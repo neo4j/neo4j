@@ -69,7 +69,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        InstanceSelector<IndexUpdater> updaterSelector = new InstanceSelector<>( new IndexUpdater[INSTANCE_COUNT],
+        LazyInstanceSelector<IndexUpdater> updaterSelector = new LazyInstanceSelector<>( new IndexUpdater[INSTANCE_COUNT],
                 slot -> instanceSelector.select( slot ).newUpdater( mode ) );
         return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
@@ -95,7 +95,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public IndexReader newReader()
     {
-        InstanceSelector<IndexReader> readerSelector = new InstanceSelector<>( new IndexReader[INSTANCE_COUNT],
+        LazyInstanceSelector<IndexReader> readerSelector = new LazyInstanceSelector<>( new IndexReader[INSTANCE_COUNT],
                 slot -> instanceSelector.select( slot ).newReader() );
         return new FusionIndexReader( slotSelector, readerSelector, descriptor );
     }

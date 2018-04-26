@@ -19,13 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.util.function.IntFunction;
-
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.Exceptions;
-
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
 
 /**
  * Selects an instance given a certain slot.
@@ -33,33 +29,19 @@ import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_CO
  */
 class InstanceSelector<T>
 {
-    private final T[] instances;
-    private final IntFunction<T> factory;
-    private boolean closed;
+    final T[] instances;
+    boolean closed;
 
     /**
-     * @param instances fully instantiated instances so that no factory is needed.
+     * @param instances array of fully instantiated instances
      */
     InstanceSelector( T[] instances )
     {
-        this( instances, slot ->
-        {
-            throw new IllegalStateException( "No instantiation expected" );
-        } );
-    }
-
-    /**
-     * @param instances uninstantiated instances, instantiated lazily by the {@code factory}.
-     * @param factory {@link IntFunction} for instantiating instances for specific slots.
-     */
-    InstanceSelector( T[] instances, IntFunction<T> factory )
-    {
         this.instances = instances;
-        this.factory = factory;
     }
 
     /**
-     * Returns the instance at the given slot. Instantiating it if it hasn't already been instantiated.
+     * Returns the instance at the given slot.
      *
      * @param slot slot number to return instance for.
      * @return the instance at the given {@code slot}.
@@ -68,28 +50,8 @@ class InstanceSelector<T>
     {
         if ( instances[slot] == null )
         {
-            assertOpen();
-            instances[slot] = factory.apply( slot );
+            throw new IllegalStateException( "Instance is not instantiated" );
         }
-        return instances[slot];
-    }
-
-    private void assertOpen()
-    {
-        if ( closed )
-        {
-            throw new IllegalStateException( "This selector has been closed" );
-        }
-    }
-
-    /**
-     * Returns the instance at the given slot. If the instance at the given {@code slot} hasn't been instantiated yet, {@code null} is returned.
-     *
-     * @param slot slot number to return instance for.
-     * @return the instance at the given {@code slot}, or {@code null}.
-     */
-    T getIfInstantiated( int slot )
-    {
         return instances[slot];
     }
 
@@ -106,35 +68,11 @@ class InstanceSelector<T>
      */
     <R,E extends Exception> R[] instancesAs( R[] target, ThrowingFunction<T,R,E> converter ) throws E
     {
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
+        for ( int slot = 0; slot < instances.length; slot++ )
         {
             target[slot] = converter.apply( select( slot ) );
         }
         return target;
-    }
-
-    /**
-     * Convenience method for doing something to already instantiated instances.
-     *
-     * @param consumer {@link ThrowingConsumer} which performs some action on an instance.
-     * @param <E> type of exception the action may throw.
-     * @throws E exception from action.
-     */
-    <E extends Exception> void forInstantiated( ThrowingConsumer<T,E> consumer ) throws E
-    {
-        E exception = null;
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
-        {
-            T instance = getIfInstantiated( slot );
-            if ( instance != null )
-            {
-                exception = consume( exception, consumer, instance );
-            }
-        }
-        if ( exception != null )
-        {
-            throw exception;
-        }
     }
 
     /**
@@ -147,7 +85,7 @@ class InstanceSelector<T>
     <E extends Exception> void forAll( ThrowingConsumer<T,E> consumer ) throws E
     {
         E exception = null;
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
+        for ( int slot = 0; slot < instances.length; slot++ )
         {
             exception = consume( exception, consumer, select( slot ) );
         }
@@ -176,6 +114,29 @@ class InstanceSelector<T>
             {
                 closed = true;
             }
+        }
+    }
+
+    /**
+     * Convenience method for doing something to already instantiated instances.
+     *
+     * @param consumer {@link ThrowingConsumer} which performs some action on an instance.
+     * @param <E> type of exception the action may throw.
+     * @throws E exception from action.
+     */
+    private <E extends Exception> void forInstantiated( ThrowingConsumer<T,E> consumer ) throws E
+    {
+        E exception = null;
+        for ( T instance : instances )
+        {
+            if ( instance != null )
+            {
+                exception = consume( exception, consumer, instance );
+            }
+        }
+        if ( exception != null )
+        {
+            throw exception;
         }
     }
 

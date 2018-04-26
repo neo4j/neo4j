@@ -66,7 +66,8 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
-        InstanceSelector<Collection<IndexEntryUpdate<?>>> batchSelector = new InstanceSelector<>( new Collection[INSTANCE_COUNT], slot -> new ArrayList<>() );
+        LazyInstanceSelector<Collection<IndexEntryUpdate<?>>> batchSelector =
+                new LazyInstanceSelector<>( new Collection[INSTANCE_COUNT], slot -> new ArrayList<>() );
         for ( IndexEntryUpdate<?> update : updates )
         {
             batchSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).add( update );
@@ -97,8 +98,8 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        InstanceSelector<IndexUpdater> updaterSelector =
-                new InstanceSelector<>( new IndexUpdater[INSTANCE_COUNT], slot -> instanceSelector.select( slot ).newPopulatingUpdater( accessor ) );
+        LazyInstanceSelector<IndexUpdater> updaterSelector =
+                new LazyInstanceSelector<>( new IndexUpdater[INSTANCE_COUNT], slot -> instanceSelector.select( slot ).newPopulatingUpdater( accessor ) );
         return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
 

@@ -43,7 +43,7 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
 {
     private final SchemaIndexDescriptor descriptor;
 
-    FusionIndexReader( SlotSelector slotSelector, InstanceSelector<IndexReader> instanceSelector, SchemaIndexDescriptor descriptor )
+    FusionIndexReader( SlotSelector slotSelector, LazyInstanceSelector<IndexReader> instanceSelector, SchemaIndexDescriptor descriptor )
     {
         super( slotSelector, instanceSelector );
         this.descriptor = descriptor;

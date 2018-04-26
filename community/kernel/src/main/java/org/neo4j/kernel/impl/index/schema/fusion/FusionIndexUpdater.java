@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 
 class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexUpdater
 {
-    FusionIndexUpdater( SlotSelector slotSelector, InstanceSelector<IndexUpdater> instanceSelector )
+    FusionIndexUpdater( SlotSelector slotSelector, LazyInstanceSelector<IndexUpdater> instanceSelector )
     {
         super( slotSelector, instanceSelector );
     }

@@ -27,6 +27,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.IntFunction;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -115,7 +116,15 @@ public class FusionIndexUpdaterTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexUpdater = new FusionIndexUpdater( fusionVersion.slotSelector(), new InstanceSelector( updaters ) );
+        fusionIndexUpdater = new FusionIndexUpdater( fusionVersion.slotSelector(), new LazyInstanceSelector<>( updaters, throwingFactory() ) );
+    }
+
+    private IntFunction<IndexUpdater> throwingFactory()
+    {
+        return i ->
+        {
+            throw new IllegalStateException( "All updaters should exist already" );
+        };
     }
 
     private void resetMocks()

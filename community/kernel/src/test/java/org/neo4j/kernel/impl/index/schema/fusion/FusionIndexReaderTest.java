@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
+import java.util.function.IntFunction;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -121,8 +122,16 @@ public class FusionIndexReaderTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexReader = new FusionIndexReader( fusionVersion.slotSelector(), new InstanceSelector<>( readers ),
+        fusionIndexReader = new FusionIndexReader( fusionVersion.slotSelector(), new LazyInstanceSelector<>( readers, throwingFactory() ),
                 SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
+    }
+
+    private IntFunction<IndexReader> throwingFactory()
+    {
+        return i ->
+        {
+            throw new IllegalStateException( "All readers should exist already" );
+        };
     }
 
     /* close */

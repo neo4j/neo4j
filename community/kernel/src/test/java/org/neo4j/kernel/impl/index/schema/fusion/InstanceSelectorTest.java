@@ -19,141 +19,145 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
-import java.util.function.IntFunction;
-
-import org.neo4j.function.ThrowingConsumer;
-
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
 
 public class InstanceSelectorTest
 {
     @Test
-    public void shouldInstantiateLazilyOnFirstSelect()
+    public void shouldSelect()
     {
         // given
-        IntFunction<String> factory = mock( IntFunction.class );
-        when( factory.apply( anyInt() ) ).then( invocationOnMock -> String.valueOf( (Integer) invocationOnMock.getArgument( 0 ) ) );
-        InstanceSelector<String> selector = new InstanceSelector<>( new String[INSTANCE_COUNT], factory );
+        InstanceSelector<String> selector = selector( "0", "1" );
 
         // when
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
-        {
-            for ( int candidate = 0; candidate < INSTANCE_COUNT; candidate++ )
-            {
-                // then
-                if ( candidate < slot )
-                {
-                    verify( factory, times( 1 ) ).apply( candidate );
-                    selector.select( candidate );
-                    verify( factory, times( 1 ) ).apply( candidate );
-                }
-                else if ( candidate == slot )
-                {
-                    verify( factory, times( 0 ) ).apply( candidate );
-                    selector.select( candidate );
-                    verify( factory, times( 1 ) ).apply( candidate );
-                }
-                else
-                {
-                    assertNull( selector.getIfInstantiated( candidate ) );
-                }
-            }
-        }
+        String select0 = selector.select( 0 );
+        // then
+        assertEquals( "0", select0 );
+
+        // when
+        String select1 = selector.select( 1 );
+        // then
+        assertEquals( "1", select1 );
     }
 
     @Test
-    public void shouldPerformActionOnInstantiated()
+    public void shouldThrowOnNonInstantiatedSelect()
     {
         // given
-        IntFunction<String> factory = mock( IntFunction.class );
-        when( factory.apply( anyInt() ) ).then( invocationOnMock -> String.valueOf( (Integer) invocationOnMock.getArgument( 0 ) ) );
-        InstanceSelector<String> selector = new InstanceSelector<>( new String[INSTANCE_COUNT], factory );
-        selector.select( 0 );
-        selector.select( 2 );
+        InstanceSelector<String> selector = selector( "0", null );
 
-        // when
-        ThrowingConsumer<String,RuntimeException> consumer = mock( ThrowingConsumer.class );
-        selector.forInstantiated( consumer );
-
-        // then
-        verify( consumer, times( 1 ) ).accept( "0" );
-        verify( consumer, times( 1 ) ).accept( "2" );
-        verifyNoMoreInteractions( consumer );
-    }
-
-    @Test
-    public void shouldPerformActionOnAll()
-    {
-        // given
-        IntFunction<String> factory = mock( IntFunction.class );
-        when( factory.apply( anyInt() ) ).then( invocationOnMock -> String.valueOf( (Integer) invocationOnMock.getArgument( 0 ) ) );
-        InstanceSelector<String> selector = new InstanceSelector<>( new String[INSTANCE_COUNT], factory );
-        selector.select( 1 );
-
-        // when
-        ThrowingConsumer<String,RuntimeException> consumer = mock( ThrowingConsumer.class );
-        selector.forAll( consumer );
-
-        // then
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
-        {
-            verify( consumer, times( 1 ) ).accept( String.valueOf( slot ) );
-        }
-        verifyNoMoreInteractions( consumer );
-    }
-
-    @Test
-    public void shouldCloseAllInstantiated()
-    {
-        // given
-        IntFunction<String> factory = mock( IntFunction.class );
-        when( factory.apply( anyInt() ) ).then( invocationOnMock -> String.valueOf( (Integer) invocationOnMock.getArgument( 0 ) ) );
-        InstanceSelector<String> selector = new InstanceSelector<>( new String[INSTANCE_COUNT], factory );
-        selector.select( 1 );
-        selector.select( 3 );
-
-        // when
-        ThrowingConsumer<String,RuntimeException> consumer = mock( ThrowingConsumer.class );
-        selector.close( consumer );
-
-        // then
-        verify( consumer, times( 1 ) ).accept( "1" );
-        verify( consumer, times( 1 ) ).accept( "3" );
-        verifyNoMoreInteractions( consumer );
-    }
-
-    @Test
-    public void shouldPreventInstantiationAfterClose()
-    {
-        // given
-        IntFunction<String> factory = mock( IntFunction.class );
-        when( factory.apply( anyInt() ) ).then( invocationOnMock -> String.valueOf( (Integer) invocationOnMock.getArgument( 0 ) ) );
-        InstanceSelector<String> selector = new InstanceSelector<>( new String[INSTANCE_COUNT], factory );
-        selector.select( 1 );
-        selector.select( 3 );
-
-        // when
-        selector.close( mock( ThrowingConsumer.class ) );
-
-        // then
         try
         {
-            selector.select( 0 );
+            // when
+            selector.select( 1 );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
         {
-            // then good
+            // then
+            // good
         }
+    }
+
+    @Test
+    public void shouldThrowOnNonInstantiatedInstancesAs()
+    {
+        // given
+        InstanceSelector<String> selector = selector( "0", null );
+
+        // when
+        try
+        {
+            selector.instancesAs( new Number[2], Integer::parseInt );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then
+            // good
+        }
+    }
+
+    @Test
+    public void shouldInstancesAs()
+    {
+        // given
+        InstanceSelector<String> selector = selector( "0", "1" );
+
+        // when
+        Number[] numbers = selector.instancesAs( new Number[2], Integer::parseInt );
+
+        // then
+        assertEquals( 0, numbers[0] );
+        assertEquals( 1, numbers[1] );
+    }
+
+    @Test
+    public void shouldThrowOnNonInstantiatedForAll()
+    {
+        // given
+        InstanceSelector<String> selector = selector( "0", null );
+
+        // when
+        try
+        {
+            selector.forAll( Integer::parseInt );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then
+            // good
+        }
+    }
+
+    @Test
+    public void shouldForAll()
+    {
+        // given
+        InstanceSelector<String> selector = selector( "0", "1" );
+
+        // when
+        MutableInt count = new MutableInt();
+        selector.forAll( s -> count.increment() );
+
+        // then
+        assertEquals( 2, count.intValue() );
+    }
+
+    @Test
+    public void shouldNotThrowOnNonInstantiatedForAll()
+    {
+        // given
+        InstanceSelector<String> selector = selector( (String) null );
+
+        // when
+        selector.close( Integer::parseInt );
+
+        // then
+        // good
+    }
+
+    @Test
+    public void shouldCloseAll()
+    {
+        // given
+        InstanceSelector<String> selector = selector( "0", "1" );
+
+        // when
+        MutableInt count = new MutableInt();
+        selector.close( s -> count.increment() );
+
+        // then
+        assertEquals( 2, count.intValue() );
+    }
+
+    private InstanceSelector<String> selector( String... strings )
+    {
+        return new InstanceSelector<>( strings );
     }
 }
