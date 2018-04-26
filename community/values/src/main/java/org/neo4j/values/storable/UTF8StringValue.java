@@ -136,24 +136,62 @@ public final class UTF8StringValue extends StringValue
     @Override
     public int computeHash()
     {
-        byte[] values = bytes;
-
-        if ( values.length == 0 || byteLength == 0 )
+        if ( bytes.length == 0 || byteLength == 0 )
         {
             return 0;
         }
 
-        int hash = 1, i = offset, len = offset + byteLength;
-        while ( i < len )
+        CodePointCursor cpc = new CodePointCursor();
+        cpc.values = bytes;
+        cpc.i = offset;
+        int hash = 1;
+        int len = offset + byteLength;
+
+        while ( cpc.i < len )
         {
+            hash = 31 * hash + (int) cpc.nextCodePoint();
+        }
+        return hash;
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        CodePointCursor cpc = new CodePointCursor();
+        cpc.values = bytes;
+        cpc.i = offset;
+        int len = offset + byteLength;
+
+        while ( cpc.i < len )
+        {
+            long codePointA = cpc.nextCodePoint() << 32;
+            long codePointB = 0L;
+            if ( cpc.i < len )
+            {
+                codePointB = cpc.nextCodePoint();
+            }
+            hash = hashFunction.update( hash, codePointA + codePointB );
+        }
+
+        return hashFunction.update( hash, cpc.codePointCount );
+    }
+
+    private static class CodePointCursor
+    {
+        byte[] values;
+        int i;
+        int codePointCount;
+
+        long nextCodePoint()
+        {
+            codePointCount++;
             byte b = values[i];
             //If high bit is zero (equivalent to the byte being positive in two's complement)
             //we are dealing with an ascii value and use a single byte for storing the value.
             if ( b >= 0 )
             {
-                hash = 31 * hash + b;
                 i++;
-                continue;
+                return b;
             }
 
             //We can now have one of three situations.
@@ -168,72 +206,10 @@ public final class UTF8StringValue extends StringValue
                 bytesNeeded++;
                 b = (byte) (b << 1);
             }
-            int codePoint = codePoint( bytes, b, i, bytesNeeded );
+            int codePoint = codePoint( values, b, i, bytesNeeded );
             i += bytesNeeded;
-
-            hash = 31 * hash + codePoint;
+            return codePoint;
         }
-
-        return hash;
-    }
-
-    @Override
-    public long updateHash( HashFunction hashFunction, long hash )
-    {
-        class CodePointCursor
-        {
-            byte[] values;
-            int i;
-            @SuppressWarnings( "WeakerAccess" ) // Method is package-private to avoid synthetic accessor indirection.
-            int codePointCount;
-
-            @SuppressWarnings( "WeakerAccess" ) // Method is package-private to avoid synthetic accessor indirection.
-            long next()
-            {
-                codePointCount++;
-                byte b = values[i];
-                //If high bit is zero (equivalent to the byte being positive in two's complement)
-                //we are dealing with an ascii value and use a single byte for storing the value.
-                if ( b >= 0 )
-                {
-                    i++;
-                    return b;
-                }
-
-                //We can now have one of three situations.
-                //Byte1    Byte2    Byte3    Byte4
-                //110xxxxx 10xxxxxx
-                //1110xxxx 10xxxxxx 10xxxxxx
-                //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-                //Figure out how many bytes we need by reading the number of leading bytes
-                int bytesNeeded = 0;
-                while ( b < 0 )
-                {
-                    bytesNeeded++;
-                    b = (byte) (b << 1);
-                }
-                int codePoint = codePoint( values, b, i, bytesNeeded );
-                i += bytesNeeded;
-                return codePoint;
-            }
-        }
-        CodePointCursor cpc = new CodePointCursor();
-        cpc.values = bytes;
-        cpc.i = offset;
-
-        int len = offset + byteLength;
-        while ( cpc.i < len )
-        {
-            long codePointA = cpc.next() << 32;
-            long codePointB = 0L;
-            if ( cpc.i < len )
-            {
-                codePointB = cpc.next();
-            }
-            hash = hashFunction.update( hash, codePointA + codePointB );
-        }
-
-        return hashFunction.update( hash, cpc.codePointCount );
     }
 
     @Override
