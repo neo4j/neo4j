@@ -30,6 +30,9 @@ import org.neo4j.cypher.internal.runtime.LongArraySet._
   * This set will keep all it's state in a single long[] array, marking unused slots
   * using 0xF000000000000000L, a value that should never be used for node or relationship id's.
   *
+  * The set will be resized when either probing has to go on for too long when doing inserts,
+  * or the load factor reaches 75%.
+  *
   * @param capacity The initial capacity for the set. Must be a power of 2
   * @param longsPerEntry All arrays in the set must be of this length
   */
@@ -63,7 +66,7 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
   def add(value: Array[Long]): Boolean = {
     assert(value.length == longsPerEntry)
     var offset = offsetFor(value)
-
+    var probeCount = 0
     while (true) {
       table.checkSlot(offset, value) match {
         case VALUE_FOUND =>
@@ -83,7 +86,15 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
 
         case CONTINUE_PROBING =>
           // Spot already taken. Continue linear probe looking for an empty spot
-          offset = (offset + 1) & table.tableMask
+          // We will only allow a probe to go on for limited amount of steps - if we need to probe too much, we'll resize
+          if (probeCount == table.maxProbeCount) {
+            resize()
+            offset = offsetFor(value)
+            probeCount = 0
+          } else {
+            probeCount += 1
+            offset = (offset + 1) & table.tableMask
+          }
       }
     }
 
@@ -134,6 +145,10 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
 
     def timeToResize: Boolean = numberOfEntries >= resizeLimit
 
+    // By limiting the number of steps we allow probing to go on for to log2(capacity),
+    // we make sure that the worst case for the set is O(log(n)) instead of O(n)
+    val maxProbeCount: Int = (Math.log(capacity) / lnOf2).toInt
+
     def checkSlot(offset: Int, value: Array[Long]): Int = {
       val startOffset = offset * longsPerEntry
 
@@ -160,6 +175,7 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
 
 object LongArraySet {
   // Constants
+  val lnOf2 = Math.log(2)
   val NOT_IN_USE: Long = 0xF000000000000000L
   val SLOT_EMPTY: Int = 0
   val VALUE_FOUND: Int = 1
