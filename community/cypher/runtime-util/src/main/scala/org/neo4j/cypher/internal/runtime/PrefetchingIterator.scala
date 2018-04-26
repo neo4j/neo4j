@@ -24,16 +24,23 @@ abstract class PrefetchingIterator[T] extends Iterator[T] {
 
   def produceNext(): Option[T]
 
-  override def hasNext: Boolean = buffer.nonEmpty
-
-  pullNextElementFromSource()
-
-  override def next(): T = buffer match {
-    case None =>
-      Iterator.empty.next()
-    case Some(x) =>
+  override def hasNext: Boolean = {
+    if (buffer == null)
       pullNextElementFromSource()
-      x
+    buffer.nonEmpty
+  }
+
+  override def next(): T = {
+    if (buffer == null)
+      pullNextElementFromSource()
+
+    buffer match {
+      case None =>
+        Iterator.empty.next()
+      case Some(x) =>
+        pullNextElementFromSource()
+        x
+    }
   }
 
   private def pullNextElementFromSource(): Unit = {
