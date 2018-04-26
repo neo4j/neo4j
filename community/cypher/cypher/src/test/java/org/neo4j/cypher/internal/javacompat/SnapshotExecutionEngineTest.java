@@ -74,7 +74,8 @@ public class SnapshotExecutionEngineTest
         when( kernelStatement.getVersionContext() ).thenReturn( versionContext );
         when( transactionalContext.statement() ).thenReturn( kernelStatement );
         Result result = mock( Result.class );
-        when( result.getQueryStatistics() ).thenReturn( mock( QueryStatistics.class ) );
+        QueryStatistics statistics = mock( QueryStatistics.class );
+        when( result.getQueryStatistics() ).thenReturn( statistics );
         when( executor.execute( any(), anyMap(), any() ) ).thenReturn( result );
     }
 

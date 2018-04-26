@@ -81,7 +81,8 @@ public class NeoTransactionIndexApplierTest
         after.setLabelField( 18, emptyDynamicRecords );
         final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
-        when( labelScanStore.get() ).thenReturn( mock( LabelScanWriter.class ) );
+        LabelScanWriter labelScanWriter = mock( LabelScanWriter.class );
+        when( labelScanStore.get() ).thenReturn( labelScanWriter );
 
         // when
         boolean result;

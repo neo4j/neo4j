@@ -51,7 +51,8 @@ public class ThirdPartyJAXRSModuleTest
         CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
-        when( neoServer.getDatabase() ).thenReturn( mock(Database.class));
+        Database database = mock( Database.class );
+        when( neoServer.getDatabase() ).thenReturn( database );
 
         Config config = mock( Config.class );
         List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<>();

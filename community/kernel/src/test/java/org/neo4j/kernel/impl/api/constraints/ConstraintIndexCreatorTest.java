@@ -364,7 +364,8 @@ public class ConstraintIndexCreatorTest
         when( transaction.statementLocks() ).thenReturn( locks );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( transaction.schemaRead() ).thenReturn( schemaRead );
-        when( transaction.txState() ).thenReturn( mock( TransactionState.class ) );
+        TransactionState transactionState = mock( TransactionState.class );
+        when( transaction.txState() ).thenReturn( transactionState );
         return transaction;
     }
 }

@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Map;
 
 import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingPlugin;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingProcessor;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 
@@ -63,7 +64,8 @@ public class GetServersProcedureV2Test
     {
         // given
         LoadBalancingPlugin plugin = mock( LoadBalancingPlugin.class );
-        when( plugin.run( anyMap() ) ).thenReturn( mock( LoadBalancingPlugin.Result.class ) );
+        LoadBalancingProcessor.Result result = mock( LoadBalancingPlugin.Result.class );
+        when( plugin.run( anyMap() ) ).thenReturn( result );
         GetServersProcedureForMultiDC getServers = new GetServersProcedureForMultiDC( plugin );
         Map<String,String> clientContext = stringMap( "key", "value", "key2", "value2" );
 

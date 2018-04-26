@@ -75,7 +75,8 @@ public class SnapshotStateTest
 
         SnapshotContext context = mock( SnapshotContext.class );
         when( context.getClusterContext() ).thenReturn( clusterContext );
-        when( context.getSnapshotProvider() ).thenReturn( mock( SnapshotProvider.class ) );
+        SnapshotProvider snapshotProvider = mock( SnapshotProvider.class );
+        when( context.getSnapshotProvider() ).thenReturn( snapshotProvider );
 
         Message<SnapshotMessage> message = Message.to( SnapshotMessage.refreshSnapshot, me );
 

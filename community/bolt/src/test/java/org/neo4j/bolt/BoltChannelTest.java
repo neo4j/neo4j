@@ -94,7 +94,8 @@ public class BoltChannelTest
     {
         Channel channel = mock( Channel.class );
         when( channel.isOpen() ).thenReturn( open );
-        when( channel.close() ).thenReturn( mock( ChannelFuture.class ) );
+        ChannelFuture channelFuture = mock( ChannelFuture.class );
+        when( channel.close() ).thenReturn( channelFuture );
         return channel;
     }
 }

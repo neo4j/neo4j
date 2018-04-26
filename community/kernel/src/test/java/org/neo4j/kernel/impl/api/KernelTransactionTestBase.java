@@ -111,7 +111,8 @@ public class KernelTransactionTestBase
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
-        when( readLayer.newStatement() ).thenReturn( mock( StoreStatement.class ) );
+        StoreStatement statement = mock( StoreStatement.class );
+        when( readLayer.newStatement() ).thenReturn( statement );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new Command

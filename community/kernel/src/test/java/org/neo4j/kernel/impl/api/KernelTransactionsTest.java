@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -533,7 +533,8 @@ public class KernelTransactionsTest
             StorageStatement... otherStorageStatements ) throws Throwable
     {
         Locks locks = mock( Locks.class );
-        when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
 
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
         when( readLayer.newStatement() ).thenReturn( firstStoreStatements, otherStorageStatements );
