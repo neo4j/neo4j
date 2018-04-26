@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongConsumer;
+import java.util.function.LongFunction;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -45,138 +47,62 @@ public class UpdateDeletedIndexIT
     @Test
     public void shouldHandleUpdateRemovalOfLabelConcurrentlyWithIndexDrop() throws Throwable
     {
-        // given
-        long[] nodes = createNodes();
-        IndexDefinition indexDefinition = createIndex();
-
-        // when
-        Race race = new Race();
-        race.addContestant( indexDropper( indexDefinition ), 1 );
-        for ( int i = 0; i < NODES; i++ )
-        {
-            race.addContestant( nodeLabelRemover( nodes[i] ) );
-        }
-
-        // then
-        race.go();
+        shouldHandleIndexDropConcurrentlyWithOperation( nodeId -> db.getNodeById( nodeId ).removeLabel( LABEL ) );
     }
 
     @Test
     public void shouldHandleDeleteNodeConcurrentlyWithIndexDrop() throws Throwable
     {
-        // given
-        long[] nodes = createNodes();
-        IndexDefinition indexDefinition = createIndex();
-
-        // when
-        Race race = new Race();
-        race.addContestant( indexDropper( indexDefinition ), 1 );
-        for ( int i = 0; i < NODES; i++ )
-        {
-            race.addContestant( nodeDeleter( nodes[i] ) );
-        }
-
-        // then
-        race.go();
+        shouldHandleIndexDropConcurrentlyWithOperation( nodeId -> db.getNodeById( nodeId ).delete() );
     }
 
     @Test
     public void shouldHandleRemovePropertyConcurrentlyWithIndexDrop() throws Throwable
     {
-        // given
-        long[] nodes = createNodes();
-        IndexDefinition indexDefinition = createIndex();
-
-        // when
-        Race race = new Race();
-        race.addContestant( indexDropper( indexDefinition ), 1 );
-        for ( int i = 0; i < NODES; i++ )
-        {
-            race.addContestant( nodePropertyRemover( nodes[i] ) );
-        }
-
-        // then
-        race.go();
+        shouldHandleIndexDropConcurrentlyWithOperation( nodeId -> db.getNodeById( nodeId ).removeProperty( KEY ) );
     }
 
     @Test
     public void shouldHandleNodeDetachDeleteConcurrentlyWithIndexDrop() throws Throwable
     {
+        shouldHandleIndexDropConcurrentlyWithOperation( nodeId ->
+        {
+            ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+            txBridge.getKernelTransactionBoundToThisThread( true ).dataWrite().nodeDetachDelete( nodeId );
+        } );
+    }
+
+    private void shouldHandleIndexDropConcurrentlyWithOperation( NodeOperation operation ) throws Throwable
+    {
         // given
         long[] nodes = createNodes();
         IndexDefinition indexDefinition = createIndex();
 
         // when
         Race race = new Race();
-        race.addContestant( indexDropper( indexDefinition ), 1 );
-        for ( int i = 0; i < NODES; i++ )
-        {
-            race.addContestant( nodeDetachDeleter( nodes[i] ) );
-        }
-
-        // then
-        race.go();
-    }
-
-    private Runnable indexDropper( IndexDefinition indexDefinition )
-    {
-        return () ->
+        race.addContestant( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
                 indexDefinition.drop();
                 tx.success();
             }
-        };
-    }
-
-    private Runnable nodeLabelRemover( long nodeId )
-    {
-        return () ->
+        }, 1 );
+        for ( int i = 0; i < NODES; i++ )
         {
-            try ( Transaction tx = db.beginTx() )
+            final long nodeId = nodes[i];
+            race.addContestant( throwing( () ->
             {
-                db.getNodeById( nodeId ).removeLabel( LABEL );
-                tx.success();
-            }
-        };
-    }
+                try ( Transaction tx = db.beginTx() )
+                {
+                    operation.run( nodeId );
+                    tx.success();
+                }
+            } ) );
+        }
 
-    private Runnable nodeDeleter( long nodeId )
-    {
-        return () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.getNodeById( nodeId ).delete();
-                tx.success();
-            }
-        };
-    }
-
-    private Runnable nodeDetachDeleter( long nodeId )
-    {
-        return throwing( () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread(
-                        true ).dataWrite().nodeDetachDelete( nodeId );
-                tx.success();
-            }
-        } );
-    }
-
-    private Runnable nodePropertyRemover( long nodeId )
-    {
-        return () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.getNodeById( nodeId ).removeProperty( KEY );
-                tx.success();
-            }
-        };
+        // then
+        race.go();
     }
 
     private long[] createNodes()
@@ -217,5 +143,10 @@ public class UpdateDeletedIndexIT
             tx.success();
         }
         return indexDefinition;
+    }
+
+    private interface NodeOperation
+    {
+        void run( long nodeId ) throws Exception;
     }
 }

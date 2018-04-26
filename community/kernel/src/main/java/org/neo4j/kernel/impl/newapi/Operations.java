@@ -109,6 +109,9 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * Collects all Kernel API operations and guards them from being used outside of transaction.
+ *
+ * Many methods assume cursors to be initialized before use in private methods, even if they're not passed in explicitly.
+ * Keep that in mind: e.g. nodeCursor, propertyCursor and relationshipCursor
  */
 public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 {
@@ -295,7 +298,9 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         return false;
     }
 
-    // Assuming that the nodeCursor have been initialized to the node that labels are retrieved from
+    /**
+     * Assuming that the nodeCursor have been initialized to the node that labels are retrieved from
+     */
     private void acquireSharedNodeLabelLocks()
     {
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, nodeCursor.labels().all() );
