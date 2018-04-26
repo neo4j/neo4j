@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
 import scala.collection.{immutable, mutable}
 
 /***
-  * This class can be invoked by writing CYPHER debug=printCosts <query>.
-  *
   * This class can listen to cost comparisons and report them back as normal rows. This is done by creating a fake plan
   * that looks something like this:
   *
@@ -62,7 +60,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
     def stringTo(level: Int, plan: LogicalPlan): String = {
       def indent(level: Int, in: String): String = level match {
         case 0 => in
-        case _ => "\n" + "  " * level + in
+        case _ => System.lineSeparator() + "  " * level + in
       }
 
       val cost = context.cost(plan, context.input, cardinalities)
@@ -72,7 +70,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       thisPlan + l + r
     }
 
-    val sortedPlans = input.toIndexedSeq.sorted(inputOrdering).map(projector).reverse
+    val sortedPlans = input.toIndexedSeq.sorted(inputOrdering.reverse).map(projector)
     val winner = sortedPlans.last
 
     val theseRows: immutable.Seq[Row] = sortedPlans.map { plan =>
@@ -133,8 +131,8 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
 
     val maps: immutable.Seq[MapExpression] = rows.toIndexedSeq.reverse.flatMap {
       case Row(comparisonId: Int, planId: Id, planText: String, planCosts: String, cost: Cost, cardinality: Cardinality, winner: Boolean) =>
-        val planTestLines = planText.split('\n')
-        val planCostLines = planCosts.split('\n')
+        val planTestLines = planText.split(System.lineSeparator())
+        val planCostLines = planCosts.split(System.lineSeparator())
 
         val details = planCostLines zip planTestLines map {
           case (planCost, planTxt) =>
@@ -145,7 +143,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
             )
         }
 
-        val xxx = map(
+        val summary = map(
           "comparison" -> int(comparisonId),
           "planId" -> int(planId.x),
           "planDetails" -> str(""),
@@ -154,7 +152,7 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
           "est cardinality" -> dbl(cardinality.amount),
           "winner" -> str(if (winner) "WON" else "LOST")
         )
-        xxx +: details
+        summary +: details
     }
 
     val expression = ListLiteral(maps)(pos)
