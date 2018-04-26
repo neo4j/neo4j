@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{CostComparisonListener, LogicalPlanProducer}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
@@ -34,7 +34,8 @@ class JoinSolverStepTest extends CypherFunSuite  {
   implicit def converter(s: Symbol): String = s.toString()
 
   private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]),
-    mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
+    mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger],
+    costComparisonListener = mock[CostComparisonListener])
 
   case class TestPlan(availableSymbols: Set[String] = Set.empty, solved: PlannerQuery with CardinalityEstimation = PlannerQuery.empty) extends LogicalPlan {
 

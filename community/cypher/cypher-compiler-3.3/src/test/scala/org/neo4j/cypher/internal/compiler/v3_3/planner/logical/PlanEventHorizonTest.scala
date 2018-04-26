@@ -20,20 +20,21 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.ProcedureCallProjection
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{CostComparisonListener, LogicalPlanProducer}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTInteger, CTList, CTNode}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class PlanEventHorizonTest extends CypherFunSuite with AstConstructionTestSupport {
 
   implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel]),
-    mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
+    mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger],
+    costComparisonListener = mock[CostComparisonListener])
 
   test("should do projection if necessary") {
     // Given

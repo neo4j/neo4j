@@ -151,7 +151,8 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   }
 
   implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel]),
-    mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
+    mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger],
+    costComparisonListener = mock[CostComparisonListener])
 
   def producePlannerQuery(query: String, variable: String) = {
     val (pq, _) = producePlannerQueryForPattern(query)
