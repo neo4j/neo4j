@@ -210,6 +210,12 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
             assertOpen();
             return new SpatialIndexPartReader<>( tree, layout, samplingConfig, descriptor, searchConfiguration );
         }
+
+        @Override
+        String partName()
+        {
+            return "Spatial(" + storeFile.getName() + ")";
+        }
     }
 
     static class PartFactory implements Factory<PartAccessor>

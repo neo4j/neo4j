@@ -63,8 +63,8 @@ public class NativeLuceneFusionIndexProviderFactory20 extends
         FileSystemAbstraction fs = dependencies.fileSystem();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( FusionIndexProvider.class );
         Monitors monitors = dependencies.monitors();
-        monitors.addMonitorListener( new LoggingMonitor( log ), KEY );
-        IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, KEY );
+        monitors.addMonitorListener( new LoggingMonitor( log ), DESCRIPTOR.toString() );
+        IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, DESCRIPTOR.toString() );
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();

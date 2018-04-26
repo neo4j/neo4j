@@ -764,6 +764,39 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
+    public void assertContainsExactlyOneMessageMatching( Matcher<String> messageMatcher )
+    {
+        boolean found = false;
+        synchronized ( logCalls )
+        {
+            for ( LogCall logCall : logCalls )
+            {
+                if ( messageMatcher.matches( logCall.message ) )
+                {
+                    if ( !found )
+                    {
+                        found = true;
+                    }
+                    else
+                    {
+                        StringDescription description = new StringDescription();
+                        description.appendDescriptionOf( messageMatcher );
+                        fail( format( "Expected exactly one log statement with message as %s, but multiple found. Actual log calls were:%n%s",
+                                 description.toString(), serialize( logCalls.iterator() ) ) );
+                    }
+                }
+            }
+            if ( !found )
+            {
+                StringDescription description = new StringDescription();
+                description.appendDescriptionOf( messageMatcher );
+                fail( format(
+                        "Expected at least one log statement with message as %s, but none found. Actual log calls were:\n%s",
+                        description.toString(), serialize( logCalls.iterator() ) ) );
+            }
+        }
+    }
+
     public void assertNoLoggingOccurred()
     {
         if ( logCalls.size() != 0 )

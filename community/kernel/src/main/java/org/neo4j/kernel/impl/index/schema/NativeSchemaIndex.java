@@ -38,7 +38,7 @@ import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
-class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
+abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
 {
     final PageCache pageCache;
     final File storeFile;
@@ -70,6 +70,8 @@ class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSc
         tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector );
     }
 
+    abstract String partName();
+
     private GBPTree.Monitor treeMonitor( )
     {
         return new GBPTree.Monitor.Adaptor()
@@ -77,7 +79,7 @@ class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSc
             @Override
             public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
             {
-                monitor.recoveryCompleted( indexId, descriptor, map(
+                monitor.recoveryCompleted( indexId, descriptor, partName(), map(
                         "Number of pages visited", numberOfPagesVisited,
                         "Number of cleaned crashed pointers", numberOfCleanedCrashPointers,
                         "Time spent", duration( durationMillis ) ) );

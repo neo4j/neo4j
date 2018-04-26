@@ -197,6 +197,12 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             assertOpen();
             return new TemporalIndexPartReader<>( tree, layout, samplingConfig, descriptor );
         }
+
+        @Override
+        String partName()
+        {
+            return "Temporal(" + storeFile.getName() + ")";
+        }
     }
 
     static class PartFactory implements TemporalIndexCache.Factory<PartAccessor<?>>
