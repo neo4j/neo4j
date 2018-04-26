@@ -77,7 +77,7 @@ public class OnlineBackupCommandTest
     @Before
     public void setup() throws Exception
     {
-        OnlineBackupContextBuilder contextBuilder = mock( OnlineBackupContextBuilder.class );
+        OnlineBackupContextFactory contextBuilder = mock( OnlineBackupContextFactory.class );
         when( contextBuilder.createContext( any() ) ).thenReturn( onlineBackupContext );
 
         when( outsideWorld.fileSystem() ).thenReturn( fileSystemAbstraction );

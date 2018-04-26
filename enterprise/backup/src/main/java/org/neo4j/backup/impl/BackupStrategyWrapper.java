@@ -25,6 +25,7 @@ package org.neo4j.backup.impl;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
@@ -87,6 +88,7 @@ class BackupStrategyWrapper
         if ( previousBackupExists )
         {
             log.info( "Previous backup found, trying incremental backup." );
+            System.err.printf( "BackupStrategyWrapper keep logs is %b\n", config.get( GraphDatabaseSettings.keep_logical_logs ) );
             Fallible<BackupStageOutcome> state =
                     backupStrategy.performIncrementalBackup( userSpecifiedBackupLocation, config, userSpecifiedAddress );
             boolean fullBackupWontWork = BackupStageOutcome.WRONG_PROTOCOL.equals( state.getState() );

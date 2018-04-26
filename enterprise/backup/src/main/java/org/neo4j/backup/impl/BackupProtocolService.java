@@ -159,7 +159,7 @@ public class BackupProtocolService
             long lastCommittedTx = -1;
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory.toFile(), tuningConfiguration,
                     loadKernelExtensions(), logProvider, fileSystem, pageCache,
-                    monitors.newMonitor( StoreCopyClientMonitor.class, getClass() ), forensics );
+                    monitors.newMonitor( StoreCopyClientMonitor.class, getClass() ), forensics, true );
             FullBackupStoreCopyRequester storeCopyRequester =
                     new FullBackupStoreCopyRequester( sourceHostNameOrIp, sourcePort, timeout, forensics, monitors );
             storeCopier.copyStore(
@@ -259,8 +259,6 @@ public class BackupProtocolService
     {
         Map<String,String> tempDbConfig = new HashMap<>();
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
-        // In case someone deleted the logical log from a full backup
-        tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
         tempDbConfig.put( GraphDatabaseSettings.pagecache_warmup_enabled.name(), Settings.FALSE );
         return tempDbConfig;
     }
@@ -349,6 +347,8 @@ public class BackupProtocolService
             Path targetDirectory, PageCache pageCache, Map<String,String> config )
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
+        System.err.printf( "keep logical logs in backup protocol service startTemporaryDb is %s\n",
+                config.get( GraphDatabaseSettings.keep_logical_logs.name() ) );
         return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory.toFile() )
                 .setConfig( config )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )

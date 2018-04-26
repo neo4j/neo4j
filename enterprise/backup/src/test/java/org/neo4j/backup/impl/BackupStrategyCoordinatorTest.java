@@ -62,7 +62,6 @@ public class BackupStrategyCoordinatorTest
 
     // dependencies
     private final ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
-    private final CleanTxLogService cleanTxLogService = mock( CleanTxLogService.class );
     private final OutsideWorld outsideWorld = mock( OutsideWorld.class );
     private final FileSystemAbstraction fileSystem = mock( FileSystemAbstraction.class );
     private final LogProvider logProvider = mock( LogProvider.class );
@@ -88,7 +87,7 @@ public class BackupStrategyCoordinatorTest
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
         when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( reportDir );
         when( requiredArguments.getReportDir() ).thenReturn( reportDir );
-        subject = new BackupStrategyCoordinator( consistencyCheckService, cleanTxLogService, outsideWorld, logProvider, progressMonitorFactory,
+        subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory,
                 Arrays.asList( firstStrategy, secondStrategy ) );
     }
 
@@ -238,7 +237,7 @@ public class BackupStrategyCoordinatorTest
     public void havingNoStrategiesCausesAllSolutionsFailedException() throws CommandFailed
     {
         // given there are no strategies in the solution
-        subject = new BackupStrategyCoordinator( consistencyCheckService, cleanTxLogService, outsideWorld, logProvider, progressMonitorFactory,
+        subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory,
                 Collections.emptyList() );
 
         // then we want a predictable exception (instead of NullPointer)
@@ -267,7 +266,7 @@ public class BackupStrategyCoordinatorTest
         }
 
         // then
-        verifyZeroInteractions( cleanTxLogService );
+        fail();
     }
 
     @Test
@@ -280,7 +279,7 @@ public class BackupStrategyCoordinatorTest
         subject.performBackup( onlineBackupContext );
 
         // then
-        verify( cleanTxLogService, times( 1 ) ).removeUnnecessaryTransactionLogs( any() );
+        fail();
     }
 
     /**

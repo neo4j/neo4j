@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -50,15 +51,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.ports.allocation.PortAuthority;
@@ -67,12 +66,14 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.neo4j.backup.impl.OnlineBackupCommandCcIT.runBackupToolFromSameJvmToGetExitCode;
 import static org.neo4j.backup.impl.OnlineBackupCommandCcIT.wrapWithNormalOutput;
 import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
@@ -102,17 +103,6 @@ public class OnlineBackupCommandHaIT
     private static final Label label = Label.label( "any_label" );
     private static final String PROP_NAME = "name";
     private static final String PROP_RANDOM = "random";
-
-    private static void createSomeData( GraphDatabaseService db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode();
-            node.setProperty( "name", "Neo" );
-            db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
-            tx.success();
-        }
-    }
 
     @Before
     public void resetTasks()
@@ -312,7 +302,8 @@ public class OnlineBackupCommandHaIT
                 "--name=" + backupName ) );
 
         // and the database contains a few more transactions
-        LongStream.range( 0, 50 ).forEach( number -> createSomeData( db ) );
+        transactions1M( db ); // first rotation
+        transactions1M( db ); // second rotation and prune
 
         // when we perform an incremental backup
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupDir,
@@ -322,14 +313,43 @@ public class OnlineBackupCommandHaIT
                 "--protocol=common",
                 "--name=" + backupName ) );
 
-        // then there are no transaction files
+        // then there has been a rotation
         BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
         LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
         long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
         long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
-        assertEquals( -1, lowestTxIdInLogFiles );
-        assertEquals( -1, highestTxIdInLogFiles );
+        assertEquals( 2, highestTxIdInLogFiles );
+        assertEquals( 1, lowestTxIdInLogFiles );
     }
+
+    static void transactions1M( GraphDatabaseService db )
+    {
+        int numberOfTransactions = 500;
+        long sizeOfTransaction = (ByteUnit.mebiBytes( 1 ) / numberOfTransactions) + 1;
+        for ( int txId = 0; txId < numberOfTransactions; txId++ )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode();
+                String longString = LongStream.range( 0, sizeOfTransaction ).map( l -> l % 10 ).mapToObj( Long::toString ).collect( joining( "" ) );
+                node.setProperty( "name", longString );
+                db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
+                tx.success();
+            }
+        }
+    }
+
+    private static void createSomeData( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( "name", "Neo" );
+            db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
+            tx.success();
+        }
+    }
+
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
     {

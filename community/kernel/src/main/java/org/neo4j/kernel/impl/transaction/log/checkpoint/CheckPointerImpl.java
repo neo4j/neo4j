@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
+import java.util.Arrays;
+
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -147,6 +149,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         {
             long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
             long lastClosedTransactionId = lastClosedTransaction[0];
+            System.out.printf( "Check point was needed an lastClosedTransaction is = %s\n", Arrays.toString( lastClosedTransaction ) );
             LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
             String prefix = triggerInfo.describe( lastClosedTransactionId );
             /*

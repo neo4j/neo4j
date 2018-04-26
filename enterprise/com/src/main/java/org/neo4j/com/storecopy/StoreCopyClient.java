@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.collection.Visitor;
@@ -92,17 +93,19 @@ public class StoreCopyClient
     private final PageCache pageCache;
     private final StoreCopyClientMonitor monitor;
     private final boolean forensics;
+    private final boolean pruneLogs;
     private final FileMoveProvider fileMoveProvider;
 
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
-            FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics )
+            FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics, boolean pruneLogs )
     {
-        this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMoveProvider( pageCache,
+        this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, pruneLogs, new FileMoveProvider( pageCache,
                 fs ) );
     }
 
-    public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
-            FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics, FileMoveProvider fileMoveProvider )
+    StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
+            FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics, boolean pruneLogs,
+            FileMoveProvider fileMoveProvider )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -112,6 +115,7 @@ public class StoreCopyClient
         this.pageCache = pageCache;
         this.monitor = monitor;
         this.forensics = forensics;
+        this.pruneLogs = pruneLogs;
         this.fileMoveProvider = fileMoveProvider;
     }
 
@@ -261,17 +265,24 @@ public class StoreCopyClient
     {
         ExternallyManagedPageCache.GraphDatabaseFactoryWithPageCacheFactory factory =
                 ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
-        return factory
+        GraphDatabaseBuilder builder = factory
                 .setKernelExtensions( kernelExtensions )
                 .setUserLogProvider( NullLogProvider.getInstance() )
-                .newEmbeddedDatabaseBuilder( tempStore.getAbsoluteFile() )
-                .setConfig( "dbms.backup.enabled", Settings.FALSE )
+                .newEmbeddedDatabaseBuilder( tempStore.getAbsoluteFile() ).setConfig( "dbms.backup.enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.pagecache_warmup_enabled, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logical_logs_location, tempStore.getAbsolutePath() )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, config.get( GraphDatabaseSettings.allow_upgrade ).toString() )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.allow_upgrade, config.get( GraphDatabaseSettings.allow_upgrade ).toString() );
+        System.out.printf( "com.StoreCopyClient prunelogs=%b\n", pruneLogs );
+        if ( pruneLogs )
+        {
+            builder = builder
+                    .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.FALSE )
+                    .setConfig( GraphDatabaseSettings.check_point_interval_time, "1ms" )
+                    .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" ); // <-- smallest possible threshold
+        }
+        return builder.newGraphDatabase();
     }
 
     private StoreWriter decorateWithProgressIndicator( final StoreWriter actual )

@@ -58,6 +58,8 @@ public class LogPruningImpl implements LogPruning
         this.strategyFactory = strategyFactory;
         this.clock = clock;
         this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, clock, config.get( GraphDatabaseSettings.keep_logical_logs ) );
+        new RuntimeException( String.format( "Pruning strategy from config %s which is strategy %s\n", config.get( GraphDatabaseSettings.keep_logical_logs ),
+                pruneStrategy.getClass().getName() ) ).printStackTrace( System.err );
 
         // Register listener for updates
         config.registerDynamicUpdateListener( GraphDatabaseSettings.keep_logical_logs,

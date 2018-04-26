@@ -75,6 +75,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.neo4j.backup.impl.OnlineBackupCommandHaIT.transactions1M;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandCcIT
@@ -281,37 +282,36 @@ public class OnlineBackupCommandCcIT
     {
         // given database exists with data
         Cluster cluster = startCluster( recordFormat );
+        createSomeData( cluster );
 
         // and we have a full backup
         String backupName = "backupName" + recordFormat;
         String address = CausalClusteringTestHelpers.backupAddress( clusterLeader( cluster ).database() );
-        assertEquals( 0,
-                runBackupToolFromOtherJvmToGetExitCode(
-                        "--from", address,
-                        "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=" + backupName ) );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
 
         // and the database contains a few more transactions
-        LongStream.range( 0, 50 ).forEach( number -> createSomeData( cluster ) );
+        transactions1M( clusterLeader( cluster ).database() ); // first rotation
+        transactions1M( clusterLeader( cluster ).database() ); // second rotation and prune
 
         // when we perform an incremental backup
-        assertEquals( 0,
-                runBackupToolFromOtherJvmToGetExitCode(
-                        "--from", address,
-                        "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=" + backupName ) );
+        assertEquals( 0, runBackupToolFromSameJvm(
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
 
-        // then there are no transaction files
+        // then there has been a rotation
         BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
         LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
         long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
         long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
-        assertEquals( -1, lowestTxIdInLogFiles );
-        assertEquals( -1, highestTxIdInLogFiles );
+        assertEquals( 2, highestTxIdInLogFiles );
+        assertEquals( 1, lowestTxIdInLogFiles );
     }
-
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
     {
         if ( nullAbleOutput == null )
