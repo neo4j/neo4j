@@ -94,14 +94,17 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
             // chunked transaction stream ends the interaction internally and closes the cursor
             ctx.writeAndFlush( txStream ).addListener( f ->
             {
-                String message = format( "Streamed transactions [%d--%d] to %s", firstTxId, txStream.lastTxId(), ctx.channel().remoteAddress() );
-                if ( f.isSuccess() )
+                if ( log.isDebugEnabled() || !f.isSuccess() )
                 {
-                    log.info( message );
-                }
-                else
-                {
-                    log.warn( message, f.cause() );
+                    String message = format( "Streamed transactions [%d--%d] to %s", firstTxId, txStream.lastTxId(), ctx.channel().remoteAddress() );
+                    if ( f.isSuccess() )
+                    {
+                        log.debug( message );
+                    }
+                    else
+                    {
+                        log.warn( message, f.cause() );
+                    }
                 }
             } );
         }
