@@ -29,5 +29,4 @@ public class HighLimitFullCheckIT extends FullCheckIntegrationTest
     {
         return HighLimitWithSmallRecords.NAME;
     }
-
 }
