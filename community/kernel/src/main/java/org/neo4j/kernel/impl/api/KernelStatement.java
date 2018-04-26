@@ -27,9 +27,11 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -264,6 +266,11 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     public VersionContext getVersionContext()
     {
         return versionContextSupplier.getVersionContext();
+    }
+
+    void assertAllows( Function<AccessMode,Boolean> allows, String mode )
+    {
+      transaction.assertAllows( allows, mode );
     }
 
     private void recordOpenCloseMethods()

@@ -124,7 +124,7 @@ abstract class RelationshipSparseSelection
      *
      * @return True is a valid relationship was found
      */
-    protected final boolean fetchNext()
+    protected boolean fetchNext()
     {
         if ( onRelationship || firstNext )
         {
@@ -150,7 +150,7 @@ abstract class RelationshipSparseSelection
         return types == null || ArrayUtils.contains( types, cursor.type() );
     }
 
-    public final void close()
+    public void close()
     {
         try
         {
