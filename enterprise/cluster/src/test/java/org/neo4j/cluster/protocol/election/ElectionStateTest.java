@@ -36,7 +36,7 @@ import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.MessageArgumentMatcher;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
-import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage.VersionedConfigurationStateChange;
 import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.assertEquals;
@@ -256,8 +256,9 @@ public class ElectionStateTest
         when( electionContext.getElectionWinner( COORDINATOR ) ).thenReturn( winner );
 
         when( electionContext.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
+        VersionedConfigurationStateChange stateChange = mock( VersionedConfigurationStateChange.class );
         when( electionContext.newConfigurationStateChange() )
-                .thenReturn( mock( ClusterMessage.VersionedConfigurationStateChange.class ) );
+                .thenReturn( stateChange );
 
         when( electionContext.getUriForId( winner ) ).thenReturn( URI.create( winnerURI ) );
 

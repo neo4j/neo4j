@@ -121,8 +121,9 @@ public class OperationsLockTest
         when( cursors.allocatePropertyCursor() ).thenReturn( propertyCursor );
         when( cursors.allocateRelationshipScanCursor() ).thenReturn( relationshipCursor );
         AutoIndexing autoindexing = mock( AutoIndexing.class );
-        when( autoindexing.nodes() ).thenReturn( mock( AutoIndexOperations.class ) );
-        when( autoindexing.relationships() ).thenReturn( mock( AutoIndexOperations.class ) );
+        AutoIndexOperations autoIndexOperations = mock( AutoIndexOperations.class );
+        when( autoindexing.nodes() ).thenReturn( autoIndexOperations );
+        when( autoindexing.relationships() ).thenReturn( autoIndexOperations );
         StorageStatement storageStatement = mock( StorageStatement.class );
         StorageEngine engine = mock( StorageEngine.class );
         storeReadLayer = mock( StoreReadLayer.class );

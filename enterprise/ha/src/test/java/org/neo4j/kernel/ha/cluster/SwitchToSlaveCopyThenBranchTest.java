@@ -329,7 +329,7 @@ public class SwitchToSlaveCopyThenBranchTest
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         Stream mockStream = mock( Stream.class );
-        when( mockStream.filter( any( Predicate.class ) ) ).thenReturn( mock( Stream.class ) );
+        when( mockStream.filter( any( Predicate.class ) ) ).thenReturn( mockStream);
         FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
         when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) )
                 .thenReturn( mockStream );

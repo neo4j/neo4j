@@ -102,7 +102,8 @@ public class MachineRoom
 
     private static void init( BoltStateMachine machine, String owner ) throws AuthenticationException, BoltConnectionFatality
     {
-        when( machine.spi.authenticate( any() ) ).thenReturn( mock( AuthenticationResult.class ) );
+        AuthenticationResult authenticationResult = mock( AuthenticationResult.class );
+        when( machine.spi.authenticate( any() ) ).thenReturn( authenticationResult );
         machine.init( USER_AGENT, owner == null ? emptyMap() : Collections.singletonMap( AuthToken.PRINCIPAL, owner ), nullResponseHandler() );
     }
 

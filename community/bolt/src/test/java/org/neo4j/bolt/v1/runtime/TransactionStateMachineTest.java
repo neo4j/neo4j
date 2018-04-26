@@ -574,7 +574,8 @@ public class TransactionStateMachineTest
         TransactionStateMachine.BoltResultHandle resultHandle = newResultHandle();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( mock( KernelTransaction.class ) );
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( kernelTransaction );
         when( stateMachineSPI.executeQuery( any(), any(), anyString(), any() ) ).thenReturn( resultHandle );
         when( stateMachineSPI.executeQuery( any(), any(), eq( "FAIL" ), any() ) ).thenThrow( new TransactionTerminatedException( failureStatus ) );
 

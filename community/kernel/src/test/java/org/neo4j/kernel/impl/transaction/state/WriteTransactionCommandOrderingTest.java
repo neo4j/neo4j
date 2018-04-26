@@ -190,9 +190,12 @@ public class WriteTransactionCommandOrderingTest
                 Collections.emptyList() );
 
         NeoStores neoStores = mock( NeoStores.class );
-        when( neoStores.getNodeStore() ).thenReturn( mock( NodeStore.class ) );
-        when( neoStores.getRelationshipGroupStore() ).thenReturn( mock( RelationshipGroupStore.class ) );
-        when( neoStores.getRelationshipStore() ).thenReturn( mock( RelationshipStore.class ) );
+        NodeStore store = mock( NodeStore.class );
+        when( neoStores.getNodeStore() ).thenReturn( store );
+        RelationshipGroupStore relationshipGroupStore = mock( RelationshipGroupStore.class );
+        when( neoStores.getRelationshipGroupStore() ).thenReturn( relationshipGroupStore );
+        RelationshipStore relationshipStore = mock( RelationshipStore.class );
+        when( neoStores.getRelationshipStore() ).thenReturn( relationshipStore );
 
         return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet,
                 0, null, null, null, null, null );

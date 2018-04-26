@@ -140,7 +140,8 @@ public class ReplicatedTokenHolderTest
                 any( StorageStatement.class ), any( ResourceLocker.class ), anyLong() );
 
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
-        when( readLayer.newStatement() ).thenReturn( mock( StorageStatement.class ) );
+        StorageStatement statement = mock( StorageStatement.class );
+        when( readLayer.newStatement() ).thenReturn( statement );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
         return storageEngine;
     }

@@ -72,7 +72,8 @@ public class NetworkReceiverTest
     public void testMessageReceivedOriginFix() throws Exception
     {
         LogProvider logProvider = mock( LogProvider.class );
-        when( logProvider.getLog( NetworkReceiver.class ) ).thenReturn( mock( Log.class ) );
+        Log log = mock( Log.class );
+        when( logProvider.getLog( NetworkReceiver.class ) ).thenReturn( log );
         NetworkReceiver networkReceiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                 mock( NetworkReceiver.Configuration.class ), logProvider );
 

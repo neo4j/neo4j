@@ -54,7 +54,8 @@ public class TestPlaceboTransaction
     public void before()
     {
         ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
-        when( bridge.get() ).thenReturn( mock( Statement.class ) );
+        Statement statement = mock( Statement.class );
+        when( bridge.get() ).thenReturn( statement );
         kernelTransaction = spy( KernelTransaction.class );
         locks = mock( Locks.class );
         when(kernelTransaction.locks()).thenReturn( locks );
