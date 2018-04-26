@@ -59,14 +59,14 @@ trait CacheTracer[QUERY_KEY] {
   * @param stalenessCaller Decided whether CachedExecutionPlans are stale
   * @param tracer Traces cache activity
   */
-class NewQueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximumSize: Int,
-                                                                     val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
-                                                                     val tracer: CacheTracer[QUERY_KEY],
-                                                                     val BEING_RECOMPILED: EXECUTABLE_QUERY) {
+class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximumSize: Int,
+                                                                  val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
+                                                                  val tracer: CacheTracer[QUERY_KEY],
+                                                                  val BEING_RECOMPILED: EXECUTABLE_QUERY) {
 
   val inner: Cache[QUERY_KEY, EXECUTABLE_QUERY] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, EXECUTABLE_QUERY]()
 
-  import NewQueryCache.NOT_PRESENT
+  import QueryCache.NOT_PRESENT
 
   /**
     * Retrieve the CachedExecutionPlan associated with the given queryKey, or compile, cache and
@@ -171,7 +171,7 @@ class NewQueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximum
   }
 }
 
-object NewQueryCache {
+object QueryCache {
   val BEING_RECOMPILED_PLAN: ExecutionPlan = new ExecutionPlan {
     override def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityInfo = ???
     override def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result = ???

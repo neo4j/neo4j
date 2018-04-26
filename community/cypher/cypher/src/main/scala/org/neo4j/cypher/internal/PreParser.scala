@@ -31,7 +31,7 @@ class PreParser(configuredVersion: CypherVersion,
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String, profile: Boolean = false): PreParsedQuery = {
-    preParsedQueries.getOrElseUpdate(queryText, actuallyPreParse(queryText, profile))
+    preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText, profile))
   }
 
   private def actuallyPreParse(queryText: String, profile: Boolean): PreParsedQuery = {

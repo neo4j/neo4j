@@ -7,7 +7,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Execut
 import org.neo4j.cypher.internal.compiler.v3_5.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
-import org.neo4j.cypher.internal.{CacheTracer, NewQueryCache, PlanStalenessCaller, ReusabilityInfo}
+import org.neo4j.cypher.internal.{CacheTracer, QueryCache, PlanStalenessCaller, ReusabilityInfo}
 import org.neo4j.values.virtual.MapValue
 
 class AstQueryCache[STATEMENT <: AnyRef](override val maximumSize: Int,
@@ -15,10 +15,10 @@ class AstQueryCache[STATEMENT <: AnyRef](override val maximumSize: Int,
                                          clock: Clock,
                                          divergence: StatsDivergenceCalculator,
                                          lastCommittedTxIdProvider: () => Long
-) extends NewQueryCache[STATEMENT, ExecutionPlan](maximumSize,
-                                                  AstQueryCache.stalenessCaller(clock, divergence, lastCommittedTxIdProvider),
-                                                  tracer,
-                                                  AstQueryCache.BEING_RECOMPILED) {
+) extends QueryCache[STATEMENT, ExecutionPlan](maximumSize,
+                                               AstQueryCache.stalenessCaller(clock, divergence, lastCommittedTxIdProvider),
+                                               tracer,
+                                               AstQueryCache.BEING_RECOMPILED) {
 
 }
 
