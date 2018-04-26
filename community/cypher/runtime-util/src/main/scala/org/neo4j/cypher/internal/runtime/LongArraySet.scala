@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import java.lang.Integer.highestOneBit
 import java.util
+
 import org.neo4j.cypher.internal.runtime.LongArraySet._
 
 /**
@@ -39,6 +40,11 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
 
   private var table = new Table(capacity)
 
+  /***
+    * Returns true if the value is in the set.
+    * @param value The value to check for
+    * @return whether the value is in the set or not.
+    */
   def contains(value: Array[Long]): Boolean = {
     var key = offsetFor(value)
     var result = 0
@@ -49,7 +55,12 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
     result == VALUE_FOUND
   }
 
-  def add(value: Array[Long]): Unit = {
+  /**
+    * Adds a value to the set.
+    * @param value The new value to be added to the set
+    * @return The method returns true if the value was added and false if it already existed in the set.
+    */
+  def add(value: Array[Long]): Boolean = {
     assert(value.length == longsPerEntry)
     var offset = offsetFor(value)
 
@@ -57,7 +68,7 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
       table.checkSlot(offset, value) match {
         case VALUE_FOUND =>
           // Set already contains value - do nothing
-          return
+          return false
 
         case SLOT_EMPTY if table.timeToResize =>
           // We know that the value does not yet exist in the set, but there is not space for it
@@ -68,13 +79,15 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
         case SLOT_EMPTY =>
           // The value does not yet exist in the set, and here is a free spot
           table.addValueToSet(value, offset)
-          return
+          return true
 
         case CONTINUE_PROBING =>
           // Spot already taken. Continue linear probe looking for an empty spot
           offset = (offset + 1) & table.tableMask
       }
     }
+
+    throw new RuntimeException("This will never be reached. Just here to stop the compiler from complaining.")
   }
 
   private def resize(): Unit = {

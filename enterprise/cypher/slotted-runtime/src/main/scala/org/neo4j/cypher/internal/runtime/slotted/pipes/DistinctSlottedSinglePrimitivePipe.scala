@@ -58,9 +58,8 @@ case class DistinctSlottedSinglePrimitivePipe(source: Pipe,
         while (input.nonEmpty) { // Let's pull data until we find something not already seen
           val next = input.next()
           val id = next.getLongAt(offset)
-          if (!seen.contains(id)) {
+          if (seen.add(id)) {
             // Found something! Set it as the next element to yield, and exit
-            seen.add(id)
             val outgoing = SlottedExecutionContext(slots)
             val outputValue = expression(next, state)
             setInSlot(outgoing, outputValue)

@@ -64,8 +64,7 @@ case class DistinctSlottedPrimitivePipe(source: Pipe,
           // Create key array
           val keys = buildKey(next)
 
-          if (!seen.contains(keys)) {
-            seen.add(keys)
+          if (seen.add(keys)) {
             // Found something! Set it as the next element to yield, and exit
             val outgoing = SlottedExecutionContext(slots)
             for (setter <- setValuesInOutput) {
