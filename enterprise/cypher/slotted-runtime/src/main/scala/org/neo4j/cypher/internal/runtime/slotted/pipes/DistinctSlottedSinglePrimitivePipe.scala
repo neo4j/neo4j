@@ -64,7 +64,7 @@ case class DistinctSlottedSinglePrimitivePipe(source: Pipe,
             val outgoing = SlottedExecutionContext(slots)
             val outputValue = expression(next, state)
             setInSlot(outgoing, outputValue)
-            return Some(next)
+            return Some(outgoing)
           }
         }
 

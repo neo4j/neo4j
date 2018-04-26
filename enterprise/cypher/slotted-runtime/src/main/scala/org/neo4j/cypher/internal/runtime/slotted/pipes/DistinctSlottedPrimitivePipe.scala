@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
-import org.neo4j.cypher.internal.runtime.{LongArraySet, PrefetchingIterator}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.runtime.slotted.helpers.SlottedPipeBuilderUtils
+import org.neo4j.cypher.internal.runtime.{LongArraySet, PrefetchingIterator}
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 import scala.collection.immutable
@@ -72,7 +72,7 @@ case class DistinctSlottedPrimitivePipe(source: Pipe,
               setter(next, state, outgoing)
             }
 
-            return Some(next)
+            return Some(outgoing)
           }
         }
 
