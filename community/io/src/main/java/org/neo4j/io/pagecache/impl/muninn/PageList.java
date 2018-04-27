@@ -35,17 +35,17 @@ import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * The PageList maintains the off-heap meta-data for the individual memory pages.
- *
+ * <p>
  * The meta-data for each page is the following:
  *
  * <table>
- *     <tr><th>Bytes</th><th>Use</th></tr>
- *     <tr><td>8</td><td>Sequence lock word.</td></tr>
- *     <tr><td>8</td><td>Pointer to the memory page.</td></tr>
- *     <tr><td>8</td><td>Last modified transaction id.</td></tr>
- *     <tr><td>5</td><td>File page id.</td></tr>
- *     <tr><td>1</td><td>Usage stamp. Optimistically incremented; truncated to a max of 4.</td></tr>
- *     <tr><td>2</td><td>Page swapper id.</td></tr>
+ * <tr><th>Bytes</th><th>Use</th></tr>
+ * <tr><td>8</td><td>Sequence lock word.</td></tr>
+ * <tr><td>8</td><td>Pointer to the memory page.</td></tr>
+ * <tr><td>8</td><td>Last modified transaction id.</td></tr>
+ * <tr><td>5</td><td>File page id.</td></tr>
+ * <tr><td>1</td><td>Usage stamp. Optimistically incremented; truncated to a max of 4.</td></tr>
+ * <tr><td>2</td><td>Page swapper id.</td></tr>
  * </table>
  */
 class PageList
@@ -151,6 +151,7 @@ class PageList
      * All data and state will be shared between this and the given {@code PageList}. This means that changing the page
      * list state through one has the same effect as changing it through the other – they are both effectively the same
      * object.
+     *
      * @param pageList The {@code PageList} instance whose state to copy.
      */
     PageList( PageList pageList )
@@ -225,6 +226,7 @@ class PageList
     /**
      * Turn a {@code pageId} into a {@code pageRef} that can be used for accessing and manipulating the given page
      * using the other methods in this class.
+     *
      * @param pageId The {@code pageId} to turn into a {@code pageRef}.
      * @return A {@code pageRef} which is an opaque, internal and direct pointer to the meta-data of the given memory
      * page.
@@ -485,7 +487,8 @@ class PageList
     }
 
     private static IllegalStateException cannotFaultException( long pageRef, PageSwapper swapper, int swapperId,
-                                                        long filePageId, int currentSwapper, long currentFilePageId )
+                                                               long filePageId, int currentSwapper,
+                                                               long currentFilePageId )
     {
         String msg = format(
                 "Cannot fault page {filePageId = %s, swapper = %s (swapper id = %s)} into " +
