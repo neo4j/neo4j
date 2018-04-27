@@ -52,10 +52,19 @@ class PageList
 {
     private static final boolean forceSlowMemoryClear = flag( PageList.class, "forceSlowMemoryClear", false );
 
-    public static final int META_DATA_BYTES_PER_PAGE = 32;
-    public static final long MAX_PAGES = Integer.MAX_VALUE;
+    static final int META_DATA_BYTES_PER_PAGE = 32;
+    static final long MAX_PAGES = Integer.MAX_VALUE;
 
     private static final int UNBOUND_LAST_MODIFIED_TX_ID = -1;
+    private static final long MASK_USAGE_COUNT = 0x07;
+    private static final long MASK_NOT_USAGE_COUNT = ~MASK_USAGE_COUNT;
+    private static final int MAX_USAGE_COUNT = 4;
+    private static final int MASK_NOT_FILE_PAGE_ID = 0xFFFFFF;
+    private static final int SHIFT_FILE_PAGE_ID = 24;
+    private static final int SHIFT_SWAPPER_ID = 3;
+    private static final long MASK_SHIFTED_SWAPPER_ID = 0b1_11111_11111_11111_11111;
+    private static final long MASK_NOT_SWAPPER_ID = ~(MASK_SHIFTED_SWAPPER_ID << SHIFT_SWAPPER_ID);
+    private static final long UNBOUND_PAGE_BINDING = PageCursor.UNBOUND_PAGE_ID << SHIFT_FILE_PAGE_ID;
 
     // 40 bits for file page id
     private static final long MAX_FILE_PAGE_ID = 0b11111111_11111111_11111111_11111111_11111111L;
@@ -68,6 +77,7 @@ class PageList
     private static final int OFFSET_SWAPPER_ID = 29; // 2 bytes, plus the 5 high-bits from usage counter
     @SuppressWarnings( "unused" )
     private static final int OFFSET_USAGE_COUNTER = 31; // 1 byte, but only the 3 low bits.
+    // The last word-line, with the file page id, swapper id, and usage counter, is called the page binding word.
 
     // todo we can alternatively also make use of the lower 12 bits of the address field, because
     // todo the addresses are page aligned, and we can assume them to be at least 4096 bytes in size.
@@ -178,7 +188,7 @@ class PageList
             UnsafeUtil.putLong( address += Long.BYTES, initialLockWord ); // lock word
             UnsafeUtil.putLong( address += Long.BYTES, 0 ); // pointer
             UnsafeUtil.putLong( address += Long.BYTES, 0 ); // last tx id
-            UnsafeUtil.putLong( address += Long.BYTES, MAX_FILE_PAGE_ID << 24 );
+            UnsafeUtil.putLong( address += Long.BYTES, UNBOUND_PAGE_BINDING );
         }
     }
 
@@ -247,7 +257,7 @@ class PageList
         return pageRef + OFFSET_ADDRESS;
     }
 
-    private long offFilePageId( long pageRef )
+    private long offPageBinding( long pageRef )
     {
         return pageRef + OFFSET_FILE_PAGE_ID;
     }
@@ -338,7 +348,7 @@ class PageList
 
     private byte getUsageCounter( long pageRef )
     {
-        return (byte) (UnsafeUtil.getLongVolatile( offFilePageId( pageRef ) ) & 0x07);
+        return (byte) (UnsafeUtil.getLongVolatile( offPageBinding( pageRef ) ) & MASK_USAGE_COUNT);
     }
 
     /**
@@ -347,10 +357,10 @@ class PageList
     public void incrementUsage( long pageRef )
     {
         // This is intentionally left benignly racy for performance.
-        long address = offFilePageId( pageRef );
+        long address = offPageBinding( pageRef );
         long v = UnsafeUtil.getLongVolatile( address );
-        long usage = v & 0x07;
-        if ( usage < 4 ) // avoid cache sloshing by not doing a write if counter is already maxed out
+        long usage = v & MASK_USAGE_COUNT;
+        if ( usage < MAX_USAGE_COUNT ) // avoid cache sloshing by not doing a write if counter is already maxed out
         {
             usage++;
             // Use compareAndSwapLong to only actually store the updated count if nothing else changed
@@ -358,7 +368,7 @@ class PageList
             // Those fields are updated under guard of the exclusive lock, but we *might* race with
             // that here, and in that case we would never want a usage counter update to clobber a page
             // binding update.
-            UnsafeUtil.compareAndSwapLong( null, address, v, (v & 0xFFFFFFFF_FFFFFFF8L) + usage );
+            UnsafeUtil.compareAndSwapLong( null, address, v, (v & MASK_NOT_USAGE_COUNT) + usage );
         }
     }
 
@@ -368,21 +378,21 @@ class PageList
     public boolean decrementUsage( long pageRef )
     {
         // This is intentionally left benignly racy for performance.
-        long address = offFilePageId( pageRef );
+        long address = offPageBinding( pageRef );
         long v = UnsafeUtil.getLongVolatile( address );
-        long usage = v & 0x07;
+        long usage = v & MASK_USAGE_COUNT;
         if ( usage > 0 )
         {
             usage--;
             // See `incrementUsage` about why we use `compareAndSwapLong`.
-            UnsafeUtil.compareAndSwapLong( null, address, v, (v & 0xFFFFFFFF_FFFFFFF8L) + usage );
+            UnsafeUtil.compareAndSwapLong( null, address, v, (v & MASK_NOT_USAGE_COUNT) + usage );
         }
         return usage == 0;
     }
 
     public long getFilePageId( long pageRef )
     {
-        long filePageId = UnsafeUtil.getLong( offFilePageId( pageRef ) ) >>> 24;
+        long filePageId = UnsafeUtil.getLong( offPageBinding( pageRef ) ) >>> SHIFT_FILE_PAGE_ID;
         return filePageId == MAX_FILE_PAGE_ID ? PageCursor.UNBOUND_PAGE_ID : filePageId;
     }
 
@@ -393,9 +403,9 @@ class PageList
             throw new IllegalArgumentException(
                     format( "File page id: %s is bigger then max supported value %s.", filePageId, MAX_FILE_PAGE_ID ) );
         }
-        long address = offFilePageId( pageRef );
+        long address = offPageBinding( pageRef );
         long v = UnsafeUtil.getLong( address );
-        filePageId = (filePageId << 24) + (v & 0xFFFFFF);
+        filePageId = (filePageId << SHIFT_FILE_PAGE_ID) + (v & MASK_NOT_FILE_PAGE_ID);
         UnsafeUtil.putLong( address, filePageId );
     }
 
@@ -419,15 +429,15 @@ class PageList
 
     public int getSwapperId( long pageRef )
     {
-        long v = UnsafeUtil.getLong( offFilePageId( pageRef ) ) >>> 3;
-        return (int) (v & 0b1_11111_11111_11111_11111); // 21 bits.
+        long v = UnsafeUtil.getLong( offPageBinding( pageRef ) ) >>> SHIFT_SWAPPER_ID;
+        return (int) (v & MASK_SHIFTED_SWAPPER_ID); // 21 bits.
     }
 
     private void setSwapperId( long pageRef, int swapperId )
     {
-        swapperId = swapperId << 3;
-        long address = offFilePageId( pageRef );
-        long v = UnsafeUtil.getLong( address ) & (~(0b1_11111_11111_11111_11111 << 3));
+        swapperId = swapperId << SHIFT_SWAPPER_ID;
+        long address = offPageBinding( pageRef );
+        long v = UnsafeUtil.getLong( address ) & MASK_NOT_SWAPPER_ID;
         UnsafeUtil.putLong( address, v + swapperId );
     }
 
@@ -551,10 +561,9 @@ class PageList
         }
     }
 
-    protected void clearBinding( long pageRef )
+    private void clearBinding( long pageRef )
     {
-        setFilePageId( pageRef, PageCursor.UNBOUND_PAGE_ID );
-        setSwapperId( pageRef, (short) 0 );
+        UnsafeUtil.putLong( offPageBinding( pageRef ), UNBOUND_PAGE_BINDING );
     }
 
     public String toString( long pageRef )
