@@ -1368,7 +1368,7 @@ public class PageListTest
     public void pageMustBeLoadedAndBoundAfterFault() throws Exception
     {
         // exclusive lock implied by constructor
-        short swapperId = 1;
+        int swapperId = 1;
         long filePageId = 42;
         pageList.initBuffer( pageRef );
         pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
@@ -1382,7 +1382,7 @@ public class PageListTest
     public void pageWith5BytesFilePageIdMustBeLoadedAndBoundAfterFault() throws Exception
     {
         // exclusive lock implied by constructor
-        short swapperId = 12;
+        int swapperId = 12;
         long filePageId = Integer.MAX_VALUE + 1L;
         pageList.initBuffer( pageRef );
         pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
@@ -1404,7 +1404,7 @@ public class PageListTest
                 throw new IOException( "boo" );
             }
         };
-        short swapperId = 1;
+        int swapperId = 1;
         long filePageId = 42;
         pageList.initBuffer( pageRef );
         try
@@ -1416,7 +1416,7 @@ public class PageListTest
             assertThat( e.getMessage(), is( "boo" ) );
         }
         assertThat( pageList.getFilePageId( pageRef ), is( filePageId ) );
-        assertThat( pageList.getSwapperId( pageRef ), is( (short) 0 ) ); // 0 means not bound
+        assertThat( pageList.getSwapperId( pageRef ), is( 0 ) ); // 0 means not bound
         assertTrue( pageList.isLoaded( pageRef ) );
         assertFalse( pageList.isBoundTo( pageRef, swapperId, filePageId ) );
     }
@@ -1629,16 +1629,16 @@ public class PageListTest
     public void pageMustNotBeBoundAfterSuccessfulEviction() throws Exception
     {
         pageList.unlockExclusive( pageRef );
-        short swapperId = swappers.allocate( DUMMY_SWAPPER );
+        int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
         assertTrue( pageList.isBoundTo( pageRef, (short) 1, 42 ) );
         assertTrue( pageList.isLoaded( pageRef ) );
-        assertThat( pageList.getSwapperId( pageRef ), is( (short) 1 ) );
+        assertThat( pageList.getSwapperId( pageRef ), is( 1 ) );
         pageList.tryEvict( pageRef, EvictionRunEvent.NULL );
         assertFalse( pageList.isBoundTo( pageRef, (short) 1, 42 ) );
         assertFalse( pageList.isLoaded( pageRef ) );
-        assertThat( pageList.getSwapperId( pageRef ), is( (short) 0 ) );
+        assertThat( pageList.getSwapperId( pageRef ), is( 0 ) );
     }
 
     @Test
@@ -2069,7 +2069,7 @@ public class PageListTest
         doFault( swapperId, Long.MAX_VALUE );
     }
 
-    private void doFault( short swapperId, long filePageId ) throws IOException
+    private void doFault( int swapperId, long filePageId ) throws IOException
     {
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
