@@ -42,10 +42,4 @@ class NumberSchemaIndexPopulator extends NativeSchemaIndexPopulator<NumberSchema
     {
         return new NumberSchemaIndexReader<>( tree, layout, samplingConfig, descriptor );
     }
-
-    @Override
-    String partName()
-    {
-        return "Number";
-    }
 }

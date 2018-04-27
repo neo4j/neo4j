@@ -43,12 +43,11 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void recoveryCompleted( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String partName, Map<String,Object> data )
+    public void recoveryCompleted( SchemaIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
     {
         StringJoiner joiner = new StringJoiner( ", ", "Schema index recovery completed: ", "" );
-        joiner.add( "indexId=" + indexId );
         joiner.add( "descriptor=" + schemaIndexDescriptor );
-        joiner.add( "partName=" + partName );
+        joiner.add( "file=" + indexFile );
         data.forEach( ( key, value ) -> joiner.add( format( "%s=%s", key, value ) ) );
         log.info( joiner.toString() );
     }

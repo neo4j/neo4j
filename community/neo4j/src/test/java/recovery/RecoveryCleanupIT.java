@@ -158,21 +158,21 @@ public class RecoveryCleanupIT
 
         // then
         List<Matcher<String>> matchers = new ArrayList<>();
-        matchers.add( indexRecoveryLogMatcher( "String" ) );
-        matchers.add( indexRecoveryLogMatcher( "Number" ) );
-        matchers.add( indexRecoveryLogMatcher( "Spatial" ) );
-        matchers.add( indexRecoveryLogMatcher( "Temporal" ) );
+        matchers.add( indexRecoveryLogMatcher( "string" ) );
+        matchers.add( indexRecoveryLogMatcher( "native" ) );
+        matchers.add( indexRecoveryLogMatcher( "spatial" ) );
+        matchers.add( indexRecoveryLogMatcher( "temporal" ) );
         matchers.forEach( logProvider::assertContainsExactlyOneMessageMatching );
     }
 
-    private Matcher<String> indexRecoveryLogMatcher( String partName )
+    private Matcher<String> indexRecoveryLogMatcher( String subIndexProviderKey )
     {
 
         return Matchers.stringContainsInOrder( Iterables.asIterable(
                 "Schema index recovery completed",
-                "indexId",
                 "descriptor",
-                "partName=" + partName,
+                "file=",
+                "/" + subIndexProviderKey,
                 "cleaned crashed pointers",
                 "pages visited",
                 "Time spent" ) );

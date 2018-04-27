@@ -69,10 +69,4 @@ public class StringSchemaIndexAccessor extends NativeSchemaIndexAccessor<StringS
     {
         VALIDATOR.validate( tuple[0] );
     }
-
-    @Override
-    String partName()
-    {
-        return "String";
-    }
 }

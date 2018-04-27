@@ -155,12 +155,6 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         {
             return new TemporalIndexPartReader<>( tree, layout, samplingConfig, descriptor );
         }
-
-        @Override
-        String partName()
-        {
-            return "Temporal(" + storeFile.getName() + ")";
-        }
     }
 
     static class PartFactory implements TemporalIndexCache.Factory<PartPopulator<?>>

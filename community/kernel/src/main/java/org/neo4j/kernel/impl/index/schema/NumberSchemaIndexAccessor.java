@@ -53,10 +53,4 @@ public class NumberSchemaIndexAccessor extends NativeSchemaIndexAccessor<NumberS
         assertOpen();
         return new NumberSchemaIndexReader<>( tree, layout, samplingConfig, descriptor );
     }
-
-    @Override
-    String partName()
-    {
-        return "Number";
-    }
 }

@@ -179,12 +179,6 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         {
             tree.checkpoint( IOLimiter.unlimited(), settings.headerWriter( BYTE_ONLINE ) );
         }
-
-        @Override
-        String partName()
-        {
-            return "Spatial(" + storeFile.getName() + ")";
-        }
     }
 
     static class PartFactory implements Factory<PartPopulator>

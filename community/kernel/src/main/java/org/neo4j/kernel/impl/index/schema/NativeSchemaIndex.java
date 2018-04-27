@@ -70,8 +70,6 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
         tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector );
     }
 
-    abstract String partName();
-
     private GBPTree.Monitor treeMonitor( )
     {
         return new GBPTree.Monitor.Adaptor()
@@ -79,7 +77,7 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
             @Override
             public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
             {
-                monitor.recoveryCompleted( indexId, descriptor, partName(), map(
+                monitor.recoveryCompleted( descriptor, storeFile.getAbsolutePath(), map(
                         "Number of pages visited", numberOfPagesVisited,
                         "Number of cleaned crashed pointers", numberOfCleanedCrashPointers,
                         "Time spent", duration( durationMillis ) ) );

@@ -42,10 +42,4 @@ public class StringSchemaIndexPopulator extends NativeSchemaIndexPopulator<Strin
     {
         return new StringSchemaIndexReader( tree, layout, samplingConfig, descriptor );
     }
-
-    @Override
-    String partName()
-    {
-        return "String";
-    }
 }
