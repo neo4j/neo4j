@@ -297,7 +297,7 @@ public class PropertyConstraintsStressIT
         } );
     }
 
-    public void shouldNotAllowConstraintsViolationsUnderStress( Operation ops ) throws Exception
+    private void shouldNotAllowConstraintsViolationsUnderStress( Operation ops ) throws Exception
     {
         // Given
         HighlyAvailableGraphDatabase master = cluster.getMaster();
