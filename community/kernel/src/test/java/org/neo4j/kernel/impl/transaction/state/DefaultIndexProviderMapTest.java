@@ -24,11 +24,10 @@ import org.junit.Test;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
 
 public class DefaultIndexProviderMapTest
 {
@@ -65,7 +64,7 @@ public class DefaultIndexProviderMapTest
         IndexProviderMap map = new DefaultIndexProviderMap( provider );
         try
         {
-            new DefaultIndexProviderMap( provider ).apply( new IndexProvider.Descriptor( "provider2", "1.2" ) );
+            new DefaultIndexProviderMap( provider ).lookup( new IndexProvider.Descriptor( "provider2", "1.2" ) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )

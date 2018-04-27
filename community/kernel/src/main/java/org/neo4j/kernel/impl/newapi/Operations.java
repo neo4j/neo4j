@@ -871,7 +871,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
 
         SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
-        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.apply( providerName ).getProviderDescriptor() : null;
+        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.lookup( providerName ).getProviderDescriptor() : null;
         ktx.txState().indexRuleDoAdd( indexDescriptor, providerDescriptor );
         return DefaultIndexReference.fromDescriptor( indexDescriptor );
     }
@@ -924,7 +924,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor );
 
         // Create constraints
-        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.apply( providerName ).getProviderDescriptor() : null;
+        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.lookup( providerName ).getProviderDescriptor() : null;
         indexBackedConstraintCreate( constraint, providerDescriptor );
         return constraint;
     }
@@ -951,7 +951,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
 
         //create constraint
-        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.apply( providerName ).getProviderDescriptor() : null;
+        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.lookup( providerName ).getProviderDescriptor() : null;
         indexBackedConstraintCreate( constraint, providerDescriptor );
         return constraint;
     }

@@ -498,7 +498,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             IndexRule rule = rules[i];
             SchemaIndexDescriptor index = rule.getIndexDescriptor();
             descriptors[i] = index.schema();
-            IndexPopulator populator = schemaIndexProviders.apply( rule.getProviderDescriptor() )
+            IndexPopulator populator = schemaIndexProviders.lookup( rule.getProviderDescriptor() )
                                                 .getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
             populator.create();
             populators.add( new IndexPopulatorWithSchema( populator, index ) );
@@ -585,7 +585,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         List<IndexRule> indexesNeedingPopulation = new ArrayList<>();
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            IndexProvider provider = schemaIndexProviders.apply( rule.getProviderDescriptor() );
+            IndexProvider provider = schemaIndexProviders.lookup( rule.getProviderDescriptor() );
             if ( provider.getInitialState( rule.getId(), rule.getIndexDescriptor() ) != InternalIndexState.FAILED )
             {
                 indexesNeedingPopulation.add( rule );
