@@ -58,6 +58,7 @@
     <module>dbms</module>
     <module>command-line</module>
     <module>procedure-compiler</module>
+    <module>random-values</module>
     <module>values</module>
     <module>ssl</module>
     <module>spatial-index</module>
