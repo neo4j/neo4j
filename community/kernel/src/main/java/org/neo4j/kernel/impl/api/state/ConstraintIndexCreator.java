@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.io.IOException;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -97,8 +98,8 @@ public class ConstraintIndexCreator
      * Btw providerDescriptor is allowed to be null, where default configured will be used.
      */
     public long createUniquenessConstraintIndex( KernelTransactionImplementation transaction,
-            SchemaDescriptor descriptor, IndexProvider.Descriptor providerDescriptor ) throws TransactionFailureException, CreateConstraintFailureException,
-            UniquePropertyValueValidationException, AlreadyConstrainedException
+            SchemaDescriptor descriptor, @Nullable IndexProvider.Descriptor providerDescriptor )
+            throws TransactionFailureException, CreateConstraintFailureException, UniquePropertyValueValidationException, AlreadyConstrainedException
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
 

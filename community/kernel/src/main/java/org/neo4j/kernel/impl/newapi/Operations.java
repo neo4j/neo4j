@@ -886,7 +886,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
 
         SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
-        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.lookup( providerName ).getProviderDescriptor() : null;
+        IndexProvider.Descriptor providerDescriptor = providerByName( providerName );
         ktx.txState().indexRuleDoAdd( indexDescriptor, providerDescriptor );
         return DefaultIndexReference.fromDescriptor( indexDescriptor );
     }
@@ -939,7 +939,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor );
 
         // Create constraints
-        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.lookup( providerName ).getProviderDescriptor() : null;
+        IndexProvider.Descriptor providerDescriptor = providerByName( providerName );
         indexBackedConstraintCreate( constraint, providerDescriptor );
         return constraint;
     }
@@ -966,7 +966,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
 
         //create constraint
-        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.lookup( providerName ).getProviderDescriptor() : null;
+        IndexProvider.Descriptor providerDescriptor = providerByName( providerName );
         indexBackedConstraintCreate( constraint, providerDescriptor );
         return constraint;
     }
@@ -1246,5 +1246,10 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         {
             throw new NoSuchIndexException( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
         }
+    }
+
+    private IndexProvider.Descriptor providerByName( String providerName )
+    {
+        return providerName != null ? indexProviderMap.lookup( providerName ).getProviderDescriptor() : null;
     }
 }
