@@ -207,7 +207,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 long indexId = indexRule.getId();
                 SchemaIndexDescriptor descriptor = indexRule.getIndexDescriptor();
                 IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
-                IndexProvider provider = providerMap.apply( providerDescriptor );
+                IndexProvider provider = providerMap.lookup( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexId, descriptor );
                 indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() )
                 .add( new IndexLogRecord( indexId, descriptor ) );

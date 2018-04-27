@@ -97,7 +97,7 @@ public class IndexAccessors implements Closeable
 
     private IndexProvider provider( IndexProviderMap providers, IndexRule indexRule )
     {
-        return providers.apply( indexRule.getProviderDescriptor() );
+        return providers.lookup( indexRule.getProviderDescriptor() );
     }
 
     public Collection<IndexRule> notOnlineRules()

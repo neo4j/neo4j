@@ -164,7 +164,7 @@ class IndexProxyCreator
     private IndexPopulator populatorFromProvider( IndexProvider.Descriptor providerDescriptor, long ruleId,
                                                   SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        IndexProvider indexProvider = providerMap.apply( providerDescriptor );
+        IndexProvider indexProvider = providerMap.lookup( providerDescriptor );
         return indexProvider.getPopulator( ruleId, descriptor, samplingConfig );
     }
 
@@ -172,13 +172,13 @@ class IndexProxyCreator
                                                       long ruleId, SchemaIndexDescriptor descriptor,
                                                       IndexSamplingConfig samplingConfig ) throws IOException
     {
-        IndexProvider indexProvider = providerMap.apply( providerDescriptor );
+        IndexProvider indexProvider = providerMap.lookup( providerDescriptor );
         return indexProvider.getOnlineAccessor( ruleId, descriptor, samplingConfig );
     }
 
     private IndexMeta indexMetaFromProvider( long ruleId, IndexProvider.Descriptor providerDescriptor, SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        IndexCapability indexCapability = providerMap.apply( providerDescriptor ).getCapability( schemaIndexDescriptor );
+        IndexCapability indexCapability = providerMap.lookup( providerDescriptor ).getCapability( schemaIndexDescriptor );
         return new IndexMeta( ruleId, schemaIndexDescriptor, providerDescriptor, indexCapability );
     }
 }

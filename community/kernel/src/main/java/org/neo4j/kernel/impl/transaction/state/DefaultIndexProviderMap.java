@@ -73,7 +73,7 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     }
 
     @Override
-    public IndexProvider apply( IndexProvider.Descriptor providerDescriptor )
+    public IndexProvider lookup( IndexProvider.Descriptor providerDescriptor )
     {
         IndexProvider provider = indexProviders.get( providerDescriptor );
         if ( provider != null )
@@ -85,7 +85,7 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     }
 
     @Override
-    public IndexProvider apply( String providerDescriptorName ) throws IndexProviderNotFoundException
+    public IndexProvider lookup( String providerDescriptorName ) throws IndexProviderNotFoundException
     {
         IndexProvider provider = indexProvidersByName.get( providerDescriptorName );
         if ( provider != null )

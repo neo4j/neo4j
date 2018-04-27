@@ -184,7 +184,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
             // No specific provider descriptor, use the default
             providerDescriptor = indexProviderMap.getDefaultProvider().getProviderDescriptor();
         }
-        else if ( indexProviderMap.apply( providerDescriptor ) == null )
+        else if ( indexProviderMap.lookup( providerDescriptor ) == null )
         {
             // A specific provider descriptor, verify that it exists
             throw new IllegalArgumentException( "Specified non-existent provider '" + providerDescriptor + "' for created index " + index );
