@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Arrays;
@@ -347,7 +348,21 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
     }
 
-    void flushAndForceInternal( FlushEventOpportunity flushOpportunity, boolean forClosing, IOLimiter limiter )
+    void flushAndForceInternal( FlushEventOpportunity flushes, boolean forClosing, IOLimiter limiter )
+            throws IOException
+    {
+        try
+        {
+            doFlushAndForceInternal( flushes, forClosing, limiter );
+        }
+        catch ( ClosedChannelException e )
+        {
+            e.addSuppressed( closeStackTrace );
+            throw e;
+        }
+    }
+
+    private void doFlushAndForceInternal( FlushEventOpportunity flushes, boolean forClosing, IOLimiter limiter )
             throws IOException
     {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
@@ -415,14 +430,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                 }
                 if ( pagesGrabbed > 0 )
                 {
-                    vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushOpportunity, forClosing );
+                    vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushes, forClosing );
                     limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
                     pagesGrabbed = 0;
                 }
             }
             if ( pagesGrabbed > 0 )
             {
-                vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushOpportunity, forClosing );
+                vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushes, forClosing );
                 limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
             }
         }
