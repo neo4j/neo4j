@@ -142,8 +142,29 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
 
             // then
             verifyAfterAdditionalUpdate( db, LABEL_LUCENE_10 );
+
+            // when
+            additionalUpdates( db, LABEL_FUSION_20 );
+
+            // then
+            verifyAfterAdditionalUpdate( db, LABEL_FUSION_20 );
+
+            // and finally
             verifyExpectedProvider( db, LABEL_LUCENE_10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR );
             verifyExpectedProvider( db, LABEL_FUSION_20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
+        }
+        finally
+        {
+            db.shutdown();
+            indexRecoveryTracker.reset();
+        }
+
+        // when
+        db = setupDb( storeDir, indexRecoveryTracker );
+        try
+        {
+            // then
+            verifyInitialState( indexRecoveryTracker, 4, InternalIndexState.ONLINE );
         }
         finally
         {
@@ -186,9 +207,29 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
 
             // then
             verifyAfterAdditionalUpdate( db, LABEL_FUSION_10 );
+
+            // when
+            additionalUpdates( db, LABEL_FUSION_20 );
+
+            // then
+            verifyAfterAdditionalUpdate( db, LABEL_FUSION_20 );
+
+            // and finally
             verifyExpectedProvider( db, LABEL_LUCENE_10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR );
             verifyExpectedProvider( db, LABEL_FUSION_10, NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR );
             verifyExpectedProvider( db, LABEL_FUSION_20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+
+        // when
+        db = setupDb( storeDir, indexRecoveryTracker );
+        try
+        {
+            // then
+            verifyInitialState( indexRecoveryTracker, 6, InternalIndexState.ONLINE );
         }
         finally
         {
@@ -209,7 +250,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
 
     private void verifyInitialState( IndexRecoveryTracker indexRecoveryTracker, int expectedNumberOfIndexes, InternalIndexState expectedInitialState )
     {
-        assertEquals( "exactly " + expectedNumberOfIndexes + " legacy indexes ", expectedNumberOfIndexes, indexRecoveryTracker.initialStateMap.size() );
+        assertEquals( "exactly " + expectedNumberOfIndexes + " indexes ", expectedNumberOfIndexes, indexRecoveryTracker.initialStateMap.size() );
         for ( InternalIndexState actualInitialState : indexRecoveryTracker.initialStateMap.values() )
         {
             assertEquals( "initial state is online, don't do recovery", expectedInitialState, actualInitialState );
@@ -406,6 +447,11 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         public void initialState( SchemaIndexDescriptor descriptor, InternalIndexState state )
         {
             initialStateMap.put( descriptor, state );
+        }
+
+        public void reset()
+        {
+            initialStateMap = new HashMap<>();
         }
     }
 }
