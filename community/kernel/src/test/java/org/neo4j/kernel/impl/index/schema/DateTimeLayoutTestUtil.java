@@ -33,13 +33,12 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.time.ZoneOffset.UTC;
 
-public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKey, NativeSchemaValue>
+public class DateTimeLayoutTestUtil extends LayoutTestUtil<TemporalSchemaKey, NativeSchemaValue>
 {
     private static final ZonedDateTime[] ALL_EXTREME_VALUES = new ZonedDateTime[]
     {
@@ -62,9 +61,9 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
     }
 
     @Override
-    Layout<ZonedDateTimeSchemaKey,NativeSchemaValue> createLayout()
+    Layout<TemporalSchemaKey,NativeSchemaValue> createLayout()
     {
-        return new ZonedDateTimeLayout();
+        return new TemporalLayout();
     }
 
     @Override
@@ -80,7 +79,7 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
     }
 
     @Override
-    int compareIndexedPropertyValue( ZonedDateTimeSchemaKey key1, ZonedDateTimeSchemaKey key2 )
+    int compareIndexedPropertyValue( TemporalSchemaKey key1, TemporalSchemaKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }

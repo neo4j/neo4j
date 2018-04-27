@@ -35,9 +35,7 @@ import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.TimeLayoutTestUtil.MAX_NANOS_PER_DAY;
-
-public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, NativeSchemaValue>
+public class LocalTimeLayoutTestUtil extends LayoutTestUtil<TemporalSchemaKey, NativeSchemaValue>
 {
     private static final LocalTime[] ALL_EXTREME_VALUES = new LocalTime[]
     {
@@ -60,9 +58,9 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, 
     }
 
     @Override
-    Layout<LocalTimeSchemaKey,NativeSchemaValue> createLayout()
+    Layout<TemporalSchemaKey,NativeSchemaValue> createLayout()
     {
-        return new LocalTimeLayout();
+        return new TemporalLayout();
     }
 
     @Override
@@ -78,7 +76,7 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, 
     }
 
     @Override
-    int compareIndexedPropertyValue( LocalTimeSchemaKey key1, LocalTimeSchemaKey key2 )
+    int compareIndexedPropertyValue( TemporalSchemaKey key1, TemporalSchemaKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }

@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
-public class DateUniqueSchemaIndexPopulatorTest extends TemporalUniqueSchemaIndexPopulatorTest
+public abstract class TemporalUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<TemporalSchemaKey,NativeSchemaValue>
 {
     @Override
-    protected LayoutTestUtil<TemporalSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    NativeSchemaIndexPopulator<TemporalSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        return new UniqueLayoutTestUtil<>(
-                new DateLayoutTestUtil( SchemaIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+        return new TemporalIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
     }
 }
