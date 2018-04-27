@@ -257,8 +257,7 @@ public class ElectionStateTest
 
         when( electionContext.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
         VersionedConfigurationStateChange stateChange = mock( VersionedConfigurationStateChange.class );
-        when( electionContext.newConfigurationStateChange() )
-                .thenReturn( stateChange );
+        when( electionContext.newConfigurationStateChange() ).thenReturn( stateChange );
 
         when( electionContext.getUriForId( winner ) ).thenReturn( URI.create( winnerURI ) );
 

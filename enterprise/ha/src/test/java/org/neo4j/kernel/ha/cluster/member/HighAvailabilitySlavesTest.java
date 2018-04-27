@@ -118,8 +118,7 @@ public class HighAvailabilitySlavesTest
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
         Slave slave = mock( Slave.class );
-        when( slaveFactory.newSlave( any( LifeSupport.class ), any( ClusterMember.class ), any( String.class ),
-                any( Integer.class ) ) ).thenReturn( slave );
+        when( slaveFactory.newSlave( any( LifeSupport.class ), any( ClusterMember.class ), any( String.class ), any( Integer.class ) ) ).thenReturn( slave );
 
         HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory,
                 new HostnamePort( null, 0 ) );
@@ -143,8 +142,8 @@ public class HighAvailabilitySlavesTest
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
         Slave slave = mock( Slave.class );
-        when( slaveFactory.newSlave( any( LifeSupport.class ), any( ClusterMember.class ), any( String.class ),
-                any( Integer.class ) ) ).thenReturn( slave, slave );
+        when( slaveFactory.newSlave( any( LifeSupport.class ), any( ClusterMember.class ), any( String.class ), any( Integer.class ) ) )
+                .thenReturn( slave, slave );
 
         HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory, new
                 HostnamePort( "localhost", 0 ) );
