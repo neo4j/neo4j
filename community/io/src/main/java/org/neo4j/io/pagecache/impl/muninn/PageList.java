@@ -58,10 +58,11 @@ class PageList
     private static final int UNBOUND_LAST_MODIFIED_TX_ID = -1;
     private static final long MASK_USAGE_COUNT = 0x07;
     private static final long MASK_NOT_USAGE_COUNT = ~MASK_USAGE_COUNT;
-    private static final int MAX_USAGE_COUNT = 4;
-    private static final int MASK_NOT_FILE_PAGE_ID = 0xFFFFFF;
+    private static final long MAX_USAGE_COUNT = 4;
+    private static final long MASK_NOT_FILE_PAGE_ID = 0xFFFFFF;
     private static final int SHIFT_FILE_PAGE_ID = 24;
     private static final int SHIFT_SWAPPER_ID = 3;
+    private static final int SHIFT_PARTIAL_FILE_PAGE_ID = SHIFT_FILE_PAGE_ID - SHIFT_SWAPPER_ID;
     private static final long MASK_SHIFTED_SWAPPER_ID = 0b1_11111_11111_11111_11111;
     private static final long MASK_NOT_SWAPPER_ID = ~(MASK_SHIFTED_SWAPPER_ID << SHIFT_SWAPPER_ID);
     private static final long UNBOUND_PAGE_BINDING = PageCursor.UNBOUND_PAGE_ID << SHIFT_FILE_PAGE_ID;
@@ -450,7 +451,10 @@ class PageList
 
     public boolean isBoundTo( long pageRef, int swapperId, long filePageId )
     {
-        return getSwapperId( pageRef ) == swapperId && getFilePageId( pageRef ) == filePageId;
+        long address = offPageBinding( pageRef );
+        long expectedBinding = (filePageId << SHIFT_PARTIAL_FILE_PAGE_ID) + swapperId;
+        long actualBinding = UnsafeUtil.getLong( address ) >>> SHIFT_SWAPPER_ID;
+        return expectedBinding == actualBinding;
     }
 
     public void fault( long pageRef, PageSwapper swapper, int swapperId, long filePageId, PageFaultEvent event )
