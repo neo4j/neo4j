@@ -19,97 +19,21 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.graphdb.Resource;
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
-import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
-
-class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>> implements IndexReader
+class TemporalIndexReader extends NativeSchemaIndexReader<TemporalSchemaKey,NativeSchemaValue>
 {
-    private final IndexDescriptor descriptor;
-
-    TemporalIndexReader( IndexDescriptor descriptor, TemporalIndexAccessor accessor )
+    TemporalIndexReader( GBPTree<TemporalSchemaKey,NativeSchemaValue> tree, Layout<TemporalSchemaKey,NativeSchemaValue> layout,
+            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
     {
-        super( new PartFactory( accessor ) );
-        this.descriptor = descriptor;
-    }
-
-    @Override
-    public void close()
-    {
-        forAll( Resource::close, this );
-    }
-
-    @Override
-    public long countIndexedNodes( long nodeId, Value... propertyValues )
-    {
-        NativeSchemaIndexReader<?,NativeSchemaValue> partReader = uncheckedSelect( propertyValues[0].valueGroup() );
-        return partReader == null ? 0L : partReader.countIndexedNodes( nodeId, propertyValues );
-    }
-
-    @Override
-    public IndexSampler createSampler()
-    {
-        return new FusionIndexSampler( Iterators.stream( iterator() ).map( IndexReader::createSampler ).toArray( IndexSampler[]::new ) );
-    }
-
-    @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates )
-    {
-        NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, predicates );
-        return nodeValueIterator;
-    }
-
-    @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
-    {
-        if ( predicates.length != 1 )
-        {
-            throw new IllegalArgumentException( "Only single property temporal indexes are supported." );
-        }
-        IndexQuery predicate = predicates[0];
-        if ( predicate instanceof ExistsPredicate )
-        {
-            loadAll();
-            BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates );
-            for ( NativeSchemaIndexReader<?,NativeSchemaValue> reader : this )
-            {
-                reader.query( multiProgressor, indexOrder, predicates );
-            }
-        }
-        else
-        {
-            if ( validPredicate( predicate ) )
-            {
-                NativeSchemaIndexReader<?,NativeSchemaValue> part = uncheckedSelect( predicate.valueGroup() );
-                if ( part != null )
-                {
-                    part.query( cursor, indexOrder, predicates );
-                }
-                else
-                {
-                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
-                }
-            }
-            else
-            {
-                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
-            }
-        }
+        super( tree, layout, samplingConfig, descriptor );
     }
 
     @Override
@@ -118,58 +42,73 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
         return true;
     }
 
-    private boolean validPredicate( IndexQuery predicate )
+    @Override
+    void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates )
     {
-        return predicate instanceof IndexQuery.ExactPredicate || predicate instanceof IndexQuery.RangePredicate;
+        if ( predicates.length != 1 )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        CapabilityValidator.validateQuery( TemporalIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
-    /**
-     * To create TemporalIndexPartReaders on demand, the PartFactory maintains a reference to the parent TemporalIndexAccessor.
-     * The creation of a part reader can then be delegated to the correct PartAccessor.
-     */
-    static class PartFactory implements TemporalIndexCache.Factory<TemporalIndexPartReader<?>>
+    @Override
+    boolean initializeRangeForQuery( TemporalSchemaKey treeKeyFrom, TemporalSchemaKey treeKeyTo, IndexQuery[] predicates )
     {
-        private final TemporalIndexAccessor accessor;
-
-        PartFactory( TemporalIndexAccessor accessor )
+        IndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
         {
-            this.accessor = accessor;
+        case exists:
+            treeKeyFrom.initAsLowest();
+            treeKeyTo.initAsHighest();
+            break;
+
+        case exact:
+            IndexQuery.ExactPredicate exactPredicate = (IndexQuery.ExactPredicate) predicate;
+            treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
+            treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
+            break;
+
+        case range:
+            IndexQuery.RangePredicate<?> rangePredicate = (IndexQuery.RangePredicate<?>) predicate;
+            initFromForRange( rangePredicate, treeKeyFrom, treeKeyTo );
+            initToForRange( rangePredicate, treeKeyTo, treeKeyFrom );
+            break;
+
+        default:
+            throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
+        return false; // no filtering
+    }
 
-        @Override
-        public TemporalIndexPartReader<?> newDate()
+    private void initFromForRange( IndexQuery.RangePredicate<?> rangePredicate, TemporalSchemaKey treeKeyFrom, TemporalSchemaKey other )
+    {
+        Value fromValue = rangePredicate.fromValue();
+        if ( fromValue == Values.NO_VALUE )
         {
-            return accessor.selectOrElse( ValueGroup.DATE, TemporalIndexAccessor.PartAccessor::newReader, null );
+            treeKeyFrom.initAsLowest();
+            treeKeyFrom.type = other.type;
         }
-
-        @Override
-        public TemporalIndexPartReader<?> newLocalDateTime()
+        else
         {
-            return accessor.selectOrElse( ValueGroup.LOCAL_DATE_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
+            treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE, fromValue );
+            treeKeyFrom.setCompareId( true );
         }
+    }
 
-        @Override
-        public TemporalIndexPartReader<?> newZonedDateTime()
+    private void initToForRange( IndexQuery.RangePredicate<?> rangePredicate, TemporalSchemaKey treeKeyTo, TemporalSchemaKey other )
+    {
+        Value toValue = rangePredicate.toValue();
+        if ( toValue == Values.NO_VALUE )
         {
-            return accessor.selectOrElse( ValueGroup.ZONED_DATE_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
+            treeKeyTo.initAsHighest();
+            treeKeyTo.type = other.type;
         }
-
-        @Override
-        public TemporalIndexPartReader<?> newLocalTime()
+        else
         {
-            return accessor.selectOrElse( ValueGroup.LOCAL_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
-        }
-
-        @Override
-        public TemporalIndexPartReader<?> newZonedTime()
-        {
-            return accessor.selectOrElse( ValueGroup.ZONED_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
-        }
-
-        @Override
-        public TemporalIndexPartReader<?> newDuration()
-        {
-            return accessor.selectOrElse( ValueGroup.DURATION, TemporalIndexAccessor.PartAccessor::newReader, null );
+            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
+            treeKeyTo.setCompareId( true );
         }
     }
 }

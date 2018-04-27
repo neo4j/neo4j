@@ -19,131 +19,60 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.index.internal.gbptree.MetadataMismatchException;
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.ValueCategory;
 
-public class TemporalIndexProvider extends IndexProvider
+public class TemporalIndexProvider extends NativeIndexProvider<TemporalSchemaKey,NativeSchemaValue>
 {
     public static final String KEY = "temporal";
     static final IndexCapability CAPABILITY = new TemporalIndexCapability();
     private static final Descriptor TEMPORAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
 
-    private final PageCache pageCache;
-    private final FileSystemAbstraction fs;
-    private final Monitor monitor;
-    private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
-    private final boolean readOnly;
-
     public TemporalIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
                                   IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
                                   RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
-        super( TEMPORAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
-        this.pageCache = pageCache;
-        this.fs = fs;
-        this.monitor = monitor;
-        this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
-        this.readOnly = readOnly;
+        super( TEMPORAL_PROVIDER_DESCRIPTOR, 0, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    Layout<TemporalSchemaKey,NativeSchemaValue> layout( StoreIndexDescriptor descriptor )
     {
-        if ( readOnly )
-        {
-            throw new UnsupportedOperationException( "Can't create populator for read only index" );
-        }
-        TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
-        return new TemporalIndexPopulator( descriptor, samplingConfig, files, pageCache, fs, monitor );
+        return new TemporalLayout();
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    protected IndexPopulator newIndexPopulator( File storeFile, Layout<TemporalSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig )
     {
-        TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
-        return new TemporalIndexAccessor( descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files );
+        return new TemporalIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+    protected IndexAccessor newIndexAccessor( File storeFile, Layout<TemporalSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
-
-        try
-        {
-            for ( TemporalIndexFiles.FileLayout subIndex : temporalIndexFiles.existing() )
-            {
-                String indexFailure = NativeSchemaIndexes.readFailureMessage( pageCache, subIndex.indexFile );
-                if ( indexFailure != null )
-                {
-                    return indexFailure;
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
-    }
-
-    @Override
-    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
-    {
-        TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
-
-        final Iterable<TemporalIndexFiles.FileLayout> existing = temporalIndexFiles.existing();
-        InternalIndexState state = InternalIndexState.ONLINE;
-        for ( TemporalIndexFiles.FileLayout subIndex : existing )
-        {
-            try
-            {
-                switch ( NativeSchemaIndexes.readState( pageCache, subIndex.indexFile ) )
-                {
-                case FAILED:
-                    return InternalIndexState.FAILED;
-                case POPULATING:
-                    state = InternalIndexState.POPULATING;
-                default: // continue
-                }
-            }
-            catch ( MetadataMismatchException | IOException e )
-            {
-                monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
-                return InternalIndexState.POPULATING;
-            }
-        }
-        return state;
+        return new TemporalIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
     }
 
     @Override
     public IndexCapability getCapability()
     {
         return CAPABILITY;
-    }
-
-    @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
-    {
-        // Since this native provider is a new one, there's no need for migration on this level.
-        // Migration should happen in the combined layer for the time being.
-        return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
     /**

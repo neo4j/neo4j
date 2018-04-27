@@ -20,21 +20,11 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.values.storable.ValueGroup;
 
-public class DurationUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<DurationSchemaKey,NativeSchemaValue>
+public class DurationUniqueSchemaIndexPopulatorTest extends TemporalUniqueSchemaIndexPopulatorTest
 {
     @Override
-    NativeSchemaIndexPopulator<DurationSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
-    {
-        TemporalIndexFiles.FileLayout<DurationSchemaKey> fileLayout =
-                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.DURATION );
-        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
-    }
-
-    @Override
-    protected LayoutTestUtil<DurationSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    protected LayoutTestUtil<TemporalSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
         return new UniqueLayoutTestUtil<>(
                 new DurationLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );

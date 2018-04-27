@@ -19,27 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
-
-public class DurationNonUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<DurationSchemaKey,NativeSchemaValue>
+public class DurationNonUniqueSchemaIndexAccessorTest extends TemporalSchemaIndexAccessorTest
 {
     @Override
-    NativeSchemaIndexAccessor<DurationSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
-    {
-        TemporalIndexFiles.FileLayout<DurationSchemaKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.DURATION );
-        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, indexDescriptor, samplingConfig );
-    }
-
-    @Override
-    protected LayoutTestUtil<DurationSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    protected LayoutTestUtil<TemporalSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
         return new DurationLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
-
 }

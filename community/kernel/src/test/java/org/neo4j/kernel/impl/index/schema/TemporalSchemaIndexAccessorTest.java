@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo4j,"
- * Neo4j Sweden AB [http://neo4j.com]
+ * Copyright (c) 2002-2018 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import java.io.IOException;
 
-public class DateNonUniqueSchemaIndexAccessorTest extends TemporalSchemaIndexAccessorTest
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+
+public abstract class TemporalSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<TemporalSchemaKey,NativeSchemaValue>
 {
     @Override
-    protected LayoutTestUtil<TemporalSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    NativeSchemaIndexAccessor<TemporalSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new DateLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
+        return new TemporalIndexAccessor( pageCache, fs, getIndexFile(), layout, IMMEDIATE, monitor, indexDescriptor, samplingConfig );
     }
 }

@@ -20,21 +20,11 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.values.storable.ValueGroup;
 
-public class DateTimeUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<ZonedDateTimeSchemaKey,NativeSchemaValue>
+public class DateTimeUniqueSchemaIndexPopulatorTest extends TemporalUniqueSchemaIndexPopulatorTest
 {
     @Override
-    NativeSchemaIndexPopulator<ZonedDateTimeSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
-    {
-        TemporalIndexFiles.FileLayout<ZonedDateTimeSchemaKey> fileLayout =
-                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_DATE_TIME );
-        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
-    }
-
-    @Override
-    protected LayoutTestUtil<ZonedDateTimeSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    protected LayoutTestUtil<TemporalSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
         return new UniqueLayoutTestUtil<>(
                 new DateTimeLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
