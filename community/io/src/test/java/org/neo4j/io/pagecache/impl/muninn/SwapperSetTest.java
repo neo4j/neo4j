@@ -188,12 +188,12 @@ public class SwapperSetTest
     public void mustKeepTrackOfAvailableSwapperIds()
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
-        short initial = Short.MAX_VALUE - 1;
+        int initial = (1 << 21) - 2;
         assertThat( set.countAvailableIds(), is( initial ) );
         int id = set.allocate( swapper );
-        assertThat( set.countAvailableIds(), is( (short) (initial - 1) ) );
+        assertThat( set.countAvailableIds(), is( initial - 1 ) );
         set.free( id );
-        assertThat( set.countAvailableIds(), is( (short) (initial - 1) ) );
+        assertThat( set.countAvailableIds(), is( initial - 1 ) );
         set.vacuum( x -> {} );
         assertThat( set.countAvailableIds(), is( initial ) );
     }
