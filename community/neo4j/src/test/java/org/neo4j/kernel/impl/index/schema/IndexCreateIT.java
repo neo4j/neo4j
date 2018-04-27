@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
@@ -36,25 +37,28 @@ public class IndexCreateIT extends KernelIntegrationTest
     @Test
     public void shouldCreateIndexWithSpecificExistingProviderName() throws KernelException
     {
-        int labelId = 0;
-        for ( GraphDatabaseSettings.SchemaIndex indexSetting : GraphDatabaseSettings.SchemaIndex.values() )
-        {
-            // given
-            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-            String provider = indexSetting.providerName();
-            LabelSchemaDescriptor descriptor = forLabel( labelId++, 0 );
-            schemaWrite.indexCreate( descriptor, provider );
-
-            // when
-            commit();
-
-            // then
-            assertEquals( provider, indexingService.getIndexProxy( descriptor ).getProviderDescriptor().name() );
-        }
+        shouldCreateWithSpecificExistingProviderName( SchemaWrite::indexCreate );
     }
 
     @Test
-    public void shouldFailOnCreateIndexWithNonExistentProviderName() throws KernelException
+    public void shouldCreateUniquePropertyConstraintWithSpecificExistingProviderName() throws KernelException
+    {
+        shouldCreateWithSpecificExistingProviderName( SchemaWrite::uniquePropertyConstraintCreate );
+    }
+
+    @Test
+    public void shouldFailCreateIndexWithNonExistentProviderName() throws KernelException
+    {
+        shouldFailWithNonExistentProviderName( SchemaWrite::indexCreate );
+    }
+
+    @Test
+    public void shouldFailCreateUniquePropertyConstraintWithNonExistentProviderName() throws KernelException
+    {
+        shouldFailWithNonExistentProviderName( SchemaWrite::uniquePropertyConstraintCreate );
+    }
+
+    void shouldFailWithNonExistentProviderName( IndexCreator creator ) throws KernelException
     {
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
@@ -69,5 +73,29 @@ public class IndexCreateIT extends KernelIntegrationTest
         {
             // then good
         }
+    }
+
+    void shouldCreateWithSpecificExistingProviderName( IndexCreator creator ) throws KernelException
+    {
+        int labelId = 0;
+        for ( GraphDatabaseSettings.SchemaIndex indexSetting : GraphDatabaseSettings.SchemaIndex.values() )
+        {
+            // given
+            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+            String provider = indexSetting.providerName();
+            LabelSchemaDescriptor descriptor = forLabel( labelId++, 0 );
+            creator.create( schemaWrite, descriptor, provider );
+
+            // when
+            commit();
+
+            // then
+            assertEquals( provider, indexingService.getIndexProxy( descriptor ).getProviderDescriptor().name() );
+        }
+    }
+
+    interface IndexCreator
+    {
+        void create( SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName ) throws SchemaKernelException;
     }
 }
