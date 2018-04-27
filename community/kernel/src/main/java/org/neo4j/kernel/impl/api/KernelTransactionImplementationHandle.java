@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -62,7 +61,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.startTime = tx.startTime();
         this.timeoutMillis = tx.timeout();
-        this.subject = tx.subject();
+        this.subject = tx.subjectOrAnonymous();
         this.terminationReason = tx.getReasonIfTerminated();
         this.executingQueries = tx.executingQueries();
         this.metaData = tx.getMetaData();

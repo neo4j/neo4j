@@ -178,7 +178,7 @@ class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public AuthSubject subject()
+    public AuthSubject subjectOrAnonymous()
     {
         AuthSubject subject = mock( AuthSubject.class );
         when( subject.username() ).thenReturn( "testUser" );
@@ -256,19 +256,19 @@ class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public NodeCursor nodeCursor()
+    public NodeCursor ambientNodeCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public RelationshipScanCursor relationshipCursor()
+    public RelationshipScanCursor ambientRelationshipCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public PropertyCursor propertyCursor()
+    public PropertyCursor ambientPropertyCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

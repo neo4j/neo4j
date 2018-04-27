@@ -492,7 +492,7 @@ public class OperationsLockTest
     {
         long nodeId = 1L;
         returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
-        when(transaction.nodeCursor()).thenReturn( new StubNodeCursor( false ) );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
 
         operations.nodeDetachDelete( nodeId );
 
@@ -507,7 +507,7 @@ public class OperationsLockTest
         long nodeId = 1L;
         returnRelationships( transaction, false,
                 new TestRelationshipChain( nodeId ).outgoing( 1, 2L, 42 ) );
-        when( transaction.nodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
         operations.nodeDetachDelete( nodeId );
 
         order.verify( locks ).acquireExclusive(

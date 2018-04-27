@@ -85,7 +85,7 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     @Override
     public AuthSubject subject()
     {
-        return tx.subject();
+        return tx.subjectOrAnonymous();
     }
 
     @Override
