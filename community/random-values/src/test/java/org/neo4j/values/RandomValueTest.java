@@ -120,7 +120,6 @@ public class RandomValueTest
         checkBounded( () -> randomValue.nextShortValue( BOUND ) );
     }
 
-
     @Test
     public void nextByteValueUnbounded()
     {
@@ -216,6 +215,18 @@ public class RandomValueTest
         assertThat( seenDigits, empty() );
     }
 
+    @Test
+    public void nextString()
+    {
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            TextValue textValue = randomValue.nextString( 10, 20 );
+            String asString = textValue.stringValue();
+            int length = asString.codePointCount( 0, asString.length() );
+            assertThat( length, greaterThanOrEqualTo( 10 ) );
+            assertThat( length, lessThanOrEqualTo( 20 ) );
+        }
+    }
 
     private void checkDistribution( Supplier<Value> supplier )
     {
