@@ -190,7 +190,26 @@ public class RandomValueTest
             for ( int j = 0; j < asString.length(); j++ )
             {
                 int ch = asString.charAt( j );
-                assertTrue( "Not a character " + ch,  Character.isAlphabetic( ch ));
+                assertTrue( "Not a character: " + ch,  Character.isAlphabetic( ch ));
+                seenDigits.remove( ch );
+            }
+        }
+        assertThat( seenDigits, empty() );
+    }
+
+    @Test
+    public void nextAlphaNumericString()
+    {
+        Set<Integer> seenDigits = "ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvxyz0123456789".chars().boxed()
+                .collect( Collectors.toSet() );
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            TextValue textValue = randomValue.nextAlphaNumericString( 10, 20 );
+            String asString = textValue.stringValue();
+            for ( int j = 0; j < asString.length(); j++ )
+            {
+                int ch = asString.charAt( j );
+                assertTrue( "Not a character nor letter: " + ch,  Character.isAlphabetic( ch ) || Character.isDigit( ch ));
                 seenDigits.remove( ch );
             }
         }

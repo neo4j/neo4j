@@ -156,7 +156,7 @@ public class RandomValue
         byte[] bytes = new byte[length];
         for ( int i = 0; i < length; i++ )
         {
-            if (random.nextBoolean() )
+            if ( random.nextBoolean() )
             {
                 bytes[i] = (byte) intBetween( 'A', 'Z' );
             }
@@ -169,10 +169,35 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    public TextValue nextAlphaNumericString( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        byte[] bytes = new byte[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            switch ( random.nextInt( 4 ) )
+            {
+            case 0:
+                bytes[i] = (byte) intBetween( 'A', 'Z' );
+                break;
+            case 1:
+                bytes[i] = (byte) intBetween( 'a', 'z' );
+                break;
+            //We want digits being roughly as frequent as letters
+            case 2:
+            case 3:
+                bytes[i] = (byte) intBetween( '0', '9' );
+            }
+        }
+
+        return Values.utf8Value( bytes );
+    }
+
     private int intBetween( int min, int max )
     {
         return min + random.nextInt( max - min + 1 );
     }
+
     private long nextLong( long bound )
     {
         return abs( random.nextLong() ) % bound;
