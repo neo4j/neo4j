@@ -19,112 +19,37 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.List;
+
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.graphdb.Resource;
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.cursor.RawCursor;
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
-import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.schema.IndexSampler;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
-
-class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<NativeSchemaValue>> implements IndexReader
+class SpatialIndexReader extends NativeSchemaIndexReader<SpatialSchemaKey,NativeSchemaValue>
 {
-    private final IndexDescriptor descriptor;
+    private final SpaceFillingCurveConfiguration configuration;
 
-    SpatialIndexReader( IndexDescriptor descriptor, SpatialIndexAccessor accessor )
+    SpatialIndexReader( GBPTree<SpatialSchemaKey,NativeSchemaValue> tree, Layout<SpatialSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig,
+            IndexDescriptor descriptor, SpaceFillingCurveConfiguration configuration )
     {
-        super( new PartFactory( accessor ) );
-        this.descriptor = descriptor;
-    }
-
-    @Override
-    public void close()
-    {
-        forAll( Resource::close, this );
-    }
-
-    @Override
-    public long countIndexedNodes( long nodeId, Value... propertyValues )
-    {
-        NativeSchemaIndexReader<SpatialSchemaKey,NativeSchemaValue> partReader =
-                uncheckedSelect( ((PointValue) propertyValues[0]).getCoordinateReferenceSystem() );
-        return partReader == null ? 0L : partReader.countIndexedNodes( nodeId, propertyValues );
-    }
-
-    @Override
-    public IndexSampler createSampler()
-    {
-        return new FusionIndexSampler( Iterators.stream( iterator() ).map( IndexReader::createSampler ).toArray( IndexSampler[]::new ) );
-    }
-
-    @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates )
-    {
-        NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, predicates );
-        return nodeValueIterator;
-    }
-
-    @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
-    {
-        if ( predicates.length != 1 )
-        {
-            throw new IllegalArgumentException( "Only single property spatial indexes are supported." );
-        }
-        IndexQuery predicate = predicates[0];
-        if ( predicate instanceof ExistsPredicate )
-        {
-            loadAll();
-            BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates );
-            for ( NativeSchemaIndexReader<SpatialSchemaKey,NativeSchemaValue> reader : this )
-            {
-                reader.query( multiProgressor, indexOrder, predicates );
-            }
-        }
-        else
-        {
-            if ( validPredicate( predicate ) )
-            {
-                CoordinateReferenceSystem crs;
-                if ( predicate instanceof IndexQuery.ExactPredicate )
-                {
-                    crs = ((PointValue) ((IndexQuery.ExactPredicate) predicate).value()).getCoordinateReferenceSystem();
-                }
-                else if ( predicate instanceof IndexQuery.GeometryRangePredicate )
-                {
-                    crs = ((IndexQuery.GeometryRangePredicate) predicate).crs();
-                }
-                else
-                {
-                    throw new IllegalArgumentException( "Wrong type of predicate, couldn't get CoordinateReferenceSystem" );
-                }
-                SpatialIndexPartReader<NativeSchemaValue> part = uncheckedSelect( crs );
-                if ( part != null )
-                {
-                    part.query( cursor, indexOrder, predicates );
-                }
-                else
-                {
-                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
-                }
-            }
-            else
-            {
-                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
-            }
-        }
+        super( tree, layout, samplingConfig, descriptor );
+        this.configuration = configuration;
     }
 
     @Override
@@ -133,28 +58,127 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
         return false;
     }
 
-    private boolean validPredicate( IndexQuery predicate )
+    @Override
+    public PrimitiveLongResourceIterator query( IndexQuery... predicates )
     {
-        return predicate instanceof IndexQuery.ExactPredicate || predicate instanceof IndexQuery.RangePredicate;
+        NodeValueIterator iterator = new NodeValueIterator();
+        BridgingIndexProgressor progressor = new BridgingIndexProgressor( iterator, descriptor.schema().getPropertyIds() );
+        query( iterator, IndexOrder.NONE, predicates );
+        return iterator;
     }
 
-    /**
-     * To create TemporalIndexPartReaders on demand, the PartFactory maintains a reference to the parent TemporalIndexAccessor.
-     * The creation of a part reader can then be delegated to the correct PartAccessor.
-     */
-    static class PartFactory implements Factory<SpatialIndexPartReader<NativeSchemaValue>>
+    @Override
+    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
     {
-        private final SpatialIndexAccessor accessor;
-
-        PartFactory( SpatialIndexAccessor accessor )
+        validateQuery( indexOrder, predicates );
+        IndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
         {
-            this.accessor = accessor;
+        case exists:
+            startSeekForExists( cursor, predicate );
+            break;
+        case exact:
+            startSeekForExact( cursor, ((ExactPredicate) predicate).value(), predicate );
+            break;
+        case range:
+            GeometryRangePredicate rangePredicate = (GeometryRangePredicate) predicate;
+            startSeekForRange( cursor, rangePredicate, predicates );
+            break;
+        default:
+            throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+        }
+    }
+
+    private void startSeekForExists( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
+    {
+        SpatialSchemaKey treeKeyFrom = layout.newKey();
+        SpatialSchemaKey treeKeyTo = layout.newKey();
+        treeKeyFrom.initAsLowest();
+        treeKeyTo.initAsHighest();
+        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
+    }
+
+    private void startSeekForExact( IndexProgressor.NodeValueClient client, Value value, IndexQuery... predicates )
+    {
+        SpatialSchemaKey treeKeyFrom = layout.newKey();
+        SpatialSchemaKey treeKeyTo = layout.newKey();
+        treeKeyFrom.from( Long.MIN_VALUE, value );
+        treeKeyTo.from( Long.MAX_VALUE, value );
+        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
+    }
+
+    private void startSeekForRange( IndexProgressor.NodeValueClient client, GeometryRangePredicate rangePredicate, IndexQuery[] query )
+    {
+        try
+        {
+            BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
+            client.initialize( descriptor, multiProgressor, query );
+            SpaceFillingCurve curve = layout().getSpaceFillingCurve( rangePredicate.crs() );
+            double[] from = rangePredicate.from() == null ? null : rangePredicate.from().coordinate();
+            double[] to = rangePredicate.to() == null ? null : rangePredicate.to().coordinate();
+            List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( from, to, configuration );
+            for ( SpaceFillingCurve.LongRange range : ranges )
+            {
+                SpatialSchemaKey treeKeyFrom = layout.newKey();
+                SpatialSchemaKey treeKeyTo = layout.newKey();
+                treeKeyFrom.fromDerivedValue( Long.MIN_VALUE, range.min, rangePredicate.crs() );
+                treeKeyTo.fromDerivedValue( Long.MAX_VALUE, range.max + 1, rangePredicate.crs() );
+                RawCursor<Hit<SpatialSchemaKey,NativeSchemaValue>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
+                IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
+                multiProgressor.initialize( descriptor, hitProgressor, query );
+            }
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Invalid query ranges will cause this state (eg. min>max)
+            client.initialize( descriptor, IndexProgressor.EMPTY, query );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, SpatialSchemaKey treeKeyFrom,
+            SpatialSchemaKey treeKeyTo, IndexQuery[] query, boolean needFilter )
+    {
+        if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
+        {
+            client.initialize( descriptor, IndexProgressor.EMPTY, query );
+            return;
+        }
+        try
+        {
+            RawCursor<Hit<SpatialSchemaKey,NativeSchemaValue>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
+            IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
+            client.initialize( descriptor, hitProgressor, query );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private SpatialLayout layout()
+    {
+        return (SpatialLayout) layout;
+    }
+
+    @Override
+    void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates )
+    {
+        if ( predicates.length != 1 )
+        {
+            throw new UnsupportedOperationException();
         }
 
-        @Override
-        public SpatialIndexPartReader<NativeSchemaValue> newSpatial( CoordinateReferenceSystem crs )
-        {
-            return accessor.selectOrElse( crs, SpatialIndexAccessor.PartAccessor::newReader, null );
-        }
+        CapabilityValidator.validateQuery( StringIndexProvider.CAPABILITY, indexOrder, predicates );
+    }
+
+    @Override
+    boolean initializeRangeForQuery( SpatialSchemaKey treeKeyFrom, SpatialSchemaKey treeKeyTo, IndexQuery[] predicates )
+    {
+        throw new UnsupportedOperationException( "Will not be called in this implementation" );
     }
 }
