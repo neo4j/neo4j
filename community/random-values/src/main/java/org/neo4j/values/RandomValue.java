@@ -30,6 +30,7 @@ import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.ShortValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.abs;
@@ -137,6 +138,22 @@ public class RandomValue
         }
     }
 
+    public TextValue nextDigitString( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        byte[] bytes = new byte[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            bytes[i] = (byte) intBetween( '0', '9' );
+        }
+
+        return Values.utf8Value( bytes );
+    }
+
+    private int intBetween( int min, int max )
+    {
+        return min + random.nextInt( max - min + 1 );
+    }
     private long nextLong( long bound )
     {
         return abs( random.nextLong() ) % bound;
