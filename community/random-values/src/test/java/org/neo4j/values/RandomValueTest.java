@@ -33,6 +33,7 @@ import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.ShortValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.Matchers.empty;
@@ -43,6 +44,7 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.values.storable.Values.ZERO_INT;
 import static org.neo4j.values.storable.Values.longValue;
 
@@ -155,6 +157,24 @@ public class RandomValueTest
             seen.remove( numberValue.getClass() );
         }
         assertThat( seen, empty() );
+    }
+
+    @Test
+    public void nextDigitString()
+    {
+        Set<Character> seenDigits = new HashSet<>( Arrays.asList( '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' ) );
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            TextValue textValue = randomValue.nextDigitString( 5, 10 );
+            String asString = textValue.stringValue();
+            for ( int j = 0; j < asString.length(); j++ )
+            {
+                char ch = asString.charAt( j );
+                assertTrue( Character.isDigit( ch ));
+                seenDigits.remove( ch );
+            }
+        }
+        assertThat( seenDigits, empty() );
     }
 
     private void checkDistribution( Supplier<Value> supplier )
