@@ -50,7 +50,7 @@ public class SpatialIndexProviderTest extends NativeIndexProviderTest
     @Override
     protected InternalIndexState expectedStateOnNonExistingSubIndex()
     {
-        return InternalIndexState.ONLINE;
+        return InternalIndexState.POPULATING;
     }
 
     @Override

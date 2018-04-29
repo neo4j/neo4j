@@ -22,32 +22,32 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 
 /**
  * {@link Layout} for PointValues.
  */
 class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
 {
-    private SpaceFillingCurve curve;
-    CoordinateReferenceSystem crs;
+    private final SpaceFillingCurveSettingsFactory curveFactory;
 
-    SpatialLayout( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
+    SpatialLayout( SpaceFillingCurveSettingsFactory curveFactory )
     {
         super( "UPI", 0, 1 );
-        this.crs = crs;
-        this.curve = curve;
+        this.curveFactory = curveFactory;
     }
 
-    SpaceFillingCurve getSpaceFillingCurve()
+    SpaceFillingCurve getSpaceFillingCurve( CoordinateReferenceSystem crs )
     {
-        return curve;
+        return curveFactory.settingsFor( crs ).curve();
     }
 
     @Override
     public SpatialSchemaKey newKey()
     {
-        return new SpatialSchemaKey( crs, curve );
+        return new SpatialSchemaKey( curveFactory );
     }
 
     @Override
@@ -70,6 +70,8 @@ class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
     @Override
     public void writeKey( PageCursor cursor, SpatialSchemaKey key )
     {
+        cursor.putInt( key.crs.getTable().getTableId() );
+        cursor.putInt( key.crs.getCode() );
         cursor.putLong( key.rawValueBits );
         cursor.putLong( key.getEntityId() );
     }
@@ -77,6 +79,20 @@ class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
     @Override
     public void readKey( PageCursor cursor, SpatialSchemaKey into, int keySize )
     {
+        int tableId = cursor.getInt();
+        int code = cursor.getInt();
+        try
+        {
+            if ( into.crs == null || into.crs.getTable().getTableId() != tableId || into.crs.getCode() != code )
+            {
+                into.crs = CoordinateReferenceSystem.get( tableId, code );
+            }
+        }
+        catch ( InvalidValuesArgumentException | IllegalArgumentException | ArrayIndexOutOfBoundsException e )
+        {
+            // This can happen on bad read from page cursor which should result in shouldRetry
+            into.crs = CoordinateReferenceSystem.WGS84;
+        }
         into.rawValueBits = cursor.getLong();
         into.setEntityId( cursor.getLong() );
     }
