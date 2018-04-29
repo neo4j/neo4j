@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.values.storable.ByteValue;
 import org.neo4j.values.storable.DoubleValue;
@@ -162,20 +163,40 @@ public class RandomValueTest
     @Test
     public void nextDigitString()
     {
-        Set<Character> seenDigits = new HashSet<>( Arrays.asList( '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' ) );
+        Set<Integer> seenDigits = "0123456789".chars().boxed().collect( Collectors.toSet() );
         for ( int i = 0; i < ITERATIONS; i++ )
         {
             TextValue textValue = randomValue.nextDigitString( 5, 10 );
             String asString = textValue.stringValue();
             for ( int j = 0; j < asString.length(); j++ )
             {
-                char ch = asString.charAt( j );
+                int ch = asString.charAt( j );
                 assertTrue( Character.isDigit( ch ));
                 seenDigits.remove( ch );
             }
         }
         assertThat( seenDigits, empty() );
     }
+
+    @Test
+    public void nextAlphaString()
+    {
+        Set<Integer> seenDigits = "ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvxyz".chars().boxed()
+                .collect( Collectors.toSet() );
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            TextValue textValue = randomValue.nextAlphaString( 5, 10 );
+            String asString = textValue.stringValue();
+            for ( int j = 0; j < asString.length(); j++ )
+            {
+                int ch = asString.charAt( j );
+                assertTrue( "Not a character " + ch,  Character.isAlphabetic( ch ));
+                seenDigits.remove( ch );
+            }
+        }
+        assertThat( seenDigits, empty() );
+    }
+
 
     private void checkDistribution( Supplier<Value> supplier )
     {

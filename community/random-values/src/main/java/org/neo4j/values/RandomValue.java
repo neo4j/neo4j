@@ -150,6 +150,25 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    public TextValue nextAlphaString( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        byte[] bytes = new byte[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            if (random.nextBoolean() )
+            {
+                bytes[i] = (byte) intBetween( 'A', 'Z' );
+            }
+            else
+            {
+                bytes[i] = (byte) intBetween( 'a', 'z' );
+            }
+        }
+
+        return Values.utf8Value( bytes );
+    }
+
     private int intBetween( int min, int max )
     {
         return min + random.nextInt( max - min + 1 );
