@@ -193,6 +193,38 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    public TextValue nextString( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        UTF8StringValueBuilder builder = new UTF8StringValueBuilder( nextPowerOf2( length ) );
+
+        for ( int i = 0; i < length; i++ )
+        {
+            boolean validCodePoint = false;
+            while ( !validCodePoint )
+            {
+                int codePoint = intBetween( Character.MIN_CODE_POINT, Character.MAX_CODE_POINT );
+                switch ( Character.getType( codePoint ) )
+                {
+                case Character.UNASSIGNED:
+                case Character.PRIVATE_USE:
+                case Character.SURROGATE:
+                    continue;
+                default:
+                    builder.addCodePoint( codePoint );
+                    validCodePoint = true;
+                }
+            }
+        }
+        return builder.build();
+    }
+
+    private int nextPowerOf2( int i )
+    {
+        return 1 << (32 - Integer.numberOfLeadingZeros( i ));
+    }
+
+
     private int intBetween( int min, int max )
     {
         return min + random.nextInt( max - min + 1 );

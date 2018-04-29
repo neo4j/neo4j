@@ -64,40 +64,40 @@ class UTF8StringValueBuilder
         return Values.utf8Value( bytes, 0, length );
     }
 
-    void addCodePoint( int codepoint )
+    void addCodePoint( int codePoint )
     {
-        assert codepoint >= 0;
-        if ( codepoint < 0x80 )
+        assert codePoint >= 0;
+        if ( codePoint < 0x80 )
         {
             //one byte is all it takes
-            add( (byte) codepoint );
+            add( (byte) codePoint );
         }
-        else if ( codepoint < 0x800 )
+        else if ( codePoint < 0x800 )
         {
             //Require two bytes - will be laid out like:
             //b1       b2
             //110xxxxx 10xxxxxx
-            add( (byte) (0b1100_0000 | (0b0001_1111 & (codepoint >> 6))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & codepoint)) );
+            add( (byte) (0b1100_0000 | (0b0001_1111 & (codePoint >> 6))) );
+            add( (byte) (0b1000_0000 | (0b0011_1111 & codePoint)) );
         }
-        else if ( codepoint < 0x10000 )
+        else if ( codePoint < 0x10000 )
         {
             //Require three bytes - will be laid out like:
             //b1       b2       b3
             //1110xxxx 10xxxxxx 10xxxxxx
-            add( (byte) (0b1110_0000 | (0b0000_1111 & (codepoint >> 12))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & (codepoint >> 6))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & codepoint)) );
+            add( (byte) (0b1110_0000 | (0b0000_1111 & (codePoint >> 12))) );
+            add( (byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 6))) );
+            add( (byte) (0b1000_0000 | (0b0011_1111 & codePoint)) );
         }
         else
         {
             //Require four bytes - will be laid out like:
             //b1       b2       b3
             //11110xxx 10xxxxxx 10xxxxxx
-            add( (byte) (0b1111_0000 | (0b0001_1111 & (codepoint >> 18))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & (codepoint >> 12))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & (codepoint >> 6))) );
-            add( (byte) (0b1000_0000 | (0b0011_1111 & codepoint)) );
+            add( (byte) (0b1111_0000 | (0b0001_1111 & (codePoint >> 18))) );
+            add( (byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 12))) );
+            add( (byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 6))) );
+            add( (byte) (0b1000_0000 | (0b0011_1111 & codePoint)) );
         }
     }
 }
