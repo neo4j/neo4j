@@ -144,7 +144,8 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2, 4))))
   }
 
-  test("point function should throw on unrecognized map entry") {
+  // We can un-ignore this if/when we re-enable strict map checks in PointFunction.scala
+  ignore("point function should throw on unrecognized map entry") {
     val stillWithoutFix = Configs.Version3_1 + Configs.AllRulePlanners
     failWithError(pointConfig - stillWithoutFix + Configs.Procs, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
   }
