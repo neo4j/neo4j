@@ -22,26 +22,25 @@ package org.neo4j.server.integration;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.CommunityBootstrapper;
-import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -54,19 +53,13 @@ import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 public class StartupLoggingIT extends ExclusiveServerTestBase
 {
     @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Rule
-    public TestDirectory homeDir = TestDirectory.testDirectory();
-
-    @Before
-    public void setUp() throws IOException
-    {
-        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( DatabaseManagementSystemSettings.data_directory ) );
-    }
+    public final TestDirectory homeDir = TestDirectory.testDirectory();
 
     @Test
-    public void shouldLogHelpfulStartupMessages() throws Throwable
+    public void shouldLogHelpfulStartupMessages()
     {
         CommunityBootstrapper boot = new CommunityBootstrapper();
         Map<String,String> propertyPairs = getPropertyPairs();
@@ -87,11 +80,14 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         ) );
     }
 
-    private Map<String,String> getPropertyPairs() throws IOException
+    private Map<String,String> getPropertyPairs()
     {
-        Map<String,String> relativeProperties = ServerTestUtils.getDefaultRelativeProperties();
-
+        Map<String,String> relativeProperties = new HashMap<>();
+        relativeProperties.put( DatabaseManagementSystemSettings.data_directory.name(), homeDir.graphDbDir().toString() );
+        relativeProperties.put( GraphDatabaseSettings.logs_directory.name(), homeDir.graphDbDir().toString() );
+        relativeProperties.put( LegacySslPolicyConfig.certificates_directory.name(), homeDir.graphDbDir().toString() );
         relativeProperties.put( GraphDatabaseSettings.allow_upgrade.name(), Settings.TRUE);
+        relativeProperties.put( ServerSettings.script_enabled.name(), Settings.TRUE );
 
         HttpConnector http = new HttpConnector( "http", Encryption.NONE );
         relativeProperties.put( http.type.name(), "HTTP" );
