@@ -19,8 +19,6 @@
  */
 package org.neo4j.values;
 
-import org.neo4j.hashing.HashFunction;
-
 public abstract class AnyValue
 {
     private int hash;
@@ -46,18 +44,9 @@ public abstract class AnyValue
         return hash;
     }
 
-    public final long hashCode64()
-    {
-        HashFunction xxh64 = HashFunction.incrementalXXH64();
-        long seed = 1; // Arbitrary seed, but it must always be the same or hash values will change.
-        return xxh64.finalise( updateHash( xxh64, xxh64.initialise( seed ) ) );
-    }
-
     protected abstract boolean eq( Object other );
 
     protected abstract int computeHash();
-
-    public abstract long updateHash( HashFunction hashFunction, long hash );
 
     public abstract <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E;
 
