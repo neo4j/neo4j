@@ -71,19 +71,68 @@ import static org.neo4j.values.storable.Values.shortValue;
 
 public class RandomValue
 {
+    public interface Configuration
+    {
+        int stringMinLength();
+
+        int stringMaxLength();
+
+        int arrayMinLength();
+
+        int arrayMaxLength();
+    }
+
+    public static class Default implements Configuration
+    {
+        @Override
+        public int stringMinLength()
+        {
+            return 5;
+        }
+
+        @Override
+        public int stringMaxLength()
+        {
+            return 20;
+        }
+
+        @Override
+        public int arrayMinLength()
+        {
+            return 1;
+        }
+
+        @Override
+        public int arrayMaxLength()
+        {
+            return 10;
+        }
+    }
+
     //TODO make possible to use SplittableRandom
     private final Random random;
+    private final Configuration configuration;
     public static final long NANOS_PER_SECOND = 1_000_000_000L;
-
 
     public RandomValue()
     {
-        this( ThreadLocalRandom.current() );
+        this( ThreadLocalRandom.current(), new Default() );
     }
 
     public RandomValue( Random random )
     {
+        this( random, new Default() );
+    }
+
+    public RandomValue( Configuration configuration )
+    {
+        this( ThreadLocalRandom.current(), configuration );
+    }
+
+    public RandomValue( Random random, Configuration configuration )
+    {
         this.random = random;
+        this.configuration = configuration;
     }
 
     LongValue nextLongValue()
@@ -168,6 +217,11 @@ public class RandomValue
         }
     }
 
+    public TextValue nextDigitString()
+    {
+        return nextDigitString( configuration.stringMinLength(), configuration.stringMaxLength() );
+    }
+
     public TextValue nextDigitString( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -178,6 +232,11 @@ public class RandomValue
         }
 
         return Values.utf8Value( bytes );
+    }
+
+    public TextValue nextAlphaString()
+    {
+        return nextAlphaString( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
     public TextValue nextAlphaString( int minLength, int maxLength )
@@ -197,6 +256,11 @@ public class RandomValue
         }
 
         return Values.utf8Value( bytes );
+    }
+
+    public TextValue nextAlphaNumericString()
+    {
+        return nextAlphaNumericString( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
     public TextValue nextAlphaNumericString( int minLength, int maxLength )
@@ -223,6 +287,11 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    public TextValue nextAsciiString()
+    {
+        return nextAsciiString( configuration.stringMinLength(), configuration.stringMaxLength() );
+    }
+
     public TextValue nextAsciiString( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -235,6 +304,11 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    public TextValue nextPrintableAsciiString()
+    {
+        return nextPrintableAsciiString( configuration.stringMinLength(), configuration.stringMaxLength() );
+    }
+
     public TextValue nextPrintableAsciiString( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -245,6 +319,11 @@ public class RandomValue
 
         }
         return Values.utf8Value( bytes );
+    }
+
+    public TextValue nextString()
+    {
+        return nextString( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
     public TextValue nextString( int minLength, int maxLength )
@@ -301,7 +380,7 @@ public class RandomValue
     public DurationValue randomPeriod()
     {
         // Based on Java period (years, months and days)
-        return duration( Period.of( random.nextInt(), random.nextInt( 12 ), random.nextInt( 28 ) ));
+        return duration( Period.of( random.nextInt(), random.nextInt( 12 ), random.nextInt( 28 ) ) );
     }
 
     public DurationValue randomDuration()
