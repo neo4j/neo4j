@@ -43,6 +43,12 @@ public abstract class AbstractStoreGenerator implements BackupStore
         return Optional.of( backupFromCore );
     }
 
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName();
+    }
+
     private String backupName()
     {
         return "backup-" + UUID.randomUUID().toString().substring( 5 );
