@@ -59,16 +59,16 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
             tx.success();
         }
 
-    try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = session.beginTransaction() )
         {
-        Read read = tx.dataRead( );
+            Read read = tx.dataRead();
 
-        try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor())
-              {
-            MutableLongSet uniqueIds = new LongHashSet() ;
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+            {
+                MutableLongSet uniqueIds = new LongHashSet();
 
-            // WHEN
-            read.nodeLabelScan( labelOne, cursor );
+                // WHEN
+                read.nodeLabelScan( labelOne, cursor );
 
                 // THEN
                 assertNodeCount( cursor, 1, uniqueIds );
@@ -110,21 +110,21 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
             tx.success();
         }
 
-    try ( Transaction tx = session.beginTransaction() )
+        try ( Transaction tx = session.beginTransaction() )
         {
             tx.dataWrite().nodeDelete( deletedInTx );
-    createdInTx = createNode( tx.dataWrite(), labelOne);
+            createdInTx = createNode( tx.dataWrite(), labelOne );
 
-        createNode( tx.dataWrite(), labelTwo );
+            createNode( tx.dataWrite(), labelTwo );
 
-        Read read = tx.dataRead( );
+            Read read = tx.dataRead();
 
-        try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor())
-              {
-            MutableLongSet uniqueIds = new LongHashSet() ;
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+            {
+                MutableLongSet uniqueIds = new LongHashSet();
 
-            // when
-            read.nodeLabelScan( labelOne, cursor );
+                // when
+                read.nodeLabelScan( labelOne, cursor );
 
                 // then
                 assertNodes( cursor, uniqueIds, inStore, createdInTx );

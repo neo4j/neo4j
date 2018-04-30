@@ -1220,7 +1220,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       generator.expression(
         pop(
           invoke(generator.load(tableVar), countingTableIncrement, generator.load(keyVar), constant(1))
-        ));
+        ))
 
     case LongsToCountTable =>
       val countName = context.namer.newVarName()
