@@ -35,14 +35,13 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
-import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Arrays.stream;
 import static org.neo4j.collection.PrimitiveLongCollections.asSet;
-import static org.neo4j.collection.PrimitiveLongResourceCollections.emptyIterator;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
@@ -243,7 +242,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState
+            LongDiffSets changes = txState
                     .indexUpdatesForRangeSeekByPrefix( descriptor, predicate.prefix() );
             added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
             removed = removed( txState, changes );
@@ -258,7 +257,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeek(
+            LongDiffSets changes = txState.indexUpdatesForRangeSeek(
                     descriptor, valueGroup,
                     predicate.fromValue(), predicate.fromInclusive(),
                     predicate.toValue(), predicate.toInclusive() );
@@ -273,7 +272,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForScan( descriptor );
+            LongDiffSets changes = txState.indexUpdatesForScan( descriptor );
             added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
             removed = removed( txState, changes );
         }
@@ -285,7 +284,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForSuffixOrContains( descriptor, query );
+            LongDiffSets changes = txState.indexUpdatesForSuffixOrContains( descriptor, query );
             added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
             removed = removed( txState, changes );
         }
@@ -298,14 +297,14 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = read.txState()
+            LongDiffSets changes = read.txState()
                     .indexUpdatesForSeek( descriptor, IndexQuery.asValueTuple( exactPreds ) );
             added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
             removed = removed( txState, changes );
         }
     }
 
-    private LongSet removed( TransactionState txState, PrimitiveLongReadableDiffSets changes )
+    private LongSet removed( TransactionState txState, LongDiffSets changes )
     {
         final MutableLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
         longSet.addAll( changes.getRemoved() );

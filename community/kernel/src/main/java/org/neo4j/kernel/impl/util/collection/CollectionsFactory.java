@@ -25,7 +25,7 @@ import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -42,7 +42,7 @@ public interface CollectionsFactory
 
     <V> MutableIntObjectMap<V> newIntObjectMap();
 
-    PrimitiveLongDiffSets newLongDiffSets();
+    MutableLongDiffSets newLongDiffSets();
 
     MemoryTracker getMemoryTracker();
 

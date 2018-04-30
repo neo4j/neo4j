@@ -31,9 +31,9 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
  * target collection such that the result is equivalent to just
  * executing the sequence of additions and removals in order.
  */
-public interface PrimitiveLongReadableDiffSets
+public interface LongDiffSets
 {
-    PrimitiveLongReadableDiffSets EMPTY = new PrimitiveLongReadableDiffSets()
+    LongDiffSets EMPTY = new LongDiffSets()
     {
         @Override
         public boolean isAdded( long element )
