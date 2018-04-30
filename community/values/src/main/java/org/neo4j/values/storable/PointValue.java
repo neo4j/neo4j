@@ -469,6 +469,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         private Double latitude;
         private Double height;
         private int srid = -1;
+        private boolean allowOpenMaps = true;
 
         @Override
         public void assign( String key, Object value )
@@ -511,7 +512,10 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                 assignIntegral( key, value, i -> srid = i );
                 break;
             default:
-                throwOnUnrecognizedKey( key );
+                if ( !allowOpenMaps )
+                {
+                    throwOnUnrecognizedKey( key );
+                }
             }
         }
 

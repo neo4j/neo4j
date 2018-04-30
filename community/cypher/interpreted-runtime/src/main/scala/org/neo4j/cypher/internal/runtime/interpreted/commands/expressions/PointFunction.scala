@@ -38,6 +38,7 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
       if (containsNull(map)) {
         Values.NO_VALUE
       } else {
+        //TODO: We might consider removing this code if the PointBuilder.allowOpenMaps=true remains default
         if (value.isInstanceOf[VirtualNodeValue] || value.isInstanceOf[VirtualRelationshipValue]) {
           // We need to filter out any non-spatial properties from the map, otherwise PointValue.fromMap will throw
           val allowedKeys = PointValue.ALLOWED_KEYS
