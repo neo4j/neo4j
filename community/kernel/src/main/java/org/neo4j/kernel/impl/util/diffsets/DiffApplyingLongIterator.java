@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -79,8 +80,8 @@ class DiffApplyingLongIterator extends PrimitiveLongBaseIterator implements Prim
     DiffApplyingLongIterator( LongIterator source, Set<?> addedElements, Set<?> removedElements, @Nullable Resource resource )
     {
         this.source = source;
-        this.addedElements = addedElements;
-        this.addedElementsIterator = addedElements.iterator();
+        this.addedElements = new HashSet<>( addedElements );
+        this.addedElementsIterator = this.addedElements.iterator();
         this.removedElements = removedElements;
         this.resource = resource;
         this.phase = Phase.FILTERED_SOURCE;

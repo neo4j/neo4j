@@ -30,12 +30,10 @@ import java.util.function.Predicate;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.SuperReadableDiffSets;
 
 import static java.lang.String.format;
-import static java.util.Collections.newSetFromMap;
 
 /**
  * Super class of readable diffsets where use of {@link LongIterator} can be parameterized
@@ -215,7 +213,7 @@ abstract class SuperDiffSets<T> implements SuperReadableDiffSets<T>
 
     private Set<T> newSet()
     {
-        return newSetFromMap( new VersionedHashMap<>() );
+        return new HashSet<>();
     }
 
     private Set<T> resultSet( Set<T> coll )
