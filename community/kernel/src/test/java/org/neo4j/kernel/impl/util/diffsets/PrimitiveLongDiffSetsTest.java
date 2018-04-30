@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util.diffsets;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
@@ -28,7 +27,6 @@ import org.junit.Test;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
-import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -161,20 +159,6 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void visitAddedAndRemovedElements()
-    {
-        PrimitiveLongDiffSets diffSet = createDiffSet();
-        diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L, 11L ) );
-        diffSet.removeAll( PrimitiveLongCollections.iterator( 1L, 2L ) );
-
-        AggregatedPrimitiveLongDiffSetsVisitor visitor = new AggregatedPrimitiveLongDiffSetsVisitor();
-        diffSet.visit( visitor );
-
-        assertEquals( asSet( 9L, 10L, 11L ), toSet( visitor.getAddedElements() ) );
-        assertEquals( asSet( 1L, 2L ), toSet( visitor.getRemovedElements() ) );
-    }
-
-    @Test
     public void useCollectionsFactory()
     {
         final MutableLongSet set1 = new LongHashSet();
@@ -195,33 +179,5 @@ public class PrimitiveLongDiffSetsTest
     private static PrimitiveLongDiffSets createDiffSet()
     {
         return new PrimitiveLongDiffSets( OnHeapCollectionsFactory.INSTANCE );
-    }
-
-    private static class AggregatedPrimitiveLongDiffSetsVisitor implements PrimitiveLongDiffSetsVisitor
-    {
-        private final MutableLongSet addedElements = new LongHashSet();
-        private final MutableLongSet removedElements = new LongHashSet();
-
-        @Override
-        public void visitAdded( long element )
-        {
-            addedElements.add( element );
-        }
-
-        @Override
-        public void visitRemoved( long element )
-        {
-            removedElements.add( element );
-        }
-
-        LongSet getAddedElements()
-        {
-            return addedElements;
-        }
-
-        LongSet getRemovedElements()
-        {
-            return removedElements;
-        }
     }
 }
