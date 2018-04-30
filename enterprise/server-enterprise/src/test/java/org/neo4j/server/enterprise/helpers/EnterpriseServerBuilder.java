@@ -92,8 +92,7 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     {
         private final File configFile;
 
-        TestEnterpriseNeoServer( Config config, File configFile,
-                GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+        TestEnterpriseNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
         {
             super( config, dependencies, logProvider );
             this.configFile = configFile;

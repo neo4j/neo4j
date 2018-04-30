@@ -177,7 +177,7 @@ public class ClusterBinderTest
         Map<MemberId,CoreServerInfo> members = new HashMap<>();
 
         IntStream.range(0, minCoreHosts).forEach( i ->
-                members.put( new MemberId( UUID.randomUUID() ), TestTopology.addressesForCore( i ) ) );
+                members.put( new MemberId( UUID.randomUUID() ), TestTopology.addressesForCore( i, false ) ) );
 
         CoreTopology bootstrappableTopology = new CoreTopology( null, true, members );
 

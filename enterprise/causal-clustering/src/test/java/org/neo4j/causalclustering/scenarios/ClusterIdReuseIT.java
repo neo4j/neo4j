@@ -51,7 +51,7 @@ public class ClusterIdReuseIT
             // need to be 1 in order for the reuse count to be deterministic
             .withSharedCoreParam( GraphDatabaseSettings.record_id_batch_size, Integer.toString( 1 ) )
             .withNumberOfReadReplicas( 0 );
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @Test
     public void shouldReuseIdsInCluster() throws Exception
@@ -200,7 +200,7 @@ public class ClusterIdReuseIT
         return leader.database().getDependencyResolver().resolveDependency( clazz );
     }
 
-    private CoreClusterMember removeTwoNodes( Cluster cluster, MutableLong first, MutableLong second ) throws Exception
+    private CoreClusterMember removeTwoNodes( Cluster<?> cluster, MutableLong first, MutableLong second ) throws Exception
     {
         return cluster.coreTx( ( db, tx ) ->
         {
@@ -213,7 +213,7 @@ public class ClusterIdReuseIT
         } );
     }
 
-    private CoreClusterMember createThreeNodes( Cluster cluster, MutableLong first, MutableLong second ) throws Exception
+    private CoreClusterMember createThreeNodes( Cluster<?> cluster, MutableLong first, MutableLong second ) throws Exception
     {
         return cluster.coreTx( ( db, tx ) ->
         {

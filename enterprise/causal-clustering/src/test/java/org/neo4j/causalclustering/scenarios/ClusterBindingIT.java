@@ -72,7 +72,7 @@ public class ClusterBindingIT
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( clusterRule );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
     private FileSystemAbstraction fs;
 
     @Before

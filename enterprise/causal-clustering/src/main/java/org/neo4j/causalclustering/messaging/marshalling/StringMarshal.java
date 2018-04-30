@@ -131,6 +131,11 @@ public class StringMarshal
         try
         {
             int len = channel.getInt();
+            if ( len == NULL_STRING_LENGTH )
+            {
+                return null;
+            }
+
             byte[] stringBytes = new byte[len];
             channel.get( stringBytes, stringBytes.length );
 

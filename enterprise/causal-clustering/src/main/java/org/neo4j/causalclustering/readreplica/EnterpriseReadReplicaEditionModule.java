@@ -219,7 +219,12 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         configureDiscoveryService( discoveryServiceFactory, dependencies, config, logProvider );
 
-        topologyService = discoveryServiceFactory.topologyService( config, logProvider, platformModule.jobScheduler, myself, hostnameResolver,
+        topologyService = discoveryServiceFactory.readReplicaTopologyService(
+                config,
+                logProvider,
+                platformModule.jobScheduler,
+                myself,
+                hostnameResolver,
                 resolveStrategy( config, logProvider ) );
 
         life.add( dependencies.satisfyDependency( topologyService ) );

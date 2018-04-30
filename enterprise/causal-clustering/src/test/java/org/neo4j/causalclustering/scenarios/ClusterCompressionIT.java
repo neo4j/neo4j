@@ -74,7 +74,7 @@ public class ClusterCompressionIT
                 .withSharedCoreParam( compression_implementations, modifierProtocol.implementation() )
                 .withSharedReadReplicaParam( compression_implementations, modifierProtocol.implementation() );
 
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
          // when
         int numberOfNodes = 10;

@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.EnterpriseCluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,7 +47,7 @@ import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
 
 class Resources
 {
-    private final Cluster cluster;
+    private final Cluster<?> cluster;
     private final File clusterDir;
     private final File backupDir;
     private final FileSystemAbstraction fileSystem;
@@ -77,11 +78,11 @@ class Resources
         Map<String,String> readReplicaParams = configureTxLogRotationAndPruning( new HashMap<>(), txPrune );
 
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
-        cluster = new Cluster( clusterDir, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams, emptyMap(), readReplicaParams, emptyMap(),
-                Standard.LATEST_NAME, IpFamily.IPV4, false );
+        cluster = new EnterpriseCluster( clusterDir, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams, emptyMap(), readReplicaParams,
+                emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
     }
 
-    public Cluster cluster()
+    public Cluster<?> cluster()
     {
         return cluster;
     }

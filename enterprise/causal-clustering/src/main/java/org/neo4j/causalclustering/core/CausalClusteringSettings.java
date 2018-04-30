@@ -29,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.logging.Level;
 
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactorySelector;
 import org.neo4j.causalclustering.discovery.DnsHostnameResolver;
 import org.neo4j.causalclustering.discovery.DomainNameResolverImpl;
 import org.neo4j.causalclustering.discovery.HostnameResolver;
@@ -221,6 +222,11 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Configure the discovery type used for cluster name resolution" )
     public static final Setting<DiscoveryType> discovery_type =
             setting( "causal_clustering.discovery_type", options( DiscoveryType.class ), DiscoveryType.LIST.name() );
+
+    @Description( "Select the middleware used for cluster topology discovery" )
+    public static final Setting<DiscoveryServiceFactorySelector.DiscoveryMiddleware> middleware_type =
+            setting( "causal_clustering.middleware_type", options( DiscoveryServiceFactorySelector.DiscoveryMiddleware.class ),
+                    DiscoveryServiceFactorySelector.DEFAULT.name() );
 
     @Description( "Prevents the network middleware from dumping its own logs. Defaults to true." )
     public static final Setting<Boolean> disable_middleware_logging =

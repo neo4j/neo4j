@@ -48,7 +48,7 @@ public class CausalClusteringProceduresIT
             .withNumberOfCoreMembers( 2 )
             .withNumberOfReadReplicas( 1 );
 
-    private static Cluster cluster;
+    private static Cluster<?> cluster;
 
     @BeforeClass
     public static void setup() throws Exception

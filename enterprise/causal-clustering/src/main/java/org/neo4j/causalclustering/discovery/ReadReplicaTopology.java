@@ -24,6 +24,7 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -33,7 +34,7 @@ import static java.util.Collections.emptyMap;
 
 public class ReadReplicaTopology implements Topology<ReadReplicaInfo>
 {
-    static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptyMap() );
+    public static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptyMap() );
 
     private final Map<MemberId,ReadReplicaInfo> readReplicaMembers;
 
@@ -74,5 +75,27 @@ public class ReadReplicaTopology implements Topology<ReadReplicaInfo>
         Map<MemberId, ReadReplicaInfo> filteredMembers = filterHostsByDb( members(), dbName );
 
         return new ReadReplicaTopology( filteredMembers );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        ReadReplicaTopology that = (ReadReplicaTopology) o;
+        return Objects.equals( readReplicaMembers, that.readReplicaMembers );
+    }
+
+    @Override
+    public int hashCode()
+    {
+
+        return Objects.hash( readReplicaMembers );
     }
 }

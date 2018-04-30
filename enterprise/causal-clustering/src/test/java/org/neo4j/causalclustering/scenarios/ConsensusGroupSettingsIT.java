@@ -45,7 +45,7 @@ public class ConsensusGroupSettingsIT
             .withInstanceCoreParam( CausalClusteringSettings.leader_election_timeout, value -> "1s" )
             .withTimeout( 1000, SECONDS );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @Before
     public void setup() throws Exception

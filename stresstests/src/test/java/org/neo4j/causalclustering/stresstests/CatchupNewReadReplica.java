@@ -50,7 +50,7 @@ class CatchupNewReadReplica extends Workload
 {
     private final Predicate<Throwable> isStoreClosed = new IsStoreClosed();
     private final FileSystemAbstraction fs;
-    private Cluster cluster;
+    private Cluster<?> cluster;
     private boolean deleteStore;
 
     CatchupNewReadReplica( Control control, Resources resources )

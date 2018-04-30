@@ -65,20 +65,21 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
     protected final File databasesDirectory;
 
     public ReadReplica( File parentDir, int serverId, int boltPort, int httpPort, int txPort, int backupPort,
-                        DiscoveryServiceFactory discoveryServiceFactory,
-                        List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
-                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors,
-                        String advertisedAddress, String listenAddress )
+            int discoveryPort, DiscoveryServiceFactory discoveryServiceFactory,
+            List<AdvertisedSocketAddress> coreMemberDiscoveryAddresses, Map<String,String> extraParams,
+            Map<String,IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors,
+            String advertisedAddress, String listenAddress )
     {
         this.serverId = serverId;
 
-        String initialHosts = coreMemberHazelcastAddresses.stream().map( AdvertisedSocketAddress::toString )
+        String initialHosts = coreMemberDiscoveryAddresses.stream().map( AdvertisedSocketAddress::toString )
                 .collect( joining( "," ) );
         boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
 
         Map<String,String> config = stringMap();
         config.put( "dbms.mode", "READ_REPLICA" );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialHosts );
+        config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress( listenAddress, discoveryPort ) );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
         config.put( GraphDatabaseSettings.record_format.name(), recordFormat );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );

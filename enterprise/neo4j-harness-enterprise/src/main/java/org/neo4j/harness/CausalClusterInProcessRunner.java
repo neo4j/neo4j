@@ -24,24 +24,7 @@ package org.neo4j.harness;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.harness.internal.EnterpriseInProcessServerBuilder;
-import org.neo4j.kernel.configuration.BoltConnector;
-import org.neo4j.kernel.configuration.HttpConnector;
-import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ServerSettings;
-
-import static java.util.Collections.synchronizedList;
 import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
 
 /**

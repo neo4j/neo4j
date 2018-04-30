@@ -40,7 +40,7 @@ public class SampleData
     {
     }
 
-    public static void createSomeData( int items, Cluster cluster ) throws Exception
+    public static void createSomeData( int items, Cluster<?> cluster ) throws Exception
     {
         for ( int i = 0; i < items; i++ )
         {

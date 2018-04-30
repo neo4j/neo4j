@@ -30,7 +30,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.graphdb.Node;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -68,7 +67,7 @@ public class WillNotBecomeLeaderIT
             }
         } );
 
-        Cluster cluster = clusterRule.createCluster();
+        Cluster<?> cluster = clusterRule.createCluster();
         cluster.start();
         assertEquals( leaderId, cluster.awaitLeader().serverId() );
 

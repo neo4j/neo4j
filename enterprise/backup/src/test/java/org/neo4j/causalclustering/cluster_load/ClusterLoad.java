@@ -26,7 +26,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 
 public interface ClusterLoad
 {
-    void start( Cluster cluster ) throws Exception;
+    void start( Cluster<?> cluster ) throws Exception;
 
     void stop();
 }

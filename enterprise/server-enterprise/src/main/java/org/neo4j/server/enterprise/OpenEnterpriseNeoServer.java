@@ -33,6 +33,8 @@ import java.util.regex.Pattern;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.EnterpriseDiscoveryServiceFactorySelector;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
@@ -83,17 +85,23 @@ public class OpenEnterpriseNeoServer extends CommunityNeoServer
         return new EnterpriseGraphDatabase( storeDir, config, dependencies );
     };
 
-    private static final GraphFactory CORE_FACTORY = ( config, dependencies ) ->
+    private static GraphFactory coreFactory( DiscoveryServiceFactory discoveryServiceFactory )
     {
-        File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
-        return new CoreGraphDatabase( storeDir, config, dependencies );
-    };
+        return ( config, dependencies ) ->
+        {
+            File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
+            return new CoreGraphDatabase( storeDir, config, dependencies, discoveryServiceFactory );
+        };
+    }
 
-    private static final GraphFactory READ_REPLICA_FACTORY = ( config, dependencies ) ->
+    private static GraphFactory readReplicaFactory( DiscoveryServiceFactory discoveryServiceFactory )
     {
-        File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
-        return new ReadReplicaGraphDatabase( storeDir, config, dependencies );
-    };
+        return ( config, dependencies ) ->
+        {
+            File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
+            return new ReadReplicaGraphDatabase( storeDir, config, dependencies, discoveryServiceFactory );
+        };
+    }
 
     public OpenEnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
     {
@@ -110,6 +118,8 @@ public class OpenEnterpriseNeoServer extends CommunityNeoServer
     {
         final Mode mode = config.get( EnterpriseEditionSettings.mode );
 
+        final DiscoveryServiceFactory discoveryServiceFactory = new EnterpriseDiscoveryServiceFactorySelector().select( config );
+
         switch ( mode )
         {
         case HA:
@@ -118,9 +128,9 @@ public class OpenEnterpriseNeoServer extends CommunityNeoServer
             // Should never reach here because this mode is handled separately by the scripts.
             throw new IllegalArgumentException( "The server cannot be started in ARBITER mode." );
         case CORE:
-            return lifecycleManagingDatabase( CORE_FACTORY );
+            return lifecycleManagingDatabase( coreFactory( discoveryServiceFactory ) );
         case READ_REPLICA:
-            return lifecycleManagingDatabase( READ_REPLICA_FACTORY );
+            return lifecycleManagingDatabase( readReplicaFactory( discoveryServiceFactory ) );
         default:
             return lifecycleManagingDatabase( ENTERPRISE_FACTORY );
         }

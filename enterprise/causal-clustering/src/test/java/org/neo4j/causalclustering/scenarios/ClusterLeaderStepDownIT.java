@@ -50,7 +50,7 @@ public class ClusterLeaderStepDownIT
     public void leaderShouldStepDownWhenFollowersAreGone() throws Throwable
     {
         // when
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         //Do some work to make sure the cluster is operating normally.
         CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->

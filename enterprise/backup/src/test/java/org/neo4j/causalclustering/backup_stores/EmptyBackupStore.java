@@ -30,7 +30,7 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 public class EmptyBackupStore extends AbstractStoreGenerator
 {
     @Override
-    CoreClusterMember createData( Cluster cluster )
+    CoreClusterMember createData( Cluster<?> cluster )
     {
         return cluster.coreMembers().iterator().next();
     }

@@ -62,7 +62,7 @@ public class ClusterIndexProcedureIT
                     .withNumberOfReadReplicas( 3 )
                     .withTimeout( 1000, SECONDS );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @Before
     public void setup() throws Exception

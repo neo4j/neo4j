@@ -20,7 +20,7 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.scenarios;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -37,6 +37,13 @@ import java.util.concurrent.Future;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.discovery.CoreTopologyService;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.HostnameResolver;
+import org.neo4j.causalclustering.discovery.NoOpHostnameResolver;
+import org.neo4j.causalclustering.discovery.RaftCoreTopologyConnector;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.TopologyServiceNoRetriesStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -123,6 +130,7 @@ public class SharedDiscoveryServiceIT
                 RaftMachine raftMock = mock( RaftMachine.class );
                 RaftCoreTopologyConnector tc = new RaftCoreTopologyConnector( topologyService,
                         raftMock, CausalClusteringSettings.database.getDefaultValue() );
+                topologyService.init();
                 topologyService.start();
                 tc.start();
 

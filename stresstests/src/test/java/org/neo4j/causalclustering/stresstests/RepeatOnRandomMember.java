@@ -28,7 +28,7 @@ import org.neo4j.helper.Workload;
 
 abstract class RepeatOnRandomMember extends Workload
 {
-    private final Cluster cluster;
+    private final Cluster<?> cluster;
 
     RepeatOnRandomMember( Control control, Resources resources )
     {

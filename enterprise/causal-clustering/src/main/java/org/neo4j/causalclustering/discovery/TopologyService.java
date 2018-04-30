@@ -36,6 +36,9 @@ public interface TopologyService extends Lifecycle
 {
     String localDBName();
 
+    // It is perhaps confusing (Or even error inducing) that this core Topology will always contain the cluster id
+    // for the database local to the host upon which this method is called.
+    // TODO: evaluate returning clusterId = null for global Topologies returned by allCoreServers()
     CoreTopology allCoreServers();
 
     CoreTopology localCoreServers();

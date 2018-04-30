@@ -67,7 +67,7 @@ public class ReadReplicaToReadReplicaCatchupIT
     public void shouldEventuallyPullTransactionAcrossReadReplicas() throws Throwable
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         int numberOfNodesToCreate = 100;
 
         cluster.coreTx( ( db, tx ) ->
@@ -106,7 +106,7 @@ public class ReadReplicaToReadReplicaCatchupIT
     public void shouldCatchUpFromCoresWhenPreferredReadReplicasAreUnavailable() throws Throwable
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         int numberOfNodes = 1;
         int firstReadReplicaLocalMemberId = 101;
 
@@ -150,7 +150,7 @@ public class ReadReplicaToReadReplicaCatchupIT
         checkDataHasReplicatedToReadReplicas( cluster, numberOfNodes * 2 );
     }
 
-    static void checkDataHasReplicatedToReadReplicas( Cluster cluster, long numberOfNodes ) throws Exception
+    static void checkDataHasReplicatedToReadReplicas( Cluster<?> cluster, long numberOfNodes ) throws Exception
     {
         for ( final ReadReplica server : cluster.readReplicas() )
         {

@@ -22,12 +22,12 @@ package org.neo4j.ssl;
 import java.util.function.Function;
 import javax.net.ssl.SSLEngine;
 
-class EssentialEngineModifications implements Function<SSLEngine,SSLEngine>
+public class EssentialEngineModifications implements Function<SSLEngine,SSLEngine>
 {
     private final String[] tlsVersions;
     private final boolean isClient;
 
-    EssentialEngineModifications( String[] tlsVersions, boolean isClient )
+    public EssentialEngineModifications( String[] tlsVersions, boolean isClient )
     {
         this.tlsVersions = tlsVersions;
         this.isClient = isClient;

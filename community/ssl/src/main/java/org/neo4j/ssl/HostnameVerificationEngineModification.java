@@ -23,7 +23,7 @@ import java.util.function.Function;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
-class HostnameVerificationEngineModification implements Function<SSLEngine,SSLEngine>
+public class HostnameVerificationEngineModification implements Function<SSLEngine,SSLEngine>
 {
     /**
      * Apply modifications to engine to enable hostname verification (client side only)

@@ -53,7 +53,9 @@ class OpenEnterpriseNeoServerTest
         Config config = Config.builder().withServerDefaults().withSetting( mode, Mode.SINGLE.name() )
                 .withSetting( GraphDatabaseSettings.neo4j_home, testDirectory.storeDir().getAbsolutePath() ).build();
         GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() );
-        OpenEnterpriseNeoServer server = new OpenEnterpriseNeoServer( config, dependencies, NullLogProvider.getInstance() );
+        OpenEnterpriseNeoServer server =
+                new OpenEnterpriseNeoServer( config, dependencies, NullLogProvider.getInstance() );
+
         server.start();
         try
         {

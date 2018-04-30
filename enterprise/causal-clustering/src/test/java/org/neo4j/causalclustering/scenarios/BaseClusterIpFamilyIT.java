@@ -28,54 +28,39 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.helpers.DataCreator;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
-import static org.neo4j.causalclustering.discovery.IpFamily.IPV4;
-import static org.neo4j.causalclustering.discovery.IpFamily.IPV6;
 import static org.neo4j.causalclustering.helpers.DataCreator.countNodes;
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
 
 @RunWith( Parameterized.class )
-public class ClusterIpFamilyIT
+public abstract class BaseClusterIpFamilyIT
 {
-
-    @Parameterized.Parameters( name = "{0} {1} useWildcard={2}" )
-    public static Collection<Object[]> data()
+    protected BaseClusterIpFamilyIT( Supplier<DiscoveryServiceFactory> discoveryServiceFactory, IpFamily ipFamily, boolean useWildcard )
     {
-        return Arrays.asList( new Object[][]{
-                {SHARED, IPV4, false},
-                {SHARED, IPV6, true},
-
-                {HAZELCAST, IPV4, false},
-                {HAZELCAST, IPV6, false},
-
-                {HAZELCAST, IPV4, true},
-                {HAZELCAST, IPV6, true},
-        } );
-    }
-
-    public ClusterIpFamilyIT( DiscoveryServiceType discoveryServiceType, IpFamily ipFamily, boolean useWildcard )
-    {
-        clusterRule.withDiscoveryServiceType( discoveryServiceType );
+        clusterRule.withDiscoveryServiceType( discoveryServiceFactory );
         clusterRule.withIpFamily( ipFamily ).useWildcard( useWildcard );
     }
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
-            .withNumberOfReadReplicas( 3 );
+            .withNumberOfReadReplicas( 3 )
+            .withSharedCoreParam( CausalClusteringSettings.disable_middleware_logging, "false" )
+            .withSharedReadReplicaParam( CausalClusteringSettings.disable_middleware_logging, "false" )
+            .withSharedCoreParam( CausalClusteringSettings.middleware_logging_level, "0" )
+            .withSharedReadReplicaParam( CausalClusteringSettings.middleware_logging_level, "0" );;
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @Before
     public void setup() throws Exception

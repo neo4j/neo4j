@@ -79,7 +79,7 @@ import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
 import static org.neo4j.util.concurrent.Futures.combine;
 
-public class Cluster
+public abstract class Cluster<T extends DiscoveryServiceFactory>
 {
     private static final int DEFAULT_TIMEOUT_MS = 120_000;
     private static final int DEFAULT_CLUSTER_SIZE = 3;
@@ -90,7 +90,7 @@ public class Cluster
     private final Map<String,String> readReplicaParams;
     private final Map<String,IntFunction<String>> instanceReadReplicaParams;
     private final String recordFormat;
-    protected final DiscoveryServiceFactory discoveryServiceFactory;
+    protected final T discoveryServiceFactory;
     protected final String listenAddress;
     protected final String advertisedAddress;
     private final Set<String> dbNames;
@@ -101,7 +101,7 @@ public class Cluster
     private int highestReplicaServerId;
 
     public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
-            DiscoveryServiceFactory discoveryServiceFactory,
+            T discoveryServiceFactory,
             Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
             Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
             String recordFormat, IpFamily ipFamily, boolean useWildcard )
@@ -112,7 +112,7 @@ public class Cluster
     }
 
     public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
-            DiscoveryServiceFactory discoveryServiceFactory,
+            T discoveryServiceFactory,
             Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
             Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
             String recordFormat, IpFamily ipFamily, boolean useWildcard, Set<String> dbNames )
@@ -572,68 +572,20 @@ public class Cluster
         highestCoreServerId = noOfCoreMembers - 1;
     }
 
-    protected CoreClusterMember createCoreClusterMember( int serverId,
-                                                       int hazelcastPort,
+    protected abstract CoreClusterMember createCoreClusterMember( int serverId,
+                                                       int discoveryPort,
                                                        int clusterSize,
                                                        List<AdvertisedSocketAddress> initialHosts,
                                                        String recordFormat,
                                                        Map<String, String> extraParams,
-                                                       Map<String, IntFunction<String>> instanceExtraParams )
-    {
-        int txPort = PortAuthority.allocatePort();
-        int raftPort = PortAuthority.allocatePort();
-        int boltPort = PortAuthority.allocatePort();
-        int httpPort = PortAuthority.allocatePort();
-        int backupPort = PortAuthority.allocatePort();
+                                                       Map<String, IntFunction<String>> instanceExtraParams );
 
-        return new CoreClusterMember(
-                serverId,
-                hazelcastPort,
-                txPort,
-                raftPort,
-                boltPort,
-                httpPort,
-                backupPort,
-                clusterSize,
-                initialHosts,
-                discoveryServiceFactory,
-                recordFormat,
-                parentDir,
-                extraParams,
-                instanceExtraParams,
-                listenAddress,
-                advertisedAddress
-        );
-    }
-
-    protected ReadReplica createReadReplica( int serverId,
+    protected abstract ReadReplica createReadReplica( int serverId,
                                            List<AdvertisedSocketAddress> initialHosts,
                                            Map<String, String> extraParams,
                                            Map<String, IntFunction<String>> instanceExtraParams,
                                            String recordFormat,
-                                           Monitors monitors )
-    {
-        int boltPort = PortAuthority.allocatePort();
-        int httpPort = PortAuthority.allocatePort();
-        int txPort = PortAuthority.allocatePort();
-        int backupPort = PortAuthority.allocatePort();
-
-        return new ReadReplica(
-                parentDir,
-                serverId,
-                boltPort,
-                httpPort,
-                txPort,
-                backupPort, discoveryServiceFactory,
-                initialHosts,
-                extraParams,
-                instanceExtraParams,
-                recordFormat,
-                monitors,
-                advertisedAddress,
-                listenAddress
-        );
-    }
+                                           Monitors monitors );
 
     public void startCoreMembers() throws InterruptedException, ExecutionException
     {

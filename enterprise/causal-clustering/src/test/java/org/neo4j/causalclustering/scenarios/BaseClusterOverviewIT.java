@@ -37,11 +37,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -51,6 +51,7 @@ import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
@@ -80,21 +81,20 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureNa
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )
-public class ClusterOverviewIT
+public abstract class BaseClusterOverviewIT
 {
     @Rule
     public ClusterRule clusterRule = new ClusterRule()
-            .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" );
+            .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
+            .withSharedReadReplicaParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
+            .withSharedCoreParam( CausalClusteringSettings.disable_middleware_logging, "false" )
+            .withSharedReadReplicaParam( CausalClusteringSettings.disable_middleware_logging, "false" )
+            .withSharedCoreParam( CausalClusteringSettings.middleware_logging_level, "0" )
+            .withSharedReadReplicaParam( CausalClusteringSettings.middleware_logging_level, "0" );
 
-    @Parameterized.Parameters( name = "discovery-{0}" )
-    public static Collection<DiscoveryServiceType> data()
+    protected BaseClusterOverviewIT( Supplier<DiscoveryServiceFactory> discoveryServiceFactory )
     {
-        return Arrays.asList( DiscoveryServiceType.values() );
-    }
-
-    public ClusterOverviewIT( DiscoveryServiceType discoveryServiceType )
-    {
-        clusterRule.withDiscoveryServiceType( discoveryServiceType );
+        clusterRule.withDiscoveryServiceType( discoveryServiceFactory );
     }
 
     @Test
@@ -106,7 +106,7 @@ public class ClusterOverviewIT
         clusterRule.withNumberOfReadReplicas( 0 );
 
         // when
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         Matcher<List<MemberInfo>> expected = allOf(
                 containsMemberAddresses( cluster.coreMembers() ),
@@ -126,7 +126,7 @@ public class ClusterOverviewIT
         clusterRule.withNumberOfReadReplicas( replicaCount );
 
         // when
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         Matcher<List<MemberInfo>> expected = allOf(
                 containsAllMemberAddresses( cluster.coreMembers(), cluster.readReplicas() ),
@@ -146,7 +146,7 @@ public class ClusterOverviewIT
         clusterRule.withNumberOfReadReplicas( readReplicas );
 
         // when
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         cluster.shutdownCoreMembers();
         cluster.startCoreMembers();
 
@@ -166,7 +166,7 @@ public class ClusterOverviewIT
         clusterRule.withNumberOfCoreMembers( initialCoreMembers );
         clusterRule.withNumberOfReadReplicas( 0 );
 
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         // when
         int extraCoreMembers = 2;
@@ -186,15 +186,15 @@ public class ClusterOverviewIT
     {
         // given
         int coreMembers = 3;
-        int initialReadReplicas = 3;
+        int initialReadReplicas = 2;
         clusterRule.withNumberOfCoreMembers( coreMembers );
         clusterRule.withNumberOfReadReplicas( initialReadReplicas );
 
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         // when
-        cluster.addReadReplicaWithId( 3 ).start();
-        cluster.addReadReplicaWithId( 4 ).start();
+        cluster.addReadReplicaWithId( initialReadReplicas ).start();
+        cluster.addReadReplicaWithId( initialReadReplicas + 1 ).start();
 
         Matcher<List<MemberInfo>> expected = allOf(
                 containsAllMemberAddresses( cluster.coreMembers(), cluster.readReplicas() ),
@@ -215,7 +215,7 @@ public class ClusterOverviewIT
         clusterRule.withNumberOfCoreMembers( coreMembers );
         clusterRule.withNumberOfReadReplicas( initialReadReplicas );
 
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         assertAllEventualOverviews( cluster, containsRole( READ_REPLICA, initialReadReplicas ) );
 
@@ -235,7 +235,7 @@ public class ClusterOverviewIT
         clusterRule.withNumberOfCoreMembers( coreMembers );
         clusterRule.withNumberOfReadReplicas( 0 );
 
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         assertAllEventualOverviews( cluster, allOf( containsRole( LEADER, 1 ), containsRole( FOLLOWER, coreMembers - 1 ) ) );
 
@@ -252,9 +252,9 @@ public class ClusterOverviewIT
     public void shouldDiscoverTimeoutBasedLeaderStepdown() throws Exception
     {
         clusterRule.withNumberOfCoreMembers( 3 );
-        clusterRule.withNumberOfReadReplicas( 2 );
+        clusterRule.withNumberOfReadReplicas( 0 );
 
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         List<CoreClusterMember> followers = cluster.getAllMembersWithRole( Role.FOLLOWER );
         CoreClusterMember leader = cluster.getMemberWithRole( Role.LEADER );
         followers.forEach( CoreClusterMember::shutdown );
@@ -266,9 +266,9 @@ public class ClusterOverviewIT
     public void shouldDiscoverGreaterTermBasedLeaderStepdown() throws Exception
     {
         int originalCoreMembers = 3;
-        clusterRule.withNumberOfCoreMembers( originalCoreMembers );
+        clusterRule.withNumberOfCoreMembers( originalCoreMembers ).withNumberOfReadReplicas( 0 );
 
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         CoreClusterMember leader = cluster.awaitLeader();
         leader.config().augment( CausalClusteringSettings.refuse_to_be_leader, Settings.TRUE );
 
@@ -283,12 +283,12 @@ public class ClusterOverviewIT
                 not( equalTo( preElectionOverview ) ) ), leader, "core" );
     }
 
-    private void assertAllEventualOverviews( Cluster cluster, Matcher<List<MemberInfo>> expected ) throws KernelException, InterruptedException
+    private void assertAllEventualOverviews( Cluster<?> cluster, Matcher<List<MemberInfo>> expected ) throws KernelException, InterruptedException
     {
         assertAllEventualOverviews( cluster, expected, Collections.emptySet(), Collections.emptySet()  );
     }
 
-    private void assertAllEventualOverviews( Cluster cluster, Matcher<List<MemberInfo>> expected, Set<Integer> excludedCores, Set<Integer> excludedRRs )
+    private void assertAllEventualOverviews( Cluster<?> cluster, Matcher<List<MemberInfo>> expected, Set<Integer> excludedCores, Set<Integer> excludedRRs )
             throws KernelException, InterruptedException
     {
         for ( CoreClusterMember core : cluster.coreMembers() )

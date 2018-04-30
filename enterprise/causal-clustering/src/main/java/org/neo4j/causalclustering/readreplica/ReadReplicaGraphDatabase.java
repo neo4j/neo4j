@@ -27,7 +27,6 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
@@ -43,9 +42,9 @@ public class ReadReplicaGraphDatabase extends GraphDatabaseFacade
     {
     }
 
-    public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies )
+    public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
-        this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory(), new MemberId( UUID.randomUUID() ) );
+        this( storeDir, config, dependencies, discoveryServiceFactory, new MemberId( UUID.randomUUID() ) );
     }
 
     public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies,

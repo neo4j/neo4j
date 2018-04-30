@@ -34,7 +34,7 @@ public interface DiscoveryServiceFactory
             HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy,
             Monitors monitors );
 
-    TopologyService topologyService( Config config, LogProvider logProvider,
+    TopologyService readReplicaTopologyService( Config config, LogProvider logProvider,
             JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy );
 }

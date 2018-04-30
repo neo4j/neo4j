@@ -60,6 +60,7 @@ import static org.neo4j.causalclustering.upstream.strategies.ConnectToRandomCore
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class UserDefinedConfigurationStrategyTest
+
 {
     @Test
     public void shouldPickTheFirstMatchingServerIfCore()
@@ -249,27 +250,23 @@ public class UserDefinedConfigurationStrategyTest
             }
 
             @Override
-            public void init()
+            public void init() throws Throwable
             {
-
             }
 
             @Override
-            public void start()
+            public void start() throws Throwable
             {
-
             }
 
             @Override
-            public void stop()
+            public void stop() throws Throwable
             {
-
             }
 
             @Override
-            public void shutdown()
+            public void shutdown() throws Throwable
             {
-
             }
         };
     }

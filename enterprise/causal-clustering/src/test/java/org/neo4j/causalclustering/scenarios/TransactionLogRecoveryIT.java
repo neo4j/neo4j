@@ -59,7 +59,7 @@ public class TransactionLogRecoveryIT
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 3 );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
     private FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Before

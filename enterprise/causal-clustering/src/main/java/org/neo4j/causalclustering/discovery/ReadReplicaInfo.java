@@ -22,9 +22,14 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Collections.emptySet;
 
@@ -81,5 +86,39 @@ public class ReadReplicaInfo implements DiscoveryServerInfo
                ", clientConnectorAddresses=" + clientConnectorAddresses +
                ", groups=" + groups +
                '}';
+    }
+
+    public static ReadReplicaInfo from( Config config )
+    {
+        AdvertisedSocketAddress transactionSource = config.get( CausalClusteringSettings.transaction_advertised_address );
+        ClientConnectorAddresses clientConnectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
+        String dbName = config.get( CausalClusteringSettings.database );
+        List<String> groupList = config.get( CausalClusteringSettings.server_groups );
+        Set<String> groups = new HashSet<>( groupList );
+
+        return new ReadReplicaInfo( clientConnectorAddresses, transactionSource, groups, dbName );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        ReadReplicaInfo that = (ReadReplicaInfo) o;
+        return Objects.equals( catchupServerAddress, that.catchupServerAddress ) && Objects.equals( clientConnectorAddresses, that.clientConnectorAddresses ) &&
+                Objects.equals( groups, that.groups ) && Objects.equals( dbName, that.dbName );
+    }
+
+    @Override
+    public int hashCode()
+    {
+
+        return Objects.hash( catchupServerAddress, clientConnectorAddresses, groups, dbName );
     }
 }

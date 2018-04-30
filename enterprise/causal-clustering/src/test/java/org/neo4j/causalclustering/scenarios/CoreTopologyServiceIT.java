@@ -20,13 +20,23 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.scenarios;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.discovery.CoreTopologyService;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.HostnameResolver;
+import org.neo4j.causalclustering.discovery.NoOpHostnameResolver;
+import org.neo4j.causalclustering.discovery.TopologyServiceNoRetriesStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -38,10 +48,17 @@ import org.neo4j.ports.allocation.PortAuthority;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.initial_discovery_members;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class HazelcastCoreTopologyServiceTest
+public abstract class CoreTopologyServiceIT
 {
+    private final Supplier<DiscoveryServiceFactory> discoveryServiceType;
+
+    protected CoreTopologyServiceIT( Supplier<DiscoveryServiceFactory> discoveryServiceType )
+    {
+        this.discoveryServiceType = discoveryServiceType;
+    }
+
     @Test( timeout = 120_000 )
-    public void shouldBeAbleToStartAndStoreWithoutSuccessfulJoin()
+    public void shouldBeAbleToStartAndStopWithoutSuccessfulJoin() throws Throwable
     {
         CentralJobScheduler jobScheduler = new CentralJobScheduler();
         jobScheduler.init();
@@ -49,9 +66,11 @@ public class HazelcastCoreTopologyServiceTest
 
         // Random members that does not exists, discovery will never succeed
         String initialHosts = "localhost:" + PortAuthority.allocatePort() + ",localhost:" + PortAuthority.allocatePort();
-        Config config = config();
+        Config config = Config.defaults();
         config.augment( initial_discovery_members, initialHosts );
-        HazelcastCoreTopologyService service = new HazelcastCoreTopologyService( config,
+        config.augment( CausalClusteringSettings.discovery_listen_address, "localhost:" + PortAuthority.allocatePort() );
+        CoreTopologyService service = discoveryServiceType.get().coreTopologyService(
+                config,
                 new MemberId( UUID.randomUUID() ),
                 jobScheduler,
                 NullLogProvider.getInstance(),
@@ -59,16 +78,10 @@ public class HazelcastCoreTopologyServiceTest
                 hostnameResolver,
                 new TopologyServiceNoRetriesStrategy(),
                 new Monitors() );
+        service.init();
         service.start();
         service.stop();
+        service.shutdown();
     }
 
-    private static Config config()
-    {
-        return Config.defaults( stringMap(
-                CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
-                CausalClusteringSettings.transaction_advertised_address.name(), "127.0.0.1:7001",
-                new BoltConnector( "bolt" ).enabled.name(), "true",
-                new BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:7002" ) );
-    }
 }

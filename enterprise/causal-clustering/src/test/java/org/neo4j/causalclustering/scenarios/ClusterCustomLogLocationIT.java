@@ -54,7 +54,7 @@ public class ClusterCustomLogLocationIT
     @Test
     public void clusterWithCustomTransactionLogLocation() throws Exception
     {
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         for ( int i = 0; i < 10; i++ )
         {

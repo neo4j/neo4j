@@ -296,7 +296,9 @@ public final class HazelcastClusterTopology
                     socketAddress( attrMap.get( RAFT_SERVER ), AdvertisedSocketAddress::new ),
                     socketAddress( attrMap.get( TRANSACTION_SERVER ), AdvertisedSocketAddress::new ),
                     ClientConnectorAddresses.fromString( attrMap.get( CLIENT_CONNECTOR_ADDRESSES ) ),
-                    asSet( serverGroupsMMap.get( attrMap.get( MEMBER_UUID ) ) ), attrMap.get( MEMBER_DB_NAME ) );
+                    asSet( serverGroupsMMap.get( attrMap.get( MEMBER_UUID ) ) ),
+                    attrMap.get( MEMBER_DB_NAME ),
+                    member.getBooleanAttribute( REFUSE_TO_BE_LEADER_KEY ) );
 
             MemberId memberId = new MemberId( UUID.fromString( attrMap.get( MEMBER_UUID ) ) );
             coreMembers.put( memberId, coreServerInfo );

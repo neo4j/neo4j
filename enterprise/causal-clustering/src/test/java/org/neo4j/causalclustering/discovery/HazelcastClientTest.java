@@ -100,7 +100,6 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class HazelcastClientTest
 {
     private MemberId myself = new MemberId( UUID.randomUUID() );
-    private TopologyServiceRetryStrategy topologyServiceRetryStrategy = new TopologyServiceNoRetriesStrategy();
     private static final java.util.function.Supplier<HashMap<String, String>> DEFAULT_SETTINGS = () -> {
         HashMap<String, String> settings = new HashMap<>();
 
@@ -114,13 +113,6 @@ public class HazelcastClientTest
         return settings;
     };
 
-    private Config config( HashMap<String, String> settings )
-    {
-        HashMap<String, String> defaults = DEFAULT_SETTINGS.get();
-        defaults.putAll( settings );
-        return Config.defaults( defaults );
-    }
-
     private Config config( String key, String value )
     {
         HashMap<String, String> defaults = DEFAULT_SETTINGS.get();
@@ -130,7 +122,6 @@ public class HazelcastClientTest
 
     private Config config()
     {
-
         return Config.defaults( DEFAULT_SETTINGS.get() );
     }
 
@@ -153,7 +144,7 @@ public class HazelcastClientTest
         return client;
     }
 
-    private HazelcastClient startedClientWithMembers( Set<Member> members, Config config )
+    private HazelcastClient startedClientWithMembers( Set<Member> members, Config config ) throws Throwable
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -161,6 +152,7 @@ public class HazelcastClientTest
         when( cluster.getMembers() ).thenReturn( members );
 
         HazelcastClient client = hzClient( jobScheduler, cluster, config );
+        client.init();
         client.start();
         jobScheduler.runJob();
 
@@ -168,7 +160,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnTopologyUsingHazelcastMembers()
+    public void shouldReturnTopologyUsingHazelcastMembers() throws Throwable
     {
         // given
         Set<Member> members = asSet( makeMember( 1 ), makeMember( 2 ) );
@@ -182,7 +174,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void localAndAllTopologiesShouldMatchForSingleDBName()
+    public void localAndAllTopologiesShouldMatchForSingleDBName() throws Throwable
     {
         // given
         Set<Member> members = asSet( makeMember( 1 ), makeMember( 2 ) );
@@ -194,7 +186,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void localAndAllTopologiesShouldDifferForMultipleDBNames()
+    public void localAndAllTopologiesShouldDifferForMultipleDBNames() throws Throwable
     {
         // given
         Set<Member> members = asSet( makeMember( 1, "foo" ), makeMember( 2, "bar" ) );
@@ -207,7 +199,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void allTopologyShouldContainAllMembers()
+    public void allTopologyShouldContainAllMembers() throws Throwable
     {
         // given
         Set<Member> members = asSet( makeMember( 1, "foo" ), makeMember( 2, "bar" ) );
@@ -219,7 +211,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldNotReconnectWhileHazelcastRemainsAvailable()
+    public void shouldNotReconnectWhileHazelcastRemainsAvailable() throws Throwable
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -242,6 +234,7 @@ public class HazelcastClientTest
         when( cluster.getMembers() ).thenReturn( members );
 
         // when
+        client.init();
         client.start();
         jobScheduler.runJob();
 
@@ -257,7 +250,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast()
+    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast() throws Throwable
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -283,6 +276,7 @@ public class HazelcastClientTest
         when( cluster.getMembers() ).thenReturn( members );
 
         // when
+        client.init();
         client.start();
         jobScheduler.runJob();
         CoreTopology topology = client.allCoreServers();
@@ -291,7 +285,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldRegisterReadReplicaInTopology()
+    public void shouldRegisterReadReplicaInTopology() throws Throwable
     {
         // given
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -328,6 +322,7 @@ public class HazelcastClientTest
         HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
 
         // when
+        hazelcastClient.init();
         hazelcastClient.start();
         jobScheduler.runJob();
 
@@ -336,7 +331,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldRemoveReadReplicasOnGracefulShutdown()
+    public void shouldRemoveReadReplicasOnGracefulShutdown() throws Throwable
     {
         // given
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -371,6 +366,7 @@ public class HazelcastClientTest
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
 
+        hazelcastClient.init();
         hazelcastClient.start();
 
         jobScheduler.runJob();
@@ -383,7 +379,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldSwallowNPEFromHazelcast()
+    public void shouldSwallowNPEFromHazelcast() throws Throwable
     {
         // given
         Endpoint endpoint = mock( Endpoint.class );
@@ -402,6 +398,7 @@ public class HazelcastClientTest
 
         HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
 
+        hazelcastClient.init();
         hazelcastClient.start();
 
         jobScheduler.runJob();

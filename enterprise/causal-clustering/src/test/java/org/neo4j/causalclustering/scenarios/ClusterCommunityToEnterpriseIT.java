@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.EnterpriseCluster;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -47,7 +48,7 @@ import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually
 
 public class ClusterCommunityToEnterpriseIT
 {
-    private Cluster cluster;
+    private Cluster<?> cluster;
     private FileSystemAbstraction fsa;
 
     @Rule
@@ -60,7 +61,7 @@ public class ClusterCommunityToEnterpriseIT
     {
         fsa = fileSystemRule.get();
 
-        cluster = new Cluster( testDir.directory( "cluster" ), 3, 0,
+        cluster = new EnterpriseCluster( testDir.directory( "cluster" ), 3, 0,
                 new SharedDiscoveryServiceFactory(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), HighLimit.NAME,
                 IpFamily.IPV4, false );
     }

@@ -176,6 +176,11 @@ public class SslPolicy
         return clientAuth;
     }
 
+    public boolean isVerifyHostname()
+    {
+        return verifyHostname;
+    }
+
     @Override
     public String toString()
     {

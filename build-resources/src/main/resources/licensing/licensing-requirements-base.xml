@@ -37,6 +37,7 @@
   <liked-license>Mozilla Public License, Version 2.0</liked-license>
   <liked-license>SIL OFL 1.1</liked-license>
   <liked-license>ISC</liked-license>
+  <liked-license>Creative Commons 0</liked-license> <!--TODO check -->
 
 
   <override-licenses>
@@ -142,6 +143,9 @@
     </license>
     <license name="Bouncy Castle License">
       <aka>Bouncy Castle Licence</aka>
+    </license>
+    <license name="Creative Commons 0">
+      <aka>CC0</aka>
     </license>
   </coalesced-licenses>
   <dual-licenses>

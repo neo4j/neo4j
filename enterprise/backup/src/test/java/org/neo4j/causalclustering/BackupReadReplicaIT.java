@@ -62,7 +62,7 @@ public class BackupReadReplicaIT
             .withNumberOfReadReplicas( 1 )
             .withSharedReadReplicaParam( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
     private File backupPath;
 
     @Before

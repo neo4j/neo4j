@@ -40,7 +40,7 @@ public class DataCreator
     {
     }
 
-    public static CoreClusterMember createLabelledNodesWithProperty( Cluster cluster, int numberOfNodes,
+    public static CoreClusterMember createLabelledNodesWithProperty( Cluster<?> cluster, int numberOfNodes,
             Label label, Supplier<Pair<String,Object>> propertyPair ) throws Exception
     {
         CoreClusterMember last = null;
@@ -56,7 +56,7 @@ public class DataCreator
         return last;
     }
 
-    public static CoreClusterMember createEmptyNodes( Cluster cluster, int numberOfNodes ) throws Exception
+    public static CoreClusterMember createEmptyNodes( Cluster<?> cluster, int numberOfNodes ) throws Exception
     {
         CoreClusterMember last = null;
         for ( int i = 0; i < numberOfNodes; i++ )

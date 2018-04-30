@@ -79,9 +79,9 @@ public class GetServersProcedureV1RoutingTest
         when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
 
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
-        coreMembers.put( member( 0 ), addressesForCore( 0 ) );
-        coreMembers.put( member( 1 ), addressesForCore( 1 ) );
-        coreMembers.put( member( 2 ), addressesForCore( 2 ) );
+        coreMembers.put( member( 0 ), addressesForCore( 0, false ) );
+        coreMembers.put( member( 1 ), addressesForCore( 1, false ) );
+        coreMembers.put( member( 2 ), addressesForCore( 2, false ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.localCoreServers() ).thenReturn( clusterTopology );

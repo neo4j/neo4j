@@ -123,7 +123,7 @@ public class ReadReplicaReplicationIT
     public void shouldNotBeAbleToWriteToReadReplica() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         ReadReplicaGraphDatabase readReplica = cluster.findAnyReadReplica().database();
 
@@ -146,7 +146,7 @@ public class ReadReplicaReplicationIT
     public void allServersBecomeAvailable() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         // then
         for ( final ReadReplica readReplica : cluster.readReplicas() )
@@ -160,7 +160,7 @@ public class ReadReplicaReplicationIT
     public void shouldEventuallyPullTransactionDownToAllReadReplicas() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
+        Cluster<?> cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
         int nodesBeforeReadReplicaStarts = 1;
 
         cluster.coreTx( ( db, tx ) ->
@@ -240,7 +240,7 @@ public class ReadReplicaReplicationIT
     public void shouldShutdownRatherThanPullUpdatesFromCoreMemberWithDifferentStoreIdIfLocalStoreIsNonEmpty()
             throws Exception
     {
-        Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
+        Cluster<?> cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
 
         cluster.coreTx( createSomeData );
 
@@ -275,7 +275,7 @@ public class ReadReplicaReplicationIT
     public void aReadReplicShouldBeAbleToRejoinTheCluster() throws Exception
     {
         int readReplicaId = 4;
-        Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
+        Cluster<?> cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
 
         cluster.coreTx( createSomeData );
 
@@ -307,7 +307,7 @@ public class ReadReplicaReplicationIT
     public void readReplicasShouldRestartIfTheWholeClusterIsRestarted() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         // when
         cluster.shutdown();
@@ -329,7 +329,7 @@ public class ReadReplicaReplicationIT
                 GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M",
                 GraphDatabaseSettings.check_point_interval_time.name(), "100ms" );
 
-        Cluster cluster = clusterRule.withSharedCoreParams( params ).startCluster();
+        Cluster<?> cluster = clusterRule.withSharedCoreParams( params ).startCluster();
 
         cluster.coreTx( ( db, tx ) ->
         {
@@ -375,7 +375,7 @@ public class ReadReplicaReplicationIT
                 GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M",
                 GraphDatabaseSettings.check_point_interval_time.name(), "100ms" );
 
-        Cluster cluster = clusterRule.withSharedCoreParams( params ).startCluster();
+        Cluster<?> cluster = clusterRule.withSharedCoreParams( params ).startCluster();
 
         cluster.coreTx( ( db, tx ) ->
         {
@@ -423,7 +423,7 @@ public class ReadReplicaReplicationIT
     public void transactionsShouldNotAppearOnTheReadReplicaWhilePollingIsPaused() throws Throwable
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         ReadReplicaGraphDatabase readReplicaGraphDatabase = cluster.findAnyReadReplica().database();
         CatchupPollingProcess pollingClient = readReplicaGraphDatabase.getDependencyResolver()
@@ -509,7 +509,7 @@ public class ReadReplicaReplicationIT
     public void shouldThrowExceptionIfReadReplicaRecordFormatDiffersToCoreRecordFormat() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).withRecordFormat( HighLimit.NAME ).startCluster();
+        Cluster<?> cluster = clusterRule.withNumberOfReadReplicas( 0 ).withRecordFormat( HighLimit.NAME ).startCluster();
 
         // when
         cluster.coreTx( createSomeData );
@@ -535,7 +535,7 @@ public class ReadReplicaReplicationIT
                 CausalClusteringSettings.raft_log_pruning_frequency.name(), "500ms",
                 CausalClusteringSettings.state_machine_flush_window_size.name(), "1",
                 CausalClusteringSettings.raft_log_pruning_strategy.name(), "1 entries" );
-        Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).withSharedCoreParams( params )
+        Cluster<?> cluster = clusterRule.withNumberOfReadReplicas( 0 ).withSharedCoreParams( params )
                 .withRecordFormat( HighLimit.NAME ).startCluster();
 
         cluster.coreTx( ( db, tx ) ->
@@ -592,7 +592,7 @@ public class ReadReplicaReplicationIT
     public void pageFaultsFromReplicationMustCountInMetrics() throws Exception
     {
         // Given initial pin counts on all members
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         Function<ReadReplica,PageCacheCounters> getPageCacheCounters =
                 ccm -> ccm.database().getDependencyResolver().resolveDependency( PageCacheCounters.class );
         List<PageCacheCounters> countersList =

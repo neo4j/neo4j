@@ -60,7 +60,7 @@ class IdReuse
      */
     static class UniqueFreeIds extends Validation
     {
-        private final Cluster cluster;
+        private final Cluster<?> cluster;
         private final FileSystemAbstraction fs;
         private final Log log;
 
@@ -130,7 +130,7 @@ class IdReuse
 
     static class IdReuseSetup extends Preparation
     {
-        private final Cluster cluster;
+        private final Cluster<?> cluster;
 
         IdReuseSetup( Resources resources )
         {
@@ -165,7 +165,7 @@ class IdReuse
 
     static class InsertionWorkload extends Workload
     {
-        private Cluster cluster;
+        private Cluster<?> cluster;
 
         InsertionWorkload( Control control, Resources resources )
         {
@@ -202,7 +202,7 @@ class IdReuse
     {
         private final long reelectIntervalSeconds;
         private final Log log;
-        private Cluster cluster;
+        private Cluster<?> cluster;
 
         ReelectionWorkload( Control control, Resources resources, Config config )
         {
@@ -240,7 +240,7 @@ class IdReuse
     {
         private final SecureRandom rnd = new SecureRandom();
         private final int idHighRange;
-        private Cluster cluster;
+        private Cluster<?> cluster;
 
         DeletionWorkload( Control control, Resources resources )
         {

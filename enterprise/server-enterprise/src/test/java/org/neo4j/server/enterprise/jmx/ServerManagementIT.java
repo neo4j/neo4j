@@ -42,7 +42,6 @@ import static org.junit.Assert.assertNotNull;
 
 public class ServerManagementIT
 {
-
     private final CleanupRule cleanup = new CleanupRule();
     private final TestDirectory baseDir = TestDirectory.testDirectory();
     private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -67,8 +66,7 @@ public class ServerManagementIT
                 .build();
 
         // When
-        NeoServer server = cleanup.add( new OpenEnterpriseNeoServer( config, graphDbDependencies(), NullLogProvider
-                .getInstance() ) );
+        NeoServer server = cleanup.add( new OpenEnterpriseNeoServer( config, graphDbDependencies(), NullLogProvider.getInstance() ) );
         server.start();
 
         assertNotNull( server.getDatabase().getGraph() );

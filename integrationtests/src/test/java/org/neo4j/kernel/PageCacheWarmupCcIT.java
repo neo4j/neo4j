@@ -61,7 +61,7 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
             .withSharedReadReplicaParam( CausalClusteringSettings.pull_interval, "100ms" )
             .withSharedReadReplicaParam( CausalClusteringSettings.upstream_selection_strategy, LeaderOnlyStrategy.IDENTITY );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
     private CoreClusterMember leader;
 
     @Before

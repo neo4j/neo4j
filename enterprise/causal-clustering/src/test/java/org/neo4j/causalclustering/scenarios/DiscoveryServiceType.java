@@ -22,28 +22,18 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 
-public enum DiscoveryServiceType
+public interface DiscoveryServiceType
 {
-    SHARED( SharedDiscoveryServiceFactory::new ),
-    HAZELCAST( HazelcastDiscoveryServiceFactory::new );
+    Supplier<DiscoveryServiceFactory> SHARED = SharedDiscoveryServiceFactory::new;
+    Supplier<DiscoveryServiceFactory> HAZELCAST = HazelcastDiscoveryServiceFactory::new;
 
-    private final Supplier<DiscoveryServiceFactory> factory;
-
-    DiscoveryServiceType( Supplier<DiscoveryServiceFactory> factory )
-    {
-        this.factory = factory;
-    }
-
-    public DiscoveryServiceFactory create()
-    {
-        return factory.get();
-    }
-
+    List<Supplier<DiscoveryServiceFactory>> values = Arrays.asList( SHARED, HAZELCAST );
 }

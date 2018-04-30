@@ -53,7 +53,7 @@ public class ClusterFormationIT
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @Before
     public void setup() throws Exception

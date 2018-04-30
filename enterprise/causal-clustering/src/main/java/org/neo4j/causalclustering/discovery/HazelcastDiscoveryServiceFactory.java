@@ -46,7 +46,7 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     }
 
     @Override
-    public TopologyService topologyService( Config config, LogProvider logProvider,
+    public TopologyService readReplicaTopologyService( Config config, LogProvider logProvider,
                                             JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,
                                             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {

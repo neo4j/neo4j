@@ -40,6 +40,7 @@ import org.neo4j.causalclustering.backup_stores.EmptyBackupStore;
 import org.neo4j.causalclustering.backup_stores.NoStore;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.EnterpriseCluster;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -71,8 +72,8 @@ public class ClusterSeedingIT
     @Rule
     public RuleChain rules = RuleChain.outerRule( fileSystemRule ).around( testDir ).around( suppressOutput );
 
-    private Cluster backupCluster;
-    private Cluster cluster;
+    private Cluster<?> backupCluster;
+    private Cluster<?> cluster;
     private FileCopyDetector fileCopyDetector;
     private File baseBackupDir;
 
@@ -87,11 +88,11 @@ public class ClusterSeedingIT
     public void setup()
     {
         this.fileCopyDetector = new FileCopyDetector();
-        backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
+        backupCluster = new EnterpriseCluster( testDir.directory( "cluster-for-backup" ), 3, 0,
                 new SharedDiscoveryServiceFactory(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard
                 .LATEST_NAME, IpFamily.IPV4, false );
 
-        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
+        cluster = new EnterpriseCluster( testDir.directory( "cluster-b" ), 3, 0,
                 new SharedDiscoveryServiceFactory(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME,
                 IpFamily.IPV4, false );
 

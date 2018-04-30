@@ -63,7 +63,7 @@ public class BackupCoreIT
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
     private File backupsDir;
 
     @Before
@@ -95,7 +95,7 @@ public class BackupCoreIT
         }
     }
 
-    static CoreGraphDatabase createSomeData( Cluster cluster ) throws Exception
+    static CoreGraphDatabase createSomeData( Cluster<?> cluster ) throws Exception
     {
         return cluster.coreTx( ( db, tx ) ->
         {
@@ -105,7 +105,7 @@ public class BackupCoreIT
         } ).database();
     }
 
-    private static String backupAddress( Cluster cluster )
+    private static String backupAddress( Cluster<?> cluster )
     {
         return cluster.getMemberWithRole( Role.LEADER ).settingValue( "causal_clustering.transaction_listen_address" );
     }

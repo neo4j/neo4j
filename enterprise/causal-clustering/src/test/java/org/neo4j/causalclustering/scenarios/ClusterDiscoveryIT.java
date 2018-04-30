@@ -81,7 +81,7 @@ public class ClusterDiscoveryIT
     public void shouldFindReadWriteAndRouteServers() throws Exception
     {
         // when
-        Cluster cluster = clusterRule.withSharedCoreParams( config ).withNumberOfReadReplicas( 1 ).startCluster();
+        Cluster<?> cluster = clusterRule.withSharedCoreParams( config ).withNumberOfReadReplicas( 1 ).startCluster();
 
         // then
         int cores = cluster.coreMembers().size();
@@ -106,7 +106,7 @@ public class ClusterDiscoveryIT
     public void shouldNotBeAbleToDiscoverFromReadReplicas() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.withSharedCoreParams( config ).withNumberOfReadReplicas( 2 ).startCluster();
+        Cluster<?> cluster = clusterRule.withSharedCoreParams( config ).withNumberOfReadReplicas( 2 ).startCluster();
 
         try
         {

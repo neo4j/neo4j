@@ -31,7 +31,6 @@ import org.neo4j.logging.LogProvider;
 
 public class CommunityBootstrapper extends ServerBootstrapper
 {
-
     @Override
     protected NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
                                          LogProvider logProvider )
@@ -45,5 +44,4 @@ public class CommunityBootstrapper extends ServerBootstrapper
     {
         return Collections.singletonList( new ServerConfigurationValidator() );
     }
-
 }

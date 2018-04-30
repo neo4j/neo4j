@@ -40,11 +40,11 @@ public class ClusterOfClustersInProcessRunner
 
             CausalClusterInProcessBuilder.CausalCluster cluster =
                     CausalClusterInProcessBuilder.init()
-                            .withCores( 6 )
-                            .withReplicas( 4 )
+                            .withCores( 9 )
+                            .withReplicas( 6 )
                             .withLogger( toOutputStream( System.out ) )
                             .atPath( clusterPath )
-                            .withOptionalDatabases( Arrays.asList("foo", "bar") )
+                            .withOptionalDatabases( Arrays.asList("foo", "bar", "baz") )
                             .build();
 
             System.out.println( "Waiting for cluster to boot up..." );

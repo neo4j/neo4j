@@ -69,7 +69,7 @@ public class PreElectionIT
     public void shouldNotStartAnElectionIfAMinorityOfServersHaveTimedOutOnHeartbeats() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         CoreClusterMember follower = cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 1, TimeUnit.MINUTES );
 
         // when
@@ -91,7 +91,7 @@ public class PreElectionIT
     public void shouldStartElectionIfLeaderRemoved() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         CoreClusterMember oldLeader = cluster.awaitLeader();
 
         // when
@@ -110,7 +110,7 @@ public class PreElectionIT
         clusterRule
                 .withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, this::firstServerRefusesToBeLeader )
                 .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" );
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         CoreClusterMember oldLeader = cluster.awaitLeader();
 
         // when

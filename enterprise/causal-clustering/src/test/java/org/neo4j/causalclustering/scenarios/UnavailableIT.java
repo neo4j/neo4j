@@ -43,7 +43,7 @@ public class UnavailableIT
     @Rule
     public final ClusterRule clusterRule = new ClusterRule().withNumberOfCoreMembers( 3 );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @Before
     public void setup() throws Exception

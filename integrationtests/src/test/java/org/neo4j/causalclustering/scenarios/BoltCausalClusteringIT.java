@@ -84,7 +84,7 @@ public class BoltCausalClusteringIT
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @Test
     public void shouldExecuteReadAndWritesWhenDriverSuppliedWithAddressOfLeader() throws Exception
@@ -224,7 +224,7 @@ public class BoltCausalClusteringIT
      */
     private class LeaderSwitcher implements Runnable
     {
-        private final Cluster cluster;
+        private final Cluster<?> cluster;
         private final CountDownLatch switchCompleteLatch;
         private CoreClusterMember initialLeader;
         private CoreClusterMember currentLeader;
@@ -233,7 +233,7 @@ public class BoltCausalClusteringIT
         private boolean stopped;
         private Throwable throwable;
 
-        LeaderSwitcher( Cluster cluster, CountDownLatch switchCompleteLatch )
+        LeaderSwitcher( Cluster<?> cluster, CountDownLatch switchCompleteLatch )
         {
             this.cluster = cluster;
             this.switchCompleteLatch = switchCompleteLatch;
@@ -686,7 +686,7 @@ public class BoltCausalClusteringIT
                 GraphDatabaseSettings.check_point_interval_time.name(), "100ms",
                 CausalClusteringSettings.cluster_allow_reads_on_followers.name(), "false");
 
-        Cluster cluster = clusterRule.withSharedCoreParams( params ).withNumberOfReadReplicas( 1 ).startCluster();
+        Cluster<?> cluster = clusterRule.withSharedCoreParams( params ).withNumberOfReadReplicas( 1 ).startCluster();
 
         Driver driver = GraphDatabase.driver( cluster.awaitLeader().routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 

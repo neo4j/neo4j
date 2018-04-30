@@ -34,7 +34,7 @@ import static org.neo4j.consistency.ConsistencyCheckTool.runConsistencyCheckTool
  */
 public class ConsistencyCheck extends Validation
 {
-    private final Cluster cluster;
+    private final Cluster<?> cluster;
 
     ConsistencyCheck( Resources resources )
     {

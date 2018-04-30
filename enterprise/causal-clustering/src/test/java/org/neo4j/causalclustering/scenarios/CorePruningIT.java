@@ -52,7 +52,7 @@ public class CorePruningIT
     public void actuallyDeletesTheFiles() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         CoreClusterMember coreGraphDatabase = null;
         int txs = 10;
@@ -76,7 +76,7 @@ public class CorePruningIT
     public void shouldNotPruneUncommittedEntries() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         CoreClusterMember coreGraphDatabase = null;
         int txs = 1000;

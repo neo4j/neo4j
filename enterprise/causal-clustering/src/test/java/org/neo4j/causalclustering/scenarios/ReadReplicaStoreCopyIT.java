@@ -62,7 +62,7 @@ public class ReadReplicaStoreCopyIT
     @Test( timeout = 240_000 )
     public void shouldNotBePossibleToStartTransactionsWhenReadReplicaCopiesStore() throws Throwable
     {
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         ReadReplica readReplica = cluster.findAnyReadReplica();
 
@@ -94,7 +94,7 @@ public class ReadReplicaStoreCopyIT
         }
     }
 
-    private static void writeSomeDataAndForceLogRotations( Cluster cluster ) throws Exception
+    private static void writeSomeDataAndForceLogRotations( Cluster<?> cluster ) throws Exception
     {
         for ( int i = 0; i < 20; i++ )
         {
@@ -108,7 +108,7 @@ public class ReadReplicaStoreCopyIT
         }
     }
 
-    private static void forceLogRotationOnAllCores( Cluster cluster )
+    private static void forceLogRotationOnAllCores( Cluster<?> cluster )
     {
         for ( CoreClusterMember core : cluster.coreMembers() )
         {

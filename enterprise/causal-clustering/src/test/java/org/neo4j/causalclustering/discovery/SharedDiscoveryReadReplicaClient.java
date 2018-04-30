@@ -29,13 +29,13 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.SafeLifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.SocketAddressParser.socketAddress;
 
-class SharedDiscoveryReadReplicaClient implements TopologyService, Lifecycle
+class SharedDiscoveryReadReplicaClient extends SafeLifecycle implements TopologyService
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final ReadReplicaInfo addresses;
@@ -56,26 +56,26 @@ class SharedDiscoveryReadReplicaClient implements TopologyService, Lifecycle
     }
 
     @Override
-    public void init()
+    public void init0()
     {
         // nothing to do
     }
 
     @Override
-    public void start()
+    public void start0()
     {
         sharedDiscoveryService.registerReadReplica( this );
         log.info( "Registered read replica member id: %s at %s", memberId, addresses );
     }
 
     @Override
-    public void stop()
+    public void stop0()
     {
         sharedDiscoveryService.unRegisterReadReplica( this );
     }
 
     @Override
-    public void shutdown()
+    public void shutdown0()
     {
         // nothing to do
     }

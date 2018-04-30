@@ -36,7 +36,7 @@ import static java.util.Collections.emptyMap;
 
 public class CoreTopology implements Topology<CoreServerInfo>
 {
-    static final CoreTopology EMPTY = new CoreTopology( null, false, emptyMap() );
+    public static final CoreTopology EMPTY = new CoreTopology( null, false, emptyMap() );
 
     private final ClusterId clusterId;
     private final boolean canBeBootstrapped;

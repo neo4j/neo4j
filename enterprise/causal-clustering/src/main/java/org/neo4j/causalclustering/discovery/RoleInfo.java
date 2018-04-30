@@ -29,20 +29,4 @@ public enum RoleInfo
     FOLLOWER,
     READ_REPLICA,
     UNKNOWN;
-
-    @Override
-    public String toString()
-    {
-        switch ( this )
-        {
-            case LEADER:
-                return "LEADER";
-            case FOLLOWER:
-                return "FOLLOWER";
-            case READ_REPLICA:
-                return "READ REPLICA";
-            default:
-                return "UNKNOWN";
-        }
-    }
 }

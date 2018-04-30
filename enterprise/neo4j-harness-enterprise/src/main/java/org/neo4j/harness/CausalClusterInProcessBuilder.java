@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactorySelector;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.internal.EnterpriseInProcessServerBuilder;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -69,6 +70,7 @@ public class CausalClusterInProcessBuilder
         private PortPickingFactory portFactory = PortPickingFactory.DEFAULT;
         private final Map<String, String> config = new HashMap<>();
         private List<String> databases = new ArrayList<>( Collections.singletonList( "default" ) );
+        private DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory = DiscoveryServiceFactorySelector.DEFAULT;
 
         public WithReplicas withCores( int n )
         {
@@ -117,6 +119,13 @@ public class CausalClusterInProcessBuilder
             return this;
         }
 
+        @Override
+        public Builder withDiscoveryServiceFactory( DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory )
+        {
+            this.discoveryServiceFactory = discoveryServiceFactory;
+            return this;
+        }
+
         public CausalCluster build()
         {
             int nDatabases = databases.size();
@@ -158,6 +167,8 @@ public class CausalClusterInProcessBuilder
         Builder withOptionalPortsStrategy( PortPickingStrategy s );
 
         Builder withOptionalDatabases( List<String> databaseNames );
+
+        Builder withDiscoveryServiceFactory( DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory );
     }
 
     /**
@@ -245,6 +256,7 @@ public class CausalClusterInProcessBuilder
         private final Log log;
         private final PortPickingFactory portFactory;
         private final Map<String,String> config;
+        private final DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory;
 
         private List<ServerControls> coreControls = synchronizedList( new ArrayList<>() );
         private List<ServerControls> replicaControls = synchronizedList( new ArrayList<>() );
@@ -258,6 +270,7 @@ public class CausalClusterInProcessBuilder
             this.portFactory = builder.portFactory;
             this.databaseNames = builder.databases;
             this.config = builder.config;
+            this.discoveryServiceFactory = builder.discoveryServiceFactory;
         }
 
         private Map<Integer,String> distributeHostsBetweenDatabases( int nHosts, List<String> databases )
@@ -303,7 +316,7 @@ public class CausalClusterInProcessBuilder
                 int httpsPort = portFactory.httpsCorePort( coreId );
 
                 String homeDir = "core-" + coreId;
-                TestServerBuilder builder = new EnterpriseInProcessServerBuilder( clusterPath.toFile(), homeDir );
+                EnterpriseInProcessServerBuilder builder = new EnterpriseInProcessServerBuilder( clusterPath.toFile(), homeDir );
 
                 String homePath = Paths.get( clusterPath.toString(), homeDir ).toAbsolutePath().toString();
                 builder.withConfig( GraphDatabaseSettings.neo4j_home.name(), homePath );
@@ -330,6 +343,8 @@ public class CausalClusterInProcessBuilder
 
                 config.forEach( builder::withConfig );
 
+                builder.withDiscoveryServiceFactory( discoveryServiceFactory );
+
                 int finalCoreId = coreId;
                 Thread coreThread = new Thread( () ->
                 {
@@ -355,7 +370,7 @@ public class CausalClusterInProcessBuilder
                 int httpsPort = portFactory.httpsReadReplicaPort( replicaId );
 
                 String homeDir = "replica-" + replicaId;
-                TestServerBuilder builder = new EnterpriseInProcessServerBuilder( clusterPath.toFile(), homeDir );
+                EnterpriseInProcessServerBuilder builder = new EnterpriseInProcessServerBuilder( clusterPath.toFile(), homeDir );
 
                 String homePath = Paths.get( clusterPath.toString(), homeDir ).toAbsolutePath().toString();
                 builder.withConfig( GraphDatabaseSettings.neo4j_home.name(), homePath );
@@ -373,6 +388,8 @@ public class CausalClusterInProcessBuilder
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );
 
                 builder.withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+
+                builder.withDiscoveryServiceFactory( discoveryServiceFactory );
 
                 config.forEach( builder::withConfig );
 

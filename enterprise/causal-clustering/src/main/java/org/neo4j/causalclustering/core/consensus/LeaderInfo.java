@@ -23,12 +23,12 @@
 package org.neo4j.causalclustering.core.consensus;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
 public class LeaderInfo implements Serializable
 {
-
     private static final long serialVersionUID = 7983780359510842910L;
 
     public static final LeaderInfo INITIAL = new LeaderInfo( null, -1 );
@@ -76,5 +76,26 @@ public class LeaderInfo implements Serializable
     public String toString()
     {
         return "LeaderInfo{" + "memberId=" + memberId + ", term=" + term + '}';
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        LeaderInfo that = (LeaderInfo) o;
+        return term == that.term && isSteppingDown == that.isSteppingDown && Objects.equals( memberId, that.memberId );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( memberId, term, isSteppingDown );
     }
 }

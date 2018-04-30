@@ -54,7 +54,7 @@ public class ClusterShutdownIT
 
     @Parameterized.Parameter()
     public Collection<Integer> shutdownOrder;
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @Parameterized.Parameters( name = "shutdown order {0}" )
     public static Collection<Collection<Integer>> shutdownOrders()
@@ -93,7 +93,7 @@ public class ClusterShutdownIT
         } );
     }
 
-    private void shouldShutdownEvenThoughWaitingForLock0( Cluster cluster, int victimId, Collection<Integer> shutdownOrder ) throws Exception
+    private void shouldShutdownEvenThoughWaitingForLock0( Cluster<?> cluster, int victimId, Collection<Integer> shutdownOrder ) throws Exception
     {
         final int LONG_TIME = 60_000;
         final int NUMBER_OF_LOCK_ACQUIRERS = 2;

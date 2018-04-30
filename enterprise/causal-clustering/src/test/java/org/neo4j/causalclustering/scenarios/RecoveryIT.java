@@ -56,7 +56,7 @@ public class RecoveryIT
     public void shouldBeConsistentAfterShutdown() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         fireSomeLoadAtTheCluster( cluster );
 
@@ -77,7 +77,7 @@ public class RecoveryIT
     public void singleServerWithinClusterShouldBeConsistentAfterRestart() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         int clusterSize = cluster.numberOfCoreMembersReportedByTopology();
 
         fireSomeLoadAtTheCluster( cluster );
@@ -123,7 +123,7 @@ public class RecoveryIT
         assertTrue( result.isSuccessful() );
     }
 
-    private static void fireSomeLoadAtTheCluster( Cluster cluster ) throws Exception
+    private static void fireSomeLoadAtTheCluster( Cluster<?> cluster ) throws Exception
     {
         for ( int i = 0; i < cluster.numberOfCoreMembersReportedByTopology(); i++ )
         {

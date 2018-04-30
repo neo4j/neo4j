@@ -26,6 +26,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
@@ -73,6 +77,64 @@ public class StringMarshalTest
         // when
         StringMarshal.marshal( buffer, null );
         String reconstructed = StringMarshal.unmarshal( buffer );
+
+        // then
+        assertNull( reconstructed );
+    }
+
+    @Test
+    public void shouldSerializeAndDeserializeStringUsingChannel() throws IOException
+    {
+        // given
+        final String TEST_STRING = "ABC123_?";
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        OutputStreamWritableChannel writableChannel = new OutputStreamWritableChannel( outputStream );
+
+        // when
+        StringMarshal.marshal( writableChannel, TEST_STRING );
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream( outputStream.toByteArray() );
+        InputStreamReadableChannel readableChannel = new InputStreamReadableChannel( inputStream );
+        String reconstructed = StringMarshal.unmarshal( readableChannel );
+
+        // then
+        assertNotSame( TEST_STRING, reconstructed );
+        assertEquals( TEST_STRING, reconstructed );
+    }
+
+    @Test
+    public void shouldSerializeAndDeserializeEmptyStringUsingChannel() throws IOException
+    {
+        // given
+        final String TEST_STRING = "";
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        OutputStreamWritableChannel writableChannel = new OutputStreamWritableChannel( outputStream );
+
+        // when
+        StringMarshal.marshal( writableChannel, TEST_STRING );
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream( outputStream.toByteArray() );
+        InputStreamReadableChannel readableChannel = new InputStreamReadableChannel( inputStream );
+        String reconstructed = StringMarshal.unmarshal( readableChannel );
+
+        // then
+        assertNotSame( TEST_STRING, reconstructed );
+        assertEquals( TEST_STRING, reconstructed );
+    }
+
+    @Test
+    public void shouldSerializeAndDeserializeNullUsingChannel() throws IOException
+    {
+        // given
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        OutputStreamWritableChannel writableChannel = new OutputStreamWritableChannel( outputStream );
+
+        // when
+        StringMarshal.marshal( writableChannel, null );
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream( outputStream.toByteArray() );
+        InputStreamReadableChannel readableChannel = new InputStreamReadableChannel( inputStream );
+        String reconstructed = StringMarshal.unmarshal( readableChannel );
 
         // then
         assertNull( reconstructed );

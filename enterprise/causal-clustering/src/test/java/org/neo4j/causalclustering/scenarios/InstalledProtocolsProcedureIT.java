@@ -30,7 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
-import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -68,7 +67,7 @@ public class InstalledProtocolsProcedureIT
             .withSharedCoreParam( CausalClusteringSettings.compression_implementations, "snappy" )
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 );
-    private Cluster cluster;
+    private Cluster<?> cluster;
     private CoreClusterMember leader;
 
     @Before

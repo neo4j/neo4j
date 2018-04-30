@@ -25,6 +25,8 @@ package org.neo4j.harness.internal;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactorySelector;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
@@ -33,6 +35,8 @@ import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 
 public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBuilder
 {
+    private DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryServiceFactory = DiscoveryServiceFactorySelector.DEFAULT;
+
     public EnterpriseInProcessServerBuilder()
     {
         this( new File( System.getProperty( "java.io.tmpdir" ) ) );
@@ -49,9 +53,26 @@ public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBui
     }
 
     @Override
-    protected AbstractNeoServer createNeoServer( Map<String,String> config,
+    protected AbstractNeoServer createNeoServer( Map<String,String> configMap,
             GraphDatabaseFacadeFactory.Dependencies dependencies, FormattedLogProvider userLogProvider )
     {
-        return new OpenEnterpriseNeoServer( Config.defaults( config ), dependencies, userLogProvider );
+        Config config = Config.defaults( configMap );
+        config.augment( CausalClusteringSettings.middleware_type, discoveryServiceFactory.name() );
+        return new OpenEnterpriseNeoServer( config, dependencies, userLogProvider );
     }
+
+    /**
+     * Configure the server to use the specified service to build cluster topologies and share associated metadata.
+     *
+     * Only relevant for causal clustering.
+     *
+     * @param discoveryService
+     * @return this builder instance
+     */
+    public EnterpriseInProcessServerBuilder withDiscoveryServiceFactory( DiscoveryServiceFactorySelector.DiscoveryMiddleware discoveryService )
+    {
+        this.discoveryServiceFactory = discoveryService;
+        return this;
+    }
+
 }

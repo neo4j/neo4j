@@ -75,7 +75,7 @@ public class ReadReplicaHierarchicalCatchupIT
                 .withInstanceCoreParam( CausalClusteringSettings.server_groups, id -> serverGroups.get( id ) );
 
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         int numberOfNodesToCreate = 100;
 
         cluster.coreTx( ( db, tx ) ->

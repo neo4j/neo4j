@@ -27,7 +27,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -75,7 +74,7 @@ public class CoreEdgeMetricsIT
             .withSharedCoreParam( MetricsSettings.csvInterval, "100ms" )
             .withSharedReadReplicaParam( MetricsSettings.csvInterval, "100ms" );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @After
     public void shutdown()

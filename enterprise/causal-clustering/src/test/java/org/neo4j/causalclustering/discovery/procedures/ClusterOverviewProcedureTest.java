@@ -26,7 +26,6 @@ import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +34,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
@@ -69,9 +67,9 @@ public class ClusterOverviewProcedureTest
         MemberId follower1 = new MemberId( UUID.randomUUID() );
         MemberId follower2 = new MemberId( UUID.randomUUID() );
 
-        coreMembers.put( theLeader, addressesForCore( 0 ) );
-        coreMembers.put( follower1, addressesForCore( 1 ) );
-        coreMembers.put( follower2, addressesForCore( 2 ) );
+        coreMembers.put( theLeader, addressesForCore( 0, false ) );
+        coreMembers.put( follower1, addressesForCore( 1, false ) );
+        coreMembers.put( follower2, addressesForCore( 2, false ) );
 
         Map<MemberId,ReadReplicaInfo> replicaMembers = new HashMap<>();
         MemberId replica4 = new MemberId( UUID.randomUUID() );

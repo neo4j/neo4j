@@ -32,7 +32,7 @@ import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.SafeLifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -48,7 +48,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-public class HazelcastClient implements TopologyService, Lifecycle
+public class HazelcastClient extends SafeLifecycle implements TopologyService
 {
     private final Log log;
     private final ClientConnectorAddresses connectorAddresses;
@@ -133,7 +133,7 @@ public class HazelcastClient implements TopologyService, Lifecycle
     }
 
     @Override
-    public ReadReplicaTopology localReadReplicas()
+    public  ReadReplicaTopology localReadReplicas()
     {
         return localReadReplicaTopology;
     }
@@ -171,13 +171,13 @@ public class HazelcastClient implements TopologyService, Lifecycle
     }
 
     @Override
-    public void init()
+    public void init0()
     {
         // nothing to do
     }
 
     @Override
-    public void start()
+    public void start0()
     {
         keepAliveJob = scheduler.scheduleRecurring( "KeepAlive", timeToLive / 3, this::keepReadReplicaAlive );
         refreshTopologyJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, () -> {
@@ -187,7 +187,7 @@ public class HazelcastClient implements TopologyService, Lifecycle
     }
 
     @Override
-    public void stop()
+    public void stop0()
     {
         keepAliveJob.cancel( true );
         refreshTopologyJob.cancel( true );
@@ -195,7 +195,7 @@ public class HazelcastClient implements TopologyService, Lifecycle
     }
 
     @Override
-    public void shutdown()
+    public void shutdown0()
     {
         // nothing to do
     }

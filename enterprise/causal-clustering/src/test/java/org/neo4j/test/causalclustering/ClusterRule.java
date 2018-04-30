@@ -34,13 +34,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.EnterpriseCluster;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
-import org.neo4j.causalclustering.scenarios.DiscoveryServiceType;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.TestDirectory;
@@ -58,11 +60,11 @@ public class ClusterRule extends ExternalResource
 {
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private File clusterDirectory;
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     private int noCoreMembers = 3;
     private int noReadReplicas = 3;
-    private DiscoveryServiceType discoveryServiceType = SHARED;
+    private Supplier<DiscoveryServiceFactory> discoveryServiceFactory = SHARED;
     private Map<String,String> coreParams = stringMap();
     private Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
     private Map<String,String> readReplicaParams = stringMap();
@@ -122,7 +124,7 @@ public class ClusterRule extends ExternalResource
      * Starts cluster with the configuration provided at instantiation time. This method will not return until the
      * cluster is up and all members report each other as available.
      */
-    public Cluster startCluster() throws Exception
+    public Cluster<?> startCluster() throws Exception
     {
         createCluster();
         cluster.start();
@@ -133,11 +135,11 @@ public class ClusterRule extends ExternalResource
         return cluster;
     }
 
-    public Cluster createCluster()
+    public Cluster<?> createCluster()
     {
         if ( cluster == null )
         {
-            cluster = new Cluster( clusterDirectory, noCoreMembers, noReadReplicas, discoveryServiceType.create(), coreParams,
+            cluster = new EnterpriseCluster( clusterDirectory, noCoreMembers, noReadReplicas, discoveryServiceFactory.get(), coreParams,
                     instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat, ipFamily, useWildcard, dbNames );
         }
 
@@ -189,9 +191,9 @@ public class ClusterRule extends ExternalResource
         return this;
     }
 
-    public ClusterRule withDiscoveryServiceType( DiscoveryServiceType discoveryType )
+    public ClusterRule withDiscoveryServiceType( Supplier<DiscoveryServiceFactory> discoveryFactory )
     {
-        this.discoveryServiceType = discoveryType;
+        this.discoveryServiceFactory = discoveryFactory;
         return this;
     }
 

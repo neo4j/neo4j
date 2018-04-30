@@ -33,12 +33,12 @@ import static org.neo4j.causalclustering.BackupUtil.createBackupFromCore;
 
 public abstract class AbstractStoreGenerator implements BackupStore
 {
-    abstract CoreClusterMember createData( Cluster cluster ) throws Exception;
+    abstract CoreClusterMember createData( Cluster<?> cluster ) throws Exception;
 
     abstract void modify( File backup );
 
     @Override
-    public Optional<File> generate( File backupDir, Cluster backupCluster ) throws Exception
+    public Optional<File> generate( File backupDir, Cluster<?> backupCluster ) throws Exception
     {
         CoreClusterMember core = createData( backupCluster );
         File backupFromCore = createBackupFromCore( core, backupName(), backupDir );

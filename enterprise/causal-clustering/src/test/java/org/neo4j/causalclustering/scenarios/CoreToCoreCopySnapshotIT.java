@@ -65,7 +65,7 @@ public class CoreToCoreCopySnapshotIT
     public void shouldBeAbleToDownloadLargerFreshSnapshot() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         CoreClusterMember source = cluster.coreTx( ( db, tx ) ->
         {
@@ -99,7 +99,7 @@ public class CoreToCoreCopySnapshotIT
                 CausalClusteringSettings.raft_log_pruning_strategy.name(), "3 entries",
                 CausalClusteringSettings.raft_log_rotation_size.name(), "1K" );
 
-        Cluster cluster = clusterRule.withSharedCoreParams( params ).startCluster();
+        Cluster<?> cluster = clusterRule.withSharedCoreParams( params ).startCluster();
 
         CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
         {
@@ -136,7 +136,7 @@ public class CoreToCoreCopySnapshotIT
         int numberOfTransactions = 100;
 
         // start the cluster
-        Cluster cluster = clusterRule.withSharedCoreParams( coreParams ).startCluster();
+        Cluster<?> cluster = clusterRule.withSharedCoreParams( coreParams ).startCluster();
         Timeout timeout = new Timeout( Clocks.systemClock(), 120, SECONDS );
 
         // accumulate some log files
@@ -200,7 +200,7 @@ public class CoreToCoreCopySnapshotIT
         return clusterMember.getLogFileNames().lastKey().intValue();
     }
 
-    private CoreClusterMember doSomeTransactions( Cluster cluster, int count )
+    private CoreClusterMember doSomeTransactions( Cluster<?> cluster, int count )
     {
         try
         {

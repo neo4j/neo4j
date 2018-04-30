@@ -61,7 +61,7 @@ public class RestartIT
     public void restartFirstServer() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         // when
         cluster.removeCoreMemberWithServerId( 0 );
@@ -75,7 +75,7 @@ public class RestartIT
     public void restartSecondServer() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         // when
         cluster.removeCoreMemberWithServerId( 1 );
@@ -89,7 +89,7 @@ public class RestartIT
     public void restartWhileDoingTransactions() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
 
         // when
         final GraphDatabaseService coreDB = cluster.getCoreMemberById( 0 ).database();
@@ -128,7 +128,7 @@ public class RestartIT
     public void shouldHaveWritableClusterAfterCompleteRestart() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         cluster.shutdown();
 
         // when
@@ -150,7 +150,7 @@ public class RestartIT
     public void readReplicaTest() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.withNumberOfCoreMembers( 2 ).withNumberOfReadReplicas( 1 ).startCluster();
+        Cluster<?> cluster = clusterRule.withNumberOfCoreMembers( 2 ).withNumberOfReadReplicas( 1 ).startCluster();
 
         // when
         CoreClusterMember last = cluster.coreTx( ( db, tx ) ->

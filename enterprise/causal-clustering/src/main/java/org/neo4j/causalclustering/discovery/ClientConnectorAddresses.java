@@ -22,6 +22,7 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -31,11 +32,15 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.helpers.SocketAddressParser;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.bolt;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.http;
@@ -184,6 +189,36 @@ public class ClientConnectorAddresses implements Iterable<ClientConnectorAddress
         public int hashCode()
         {
             return Objects.hash( scheme, socketAddress );
+        }
+    }
+
+    public static class Marshal extends SafeChannelMarshal<ClientConnectorAddresses>
+    {
+        @Override
+        protected ClientConnectorAddresses unmarshal0( ReadableChannel channel ) throws IOException
+        {
+            int size = channel.getInt();
+            List<ConnectorUri> connectorUris = new ArrayList<>( size );
+            for ( int i = 0; i < size; i++ )
+            {
+                String schemeName = StringMarshal.unmarshal( channel );
+                String hostName = StringMarshal.unmarshal( channel );
+                int port = channel.getInt();
+                connectorUris.add( new ConnectorUri( Scheme.valueOf( schemeName ), new AdvertisedSocketAddress( hostName, port ) ) );
+            }
+            return new ClientConnectorAddresses( connectorUris );
+        }
+
+        @Override
+        public void marshal( ClientConnectorAddresses connectorUris, WritableChannel channel ) throws IOException
+        {
+            channel.putInt( connectorUris.connectorUris.size() );
+            for ( ConnectorUri uri : connectorUris )
+            {
+                StringMarshal.marshal( channel, uri.scheme.name() );
+                StringMarshal.marshal( channel, uri.socketAddress.getHostname() );
+                channel.putInt( uri.socketAddress.getPort() );
+            }
         }
     }
 }

@@ -54,7 +54,7 @@ class ReplaceRandomMember extends RepeatOnRandomMember
     private static final long MAX_BACKUP_FAILURES = 5;
     private static final long RETRY_TIMEOUT_MILLIS = 5000;
 
-    private final Cluster cluster;
+    private final Cluster<?> cluster;
     private final File baseBackupDir;
     private final FileSystemAbstraction fs;
     private final Log log;

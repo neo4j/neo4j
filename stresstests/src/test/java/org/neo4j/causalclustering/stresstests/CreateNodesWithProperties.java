@@ -39,7 +39,7 @@ class CreateNodesWithProperties extends Workload
 {
     private static final Label label = Label.label( "Label" );
 
-    private final Cluster cluster;
+    private final Cluster<?> cluster;
     private final CappedLogger txLogger;
     private final boolean enableIndexes;
 
@@ -98,7 +98,7 @@ class CreateNodesWithProperties extends Workload
         txSuccessCount++;
     }
 
-    private static void setupIndexes( Cluster cluster )
+    private static void setupIndexes( Cluster<?> cluster )
     {
         try
         {

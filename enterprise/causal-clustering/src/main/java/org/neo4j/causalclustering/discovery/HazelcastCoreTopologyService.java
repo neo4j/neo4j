@@ -22,15 +22,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.ListenerConfig;
@@ -45,6 +36,14 @@ import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.nio.Address;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
@@ -54,9 +53,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -74,7 +71,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecycle
+public class HazelcastCoreTopologyService extends AbstractCoreTopologyService
 {
     public interface Monitor
     {
@@ -86,11 +83,6 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private static final int HAZELCAST_MIN_CLUSTER = 2;
 
-    private final Config config;
-    private final MemberId myself;
-    private final Log log;
-    private final Log userLog;
-    private final CoreTopologyListenerService listenerService;
     private final RobustJobSchedulerWrapper scheduler;
     private final long refreshPeriod;
     private final HostnameResolver hostnameResolver;
@@ -105,13 +97,13 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
 
     private volatile HazelcastInstance hazelcastInstance;
 
-    /* cached data updated during each refresh */
-    private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
-    private volatile CoreTopology localCoreTopology = CoreTopology.EMPTY;
-    private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
-    private volatile ReadReplicaTopology localReadReplicaTopology = ReadReplicaTopology.EMPTY;
     private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
     private volatile Map<MemberId,RoleInfo> coreRoles = Collections.emptyMap();
+
+    private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
+    private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
+    private volatile CoreTopology localCoreTopology = CoreTopology.EMPTY;
+    private volatile ReadReplicaTopology localReadReplicaTopology = ReadReplicaTopology.EMPTY;
 
     private Thread startingThread;
     private volatile boolean stopped;
@@ -120,30 +112,13 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy, Monitors monitors )
     {
-        this.config = config;
-        this.myself = myself;
-        this.listenerService = new CoreTopologyListenerService();
-        this.log = logProvider.getLog( getClass() );
+        super( config, myself, logProvider, userLogProvider );
+        this.localDBName = config.get( CausalClusteringSettings.database );
         this.scheduler = new RobustJobSchedulerWrapper( jobScheduler, log );
-        this.userLog = userLogProvider.getLog( getClass() );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.hostnameResolver = hostnameResolver;
         this.topologyServiceRetryStrategy = topologyServiceRetryStrategy;
         this.monitor = monitors.newMonitor( Monitor.class );
-        this.localDBName = config.get( CausalClusteringSettings.database );
-    }
-
-    @Override
-    public void addLocalCoreTopologyListener( Listener listener )
-    {
-        listenerService.addCoreTopologyListener( listener );
-        listener.onCoreTopologyChange( localCoreServers() );
-    }
-
-    @Override
-    public void removeLocalCoreTopologyListener( Listener listener )
-    {
-        listenerService.removeCoreTopologyListener( listener );
     }
 
     @Override
@@ -154,7 +129,7 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
     }
 
     @Override
-    public void setLeader( LeaderInfo newLeaderInfo, String dbName )
+    public void setLeader0( LeaderInfo newLeaderInfo, String dbName )
     {
         leaderInfo.updateAndGet( currentLeaderInfo ->
         {
@@ -171,21 +146,9 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
     }
 
     @Override
-    public void handleStepDown( long term, String dbName )
+    public void handleStepDown0( long term, String dbName )
     {
-        LeaderInfo localLeaderInfo = leaderInfo.get();
-
-        boolean wasLeaderForDbAndTerm =
-                Objects.equals( myself, localLeaderInfo.memberId() ) &&
-                localDBName.equals( dbName ) &&
-                term == localLeaderInfo.term();
-
-        if ( wasLeaderForDbAndTerm )
-        {
-            log.info( "Step down event detected. This topology member, with MemberId %s, was leader in term %s, now moving " +
-                    "to follower.", myself, localLeaderInfo.term() );
-            stepDownInfo.set( Optional.of( localLeaderInfo.stepDown() ) );
-        }
+        HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo.get().stepDown(), dbName );
     }
 
     @Override
@@ -195,19 +158,13 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
     }
 
     @Override
-    public String localDBName()
-    {
-        return localDBName;
-    }
-
-    @Override
-    public void init()
+    public void init0()
     {
         // nothing to do
     }
 
     @Override
-    public void start()
+    public void start0()
     {
         /*
          * We will start hazelcast in its own thread. Hazelcast blocks until the minimum cluster size is available
@@ -238,7 +195,7 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
     }
 
     @Override
-    public void stop()
+    public void stop0()
     {
         log.info( String.format( "HazelcastCoreTopologyService stopping and unbinding from %s",
                 config.get( discovery_listen_address ) ) );
@@ -267,7 +224,7 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
     }
 
     @Override
-    public void shutdown()
+    public void shutdown0()
     {
         // nothing to do
     }
@@ -379,11 +336,14 @@ public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecy
     }
 
     @Override
+    public String localDBName()
+    {
+        return localDBName;
+    }
+
+    @Override
     public CoreTopology allCoreServers()
     {
-        // It is perhaps confusing (Or even error inducing) that this core Topology will always contain the cluster id
-        // for the database local to the host upon which this method is called.
-        // TODO: evaluate returning clusterId = null for global Topologies returned by allCoreServers()
         return coreTopology;
     }
 

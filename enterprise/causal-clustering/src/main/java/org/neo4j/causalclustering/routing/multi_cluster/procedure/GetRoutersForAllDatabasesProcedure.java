@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
+import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.routing.Endpoint;
 import org.neo4j.causalclustering.routing.multi_cluster.MultiClusterRoutingResult;
@@ -85,6 +86,7 @@ public class GetRoutersForAllDatabasesProcedure implements CallableProcedure
 
     private Map<String, List<Endpoint>> routeEndpoints()
     {
+        CoreTopology core =  topologyService.allCoreServers();
         Stream<CoreServerInfo> allCoreMemberInfo = topologyService.allCoreServers().members().values().stream();
 
         Map<String, List<CoreServerInfo>> coresByDb = allCoreMemberInfo.collect( Collectors.groupingBy( CoreServerInfo::getDatabaseName ) );

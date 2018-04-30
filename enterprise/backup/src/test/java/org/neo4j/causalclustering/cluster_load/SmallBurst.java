@@ -28,7 +28,7 @@ import org.neo4j.causalclustering.helpers.DataCreator;
 public class SmallBurst implements ClusterLoad
 {
     @Override
-    public void start( Cluster cluster ) throws Exception
+    public void start( Cluster<?> cluster ) throws Exception
     {
         DataCreator.createEmptyNodes( cluster, 10 );
     }

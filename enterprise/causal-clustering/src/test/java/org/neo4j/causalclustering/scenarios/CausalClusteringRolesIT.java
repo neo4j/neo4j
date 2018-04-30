@@ -46,7 +46,7 @@ public class CausalClusteringRolesIT
     public void readReplicasShouldRefuseWrites() throws Exception
     {
         // given
-        Cluster cluster = clusterRule.startCluster();
+        Cluster<?> cluster = clusterRule.startCluster();
         GraphDatabaseService db = cluster.findAnyReadReplica().database();
         Transaction tx = db.beginTx();
 

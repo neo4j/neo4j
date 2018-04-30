@@ -29,5 +29,5 @@ import org.neo4j.causalclustering.discovery.Cluster;
 
 public interface BackupStore
 {
-    Optional<File> generate( File backupDir, Cluster backupCluster ) throws Exception;
+    Optional<File> generate( File backupDir, Cluster<?> backupCluster ) throws Exception;
 }

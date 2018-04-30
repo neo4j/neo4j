@@ -58,7 +58,7 @@ public class VersionContextTrackingIT
     @Rule
     public final ClusterRule clusterRule = new ClusterRule();
     private static final int NUMBER_OF_TRANSACTIONS = 3;
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @Before
     public void setup() throws Exception

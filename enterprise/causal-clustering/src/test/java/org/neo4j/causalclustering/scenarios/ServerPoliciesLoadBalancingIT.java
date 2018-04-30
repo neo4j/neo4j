@@ -41,6 +41,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.EnterpriseCluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.routing.Endpoint;
@@ -73,7 +74,7 @@ public class ServerPoliciesLoadBalancingIT
     @Rule
     public DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @After
     public void after()
@@ -87,7 +88,7 @@ public class ServerPoliciesLoadBalancingIT
     @Test
     public void defaultBehaviour() throws Exception
     {
-        cluster = new Cluster( testDir.directory( "cluster" ), 3, 3, new HazelcastDiscoveryServiceFactory(), emptyMap(),
+        cluster = new EnterpriseCluster( testDir.directory( "cluster" ), 3, 3, new HazelcastDiscoveryServiceFactory(), emptyMap(),
                 emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster.start();
@@ -98,7 +99,7 @@ public class ServerPoliciesLoadBalancingIT
     @Test
     public void defaultBehaviourWithAllowReadsOnFollowers() throws Exception
     {
-        cluster = new Cluster( testDir.directory( "cluster" ), 3, 3,
+        cluster = new EnterpriseCluster( testDir.directory( "cluster" ), 3, 3,
                 new HazelcastDiscoveryServiceFactory(),
                 stringMap( CausalClusteringSettings.cluster_allow_reads_on_followers.name(), "true" ),
                 emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
@@ -123,7 +124,7 @@ public class ServerPoliciesLoadBalancingIT
                 CausalClusteringSettings.load_balancing_config.name() + ".server_policies.default", defaultPolicy,
                 CausalClusteringSettings.multi_dc_license.name(), "true");
 
-        cluster = new Cluster( testDir.directory( "cluster" ), 5, 5,
+        cluster = new EnterpriseCluster( testDir.directory( "cluster" ), 5, 5,
                 new HazelcastDiscoveryServiceFactory(), coreParams, instanceCoreParams,
                 emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
 
@@ -176,7 +177,7 @@ public class ServerPoliciesLoadBalancingIT
                 CausalClusteringSettings.multi_dc_license.name(), "true"
         );
 
-        cluster = new Cluster( testDir.directory( "cluster" ), 3, 3,
+        cluster = new EnterpriseCluster( testDir.directory( "cluster" ), 3, 3,
                 new HazelcastDiscoveryServiceFactory(), coreParams, instanceCoreParams,
                 emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
 

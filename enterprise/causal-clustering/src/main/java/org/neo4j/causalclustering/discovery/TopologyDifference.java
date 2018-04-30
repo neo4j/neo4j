@@ -24,7 +24,7 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.Set;
 
-class TopologyDifference
+public class TopologyDifference
 {
     private Set<Difference> added;
     private Set<Difference> removed;
@@ -45,7 +45,7 @@ class TopologyDifference
         return removed;
     }
 
-    boolean hasChanges()
+    public boolean hasChanges()
     {
         return added.size() > 0 || removed.size() > 0;
     }

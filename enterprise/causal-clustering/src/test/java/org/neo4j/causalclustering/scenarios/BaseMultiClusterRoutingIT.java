@@ -30,8 +30,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,6 +47,7 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.routing.Endpoint;
 import org.neo4j.causalclustering.routing.multi_cluster.MultiClusterRoutingResult;
 import org.neo4j.causalclustering.routing.multi_cluster.procedure.MultiClusterRoutingResultFormat;
@@ -65,42 +65,25 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.DATABASE;
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_DATABASE;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_ALL_DATABASES;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )
-public class MultiClusterRoutingIT
+public abstract class BaseMultiClusterRoutingIT
 {
 
-    private static Set<String> DB_NAMES_1 = Stream.of( "foo", "bar" ).collect( Collectors.toSet() );
-    private static Set<String> DB_NAMES_2 = Collections.singleton( "default" );
-    private static Set<String> DB_NAMES_3 = Stream.of( "foo", "bar", "baz" ).collect( Collectors.toSet() );
-
-    @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> data()
-    {
-        return Arrays.asList( new Object[][]
-                {
-                        { "[shared discovery, 6 core hosts, 2 databases]", 6, 0, DB_NAMES_1, SHARED },
-                        { "[hazelcast discovery, 6 core hosts, 2 databases]", 6, 0, DB_NAMES_1, HAZELCAST },
-                        { "[shared discovery, 5 core hosts, 1 database]", 5, 0, DB_NAMES_2, SHARED },
-                        { "[hazelcast discovery, 5 core hosts, 1 database]", 5, 0, DB_NAMES_2, HAZELCAST },
-                        { "[hazelcast discovery, 6 core hosts, 3 read replicas, 3 databases]", 9, 3, DB_NAMES_3, HAZELCAST },
-                        { "[shared discovery, 6 core hosts, 3 read replicas, 3 databases]", 8, 2, DB_NAMES_3, SHARED }
-                }
-        );
-    }
+    protected static Set<String> DB_NAMES_1 = Stream.of( "foo", "bar" ).collect( Collectors.toSet() );
+    protected static Set<String> DB_NAMES_2 = Collections.singleton( "default" );
+    protected static Set<String> DB_NAMES_3 = Stream.of( "foo", "bar", "baz" ).collect( Collectors.toSet() );
 
     private final Set<String> dbNames;
     private final ClusterRule clusterRule;
     private final DefaultFileSystemRule fileSystemRule;
-    private final DiscoveryServiceType discoveryType;
+    private final Supplier<DiscoveryServiceFactory> discoveryType;
     private final int numCores;
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
     private FileSystemAbstraction fs;
 
     @Rule
@@ -109,7 +92,8 @@ public class MultiClusterRoutingIT
     @Rule
     public Timeout globalTimeout = Timeout.seconds(300);
 
-    public MultiClusterRoutingIT( String ignoredName, int numCores, int numReplicas, Set<String> dbNames, DiscoveryServiceType discoveryType )
+    protected BaseMultiClusterRoutingIT( String ignoredName, int numCores, int numReplicas, Set<String> dbNames,
+            Supplier<DiscoveryServiceFactory> discoveryType )
     {
         this.dbNames = dbNames;
         this.discoveryType = discoveryType;

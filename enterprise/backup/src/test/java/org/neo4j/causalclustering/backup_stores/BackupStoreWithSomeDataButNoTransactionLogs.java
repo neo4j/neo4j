@@ -33,7 +33,7 @@ import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
 public class BackupStoreWithSomeDataButNoTransactionLogs extends AbstractStoreGenerator
 {
     @Override
-    CoreClusterMember createData( Cluster cluster ) throws Exception
+    CoreClusterMember createData( Cluster<?> cluster ) throws Exception
     {
         return createEmptyNodes( cluster, 10 );
     }

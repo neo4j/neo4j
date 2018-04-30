@@ -23,7 +23,6 @@
 package org.neo4j.causalclustering.messaging;
 
 import java.io.Flushable;
-import java.io.IOException;
 
 import io.netty.buffer.ByteBuf;
 

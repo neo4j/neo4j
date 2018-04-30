@@ -51,7 +51,7 @@ public class ClusterRuleIT
     @Test
     public void shouldAssignPortsToMembersAutomatically() throws Exception
     {
-        Cluster cluster = clusterRule.withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 5 ).startCluster();
+        Cluster<?> cluster = clusterRule.withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 5 ).startCluster();
 
         int numberOfCoreMembers = cluster.coreMembers().size();
         assertThat( numberOfCoreMembers, is( 3 ) );
@@ -66,7 +66,7 @@ public class ClusterRuleIT
                         numberOfReadReplicas * NumberOfPortsUsedByReadReplica ) );
     }
 
-    private Set<Integer> gatherPortsUsed( Cluster cluster )
+    private Set<Integer> gatherPortsUsed( Cluster<?> cluster )
     {
         Set<Integer> portsUsed = new HashSet<>();
 

@@ -66,7 +66,7 @@ public class CoreReplicationIT
                     .withNumberOfReadReplicas( 0 )
                     .withTimeout( 1000, SECONDS );
 
-    private Cluster cluster;
+    private Cluster<?> cluster;
 
     @Before
     public void setup() throws Exception

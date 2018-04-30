@@ -29,24 +29,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
+import org.neo4j.causalclustering.discovery.TestTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ConnectToRandomCoreServerStrategyTest
 {
@@ -83,11 +80,7 @@ public class ConnectToRandomCoreServerStrategyTest
 
         for ( MemberId memberId : memberIds )
         {
-            coreMembers.put( memberId,
-                    new CoreServerInfo( new AdvertisedSocketAddress( "localhost", 5000 + offset ), new AdvertisedSocketAddress( "localhost", 6000 + offset ),
-                            new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
-                                    new AdvertisedSocketAddress( "localhost", 7000 + offset ) ) ) ), asSet( "core" ), "default" ) );
-
+            coreMembers.put( memberId, TestTopology.addressesForCore( offset, false ) );
             offset++;
         }
 

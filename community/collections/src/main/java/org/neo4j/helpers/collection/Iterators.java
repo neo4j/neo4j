@@ -23,6 +23,8 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,8 +32,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -472,6 +476,13 @@ public final class Iterators
         {
             addUnique( set, items.next() );
         }
+        return set;
+    }
+
+    public static <T> SortedSet<T> asSortedSet( Comparator<T> comparator, T... items )
+    {
+        TreeSet<T> set = new TreeSet<>( comparator );
+        Collections.addAll( set, items );
         return set;
     }
 

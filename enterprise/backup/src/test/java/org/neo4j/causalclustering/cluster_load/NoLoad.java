@@ -27,7 +27,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 public class NoLoad implements ClusterLoad
 {
     @Override
-    public void start( Cluster cluster )
+    public void start( Cluster<?> cluster )
     {
         // do nothing
     }
