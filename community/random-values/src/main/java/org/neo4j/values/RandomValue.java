@@ -19,21 +19,49 @@
  */
 package org.neo4j.values;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.FloatValue;
 import org.neo4j.values.storable.IntValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.ShortValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.abs;
+import static java.time.LocalDate.ofEpochDay;
+import static java.time.LocalDateTime.ofInstant;
+import static java.time.LocalTime.ofNanoOfDay;
+import static java.time.ZoneOffset.UTC;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.byteValue;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.floatValue;
@@ -45,6 +73,8 @@ public class RandomValue
 {
     //TODO make possible to use SplittableRandom
     private final Random random;
+    public static final long NANOS_PER_SECOND = 1_000_000_000L;
+
 
     public RandomValue()
     {
@@ -243,11 +273,80 @@ public class RandomValue
         return builder.build();
     }
 
+    public TimeValue randomTime()
+    {
+        return time( OffsetTime.ofInstant( randomInstant(), UTC ) );
+    }
+
+    public LocalDateTimeValue randomLocalDateTime()
+    {
+        return localDateTime( ofInstant( randomInstant(), UTC ) );
+    }
+
+    public DateValue randomDate()
+    {
+        return date( ofEpochDay( nextLong( LocalDate.MIN.toEpochDay(), LocalDate.MAX.toEpochDay() ) ) );
+    }
+
+    public LocalTimeValue randomLocalTime()
+    {
+        return localTime( ofNanoOfDay( nextLong( LocalTime.MIN.toNanoOfDay(), LocalTime.MAX.toNanoOfDay() ) ) );
+    }
+
+    public DateTimeValue randomDateTime()
+    {
+        return datetime( ZonedDateTime.ofInstant( randomInstant(), UTC ) );
+    }
+
+    public DurationValue randomPeriod()
+    {
+        // Based on Java period (years, months and days)
+        return duration( Period.of( random.nextInt(), random.nextInt( 12 ), random.nextInt( 28 ) ));
+    }
+
+    public DurationValue randomDuration()
+    {
+        // Based on java duration (seconds)
+        return duration( Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS ) );
+    }
+
+    public PointValue randomCartesianPoint()
+    {
+        return Values.pointValue( CoordinateReferenceSystem.Cartesian, random.nextDouble(), random.nextDouble() );
+    }
+
+    public PointValue randomCartesian3DPoint()
+    {
+        return Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, random.nextDouble(),
+                random.nextDouble(), random.nextDouble() );
+    }
+
+    public PointValue randomWGS84Point()
+    {
+        double longitude = random.nextDouble() * 360.0 - 180.0;
+        double latitude = random.nextDouble() * 180.0 - 90.0;
+        return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
+    }
+
+    public PointValue randomWGS843DPoint()
+    {
+        double longitude = random.nextDouble() * 360.0 - 180.0;
+        double latitude = random.nextDouble() * 180.0 - 90.0;
+        return Values.pointValue( CoordinateReferenceSystem.WGS84_3D, longitude, latitude,
+                random.nextDouble() * 10000 );
+    }
+
+    private Instant randomInstant()
+    {
+        return Instant.ofEpochSecond(
+                nextLong( LocalDateTime.MIN.toEpochSecond( UTC ), LocalDateTime.MAX.toEpochSecond( UTC ) ),
+                nextLong( NANOS_PER_SECOND ) );
+    }
+
     private int nextPowerOf2( int i )
     {
         return 1 << (32 - Integer.numberOfLeadingZeros( i ));
     }
-
 
     private int intBetween( int min, int max )
     {
@@ -257,5 +356,10 @@ public class RandomValue
     private long nextLong( long bound )
     {
         return abs( random.nextLong() ) % bound;
+    }
+
+    private long nextLong( long origin, long bound )
+    {
+        return nextLong( (bound - origin) + 1L ) + origin;
     }
 }
