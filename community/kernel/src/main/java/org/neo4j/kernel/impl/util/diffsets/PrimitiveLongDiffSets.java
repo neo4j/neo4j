@@ -29,7 +29,6 @@ import java.util.Objects;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
-import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 
 /**
@@ -103,20 +102,6 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
     {
         checkRemovedElements();
         return removeElement( element );
-    }
-
-    public void visit( PrimitiveLongDiffSetsVisitor visitor )
-    {
-        LongIterator addedItems = addedElements.longIterator();
-        while ( addedItems.hasNext() )
-        {
-            visitor.visitAdded( addedItems.next() );
-        }
-        LongIterator removedItems = removedElements.longIterator();
-        while ( removedItems.hasNext() )
-        {
-            visitor.visitRemoved( removedItems.next() );
-        }
     }
 
     @Override
