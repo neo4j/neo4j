@@ -27,6 +27,9 @@ package org.neo4j.cypher.internal.runtime;
  * <p>
  * The set will be resized when either probing has to go on for too long when doing inserts,
  * or the load factor reaches 75%.
+ *
+ * The word "offset" here means the index into an array,
+ * and slot is a number that multiplied by the width of the values will return the offset.
  */
 public class LongArraySet
 {
@@ -57,7 +60,7 @@ public class LongArraySet
     public boolean add( long[] value )
     {
         assert value.length == width : "all elements must have the same size";
-        int slotNr = offsetFor( value );
+        int slotNr = slotFor( value );
         int probeCount = 0;
         while ( true )
         {
@@ -69,7 +72,8 @@ public class LongArraySet
                     // We know we need to add the value to the set, but there is no space left
                     resize();
                     // Need to restart linear probe after resizing
-                    slotNr = offsetFor( value );
+                    slotNr = slotFor( value );
+                    probeCount = 0;
                 }
                 else
                 {
@@ -77,26 +81,29 @@ public class LongArraySet
                     return true;
                 }
             }
-
-            for ( int i = 0; i < width; i++ )
+            else
             {
-                if ( table.inner[offset + i] != value[i] )
+                for ( int i = 0; i < width; i++ )
                 {
-                    // Found a different value in this slot
-                    slotNr = (slotNr + 1) & table.tableMask;
-                    probeCount++;
-                    break;
+                    if ( table.inner[offset + i] != value[i] )
+                    {
+                        // Found a different value in this slot
+                        slotNr = (slotNr + 1) & table.tableMask;
+                        probeCount++;
+                        break;
+                    }
+                    else if ( i == width - 1 )
+                    {
+                        return false;
+                    }
                 }
-                else if ( i == width - 1 )
+                if ( probeCount > table.maxProbeCount )
                 {
-                    return false;
+                    resize();
+                    // Need to restart linear probe after resizing
+                    slotNr = slotFor( value );
+                    probeCount = 0;
                 }
-            }
-            if ( probeCount > table.maxProbeCount )
-            {
-                resize();
-                // Need to restart linear probe after resizing
-                slotNr = offsetFor( value );
             }
         }
     }
@@ -104,17 +111,18 @@ public class LongArraySet
     /***
      * Returns true if the value is in the set.
      * @param value The value to check for
-     * @return whether the value is in the set or not.
+    1     * @return whether the value is in the set or not.
      */
     public boolean contains( long[] value )
     {
         assert value.length == width : "all elements must have the same size";
-        int offset = offsetFor( value );
+        int slot = slotFor( value );
+
         int result;
         do
         {
-            result = table.checkSlot( offset, value );
-            offset = (offset + 1) & table.tableMask;
+            result = table.checkSlot( slot, value );
+            slot = (slot + 1) & table.tableMask;
         }
         while ( result == CONTINUE_PROBING );
         return result == VALUE_FOUND;
@@ -125,21 +133,22 @@ public class LongArraySet
         int oldSize = table.capacity;
         int oldNumberEntries = table.numberOfEntries;
         long[] srcArray = table.inner;
+        Table oldTable = table;
         table = new Table( oldSize * 2 );
         long[] dstArray = table.inner;
         table.numberOfEntries = oldNumberEntries;
 
-        for ( int i = 0; i < oldSize; i++ )
+        for ( int fromSlot = 0; fromSlot < oldSize; fromSlot++ )
         {
-            int fromOffset = i * width;
+            int fromOffset = fromSlot * width;
             if ( srcArray[fromOffset] != NOT_IN_USE )
             {
-                int toOffset = table.hashCode( fromOffset ) & table.tableMask;
+                int toSlot = oldTable.hashCode( fromOffset ) & table.tableMask;
 
                 // Linear probe until we find an unused slot.
                 // No need to check for size here - we are already inside of resize()
-                toOffset = findUnusedSlot( dstArray, toOffset );
-                System.arraycopy( srcArray, fromOffset, dstArray, toOffset, width );
+                toSlot = findUnusedSlot( dstArray, toSlot );
+                System.arraycopy( srcArray, fromOffset, dstArray, toSlot * width, width );
             }
         }
     }
@@ -156,7 +165,7 @@ public class LongArraySet
         }
     }
 
-    private int offsetFor( long[] value )
+    private int slotFor( long[] value )
     {
         return java.util.Arrays.hashCode( value ) & table.tableMask;
     }
@@ -200,11 +209,11 @@ public class LongArraySet
             return result;
         }
 
-        int checkSlot( int offset, long[] value )
+        int checkSlot( int slot, long[] value )
         {
             assert value.length == width;
 
-            int startOffset = offset * width;
+            int startOffset = slot * width;
             if ( inner[startOffset] == NOT_IN_USE )
             {
                 return SLOT_EMPTY;
@@ -221,10 +230,10 @@ public class LongArraySet
             return VALUE_FOUND;
         }
 
-        void setValue( int offset, long[] value )
+        void setValue( int slot, long[] value )
         {
-            int startOffset = offset * width;
-            System.arraycopy( value, 0, inner, startOffset, width );
+            int offset = slot * width;
+            System.arraycopy( value, 0, inner, offset, width );
             numberOfEntries++;
         }
     }
