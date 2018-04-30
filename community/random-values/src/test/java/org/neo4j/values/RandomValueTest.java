@@ -216,6 +216,32 @@ public class RandomValueTest
     }
 
     @Test
+    public void nextAsciiString()
+    {
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            TextValue textValue = randomValue.nextAsciiString( 10, 20 );
+            String asString = textValue.stringValue();
+            int length = asString.length();
+            assertThat( length, greaterThanOrEqualTo( 10 ) );
+            assertThat( length, lessThanOrEqualTo( 20 ) );
+        }
+    }
+
+    @Test
+    public void nextPrintableAsciiString()
+    {
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            TextValue textValue = randomValue.nextPrintableAsciiString( 10, 20 );
+            String asString = textValue.stringValue();
+            int length = asString.length();
+            assertThat( length, greaterThanOrEqualTo( 10 ) );
+            assertThat( length, lessThanOrEqualTo( 20 ) );
+        }
+    }
+
+    @Test
     public void nextString()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
