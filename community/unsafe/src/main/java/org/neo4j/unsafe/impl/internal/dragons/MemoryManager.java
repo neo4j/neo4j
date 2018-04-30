@@ -167,7 +167,7 @@ public final class MemoryManager
         public final Grab next;
         private final long address;
         private final long limit;
-        private final long alignMask;
+        private final long alignment;
         private long nextAlignedPointer;
 
         Grab( Grab next, long size, long alignment )
@@ -175,27 +175,32 @@ public final class MemoryManager
             this.next = next;
             this.address = allocateNativeMemory( size );
             this.limit = address + size;
-            this.alignMask = alignment - 1;
+            this.alignment = alignment;
 
             nextAlignedPointer = nextAligned( this.address );
         }
 
-        Grab( Grab next, long address, long limit, long alignMask, long nextAlignedPointer )
+        Grab( Grab next, long address, long limit, long alignment, long nextAlignedPointer )
         {
             this.next = next;
             this.address = address;
             this.limit = limit;
-            this.alignMask = alignMask;
+            this.alignment = alignment;
             this.nextAlignedPointer = nextAlignedPointer;
         }
 
         private long nextAligned( long pointer )
         {
-            if ( (pointer & ~alignMask) == pointer )
+            if ( alignment == 1 )
             {
                 return pointer;
             }
-            return (pointer + alignMask) & ~alignMask;
+            long off = pointer % alignment;
+            if ( off == 0 )
+            {
+                return pointer;
+            }
+            return pointer + (alignment - off);
         }
 
         long allocate( long bytes )
@@ -217,7 +222,7 @@ public final class MemoryManager
 
         Grab setNext( Grab grab )
         {
-            return new Grab( grab, address, limit, alignMask, nextAlignedPointer );
+            return new Grab( grab, address, limit, alignment, nextAlignedPointer );
         }
 
         @Override
