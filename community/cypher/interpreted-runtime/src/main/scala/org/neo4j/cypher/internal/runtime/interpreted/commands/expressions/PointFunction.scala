@@ -32,15 +32,14 @@ import org.neo4j.values.virtual.{MapValue, VirtualNodeValue, VirtualRelationship
 import scala.collection.JavaConverters._
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
-  val allowOpenMaps = true
-
   override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): AnyValue = value match {
     case IsMap(mapCreator) =>
       val map = mapCreator(state.query)
       if (containsNull(map)) {
         Values.NO_VALUE
       } else {
-        if (allowOpenMaps || value.isInstanceOf[VirtualNodeValue] || value.isInstanceOf[VirtualRelationshipValue]) {
+        //TODO: We might consider removing this code if the PointBuilder.allowOpenMaps=true remains default
+        if (value.isInstanceOf[VirtualNodeValue] || value.isInstanceOf[VirtualRelationshipValue]) {
           // We need to filter out any non-spatial properties from the map, otherwise PointValue.fromMap will throw
           val allowedKeys = PointValue.ALLOWED_KEYS
           val filteredMap = VirtualValues.map(map.getMapCopy.asScala.filterKeys( k => allowedKeys.exists( _.equalsIgnoreCase(k) )).asJava)
