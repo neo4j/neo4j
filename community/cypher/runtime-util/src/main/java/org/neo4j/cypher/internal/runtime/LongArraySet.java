@@ -28,7 +28,6 @@ package org.neo4j.cypher.internal.runtime;
  * The set will be resized when either probing has to go on for too long when doing inserts,
  * or the load factor reaches 75%.
  */
-@SuppressWarnings( "ALL" )
 public class LongArraySet
 {
     private static final long NOT_IN_USE = 0xF000000000000000L;
@@ -58,48 +57,46 @@ public class LongArraySet
     public boolean add( long[] value )
     {
         assert value.length == width : "all elements must have the same size";
-        int offset = offsetFor( value );
+        int slotNr = offsetFor( value );
         int probeCount = 0;
         while ( true )
         {
-            int apa = table.checkSlot( offset, value );
-            switch ( apa )
+            int offset = slotNr * width;
+            if ( table.inner[offset] == NOT_IN_USE )
             {
-            case VALUE_FOUND:
-                // Set already contains value - do nothing
-                return true;
-
-            case SLOT_EMPTY:
                 if ( table.timeToResize() )
                 {
-                    // We know that the value does not yet exist in the set, but there is not space for it
+                    // We know we need to add the value to the set, but there is no space left
                     resize();
-                    // Need to re-start the linear probing after resizing
-                    offset = offsetFor( value );
-                    break;
+                    // Need to restart linear probe after resizing
+                    slotNr = offsetFor( value );
                 }
                 else
                 {
-                    // The value does not yet exist in the set, and here is a free spot
-                    table.setValue( offset, value );
+                    table.setValue( slotNr, value );
                     return true;
                 }
-            case CONTINUE_PROBING:
-                // Slot already taken
-                if ( probeCount == table.maxProbeCount )
+            }
+
+            for ( int i = 0; i < width; i++ )
+            {
+                if ( table.inner[offset + i] != value[i] )
                 {
-                    // We will only allow a probe to go on for limited amount of steps - if we need to probe too much, we'll resize
-                    resize();
-                    offset = offsetFor( value );
-                    probeCount = 0;
-                }
-                else
-                {
+                    // Found a different value in this slot
+                    slotNr = (slotNr + 1) & table.tableMask;
                     probeCount++;
-                    offset = (offset + 1) & table.tableMask;
+                    break;
                 }
-                break;
-                default: throw new RuntimeException( "this should never happen" );
+                else if ( i == width - 1 )
+                {
+                    return false;
+                }
+            }
+            if ( probeCount > table.maxProbeCount )
+            {
+                resize();
+                // Need to restart linear probe after resizing
+                slotNr = offsetFor( value );
             }
         }
     }
@@ -126,30 +123,36 @@ public class LongArraySet
     private void resize()
     {
         int oldSize = table.capacity;
-        long[] oldTable = table.inner;
+        int oldNumberEntries = table.numberOfEntries;
+        long[] srcArray = table.inner;
         table = new Table( oldSize * 2 );
+        long[] dstArray = table.inner;
+        table.numberOfEntries = oldNumberEntries;
 
-        // Creating the key array outside of the copy loop allows us to reuse the same array for all elements
-        long[] current = new long[width];
         for ( int i = 0; i < oldSize; i++ )
         {
             int fromOffset = i * width;
-            if ( oldTable[fromOffset] != NOT_IN_USE )
+            if ( srcArray[fromOffset] != NOT_IN_USE )
             {
-                // Copy over the longs from the source to the key array
-                System.arraycopy( oldTable, fromOffset, current, 0, width );
-                int toOffset = offsetFor( current );
+                int toOffset = table.hashCode( fromOffset ) & table.tableMask;
 
                 // Linear probe until we find an unused slot.
                 // No need to check for size here - we are already inside of resize()
-                int statusForSlot = table.checkSlot( toOffset, current );
-                while ( statusForSlot != SLOT_EMPTY )
-                {
-                    toOffset = (toOffset + 1) & table.tableMask;
-                    statusForSlot = table.checkSlot( toOffset, current );
-                }
-                table.setValue( toOffset, current );
+                toOffset = findUnusedSlot( dstArray, toOffset );
+                System.arraycopy( srcArray, fromOffset, dstArray, toOffset, width );
             }
+        }
+    }
+
+    private int findUnusedSlot( long[] to, int startOffset )
+    {
+        while ( true )
+        {
+            if ( to[startOffset * width] == NOT_IN_USE )
+            {
+                return startOffset;
+            }
+            startOffset = (startOffset + 1) & table.tableMask;
         }
     }
 
@@ -162,7 +165,7 @@ public class LongArraySet
     {
         private final int capacity;
         private final long[] inner;
-        private int numberOfEntries;
+        int numberOfEntries;
         private int resizeLimit;
 
         int tableMask;
@@ -172,7 +175,7 @@ public class LongArraySet
         {
             this.capacity = capacity;
             resizeLimit = (int) (capacity * 0.75);
-            tableMask = java.lang.Integer.highestOneBit( capacity ) - 1;
+            tableMask = Integer.highestOneBit( capacity ) - 1;
             inner = new long[capacity * width];
             java.util.Arrays.fill( inner, NOT_IN_USE );
             maxProbeCount = (int) (Math.log( capacity ) / lnOf2);
@@ -180,7 +183,21 @@ public class LongArraySet
 
         boolean timeToResize()
         {
-            return numberOfEntries >= resizeLimit;
+            return numberOfEntries == resizeLimit;
+        }
+
+        int hashCode( int offset )
+        {
+            int result = 1;
+            int lastOffset = offset + width;
+            for ( int i = offset; i < lastOffset; i++ )
+            {
+                long element = inner[i];
+                int elementHash = (int) (element ^ (element >>> 32));
+                result = 31 * result + elementHash;
+            }
+
+            return result;
         }
 
         int checkSlot( int offset, long[] value )
