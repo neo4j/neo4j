@@ -27,7 +27,8 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -35,13 +36,11 @@ import java.util.function.Function;
 
 import org.neo4j.collection.PrimitiveIntCollections;
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor.Home;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
-import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.Direction;
 
 import static org.neo4j.collection.PrimitiveLongCollections.toPrimitiveIterator;
@@ -194,8 +193,7 @@ public class RelationshipChangesForNode
     public void addRelationship( long relId, int typeId, Direction direction )
     {
         Map<Integer, Set<Long>> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-        Set<Long> rels =
-                relTypeToRelsMap.computeIfAbsent( typeId, k -> Collections.newSetFromMap( new VersionedHashMap<>() ) );
+        Set<Long> rels = relTypeToRelsMap.computeIfAbsent( typeId, k -> new HashSet<>() );
 
         rels.add( relId );
 
@@ -423,7 +421,7 @@ public class RelationshipChangesForNode
     {
         if ( outgoing == null )
         {
-            outgoing = new VersionedHashMap<>();
+            outgoing = new HashMap<>();
         }
         return outgoing;
     }
@@ -432,7 +430,7 @@ public class RelationshipChangesForNode
     {
         if ( incoming == null )
         {
-            incoming = new VersionedHashMap<>();
+            incoming = new HashMap<>();
         }
         return incoming;
     }
@@ -441,7 +439,7 @@ public class RelationshipChangesForNode
     {
         if ( loops == null )
         {
-            loops = new VersionedHashMap<>();
+            loops = new HashMap<>();
         }
         return loops;
     }
@@ -502,7 +500,7 @@ public class RelationshipChangesForNode
                 Iterator<Set<Long>> diffSet = filter.apply( map );
                 while ( diffSet.hasNext() )
                 {
-                    result.add( diffSet.next() );
+                    result.add( new HashSet<>( diffSet.next() ) );
                 }
             }
         }
@@ -544,14 +542,21 @@ public class RelationshipChangesForNode
 
     private LongIterator primitiveIds( Map<Integer, Set<Long>> map )
     {
-        return map == null ? ImmutableEmptyLongIterator.INSTANCE :
-               toPrimitiveIterator( Iterators.flatMap( Set::iterator, map.values().iterator() ) );
+        if ( map == null )
+        {
+            return ImmutableEmptyLongIterator.INSTANCE;
+        }
+
+        final int size = map.values().stream().mapToInt( Set::size ).sum();
+        final Set<Long> ids = new HashSet<>( size );
+        map.values().forEach( ids::addAll );
+        return toPrimitiveIterator( ids.iterator() );
     }
 
     private LongIterator primitiveIdsByType( Map<Integer, Set<Long>> map, int type )
     {
         Set<Long> relationships = map.get( type );
-        return relationships == null ? ImmutableEmptyLongIterator.INSTANCE : toPrimitiveIterator( relationships.iterator() );
+        return relationships == null ? ImmutableEmptyLongIterator.INSTANCE : toPrimitiveIterator( new HashSet<>( relationships ).iterator() );
     }
 
     private LongIterator getRelationships( Direction direction,

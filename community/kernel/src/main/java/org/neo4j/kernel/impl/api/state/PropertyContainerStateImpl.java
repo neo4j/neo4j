@@ -19,27 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
-import static java.util.Collections.newSetFromMap;
 
 class PropertyContainerStateImpl implements PropertyContainerState
 {
     private final long id;
 
-    private VersionedHashMap<Integer, Value> addedProperties;
-    private VersionedHashMap<Integer, Value> changedProperties;
+    private Map<Integer, Value> addedProperties;
+    private Map<Integer, Value> changedProperties;
     private Set<Integer> removedProperties;
 
     private final Predicate<StorageProperty> excludePropertiesWeKnowAbout = new Predicate<StorageProperty>()
@@ -89,7 +90,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
 
         if ( changedProperties == null )
         {
-            changedProperties = new VersionedHashMap<>();
+            changedProperties = new HashMap<>();
         }
         changedProperties.put( propertyKeyId, value );
 
@@ -110,7 +111,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( addedProperties == null )
         {
-            addedProperties = new VersionedHashMap<>();
+            addedProperties = new HashMap<>();
         }
         addedProperties.put( propertyKeyId, value );
     }
@@ -123,7 +124,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( removedProperties == null )
         {
-            removedProperties = newSetFromMap( new VersionedHashMap<>() );
+            removedProperties = new HashSet<>();
         }
         removedProperties.add( propertyKeyId );
         if ( changedProperties != null )
@@ -224,7 +225,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         return removedProperties != null && removedProperties.contains( propertyKeyId );
     }
 
-    private Iterator<StorageProperty> toPropertyIterator( VersionedHashMap<Integer,Value> propertyMap )
+    private Iterator<StorageProperty> toPropertyIterator( Map<Integer, Value> propertyMap )
     {
         return propertyMap == null ? emptyIterator() :
                Iterators.map(
@@ -233,7 +234,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
                 );
     }
 
-    private PropertyKeyValue getPropertyOrNull( VersionedHashMap<Integer,Value> propertyMap, int propertyKeyId )
+    private PropertyKeyValue getPropertyOrNull( Map<Integer, Value> propertyMap, int propertyKeyId )
     {
         Value value = propertyMap.get( propertyKeyId );
         return value == null ? null : new PropertyKeyValue( propertyKeyId, value );
