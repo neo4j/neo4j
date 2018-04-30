@@ -34,4 +34,10 @@ public class NoLoad implements ClusterLoad
     {
         // do nothing
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName();
+    }
 }

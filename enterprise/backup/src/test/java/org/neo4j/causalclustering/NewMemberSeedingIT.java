@@ -74,7 +74,7 @@ public class NewMemberSeedingIT
     private File baseBackupDir;
 
     @Parameterized.Parameters( name = "{0} with {1}" )
-    public static Iterable<Object[]> data() throws Exception
+    public static Iterable<Object[]> data()
     {
         return combine( stores(), loads() );
     }
@@ -103,7 +103,7 @@ public class NewMemberSeedingIT
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         this.fileCopyDetector = new FileCopyDetector();
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0, new SharedDiscoveryServiceFactory(), emptyMap(), emptyMap(), emptyMap(), emptyMap(),
@@ -112,7 +112,7 @@ public class NewMemberSeedingIT
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( cluster != null )
         {
