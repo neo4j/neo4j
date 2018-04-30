@@ -30,7 +30,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.values.storable.ValueTuple;
 
 import static org.junit.Assert.assertEquals;
@@ -58,7 +58,7 @@ public class TxStateCompositeIndexTest
     public void shouldScanOnAnEmptyTxState()
     {
         // WHEN
-        PrimitiveLongReadableDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
+        LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
 
         // THEN
         assertTrue( diffSets.isEmpty() );
@@ -68,7 +68,7 @@ public class TxStateCompositeIndexTest
     public void shouldSeekOnAnEmptyTxState()
     {
         // WHEN
-        PrimitiveLongReadableDiffSets diffSets =
+        LongDiffSets diffSets =
                 state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
 
         // THEN
@@ -83,7 +83,7 @@ public class TxStateCompositeIndexTest
         modifyIndex( indexOn_1_2_3 ).addDefaultStringEntries( 44L );
 
         // WHEN
-        PrimitiveLongReadableDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
+        LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
 
         // THEN
         assertEquals( asSet( 42L, 43L ), toSet( diffSets.getAdded() ) );
@@ -97,7 +97,7 @@ public class TxStateCompositeIndexTest
         modifyIndex( indexOn_1_2_3 ).addDefaultStringEntries( 44L );
 
         // WHEN
-        PrimitiveLongReadableDiffSets diffSets =
+        LongDiffSets diffSets =
                 state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
 
         // THEN
@@ -112,7 +112,7 @@ public class TxStateCompositeIndexTest
         modifyIndex( indexOn_1_2_3 ).addDefaultStringProperties( 44L );
 
         // WHEN
-        PrimitiveLongReadableDiffSets diffSets =
+        LongDiffSets diffSets =
                 state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( 43001.0, 43002.0 ) );
 
         // THEN
@@ -128,7 +128,7 @@ public class TxStateCompositeIndexTest
         modifyIndex( indexOn_1_1_2 ).removeDefaultStringEntries( 44L );
 
         // WHEN
-        PrimitiveLongReadableDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
+        LongDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
 
         // THEN
         assertEquals( asSet( 42L ), toSet( diffSets.getAdded() ) );
@@ -144,7 +144,7 @@ public class TxStateCompositeIndexTest
                 getDefaultStringPropertyValues( 43L, indexOn_1_1_2.schema().getPropertyIds() ) );
 
         // WHEN
-        PrimitiveLongReadableDiffSets diffSets =
+        LongDiffSets diffSets =
                 state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
 
         // THEN
@@ -192,7 +192,7 @@ public class TxStateCompositeIndexTest
         for ( int i = 0; i < values.length; i++ )
         {
             // WHEN
-            PrimitiveLongReadableDiffSets diffSets = state.indexUpdatesForSeek( index, values[i] );
+            LongDiffSets diffSets = state.indexUpdatesForSeek( index, values[i] );
 
             // THEN
             assertEquals( asSet( nodeIdStart + i ), toSet( diffSets.getAdded() ) );

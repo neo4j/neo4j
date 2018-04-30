@@ -62,7 +62,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
-import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -217,7 +217,7 @@ public class KernelTransactionTestBase
         }
 
         @Override
-        public PrimitiveLongDiffSets newLongDiffSets()
+        public MutableLongDiffSets newLongDiffSets()
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongDiffSets();
         }

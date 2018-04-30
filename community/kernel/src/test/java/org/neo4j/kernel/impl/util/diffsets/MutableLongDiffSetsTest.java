@@ -41,7 +41,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class PrimitiveLongDiffSetsTest
+public class MutableLongDiffSetsTest
 {
 
     @Test
@@ -53,7 +53,7 @@ public class PrimitiveLongDiffSetsTest
     @Test
     public void addElementsToDiffSets()
     {
-        PrimitiveLongDiffSets diffSets = createDiffSet();
+        MutableLongDiffSets diffSets = createDiffSet();
 
         diffSets.add( 1L );
         diffSets.add( 2L );
@@ -66,7 +66,7 @@ public class PrimitiveLongDiffSetsTest
     @Test
     public void removeElementsInDiffSets()
     {
-        PrimitiveLongDiffSets diffSets = createDiffSet();
+        MutableLongDiffSets diffSets = createDiffSet();
 
         diffSets.remove( 1L );
         diffSets.remove( 2L );
@@ -78,7 +78,7 @@ public class PrimitiveLongDiffSetsTest
     @Test
     public void removeAndAddElementsToDiffSets()
     {
-        PrimitiveLongDiffSets diffSets = createDiffSet();
+        MutableLongDiffSets diffSets = createDiffSet();
 
         diffSets.remove( 1L );
         diffSets.remove( 2L );
@@ -95,7 +95,7 @@ public class PrimitiveLongDiffSetsTest
     @Test
     public void checkIsElementsAddedOrRemoved()
     {
-        PrimitiveLongDiffSets diffSet = createDiffSet();
+        MutableLongDiffSets diffSet = createDiffSet();
 
         diffSet.add( 1L );
 
@@ -114,7 +114,7 @@ public class PrimitiveLongDiffSetsTest
     @Test
     public void addAllElements()
     {
-        PrimitiveLongDiffSets diffSet = createDiffSet();
+        MutableLongDiffSets diffSet = createDiffSet();
 
         diffSet.addAll( PrimitiveLongCollections.iterator( 7L, 8L ) );
         diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L ) );
@@ -125,7 +125,7 @@ public class PrimitiveLongDiffSetsTest
     @Test
     public void removeAllElements()
     {
-        PrimitiveLongDiffSets diffSet = createDiffSet();
+        MutableLongDiffSets diffSet = createDiffSet();
 
         diffSet.removeAll( PrimitiveLongCollections.iterator( 7L, 8L ) );
         diffSet.removeAll( PrimitiveLongCollections.iterator( 9L, 10L ) );
@@ -136,7 +136,7 @@ public class PrimitiveLongDiffSetsTest
     @Test
     public void addedAndRemovedElementsDelta()
     {
-        PrimitiveLongDiffSets diffSet = createDiffSet();
+        MutableLongDiffSets diffSet = createDiffSet();
         assertEquals( 0, diffSet.delta() );
 
         diffSet.addAll( PrimitiveLongCollections.iterator( 7L, 8L ) );
@@ -150,7 +150,7 @@ public class PrimitiveLongDiffSetsTest
     @Test
     public void augmentDiffSetWithExternalElements()
     {
-        PrimitiveLongDiffSets diffSet = createDiffSet();
+        MutableLongDiffSets diffSet = createDiffSet();
         diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L, 11L ) );
         diffSet.removeAll( PrimitiveLongCollections.iterator( 1L, 2L ) );
 
@@ -166,7 +166,7 @@ public class PrimitiveLongDiffSetsTest
         final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
         doReturn( set1, set2 ).when( collectionsFactory ).newLongSet();
 
-        final PrimitiveLongDiffSets diffSets = new PrimitiveLongDiffSets( collectionsFactory );
+        final MutableLongDiffSets diffSets = new MutableLongDiffSets( collectionsFactory );
         diffSets.add( 1L );
         diffSets.remove( 2L );
 
@@ -176,8 +176,8 @@ public class PrimitiveLongDiffSetsTest
         verifyNoMoreInteractions( collectionsFactory );
     }
 
-    private static PrimitiveLongDiffSets createDiffSet()
+    private static MutableLongDiffSets createDiffSet()
     {
-        return new PrimitiveLongDiffSets( OnHeapCollectionsFactory.INSTANCE );
+        return new MutableLongDiffSets( OnHeapCollectionsFactory.INSTANCE );
     }
 }

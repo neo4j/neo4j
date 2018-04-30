@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
-import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -187,7 +187,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
 
-    private Set<PrimitiveLongDiffSets> indexDiffs;
+    private Set<MutableLongDiffSets> indexDiffs;
     private final TxState state;
 
     NodeStateImpl( long id, TxState state )
@@ -332,16 +332,16 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         return new IntHashSet();
     }
 
-    void addIndexDiff( PrimitiveLongDiffSets diff )
+    void addIndexDiff( MutableLongDiffSets diff )
     {
         if ( indexDiffs == null )
         {
-            indexDiffs = Collections.newSetFromMap( new IdentityHashMap<PrimitiveLongDiffSets, Boolean>() );
+            indexDiffs = Collections.newSetFromMap( new IdentityHashMap<MutableLongDiffSets, Boolean>() );
         }
         indexDiffs.add( diff );
     }
 
-    void removeIndexDiff( PrimitiveLongDiffSets diff )
+    void removeIndexDiff( MutableLongDiffSets diff )
     {
         if ( indexDiffs != null )
         {
@@ -353,7 +353,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( indexDiffs != null )
         {
-            for ( PrimitiveLongDiffSets diff : indexDiffs )
+            for ( MutableLongDiffSets diff : indexDiffs )
             {
                 if ( diff.getAdded().contains( nodeId ) )
                 {

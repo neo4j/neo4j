@@ -140,17 +140,17 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForScan( SchemaIndexDescriptor index );
+    LongDiffSets indexUpdatesForScan( SchemaIndexDescriptor index );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( SchemaIndexDescriptor index, IndexQuery query );
+    LongDiffSets indexUpdatesForSuffixOrContains( SchemaIndexDescriptor index, IndexQuery query );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor index, ValueTuple values );
+    LongDiffSets indexUpdatesForSeek( SchemaIndexDescriptor index, ValueTuple values );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor index, ValueGroup valueGroup,
+    LongDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor index, ValueGroup valueGroup,
                                                             Value lower, boolean includeLower,
                                                             Value upper, boolean includeUpper );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( SchemaIndexDescriptor index, String prefix );
+    LongDiffSets indexUpdatesForRangeSeekByPrefix( SchemaIndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );
 

@@ -29,7 +29,7 @@ import java.util.Objects;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
-import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
 /**
  * Primitive long version of collection that with given a sequence of add and removal operations, tracks
@@ -37,7 +37,7 @@ import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
  * target collection such that the result is equivalent to just
  * executing the sequence of additions and removals in order.
  */
-public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Closeable
+public class MutableLongDiffSets implements LongDiffSets, Closeable
 {
     private static final MutableLongSet NOT_INITIALIZED = LongSets.mutable.empty();
 
@@ -45,19 +45,19 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
     private MutableLongSet addedElements;
     private MutableLongSet removedElements;
 
-    public PrimitiveLongDiffSets()
+    public MutableLongDiffSets()
     {
         this( NOT_INITIALIZED, NOT_INITIALIZED, OnHeapCollectionsFactory.INSTANCE );
     }
 
-    public PrimitiveLongDiffSets( MutableLongSet addedElements, MutableLongSet removedElements, CollectionsFactory collectionsFactory )
+    public MutableLongDiffSets( MutableLongSet addedElements, MutableLongSet removedElements, CollectionsFactory collectionsFactory )
     {
         this.addedElements = addedElements;
         this.removedElements = removedElements;
         this.collectionsFactory = collectionsFactory;
     }
 
-    public PrimitiveLongDiffSets( CollectionsFactory collectionsFactory )
+    public MutableLongDiffSets( CollectionsFactory collectionsFactory )
     {
         this( NOT_INITIALIZED, NOT_INITIALIZED, collectionsFactory );
     }
@@ -157,7 +157,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
         {
             return false;
         }
-        PrimitiveLongDiffSets diffSets = (PrimitiveLongDiffSets) o;
+        MutableLongDiffSets diffSets = (MutableLongDiffSets) o;
         return Objects.equals( addedElements, diffSets.addedElements ) &&
                 Objects.equals( removedElements, diffSets.removedElements );
     }
