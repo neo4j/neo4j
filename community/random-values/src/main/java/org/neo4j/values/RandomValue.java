@@ -193,6 +193,30 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    public TextValue nextAsciiString( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        byte[] bytes = new byte[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            bytes[i] = (byte) intBetween( 0, 127 );
+
+        }
+        return Values.utf8Value( bytes );
+    }
+
+    public TextValue nextPrintableAsciiString( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        byte[] bytes = new byte[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            bytes[i] = (byte) intBetween( 32, 126 );
+
+        }
+        return Values.utf8Value( bytes );
+    }
+
     public TextValue nextString( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
