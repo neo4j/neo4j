@@ -34,11 +34,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.causalclustering.stresstests.Config;
 import org.neo4j.causalclustering.stresstests.Control;
 import org.neo4j.concurrent.Futures;
+import org.neo4j.diagnostics.utils.DumpUtils;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.ThreadTestUtils;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
@@ -110,14 +110,14 @@ public class BackupServiceStressTesting
             service.shutdown();
             if ( !service.awaitTermination( 30, SECONDS ) )
             {
-                ThreadTestUtils.dumpAllStackTraces();
+                printThreadDump();
                 fail( "Didn't manage to shut down the workers correctly, dumped threads for forensic purposes" );
             }
         }
         catch ( TimeoutException t )
         {
             System.err.println( format( "Timeout waiting task completion. Dumping all threads." ) );
-            ThreadTestUtils.dumpAllStackTraces();
+            printThreadDump();
             throw t;
         }
         finally
@@ -129,5 +129,10 @@ public class BackupServiceStressTesting
         // let's cleanup disk space when everything went well
         FileUtils.deleteRecursively( storeDirectory );
         FileUtils.deletePathRecursively( workDirectory );
+    }
+
+    private static void printThreadDump()
+    {
+        System.err.println( DumpUtils.threadDump() );
     }
 }
