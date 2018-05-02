@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -74,23 +75,17 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
     }
 
     @Override
-    public void removeAll( LongIterator elementsToRemove )
+    public void removeAll( LongIterable elements )
     {
         checkRemovedElements();
-        while ( elementsToRemove.hasNext() )
-        {
-            removeElement( elementsToRemove.next() );
-        }
+        elements.each( this::removeElement );
     }
 
     @Override
-    public void addAll( LongIterator elementsToAdd )
+    public void addAll( LongIterable elements )
     {
         checkAddedElements();
-        while ( elementsToAdd.hasNext() )
-        {
-            addElement( elementsToAdd.next() );
-        }
+        elements.each( this::addElement );
     }
 
     @Override
