@@ -31,6 +31,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -71,6 +72,28 @@ import static org.neo4j.values.storable.Values.shortValue;
 
 public class RandomValue
 {
+
+    private static final int BOOLEAN = 0;
+    private static final int BYTE = 1;
+    private static final int SHORT = 2;
+    private static final int STRING = 3;
+    private static final int INT = 4;
+    private static final int LONG = 5;
+    private static final int FLOAT = 6;
+    private static final int DOUBLE = 7;
+    private static final int LOCAL_DATE_TIME = 8;
+    private static final int DATE = 9;
+    private static final int LOCAL_TIME = 10;
+    private static final int PERIOD = 11;
+    private static final int DURATION = 12;
+    private static final int TIME = 13;
+    private static final int DATE_TIME = 14;
+    private static final int CARTESIAN_POINT = 15;
+    private static final int CARTESIAN_POINT_3D = 16;
+    private static final int GEOGRAPHIC_POINT = 17;
+    private static final int GEOGRAPHIC_POINT_3D = 18;
+    private static final int NUMBER_OF_TYPES = 19;
+
     public interface Configuration
     {
         int stringMinLength();
@@ -352,62 +375,326 @@ public class RandomValue
         return builder.build();
     }
 
-    public TimeValue randomTime()
+    public ArrayValue nextArray()
+    {
+        return nextArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    public ArrayValue nextArray( int minLength, int maxLength )
+    {
+        int type = random.nextInt( NUMBER_OF_TYPES );
+        switch ( type )
+        {
+        case BOOLEAN:
+            return nextBooleanArray( minLength, maxLength );
+        case BYTE:
+            return nextByteArray( minLength, maxLength );
+        case SHORT:
+            return nextShortArray( minLength, maxLength );
+        case STRING:
+            return nextStringArray( minLength, maxLength );
+        case INT:
+            return nextIntArray( minLength, maxLength );
+        case LONG:
+            return nextLongArray( minLength, maxLength );
+        case FLOAT:
+            return nextFloatArray( minLength, maxLength );
+        case DOUBLE:
+            return nextDoubleArray( minLength, maxLength );
+        case LOCAL_DATE_TIME:
+            return nextLocalDateTimeArray( minLength, maxLength );
+        case DATE:
+            return nextDateArray( minLength, maxLength );
+        case LOCAL_TIME:
+            return nextLocalTimeArray( minLength, maxLength );
+        case PERIOD:
+            return nextPeriodArray( minLength, maxLength );
+        case DURATION:
+            return nextDurationArray( minLength, maxLength );
+        case TIME:
+            return nextTimeArray( minLength, maxLength );
+        case DATE_TIME:
+            return nextDateTimeArray( minLength, maxLength );
+        case CARTESIAN_POINT:
+            return nextCartesianPointArray( minLength, maxLength );
+        case CARTESIAN_POINT_3D:
+            return nextCartesian3DPointArray( minLength, maxLength );
+        case GEOGRAPHIC_POINT:
+            return nextGeographicPointArray( minLength, maxLength );
+        case GEOGRAPHIC_POINT_3D:
+            return nextGeographic3DPointArray( minLength, maxLength );
+
+        default:
+            throw new IllegalArgumentException( "Unknown value type: " + type );
+        }
+    }
+
+    public ArrayValue nextCartesianPointArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        PointValue[] array = new PointValue[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = nextCartesianPoint();
+        }
+        return Values.pointArray( array );
+    }
+
+    public ArrayValue nextCartesian3DPointArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        PointValue[] array = new PointValue[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = nextCartesian3DPoint();
+        }
+        return Values.pointArray( array );
+    }
+
+    public ArrayValue nextGeographicPointArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        PointValue[] array = new PointValue[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = nextGeographicPoint();
+        }
+        return Values.pointArray( array );
+    }
+
+    public ArrayValue nextGeographic3DPointArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        PointValue[] array = new PointValue[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = nextGeographic3DPoint();
+        }
+        return Values.pointArray( array );
+    }
+
+    public ArrayValue nextLocalTimeArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        LocalTime[] array = new LocalTime[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = ofNanoOfDay( nextLong( LocalTime.MIN.toNanoOfDay(), LocalTime.MAX.toNanoOfDay() ) );
+        }
+        return Values.localTimeArray( array );
+    }
+
+    public ArrayValue nextTimeArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        OffsetTime[] array = new OffsetTime[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = OffsetTime.ofInstant( randomInstant(), UTC );
+        }
+        return Values.timeArray( array );
+    }
+
+    public ArrayValue nextDateTimeArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        ZonedDateTime[] array = new ZonedDateTime[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = ZonedDateTime.ofInstant( randomInstant(), UTC );
+        }
+        return Values.dateTimeArray( array );
+    }
+
+    public ArrayValue nextLocalDateTimeArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        LocalDateTime[] array = new LocalDateTime[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = ofInstant( randomInstant(), UTC );
+        }
+        return Values.localDateTimeArray( array );
+    }
+
+    public ArrayValue nextDateArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        LocalDate[] array = new LocalDate[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = ofEpochDay( nextLong( LocalDate.MIN.toEpochDay(), LocalDate.MAX.toEpochDay() ) );
+        }
+        return Values.dateArray( array );
+    }
+
+    public ArrayValue nextPeriodArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        Period[] array = new Period[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = Period.of( random.nextInt(), random.nextInt( 12 ), random.nextInt( 28 ) );
+        }
+        return Values.durationArray( array );
+    }
+
+    public ArrayValue nextDurationArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        Duration[] array = new Duration[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            array[i] = Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS );
+        }
+        return Values.durationArray( array );
+    }
+
+    public ArrayValue nextDoubleArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        double[] doubles = new double[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            doubles[i] = random.nextDouble();
+        }
+        return Values.doubleArray( doubles );
+    }
+
+    public ArrayValue nextFloatArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        float[] floats = new float[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            floats[i] = random.nextFloat();
+        }
+        return Values.floatArray( floats );
+    }
+
+    public ArrayValue nextLongArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        long[] longs = new long[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            longs[i] = random.nextLong();
+        }
+        return Values.longArray( longs );
+    }
+
+    public ArrayValue nextIntArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        int[] ints = new int[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            ints[i] = random.nextInt();
+        }
+        return Values.intArray( ints );
+    }
+
+    public ArrayValue nextBooleanArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        boolean[] booleans = new boolean[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            booleans[i] = random.nextBoolean();
+        }
+        return Values.booleanArray( booleans );
+    }
+
+    public ArrayValue nextByteArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        byte[] bytes = new byte[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            bytes[i] = (byte) random.nextInt();
+        }
+        return Values.byteArray( bytes );
+    }
+
+    public ArrayValue nextShortArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        short[] shorts = new short[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            shorts[i] = (short) random.nextInt();
+        }
+        return Values.shortArray( shorts );
+    }
+
+    public ArrayValue nextStringArray( int minLength, int maxLength )
+    {
+        int length = intBetween( minLength, maxLength );
+        String[] strings = new String[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            strings[i] = nextString().stringValue();
+        }
+        return Values.stringArray( strings );
+    }
+
+
+    public TimeValue nextTimeValue()
     {
         return time( OffsetTime.ofInstant( randomInstant(), UTC ) );
     }
 
-    public LocalDateTimeValue randomLocalDateTime()
+    public LocalDateTimeValue nextLocalDateTimeValue()
     {
         return localDateTime( ofInstant( randomInstant(), UTC ) );
     }
 
-    public DateValue randomDate()
+    public DateValue nextDateValue()
     {
         return date( ofEpochDay( nextLong( LocalDate.MIN.toEpochDay(), LocalDate.MAX.toEpochDay() ) ) );
     }
 
-    public LocalTimeValue randomLocalTime()
+    public LocalTimeValue nextLocalTimeValue()
     {
         return localTime( ofNanoOfDay( nextLong( LocalTime.MIN.toNanoOfDay(), LocalTime.MAX.toNanoOfDay() ) ) );
     }
 
-    public DateTimeValue randomDateTime()
+    public DateTimeValue nextDateTimeValue()
     {
         return datetime( ZonedDateTime.ofInstant( randomInstant(), UTC ) );
     }
 
-    public DurationValue randomPeriod()
+    public DurationValue nextPeriod()
     {
         // Based on Java period (years, months and days)
         return duration( Period.of( random.nextInt(), random.nextInt( 12 ), random.nextInt( 28 ) ) );
     }
 
-    public DurationValue randomDuration()
+    public DurationValue nextDuration()
     {
         // Based on java duration (seconds)
         return duration( Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS ) );
     }
 
-    public PointValue randomCartesianPoint()
+    public PointValue nextCartesianPoint()
     {
         return Values.pointValue( CoordinateReferenceSystem.Cartesian, random.nextDouble(), random.nextDouble() );
     }
 
-    public PointValue randomCartesian3DPoint()
+    public PointValue nextCartesian3DPoint()
     {
         return Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, random.nextDouble(),
                 random.nextDouble(), random.nextDouble() );
     }
 
-    public PointValue randomWGS84Point()
+    public PointValue nextGeographicPoint()
     {
         double longitude = random.nextDouble() * 360.0 - 180.0;
         double latitude = random.nextDouble() * 180.0 - 90.0;
         return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
     }
 
-    public PointValue randomWGS843DPoint()
+    public PointValue nextGeographic3DPoint()
     {
         double longitude = random.nextDouble() * 360.0 - 180.0;
         double latitude = random.nextDouble() * 180.0 - 90.0;
