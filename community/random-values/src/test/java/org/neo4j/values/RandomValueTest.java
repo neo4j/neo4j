@@ -20,10 +20,15 @@
 package org.neo4j.values;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
+import java.util.SplittableRandom;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -59,10 +64,26 @@ import static org.junit.Assert.fail;
 import static org.neo4j.values.storable.Values.ZERO_INT;
 import static org.neo4j.values.storable.Values.longValue;
 
+@RunWith( Parameterized.class )
 public class RandomValueTest
 {
     private static final int ITERATIONS = 500;
-    private final RandomValue randomValue = new RandomValue();
+
+    @Parameterized.Parameter( 0 )
+    public RandomValue randomValue;
+
+    @Parameterized.Parameter( 1 )
+    public String name;
+
+    @Parameterized.Parameters( name = "{1}" )
+    public static Iterable<Object[]> generators()
+    {
+        return Arrays.asList(
+                new Object[]{RandomValue.create( ThreadLocalRandom.current() ), Random.class.getName()},
+                new Object[]{RandomValue.create( new SplittableRandom() ), SplittableRandom.class.getName()}
+        );
+    }
+
     private final static byte BOUND = 100;
     private final static LongValue UPPER = longValue( BOUND );
     private static final Set<Class<? extends NumberValue>> NUMBER_TYPES = new HashSet<>(

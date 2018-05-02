@@ -29,6 +29,7 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
+import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.values.storable.ArrayValue;
@@ -81,7 +82,7 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.shortValue;
 
 /**
- * Helper class that generates random values of all supported types.
+ * Helper class that generates generator values of all supported types.
  */
 public class RandomValue
 {
@@ -149,30 +150,80 @@ public class RandomValue
         }
     }
 
-    //TODO make possible to use SplittableRandom
-    private final Random random;
+    private final Generator generator;
     private final Configuration configuration;
-    public static final long NANOS_PER_SECOND = 1_000_000_000L;
 
-    public RandomValue()
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
+
+    private RandomValue( Generator generator )
     {
-        this( ThreadLocalRandom.current(), new Default() );
+        this( generator, new Default() );
     }
 
-    public RandomValue( Random random )
+    private RandomValue( Generator generator, Configuration configuration )
     {
-        this( random, new Default() );
-    }
-
-    public RandomValue( Configuration configuration )
-    {
-        this( ThreadLocalRandom.current(), configuration );
-    }
-
-    public RandomValue( Random random, Configuration configuration )
-    {
-        this.random = random;
+        this.generator = generator;
         this.configuration = configuration;
+    }
+
+    /**
+     * Create a {@code RandomValue} with default configuration
+     *
+     * @return a {@code RandomValue} instance
+     */
+    public static RandomValue create()
+    {
+        return new RandomValue( new RandomGenerator( ThreadLocalRandom.current() ) );
+    }
+
+    /**
+     * Create a {@code RandomValue} with the given configuration
+     *
+     * @return a {@code RandomValue} instance
+     */
+    public static RandomValue create( Configuration configuration )
+    {
+        return new RandomValue( new RandomGenerator( ThreadLocalRandom.current() ), configuration );
+    }
+
+    /**
+     * Create a {@code RandomValue} using the given {@link Random} with given configuration
+     *
+     * @return a {@code RandomValue} instance
+     */
+    public static RandomValue create( Random random, Configuration configuration )
+    {
+        return new RandomValue( new RandomGenerator( random ), configuration );
+    }
+
+    /**
+     * Create a {@code RandomValue} using the given {@link Random} with default configuration
+     *
+     * @return a {@code RandomValue} instance
+     */
+    public static RandomValue create( Random random )
+    {
+        return new RandomValue( new RandomGenerator( random ) );
+    }
+
+    /**
+     * Create a {@code RandomValue} using the given {@link SplittableRandom} with given configuration
+     *
+     * @return a {@code RandomValue} instance
+     */
+    public static RandomValue create( SplittableRandom random, Configuration configuration )
+    {
+        return new RandomValue( new SplittableRandomGenerator( random ), configuration );
+    }
+
+    /**
+     * Create a {@code RandomValue} using the given {@link SplittableRandom} with default configuration
+     *
+     * @return a {@code RandomValue} instance
+     */
+    public static RandomValue create( SplittableRandom random )
+    {
+        return new RandomValue( new SplittableRandomGenerator( random ) );
     }
 
     /**
@@ -182,7 +233,7 @@ public class RandomValue
      */
     public LongValue nextLongValue()
     {
-        return longValue( random.nextLong() );
+        return longValue( generator.nextLong() );
     }
 
     /**
@@ -221,7 +272,7 @@ public class RandomValue
      */
     public BooleanValue nextBooleanValue()
     {
-        return Values.booleanValue( random.nextBoolean() );
+        return Values.booleanValue( generator.nextBoolean() );
     }
 
     /**
@@ -231,7 +282,7 @@ public class RandomValue
      */
     public IntValue nextIntValue()
     {
-        return intValue( random.nextInt() );
+        return intValue( generator.nextInt() );
     }
 
     /**
@@ -244,7 +295,7 @@ public class RandomValue
      */
     public IntValue nextIntValue( int bound )
     {
-        return intValue( random.nextInt( bound ) );
+        return intValue( generator.nextInt( bound ) );
     }
 
     /**
@@ -254,7 +305,7 @@ public class RandomValue
      */
     public ShortValue nextShortValue()
     {
-        return shortValue( (short) random.nextInt() );
+        return shortValue( (short) generator.nextInt() );
     }
 
     /**
@@ -267,7 +318,7 @@ public class RandomValue
      */
     public ShortValue nextShortValue( short bound )
     {
-        return shortValue( (short) random.nextInt( bound ) );
+        return shortValue( (short) generator.nextInt( bound ) );
     }
 
     /**
@@ -277,7 +328,7 @@ public class RandomValue
      */
     public ByteValue nextByteValue()
     {
-        return byteValue( (byte) random.nextInt() );
+        return byteValue( (byte) generator.nextInt() );
     }
 
     /**
@@ -290,7 +341,7 @@ public class RandomValue
      */
     public ByteValue nextByteValue( byte bound )
     {
-        return byteValue( (byte) random.nextInt( bound ) );
+        return byteValue( (byte) generator.nextInt( bound ) );
     }
 
     /**
@@ -300,7 +351,7 @@ public class RandomValue
      */
     public FloatValue nextFloatValue()
     {
-        return floatValue( random.nextFloat() );
+        return floatValue( generator.nextFloat() );
     }
 
     /**
@@ -310,7 +361,7 @@ public class RandomValue
      */
     public DoubleValue nextDoubleValue()
     {
-        return doubleValue( random.nextFloat() );
+        return doubleValue( generator.nextFloat() );
     }
 
     /**
@@ -320,7 +371,7 @@ public class RandomValue
      */
     public NumberValue nextNumberValue()
     {
-        int type = random.nextInt( 6 );
+        int type = generator.nextInt( 6 );
         switch ( type )
         {
         case 0:
@@ -398,7 +449,7 @@ public class RandomValue
         byte[] bytes = new byte[length];
         for ( int i = 0; i < length; i++ )
         {
-            if ( random.nextBoolean() )
+            if ( generator.nextBoolean() )
             {
                 bytes[i] = (byte) intBetween( 'A', 'Z' );
             }
@@ -437,7 +488,7 @@ public class RandomValue
         byte[] bytes = new byte[length];
         for ( int i = 0; i < length; i++ )
         {
-            switch ( random.nextInt( 4 ) )
+            switch ( generator.nextInt( 4 ) )
             {
             case 0:
                 bytes[i] = (byte) intBetween( 'A', 'Z' );
@@ -525,7 +576,7 @@ public class RandomValue
      * The length of the text will be between {@link Configuration#stringMinLength()} and
      * {@link Configuration#stringMaxLength()}
      *
-     * @return a random {@link TextValue}.
+     * @return a generator {@link TextValue}.
      */
     public TextValue nextString()
     {
@@ -537,7 +588,7 @@ public class RandomValue
      *
      * @param minLength the minimum length of the string
      * @param maxLength the maximum length of the string
-     * @return a random {@link TextValue}.
+     * @return a generator {@link TextValue}.
      */
     public TextValue nextString( int minLength, int maxLength )
     {
@@ -880,7 +931,7 @@ public class RandomValue
         Period[] array = new Period[length];
         for ( int i = 0; i < length; i++ )
         {
-            array[i] = Period.of( random.nextInt(), random.nextInt( 12 ), random.nextInt( 28 ) );
+            array[i] = Period.of( generator.nextInt(), generator.nextInt( 12 ), generator.nextInt( 28 ) );
         }
         return Values.durationArray( array );
     }
@@ -916,7 +967,7 @@ public class RandomValue
         double[] doubles = new double[length];
         for ( int i = 0; i < length; i++ )
         {
-            doubles[i] = random.nextDouble();
+            doubles[i] = generator.nextDouble();
         }
         return Values.doubleArray( doubles );
     }
@@ -934,7 +985,7 @@ public class RandomValue
         float[] floats = new float[length];
         for ( int i = 0; i < length; i++ )
         {
-            floats[i] = random.nextFloat();
+            floats[i] = generator.nextFloat();
         }
         return Values.floatArray( floats );
     }
@@ -952,7 +1003,7 @@ public class RandomValue
         long[] longs = new long[length];
         for ( int i = 0; i < length; i++ )
         {
-            longs[i] = random.nextLong();
+            longs[i] = generator.nextLong();
         }
         return Values.longArray( longs );
     }
@@ -970,7 +1021,7 @@ public class RandomValue
         int[] ints = new int[length];
         for ( int i = 0; i < length; i++ )
         {
-            ints[i] = random.nextInt();
+            ints[i] = generator.nextInt();
         }
         return Values.intArray( ints );
     }
@@ -988,7 +1039,7 @@ public class RandomValue
         boolean[] booleans = new boolean[length];
         for ( int i = 0; i < length; i++ )
         {
-            booleans[i] = random.nextBoolean();
+            booleans[i] = generator.nextBoolean();
         }
         return Values.booleanArray( booleans );
     }
@@ -1006,7 +1057,7 @@ public class RandomValue
         byte[] bytes = new byte[length];
         for ( int i = 0; i < length; i++ )
         {
-            bytes[i] = (byte) random.nextInt();
+            bytes[i] = (byte) generator.nextInt();
         }
         return Values.byteArray( bytes );
     }
@@ -1024,7 +1075,7 @@ public class RandomValue
         short[] shorts = new short[length];
         for ( int i = 0; i < length; i++ )
         {
-            shorts[i] = (short) random.nextInt();
+            shorts[i] = (short) generator.nextInt();
         }
         return Values.shortArray( shorts );
     }
@@ -1105,7 +1156,7 @@ public class RandomValue
     public DurationValue nextPeriod()
     {
         // Based on Java period (years, months and days)
-        return duration( Period.of( random.nextInt(), random.nextInt( 12 ), random.nextInt( 28 ) ) );
+        return duration( Period.of( generator.nextInt(), generator.nextInt( 12 ), generator.nextInt( 28 ) ) );
     }
 
     /**
@@ -1126,7 +1177,7 @@ public class RandomValue
      */
     public PointValue nextCartesianPoint()
     {
-        return Values.pointValue( CoordinateReferenceSystem.Cartesian, random.nextDouble(), random.nextDouble() );
+        return Values.pointValue( CoordinateReferenceSystem.Cartesian, generator.nextDouble(), generator.nextDouble() );
     }
 
     /**
@@ -1136,8 +1187,8 @@ public class RandomValue
      */
     public PointValue nextCartesian3DPoint()
     {
-        return Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, random.nextDouble(),
-                random.nextDouble(), random.nextDouble() );
+        return Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, generator.nextDouble(),
+                generator.nextDouble(), generator.nextDouble() );
     }
 
     /**
@@ -1147,8 +1198,8 @@ public class RandomValue
      */
     public PointValue nextGeographicPoint()
     {
-        double longitude = random.nextDouble() * 360.0 - 180.0;
-        double latitude = random.nextDouble() * 180.0 - 90.0;
+        double longitude = generator.nextDouble() * 360.0 - 180.0;
+        double latitude = generator.nextDouble() * 180.0 - 90.0;
         return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
     }
 
@@ -1159,10 +1210,10 @@ public class RandomValue
      */
     public PointValue nextGeographic3DPoint()
     {
-        double longitude = random.nextDouble() * 360.0 - 180.0;
-        double latitude = random.nextDouble() * 180.0 - 90.0;
+        double longitude = generator.nextDouble() * 360.0 - 180.0;
+        double latitude = generator.nextDouble() * 180.0 - 90.0;
         return Values.pointValue( CoordinateReferenceSystem.WGS84_3D, longitude, latitude,
-                random.nextDouble() * 10000 );
+                generator.nextDouble() * 10000 );
     }
 
     private Instant randomInstant()
@@ -1179,12 +1230,12 @@ public class RandomValue
 
     private int intBetween( int min, int max )
     {
-        return min + random.nextInt( max - min + 1 );
+        return min + generator.nextInt( max - min + 1 );
     }
 
     private long nextLong( long bound )
     {
-        return abs( random.nextLong() ) % bound;
+        return abs( generator.nextLong() ) % bound;
     }
 
     private long nextLong( long origin, long bound )
@@ -1194,6 +1245,6 @@ public class RandomValue
 
     private Types nextType()
     {
-        return TYPES[random.nextInt( TYPES.length )];
+        return TYPES[generator.nextInt( TYPES.length )];
     }
 }
