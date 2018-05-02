@@ -32,21 +32,30 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.BooleanArray;
 import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.ByteArray;
 import org.neo4j.values.storable.ByteValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DoubleArray;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.FloatArray;
 import org.neo4j.values.storable.FloatValue;
+import org.neo4j.values.storable.IntArray;
 import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.ShortArray;
 import org.neo4j.values.storable.ShortValue;
+import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
@@ -71,31 +80,36 @@ import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.shortValue;
 
+/**
+ * Helper class that generates random values of all supported types.
+ */
 public class RandomValue
 {
+    enum Types
+    {
+        BOOLEAN,
+        BYTE,
+        SHORT,
+        STRING,
+        INT,
+        LONG,
+        FLOAT,
+        DOUBLE,
+        LOCAL_DATE_TIME,
+        DATE,
+        LOCAL_TIME,
+        PERIOD,
+        DURATION,
+        TIME,
+        DATE_TIME,
+        CARTESIAN_POINT,
+        CARTESIAN_POINT_3D,
+        GEOGRAPHIC_POINT,
+        GEOGRAPHIC_POINT_3D,
+        ARRAY
+    }
 
-    private static final int BOOLEAN = 0;
-    private static final int BYTE = 1;
-    private static final int SHORT = 2;
-    private static final int STRING = 3;
-    private static final int INT = 4;
-    private static final int LONG = 5;
-    private static final int FLOAT = 6;
-    private static final int DOUBLE = 7;
-    private static final int LOCAL_DATE_TIME = 8;
-    private static final int DATE = 9;
-    private static final int LOCAL_TIME = 10;
-    private static final int PERIOD = 11;
-    private static final int DURATION = 12;
-    private static final int TIME = 13;
-    private static final int DATE_TIME = 14;
-    private static final int CARTESIAN_POINT = 15;
-    private static final int CARTESIAN_POINT_3D = 16;
-    private static final int GEOGRAPHIC_POINT = 17;
-    private static final int GEOGRAPHIC_POINT_3D = 18;
-    private static final int ARRAY = 19;
-    private static final int NUMBER_OF_PRIMITIVE_TYPES = 19;
-    private static final int NUMBER_OF_TYPES = 20;
+    private static Types[] TYPES = Types.values();
 
     public interface Configuration
     {
@@ -161,66 +175,149 @@ public class RandomValue
         this.configuration = configuration;
     }
 
-    LongValue nextLongValue()
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link LongValue}
+     *
+     * @return the next pseudorandom uniformly distributed {@link LongValue}
+     */
+    public LongValue nextLongValue()
     {
         return longValue( random.nextLong() );
     }
 
-    LongValue nextLongValue( long bound )
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link LongValue} between 0 (inclusive) and the specified
+     * value (exclusive)
+     *
+     * @param bound the upper bound (exclusive).  Must be positive.
+     * @return the next pseudorandom, uniformly distributed {@link LongValue}
+     * value between zero (inclusive) and {@code bound} (exclusive)
+     */
+    public LongValue nextLongValue( long bound )
     {
         return longValue( nextLong( bound ) );
     }
 
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link LongValue} between the specified lower bound
+     * (inclusive) and the specified
+     * upper bound (inclusive)
+     *
+     * @param lower the lower bound (inclusive).
+     * @param upper the upper bound (inclusive).
+     * @return the next pseudorandom, uniformly distributed {@link LongValue}
+     * value between {@code lower} (inclusive) and {@code upper} (inclusive)
+     */
     public LongValue nextLongValue( long lower, long upper )
     {
         return longValue( nextLong( (upper - lower) + 1L ) + lower );
     }
 
+
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link BooleanValue}
+     *
+     * @return the next pseudorandom uniformly distributed {@link BooleanValue}
+     */
     public BooleanValue nextBooleanValue()
     {
         return Values.booleanValue( random.nextBoolean() );
     }
 
-    public IntValue nextIntValue( int bound )
-    {
-        return intValue( random.nextInt( bound ) );
-    }
-
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link IntValue}
+     *
+     * @return the next pseudorandom uniformly distributed {@link IntValue}
+     */
     public IntValue nextIntValue()
     {
         return intValue( random.nextInt() );
     }
 
-    public ShortValue nextShortValue( short bound )
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link IntValue} between 0 (inclusive) and the specified
+     * value (exclusive)
+     *
+     * @param bound the upper bound (exclusive).  Must be positive.
+     * @return the next pseudorandom, uniformly distributed {@link IntValue}
+     * value between zero (inclusive) and {@code bound} (exclusive)
+     */
+    public IntValue nextIntValue( int bound )
     {
-        return shortValue( (short) random.nextInt( bound ) );
+        return intValue( random.nextInt( bound ) );
     }
 
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link ShortValue}
+     *
+     * @return the next pseudorandom uniformly distributed {@link ShortValue}
+     */
     public ShortValue nextShortValue()
     {
         return shortValue( (short) random.nextInt() );
     }
 
-    public ByteValue nextByteValue( byte bound )
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link ShortValue} between 0 (inclusive) and the specified
+     * value (exclusive)
+     *
+     * @param bound the upper bound (exclusive).  Must be positive.
+     * @return the next pseudorandom, uniformly distributed {@link ShortValue}
+     * value between zero (inclusive) and {@code bound} (exclusive)
+     */
+    public ShortValue nextShortValue( short bound )
     {
-        return byteValue( (byte) random.nextInt( bound ) );
+        return shortValue( (short) random.nextInt( bound ) );
     }
 
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link ByteValue}
+     *
+     * @return the next pseudorandom uniformly distributed {@link ByteValue}
+     */
     public ByteValue nextByteValue()
     {
         return byteValue( (byte) random.nextInt() );
     }
 
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link ByteValue} between 0 (inclusive) and the specified
+     * value (exclusive)
+     *
+     * @param bound the upper bound (exclusive).  Must be positive.
+     * @return the next pseudorandom, uniformly distributed {@link ByteValue}
+     * value between zero (inclusive) and {@code bound} (exclusive)
+     */
+    public ByteValue nextByteValue( byte bound )
+    {
+        return byteValue( (byte) random.nextInt( bound ) );
+    }
+
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link FloatValue}
+     *
+     * @return the next pseudorandom uniformly distributed {@link FloatValue}
+     */
     public FloatValue nextFloatValue()
     {
         return floatValue( random.nextFloat() );
     }
 
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link DoubleValue}
+     *
+     * @return the next pseudorandom uniformly distributed {@link DoubleValue}
+     */
     public DoubleValue nextDoubleValue()
     {
         return doubleValue( random.nextFloat() );
     }
 
+    /**
+     * Returns the next pseudorandom uniformly distributed {@link NumberValue}
+     *
+     * @return the next pseudorandom uniformly distributed {@link NumberValue}
+     */
     public NumberValue nextNumberValue()
     {
         int type = random.nextInt( 6 );
@@ -243,11 +340,26 @@ public class RandomValue
         }
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of digits.
+     * <p>
+     * The length of the text will be between {@link Configuration#stringMinLength()} and
+     * {@link Configuration#stringMaxLength()}
+     *
+     * @return a {@link TextValue} consisting only of digits.
+     */
     public TextValue nextDigitString()
     {
         return nextDigitString( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of digits with a length between the given values.
+     *
+     * @param minLength the minimum length of the string
+     * @param maxLength the maximum length of the string
+     * @return a {@link TextValue} consisting only of digits with a length between the given values.
+     */
     public TextValue nextDigitString( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -260,11 +372,26 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of ascii alphabetic characters.
+     * <p>
+     * The length of the text will be between {@link Configuration#stringMinLength()} and
+     * {@link Configuration#stringMaxLength()}
+     *
+     * @return a {@link TextValue} consisting only of ascii alphabetic characters.
+     */
     public TextValue nextAlphaString()
     {
         return nextAlphaString( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of ascii alphabetic characters.
+     *
+     * @param minLength the minimum length of the string
+     * @param maxLength the maximum length of the string
+     * @return a {@link TextValue} consisting only of ascii alphabetic characters.
+     */
     public TextValue nextAlphaString( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -284,11 +411,26 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of ascii alphabetic and numerical characters.
+     * <p>
+     * The length of the text will be between {@link Configuration#stringMinLength()} and
+     * {@link Configuration#stringMaxLength()}
+     *
+     * @return a {@link TextValue} consisting only of ascii alphabetic and numerical characters.
+     */
     public TextValue nextAlphaNumericString()
     {
         return nextAlphaNumericString( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of ascii alphabetic and numerical characters.
+     *
+     * @param minLength the minimum length of the string
+     * @param maxLength the maximum length of the string
+     * @return a {@link TextValue} consisting only of ascii alphabetic and numerical characters.
+     */
     public TextValue nextAlphaNumericString( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -313,11 +455,26 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of ascii characters.
+     * <p>
+     * The length of the text will be between {@link Configuration#stringMinLength()} and
+     * {@link Configuration#stringMaxLength()}
+     *
+     * @return a {@link TextValue} consisting only of ascii characters.
+     */
     public TextValue nextAsciiString()
     {
         return nextAsciiString( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of ascii characters.
+     *
+     * @param minLength the minimum length of the string
+     * @param maxLength the maximum length of the string
+     * @return a {@link TextValue} consisting only of ascii characters.
+     */
     public TextValue nextAsciiString( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -330,11 +487,26 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of printable ascii characters.
+     * <p>
+     * The length of the text will be between {@link Configuration#stringMinLength()} and
+     * {@link Configuration#stringMaxLength()}
+     *
+     * @return a {@link TextValue} consisting only of printable ascii characters.
+     */
     public TextValue nextPrintableAsciiString()
     {
         return nextPrintableAsciiString( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue} consisting only of printable ascii characters.
+     *
+     * @param minLength the minimum length of the string
+     * @param maxLength the maximum length of the string
+     * @return a {@link TextValue} consisting only of printable ascii characters.
+     */
     public TextValue nextPrintableAsciiString( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -347,11 +519,26 @@ public class RandomValue
         return Values.utf8Value( bytes );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue}.
+     * <p>
+     * The length of the text will be between {@link Configuration#stringMinLength()} and
+     * {@link Configuration#stringMaxLength()}
+     *
+     * @return a random {@link TextValue}.
+     */
     public TextValue nextString()
     {
         return nextString( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
+    /**
+     * Returns the next pseudorandom {@link TextValue}.
+     *
+     * @param minLength the minimum length of the string
+     * @param maxLength the maximum length of the string
+     * @return a random {@link TextValue}.
+     */
     public TextValue nextString( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -360,6 +547,10 @@ public class RandomValue
         for ( int i = 0; i < length; i++ )
         {
             boolean validCodePoint = false;
+
+            //TODO it is a bit inefficient to generate integer and then retry if we end up in an invalid range
+            //instead we could always generate values in a valid range, however there are a lot of ranges with holes
+            //so the code will probably become a bit unwieldly
             while ( !validCodePoint )
             {
                 int codePoint = intBetween( Character.MIN_CODE_POINT, Character.MAX_CODE_POINT );
@@ -378,9 +569,19 @@ public class RandomValue
         return builder.build();
     }
 
+    /**
+     * Returns the next pseudorandom {@link Value}, distributed uniformly among the supported Value types.
+     * <p>
+     * The length of strings will be governed by {@link Configuration#stringMinLength()} and
+     * {@link Configuration#stringMaxLength()} and
+     * the length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link Value}
+     */
     public Value nextValue()
     {
-        int type = random.nextInt( NUMBER_OF_TYPES );
+        Types type = nextType();
         switch ( type )
         {
         case BOOLEAN:
@@ -429,61 +630,89 @@ public class RandomValue
         }
     }
 
+    /**
+     * Returns the next pseudorandom {@link ArrayValue}, distributed uniformly among the supported Value types.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link ArrayValue}
+     */
     public ArrayValue nextArray()
     {
         return nextArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
     }
 
+    /**
+     * Returns the next pseudorandom {@link ArrayValue}, distributed uniformly among the supported Value types where
+     * the length of the array is given by the provided values.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link ArrayValue}
+     */
     public ArrayValue nextArray( int minLength, int maxLength )
     {
-        int type = random.nextInt( NUMBER_OF_PRIMITIVE_TYPES );
-        switch ( type )
+        while ( true )
         {
-        case BOOLEAN:
-            return nextBooleanArray( minLength, maxLength );
-        case BYTE:
-            return nextByteArray( minLength, maxLength );
-        case SHORT:
-            return nextShortArray( minLength, maxLength );
-        case STRING:
-            return nextStringArray( minLength, maxLength );
-        case INT:
-            return nextIntArray( minLength, maxLength );
-        case LONG:
-            return nextLongArray( minLength, maxLength );
-        case FLOAT:
-            return nextFloatArray( minLength, maxLength );
-        case DOUBLE:
-            return nextDoubleArray( minLength, maxLength );
-        case LOCAL_DATE_TIME:
-            return nextLocalDateTimeArray( minLength, maxLength );
-        case DATE:
-            return nextDateArray( minLength, maxLength );
-        case LOCAL_TIME:
-            return nextLocalTimeArray( minLength, maxLength );
-        case PERIOD:
-            return nextPeriodArray( minLength, maxLength );
-        case DURATION:
-            return nextDurationArray( minLength, maxLength );
-        case TIME:
-            return nextTimeArray( minLength, maxLength );
-        case DATE_TIME:
-            return nextDateTimeArray( minLength, maxLength );
-        case CARTESIAN_POINT:
-            return nextCartesianPointArray( minLength, maxLength );
-        case CARTESIAN_POINT_3D:
-            return nextCartesian3DPointArray( minLength, maxLength );
-        case GEOGRAPHIC_POINT:
-            return nextGeographicPointArray( minLength, maxLength );
-        case GEOGRAPHIC_POINT_3D:
-            return nextGeographic3DPointArray( minLength, maxLength );
-
-        default:
-            throw new IllegalArgumentException( "Unknown value type: " + type );
+            Types type = nextType();
+            switch ( type )
+            {
+            case BOOLEAN:
+                return nextBooleanArray( minLength, maxLength );
+            case BYTE:
+                return nextByteArray( minLength, maxLength );
+            case SHORT:
+                return nextShortArray( minLength, maxLength );
+            case STRING:
+                return nextStringArray( minLength, maxLength );
+            case INT:
+                return nextIntArray( minLength, maxLength );
+            case LONG:
+                return nextLongArray( minLength, maxLength );
+            case FLOAT:
+                return nextFloatArray( minLength, maxLength );
+            case DOUBLE:
+                return nextDoubleArray( minLength, maxLength );
+            case LOCAL_DATE_TIME:
+                return nextLocalDateTimeArray( minLength, maxLength );
+            case DATE:
+                return nextDateArray( minLength, maxLength );
+            case LOCAL_TIME:
+                return nextLocalTimeArray( minLength, maxLength );
+            case PERIOD:
+                return nextPeriodArray( minLength, maxLength );
+            case DURATION:
+                return nextDurationArray( minLength, maxLength );
+            case TIME:
+                return nextTimeArray( minLength, maxLength );
+            case DATE_TIME:
+                return nextDateTimeArray( minLength, maxLength );
+            case CARTESIAN_POINT:
+                return nextCartesianPointArray( minLength, maxLength );
+            case CARTESIAN_POINT_3D:
+                return nextCartesian3DPointArray( minLength, maxLength );
+            case GEOGRAPHIC_POINT:
+                return nextGeographicPointArray( minLength, maxLength );
+            case GEOGRAPHIC_POINT_3D:
+                return nextGeographic3DPointArray( minLength, maxLength );
+            case ARRAY://we don't want nested arrays
+                continue;
+            default:
+                throw new IllegalArgumentException( "Unknown value type: " + type );
+            }
         }
     }
 
-    public ArrayValue nextCartesianPointArray( int minLength, int maxLength )
+
+    /**
+     * Returns the next pseudorandom {@link PointArray} of cartesian two-dimensional points.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link PointArray} of cartesian points two-dimensional points.
+     */
+    public PointArray nextCartesianPointArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         PointValue[] array = new PointValue[length];
@@ -494,7 +723,14 @@ public class RandomValue
         return Values.pointArray( array );
     }
 
-    public ArrayValue nextCartesian3DPointArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link PointArray} of cartesian three-dimensional points.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link PointArray} of cartesian points three-dimensional points.
+     */
+    public PointArray nextCartesian3DPointArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         PointValue[] array = new PointValue[length];
@@ -505,7 +741,14 @@ public class RandomValue
         return Values.pointArray( array );
     }
 
-    public ArrayValue nextGeographicPointArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link PointArray} of geographic two-dimensional points.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link PointArray} of geographic two-dimensional points.
+     */
+    public PointArray nextGeographicPointArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         PointValue[] array = new PointValue[length];
@@ -516,7 +759,14 @@ public class RandomValue
         return Values.pointArray( array );
     }
 
-    public ArrayValue nextGeographic3DPointArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link PointArray} of geographic three-dimensional points.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link PointArray} of geographic three-dimensional points.
+     */
+    public PointArray nextGeographic3DPointArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         PointValue[] array = new PointValue[length];
@@ -527,6 +777,13 @@ public class RandomValue
         return Values.pointArray( array );
     }
 
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of local-time elements.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link ArrayValue} of local-time elements.
+     */
     public ArrayValue nextLocalTimeArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -538,6 +795,13 @@ public class RandomValue
         return Values.localTimeArray( array );
     }
 
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of time elements.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link ArrayValue} of time elements.
+     */
     public ArrayValue nextTimeArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -549,6 +813,13 @@ public class RandomValue
         return Values.timeArray( array );
     }
 
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of local date-time elements.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link ArrayValue} of local date-time elements.
+     */
     public ArrayValue nextDateTimeArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -560,6 +831,13 @@ public class RandomValue
         return Values.dateTimeArray( array );
     }
 
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of local-date-time elements.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link ArrayValue} of local-date-time elements.
+     */
     public ArrayValue nextLocalDateTimeArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -571,6 +849,13 @@ public class RandomValue
         return Values.localDateTimeArray( array );
     }
 
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of date elements.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link ArrayValue} of date elements.
+     */
     public ArrayValue nextDateArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -582,6 +867,13 @@ public class RandomValue
         return Values.dateArray( array );
     }
 
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of period elements.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link ArrayValue} of period elements.
+     */
     public ArrayValue nextPeriodArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -593,6 +885,13 @@ public class RandomValue
         return Values.durationArray( array );
     }
 
+    /**
+     * Returns the next pseudorandom {@link ArrayValue} of duration elements.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link ArrayValue} of duration elements.
+     */
     public ArrayValue nextDurationArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
@@ -604,7 +903,14 @@ public class RandomValue
         return Values.durationArray( array );
     }
 
-    public ArrayValue nextDoubleArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link DoubleArray}.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link DoubleArray}.
+     */
+    public DoubleArray nextDoubleArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         double[] doubles = new double[length];
@@ -615,7 +921,14 @@ public class RandomValue
         return Values.doubleArray( doubles );
     }
 
-    public ArrayValue nextFloatArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link FloatArray}.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link FloatArray}.
+     */
+    public FloatArray nextFloatArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         float[] floats = new float[length];
@@ -626,7 +939,14 @@ public class RandomValue
         return Values.floatArray( floats );
     }
 
-    public ArrayValue nextLongArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link LongArray}.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link LongArray}.
+     */
+    public LongArray nextLongArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         long[] longs = new long[length];
@@ -637,7 +957,14 @@ public class RandomValue
         return Values.longArray( longs );
     }
 
-    public ArrayValue nextIntArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link IntArray}.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link IntArray}.
+     */
+    public IntArray nextIntArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         int[] ints = new int[length];
@@ -648,7 +975,14 @@ public class RandomValue
         return Values.intArray( ints );
     }
 
-    public ArrayValue nextBooleanArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link BooleanArray}.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link BooleanArray}.
+     */
+    public BooleanArray nextBooleanArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         boolean[] booleans = new boolean[length];
@@ -659,7 +993,14 @@ public class RandomValue
         return Values.booleanArray( booleans );
     }
 
-    public ArrayValue nextByteArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link ByteArray}.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link ByteArray}.
+     */
+    public ByteArray nextByteArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         byte[] bytes = new byte[length];
@@ -670,7 +1011,14 @@ public class RandomValue
         return Values.byteArray( bytes );
     }
 
-    public ArrayValue nextShortArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link ShortArray}.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link ShortArray}.
+     */
+    public ShortArray nextShortArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         short[] shorts = new short[length];
@@ -681,7 +1029,14 @@ public class RandomValue
         return Values.shortArray( shorts );
     }
 
-    public ArrayValue nextStringArray( int minLength, int maxLength )
+    /**
+     * Returns the next pseudorandom {@link TextArray}.
+     *
+     * @param minLength the minimum length of the array
+     * @param maxLength the maximum length of the array
+     * @return the next pseudorandom {@link TextArray}.
+     */
+    public TextArray nextStringArray( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         String[] strings = new String[length];
@@ -692,55 +1047,104 @@ public class RandomValue
         return Values.stringArray( strings );
     }
 
-
+    /**
+     * Returns the next pseudorandom {@link TimeValue}.
+     *
+     * @return the next pseudorandom {@link TimeValue}.
+     */
     public TimeValue nextTimeValue()
     {
         return time( OffsetTime.ofInstant( randomInstant(), UTC ) );
     }
 
+    /**
+     * Returns the next pseudorandom {@link LocalDateTimeValue}.
+     *
+     * @return the next pseudorandom {@link LocalDateTimeValue}.
+     */
     public LocalDateTimeValue nextLocalDateTimeValue()
     {
         return localDateTime( ofInstant( randomInstant(), UTC ) );
     }
 
+    /**
+     * Returns the next pseudorandom {@link DateValue}.
+     *
+     * @return the next pseudorandom {@link DateValue}.
+     */
     public DateValue nextDateValue()
     {
         return date( ofEpochDay( nextLong( LocalDate.MIN.toEpochDay(), LocalDate.MAX.toEpochDay() ) ) );
     }
 
+    /**
+     * Returns the next pseudorandom {@link LocalTimeValue}.
+     *
+     * @return the next pseudorandom {@link LocalTimeValue}.
+     */
     public LocalTimeValue nextLocalTimeValue()
     {
         return localTime( ofNanoOfDay( nextLong( LocalTime.MIN.toNanoOfDay(), LocalTime.MAX.toNanoOfDay() ) ) );
     }
 
+    /**
+     * Returns the next pseudorandom {@link DateTimeValue}.
+     *
+     * @return the next pseudorandom {@link DateTimeValue}.
+     */
     public DateTimeValue nextDateTimeValue()
     {
         return datetime( ZonedDateTime.ofInstant( randomInstant(), UTC ) );
     }
 
+    /**
+     * Returns the next pseudorandom {@link DurationValue} based on periods.
+     *
+     * @return the next pseudorandom {@link DurationValue}.
+     */
     public DurationValue nextPeriod()
     {
         // Based on Java period (years, months and days)
         return duration( Period.of( random.nextInt(), random.nextInt( 12 ), random.nextInt( 28 ) ) );
     }
 
+    /**
+     * Returns the next pseudorandom {@link DurationValue} based on duration.
+     *
+     * @return the next pseudorandom {@link DurationValue}.
+     */
     public DurationValue nextDuration()
     {
         // Based on java duration (seconds)
         return duration( Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS ) );
     }
 
+    /**
+     * Returns the next pseudorandom two-dimensional cartesian {@link PointValue}.
+     *
+     * @return the next pseudorandom two-dimensional cartesian {@link PointValue}.
+     */
     public PointValue nextCartesianPoint()
     {
         return Values.pointValue( CoordinateReferenceSystem.Cartesian, random.nextDouble(), random.nextDouble() );
     }
 
+    /**
+     * Returns the next pseudorandom three-dimensional cartesian {@link PointValue}.
+     *
+     * @return the next pseudorandom three-dimensional cartesian {@link PointValue}.
+     */
     public PointValue nextCartesian3DPoint()
     {
         return Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, random.nextDouble(),
                 random.nextDouble(), random.nextDouble() );
     }
 
+    /**
+     * Returns the next pseudorandom two-dimensional geographic {@link PointValue}.
+     *
+     * @return the next pseudorandom two-dimensional geographic {@link PointValue}.
+     */
     public PointValue nextGeographicPoint()
     {
         double longitude = random.nextDouble() * 360.0 - 180.0;
@@ -748,6 +1152,11 @@ public class RandomValue
         return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
     }
 
+    /**
+     * Returns the next pseudorandom three-dimensional geographic {@link PointValue}.
+     *
+     * @return the next pseudorandom three-dimensional geographic {@link PointValue}.
+     */
     public PointValue nextGeographic3DPoint()
     {
         double longitude = random.nextDouble() * 360.0 - 180.0;
@@ -781,5 +1190,10 @@ public class RandomValue
     private long nextLong( long origin, long bound )
     {
         return nextLong( (bound - origin) + 1L ) + origin;
+    }
+
+    private Types nextType()
+    {
+        return TYPES[random.nextInt( TYPES.length )];
     }
 }
