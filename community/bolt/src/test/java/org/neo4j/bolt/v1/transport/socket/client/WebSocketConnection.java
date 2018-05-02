@@ -103,7 +103,6 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
         // ownership
         ByteBuffer wrap = ByteBuffer.wrap( Arrays.copyOf( rawBytes, rawBytes.length ) );
         server.sendBytes( wrap );
-        server.flush();
         return this;
     }
 
