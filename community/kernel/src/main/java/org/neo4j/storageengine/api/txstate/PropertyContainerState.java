@@ -44,8 +44,6 @@ public interface PropertyContainerState
 
     Iterator<StorageProperty> addedAndChangedProperties();
 
-    Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator );
-
     void accept( Visitor visitor ) throws ConstraintValidationException;
 
     interface Visitor
@@ -91,12 +89,6 @@ public interface PropertyContainerState
         public Iterator<StorageProperty> addedAndChangedProperties()
         {
             return emptyIterator();
-        }
-
-        @Override
-        public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-        {
-            return iterator;
         }
 
         @Override

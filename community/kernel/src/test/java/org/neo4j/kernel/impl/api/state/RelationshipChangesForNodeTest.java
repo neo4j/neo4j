@@ -24,59 +24,22 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.api.store.RelationshipIterator.EMPTY;
 import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
 import static org.neo4j.storageengine.api.Direction.OUTGOING;
 
 public class RelationshipChangesForNodeTest
 {
-    private static final int REL_0 = 0;
-    private static final int REL_1 = 1;
-    private static final int TYPE_SELF = 0;
-    private static final int TYPE_DIR = 1;
-
-    @Test
-    public void testOutgoingRelsWithTypeAndLoop()
-    {
-        RelationshipChangesForNode changes = new RelationshipChangesForNode(
-                RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
-        changes.addRelationship( REL_0, TYPE_SELF, BOTH );
-        changes.addRelationship( REL_1, TYPE_DIR, OUTGOING );
-
-        RelationshipIterator iterator = changes.augmentRelationships( OUTGOING, new int[]{TYPE_DIR}, EMPTY );
-        assertEquals( true, iterator.hasNext() );
-        assertEquals( REL_1, iterator.next() );
-        assertEquals( "should have no next relationships but has ", false, iterator.hasNext() );
-    }
-
-    @Test
-    public void testIncomingRelsWithTypeAndLoop()
-    {
-        RelationshipChangesForNode changes = new RelationshipChangesForNode(
-                RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
-        changes.addRelationship( REL_0, TYPE_SELF, BOTH );
-        changes.addRelationship( REL_1, TYPE_DIR, INCOMING );
-
-        RelationshipIterator iterator = changes.augmentRelationships( INCOMING, new int[]{TYPE_DIR}, EMPTY );
-        assertEquals( true, iterator.hasNext() );
-        assertEquals( REL_1, iterator.next() );
-        assertEquals( "should have no next relationships but has ", false, iterator.hasNext() );
-    }
 
     @Test
     public void shouldGetRelationships()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
-                RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
+                RelationshipChangesForNode.DiffStrategy.ADD );
 
         final int TYPE = 2;
 
@@ -95,7 +58,7 @@ public class RelationshipChangesForNodeTest
     public void shouldGetRelationshipsByTypeAndDirection()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
-                RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
+                RelationshipChangesForNode.DiffStrategy.ADD );
 
         final int TYPE = 2;
         final int DECOY_TYPE = 666;

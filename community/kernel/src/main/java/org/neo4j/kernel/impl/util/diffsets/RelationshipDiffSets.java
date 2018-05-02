@@ -23,9 +23,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.RelationshipVisitor.Home;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 
 /**
@@ -38,29 +35,20 @@ import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
  */
 public class RelationshipDiffSets<T> extends SuperDiffSets<T> implements ReadableRelationshipDiffSets<T>
 {
-    private final Home txStateRelationshipHome;
-
-    public RelationshipDiffSets( RelationshipVisitor.Home txStateRelationshipHome )
+    public RelationshipDiffSets()
     {
-        this( txStateRelationshipHome, null, null );
+        this( null, null );
     }
 
-    private RelationshipDiffSets( RelationshipVisitor.Home txStateRelationshipHome, Set<T> addedElements, Set<T> removedElements )
+    private RelationshipDiffSets( Set<T> addedElements, Set<T> removedElements )
     {
         super( addedElements, removedElements );
-        this.txStateRelationshipHome = txStateRelationshipHome;
-    }
-
-    @Override
-    public RelationshipIterator augment( final RelationshipIterator source )
-    {
-        return new DiffApplyingRelationshipIterator( source, added( false ), removed( false ), txStateRelationshipHome );
     }
 
     @Override
     public RelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
-        return new RelationshipDiffSets<>( txStateRelationshipHome,
+        return new RelationshipDiffSets<>(
                 Iterables.asSet( Iterables.filter( addedFilter, added( false ) ) ),
                 Iterables.asSet( removed( false ) ) );
     }

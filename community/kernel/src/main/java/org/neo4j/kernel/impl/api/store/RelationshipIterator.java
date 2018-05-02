@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.store;
 import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 
 public interface RelationshipIterator extends RelationshipVisitor.Home, LongIterator
@@ -51,8 +50,4 @@ public interface RelationshipIterator extends RelationshipVisitor.Home, LongIter
     }
 
     RelationshipIterator EMPTY = new Empty();
-
-    abstract class BaseIterator extends PrimitiveLongBaseIterator implements RelationshipIterator
-    {
-    }
 }

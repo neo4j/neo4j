@@ -20,13 +20,11 @@
 package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
 
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
-import org.neo4j.storageengine.api.Direction;
 
 /**
  * Represents the transactional changes to a node:
@@ -47,10 +45,6 @@ public interface NodeState extends PropertyContainerState
 
     ReadableDiffSets<Integer> labelDiffSets();
 
-    int augmentDegree( Direction direction, int degree );
-
-    int augmentDegree( Direction direction, int degree, int typeId );
-
     /**
      * This method counts all directions separately, i.e.
      * total count = count(INCOMING) + count(OUTGOING) + count(LOOPS)
@@ -59,19 +53,9 @@ public interface NodeState extends PropertyContainerState
 
     void accept( NodeState.Visitor visitor ) throws ConstraintValidationException;
 
-    IntSet relationshipTypes();
-
     long getId();
-
-    @Deprecated
-    LongIterator getAddedRelationships( Direction direction );
-
-    @Deprecated
-    LongIterator getAddedRelationships( Direction direction, int[] relTypes );
 
     LongIterator getAddedRelationships();
 
     LongIterator getAddedRelationships( RelationshipDirection direction, int relType );
-
-    boolean hasRelationshipChanges();
 }

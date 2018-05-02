@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -71,12 +69,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-        {
-            return iterator;
-        }
-
-        @Override
         public void accept( PropertyContainerState.Visitor visitor )
         {
         }
@@ -85,18 +77,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         public ReadableDiffSets<Integer> labelDiffSets()
         {
             return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public int augmentDegree( Direction direction, int degree )
-        {
-            return degree;
-        }
-
-        @Override
-        public int augmentDegree( Direction direction, int degree, int typeId )
-        {
-            return degree;
         }
 
         @Override
@@ -111,12 +91,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public IntSet relationshipTypes()
-        {
-            return new IntHashSet();
-        }
-
-        @Override
         public long getId()
         {
             throw new UnsupportedOperationException( "id not defined" );
@@ -124,12 +98,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
 
         @Override
         public boolean hasPropertyChanges()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean hasRelationshipChanges()
         {
             return false;
         }
@@ -156,18 +124,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         public boolean isPropertyRemoved( int propertyKeyId )
         {
             return false;
-        }
-
-        @Override
-        public LongIterator getAddedRelationships( Direction direction )
-        {
-            return ImmutableEmptyLongIterator.INSTANCE;
-        }
-
-        @Override
-        public LongIterator getAddedRelationships( Direction direction, int[] relTypes )
-        {
-            return ImmutableEmptyLongIterator.INSTANCE;
         }
 
         @Override
@@ -215,7 +171,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( !hasAddedRelationships() )
         {
-            relationshipsAdded = new RelationshipChangesForNode( DiffStrategy.ADD, state );
+            relationshipsAdded = new RelationshipChangesForNode( DiffStrategy.ADD );
         }
         relationshipsAdded.addRelationship( relId, typeId, direction );
     }
@@ -233,7 +189,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
         if ( !hasRemovedRelationships() )
         {
-            relationshipsRemoved = new RelationshipChangesForNode( DiffStrategy.REMOVE, state );
+            relationshipsRemoved = new RelationshipChangesForNode( DiffStrategy.REMOVE );
         }
         relationshipsRemoved.addRelationship( relId, typeId, direction );
     }
@@ -258,34 +214,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         {
             indexDiffs.clear();
         }
-    }
-
-    @Override
-    public int augmentDegree( Direction direction, int degree )
-    {
-        if ( hasAddedRelationships() )
-        {
-            degree = relationshipsAdded.augmentDegree( direction, degree );
-        }
-        if ( hasRemovedRelationships() )
-        {
-            degree = relationshipsRemoved.augmentDegree( direction, degree );
-        }
-        return degree;
-    }
-
-    @Override
-    public int augmentDegree( Direction direction, int degree, int typeId )
-    {
-        if ( hasAddedRelationships() )
-        {
-            degree = relationshipsAdded.augmentDegree( direction, degree, typeId );
-        }
-        if ( hasRemovedRelationships() )
-        {
-            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId );
-        }
-        return degree;
     }
 
     @Override
@@ -322,16 +250,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         return relationshipsRemoved != null;
     }
 
-    @Override
-    public IntSet relationshipTypes()
-    {
-        if ( hasAddedRelationships() )
-        {
-            return relationshipsAdded.relationshipTypes();
-        }
-        return new IntHashSet();
-    }
-
     void addIndexDiff( MutableLongDiffSets diff )
     {
         if ( indexDiffs == null )
@@ -365,26 +283,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
                 }
             }
         }
-    }
-
-    @Override
-    public boolean hasRelationshipChanges()
-    {
-        return hasAddedRelationships() || hasRemovedRelationships();
-    }
-
-    @Override
-    public LongIterator getAddedRelationships( Direction direction )
-    {
-        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction ) :
-               ImmutableEmptyLongIterator.INSTANCE;
-    }
-
-    @Override
-    public LongIterator getAddedRelationships( Direction direction, int[] relTypes )
-    {
-        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relTypes ) :
-               ImmutableEmptyLongIterator.INSTANCE;
     }
 
     @Override

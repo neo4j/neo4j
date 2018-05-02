@@ -19,11 +19,7 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
-
-import java.util.Iterator;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -34,12 +30,9 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.GraphState;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
@@ -60,16 +53,6 @@ public interface ReadableTransactionState
      * Returns all nodes that, in this tx, have had the labels changed.
      */
     LongDiffSets nodesWithLabelChanged( int label );
-
-    /**
-     * Returns all nodes that, in this tx, have had any of the labels changed.
-     */
-    LongDiffSets nodesWithAnyOfLabelsChanged( int... labels );
-
-    /**
-     * Returns all nodes that, in this tx, have had all the labels changed.
-     */
-    LongDiffSets nodesWithAllLabelsChanged( int... labels );
 
     /**
      * Returns nodes that have been added and removed in this tx.
@@ -97,23 +80,9 @@ public interface ReadableTransactionState
 
     ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId );
 
-    Iterator<StorageProperty> augmentGraphProperties( Iterator<StorageProperty> original );
-
     boolean nodeIsAddedInThisTx( long nodeId );
 
     boolean nodeIsDeletedInThisTx( long nodeId );
-
-    boolean nodeModifiedInThisTx( long nodeId );
-
-    IntSet nodeRelationshipTypes( long nodeId );
-
-    int augmentNodeDegree( long node, int committedDegree, Direction direction );
-
-    int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );
-
-    LongIterator augmentNodesGetAll( LongIterator committed );
-
-    RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed );
 
     /**
      * @return {@code true} if the relationship was visited in this state, i.e. if it was created
@@ -163,21 +132,9 @@ public interface ReadableTransactionState
     Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
             PropertyContainerState propertyContainerState );
 
-    Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
-            PropertyContainerState propertyContainerState,
-            int propertyKeyId );
-
     MutableIntSet augmentLabels( MutableIntSet cursor, NodeState nodeState );
 
     Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
-
-    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
-            Direction direction );
-
-    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
-            Direction direction, int[] relTypes );
-
-    Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
 
     /**
      * The way tokens are created is that the first time a token is needed it gets created in its own little
