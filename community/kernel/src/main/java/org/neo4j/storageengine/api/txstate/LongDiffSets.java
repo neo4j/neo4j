@@ -54,12 +54,6 @@ public interface LongDiffSets
         }
 
         @Override
-        public LongSet getAddedSnapshot()
-        {
-            return LongSets.immutable.empty();
-        }
-
-        @Override
         public LongSet getRemoved()
         {
             return LongSets.immutable.empty();
@@ -109,12 +103,6 @@ public interface LongDiffSets
      * @return all added elements
      */
     LongSet getAdded();
-
-    /**
-     * Snapshot of added elements infot this collection on the moment of invocation
-     * @return snapshot of added elements
-     */
-    LongSet getAddedSnapshot();
 
     /**
      * All elements that are removed according to underlying collection

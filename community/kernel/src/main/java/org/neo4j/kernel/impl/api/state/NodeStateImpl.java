@@ -336,7 +336,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( indexDiffs == null )
         {
-            indexDiffs = Collections.newSetFromMap( new IdentityHashMap<MutableLongDiffSets, Boolean>() );
+            indexDiffs = Collections.newSetFromMap( new IdentityHashMap<>() );
         }
         indexDiffs.add( diff );
     }

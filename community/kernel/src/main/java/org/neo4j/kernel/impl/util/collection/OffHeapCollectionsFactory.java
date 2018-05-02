@@ -28,7 +28,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.memory.MemoryTracker;
 
@@ -68,9 +68,9 @@ class OffHeapCollectionsFactory implements CollectionsFactory
     }
 
     @Override
-    public MutableLongDiffSets newLongDiffSets()
+    public MutableLongDiffSetsImpl newLongDiffSets()
     {
-        return new MutableLongDiffSets( this );
+        return new MutableLongDiffSetsImpl( this );
     }
 
     @Override

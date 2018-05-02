@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
@@ -1002,7 +1003,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             return LongDiffSets.EMPTY;
         }
-        MutableLongDiffSets diffs = new MutableLongDiffSets();
+        MutableLongDiffSetsImpl diffs = new MutableLongDiffSetsImpl();
         for ( MutableLongDiffSets diffSet : updates.values() )
         {
             diffs.addAll( diffSet.getAdded().longIterator() );
@@ -1026,7 +1027,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             return LongDiffSets.EMPTY;
         }
-        MutableLongDiffSets diffs = new MutableLongDiffSets();
+        MutableLongDiffSetsImpl diffs = new MutableLongDiffSetsImpl();
         for ( Map.Entry<ValueTuple, MutableLongDiffSets> entry : updates.entrySet() )
         {
             if ( query.acceptsValue( entry.getKey().getOnlyValue() ) )
@@ -1093,7 +1094,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private LongDiffSets indexUpdatesForRangeSeek( TreeMap<ValueTuple, MutableLongDiffSets> sortedUpdates, ValueTuple lower,
             boolean includeLower, ValueTuple upper, boolean includeUpper )
     {
-        MutableLongDiffSets diffs = new MutableLongDiffSets();
+        MutableLongDiffSetsImpl diffs = new MutableLongDiffSetsImpl();
 
         Collection<MutableLongDiffSets> inRange = sortedUpdates.subMap( lower, includeLower, upper, includeUpper ).values();
         for ( MutableLongDiffSets diffForSpecificValue : inRange )
@@ -1113,7 +1114,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             return LongDiffSets.EMPTY;
         }
         ValueTuple floor = ValueTuple.of( Values.stringValue( prefix ) );
-        MutableLongDiffSets diffs = new MutableLongDiffSets();
+        MutableLongDiffSetsImpl diffs = new MutableLongDiffSetsImpl();
         for ( Map.Entry<ValueTuple, MutableLongDiffSets> entry : sortedUpdates.tailMap( floor ).entrySet() )
         {
             ValueTuple key = entry.getKey();
@@ -1209,7 +1210,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private MutableLongDiffSets getIndexUpdatesForSeek( Map<ValueTuple, MutableLongDiffSets> updates,
             ValueTuple values, boolean create )
     {
-        return create ? updates.computeIfAbsent( values, value -> new MutableLongDiffSets() ) : updates.get( values );
+        return create ? updates.computeIfAbsent( values, value -> new MutableLongDiffSetsImpl() ) : updates.get( values );
     }
 
     private Map<ValueTuple, MutableLongDiffSets> getIndexUpdatesByDescriptor( SchemaDescriptor schema,
