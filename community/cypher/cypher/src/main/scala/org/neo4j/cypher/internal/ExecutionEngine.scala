@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.configuration.Config
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
+import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, ResultBuffer, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
@@ -117,6 +117,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       checkParameters(queryParamNames, mapParams, preparedPlanExecution.extractedParams)
     }
     preparedPlanExecution.execute(wrappedContext, mapParams)
+  }
+
+  def execute(query: String,
+              mapParams: MapValue,
+              context: TransactionalContext,
+              resultBuffer: ResultBuffer
+             ): QueryExecution = {
+    ???
   }
 
   protected def parseQuery(queryText: String): ParsedQuery =
