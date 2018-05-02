@@ -57,6 +57,8 @@ import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.storageengine.api.EntityType;
 
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.NON_SCHEMA;
+
 class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDescriptor> implements FulltextAdapter
 {
 
@@ -89,11 +91,15 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDes
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
     {
         try
         {
-            return new FulltextIndexDescriptor( schema, name, propertyKeyTokenHolder, metadata );
+            if ( type == NON_SCHEMA )
+            {
+                return new FulltextIndexDescriptor( schema, name, propertyKeyTokenHolder, metadata );
+            }
+            throw new UnsupportedOperationException( String.format( "This provider does not support indexes of type %s", type ) );
         }
         catch ( TokenNotFoundException e )
         {
@@ -192,7 +198,7 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDes
             entityTokenIds = Arrays.stream( entityTokens ).mapToInt( relationshipTypeTokenHolder::getOrCreateId ).toArray();
         }
         int[] propertyIds = Arrays.stream( properties ).mapToInt( propertyKeyTokenHolder::getOrCreateId ).toArray();
-        return indexDescriptorFor( SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds ), name, analyzerClassName );
+        return indexDescriptorFor( SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds ), NON_SCHEMA, name, analyzerClassName );
     }
 
     @Override

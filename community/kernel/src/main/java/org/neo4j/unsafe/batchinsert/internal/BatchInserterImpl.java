@@ -472,8 +472,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private void createIndexRule( int labelId, int[] propertyKeyIds )
     {
-        IndexRule schemaRule = IndexRule.indexRule( schemaStore.nextId(), SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ),
-                schemaIndexProviders.getDefaultProvider().getProviderDescriptor(), IndexDescriptor.Type.GENERAL );
+        IndexRule schemaRule = IndexRule.forIndex( schemaStore.nextId(), SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ) ).withProvider(
+                schemaIndexProviders.getDefaultProvider().getProviderDescriptor() ).build();
 
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
         {
@@ -632,13 +632,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         long indexRuleId = schemaStore.nextId();
         long constraintRuleId = schemaStore.nextId();
 
-        IndexRule indexRule =
-                IndexRule.constraintIndexRule(
-                        indexRuleId,
-                        schemaIndexDescriptor,
-                        this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
-                        constraintRuleId
-                );
+        IndexRule indexRule = IndexRule.forIndex( indexRuleId, schemaIndexDescriptor ).withProvider(
+                this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor() ).withOwingConstraint( constraintRuleId ).build();
         ConstraintRule constraintRule =
                 ConstraintRule.constraintRule(
                         constraintRuleId,

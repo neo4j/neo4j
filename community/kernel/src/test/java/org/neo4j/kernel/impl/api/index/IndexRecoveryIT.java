@@ -250,7 +250,8 @@ public class IndexRecoveryIT
         when( mockedIndexProvider.getProviderDescriptor() )
                 .thenReturn( TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.compatible( any( IndexDescriptor.class ) ) ).thenReturn( true );
-        when( mockedIndexProvider.indexDescriptorFor( any( SchemaDescriptor.class ), any( String.class ), any( String.class ) ) ).then(
+        when( mockedIndexProvider.indexDescriptorFor( any( SchemaDescriptor.class ), any( IndexDescriptor.Type.class ), any( String.class ),
+                any( String.class ) ) ).then(
                 new Answer<IndexDescriptor>()
                 {
                     @Override

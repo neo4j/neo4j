@@ -496,9 +496,9 @@ public class SchemaIndexHaIT
         private final DoubleLatch latch = new DoubleLatch();
 
         @Override
-        public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+        public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
         {
-            return delegate.indexDescriptorFor( schema, name, metadata );
+            return delegate.indexDescriptorFor( schema, type, name, metadata );
         }
 
         ControlledIndexProvider( IndexProvider delegate )

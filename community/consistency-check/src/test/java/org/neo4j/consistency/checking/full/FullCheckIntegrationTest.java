@@ -2250,8 +2250,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord recordBefore = new DynamicRecord( id );
                 DynamicRecord recordAfter = recordBefore.clone();
 
-                IndexRule rule =
-                        IndexRule.indexRule( id, SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ), DESCRIPTOR, IndexDescriptor.Type.GENERAL );
+                IndexRule rule = IndexRule.forSchema( id, SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) ).withProvider( DESCRIPTOR ).build();
                 Collection<DynamicRecord> records = serializeRule( rule, recordAfter );
 
                 tx.createSchema( singleton( recordBefore ), records, rule );
@@ -2266,8 +2265,8 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        IndexRule indexRule = IndexRule.constraintIndexRule( ruleId1,
-                uniqueForLabel( labelId, propertyKeyIds ), DESCRIPTOR, ruleId2 );
+        IndexRule indexRule =
+                IndexRule.forIndex( ruleId1, uniqueForLabel( labelId, propertyKeyIds ) ).withProvider( DESCRIPTOR ).withOwingConstraint( ruleId2 ).build();
         ConstraintRule uniqueRule = ConstraintRule.constraintRule( ruleId2,
                 ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ), ruleId1 );
 
@@ -2282,8 +2281,8 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        IndexRule indexRule = IndexRule.constraintIndexRule( ruleId1,
-                uniqueForLabel( labelId, propertyKeyIds ), DESCRIPTOR, ruleId2 );
+        IndexRule indexRule =
+                IndexRule.forIndex( ruleId1, uniqueForLabel( labelId, propertyKeyIds ) ).withProvider( DESCRIPTOR ).withOwingConstraint( ruleId2 ).build();
         ConstraintRule nodeKeyRule = ConstraintRule.constraintRule( ruleId2,
                 ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ), ruleId1 );
 

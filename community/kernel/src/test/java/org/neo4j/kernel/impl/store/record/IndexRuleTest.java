@@ -21,9 +21,6 @@ package org.neo4j.kernel.impl.store.record;
 
 import org.junit.Test;
 
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -41,8 +38,8 @@ public class IndexRuleTest extends SchemaRuleTestBase
     public void shouldCreateGeneralIndex()
     {
         // GIVEN
-        SchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 );
-        IndexRule indexRule = IndexRule.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR, IndexDescriptor.Type.GENERAL );
+        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 );
+        IndexRule indexRule = IndexRule.forIndex( RULE_ID, descriptor ).withProvider( PROVIDER_DESCRIPTOR ).build();
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
@@ -59,7 +56,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         SchemaIndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        IndexRule indexRule = IndexRule.constraintIndexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR, null );
+        IndexRule indexRule = IndexRule.forIndex( RULE_ID, descriptor ).withProvider( PROVIDER_DESCRIPTOR ).build();
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
@@ -85,8 +82,8 @@ public class IndexRuleTest extends SchemaRuleTestBase
 
     private void assertEqualityByDescriptor( SchemaIndexDescriptor descriptor )
     {
-        IndexRule rule1 = IndexRule.indexRule( RULE_ID, descriptor.schema(), PROVIDER_DESCRIPTOR, IndexDescriptor.Type.GENERAL );
-        IndexRule rule2 = IndexRule.indexRule( RULE_ID_2, descriptor.schema(), PROVIDER_DESCRIPTOR_2, IndexDescriptor.Type.GENERAL);
+        IndexRule rule1 = IndexRule.forIndex( RULE_ID, descriptor ).withProvider( PROVIDER_DESCRIPTOR ).build();
+        IndexRule rule2 = IndexRule.forIndex( RULE_ID_2, descriptor ).withProvider( PROVIDER_DESCRIPTOR ).build();
 
         assertEquality( rule1, rule2 );
     }

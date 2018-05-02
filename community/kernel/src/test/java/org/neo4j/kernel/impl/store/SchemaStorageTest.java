@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -361,17 +360,16 @@ public class SchemaStorageTest
 
     private IndexRule makeIndexRule( long ruleId, String label, String propertyKey )
     {
-        return IndexRule.indexRule(
-                ruleId, SchemaDescriptorFactory.forLabel( labelId( label ), propId( propertyKey ) ), PROVIDER_DESCRIPTOR, IndexDescriptor.Type.GENERAL );
+        return IndexRule.forIndex( ruleId, SchemaIndexDescriptorFactory.forLabel( labelId( label ), propId( propertyKey ) ) ).withProvider(
+                PROVIDER_DESCRIPTOR ).build();
     }
 
     private IndexRule makeIndexRuleForConstraint( long ruleId, String label, String propertyKey,
             long constraintId )
     {
-        return IndexRule.constraintIndexRule(
-                ruleId,
-                SchemaIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( propertyKey ) ),
-                PROVIDER_DESCRIPTOR, constraintId );
+        return IndexRule.forIndex(
+                ruleId, SchemaIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( propertyKey ) ) ).withProvider(
+                PROVIDER_DESCRIPTOR ).withOwingConstraint( constraintId ).build();
     }
 
     private ConstraintRule getUniquePropertyConstraintRule( long id, String label, String property )

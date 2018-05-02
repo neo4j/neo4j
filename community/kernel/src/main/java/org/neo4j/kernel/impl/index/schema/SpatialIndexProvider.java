@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.neo4j.gis.spatial.index.curves.PartialOverlapConfiguration;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -44,6 +43,9 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class SpatialIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
@@ -94,10 +96,17 @@ public class SpatialIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
     {
-        return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
-    }
+        if ( type == GENERAL )
+        {
+            return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
+        }
+        else if ( type == UNIQUE )
+        {
+            return SchemaIndexDescriptorFactory.uniqueForLabelBySchema( schema );
+        }
+        throw new UnsupportedOperationException( String.format( "This provider does not support indexes of type %s", type ) );    }
 
     @Override
     public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor,

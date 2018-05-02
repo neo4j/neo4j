@@ -27,9 +27,8 @@ import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -93,7 +92,7 @@ public class SchemaRuleCommandTest
                     new PropertyPhysicalToLogicalConverter( propertyStore ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
     private final IndexRule rule =
-            IndexRule.indexRule( id, SchemaDescriptorFactory.forLabel( labelId, propertyKey ), PROVIDER_DESCRIPTOR, IndexDescriptor.Type.GENERAL );
+            IndexRule.forIndex( id, SchemaIndexDescriptorFactory.forLabel( labelId, propertyKey ) ).withProvider( PROVIDER_DESCRIPTOR ).build();
 
     @Test
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception

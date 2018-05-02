@@ -104,8 +104,7 @@ public class FulltextIndexProviderTest
         try ( Transaction ignore = db.beginTx() )
         {
             MultiTokenSchemaDescriptor schema = multiToken( ANY_ENTITY_TOKEN, EntityType.NODE, new int[]{2, 3, 4} );
-            fulltextIndexDescriptor = provider.indexDescriptorFor( schema, "fulltext",
-                            STANDARD );
+            fulltextIndexDescriptor = provider.indexDescriptorFor( schema, , "fulltext", STANDARD );
             assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
         }
         assertThat( indexProviderMap.getProviderFor( fulltextIndexDescriptor ), is( instanceOf( FulltextIndexProvider.class ) ) );
@@ -144,8 +143,7 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( multiToken( new int[]{7, 8, 9}, EntityType.RELATIONSHIP, new int[]{2, 3, 4} ), "rels",
-                            STANDARD );
+                    provider.indexDescriptorFor( multiToken( new int[]{7, 8, 9}, EntityType.RELATIONSHIP, new int[]{2, 3, 4} ), , "rels", STANDARD );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -179,8 +177,7 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( multiToken( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, new int[]{0, 1, 2, 3} ),
-                            "fulltext", STANDARD );
+                    provider.indexDescriptorFor( multiToken( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, new int[]{0, 1, 2, 3} ), , "fulltext", STANDARD );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -223,8 +220,7 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( multiToken( entityTokens, EntityType.NODE, propertyIds ), "fulltext",
-                            STANDARD );
+                    provider.indexDescriptorFor( multiToken( entityTokens, EntityType.NODE, propertyIds ), , "fulltext", STANDARD );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }

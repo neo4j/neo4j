@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider<SchemaIndexDescriptor>
@@ -64,10 +65,17 @@ public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider<Schem
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
     {
-        return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
-    }
+        if ( type == GENERAL )
+        {
+            return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
+        }
+        else if ( type == UNIQUE )
+        {
+            return SchemaIndexDescriptorFactory.uniqueForLabelBySchema( schema );
+        }
+        throw new UnsupportedOperationException( String.format( "This provider does not support indexes of type %s", type ) );    }
 
     @Override
     public IndexCapability getCapability( IndexDescriptor indexDescriptor )

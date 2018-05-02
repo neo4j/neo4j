@@ -131,7 +131,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
                 }
 
                 @Override
-                public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+                public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
                 {
                     return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
                 }
@@ -176,7 +176,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
             };
     // Used by deserialization
 
-    public abstract IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata );
+    public abstract IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata );
 
     /**
      * Indicate that {@link Descriptor} has not yet been decided.

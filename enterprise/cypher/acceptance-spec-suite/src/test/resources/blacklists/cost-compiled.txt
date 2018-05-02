@@ -196,7 +196,7 @@ Feature "VarLengthAcceptance": Scenario "Handles checking properties on nodes in
 Feature "VarLengthAcceptance": Scenario "Handles checking properties on nodes in path - using ALL() function on path node properties"
 Feature "VarLengthAcceptance": Scenario "Handles checking properties on nodes in multistep path - using ALL() function on path node properties"
 Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in path - using in-pattern property value"
-Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in path - using ALL() function on relationship identifier"
+Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in path - using ALL() function on relationship name"
 Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in path - using ALL() function on path relationship properties"
 Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties"
 Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with empty db"

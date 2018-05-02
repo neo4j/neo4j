@@ -38,6 +38,9 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
+
 public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
     public static final String KEY = "temporal";
@@ -62,10 +65,17 @@ public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
     {
-        return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
-    }
+        if ( type == GENERAL )
+        {
+            return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
+        }
+        else if ( type == UNIQUE )
+        {
+            return SchemaIndexDescriptorFactory.uniqueForLabelBySchema( schema );
+        }
+        throw new UnsupportedOperationException( String.format( "This provider does not support indexes of type %s", type ) );    }
 
     @Override
     public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )

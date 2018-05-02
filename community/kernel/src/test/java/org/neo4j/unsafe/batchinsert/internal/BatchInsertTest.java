@@ -60,11 +60,13 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -116,6 +118,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -934,8 +937,9 @@ public class BatchInsertTest
     {
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
-        IndexProvider provider = mock( IndexProvider.class );
+        IndexProvider provider = mock( InMemoryIndexProvider.class );
 
+        when( provider.indexDescriptorFor( any(SchemaDescriptor.class), any(IndexDescriptor.Type.class ), anyString(), anyString() ) ).thenCallRealMethod();
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
@@ -969,8 +973,9 @@ public class BatchInsertTest
     {
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
-        IndexProvider provider = mock( IndexProvider.class );
+        IndexProvider provider = mock( InMemoryIndexProvider.class );
 
+        when( provider.indexDescriptorFor( any(SchemaDescriptor.class), any(IndexDescriptor.Type.class ), anyString(), anyString() ) ).thenCallRealMethod();
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
@@ -1482,8 +1487,9 @@ public class BatchInsertTest
     private long dbWithIndexAndSingleIndexedNode() throws Exception
     {
         IndexPopulator populator = mock( IndexPopulator.class );
-        IndexProvider provider = mock( IndexProvider.class );
+        IndexProvider provider = mock( InMemoryIndexProvider.class );
 
+        when( provider.indexDescriptorFor( any(SchemaDescriptor.class), any(IndexDescriptor.Type.class ), anyString(), anyString() ) ).thenCallRealMethod();
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );

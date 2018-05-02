@@ -99,7 +99,7 @@ public class SchemaRuleDeserializer2_0to3_1
                                            SchemaIndexDescriptorFactory.uniqueForLabel( label, propertyKeyIds ) :
                                            SchemaIndexDescriptorFactory.forLabel( label, propertyKeyIds );
         long owningConstraint = constraintIndex ? readOwningConstraint( serialized ) : NO_OWNING_CONSTRAINT;
-        return new IndexRule( id, providerDescriptor, descriptor.schema(), owningConstraint, descriptor.type() );
+        return IndexRule.forIndex( id, descriptor ).withOwingConstraint( owningConstraint ).withProvider( providerDescriptor ).build();
     }
 
     private static IndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer serialized )

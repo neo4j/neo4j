@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.EntityType;
@@ -42,7 +41,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.*;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type;
 import static org.neo4j.string.UTF8.getDecodedStringFrom;
 
 public class SchemaRuleSerialization
@@ -234,7 +233,7 @@ public class SchemaRuleSerialization
         {
             LabelSchemaDescriptor schema = readLabelSchema( source );
             name = readRuleName( id, IndexRule.class, source );
-            return IndexRule.indexRule( id, schema, indexProvider, name, "", Type.GENERAL );
+            return IndexRule.forSchema( id, schema ).withProvider( indexProvider ).withName( name ).build();
         }
         case UNIQUE_INDEX:
         {
@@ -242,14 +241,16 @@ public class SchemaRuleSerialization
             LabelSchemaDescriptor schema = readLabelSchema( source );
             SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.uniqueForSchema( schema );
             name = readRuleName( id, IndexRule.class, source );
-            return IndexRule.constraintIndexRule( id, descriptor, indexProvider, owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );
+            Long constraint = owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint;
+            return IndexRule.forIndex( id, descriptor ).withProvider( indexProvider ).withName( name ).withOwingConstraint( constraint ).build();
         }
         case NON_SCHEMA_INDEX:
         {
             MultiTokenSchemaDescriptor nonSchema = readNonSchemaSchema( source );
             name = readRuleName( id, IndexRule.class, source );
             String metadata = readMetaData( source );
-            return IndexRule.indexRule( id, nonSchema, indexProvider, name, metadata, Type.NON_SCHEMA );
+            return IndexRule.forSchema( id, nonSchema ).withProvider( indexProvider ).withName( name ).withMetadata( metadata ).withType(
+                    Type.NON_SCHEMA ).build();
         }
 
         default:
