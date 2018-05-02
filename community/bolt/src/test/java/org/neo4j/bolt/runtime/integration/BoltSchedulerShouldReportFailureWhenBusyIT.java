@@ -27,6 +27,7 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
@@ -43,6 +44,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -94,10 +96,6 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
     public void setup() throws Exception
     {
         address = server.lookupDefaultConnector();
-
-        connection1 = newConnection();
-        connection2 = newConnection();
-        connection3 = newConnection();
     }
 
     @After
@@ -109,23 +107,19 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
     }
 
     @Test
-    public void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy() throws Exception
+    public void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy() throws Throwable
     {
         // it's enough to get the bolt state machine into streaming mode to have
         // the thread sticked to the connection, causing all the available threads
         // to be busy (logically)
-        enterStreaming( connection1 );
-        enterStreaming( connection2 );
+        connection1 = enterStreaming();
+        connection2 = enterStreaming();
 
         try
         {
-            connection3 = newConnection();
+            connection3 = connectAndPerformBoltHandshake( newConnection() );
 
-            connection3.connect( address )
-                    .send( util.acceptedVersions( 1, 0, 0, 0 ) )
-                    .send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
-
-            assertThat( connection3, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+            connection3.send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
             assertThat( connection3, util.eventuallyReceives(
                     msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
 
@@ -144,16 +138,64 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         }
     }
 
-    private void enterStreaming( TransportConnection connection ) throws Exception
+    private TransportConnection enterStreaming() throws Throwable
     {
-        connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) )
-                .send( util.chunk( run( "UNWIND RANGE (1, 100) AS x RETURN x" ) ) );
+        TransportConnection connection = null;
+        Throwable error = null;
 
+        // retry couple times because worker threads might seem busy
+        for ( int i = 1; i <= 7; i++ )
+        {
+            try
+            {
+                connection = newConnection();
+                enterStreaming( connection, i );
+                error = null;
+                return connection;
+            }
+            catch ( Throwable t )
+            {
+                // failed to enter the streaming state, record the error and retry
+                if ( error == null )
+                {
+                    error = t;
+                }
+                else
+                {
+                    error.addSuppressed( t );
+                }
+
+                close( connection );
+                SECONDS.sleep( i );
+            }
+        }
+
+        if ( error != null )
+        {
+            throw error;
+        }
+
+        throw new IllegalStateException( "Unable to enter the streaming state" );
+    }
+
+    private void enterStreaming( TransportConnection connection, int sleepSeconds ) throws Exception
+    {
+        connectAndPerformBoltHandshake( connection );
+
+        connection.send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+
+        SECONDS.sleep( sleepSeconds ); // sleep a bit to allow worker thread return back to the pool
+
+        connection.send( util.chunk( run( "UNWIND RANGE (1, 100) AS x RETURN x" ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+    }
+
+    private TransportConnection connectAndPerformBoltHandshake( TransportConnection connection ) throws Exception
+    {
+        connection.connect( address ).send( util.acceptedVersions( 1, 0, 0, 0 ) );
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        return connection;
     }
 
     private void exitStreaming( TransportConnection connection ) throws Exception
@@ -163,11 +205,17 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
-    private void close( TransportConnection connection ) throws Exception
+    private void close( TransportConnection connection )
     {
         if ( connection != null )
         {
-            connection.disconnect();
+            try
+            {
+                connection.disconnect();
+            }
+            catch ( IOException ignore )
+            {
+            }
         }
     }
 }
