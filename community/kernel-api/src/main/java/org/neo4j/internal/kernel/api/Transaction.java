@@ -27,6 +27,37 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * A transaction with the graph database.
+ *
+ * Access to the graph is performed via sub-interfaces like {@link org.neo4j.internal.kernel.api.Read}.
+ * Changes made within a transaction are immediately visible to all operations within it, but are only
+ * visible to other transactions after the successful commit of the transaction.
+ *
+ * Typical usage:
+ * <pre>
+ * try ( Transaction transaction = session.beginTransaction() )
+ * {
+ *      ...
+ *      transaction.success();
+ * }
+ * catch ( SomeException e )
+ * {
+ *      ...
+ * }
+ * </pre>
+ *
+ * Typical usage of failure if failure isn't controlled with exceptions:
+ * <pre>
+ * try ( Transaction transaction = session.beginTransaction() )
+ * {
+ *      ...
+ *      if ( ... some condition )
+ *      {
+ *          transaction.failure();
+ *      }
+ *
+ *      transaction.success();
+ * }
+ * </pre>
  */
 public interface Transaction extends AutoCloseable
 {

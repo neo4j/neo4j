@@ -373,7 +373,7 @@ public class QueryExecutionLocksIT
             this.lockOperationRecords = lockOperationRecords;
         }
 
-        public List<LockOperationRecord> getLockOperationRecords()
+        List<LockOperationRecord> getLockOperationRecords()
         {
             return lockOperationRecords;
         }
@@ -697,9 +697,9 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public AuthSubject subject()
+        public AuthSubject subjectOrAnonymous()
         {
-            return internal.subject();
+            return internal.subjectOrAnonymous();
         }
 
         @Override
@@ -781,21 +781,21 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public NodeCursor nodeCursor()
+        public NodeCursor ambientNodeCursor()
         {
-            return internal.nodeCursor();
+            return internal.ambientNodeCursor();
         }
 
         @Override
-        public RelationshipScanCursor relationshipCursor()
+        public RelationshipScanCursor ambientRelationshipCursor()
         {
-            return internal.relationshipCursor();
+            return internal.ambientRelationshipCursor();
         }
 
         @Override
-        public PropertyCursor propertyCursor()
+        public PropertyCursor ambientPropertyCursor()
         {
-            return internal.propertyCursor();
+            return internal.ambientPropertyCursor();
         }
 
         @Override
