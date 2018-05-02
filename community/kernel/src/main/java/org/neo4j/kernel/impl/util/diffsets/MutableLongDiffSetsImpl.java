@@ -50,6 +50,11 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
         this( NOT_INITIALIZED, NOT_INITIALIZED, OnHeapCollectionsFactory.INSTANCE );
     }
 
+    public MutableLongDiffSetsImpl( MutableLongSet added, MutableLongSet removed )
+    {
+        this( added, removed, OnHeapCollectionsFactory.INSTANCE );
+    }
+
     public MutableLongDiffSetsImpl( MutableLongSet added, MutableLongSet removed, CollectionsFactory collectionsFactory )
     {
         this.added = added;
@@ -160,7 +165,7 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
         return Objects.hash( added, removed );
     }
 
-    private void addElement( long element )
+    protected void addElement( long element )
     {
         if ( removed.isEmpty() || !removed.remove( element ) )
         {
@@ -168,7 +173,7 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
         }
     }
 
-    private boolean removeElement( long element )
+    protected boolean removeElement( long element )
     {
         if ( !added.isEmpty() && added.remove( element ) )
         {
