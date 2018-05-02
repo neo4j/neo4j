@@ -185,7 +185,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                     }
                 }, ktx.statementLocks().optimistic(), ktx.lockTracer() );
 
-        locking.lockAllNodesAndConsumeRelationships( nodeId, ktx, ktx.nodeCursor() );
+        locking.lockAllNodesAndConsumeRelationships( nodeId, ktx, ktx.ambientNodeCursor() );
         ktx.assertOpen();
 
         //we are already holding the lock

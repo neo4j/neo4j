@@ -374,7 +374,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return securityContext;
     }
 
-    public AuthSubject subject()
+    public AuthSubject subjectOrAnonymous()
     {
         return securityContext == null ? AuthSubject.ANONYMOUS : securityContext.subject();
     }
@@ -1172,19 +1172,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public NodeCursor nodeCursor()
+    public NodeCursor ambientNodeCursor()
     {
         return operations.nodeCursor();
     }
 
     @Override
-    public RelationshipScanCursor relationshipCursor()
+    public RelationshipScanCursor ambientRelationshipCursor()
     {
         return operations.relationshipCursor();
     }
 
     @Override
-    public PropertyCursor propertyCursor()
+    public PropertyCursor ambientPropertyCursor()
     {
         return operations.propertyCursor();
     }
