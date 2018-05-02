@@ -29,7 +29,6 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService
 import org.neo4j.causalclustering.identity.BoundState;
 import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
-import org.neo4j.kernel.impl.util.DebugUtil;
 import org.neo4j.kernel.lifecycle.SafeLifecycle;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -45,8 +44,9 @@ public class CoreLife extends SafeLifecycle
     private final CoreSnapshotService snapshotService;
     private final CoreStateDownloaderService downloadService;
 
-    public CoreLife( RaftMachine raftMachine, LocalDatabase localDatabase, ClusterBinder clusterBinder, CommandApplicationProcess commandApplicationProcess,
-            CoreStateMachines coreStateMachines, LifecycleMessageHandler<?> raftMessageHandler, CoreSnapshotService snapshotService,
+    public CoreLife( RaftMachine raftMachine, LocalDatabase localDatabase, ClusterBinder clusterBinder,
+            CommandApplicationProcess commandApplicationProcess, CoreStateMachines coreStateMachines,
+            LifecycleMessageHandler<?> raftMessageHandler, CoreSnapshotService snapshotService,
             CoreStateDownloaderService downloadService )
     {
         this.raftMachine = raftMachine;

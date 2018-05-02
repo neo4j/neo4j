@@ -38,7 +38,7 @@ import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.TestTopology;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -66,7 +66,7 @@ public class ClusterBinderTest
             CoreTopologyService topologyService )
     {
         return new ClusterBinder( clusterIdStorage, new StubSimpleStorage<>(), topologyService, clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper, dbName, minCoreHosts, NullLogProvider.getInstance() );
+                coreBootstrapper, dbName, minCoreHosts, new Monitors() );
     }
 
     @Test
@@ -76,10 +76,6 @@ public class ClusterBinderTest
         CoreTopology unboundTopology = new CoreTopology( null, false, emptyMap() );
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.localCoreServers() ).thenReturn( unboundTopology );
-
-        Config config = Config.defaults();
-        int minCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
-        String dbName = config.get( CausalClusteringSettings.database );
 
         ClusterBinder binder = clusterBinder( new StubSimpleStorage<>(), topologyService );
 

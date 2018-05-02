@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 
@@ -57,7 +58,8 @@ public class MembershipWaiterTest
     public void shouldReturnImmediatelyIfMemberAndCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500, NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500,
+                NullLogProvider.getInstance(), new Monitors() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
@@ -82,7 +84,8 @@ public class MembershipWaiterTest
     public void shouldWaitUntilLeaderCommitIsAvailable() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500, NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 500,
+                NullLogProvider.getInstance(), new Monitors() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
@@ -106,7 +109,8 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfCaughtUpButNotMember() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1, NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
+                NullLogProvider.getInstance(), new Monitors() );
 
         ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 1 ) )
@@ -135,7 +139,8 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfMemberButNotCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1, NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
+                NullLogProvider.getInstance(), new Monitors() );
 
         ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ), member( 1 ) )
@@ -164,7 +169,8 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfLeaderCommitIsNeverKnown() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth,  1, NullLogProvider.getInstance() );
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, () -> dbHealth, 1,
+                NullLogProvider.getInstance(), new Monitors() );
 
         ExposedRaftState raftState = RaftStateBuilder.raftState()
                 .leaderCommit( -1 )

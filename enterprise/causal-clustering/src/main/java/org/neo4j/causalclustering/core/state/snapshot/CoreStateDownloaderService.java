@@ -26,10 +26,11 @@ import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.downloadSnapshot;
@@ -45,9 +46,11 @@ public class CoreStateDownloaderService extends LifecycleAdapter
     private JobHandle jobHandle;
     private boolean stopped;
     private Supplier<DatabaseHealth> dbHealth;
+    private final Monitors monitors;
 
-    public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader, CommandApplicationProcess applicationProcess,
-            LogProvider logProvider, TimeoutStrategy.Timeout downloaderPauseStrategy, Supplier<DatabaseHealth> dbHealth )
+    public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader,
+            CommandApplicationProcess applicationProcess, LogProvider logProvider,
+            TimeoutStrategy.Timeout downloaderPauseStrategy, Supplier<DatabaseHealth> dbHealth, Monitors monitors )
     {
         this.jobScheduler = jobScheduler;
         this.downloader = downloader;
@@ -55,6 +58,7 @@ public class CoreStateDownloaderService extends LifecycleAdapter
         this.log = logProvider.getLog( getClass() );
         this.downloaderPauseStrategy = downloaderPauseStrategy;
         this.dbHealth = dbHealth;
+        this.monitors = monitors;
     }
 
     public synchronized Optional<JobHandle> scheduleDownload( CatchupAddressProvider addressProvider )
@@ -67,7 +71,7 @@ public class CoreStateDownloaderService extends LifecycleAdapter
         if ( currentJob == null || currentJob.hasCompleted() )
         {
             currentJob = new PersistentSnapshotDownloader( addressProvider, applicationProcess, downloader, log,
-                    downloaderPauseStrategy, dbHealth );
+                    downloaderPauseStrategy, dbHealth, monitors );
             jobHandle = jobScheduler.schedule( downloadSnapshot, currentJob );
             return Optional.of( jobHandle );
         }

@@ -35,6 +35,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.CountingJobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -77,7 +78,7 @@ public class CoreStateDownloaderServiceTest
         final Log log = mock( Log.class );
         CoreStateDownloaderService coreStateDownloaderService =
                 new CoreStateDownloaderService( centralJobScheduler, coreStateDownloader, applicationProcess,
-                        logProvider( log ), new NoTimeout(), () -> dbHealth );
+                        logProvider( log ), new NoTimeout(), () -> dbHealth, new Monitors() );
         coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
         waitForApplierToResume( applicationProcess );
 
@@ -98,7 +99,7 @@ public class CoreStateDownloaderServiceTest
         final Log log = mock( Log.class );
         CoreStateDownloaderService coreStateDownloaderService =
                 new CoreStateDownloaderService( countingJobScheduler, coreStateDownloader, applicationProcess,
-                        logProvider( log ), new NoTimeout(), () -> dbHealth );
+                        logProvider( log ), new NoTimeout(), () -> dbHealth, new Monitors() );
 
         coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
         Thread.sleep( 50 );

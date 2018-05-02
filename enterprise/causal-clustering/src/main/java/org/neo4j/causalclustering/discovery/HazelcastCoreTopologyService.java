@@ -19,16 +19,9 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.config.MemberAttributeConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
@@ -38,6 +31,15 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
+import com.hazelcast.nio.Address;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;
@@ -46,7 +48,9 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.helpers.SocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -57,7 +61,6 @@ import static com.hazelcast.spi.properties.GroupProperty.MERGE_FIRST_RUN_DELAY_S
 import static com.hazelcast.spi.properties.GroupProperty.MERGE_NEXT_RUN_DELAY_SECONDS;
 import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS;
 import static com.hazelcast.spi.properties.GroupProperty.PREFER_IPv4_STACK;
-import static com.hazelcast.spi.properties.GroupProperty.WAIT_SECONDS_BEFORE_JOIN;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.disable_middleware_logging;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.discovery_listen_address;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.initial_discovery_members;
@@ -68,6 +71,13 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refr
 
 public class HazelcastCoreTopologyService extends AbstractTopologyService implements CoreTopologyService
 {
+    public interface Monitor
+    {
+        void discoveredMember( SocketAddress socketAddress );
+
+        void lostMember( SocketAddress socketAddress );
+    }
+
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private static final int HAZELCAST_MIN_CLUSTER = 2;
 
@@ -80,9 +90,9 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private final long refreshPeriod;
     private final HostnameResolver hostnameResolver;
     private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
+    private final Monitor monitor;
     private final String localDBName;
 
-    private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
 
     private volatile LeaderInfo leaderInfo = LeaderInfo.INITIAL;
@@ -97,7 +107,7 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
 
     public HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
-            TopologyServiceRetryStrategy topologyServiceRetryStrategy )
+            TopologyServiceRetryStrategy topologyServiceRetryStrategy, Monitors monitors )
     {
         this.config = config;
         this.myself = myself;
@@ -108,6 +118,7 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.hostnameResolver = hostnameResolver;
         this.topologyServiceRetryStrategy = topologyServiceRetryStrategy;
+        this.monitor = monitors.newMonitor( Monitor.class );
         this.localDBName = config.get( CausalClusteringSettings.database );
     }
 
@@ -186,8 +197,6 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
             {
                 return;
             }
-            membershipRegistrationId =
-                    hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
             refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod,
                     HazelcastCoreTopologyService.this::refreshTopology );
             log.info( "Cluster discovery service started" );
@@ -213,11 +222,10 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
             refreshJob.cancel( true );
         }
 
-        if ( hazelcastInstance != null && membershipRegistrationId != null )
+        if ( hazelcastInstance != null )
         {
             try
             {
-                hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
                 hazelcastInstance.getLifecycleService().terminate();
             }
             catch ( Throwable e )
@@ -229,8 +237,6 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
 
     private HazelcastInstance createHazelcastInstance()
     {
-        System.setProperty( WAIT_SECONDS_BEFORE_JOIN.getName(), "1" );
-
         JoinConfig joinConfig = new JoinConfig();
         joinConfig.getMulticastConfig().setEnabled( false );
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
@@ -294,6 +300,7 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
 
         c.setMemberAttributeConfig( memberAttributeConfig );
         logConnectionInfo( initialMembers );
+        c.addListenerConfig( new ListenerConfig( new OurMembershipListener() ) );
 
         JobScheduler.JobHandle logJob = scheduler.schedule( "HazelcastHealth", HAZELCAST_IS_HEALTHY_TIMEOUT_MS,
                 () -> log.warn( "The server has not been able to connect in a timely fashion to the " +
@@ -331,8 +338,7 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
                 config.get( CausalClusteringSettings.raft_listen_address ),
                 config.get( CausalClusteringSettings.raft_advertised_address ),
                 ClientConnectorAddresses.extractFromConfig( config ) );
-        userLog.info( "Discovering cluster with initial members: " + initialMembers );
-        userLog.info( "Attempting to connect to the other cluster members before continuing..." );
+        userLog.info( "Discovering other core members in initial members set: " + initialMembers );
     }
 
     @Override
@@ -429,7 +435,12 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
         @Override
         public void memberAdded( MembershipEvent membershipEvent )
         {
-            log.info( "Core member added %s", membershipEvent );
+            if ( !membershipEvent.getMember().localMember() )
+            {
+                Address address = membershipEvent.getMember().getAddress();
+                monitor.discoveredMember( new SocketAddress( address.getHost(), address.getPort() ) );
+            }
+
             try
             {
                 refreshTopology();
@@ -443,7 +454,12 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
         @Override
         public void memberRemoved( MembershipEvent membershipEvent )
         {
-            log.info( "Core member removed %s", membershipEvent );
+            if ( !membershipEvent.getMember().localMember() )
+            {
+                Address address = membershipEvent.getMember().getAddress();
+                monitor.lostMember( new SocketAddress( address.getHost(), address.getPort() ) );
+            }
+
             try
             {
                 refreshTopology();
@@ -460,5 +476,4 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
             log.info( "Core member attribute changed %s", memberAttributeEvent );
         }
     }
-
 }

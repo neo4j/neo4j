@@ -67,7 +67,7 @@ public class ServerMetrics extends LifecycleAdapter
         {
             assert ServerMetrics.this.serverThreadView != null;
             ServerMetrics.this.serverThreadView = serverThreadView;
-            userLog.info( "Server thread metrics has been registered successfully" );
+            userLog.info( "Server thread metrics have been registered successfully" );
         } );
     }
 
