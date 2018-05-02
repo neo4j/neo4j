@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.After;
 import org.junit.Before;
@@ -66,6 +67,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -233,12 +235,12 @@ public class TxStateTest
         state.nodeDoAddLabel( 3, 5 );
 
         // WHEN
-        Set<Long> removed = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getRemoved();
-        Set<Long> added = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getAdded();
+        LongSet removed = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getRemoved();
+        LongSet added = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getAdded();
 
         // THEN
-        assertEquals( asSet( 0L, 1L, 2L ), Iterables.asSet( removed ) );
-        assertEquals( asSet( 3L, 4L, 5L ), Iterables.asSet( added ) );
+        assertEquals( newSetWith( 0L, 1L, 2L ), removed );
+        assertEquals( newSetWith( 3L, 4L, 5L ), added );
     }
 
     @Test
@@ -252,10 +254,10 @@ public class TxStateTest
         state.nodeDoRemoveLabel( 2, 2 );
 
         // WHEN
-        Set<Long> nodes = state.nodesWithLabelChanged( 2 ).getRemoved();
+        LongSet nodes = state.nodesWithLabelChanged( 2 ).getRemoved();
 
         // THEN
-        assertEquals( asSet( 0L, 2L ), Iterables.asSet( nodes ) );
+        assertEquals( newSetWith( 0L, 2L ), nodes );
     }
 
     //endregion
@@ -1012,7 +1014,7 @@ public class TxStateTest
         state.nodeDoDelete( nodeId );
 
         // Then
-        assertThat( Iterables.asSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
+        assertThat( state.addedAndRemovedNodes().getRemoved(), equalTo( newSetWith( nodeId ) ) );
     }
 
     @Test

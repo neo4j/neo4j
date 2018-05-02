@@ -19,6 +19,7 @@
  */
 package org.neo4j.collection;
 
+import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -568,5 +569,13 @@ public class PrimitiveLongCollections
                 current++;
             }
         }
+    }
+
+    public static MutableLongSet mergeToSet( LongIterable a, LongIterable b )
+    {
+        final MutableLongSet set = new LongHashSet( a.size() + b.size() );
+        set.addAll( a );
+        set.addAll( b );
+        return set;
     }
 }

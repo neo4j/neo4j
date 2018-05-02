@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
@@ -202,7 +203,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     {
         try
         {
-            for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
+            state.addedAndRemovedNodes().getRemoved().each( nodeId ->
             {
                 try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
                 {
@@ -219,6 +220,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                                         properties.get().value() ) );
                             }
                         }
+                        catch ( PropertyKeyIdNotFoundKernelException e )
+                        {
+                            throw new IllegalStateException( "An entity that does not exist was modified.", e );
+                        }
 
                         node.get().labels().forEach( labelId ->
                         {
@@ -233,7 +238,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                         } );
                     }
                 }
-            }
+            } );
             for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
@@ -336,16 +341,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         return relationship;
     }
 
-    private Iterable<Node> map2Nodes( Iterable<Long> added )
+    private Iterable<Node> map2Nodes( LongIterable ids )
     {
-        return new IterableWrapper<Node, Long>( added )
-        {
-            @Override
-            protected Node underlyingObjectToObject( Long id )
-            {
-                return new NodeProxy( proxySpi, id );
-            }
-        };
+        return ids.asLazy().collect( id -> new NodeProxy( proxySpi, id ) );
     }
 
     private Iterable<Relationship> map2Rels( Iterable<Long> ids )

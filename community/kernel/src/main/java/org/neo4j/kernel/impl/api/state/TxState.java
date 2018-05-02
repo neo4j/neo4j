@@ -27,10 +27,10 @@ import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -105,7 +105,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
      */
     private final CollectionsFactory collectionsFactory;
 
-    private MutableIntObjectMap<DiffSets<Long>> labelStatesMap;
+    private MutableIntObjectMap<MutableLongDiffSets> labelStatesMap;
     private MutableLongObjectMap<NodeStateImpl> nodeStatesMap;
     private MutableLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
 
@@ -191,7 +191,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         // Created nodes
         if ( nodes != null )
         {
-            nodes.accept( createdNodesVisitor( visitor ) );
+            nodes.getAdded().each( visitor::visitCreatedNode );
         }
 
         if ( relationships != null )
@@ -206,7 +206,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         // Deleted nodes
         if ( nodes != null )
         {
-            nodes.accept( deletedNodesVisitor( visitor ) );
+            nodes.getRemoved().each( visitor::visitDeletedNode );
         }
 
         for ( NodeState node : modifiedNodes() )
@@ -248,30 +248,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             createdRelationshipTypeTokens.forEachKeyValue( visitor::visitCreatedRelationshipTypeToken );
         }
-    }
-
-    private static DiffSetsVisitor<Long> deletedNodesVisitor( final TxStateVisitor visitor )
-    {
-        return new DiffSetsVisitor.Adapter<Long>()
-        {
-            @Override
-            public void visitRemoved( Long element )
-            {
-                visitor.visitDeletedNode( element );
-            }
-        };
-    }
-
-    private static DiffSetsVisitor<Long> createdNodesVisitor( final TxStateVisitor visitor )
-    {
-        return new DiffSetsVisitor.Adapter<Long>()
-        {
-            @Override
-            public void visitAdded( Long element )
-            {
-                visitor.visitCreatedNode( element );
-            }
-        };
     }
 
     private static DiffSetsVisitor<Long> deletedRelationshipsVisitor( final TxStateVisitor visitor )
@@ -365,23 +341,23 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return nodeStatesMap == null ? Iterables.empty() : Iterables.cast( nodeStatesMap.values() );
     }
 
-    private DiffSets<Long> getOrCreateLabelStateNodeDiffSets( int labelId )
+    private MutableLongDiffSets getOrCreateLabelStateNodeDiffSets( int labelId )
     {
         if ( labelStatesMap == null )
         {
             labelStatesMap = collectionsFactory.newIntObjectMap();
         }
-        return labelStatesMap.getIfAbsentPut( labelId, DiffSets::new );
+        return labelStatesMap.getIfAbsentPut( labelId, MutableLongDiffSetsImpl::new );
     }
 
-    private ReadableDiffSets<Long> getLabelStateNodeDiffSets( int labelId )
+    private LongDiffSets getLabelStateNodeDiffSets( int labelId )
     {
         if ( labelStatesMap == null )
         {
-            return ReadableDiffSets.Empty.instance();
+            return LongDiffSets.EMPTY;
         }
-        final DiffSets<Long> nodeDiffSets = labelStatesMap.get( labelId );
-        return ReadableDiffSets.Empty.ifNull( nodeDiffSets );
+        final LongDiffSets nodeDiffSets = labelStatesMap.get( labelId );
+        return nodeDiffSets == null ? LongDiffSets.EMPTY : nodeDiffSets;
     }
 
     @Override
@@ -741,21 +717,21 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> nodesWithLabelChanged( int label )
+    public LongDiffSets nodesWithLabelChanged( int label )
     {
         return getLabelStateNodeDiffSets( label );
     }
 
     @Override
-    public ReadableDiffSets<Long> nodesWithAnyOfLabelsChanged( int... labels )
+    public LongDiffSets nodesWithAnyOfLabelsChanged( int... labels )
     {
         //It is enough that one of the labels is added
         //It is necessary for all the labels are removed
-        Set<Long> added = new HashSet<>();
-        Set<Long> removed = new HashSet<>();
+        final MutableLongSet added = new LongHashSet();
+        final MutableLongSet removed = new LongHashSet();
         for ( int i = 0; i < labels.length; i++ )
         {
-            ReadableDiffSets<Long> nodeDiffSets = getLabelStateNodeDiffSets( labels[i] );
+            final LongDiffSets nodeDiffSets = getLabelStateNodeDiffSets( labels[i] );
             if ( i == 0 )
             {
                 removed.addAll( nodeDiffSets.getRemoved() );
@@ -767,18 +743,18 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             added.addAll( nodeDiffSets.getAdded() );
         }
 
-        return new DiffSets<>( added, removed );
+        return new MutableLongDiffSetsImpl( added, removed );
     }
 
     @Override
-    public ReadableDiffSets<Long> nodesWithAllLabelsChanged( int... labels )
+    public LongDiffSets nodesWithAllLabelsChanged( int... labels )
     {
-        DiffSets<Long> changes = new DiffSets<>();
+        final MutableLongDiffSets changes = new MutableLongDiffSetsImpl();
         for ( int label : labels )
         {
-            final ReadableDiffSets<Long> nodeDiffSets = getLabelStateNodeDiffSets( label );
-            changes.addAll( nodeDiffSets.getAdded().iterator() );
-            changes.removeAll( nodeDiffSets.getRemoved().iterator() );
+            final LongDiffSets nodeDiffSets = getLabelStateNodeDiffSets( label );
+            changes.addAll( nodeDiffSets.getAdded() );
+            changes.removeAll( nodeDiffSets.getRemoved() );
         }
         return changes;
     }
@@ -829,9 +805,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> addedAndRemovedNodes()
+    public LongDiffSets addedAndRemovedNodes()
     {
-        return ReadableDiffSets.Empty.ifNull( nodes );
+        return nodes == null ? LongDiffSets.EMPTY : nodes;
     }
 
     private RemovalsCountingDiffSets nodes()
@@ -1314,14 +1290,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
      * This class works around the fact that create-delete in the same transaction is a no-op in {@link DiffSets},
      * whereas we need to know total number of explicit removals.
      */
-    private class RemovalsCountingDiffSets extends DiffSets<Long>
+    private class RemovalsCountingDiffSets extends MutableLongDiffSetsImpl
     {
         private MutableLongSet removedFromAdded;
 
         @Override
-        public boolean remove( Long elem )
+        public boolean remove( long elem )
         {
-            if ( added( false ).remove( elem ) )
+            if ( isAdded( elem ) && super.remove( elem ) )
             {
                 if ( removedFromAdded == null )
                 {
@@ -1330,7 +1306,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                 removedFromAdded.add( elem );
                 return true;
             }
-            return removed( true ).add( elem );
+            return super.remove( elem );
         }
 
         private boolean wasRemoved( long id )

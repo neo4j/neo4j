@@ -20,10 +20,8 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -31,8 +29,9 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeLabelClient;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
+import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgressor>
@@ -42,7 +41,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     private long node;
     private LabelSet labels;
     private LongIterator added;
-    private Set<Long> removed;
+    private LongSet removed;
 
     private final DefaultCursors pool;
 
@@ -58,11 +57,9 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
         super.initialize( progressor );
         if ( read.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> changes =
-                    read.txState().nodesWithLabelChanged( label );
+            final LongDiffSets changes = read.txState().nodesWithLabelChanged( label );
             added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
-            removed = new HashSet<>( read.txState().addedAndRemovedNodes().getRemoved() );
-            removed.addAll( changes.getRemoved() );
+            removed = mergeToSet( read.txState().addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
         }
     }
 

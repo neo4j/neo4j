@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
@@ -41,7 +40,7 @@ import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Arrays.stream;
-import static org.neo4j.collection.PrimitiveLongCollections.asSet;
+import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
@@ -306,9 +305,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     private LongSet removed( TransactionState txState, LongDiffSets changes )
     {
-        final MutableLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
-        longSet.addAll( changes.getRemoved() );
-        return longSet;
+        return mergeToSet( txState.addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
     }
 
     private static IndexQuery.ExactPredicate[] assertOnlyExactPredicates( IndexQuery[] predicates )
