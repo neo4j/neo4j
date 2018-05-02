@@ -56,7 +56,6 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def executionPlanDescription(): InternalPlanDescription =
     executionPlanBuilder()
-      .addArgument(Version(s"CYPHER ${CypherVersion.default.name}"))
       .addArgument(RuntimeVersion(CypherVersion.default.name))
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
