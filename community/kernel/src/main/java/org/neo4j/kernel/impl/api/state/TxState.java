@@ -1006,8 +1006,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         MutableLongDiffSetsImpl diffs = new MutableLongDiffSetsImpl();
         for ( MutableLongDiffSets diffSet : updates.values() )
         {
-            diffs.addAll( diffSet.getAdded().longIterator() );
-            diffs.removeAll( diffSet.getRemoved().longIterator() );
+            diffs.addAll( diffSet.getAdded() );
+            diffs.removeAll( diffSet.getRemoved() );
         }
         return diffs;
     }
@@ -1033,8 +1033,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             if ( query.acceptsValue( entry.getKey().getOnlyValue() ) )
             {
                 MutableLongDiffSets diffsets = entry.getValue();
-                diffs.addAll( diffsets.getAdded().longIterator() );
-                diffs.removeAll( diffsets.getRemoved().longIterator() );
+                diffs.addAll( diffsets.getAdded() );
+                diffs.removeAll( diffsets.getRemoved() );
             }
         }
         return diffs;
@@ -1099,8 +1099,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         Collection<MutableLongDiffSets> inRange = sortedUpdates.subMap( lower, includeLower, upper, includeUpper ).values();
         for ( MutableLongDiffSets diffForSpecificValue : inRange )
         {
-            diffs.addAll( diffForSpecificValue.getAdded().longIterator() );
-            diffs.removeAll( diffForSpecificValue.getRemoved().longIterator() );
+            diffs.addAll( diffForSpecificValue.getAdded() );
+            diffs.removeAll( diffForSpecificValue.getRemoved() );
         }
         return diffs;
     }
@@ -1121,8 +1121,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             if ( ((TextValue) key.getOnlyValue()).stringValue().startsWith( prefix ) )
             {
                 MutableLongDiffSets diffSets = entry.getValue();
-                diffs.addAll( diffSets.getAdded().longIterator() );
-                diffs.removeAll( diffSets.getRemoved().longIterator() );
+                diffs.addAll( diffSets.getAdded() );
+                diffs.removeAll( diffSets.getRemoved() );
             }
             else
             {
