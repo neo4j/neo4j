@@ -65,7 +65,6 @@ public class SocketConnection implements TransportConnection
     public TransportConnection send( byte[] rawBytes ) throws IOException
     {
         out.write( rawBytes );
-        out.flush();
         return this;
     }
 
