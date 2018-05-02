@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -80,7 +81,6 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
@@ -102,6 +102,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -1094,6 +1095,25 @@ public class IndexingServiceTest
 
         // Then
         verify( accessor, times( 1 ) ).refresh();
+    }
+
+    @Test
+    public void shouldForgetDeferredIndexDropDuringRecoveryIfCreatedIndexWithSameRuleId() throws Exception
+    {
+        // given
+        IndexRule rule = IndexRule.indexRule( 0, index, PROVIDER_DESCRIPTOR );
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), rule );
+        life.init();
+
+        // when
+        indexing.dropIndex( rule );
+        indexing.createIndexes( rule );
+        life.start();
+
+        // then
+        IndexProxy proxy = indexing.getIndexProxy( rule.getId() );
+        assertNotNull( proxy );
+        verify( accessor, never() ).drop();
     }
 
     private IndexProxy createIndexProxyMock()
