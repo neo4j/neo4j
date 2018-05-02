@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.RandomValue;
 import org.neo4j.values.storable.Value;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -69,7 +70,7 @@ public abstract class IndexPopulationStressTest
     /**
      * Generate a random value to populate the index with.
      */
-    abstract Value randomValue( Random random );
+    abstract Value randomValue( RandomValue random );
 
     @Before
     public void setup() throws IOException
@@ -130,7 +131,7 @@ public abstract class IndexPopulationStressTest
         List<IndexEntryUpdate<?>> updates = new ArrayList<>( n );
         for ( int i = 0; i < n; i++ )
         {
-            Value value = randomValue( random );
+            Value value = randomValue( RandomValue.create( random ) );
             updates.add( IndexEntryUpdate.add( i, descriptor, value ) );
         }
         return updates;
