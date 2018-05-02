@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_5
 
-import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.frontend.v3_4.notification.EagerLoadCsvNotification
-import org.neo4j.cypher.internal.ir.v3_4.NoHeaders
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions.StringLiteral
-import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, Eager, LoadCSV}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.frontend.v3_5.notification.EagerLoadCsvNotification
+import org.neo4j.cypher.internal.ir.v3_5.NoHeaders
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.StringLiteral
+import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, Eager, LoadCSV}
 
 class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

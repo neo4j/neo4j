@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.scalacheck._
 
 class Neo4jValueComparisonTest extends CypherFunSuite {

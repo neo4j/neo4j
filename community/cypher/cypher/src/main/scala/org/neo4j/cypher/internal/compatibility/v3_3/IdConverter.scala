@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
-import org.neo4j.cypher.internal.util.v3_4.attribution._
+import org.neo4j.cypher.internal.util.v3_5.attribution._
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
 
 trait IdConverter {

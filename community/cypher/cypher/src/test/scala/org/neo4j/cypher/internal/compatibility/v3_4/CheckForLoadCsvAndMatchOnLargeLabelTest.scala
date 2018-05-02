@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_5
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.frontend.v3_4.notification.LargeLabelWithLoadCsvNotification
-import org.neo4j.cypher.internal.ir.v3_4.HasHeaders
-import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId}
-import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, StringLiteral}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.frontend.v3_5.notification.LargeLabelWithLoadCsvNotification
+import org.neo4j.cypher.internal.ir.v3_5.HasHeaders
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.{Cardinality, LabelId}
+import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, StringLiteral}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class CheckForLoadCsvAndMatchOnLargeLabelTest
     extends CypherFunSuite

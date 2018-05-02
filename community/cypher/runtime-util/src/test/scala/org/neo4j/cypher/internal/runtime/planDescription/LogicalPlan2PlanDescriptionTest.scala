@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.util.v3_4._
-import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions.{SemanticDirection, LabelName => AstLabelName, _}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.util.v3_5._
+import org.neo4j.cypher.internal.util.v3_5.attribution.{Id, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.{SemanticDirection, LabelName => AstLabelName, _}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {

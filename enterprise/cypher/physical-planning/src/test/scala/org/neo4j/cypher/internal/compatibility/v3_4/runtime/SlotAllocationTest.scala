@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime
+package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.frontend.v3_4.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, VarPatternLength}
-import org.neo4j.cypher.internal.util.v3_4.LabelId
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, _}
-import org.neo4j.cypher.internal.v3_4.logical.{plans => logicalPlans}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.frontend.v3_5.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.frontend.v3_5.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.util.v3_5.LabelId
+import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, _}
+import org.neo4j.cypher.internal.v3_5.logical.{plans => logicalPlans}
 
 //noinspection NameBooleanParameters
 class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

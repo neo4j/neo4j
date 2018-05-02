@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Not, True}
-import org.neo4j.cypher.internal.util.v3_4.symbols.CTNumber
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.symbols.CTNumber
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.intValue
 
 class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, FineToReuse, NeedsReplan}
+import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, FineToReuse, NeedsReplan}
 
 trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
   def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T

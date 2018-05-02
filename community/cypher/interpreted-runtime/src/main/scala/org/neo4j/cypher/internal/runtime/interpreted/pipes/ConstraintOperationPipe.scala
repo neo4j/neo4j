@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
+import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 
 class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)
                              (val id: Id = Id.INVALID_ID) extends Pipe {

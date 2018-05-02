@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
+package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
 import java.util.concurrent.TimeUnit.{MILLISECONDS, SECONDS}
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_4.{NeedsReplan, FineToReuse, StatsDivergenceCalculator}
-import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, GraphStatisticsSnapshot, NodesWithLabelCardinality}
-import org.neo4j.cypher.internal.util.v3_4.LabelId
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_5.{NeedsReplan, FineToReuse, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, GraphStatisticsSnapshot, NodesWithLabelCardinality}
+import org.neo4j.cypher.internal.util.v3_5.LabelId
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.time.Clocks
 
 class PlanFingerprintReferenceTest extends CypherFunSuite {

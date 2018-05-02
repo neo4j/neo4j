@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ClosingQueryResultRecordIterator, ResultIterator}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{BaseExecutionResultBuilderFactory, ExecutionResultBuilder, PipeInfo}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{ClosingQueryResultRecordIterator, ResultIterator}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{BaseExecutionResultBuilderFactory, ExecutionResultBuilder, PipeInfo}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable

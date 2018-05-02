@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor => IndexDescript
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics => GraphStatisticsV3_3, InstrumentedGraphStatistics => InstrumentedGraphStatisticsV3_3, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId => LabelIdV3_3, PropertyKeyId => PropertyKeyIdV3_3, RelTypeId => RelTypeIdV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3, Selectivity => SelectivityV3_3}
-import org.neo4j.cypher.internal.planner.v3_4.spi._
-import org.neo4j.cypher.internal.util.v3_4.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.planner.v3_5.spi._
+import org.neo4j.cypher.internal.util.v3_5.{LabelId, PropertyKeyId, RelTypeId}
 
 /**
   * This class will act as a v3.3 InstrumentedGraphStatistics, but will update instead a map of values
@@ -32,35 +32,35 @@ import org.neo4j.cypher.internal.util.v3_4.{LabelId, PropertyKeyId, RelTypeId}
   * so that existing 3.3 code will see it as the same type. However it overrides all behaviour in that class.
   *
   * @param innerV3_3 - the inner 3.3 graph statistics used by the planner to make the plans
-  * @param snapshotV3_4 - the 3.4 version of the graph statistics snapshot used to remember what was used by the planner
+  * @param snapshotv3_5 - the 3.4 version of the graph statistics snapshot used to remember what was used by the planner
   */
-class WrappedInstrumentedGraphStatistics(innerV3_3: GraphStatisticsV3_3, snapshotV3_4: MutableGraphStatisticsSnapshot) extends InstrumentedGraphStatisticsV3_3(innerV3_3, new MutableGraphStatisticsSnapshotV3_3()) {
+class WrappedInstrumentedGraphStatistics(innerV3_3: GraphStatisticsV3_3, snapshotv3_5: MutableGraphStatisticsSnapshot) extends InstrumentedGraphStatisticsV3_3(innerV3_3, new MutableGraphStatisticsSnapshotV3_3()) {
   override def nodesWithLabelCardinality(labelId: Option[LabelIdV3_3]): CardinalityV3_3 =
     if (labelId.isEmpty) {
-      snapshotV3_4.map.getOrElseUpdate(NodesWithLabelCardinality(None), 1)
+      snapshotv3_5.map.getOrElseUpdate(NodesWithLabelCardinality(None), 1)
     } else {
-      snapshotV3_4.map.getOrElseUpdate(NodesWithLabelCardinality(labelId), inner.nodesWithLabelCardinality(labelId).amount)
+      snapshotv3_5.map.getOrElseUpdate(NodesWithLabelCardinality(labelId), inner.nodesWithLabelCardinality(labelId).amount)
     }
 
   override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelIdV3_3], relTypeId: Option[RelTypeIdV3_3], toLabel: Option[LabelIdV3_3]): CardinalityV3_3 =
-    snapshotV3_4.map.getOrElseUpdate(
+    snapshotv3_5.map.getOrElseUpdate(
       CardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel),
       inner.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel).amount
     )
 
   override def indexSelectivity(index: IndexDescriptorV3_3): Option[SelectivityV3_3] = {
     val selectivity = inner.indexSelectivity(index)
-    snapshotV3_4.map.getOrElseUpdate(IndexSelectivity(index), selectivity.fold(0.0)(_.factor))
+    snapshotv3_5.map.getOrElseUpdate(IndexSelectivity(index), selectivity.fold(0.0)(_.factor))
     selectivity
   }
 
   override def indexPropertyExistsSelectivity(index: IndexDescriptorV3_3): Option[SelectivityV3_3] = {
     val selectivity = inner.indexPropertyExistsSelectivity(index)
-    snapshotV3_4.map.getOrElseUpdate(IndexPropertyExistsSelectivity(index), selectivity.fold(0.0)(_.factor))
+    snapshotv3_5.map.getOrElseUpdate(IndexPropertyExistsSelectivity(index), selectivity.fold(0.0)(_.factor))
     selectivity
   }
 
-  override def nodesAllCardinality(): CardinalityV3_3 = snapshotV3_4.map.getOrElseUpdate(NodesAllCardinality, inner.nodesAllCardinality().amount)
+  override def nodesAllCardinality(): CardinalityV3_3 = snapshotv3_5.map.getOrElseUpdate(NodesAllCardinality, inner.nodesAllCardinality().amount)
 
   implicit def to3_4l(labelId: LabelIdV3_3): LabelId = LabelId(labelId.id)
 

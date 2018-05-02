@@ -28,7 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
   * instead test with an actual database to make sure they work with the whole stack
   * including settings in the database configuration.
   * For more light-weight testing please use
-  * [[org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LeafPlanningIntegrationTest]]
+  * [[org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LeafPlanningIntegrationTest]]
   */
 class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.slotted
 
 import org.neo4j.collection.primitive.PrimitiveLongSet
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._

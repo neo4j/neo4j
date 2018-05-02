@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime
+package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_4.{CypherException, TaskCloser}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.{CypherException, TaskCloser}
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.intValue
 

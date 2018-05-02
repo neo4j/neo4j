@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.time.{LocalDate, LocalDateTime}
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
+import org.neo4j.cypher.internal.frontend.v3_5.helpers.StringHelper._
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 

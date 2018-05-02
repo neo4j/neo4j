@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.{LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.neo4j.values.virtual.NodeValue
 
 class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos {

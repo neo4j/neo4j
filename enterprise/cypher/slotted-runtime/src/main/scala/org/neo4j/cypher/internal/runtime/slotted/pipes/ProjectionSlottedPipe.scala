@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 
 /*
 Projection evaluates expressions and stores their values into new slots in the execution context.
