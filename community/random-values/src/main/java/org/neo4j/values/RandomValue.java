@@ -755,7 +755,6 @@ public class RandomValue
         }
     }
 
-
     /**
      * Returns the next pseudorandom {@link PointArray} of cartesian two-dimensional points.
      *
@@ -1170,6 +1169,34 @@ public class RandomValue
         return duration( Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS ) );
     }
 
+    public Value nextTemporalValue()
+    {
+        int nextInt = generator.nextInt( 6 );
+        switch ( nextInt )
+        {
+        case 0:
+            return nextDateValue();
+
+        case 1:
+            return nextLocalDateTimeValue();
+
+        case 2:
+            return nextDateTimeValue();
+
+        case 3:
+            return nextLocalTimeValue();
+
+        case 4:
+            return nextTimeValue();
+
+        case 5:
+            return nextDuration();
+
+        default:
+            throw new IllegalArgumentException( nextInt + " not a valid temporal type" );
+        }
+    }
+
     /**
      * Returns the next pseudorandom two-dimensional cartesian {@link PointValue}.
      *
@@ -1214,6 +1241,28 @@ public class RandomValue
         double latitude = generator.nextDouble() * 180.0 - 90.0;
         return Values.pointValue( CoordinateReferenceSystem.WGS84_3D, longitude, latitude,
                 generator.nextDouble() * 10000 );
+    }
+
+    public PointValue nextPointValue()
+    {
+        int nextInt = generator.nextInt( 4 );
+        switch ( nextInt )
+        {
+        case 0:
+            return nextCartesianPoint();
+
+        case 1:
+            return nextCartesian3DPoint();
+
+        case 2:
+            return nextGeographicPoint();
+
+        case 3:
+            return nextGeographic3DPoint();
+
+        default:
+            throw new IllegalStateException( nextInt + " not a valid point type" );
+        }
     }
 
     private Instant randomInstant()
