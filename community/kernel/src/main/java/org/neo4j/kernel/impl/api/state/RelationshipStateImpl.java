@@ -68,12 +68,6 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
         }
 
         @Override
-        public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-        {
-            return iterator;
-        }
-
-        @Override
         public void accept( Visitor visitor )
         {
         }

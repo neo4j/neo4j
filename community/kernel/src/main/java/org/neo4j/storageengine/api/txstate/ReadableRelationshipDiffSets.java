@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 /**
  * {@link SuperReadableDiffSets} with added method for filtering added relationships.
@@ -36,8 +35,6 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
 {
     @Override
     ReadableRelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter );
-
-    RelationshipIterator augment( RelationshipIterator source );
 
     @Override
     default LongIterator augment( LongIterator source )
@@ -119,12 +116,6 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
         public int delta()
         {
             return 0;
-        }
-
-        @Override
-        public RelationshipIterator augment( RelationshipIterator source )
-        {
-            return source;
         }
 
         @Override

@@ -32,17 +32,11 @@ import org.junit.runners.Parameterized;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.cursor.Cursor;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
@@ -51,8 +45,6 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -71,7 +63,6 @@ import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.new
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -82,12 +73,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.collection.PrimitiveIntCollections.toList;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
-import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
-import static org.neo4j.kernel.impl.api.state.StubCursors.relationship;
 import static org.neo4j.values.storable.ValueGroup.TEXT;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -221,26 +209,6 @@ public class TxStateTest
 
         // THEN
         assertEquals( asSet( 2 ), state.nodeStateLabelDiffSets( 1 ).getRemoved() );
-    }
-
-    @Test
-    public void shouldHandleMultipleLabels()
-    {
-        // GIVEN
-        state.nodeDoRemoveLabel( 1, 0 );
-        state.nodeDoRemoveLabel( 2, 1 );
-        state.nodeDoRemoveLabel( 3, 2 );
-        state.nodeDoAddLabel( 1, 3 );
-        state.nodeDoAddLabel( 2, 4 );
-        state.nodeDoAddLabel( 3, 5 );
-
-        // WHEN
-        LongSet removed = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getRemoved();
-        LongSet added = state.nodesWithAllLabelsChanged( 1, 2, 3 ).getAdded();
-
-        // THEN
-        assertEquals( newSetWith( 0L, 1L, 2L ), removed );
-        assertEquals( newSetWith( 3L, 4L, 5L ), added );
     }
 
     @Test
@@ -1141,52 +1109,6 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldGiveCorrectDegreeWhenAddingAndRemovingRelationships()
-    {
-        // Given
-        int startNode = 1;
-        int endNode = 2;
-        int relType = 0;
-
-        // When
-        state.relationshipDoCreate( 10, relType, startNode, endNode );
-        state.relationshipDoCreate( 11, relType, startNode, endNode );
-        state.relationshipDoCreate( 12, relType + 1, startNode, endNode );
-        state.relationshipDoCreate( 13, relType + 1, endNode, startNode );
-
-        state.relationshipDoDelete( 1337, relType, startNode, endNode );
-        state.relationshipDoDelete( 1338, relType + 1, startNode, startNode );
-
-        // Then
-        assertEquals( 12, state.augmentNodeDegree( startNode, 10, Direction.BOTH ) );
-        assertEquals( 10, state.augmentNodeDegree( startNode, 10, Direction.INCOMING ) );
-        assertEquals( 11, state.augmentNodeDegree( startNode, 10, Direction.BOTH, relType ) );
-    }
-
-    @Test
-    public void shouldGiveCorrectRelationshipTypesForNode()
-    {
-        // Given
-        int startNode = 1;
-        int endNode = 2;
-        int relType = 0;
-
-        // When
-        long relA = 10;
-        long relB = 11;
-        long relC = 12;
-        state.relationshipDoCreate( relA, relType, startNode, endNode );
-        state.relationshipDoCreate( relB, relType, startNode, endNode );
-        state.relationshipDoCreate( relC, relType + 1, startNode, endNode );
-
-        state.relationshipDoDelete( relB, relType, startNode, endNode );
-        state.relationshipDoDelete( relC, relType + 1, startNode, endNode );
-
-        // Then
-        assertThat( toList( state.nodeRelationshipTypes( startNode ).intIterator() ), equalTo( asList( relType ) ) );
-    }
-
-    @Test
     public void shouldNotChangeRecordForCreatedAndDeletedNode() throws Exception
     {
         // GIVEN
@@ -1492,78 +1414,6 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldObserveCorrectAugmentedNodeRelationshipsState()
-    {
-        // GIVEN random committed state
-        TxState state = new TxState();
-        for ( int i = 0; i < 100; i++ )
-        {
-            state.nodeDoCreate( i );
-        }
-        for ( int i = 0; i < 5; i++ )
-        {
-            state.relationshipTypeDoCreateForName( "Type-" + i, i );
-        }
-        Map<Long,RelationshipItem> committedRelationships = new HashMap<>();
-        long relationshipId = 0;
-        int nodeCount = 100;
-        int relationshipTypeCount = 5;
-        for ( int i = 0; i < 30; i++ )
-        {
-            RelationshipItem relationship = relationship( relationshipId++, random.nextInt( relationshipTypeCount ),
-                    random.nextInt( nodeCount ), random.nextInt( nodeCount ) );
-            committedRelationships.put( relationship.id(), relationship );
-        }
-        Map<Long,RelationshipItem> allRelationships = new HashMap<>( committedRelationships );
-        // and some random changes to that
-        for ( int i = 0; i < 10; i++ )
-        {
-            if ( random.nextBoolean() )
-            {
-                RelationshipItem relationship = relationship( relationshipId++, random.nextInt( relationshipTypeCount ),
-                        random.nextInt( nodeCount ), random.nextInt( nodeCount ) );
-                allRelationships.put( relationship.id(), relationship );
-                state.relationshipDoCreate( relationship.id(), relationship.type(), relationship.startNode(),
-                        relationship.endNode() );
-            }
-            else
-            {
-                RelationshipItem relationship = Iterables
-                        .fromEnd( committedRelationships.values(), random.nextInt( committedRelationships.size() ) );
-                state.relationshipDoDelete( relationship.id(), relationship.type(), relationship.startNode(),
-                        relationship.endNode() );
-                allRelationships.remove( relationship.id() );
-            }
-        }
-        // WHEN
-        for ( int i = 0; i < nodeCount; i++ )
-        {
-            Direction direction = Direction.values()[random.nextInt( Direction.values().length )];
-            int[] relationshipTypes = randomTypes( relationshipTypeCount, random.random() );
-            Cursor<RelationshipItem> committed = cursor(
-                    relationshipsForNode( i, committedRelationships, direction, relationshipTypes ).values() );
-            Cursor<RelationshipItem> augmented = relationshipTypes == null
-                                                 ? state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction )
-                                                 : state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,
-                                                         relationshipTypes );
-
-            Map<Long,RelationshipItem> expectedRelationships =
-                    relationshipsForNode( i, allRelationships, direction, relationshipTypes );
-            // THEN
-            while ( augmented.next() )
-            {
-                RelationshipItem relationship = augmented.get();
-                RelationshipItem actual = expectedRelationships.remove( relationship.id() );
-                assertNotNull( "Augmented cursor returned relationship " + relationship + ", but shouldn't have",
-                        actual );
-                assertRelationshipEquals( actual, relationship );
-            }
-            assertTrue( "Augmented cursor didn't return some expected relationships: " + expectedRelationships,
-                    expectedRelationships.isEmpty() );
-        }
-    }
-
-    @Test
     public void useCollectionFactory()
     {
         final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
@@ -1577,77 +1427,6 @@ public class TxStateTest
 
         verify( collectionsFactory, times( 3 ) ).newIntObjectMap();
         verifyNoMoreInteractions( collectionsFactory );
-    }
-
-    private Map<Long,RelationshipItem> relationshipsForNode( long nodeId, Map<Long,RelationshipItem> allRelationships,
-            Direction direction, int[] relationshipTypes )
-    {
-        Map<Long,RelationshipItem> result = new HashMap<>();
-        for ( RelationshipItem relationship : allRelationships.values() )
-        {
-            switch ( direction )
-            {
-            case OUTGOING:
-                if ( relationship.startNode() != nodeId )
-                {
-                    continue;
-                }
-                break;
-            case INCOMING:
-                if ( relationship.endNode() != nodeId )
-                {
-                    continue;
-                }
-                break;
-            case BOTH:
-                if ( relationship.startNode() != nodeId && relationship.endNode() != nodeId )
-                {
-                    continue;
-                }
-                break;
-            default:
-                throw new IllegalStateException( "Unknown direction: " + direction );
-            }
-
-            if ( relationshipTypes != null )
-            {
-                if ( !contains( relationshipTypes, relationship.type() ) )
-                {
-                    continue;
-                }
-            }
-
-            result.put( relationship.id(), relationship );
-        }
-        return result;
-    }
-
-    private void assertRelationshipEquals( RelationshipItem expected, RelationshipItem relationship )
-    {
-        assertEquals( expected.id(), relationship.id() );
-        assertEquals( expected.type(), relationship.type() );
-        assertEquals( expected.startNode(), relationship.startNode() );
-        assertEquals( expected.endNode(), relationship.endNode() );
-    }
-
-    private int[] randomTypes( int high, Random random )
-    {
-        int count = random.nextInt( high );
-        if ( count == 0 )
-        {
-            return null;
-        }
-        int[] types = new int[count];
-        Arrays.fill( types, -1 );
-        for ( int i = 0; i < count; )
-        {
-            int candidate = random.nextInt( high );
-            if ( !contains( types, candidate ) )
-            {
-                types[i++] = candidate;
-            }
-        }
-        return types;
     }
 
     private boolean contains( int[] array, int candidate )

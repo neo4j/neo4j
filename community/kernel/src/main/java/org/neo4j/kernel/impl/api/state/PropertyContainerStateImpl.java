@@ -166,26 +166,6 @@ class PropertyContainerStateImpl implements PropertyContainerState
     }
 
     @Override
-    public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-    {
-        if ( removedProperties != null || addedProperties != null || changedProperties != null )
-        {
-            iterator = Iterators.filter( excludePropertiesWeKnowAbout, iterator );
-
-            if ( addedProperties != null && !addedProperties.isEmpty() )
-            {
-                iterator = Iterators.concat( iterator, toPropertyIterator( addedProperties ) );
-            }
-            if ( changedProperties != null && !changedProperties.isEmpty() )
-            {
-                iterator = Iterators.concat( iterator, toPropertyIterator( changedProperties ) );
-            }
-        }
-
-        return iterator;
-    }
-
-    @Override
     public void accept( Visitor visitor ) throws ConstraintValidationException
     {
         if ( addedProperties != null || removedProperties != null || changedProperties != null )
