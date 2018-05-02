@@ -78,8 +78,8 @@ class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implem
             @Nullable Resource resource )
     {
         this.source = source;
-        this.addedElements = addedElements;
-        this.addedElementsIterator = addedElements.longIterator();
+        this.addedElements = addedElements.freeze();
+        this.addedElementsIterator = this.addedElements.longIterator();
         this.removedElements = removedElements;
         this.resource = resource;
         this.phase = Phase.FILTERED_SOURCE;

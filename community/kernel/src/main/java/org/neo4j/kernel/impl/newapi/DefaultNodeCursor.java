@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
-import java.util.Set;
 
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -35,9 +35,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
-
-import static java.util.Collections.emptySet;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
 class DefaultNodeCursor extends NodeRecord implements NodeCursor
 {
@@ -47,7 +45,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     private long next;
     private long highMark;
     private HasChanges hasChanges = HasChanges.MAYBE;
-    private Set<Long> addedNodes;
+    private LongSet addedNodes;
 
     private final DefaultCursors pool;
 
@@ -71,7 +69,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         this.highMark = read.nodeHighMark();
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = emptySet();
+        this.addedNodes = LongSets.immutable.empty();
     }
 
     void single( long reference, Read read )
@@ -89,7 +87,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         this.highMark = NO_ID;
         this.read = read;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = emptySet();
+        this.addedNodes = LongSets.immutable.empty();
     }
 
     @Override
@@ -136,7 +134,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
-            ReadableDiffSets<Integer> diffSets = txState.nodeStateLabelDiffSets( getId() );
+            LongDiffSets diffSets = txState.nodeStateLabelDiffSets( getId() );
             if ( diffSets.getAdded().contains( label ) )
             {
                 return true;
@@ -275,7 +273,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         {
             read = null;
             hasChanges = HasChanges.MAYBE;
-            addedNodes = emptySet();
+            addedNodes = LongSets.immutable.empty();
             reset();
 
             pool.accept( this );
@@ -302,7 +300,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             {
                 if ( !isSingle() )
                 {
-                    addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot();
+                    addedNodes = read.txState().addedAndRemovedNodes().getAdded().freeze();
                 }
                 hasChanges = HasChanges.YES;
             }
