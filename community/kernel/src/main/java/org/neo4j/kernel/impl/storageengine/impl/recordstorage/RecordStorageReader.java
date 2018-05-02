@@ -247,6 +247,28 @@ class RecordStorageReader implements StorageReader
     }
 
     @Override
+    public void labelGetOrCreateForNames( String[] labelNames, int[] labelIds ) throws TooManyLabelsException
+    {
+        try
+        {
+            labelTokenHolder.getOrCreateIds( labelNames, labelIds );
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Temporary workaround for the property store based label
+            // implementation. Actual
+            // implementation should not depend on internal kernel exception
+            // messages like this.
+            if ( e.getCause() instanceof UnderlyingStorageException &&
+                    e.getCause().getMessage().equals( "Id capacity exceeded" ) )
+            {
+                throw new TooManyLabelsException( e );
+            }
+            throw e;
+        }
+    }
+
+    @Override
     public int labelGetForName( String label )
     {
         return labelTokenHolder.getIdByName( label );

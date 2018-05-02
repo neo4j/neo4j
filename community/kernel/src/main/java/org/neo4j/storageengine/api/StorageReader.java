@@ -412,6 +412,19 @@ public interface StorageReader extends AutoCloseable
     int labelGetOrCreateForName( String labelName ) throws TooManyLabelsException;
 
     /**
+     * Get or create the label token ids for each of the given {@code labelNames}, and store them at the corresponding
+     * index in the given {@code labelIds} array.
+     *
+     * This is effectively a batching version of {@link #labelGetOrCreateForName(String)}.
+     *
+     * @param labelNames The array of label names for which to resolve or create their id.
+     * @param labelIds The array into which the resulting token ids will be stored.
+     * @throws TooManyLabelsException if too many labels would bve created by this call, compared to the token id space
+     * available.
+     */
+    void labelGetOrCreateForNames( String[] labelNames, int[] labelIds ) throws TooManyLabelsException;
+
+    /**
      * Gets relationship type token id for the given {@code relationshipTypeName}, or creates one if there is no
      * existing relationship type with the given name.
      *
