@@ -49,6 +49,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.ShortValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.abs;
@@ -92,7 +93,9 @@ public class RandomValue
     private static final int CARTESIAN_POINT_3D = 16;
     private static final int GEOGRAPHIC_POINT = 17;
     private static final int GEOGRAPHIC_POINT_3D = 18;
-    private static final int NUMBER_OF_TYPES = 19;
+    private static final int ARRAY = 19;
+    private static final int NUMBER_OF_PRIMITIVE_TYPES = 19;
+    private static final int NUMBER_OF_TYPES = 20;
 
     public interface Configuration
     {
@@ -375,6 +378,57 @@ public class RandomValue
         return builder.build();
     }
 
+    public Value nextValue()
+    {
+        int type = random.nextInt( NUMBER_OF_TYPES );
+        switch ( type )
+        {
+        case BOOLEAN:
+            return nextBooleanValue();
+        case BYTE:
+            return nextByteValue();
+        case SHORT:
+            return nextShortValue();
+        case STRING:
+            return nextString();
+        case INT:
+            return nextIntValue();
+        case LONG:
+            return nextLongValue();
+        case FLOAT:
+            return nextFloatValue();
+        case DOUBLE:
+            return nextDoubleValue();
+        case LOCAL_DATE_TIME:
+            return nextLocalDateTimeValue();
+        case DATE:
+            return nextDateValue();
+        case LOCAL_TIME:
+            return nextLocalTimeValue();
+        case PERIOD:
+            return nextPeriod();
+        case DURATION:
+            return nextDuration();
+        case TIME:
+            return nextTimeValue();
+        case DATE_TIME:
+            return nextDateTimeValue();
+        case CARTESIAN_POINT:
+            return nextCartesianPoint();
+        case CARTESIAN_POINT_3D:
+            return nextCartesian3DPoint();
+        case GEOGRAPHIC_POINT:
+            return nextGeographicPoint();
+        case GEOGRAPHIC_POINT_3D:
+            return nextGeographic3DPoint();
+        case ARRAY:
+            return nextArray();
+
+        default:
+            throw new IllegalArgumentException( "Unknown value type: " + type );
+        }
+    }
+
     public ArrayValue nextArray()
     {
         return nextArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
@@ -382,7 +436,7 @@ public class RandomValue
 
     public ArrayValue nextArray( int minLength, int maxLength )
     {
-        int type = random.nextInt( NUMBER_OF_TYPES );
+        int type = random.nextInt( NUMBER_OF_PRIMITIVE_TYPES );
         switch ( type )
         {
         case BOOLEAN:
