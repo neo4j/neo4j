@@ -27,14 +27,23 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteValue;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.FloatValue;
 import org.neo4j.values.storable.IntValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.ShortValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.Matchers.empty;
@@ -46,18 +55,43 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.values.storable.Values.ZERO_INT;
 import static org.neo4j.values.storable.Values.longValue;
 
 public class RandomValueTest
 {
-    private static final int ITERATIONS = 100;
+    private static final int ITERATIONS = 500;
     private final RandomValue randomValue = new RandomValue();
     private final static byte BOUND = 100;
     private final static LongValue UPPER = longValue( BOUND );
-    private static final Set<Class<? extends NumberValue>> NUMBER_TYPES = new HashSet<>( Arrays.asList(
-            LongValue.class, IntValue.class, ShortValue.class, ByteValue.class, FloatValue.class,
-            DoubleValue.class ) );
+    private static final Set<Class<? extends NumberValue>> NUMBER_TYPES = new HashSet<>(
+            Arrays.asList(
+                    LongValue.class,
+                    IntValue.class,
+                    ShortValue.class,
+                    ByteValue.class,
+                    FloatValue.class,
+                    DoubleValue.class ) );
+
+    private static final Set<Class<? extends AnyValue>> TYPES = new HashSet<>(
+            Arrays.asList(
+                    LongValue.class,
+                    IntValue.class,
+                    ShortValue.class,
+                    ByteValue.class,
+                    FloatValue.class,
+                    DoubleValue.class,
+                    TextValue.class,
+                    BooleanValue.class,
+                    PointValue.class,
+                    DateTimeValue.class,
+                    LocalDateTimeValue.class,
+                    DateValue.class,
+                    TimeValue.class,
+                    LocalTimeValue.class,
+                    DurationValue.class
+            ) );
 
     @Test
     public void nextLongValueUnbounded()
@@ -153,7 +187,7 @@ public class RandomValueTest
         for ( int i = 0; i < ITERATIONS; i++ )
         {
             NumberValue numberValue = randomValue.nextNumberValue();
-            assertThat( NUMBER_TYPES, hasItem( numberValue.getClass() ));
+            assertThat( NUMBER_TYPES, hasItem( numberValue.getClass() ) );
             seen.remove( numberValue.getClass() );
         }
         assertThat( seen, empty() );
@@ -170,7 +204,7 @@ public class RandomValueTest
             for ( int j = 0; j < asString.length(); j++ )
             {
                 int ch = asString.charAt( j );
-                assertTrue( Character.isDigit( ch ));
+                assertTrue( Character.isDigit( ch ) );
                 seenDigits.remove( ch );
             }
         }
@@ -189,7 +223,7 @@ public class RandomValueTest
             for ( int j = 0; j < asString.length(); j++ )
             {
                 int ch = asString.charAt( j );
-                assertTrue( "Not a character: " + ch,  Character.isAlphabetic( ch ));
+                assertTrue( "Not a character: " + ch, Character.isAlphabetic( ch ) );
                 seenDigits.remove( ch );
             }
         }
@@ -208,7 +242,8 @@ public class RandomValueTest
             for ( int j = 0; j < asString.length(); j++ )
             {
                 int ch = asString.charAt( j );
-                assertTrue( "Not a character nor letter: " + ch,  Character.isAlphabetic( ch ) || Character.isDigit( ch ));
+                assertTrue( "Not a character nor letter: " + ch,
+                        Character.isAlphabetic( ch ) || Character.isDigit( ch ) );
                 seenDigits.remove( ch );
             }
         }
@@ -252,6 +287,39 @@ public class RandomValueTest
             assertThat( length, greaterThanOrEqualTo( 10 ) );
             assertThat( length, lessThanOrEqualTo( 20 ) );
         }
+    }
+
+    @Test
+    public void nextArray()
+    {
+        HashSet<Class<? extends AnyValue>> seen = new HashSet<>( TYPES );
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            ArrayValue arrayValue = randomValue.nextArray();
+            assertThat( arrayValue.length(), greaterThanOrEqualTo( 1 ) );
+            AnyValue value = arrayValue.value( 0 );
+            assertKnownType( value.getClass() );
+            markSeen( value.getClass(), seen );
+        }
+
+        assertThat( seen, empty() );
+    }
+
+    private void assertKnownType( Class<? extends AnyValue> typeToCheck )
+    {
+        for ( Class<? extends AnyValue> type : TYPES )
+        {
+            if ( type.isAssignableFrom( typeToCheck ) )
+            {
+                return;
+            }
+        }
+        fail( typeToCheck + " is not an expected type " );
+    }
+
+    private void markSeen( Class<? extends AnyValue> typeToCheck, Set<Class<? extends AnyValue>> seen )
+    {
+        seen.removeIf( t -> t.isAssignableFrom( typeToCheck ) );
     }
 
     private void checkDistribution( Supplier<Value> supplier )
