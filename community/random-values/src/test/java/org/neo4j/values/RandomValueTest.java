@@ -298,16 +298,33 @@ public class RandomValueTest
             ArrayValue arrayValue = randomValue.nextArray();
             assertThat( arrayValue.length(), greaterThanOrEqualTo( 1 ) );
             AnyValue value = arrayValue.value( 0 );
-            assertKnownType( value.getClass() );
+            assertKnownType( value.getClass(), TYPES );
             markSeen( value.getClass(), seen );
         }
 
         assertThat( seen, empty() );
     }
 
-    private void assertKnownType( Class<? extends AnyValue> typeToCheck )
+    @Test
+    public void nextValue()
     {
-        for ( Class<? extends AnyValue> type : TYPES )
+        HashSet<Class<? extends AnyValue>> all = new HashSet<>( TYPES );
+        all.add( ArrayValue.class );
+        HashSet<Class<? extends AnyValue>> seen = new HashSet<>( all );
+
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            Value value = randomValue.nextValue();
+            assertKnownType( value.getClass(), all );
+            markSeen( value.getClass(), seen );
+        }
+
+        assertThat( seen, empty() );
+    }
+
+    private void assertKnownType( Class<? extends AnyValue> typeToCheck, Set<Class<? extends AnyValue>> types )
+    {
+        for ( Class<? extends AnyValue> type : types )
         {
             if ( type.isAssignableFrom( typeToCheck ) )
             {
