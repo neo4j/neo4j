@@ -5,6 +5,7 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
   Apache Commons Lang
+  Apache Commons Text
   Caffeine cache
   ConcurrentLinkedHashMap
   Lucene codecs
@@ -267,8 +268,8 @@ SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
-  ASM Core
-  ASM Tree
+  asm
+  asm-tree
   Scala Compiler
 ------------------------------------------------------------------------------
 
