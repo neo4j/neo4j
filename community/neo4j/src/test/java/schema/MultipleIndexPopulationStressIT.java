@@ -19,6 +19,7 @@
  */
 package schema;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -96,7 +97,7 @@ public class MultipleIndexPopulationStressIT
     private final TestDirectory directory = TestDirectory.testDirectory();
 
     private final RandomRule random = new RandomRule();
-    private final RandomValues randomValues = RandomValues.create(random.random());
+    private RandomValues randomValues;
     private final CleanupRule cleanup = new CleanupRule();
     private final RepeatRule repeat = new RepeatRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
@@ -104,6 +105,12 @@ public class MultipleIndexPopulationStressIT
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( random ).around( repeat ).around( directory )
                                                 .around( cleanup ).around( fileSystemRule );
+
+    @Before
+    public void setup()
+    {
+        this.randomValues = RandomValues.create( random.random(), getConfiguration() );
+    }
 
     @Test
     public void populateMultipleIndexWithSeveralNodesSingleThreaded() throws Exception
@@ -366,5 +373,37 @@ public class MultipleIndexPopulationStressIT
         {
             return knownEstimates( count, 0, count * TOKENS.length / 2, 0, count * TOKENS.length / 2 * Long.BYTES, 0, 0 );
         }
+    }
+
+    private RandomValues.Configuration getConfiguration()
+    {
+        return new RandomValues.Configuration()
+        {
+            private Randoms.Configuration conf = random.configuration();
+
+            @Override
+            public int stringMinLength()
+            {
+                return conf.stringMinLength();
+            }
+
+            @Override
+            public int stringMaxLength()
+            {
+                return conf.stringMaxLength();
+            }
+
+            @Override
+            public int arrayMinLength()
+            {
+                return conf.arrayMinLength();
+            }
+
+            @Override
+            public int arrayMaxLength()
+            {
+                return conf.arrayMaxLength();
+            }
+        };
     }
 }
