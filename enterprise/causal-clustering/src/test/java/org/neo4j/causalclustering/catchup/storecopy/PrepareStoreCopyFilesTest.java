@@ -42,6 +42,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -122,21 +123,21 @@ public class PrepareStoreCopyFilesTest
     @Test
     public void shouldHandleEmptyDescriptors()
     {
-        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getIndexIds();
+        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
         assertEquals( 0, indexIds.size() );
     }
 
     @Test
-    public void shouldReturnExpectedDescriptors()
+    public void shouldReturnEmptySetOfIds()
     {
         PrimitiveLongSet expectedIndexIds = Primitive.longSet();
         expectedIndexIds.add( 42 );
         when( indexListingMock.getIndexIds() ).thenReturn( expectedIndexIds );
 
-        PrimitiveLongSet actualIndexIndexIds = prepareStoreCopyFiles.getIndexIds();
+        PrimitiveLongSet actualIndexIndexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
-        assertEquals( expectedIndexIds, actualIndexIndexIds );
+        assertTrue( actualIndexIndexIds.isEmpty() );
     }
 
     private String getRelativePath( StoreFileMetadata f )

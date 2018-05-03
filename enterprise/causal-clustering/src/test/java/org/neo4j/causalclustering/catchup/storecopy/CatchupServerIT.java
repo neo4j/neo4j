@@ -58,11 +58,11 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.fs.FileUtils.relativePath;
 
@@ -148,7 +148,7 @@ public class CatchupServerIT
         assertTransactionIdMatches( prepareStoreCopyResponse.lastTransactionId() );
 
         //and
-        assertIndexIdsMatch( prepareStoreCopyResponse.getIndexIds(), neoStoreDataSource );
+        assertIndexIdsAreEmpty( prepareStoreCopyResponse.getIndexIds() );
     }
 
     @Test
@@ -277,10 +277,9 @@ public class CatchupServerIT
         assertThat( givenFile, containsInAnyOrder( expectedStoreFiles.toArray( new String[givenFile.size()] ) ) );
     }
 
-    private void assertIndexIdsMatch( PrimitiveLongSet indexIds, NeoStoreDataSource neoStoreDataSource )
+    private void assertIndexIdsAreEmpty( PrimitiveLongSet indexIds )
     {
-        PrimitiveLongSet expectedIndexIds = getExpectedIndexIds( neoStoreDataSource );
-        assertThat( expectedIndexIds, equalTo( indexIds ) );
+        assertTrue( indexIds.isEmpty() );
     }
 
     private PrimitiveLongSet getExpectedIndexIds( NeoStoreDataSource neoStoreDataSource )

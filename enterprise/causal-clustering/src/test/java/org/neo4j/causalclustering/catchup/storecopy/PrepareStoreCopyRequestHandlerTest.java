@@ -155,7 +155,7 @@ public class PrepareStoreCopyRequestHandlerTest
             throws IOException
     {
         when( prepareStoreCopyFiles.getAtomicFilesSnapshot() ).thenReturn( atomicFiles );
-        when( prepareStoreCopyFiles.getIndexIds() ).thenReturn( indexIds );
+        when( prepareStoreCopyFiles.getNonAtomicIndexIds() ).thenReturn( indexIds );
         when( prepareStoreCopyFiles.listReplayableFiles() ).thenReturn( files );
         when( checkPointer.lastCheckPointedTransactionId() ).thenReturn( lastCommitedTx );
     }
