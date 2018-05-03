@@ -143,8 +143,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             }
 
             @Override
-            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
-                    long durationMillis )
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
             {   // no-op
             }
 

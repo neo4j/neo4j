@@ -104,14 +104,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
             }
 
             @Override
-            public void recoveryCompleted( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, Map<String,Object> data )
+            public void recoveryCompleted( SchemaIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
             {   // no-op
             }
         }
 
         void failedToOpenIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String action, Exception cause );
 
-        void recoveryCompleted( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, Map<String,Object> data );
+        void recoveryCompleted( SchemaIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data );
     }
 
     public static final IndexProvider EMPTY =
