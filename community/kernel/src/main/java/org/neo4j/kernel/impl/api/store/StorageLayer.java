@@ -87,6 +87,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static java.lang.Math.toIntExact;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
@@ -167,11 +168,11 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public String labelGetName( int labelId ) throws LabelNotFoundKernelException
+    public String labelGetName( long labelId ) throws LabelNotFoundKernelException
     {
         try
         {
-            return labelTokenHolder.getTokenById( labelId ).name();
+            return labelTokenHolder.getTokenById( toIntExact( labelId ) ).name();
         }
         catch ( TokenNotFoundException e )
         {

@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.newapi.RelationshipDirection;
  */
 public interface NodeState extends PropertyContainerState
 {
-    ReadableDiffSets<Integer> labelDiffSets();
+    LongDiffSets labelDiffSets();
 
     /**
      * This method counts all directions separately, i.e.

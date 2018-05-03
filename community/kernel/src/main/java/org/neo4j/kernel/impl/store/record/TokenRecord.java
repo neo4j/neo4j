@@ -28,7 +28,7 @@ public abstract class TokenRecord extends AbstractBaseRecord
     private int nameId;
     private List<DynamicRecord> nameRecords;
 
-    public TokenRecord( int id )
+    public TokenRecord( long id )
     {
         super( id );
     }

@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
 import java.util.function.Consumer;
 
-import org.neo4j.collection.PrimitiveIntCollections;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.helpers.Numbers;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -35,7 +33,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.NodeItem;
 
-import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
@@ -108,10 +106,10 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     }
 
     @Override
-    public MutableIntSet labels()
+    public MutableLongSet labels()
     {
         ensureLabels();
-        return PrimitiveIntCollections.asSet( labels, Numbers::safeCastLongToInt );
+        return newSetWith( labels );
     }
 
     private void ensureLabels()
@@ -123,12 +121,12 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     }
 
     @Override
-    public boolean hasLabel( int labelId )
+    public boolean hasLabel( long labelId )
     {
         ensureLabels();
         for ( long label : labels )
         {
-            if ( safeCastLongToInt( label ) == labelId )
+            if ( label == labelId )
             {
                 return true;
             }

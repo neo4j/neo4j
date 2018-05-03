@@ -23,7 +23,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
@@ -92,13 +91,13 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
      */
     private final CollectionsFactory collectionsFactory;
 
-    private MutableIntObjectMap<MutableLongDiffSets> labelStatesMap;
+    private MutableLongObjectMap<MutableLongDiffSets> labelStatesMap;
     private MutableLongObjectMap<NodeStateImpl> nodeStatesMap;
     private MutableLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
 
-    private MutableIntObjectMap<String> createdLabelTokens;
-    private MutableIntObjectMap<String> createdPropertyKeyTokens;
-    private MutableIntObjectMap<String> createdRelationshipTypeTokens;
+    private MutableLongObjectMap<String> createdLabelTokens;
+    private MutableLongObjectMap<String> createdPropertyKeyTokens;
+    private MutableLongObjectMap<String> createdRelationshipTypeTokens;
 
     private GraphState graphState;
     private DiffSets<SchemaIndexDescriptor> indexChanges;
@@ -184,7 +183,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             visitor.visitNodePropertyChanges( node.getId(), node.addedProperties(), node.changedProperties(), node.removedProperties() );
 
-            final ReadableDiffSets<Integer> labelDiffSets = node.labelDiffSets();
+            final LongDiffSets labelDiffSets = node.labelDiffSets();
             visitor.visitNodeLabelChanges( node.getId(), labelDiffSets.getAdded(), labelDiffSets.getRemoved() );
         }
 
@@ -237,16 +236,16 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return nodeStatesMap == null ? Iterables.empty() : Iterables.cast( nodeStatesMap.values() );
     }
 
-    private MutableLongDiffSets getOrCreateLabelStateNodeDiffSets( int labelId )
+    private MutableLongDiffSets getOrCreateLabelStateNodeDiffSets( long labelId )
     {
         if ( labelStatesMap == null )
         {
-            labelStatesMap = collectionsFactory.newIntObjectMap();
+            labelStatesMap = collectionsFactory.newLongObjectMap();
         }
         return labelStatesMap.getIfAbsentPut( labelId, MutableLongDiffSetsImpl::new );
     }
 
-    private LongDiffSets getLabelStateNodeDiffSets( int labelId )
+    private LongDiffSets getLabelStateNodeDiffSets( long labelId )
     {
         if ( labelStatesMap == null )
         {
@@ -257,12 +256,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId )
+    public LongDiffSets nodeStateLabelDiffSets( long nodeId )
     {
         return getNodeState( nodeId ).labelDiffSets();
     }
 
-    private DiffSets<Integer> getOrCreateNodeStateLabelDiffSets( long nodeId )
+    private MutableLongDiffSets getOrCreateNodeStateLabelDiffSets( long nodeId )
     {
         return getOrCreateNodeState( nodeId ).getOrCreateLabelDiffSets();
     }
@@ -307,11 +306,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             NodeStateImpl nodeState = nodeStatesMap.remove( nodeId );
             if ( nodeState != null )
             {
-                ReadableDiffSets<Integer> diff = nodeState.labelDiffSets();
-                for ( Integer label : diff.getAdded() )
-                {
-                    getOrCreateLabelStateNodeDiffSets( label ).remove( nodeId );
-                }
+                final LongDiffSets diff = nodeState.labelDiffSets();
+                diff.getAdded().each( label -> getOrCreateLabelStateNodeDiffSets( label ).remove( nodeId ) );
                 nodeState.clearIndexDiffs( nodeId );
                 nodeState.clear();
             }
@@ -450,7 +446,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void nodeDoAddLabel( int labelId, long nodeId )
+    public void nodeDoAddLabel( long labelId, long nodeId )
     {
         getOrCreateLabelStateNodeDiffSets( labelId ).add( nodeId );
         getOrCreateNodeStateLabelDiffSets( nodeId ).add( labelId );
@@ -458,7 +454,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void nodeDoRemoveLabel( int labelId, long nodeId )
+    public void nodeDoRemoveLabel( long labelId, long nodeId )
     {
         getOrCreateLabelStateNodeDiffSets( labelId ).remove( nodeId );
         getOrCreateNodeStateLabelDiffSets( nodeId ).remove( labelId );
@@ -466,11 +462,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void labelDoCreateForName( String labelName, int id )
+    public void labelDoCreateForName( String labelName, long id )
     {
         if ( createdLabelTokens == null )
         {
-            createdLabelTokens = collectionsFactory.newIntObjectMap();
+            createdLabelTokens = collectionsFactory.newLongObjectMap();
         }
         createdLabelTokens.put( id, labelName );
         changed();
@@ -481,7 +477,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdPropertyKeyTokens == null )
         {
-            createdPropertyKeyTokens = collectionsFactory.newIntObjectMap();
+            createdPropertyKeyTokens = collectionsFactory.newLongObjectMap();
         }
         createdPropertyKeyTokens.put( id, propertyKeyName );
         changed();
@@ -492,7 +488,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdRelationshipTypeTokens == null )
         {
-            createdRelationshipTypeTokens = collectionsFactory.newIntObjectMap();
+            createdRelationshipTypeTokens = collectionsFactory.newLongObjectMap();
         }
         createdRelationshipTypeTokens.put( id, labelName );
         changed();
@@ -541,9 +537,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public MutableIntSet augmentLabels( MutableIntSet labels, NodeState nodeState )
+    public MutableLongSet augmentLabels( MutableLongSet labels, NodeState nodeState )
     {
-        ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
+        final LongDiffSets labelDiffSets = nodeState.labelDiffSets();
         if ( !labelDiffSets.isEmpty() )
         {
             labelDiffSets.getRemoved().forEach( labels::remove );
@@ -560,7 +556,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public LongDiffSets nodesWithLabelChanged( int label )
+    public LongDiffSets nodesWithLabelChanged( long label )
     {
         return getLabelStateNodeDiffSets( label );
     }

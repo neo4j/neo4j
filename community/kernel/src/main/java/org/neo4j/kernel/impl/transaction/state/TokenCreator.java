@@ -38,7 +38,7 @@ public class TokenCreator<R extends TokenRecord, T extends Token>
         this.store = store;
     }
 
-    public void createToken( String name, int id, RecordAccess<R,Void> recordAccess )
+    public void createToken( String name, long id, RecordAccess<R, Void> recordAccess )
     {
         R record = recordAccess.create( id, null ).forChangingData();
         record.setInUse( true );

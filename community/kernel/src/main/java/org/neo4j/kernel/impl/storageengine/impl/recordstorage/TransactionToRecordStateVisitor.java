@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
+
 import java.util.Iterator;
-import java.util.Set;
 
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -163,17 +164,11 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
+    public void visitNodeLabelChanges( long id, final LongSet added, final LongSet removed )
     {
         // record the state changes to be made to the store
-        for ( Integer label : removed )
-        {
-            recordState.removeLabelFromNode( label, id );
-        }
-        for ( Integer label : added )
-        {
-            recordState.addLabelToNode( label, id );
-        }
+        removed.each( label -> recordState.removeLabelFromNode( label, id ) );
+        added.each( label -> recordState.addLabelToNode( label, id ) );
     }
 
     @Override
@@ -264,19 +259,19 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitCreatedLabelToken( int id, String name )
+    public void visitCreatedLabelToken( long id, String name )
     {
         recordState.createLabelToken( name, id );
     }
 
     @Override
-    public void visitCreatedPropertyKeyToken( int id, String name )
+    public void visitCreatedPropertyKeyToken( long id, String name )
     {
         recordState.createPropertyKeyToken( name, id );
     }
 
     @Override
-    public void visitCreatedRelationshipTypeToken( int id, String name )
+    public void visitCreatedRelationshipTypeToken( long id, String name )
     {
         recordState.createRelationshipTypeToken( name, id );
     }

@@ -29,12 +29,12 @@ import java.util.Set;
 
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
-import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.util.Collections.emptyIterator;
 
@@ -67,9 +67,9 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public ReadableDiffSets<Integer> labelDiffSets()
+        public LongDiffSets labelDiffSets()
         {
-            return ReadableDiffSets.Empty.instance();
+            return LongDiffSets.EMPTY;
         }
 
         @Override
@@ -127,7 +127,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
     };
 
-    private DiffSets<Integer> labelDiffSets;
+    private MutableLongDiffSets labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
 
@@ -139,16 +139,16 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     }
 
     @Override
-    public ReadableDiffSets<Integer> labelDiffSets()
+    public LongDiffSets labelDiffSets()
     {
-        return ReadableDiffSets.Empty.ifNull( labelDiffSets );
+        return labelDiffSets == null ? LongDiffSets.EMPTY : labelDiffSets;
     }
 
-    DiffSets<Integer> getOrCreateLabelDiffSets()
+    MutableLongDiffSets getOrCreateLabelDiffSets()
     {
         if ( labelDiffSets == null )
         {
-            labelDiffSets = new DiffSets<>();
+            labelDiffSets = new MutableLongDiffSetsImpl();
         }
         return labelDiffSets;
     }
@@ -194,7 +194,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
         if ( labelDiffSets != null )
         {
-            labelDiffSets.clear();
+            labelDiffSets = null;
         }
         if ( indexDiffs != null )
         {

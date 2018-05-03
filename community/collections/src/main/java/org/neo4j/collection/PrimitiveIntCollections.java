@@ -19,7 +19,6 @@
  */
 package org.neo4j.collection;
 
-import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
@@ -226,18 +225,6 @@ public class PrimitiveIntCollections
             }
         }
         return set;
-    }
-
-    public static long[] asLongArray( IntIterable values )
-    {
-        long[] array = new long[values.size()];
-        final IntIterator iterator = values.intIterator();
-        int i = 0;
-        while ( iterator.hasNext() )
-        {
-            array[i++] = iterator.next();
-        }
-        return array;
     }
 
     public static IntIterator toPrimitiveIterator( final Iterator<Integer> iterator )

@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -51,8 +51,9 @@ public interface ReadableTransactionState
 
     /**
      * Returns all nodes that, in this tx, have had the labels changed.
+     * @param label
      */
-    LongDiffSets nodesWithLabelChanged( int label );
+    LongDiffSets nodesWithLabelChanged( long label );
 
     /**
      * Returns nodes that have been added and removed in this tx.
@@ -78,7 +79,7 @@ public interface ReadableTransactionState
 
     boolean relationshipIsDeletedInThisTx( long relationshipId );
 
-    ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId );
+    LongDiffSets nodeStateLabelDiffSets( long nodeId );
 
     boolean nodeIsAddedInThisTx( long nodeId );
 
@@ -132,7 +133,7 @@ public interface ReadableTransactionState
     Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
             PropertyContainerState propertyContainerState );
 
-    MutableIntSet augmentLabels( MutableIntSet cursor, NodeState nodeState );
+    MutableLongSet augmentLabels( MutableLongSet labels, NodeState nodeState );
 
     Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
 
