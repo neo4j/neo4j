@@ -652,7 +652,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             nodeStatesMap = collectionsFactory.newLongObjectMap();
         }
-        return nodeStatesMap.getIfAbsentPut( nodeId, () -> new NodeStateImpl( nodeId, this ) );
+        return nodeStatesMap.getIfAbsentPut( nodeId, () -> new NodeStateImpl( nodeId ) );
     }
 
     private RelationshipStateImpl getOrCreateRelationshipState( long relationshipId )

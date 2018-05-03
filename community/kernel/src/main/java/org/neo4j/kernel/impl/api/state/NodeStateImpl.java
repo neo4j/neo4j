@@ -132,12 +132,10 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     private RelationshipChangesForNode relationshipsRemoved;
 
     private Set<MutableLongDiffSets> indexDiffs;
-    private final TxState state;
 
-    NodeStateImpl( long id, TxState state )
+    NodeStateImpl( long id )
     {
         super( id );
-        this.state = state;
     }
 
     @Override
