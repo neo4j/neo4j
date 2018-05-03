@@ -19,15 +19,17 @@
  */
 package org.neo4j.harness;
 
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.ClassRule;
-import org.junit.Test;
-
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.TestDirectory;
 
 public class CausalClusterInProcessRunnerIT
@@ -63,6 +65,7 @@ public class CausalClusterInProcessRunnerIT
                         .withLogger( NullLogProvider.getInstance() )
                         .atPath( clusterPath )
                         .withOptionalPortsStrategy( portPickingStrategy )
+                        .withConfig( ServerSettings.script_enabled.name(), Settings.TRUE )
                         .build();
 
         cluster.boot();

@@ -43,10 +43,10 @@ import static org.junit.Assert.assertThat;
 public class EnterpriseInProcessServerBuilderIT
 {
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    public final TestDirectory testDir = TestDirectory.testDirectory();
 
     @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldLaunchAServerInSpecifiedDirectory()
