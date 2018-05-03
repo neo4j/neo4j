@@ -91,7 +91,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         this.signature = new UserFunctionSignature(
                 new QualifiedName( new String[0], basename.toLowerCase() ),
                 INPUT_SIGNATURE, result, null, ALLOWED,
-                description == null ? null : description.value() );
+                description == null ? null : description.value(), true );
     }
 
     private static void register( TemporalFunction<?> base, Procedures procedures ) throws ProcedureException
@@ -210,7 +210,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             this.function = base;
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {base.signature.name().name()}, name ),
-                    input, base.signature.outputType(), null, ALLOWED,  description  );
+                    input, base.signature.outputType(), null, ALLOWED,  description, true );
         }
 
         @Override

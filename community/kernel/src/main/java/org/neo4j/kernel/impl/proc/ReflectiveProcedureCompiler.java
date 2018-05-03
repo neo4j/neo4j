@@ -299,14 +299,14 @@ class ReflectiveProcedureCompiler
                 description = describeAndLogLoadFailure( procName );
                 ProcedureSignature signature =
                         new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
-                                null, new String[0], description, warning );
+                                null, new String[0], description, warning, false );
                 return new FailedLoadProcedure( signature );
             }
         }
 
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
-                        config.rolesFor( procName.toString() ), description, warning );
+                        config.rolesFor( procName.toString() ), description, warning, false );
         return new ReflectiveProcedure( signature, constructor, method, outputMapper, setters );
     }
 
@@ -347,14 +347,14 @@ class ReflectiveProcedureCompiler
                 description = describeAndLogLoadFailure( procName );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
-                                config.rolesFor( procName.toString() ), description );
+                                config.rolesFor( procName.toString() ), description, false );
                 return new FailedLoadFunction( signature );
             }
         }
 
         UserFunctionSignature signature =
                 new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
-                        config.rolesFor( procName.toString() ), description );
+                        config.rolesFor( procName.toString() ), description, false );
 
         return new ReflectiveUserFunction( signature, constructor, method, typeChecker, typeMappers, setters );
     }
@@ -453,7 +453,7 @@ class ReflectiveProcedureCompiler
                 description = describeAndLogLoadFailure( funcName );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
-                                config.rolesFor( funcName.toString() ), description );
+                                config.rolesFor( funcName.toString() ), description, false );
 
                 return new FailedLoadAggregatedFunction( signature );
             }
@@ -461,7 +461,7 @@ class ReflectiveProcedureCompiler
 
         UserFunctionSignature signature =
                 new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
-                        config.rolesFor( funcName.toString() ), description );
+                        config.rolesFor( funcName.toString() ), description, false );
 
         return new ReflectiveUserAggregationFunction( signature, constructor, creator, update, resultMethod,
                 valueConverter, setters );
