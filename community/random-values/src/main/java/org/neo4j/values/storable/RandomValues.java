@@ -143,9 +143,9 @@ public class RandomValues
     }
 
     /**
-     * Create a {@code RandomValue} with default configuration
+     * Create a {@code RandomValues} with default configuration
      *
-     * @return a {@code RandomValue} instance
+     * @return a {@code RandomValues} instance
      */
     public static RandomValues create()
     {
@@ -153,9 +153,9 @@ public class RandomValues
     }
 
     /**
-     * Create a {@code RandomValue} with the given configuration
+     * Create a {@code RandomValues} with the given configuration
      *
-     * @return a {@code RandomValue} instance
+     * @return a {@code RandomValues} instance
      */
     public static RandomValues create( Configuration configuration )
     {
@@ -163,9 +163,9 @@ public class RandomValues
     }
 
     /**
-     * Create a {@code RandomValue} using the given {@link Random} with given configuration
+     * Create a {@code RandomValues} using the given {@link Random} with given configuration
      *
-     * @return a {@code RandomValue} instance
+     * @return a {@code RandomValues} instance
      */
     public static RandomValues create( Random random, Configuration configuration )
     {
@@ -173,9 +173,9 @@ public class RandomValues
     }
 
     /**
-     * Create a {@code RandomValue} using the given {@link Random} with default configuration
+     * Create a {@code RandomValues} using the given {@link Random} with default configuration
      *
-     * @return a {@code RandomValue} instance
+     * @return a {@code RandomValues} instance
      */
     public static RandomValues create( Random random )
     {
@@ -183,9 +183,9 @@ public class RandomValues
     }
 
     /**
-     * Create a {@code RandomValue} using the given {@link SplittableRandom} with given configuration
+     * Create a {@code RandomValues} using the given {@link SplittableRandom} with given configuration
      *
-     * @return a {@code RandomValue} instance
+     * @return a {@code RandomValues} instance
      */
     public static RandomValues create( SplittableRandom random, Configuration configuration )
     {
@@ -193,9 +193,9 @@ public class RandomValues
     }
 
     /**
-     * Create a {@code RandomValue} using the given {@link SplittableRandom} with default configuration
+     * Create a {@code RandomValues} using the given {@link SplittableRandom} with default configuration
      *
-     * @return a {@code RandomValue} instance
+     * @return a {@code RandomValues} instance
      */
     public static RandomValues create( SplittableRandom random )
     {
@@ -463,7 +463,8 @@ public class RandomValues
         byte[] bytes = new byte[length];
         for ( int i = 0; i < length; i++ )
         {
-            switch ( generator.nextInt( 4 ) )
+            int nextInt = generator.nextInt( 4 );
+            switch ( nextInt )
             {
             case 0:
                 bytes[i] = (byte) intBetween( 'A', 'Z' );
@@ -475,8 +476,9 @@ public class RandomValues
             case 2:
             case 3:
                 bytes[i] = (byte) intBetween( '0', '9' );
+                break;
             default:
-                throw new IllegalArgumentException( length + " is not an expected value" );
+                throw new IllegalArgumentException( nextInt + " is not an expected value" );
             }
         }
 
