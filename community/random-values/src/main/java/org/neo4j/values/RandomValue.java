@@ -28,9 +28,11 @@ import java.time.OffsetTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Random;
 import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanArray;
@@ -263,7 +265,6 @@ public class RandomValue
     {
         return longValue( nextLong( (upper - lower) + 1L ) + lower );
     }
-
 
     /**
      * Returns the next pseudorandom uniformly distributed {@link BooleanValue}
@@ -500,6 +501,8 @@ public class RandomValue
             case 2:
             case 3:
                 bytes[i] = (byte) intBetween( '0', '9' );
+            default:
+                throw new IllegalArgumentException( length + " is not an expected value" );
             }
         }
 
@@ -991,6 +994,19 @@ public class RandomValue
 
     /**
      * Returns the next pseudorandom {@link LongArray}.
+     * <p>
+     * The length of arrays will be governed by {@link Configuration#arrayMinLength()} and
+     * {@link Configuration#arrayMaxLength()}
+     *
+     * @return the next pseudorandom {@link LongArray}
+     */
+    public LongArray nextLongArray( )
+    {
+        return nextLongArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
+    }
+
+    /**
+     * Returns the next pseudorandom {@link LongArray}.
      *
      * @param minLength the minimum length of the array
      * @param maxLength the maximum length of the array
@@ -1262,6 +1278,25 @@ public class RandomValue
 
         default:
             throw new IllegalStateException( nextInt + " not a valid point type" );
+        }
+    }
+
+    public <T> T among( T[] among )
+    {
+        return among[generator.nextInt( among.length )];
+    }
+
+    public <T> T among( List<T> among )
+    {
+        return among.get( generator.nextInt( among.size() ) );
+    }
+
+    public <T> void among( List<T> among, Consumer<T> action )
+    {
+        if ( !among.isEmpty() )
+        {
+            T item = among( among );
+            action.accept( item );
         }
     }
 

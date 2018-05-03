@@ -97,5 +97,4 @@ public class UTF8StringValueBuilderTest
         TextValue textValue = builder.build();
         assertThat( textValue.stringValue(), equalTo("\uD800\uDF48\uD800\uDF48\uD800\uDF48"));
     }
-
 }

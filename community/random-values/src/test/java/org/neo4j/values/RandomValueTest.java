@@ -84,8 +84,8 @@ public class RandomValueTest
         );
     }
 
-    private final static byte BOUND = 100;
-    private final static LongValue UPPER = longValue( BOUND );
+    private static final byte BOUND = 100;
+    private static final LongValue UPPER = longValue( BOUND );
     private static final Set<Class<? extends NumberValue>> NUMBER_TYPES = new HashSet<>(
             Arrays.asList(
                     LongValue.class,
