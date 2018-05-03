@@ -33,8 +33,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Clock;
-import java.time.Duration;
 import java.util.Map;
 
 import org.neo4j.commandline.admin.OutsideWorld;
@@ -50,14 +48,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.DateValue;
-import org.neo4j.values.storable.DurationValue;
-import org.neo4j.values.storable.LocalDateTimeValue;
-import org.neo4j.values.storable.LocalTimeValue;
-import org.neo4j.values.storable.TimeValue;
-import org.neo4j.values.storable.Values;
+import org.neo4j.values.RandomValue;
+import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
@@ -272,9 +264,10 @@ public class MemoryRecommendationsCommandTest
 
                 try ( Transaction tx = db.beginTx() )
                 {
+                    RandomValue randomValue = RandomValue.create();
                     for ( int i = 0; i < 10_000; i++ )
                     {
-                        db.createNode( LABEL_ONE ).setProperty( key, randomIndexValue( i ) );
+                        db.createNode( LABEL_ONE ).setProperty( key, randomIndexValue( i,  randomValue).asObject());
                     }
                     tx.success();
                 }
@@ -286,32 +279,32 @@ public class MemoryRecommendationsCommandTest
         }
     }
 
-    private Object randomIndexValue( int i )
+    private Value randomIndexValue( int i, RandomValue randomValue )
     {
         switch ( i % 11 )
         {
         case 0:
-            return i;
+            return randomValue.nextIntValue();
         case 1:
-            return String.valueOf( i );
+            return randomValue.nextDigitString();
         case 2:
-            return DateValue.now( Clock.systemUTC() );
+            return randomValue.nextDateValue();
         case 3:
-            return DateTimeValue.now( Clock.systemUTC() );
+            return randomValue.nextDateTimeValue();
         case 4:
-            return LocalDateTimeValue.now( Clock.systemUTC() );
+            return randomValue.nextLocalDateTimeValue();
         case 5:
-            return DurationValue.duration( Duration.ofSeconds( 10 ) );
+            return randomValue.nextDuration();
         case 6:
-            return TimeValue.now( Clock.systemUTC() );
+            return randomValue.nextTimeValue();
         case 7:
-            return LocalTimeValue.now( Clock.systemUTC() );
+            return randomValue.nextLocalTimeValue();
         case 8:
-            return Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 2 );
+            return randomValue.nextCartesianPoint();
         case 9:
-            return Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2, 3 );
+            return randomValue.nextCartesian3DPoint();
         case 10:
-            return new long[]{i, i + 1, i + 2, i + 3, i + 4, i + 5};
+            return randomValue.nextLongArray(  );
         default:
             throw new UnsupportedOperationException( "Unexpected" );
         }
