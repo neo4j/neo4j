@@ -48,7 +48,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.values.RandomValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.Matchers.both;
@@ -264,10 +264,10 @@ public class MemoryRecommendationsCommandTest
 
                 try ( Transaction tx = db.beginTx() )
                 {
-                    RandomValue randomValue = RandomValue.create();
+                    RandomValues randomValues = RandomValues.create();
                     for ( int i = 0; i < 10_000; i++ )
                     {
-                        db.createNode( LABEL_ONE ).setProperty( key, randomIndexValue( i,  randomValue).asObject());
+                        db.createNode( LABEL_ONE ).setProperty( key, randomIndexValue( i, randomValues ).asObject());
                     }
                     tx.success();
                 }
@@ -279,32 +279,32 @@ public class MemoryRecommendationsCommandTest
         }
     }
 
-    private Value randomIndexValue( int i, RandomValue randomValue )
+    private Value randomIndexValue( int i, RandomValues randomValues )
     {
         switch ( i % 11 )
         {
         case 0:
-            return randomValue.nextIntValue();
+            return randomValues.nextIntValue();
         case 1:
-            return randomValue.nextDigitString();
+            return randomValues.nextDigitString();
         case 2:
-            return randomValue.nextDateValue();
+            return randomValues.nextDateValue();
         case 3:
-            return randomValue.nextDateTimeValue();
+            return randomValues.nextDateTimeValue();
         case 4:
-            return randomValue.nextLocalDateTimeValue();
+            return randomValues.nextLocalDateTimeValue();
         case 5:
-            return randomValue.nextDuration();
+            return randomValues.nextDuration();
         case 6:
-            return randomValue.nextTimeValue();
+            return randomValues.nextTimeValue();
         case 7:
-            return randomValue.nextLocalTimeValue();
+            return randomValues.nextLocalTimeValue();
         case 8:
-            return randomValue.nextCartesianPoint();
+            return randomValues.nextCartesianPoint();
         case 9:
-            return randomValue.nextCartesian3DPoint();
+            return randomValues.nextCartesian3DPoint();
         case 10:
-            return randomValue.nextLongArray(  );
+            return randomValues.nextLongArray(  );
         default:
             throw new UnsupportedOperationException( "Unexpected" );
         }

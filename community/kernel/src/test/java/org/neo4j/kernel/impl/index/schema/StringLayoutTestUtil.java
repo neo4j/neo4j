@@ -27,7 +27,7 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.values.RandomValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
@@ -78,7 +78,7 @@ abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,Nativ
     }
 
     @Override
-    protected Value newUniqueValue( RandomValue random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    protected Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
         TextValue candidate;
         do

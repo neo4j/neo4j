@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.RandomValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -94,16 +94,16 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
                 }
                 else
                 {
-                    value = newUniqueValue( RandomValue.create( random.random(), getConfiguration() ),
+                    value = newUniqueValue( RandomValues.create( random.random(), getConfiguration() ),
                             uniqueCompareValues, uniqueValues );
                 }
 
                 return add( currentEntityId++, value );
             }
 
-            private RandomValue.Configuration getConfiguration()
+            private RandomValues.Configuration getConfiguration()
             {
-                return new RandomValue.Configuration()
+                return new RandomValues.Configuration()
                 {
                     private Randoms.Configuration conf = random.configuration();
 
@@ -140,7 +140,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
         };
     }
 
-    abstract Value newUniqueValue( RandomValue random, Set<Object> uniqueCompareValues, List<Value> uniqueValues );
+    abstract Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues );
 
     Value[] extractValuesFromUpdates( IndexEntryUpdate<SchemaIndexDescriptor>[] updates )
     {

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values;
+package org.neo4j.values.storable;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -34,35 +34,9 @@ import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
-import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.BooleanArray;
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.ByteArray;
-import org.neo4j.values.storable.ByteValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.DateValue;
-import org.neo4j.values.storable.DoubleArray;
-import org.neo4j.values.storable.DoubleValue;
-import org.neo4j.values.storable.DurationValue;
-import org.neo4j.values.storable.FloatArray;
-import org.neo4j.values.storable.FloatValue;
-import org.neo4j.values.storable.IntArray;
-import org.neo4j.values.storable.IntValue;
-import org.neo4j.values.storable.LocalDateTimeValue;
-import org.neo4j.values.storable.LocalTimeValue;
-import org.neo4j.values.storable.LongArray;
-import org.neo4j.values.storable.LongValue;
-import org.neo4j.values.storable.NumberValue;
-import org.neo4j.values.storable.PointArray;
-import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.ShortArray;
-import org.neo4j.values.storable.ShortValue;
-import org.neo4j.values.storable.TextArray;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.TimeValue;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
+import org.neo4j.values.Generator;
+import org.neo4j.values.RandomGenerator;
+import org.neo4j.values.SplittableRandomGenerator;
 
 import static java.lang.Math.abs;
 import static java.time.LocalDate.ofEpochDay;
@@ -86,7 +60,7 @@ import static org.neo4j.values.storable.Values.shortValue;
 /**
  * Helper class that generates generator values of all supported types.
  */
-public class RandomValue
+public class RandomValues
 {
     enum Types
     {
@@ -157,12 +131,12 @@ public class RandomValue
 
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
-    private RandomValue( Generator generator )
+    private RandomValues( Generator generator )
     {
         this( generator, new Default() );
     }
 
-    private RandomValue( Generator generator, Configuration configuration )
+    private RandomValues( Generator generator, Configuration configuration )
     {
         this.generator = generator;
         this.configuration = configuration;
@@ -173,9 +147,9 @@ public class RandomValue
      *
      * @return a {@code RandomValue} instance
      */
-    public static RandomValue create()
+    public static RandomValues create()
     {
-        return new RandomValue( new RandomGenerator( ThreadLocalRandom.current() ) );
+        return new RandomValues( new RandomGenerator( ThreadLocalRandom.current() ) );
     }
 
     /**
@@ -183,9 +157,9 @@ public class RandomValue
      *
      * @return a {@code RandomValue} instance
      */
-    public static RandomValue create( Configuration configuration )
+    public static RandomValues create( Configuration configuration )
     {
-        return new RandomValue( new RandomGenerator( ThreadLocalRandom.current() ), configuration );
+        return new RandomValues( new RandomGenerator( ThreadLocalRandom.current() ), configuration );
     }
 
     /**
@@ -193,9 +167,9 @@ public class RandomValue
      *
      * @return a {@code RandomValue} instance
      */
-    public static RandomValue create( Random random, Configuration configuration )
+    public static RandomValues create( Random random, Configuration configuration )
     {
-        return new RandomValue( new RandomGenerator( random ), configuration );
+        return new RandomValues( new RandomGenerator( random ), configuration );
     }
 
     /**
@@ -203,9 +177,9 @@ public class RandomValue
      *
      * @return a {@code RandomValue} instance
      */
-    public static RandomValue create( Random random )
+    public static RandomValues create( Random random )
     {
-        return new RandomValue( new RandomGenerator( random ) );
+        return new RandomValues( new RandomGenerator( random ) );
     }
 
     /**
@@ -213,9 +187,9 @@ public class RandomValue
      *
      * @return a {@code RandomValue} instance
      */
-    public static RandomValue create( SplittableRandom random, Configuration configuration )
+    public static RandomValues create( SplittableRandom random, Configuration configuration )
     {
-        return new RandomValue( new SplittableRandomGenerator( random ), configuration );
+        return new RandomValues( new SplittableRandomGenerator( random ), configuration );
     }
 
     /**
@@ -223,9 +197,9 @@ public class RandomValue
      *
      * @return a {@code RandomValue} instance
      */
-    public static RandomValue create( SplittableRandom random )
+    public static RandomValues create( SplittableRandom random )
     {
-        return new RandomValue( new SplittableRandomGenerator( random ) );
+        return new RandomValues( new SplittableRandomGenerator( random ) );
     }
 
     /**

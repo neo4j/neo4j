@@ -70,7 +70,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.util.FeatureToggles;
-import org.neo4j.values.RandomValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.System.currentTimeMillis;
@@ -96,7 +96,7 @@ public class MultipleIndexPopulationStressIT
     private final TestDirectory directory = TestDirectory.testDirectory();
 
     private final RandomRule random = new RandomRule();
-    private final RandomValue randomValue = RandomValue.create(random.random());
+    private final RandomValues randomValues = RandomValues.create(random.random());
     private final CleanupRule cleanup = new CleanupRule();
     private final RepeatRule repeat = new RepeatRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
@@ -187,10 +187,10 @@ public class MultipleIndexPopulationStressIT
             {
                 executor.submit( () ->
                 {
-                    RandomValue randomValue = RandomValue.create();
+                    RandomValues randomValues = RandomValues.create();
                     while ( !end.get() )
                     {
-                        changeRandomNode( db, nodeCount, randomValue );
+                        changeRandomNode( db, nodeCount, randomValues );
                     }
                 } );
             }
@@ -271,7 +271,7 @@ public class MultipleIndexPopulationStressIT
         }
     }
 
-    private void changeRandomNode( GraphDatabaseService db, int nodeCount, RandomValue random )
+    private void changeRandomNode( GraphDatabaseService db, int nodeCount, RandomValues random )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -335,7 +335,7 @@ public class MultipleIndexPopulationStressIT
                 String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
                 for ( String key : keys )
                 {
-                    visitor.property( key, randomValue.nextValue() );
+                    visitor.property( key, randomValues.nextValue() );
                 }
                 visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
             } ) );
