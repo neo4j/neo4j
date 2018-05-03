@@ -30,13 +30,10 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.test.Randoms;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.RandomValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-
-import static java.time.ZoneOffset.UTC;
 
 public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, NativeSchemaValue>
 {
@@ -51,11 +48,6 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
             OffsetTime.of( 23,59,59,999_999_999, ZoneOffset.ofHours( 18 ) ),
             OffsetTime.of( 23,59,59,999_999_999, ZoneOffset.ofHours( -18 ) ),
     };
-
-    public static TimeValue randomTime( Randoms random )
-    {
-        return TimeValue.time( random.randomTime() );
-    }
 
     TimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
@@ -87,12 +79,12 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
     }
 
     @Override
-    Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    Value newUniqueValue( RandomValue random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
         TimeValue candidate;
         do
         {
-            candidate = randomTime( random.randoms() );
+            candidate = random.nextTimeValue();
         }
         while ( !uniqueCompareValues.add( candidate ) );
         uniqueValues.add( candidate );

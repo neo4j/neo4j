@@ -65,6 +65,11 @@ public class RandomRule implements TestRule
         return this;
     }
 
+    public Configuration configuration()
+    {
+        return config;
+    }
+
     @Override
     public Statement apply( final Statement base, Description description )
     {
