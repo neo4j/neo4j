@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Set;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
-
-import static java.util.Collections.emptySet;
 
 class DefaultRelationshipScanCursor extends RelationshipCursor implements RelationshipScanCursor
 {
@@ -33,7 +32,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     private long next;
     private long highMark;
     private PageCursor pageCursor;
-    private Set<Long> addedRelationships;
+    private LongSet addedRelationships;
 
     private final DefaultCursors pool;
 
@@ -56,7 +55,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         this.type = type;
         highMark = read.relationshipHighMark();
         init( read );
-        this.addedRelationships = emptySet();
+        this.addedRelationships = LongSets.immutable.empty();
     }
 
     void single( long reference, Read read )
@@ -73,7 +72,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         type = -1;
         highMark = NO_ID;
         init( read );
-        this.addedRelationships = emptySet();
+        this.addedRelationships = LongSets.immutable.empty();
     }
 
     @Override
@@ -181,11 +180,12 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         return highMark == NO_ID;
     }
 
+    @Override
     protected void collectAddedTxStateSnapshot()
     {
         if ( !isSingle() )
         {
-            addedRelationships = read.txState().addedAndRemovedRelationships().getAddedSnapshot();
+            addedRelationships = read.txState().addedAndRemovedRelationships().getAdded().freeze();
         }
     }
 
