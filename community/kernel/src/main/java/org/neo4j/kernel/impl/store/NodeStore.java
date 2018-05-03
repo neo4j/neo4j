@@ -34,14 +34,14 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 
 /**
  * Implementation of the node store.
  */
-public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader> implements StoreReadLayer.Nodes
+public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader> implements StorageReader.Nodes
 {
     public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
     {

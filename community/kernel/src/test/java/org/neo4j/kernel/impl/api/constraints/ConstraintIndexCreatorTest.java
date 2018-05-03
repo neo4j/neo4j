@@ -58,7 +58,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
@@ -353,8 +353,8 @@ public class ConstraintIndexCreatorTest
                 mock( TransactionHeaderInformationFactory.class );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
         StorageEngine storageEngine = mock( StorageEngine.class );
-        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
+        StorageReader storageReader = mock( StorageReader.class );
+        when( storageEngine.newReader() ).thenReturn( storageReader );
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         SimpleStatementLocks locks =
                 new SimpleStatementLocks( mock( org.neo4j.kernel.impl.locking.Locks.Client.class ) );

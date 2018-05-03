@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -72,7 +72,7 @@ public class TxStateTransactionDataViewTest
 {
     private final ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
     private final Statement stmt = mock( Statement.class );
-    private final StoreReadLayer ops = mock( StoreReadLayer.class );
+    private final StorageReader ops = mock( StorageReader.class );
     private final KernelTransaction transaction = mock( KernelTransaction.class );
 
     private final TransactionState state = new TxState();

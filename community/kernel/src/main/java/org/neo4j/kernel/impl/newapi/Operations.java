@@ -87,7 +87,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -115,7 +115,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
     private final KernelToken token;
-    private final StoreReadLayer statement;
+    private final StorageReader statement;
     private final AutoIndexing autoIndexing;
     private DefaultNodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
@@ -128,7 +128,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public Operations(
             AllStoreHolder allStoreHolder,
             IndexTxStateUpdater updater,
-            StoreReadLayer statement,
+            StorageReader statement,
             KernelTransactionImplementation ktx,
             KernelToken token,
             DefaultCursors cursors,

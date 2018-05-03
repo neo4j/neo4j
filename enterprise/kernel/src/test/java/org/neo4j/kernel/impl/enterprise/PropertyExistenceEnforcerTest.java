@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,7 +40,6 @@ import static org.mockito.Mockito.when;
 
 public class PropertyExistenceEnforcerTest
 {
-
     @Test
     public void constraintPropertyIdsNotUpdatedByConstraintEnforcer()
     {
@@ -51,9 +50,9 @@ public class PropertyExistenceEnforcerTest
         List<ConstraintDescriptor> descriptors =
                 Arrays.asList( uniquenessConstraint, nodeKeyConstraint, relTypeConstraint );
 
-        StoreReadLayer storeReadLayer = prepareStoreReadLayerMock( descriptors );
+        StorageReader storageReader = prepareStorageReaderMock( descriptors );
 
-        PropertyExistenceEnforcer.getOrCreatePropertyExistenceEnforcerFrom( storeReadLayer );
+        PropertyExistenceEnforcer.getOrCreatePropertyExistenceEnforcerFrom( storageReader );
 
         assertArrayEquals( "Property ids should remain untouched.", new int[]{1, 70, 8},
                 uniquenessConstraint.schema().getPropertyIds() );
@@ -64,16 +63,16 @@ public class PropertyExistenceEnforcerTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private StoreReadLayer prepareStoreReadLayerMock( List<ConstraintDescriptor> descriptors )
+    private StorageReader prepareStorageReaderMock( List<ConstraintDescriptor> descriptors )
     {
-        StoreReadLayer storeReadLayer = Mockito.mock( StoreReadLayer.class );
-        when( storeReadLayer.constraintsGetAll() ).thenReturn( descriptors.iterator() );
-        when( storeReadLayer.getOrCreateSchemaDependantState( eq( PropertyExistenceEnforcer.class ),
+        StorageReader storageReader = Mockito.mock( StorageReader.class );
+        when( storageReader.constraintsGetAll() ).thenReturn( descriptors.iterator() );
+        when( storageReader.getOrCreateSchemaDependantState( eq( PropertyExistenceEnforcer.class ),
                 any( Function.class) ) ).thenAnswer( invocation ->
         {
-            Function<StoreReadLayer,PropertyExistenceEnforcer> function = invocation.getArgument( 1 );
-            return function.apply( storeReadLayer );
+            Function<StorageReader,PropertyExistenceEnforcer> function = invocation.getArgument( 1 );
+            return function.apply( storageReader );
         } );
-        return storeReadLayer;
+        return storageReader;
     }
 }

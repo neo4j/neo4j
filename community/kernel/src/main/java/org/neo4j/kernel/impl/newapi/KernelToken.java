@@ -32,14 +32,14 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.TokenHolder;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 
 public class KernelToken implements Token
 {
-    private final StoreReadLayer store;
+    private final StorageReader store;
     private final KernelTransactionImplementation ktx;
 
-    public KernelToken( StoreReadLayer store, KernelTransactionImplementation ktx )
+    public KernelToken( StorageReader store, KernelTransactionImplementation ktx )
     {
         this.store = store;
         this.ktx = ktx;

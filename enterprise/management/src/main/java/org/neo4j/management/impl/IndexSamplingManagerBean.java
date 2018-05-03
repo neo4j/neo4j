@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.management.IndexSamplingManager;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class IndexSamplingManagerBean extends ManagementBeanProvider
@@ -124,7 +124,7 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
             State state = this.state;
             if ( state != null )
             {
-                try ( StoreReadLayer read = state.storageEngine.storeReadLayer() )
+                try ( StorageReader read = state.storageEngine.newReader() )
                 {
                     labelKeyId = read.labelGetForName( labelKey );
                     propertyKeyId = read.propertyKeyGetForName( propertyKey );

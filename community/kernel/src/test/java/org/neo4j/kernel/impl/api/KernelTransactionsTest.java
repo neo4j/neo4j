@@ -75,7 +75,7 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -347,9 +347,9 @@ public class KernelTransactionsTest
     @Test
     public void transactionClosesUnderlyingStoreReaderWhenDisposed() throws Throwable
     {
-        StoreReadLayer storeStatement1 = mock( StoreReadLayer.class );
-        StoreReadLayer storeStatement2 = mock( StoreReadLayer.class );
-        StoreReadLayer storeStatement3 = mock( StoreReadLayer.class );
+        StorageReader storeStatement1 = mock( StorageReader.class );
+        StorageReader storeStatement2 = mock( StorageReader.class );
+        StorageReader storeStatement3 = mock( StorageReader.class );
 
         KernelTransactions kernelTransactions = newKernelTransactions( mock( TransactionCommitProcess.class ),
                 storeStatement1, storeStatement2, storeStatement3 );
@@ -531,30 +531,30 @@ public class KernelTransactionsTest
 
     private static KernelTransactions newTestKernelTransactions() throws Throwable
     {
-        return newKernelTransactions( true, mock( TransactionCommitProcess.class ), mock( StoreReadLayer.class ) );
+        return newKernelTransactions( true, mock( TransactionCommitProcess.class ), mock( StorageReader.class ) );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess ) throws Throwable
     {
-        return newKernelTransactions( false, commitProcess, mock( StoreReadLayer.class ) );
+        return newKernelTransactions( false, commitProcess, mock( StorageReader.class ) );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
-            StoreReadLayer firstStoreStatements, StoreReadLayer... otherStorageStatements ) throws Throwable
+            StorageReader firstReader, StorageReader... otherReaders ) throws Throwable
     {
-        return newKernelTransactions( false, commitProcess, firstStoreStatements, otherStorageStatements );
+        return newKernelTransactions( false, commitProcess, firstReader, otherReaders );
     }
 
     private static KernelTransactions newKernelTransactions( boolean testKernelTransactions,
-            TransactionCommitProcess commitProcess, StoreReadLayer firstStoreStatements,
-            StoreReadLayer... otherStorageStatements ) throws Throwable
+            TransactionCommitProcess commitProcess, StorageReader firstReader,
+            StorageReader... otherReaders ) throws Throwable
     {
         Locks locks = mock( Locks.class );
         Locks.Client client = mock( Locks.Client.class );
         when( locks.newClient() ).thenReturn( client );
 
         StorageEngine storageEngine = mock( StorageEngine.class );
-        when( storageEngine.storeReadLayer() ).thenReturn( firstStoreStatements, otherStorageStatements );
+        when( storageEngine.newReader() ).thenReturn( firstReader, otherReaders );
         doAnswer( invocation ->
         {
             Collection<StorageCommand> argument = invocation.getArgument( 0 );
@@ -563,7 +563,7 @@ public class KernelTransactionsTest
         } ).when( storageEngine ).createCommands(
                 anyCollection(),
                 any( ReadableTransactionState.class ),
-                any( StoreReadLayer.class ),
+                any( StorageReader.class ),
                 any( ResourceLocker.class ),
                 anyLong() );
 

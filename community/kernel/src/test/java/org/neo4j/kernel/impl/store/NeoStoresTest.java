@@ -85,7 +85,7 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -139,7 +139,7 @@ public class NeoStoresTest
     private NeoStoreDataSource ds;
     private KernelTransaction tx;
     private TransactionState transaction;
-    private StoreReadLayer storeLayer;
+    private StorageReader storageReader;
     private PropertyLoader propertyLoader;
 
     @Before
@@ -297,7 +297,7 @@ public class NeoStoresTest
     {
         StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
         StorageProperty oldProperty = null;
-        try ( Cursor<NodeItem> cursor = storeLayer.acquireSingleNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> cursor = storageReader.acquireSingleNodeCursor( nodeId ) )
         {
             if ( cursor.next() )
             {
@@ -327,7 +327,7 @@ public class NeoStoresTest
     {
         StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
         Value oldValue = Values.NO_VALUE;
-        try ( Cursor<RelationshipItem> cursor = storeLayer.acquireSingleRelationshipCursor( relationshipId ) )
+        try ( Cursor<RelationshipItem> cursor = storageReader.acquireSingleRelationshipCursor( relationshipId ) )
         {
             if ( cursor.next() )
             {
@@ -345,7 +345,7 @@ public class NeoStoresTest
 
     private StorageProperty getProperty( int key, long propertyId )
     {
-        try ( Cursor<PropertyItem> propertyCursor = storeLayer
+        try ( Cursor<PropertyItem> propertyCursor = storageReader
                 .acquireSinglePropertyCursor( propertyId, key, NO_LOCK, ALWAYS_OPEN ) )
         {
             if ( propertyCursor.next() )
@@ -399,7 +399,7 @@ public class NeoStoresTest
         {
             try
             {
-                storeLayer.relationshipVisit( id, visitor );
+                storageReader.relationshipVisit( id, visitor );
             }
             catch ( EntityNotFoundException e )
             {
@@ -928,7 +928,7 @@ public class NeoStoresTest
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         pStore = neoStores.getPropertyStore();
         rtStore = neoStores.getRelationshipTypeTokenStore();
-        storeLayer = ds.getDependencyResolver().resolveDependency( StorageEngine.class ).storeReadLayer();
+        storageReader = ds.getDependencyResolver().resolveDependency( StorageEngine.class ).newReader();
         propertyLoader = new PropertyLoader( neoStores );
     }
 
@@ -1033,12 +1033,12 @@ public class NeoStoresTest
     {
         int count = 0;
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreReadLayer().acquireSingleNodeCursor( node ) )
+              Cursor<NodeItem> nodeCursor = storageReader.acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
 
             NodeItem nodeItem = nodeCursor.get();
-            try ( Cursor<RelationshipItem> relationships = statement.getStoreReadLayer().acquireNodeRelationshipCursor(
+            try ( Cursor<RelationshipItem> relationships = storageReader.acquireNodeRelationshipCursor(
                     nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
             {
                 while ( relationships.next() )
@@ -1117,11 +1117,11 @@ public class NeoStoresTest
         count = 0;
 
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreReadLayer().acquireSingleNodeCursor( node ) )
+              Cursor<NodeItem> nodeCursor = storageReader.acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
             NodeItem nodeItem = nodeCursor.get();
-            try ( Cursor<RelationshipItem> relationships = statement.getStoreReadLayer().acquireNodeRelationshipCursor(
+            try ( Cursor<RelationshipItem> relationships = storageReader.acquireNodeRelationshipCursor(
                     nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
             {
                 while ( relationships.next() )
@@ -1151,7 +1151,7 @@ public class NeoStoresTest
 
     private boolean nodeExists( long nodeId )
     {
-        try ( Cursor<NodeItem> node = storeLayer.acquireSingleNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> node = storageReader.acquireSingleNodeCursor( nodeId ) )
         {
             return node.next();
         }
@@ -1206,7 +1206,7 @@ public class NeoStoresTest
     {
         try
         {
-            storeLayer.relationshipVisit( rel, ( relId, type, startNode, endNode ) ->
+            storageReader.relationshipVisit( rel, ( relId, type, startNode, endNode ) ->
             {
                 assertEquals( firstNode, startNode );
                 assertEquals( secondNode, endNode );
@@ -1408,11 +1408,11 @@ public class NeoStoresTest
     private void assertHasRelationships( long node )
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreReadLayer().acquireSingleNodeCursor( node ) )
+              Cursor<NodeItem> nodeCursor = storageReader.acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
             NodeItem nodeItem = nodeCursor.get();
-            try ( Cursor<RelationshipItem> relationships = statement.getStoreReadLayer().acquireNodeRelationshipCursor(
+            try ( Cursor<RelationshipItem> relationships = storageReader.acquireNodeRelationshipCursor(
                     nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
             {
                 assertTrue( relationships.next() );
@@ -1518,7 +1518,7 @@ public class NeoStoresTest
     {
         for ( long relId : relIds )
         {
-            try ( Cursor<RelationshipItem> relationship = storeLayer.acquireSingleRelationshipCursor( relId ) )
+            try ( Cursor<RelationshipItem> relationship = storageReader.acquireSingleRelationshipCursor( relId ) )
             {
                 assertFalse( relationship.next() );
             }
@@ -1528,11 +1528,11 @@ public class NeoStoresTest
     private void deleteRelationships( long nodeId )
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreReadLayer().acquireSingleNodeCursor( nodeId ) )
+              Cursor<NodeItem> nodeCursor = storageReader.acquireSingleNodeCursor( nodeId ) )
         {
             assertTrue( nodeCursor.next() );
             NodeItem nodeItem = nodeCursor.get();
-            statement.getStoreReadLayer()
+            storageReader
                     .acquireNodeRelationshipCursor( nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(),
                             BOTH, ALWAYS_TRUE_INT ).forAll( rel -> relDelete( rel.id() ) );
         }

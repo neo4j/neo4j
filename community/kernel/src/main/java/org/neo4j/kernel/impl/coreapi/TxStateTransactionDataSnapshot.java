@@ -50,7 +50,7 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -68,7 +68,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 {
     private final ReadableTransactionState state;
     private final EmbeddedProxySPI proxySpi;
-    private final StoreReadLayer store;
+    private final StorageReader store;
     private final KernelTransaction transaction;
 
     private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
@@ -82,11 +82,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
     public TxStateTransactionDataSnapshot(
             ReadableTransactionState state, EmbeddedProxySPI proxySpi,
-            StoreReadLayer storeReadLayer, KernelTransaction transaction )
+            StorageReader storageReader, KernelTransaction transaction )
     {
         this.state = state;
         this.proxySpi = proxySpi;
-        this.store = storeReadLayer;
+        this.store = storageReader;
         this.transaction = transaction;
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
