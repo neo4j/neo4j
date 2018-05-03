@@ -22,6 +22,9 @@ package org.neo4j.graphalgo.path;
 import common.Neo4jAlgoTestCase;
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.path.ExactDepthPathFinder;
@@ -31,7 +34,10 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
 
+import static org.hamcrest.collection.IsIn.isIn;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
 {
@@ -63,11 +69,15 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     @Test
     public void testSingle()
     {
+        final Set<String> possiblePaths = new HashSet<>();
+        possiblePaths.add( "SOURCE,z,9,0,TARGET" );
+        possiblePaths.add( "SOURCE,SUPER,r,SPIDER,TARGET" );
         createGraph();
         PathFinder<Path> finder = newFinder();
         Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) );
         assertNotNull( path );
-        assertPathDef( path, "SOURCE", "z", "9", "0", "TARGET" );
+        assertThat( getPathDef( path ), isIn( possiblePaths ) );
+        assertTrue( possiblePaths.contains( getPathDef( path ) ) );
     }
 
     @Test
