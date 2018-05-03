@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -53,13 +53,13 @@ public class IndexSamplingManagerBeanTest
     {
         dataSource = mock( NeoStoreDataSource.class );
         StorageEngine storageEngine = mock( StorageEngine.class );
-        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
+        StorageReader storageReader = mock( StorageReader.class );
+        when( storageEngine.newReader() ).thenReturn( storageReader );
         indexingService = mock( IndexingService.class );
-        when( storeReadLayer.labelGetForName( EXISTING_LABEL ) ).thenReturn( LABEL_ID );
-        when( storeReadLayer.propertyKeyGetForName( EXISTING_PROPERTY ) ).thenReturn( PROPERTY_ID );
-        when( storeReadLayer.propertyKeyGetForName( NON_EXISTING_PROPERTY ) ).thenReturn( -1 );
-        when( storeReadLayer.labelGetForName( NON_EXISTING_LABEL ) ).thenReturn( -1 );
+        when( storageReader.labelGetForName( EXISTING_LABEL ) ).thenReturn( LABEL_ID );
+        when( storageReader.propertyKeyGetForName( EXISTING_PROPERTY ) ).thenReturn( PROPERTY_ID );
+        when( storageReader.propertyKeyGetForName( NON_EXISTING_PROPERTY ) ).thenReturn( -1 );
+        when( storageReader.labelGetForName( NON_EXISTING_LABEL ) ).thenReturn( -1 );
         DependencyResolver resolver = mock( DependencyResolver.class );
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
         when( resolver.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );

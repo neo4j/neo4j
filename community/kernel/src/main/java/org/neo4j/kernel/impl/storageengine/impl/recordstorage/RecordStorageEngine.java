@@ -63,7 +63,6 @@ import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.api.store.StorageLayer;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -107,8 +106,8 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
-import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -238,13 +237,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public StoreReadLayer storeReadLayer()
+    public StorageReader newReader()
     {
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
         LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
 
-        return new StorageLayer( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, schemaStorage, neoStores, indexingService, schemaCache,
-                indexReaderFactory, labelScanStore::newReader, lockService, allocateCommandCreationContext() );
+        return new RecordStorageReader( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, schemaStorage, neoStores, indexingService,
+                schemaCache, indexReaderFactory, labelScanStore::newReader, lockService, allocateCommandCreationContext() );
     }
 
     @Override
@@ -264,18 +263,18 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void createCommands(
             Collection<StorageCommand> commands,
             ReadableTransactionState txState,
-            StoreReadLayer storeReadLayer,
+            StorageReader storageReader,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException
     {
         if ( txState != null )
         {
-            // We can make this cast here because we expected that the storeReadLayer passed in here comes from
+            // We can make this cast here because we expected that the storageReader passed in here comes from
             // this storage engine itself, anything else is considered a bug. And we do know the inner workings
             // of the storage statements that we create.
             RecordStorageCommandCreationContext creationContext =
-                    ((StorageLayer) storeReadLayer).getCommandCreationContext();
+                    ((RecordStorageReader) storageReader).getCommandCreationContext();
             TransactionRecordState recordState =
                     creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks );
 
@@ -283,12 +282,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
                     schemaStorage, constraintSemantics, indexProviderMap );
             CountsRecordState countsRecordState = new CountsRecordState();
-            txStateVisitor = constraintSemantics.decorateTxStateVisitor(
-                    storeReadLayer,
+            txStateVisitor = constraintSemantics.decorateTxStateVisitor( storageReader,
                     txState,
                     txStateVisitor );
             txStateVisitor = new TransactionCountingStateVisitor(
-                    txStateVisitor, storeReadLayer, txState, countsRecordState );
+                    txStateVisitor, storageReader, txState, countsRecordState );
             try ( TxStateVisitor visitor = txStateVisitor )
             {
                 txState.accept( visitor );

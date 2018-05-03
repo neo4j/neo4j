@@ -36,14 +36,18 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 public interface StorageEngine
 {
     /**
+     * Creates a new {@link StorageReader} for reading committed data from the underlying storage.
+     * The returned instance is intended to be used by one transaction at a time, although can and should be reused
+     * for multiple transactions.
+     *
      * @return an interface for accessing data previously
      * {@link #apply(CommandsToApply, TransactionApplicationMode) applied} to this storage.
      */
-    StoreReadLayer storeReadLayer();
+    StorageReader newReader();
 
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
-     * {@link #createCommands(Collection, ReadableTransactionState, StoreReadLayer, ResourceLocker,
+     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, ResourceLocker,
      * long)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
@@ -58,7 +62,7 @@ public interface StorageEngine
      * than applying to storage, f.ex replicating to another storage engine.
      * @param target {@link Collection} to put {@link StorageCommand commands} into.
      * @param state {@link ReadableTransactionState} representing logical store changes to generate commands for.
-     * @param storageStatement {@link StoreReadLayer} to use for reading store state during creation of commands.
+     * @param storageReader {@link StorageReader} to use for reading store state during creation of commands.
      * @param locks {@link ResourceLocker} can grab additional locks.
      * This locks client still have the potential to acquire more locks at this point.
      * TODO we should try to get rid of this locking mechanism during creation of commands
@@ -78,7 +82,7 @@ public interface StorageEngine
     void createCommands(
             Collection<StorageCommand> target,
             ReadableTransactionState state,
-            StoreReadLayer storageStatement,
+            StorageReader storageReader,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException;

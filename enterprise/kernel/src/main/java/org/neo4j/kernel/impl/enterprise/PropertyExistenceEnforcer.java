@@ -47,7 +47,7 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
@@ -58,9 +58,9 @@ import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidati
 
 class PropertyExistenceEnforcer
 {
-    static PropertyExistenceEnforcer getOrCreatePropertyExistenceEnforcerFrom( StoreReadLayer storeLayer )
+    static PropertyExistenceEnforcer getOrCreatePropertyExistenceEnforcerFrom( StorageReader storageReader )
     {
-        return storeLayer.getOrCreateSchemaDependantState( PropertyExistenceEnforcer.class, FACTORY );
+        return storageReader.getOrCreateSchemaDependantState( PropertyExistenceEnforcer.class, FACTORY );
     }
 
     private final List<LabelSchemaDescriptor> nodeConstraints;
@@ -102,25 +102,25 @@ class PropertyExistenceEnforcer
         return values;
     }
 
-    TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StoreReadLayer storeLayer )
+    TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StorageReader storageReader )
     {
-        return new Decorator( visitor, txState, storeLayer );
+        return new Decorator( visitor, txState, storageReader );
     }
 
     private static final PropertyExistenceEnforcer NO_CONSTRAINTS = new PropertyExistenceEnforcer(
             emptyList(), emptyList() )
     {
         @Override
-        TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StoreReadLayer storeLayer )
+        TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StorageReader storageReader )
         {
             return visitor;
         }
     };
-    private static final Function<StoreReadLayer,PropertyExistenceEnforcer> FACTORY = storeLayer ->
+    private static final Function<StorageReader,PropertyExistenceEnforcer> FACTORY = storageReader ->
     {
         List<LabelSchemaDescriptor> nodes = new ArrayList<>();
         List<RelationTypeSchemaDescriptor> relationships = new ArrayList<>();
-        for ( Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetAll(); constraints.hasNext(); )
+        for ( Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetAll(); constraints.hasNext(); )
         {
             ConstraintDescriptor constraint = constraints.next();
             if ( constraint.enforcesPropertyExistence() )
@@ -151,14 +151,14 @@ class PropertyExistenceEnforcer
     private class Decorator extends TxStateVisitor.Delegator
     {
         private final ReadableTransactionState txState;
-        private final StoreReadLayer storeLayer;
         private final MutableIntSet propertyKeyIds = new IntHashSet();
+        private final StorageReader storageReader;
 
-        Decorator( TxStateVisitor next, ReadableTransactionState txState, StoreReadLayer storeLayer )
+        Decorator( TxStateVisitor next, ReadableTransactionState txState, StorageReader storageReader )
         {
             super( next );
             this.txState = txState;
-            this.storeLayer = storeLayer;
+            this.storageReader = storageReader;
         }
 
         @Override
@@ -275,20 +275,20 @@ class PropertyExistenceEnforcer
 
         private Cursor<NodeItem> node( long id )
         {
-            Cursor<NodeItem> cursor = storeLayer.acquireSingleNodeCursor( id );
+            Cursor<NodeItem> cursor = storageReader.acquireSingleNodeCursor( id );
             return txState.augmentSingleNodeCursor( cursor, id );
         }
 
         private Cursor<RelationshipItem> relationship( long id )
         {
-            Cursor<RelationshipItem> cursor = storeLayer.acquireSingleRelationshipCursor( id );
+            Cursor<RelationshipItem> cursor = storageReader.acquireSingleRelationshipCursor( id );
             return txState.augmentSingleRelationshipCursor( cursor, id );
         }
 
         private Cursor<PropertyItem> properties( NodeItem node )
         {
             Lock lock = node.lock();
-            Cursor<PropertyItem> cursor = storeLayer.acquirePropertyCursor( node.nextPropertyId(), lock,
+            Cursor<PropertyItem> cursor = storageReader.acquirePropertyCursor( node.nextPropertyId(), lock,
                     AssertOpen.ALWAYS_OPEN );
             return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
         }
@@ -296,7 +296,7 @@ class PropertyExistenceEnforcer
         private Cursor<PropertyItem> properties( RelationshipItem relationship )
         {
             Lock lock = relationship.lock();
-            Cursor<PropertyItem> cursor = storeLayer.acquirePropertyCursor( relationship.nextPropertyId(), lock,
+            Cursor<PropertyItem> cursor = storageReader.acquirePropertyCursor( relationship.nextPropertyId(), lock,
                     AssertOpen.ALWAYS_OPEN );
             return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
         }

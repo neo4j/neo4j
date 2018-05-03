@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -89,16 +89,16 @@ public class IndexTxStateUpdaterTest
     {
         txState = mock( TransactionState.class );
 
-        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.indexesGetAll() ).thenAnswer( x -> indexes.iterator() );
-        when( storeReadLayer.indexesGetForLabel( anyInt() ) )
+        StorageReader storageReader = mock( StorageReader.class );
+        when( storageReader.indexesGetAll() ).thenAnswer( x -> indexes.iterator() );
+        when( storageReader.indexesGetForLabel( anyInt() ) )
                 .thenAnswer( x ->
                 {
                     Integer argument = x.getArgument( 0 );
                     return filter( hasLabel( argument ), indexes.iterator() );
                 } );
 
-        when( storeReadLayer.indexesGetRelatedToProperty( anyInt() ) )
+        when( storageReader.indexesGetRelatedToProperty( anyInt() ) )
                 .thenAnswer( x ->
                 {
                     Integer argument = x.getArgument( 0 );
@@ -120,7 +120,7 @@ public class IndexTxStateUpdaterTest
         IndexingService indexingService = mock( IndexingService.class );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( indexProxy );
-        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps, indexingService );
+        indexTxUpdater = new IndexTxStateUpdater( storageReader, readOps, indexingService );
 
     }
 

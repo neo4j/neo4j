@@ -39,28 +39,25 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.storageengine.api.StoreReadLayer;
-import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DurationValue;
@@ -69,7 +66,6 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.collection.PrimitiveLongCollections.count;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 
@@ -391,34 +387,29 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
                     .resolveDependency( ThreadToStatementContextBridge.class )
                     .getKernelTransactionBoundToThisThread( true );
 
-            try ( Statement statement = ktx.acquireStatement() )
+            TokenRead tokenRead = ktx.tokenRead();
+            int labelId = tokenRead.nodeLabel( label.name() );
+            int[] propertyKeyIds = new int[keys.length];
+            for ( int i = 0; i < propertyKeyIds.length; i++ )
             {
-                TokenRead tokenRead = ktx.tokenRead();
-                int labelId = tokenRead.nodeLabel( label.name() );
-                int[] propertyKeyIds = new int[keys.length];
-                for ( int i = 0; i < keys.length; i++ )
-                {
-                    propertyKeyIds[i] = tokenRead.propertyKey( keys[i] );
-                }
-
-                CapableIndexReference index = ktx.schemaRead().index( labelId, propertyKeyIds );
-
-                // wait for index to come online
-                db.schema().awaitIndexesOnline( 5, TimeUnit.SECONDS );
-
-                int count;
-                StoreReadLayer storeStatement = ((KernelStatement) statement).getStoreReadLayer();
-                IndexReader reader = storeStatement.getIndexReader( DefaultIndexReference.toDescriptor( index ) );
-                IndexQuery[] predicates = new IndexQuery[propertyKeyIds.length];
-                for ( int i = 0; i < propertyKeyIds.length; i++ )
-                {
-                    predicates[i] = IndexQuery.exists( propertyKeyIds[i] );
-                }
-                count = count( reader.query( predicates ) );
-
-                tx.success();
-                return count;
+                propertyKeyIds[i] = tokenRead.propertyKey( keys[i] );
             }
+            IndexQuery[] predicates = new IndexQuery[propertyKeyIds.length];
+            for ( int i = 0; i < propertyKeyIds.length; i++ )
+            {
+                predicates[i] = IndexQuery.exists( propertyKeyIds[i] );
+            }
+            CapableIndexReference index = ktx.schemaRead().index( labelId, propertyKeyIds );
+            NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
+            ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, predicates );
+            int count = 0;
+            while ( cursor.next() )
+            {
+                count++;
+            }
+
+            tx.success();
+            return count;
         }
     }
 

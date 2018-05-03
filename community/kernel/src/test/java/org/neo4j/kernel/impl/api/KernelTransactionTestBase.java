@@ -66,7 +66,7 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -87,7 +87,7 @@ public class KernelTransactionTestBase
     protected final StorageEngine storageEngine = mock( StorageEngine.class );
     protected final NeoStores neoStores = mock( NeoStores.class );
     protected final MetaDataStore metaDataStore = mock( MetaDataStore.class );
-    protected final StoreReadLayer readLayer = mock( StoreReadLayer.class );
+    protected final StorageReader readLayer = mock( StorageReader.class );
     protected final TransactionHooks hooks = new TransactionHooks();
     protected final ExplicitIndexTransactionState explicitIndexState = mock( ExplicitIndexTransactionState.class );
     protected final Supplier<ExplicitIndexTransactionState> explicitIndexStateSupplier = () -> explicitIndexState;
@@ -110,13 +110,13 @@ public class KernelTransactionTestBase
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
-        when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
+        when( storageEngine.newReader() ).thenReturn( readLayer );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new Command
                 .RelationshipCountsCommand( 1, 2,3, 4L ) ) )
             .when( storageEngine ).createCommands(
                     anyCollection(),
                     any( ReadableTransactionState.class ),
-                    any( StoreReadLayer.class ), any( ResourceLocker.class ),
+                    any( StorageReader.class ), any( ResourceLocker.class ),
                     anyLong() );
     }
 

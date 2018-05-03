@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.time.Clocks;
 
 import static org.mockito.Mockito.mock;
@@ -64,14 +64,14 @@ public class KernelTransactionFactory
     {
         public KernelTransactionImplementation transaction;
         public StorageEngine storageEngine;
-        public StoreReadLayer storeReadLayer;
+        public StorageReader storageReader;
 
         public Instances( KernelTransactionImplementation transaction, StorageEngine storageEngine,
-                StoreReadLayer storeReadLayer )
+                StorageReader storageReader )
         {
             this.transaction = transaction;
             this.storageEngine = storageEngine;
-            this.storeReadLayer = storeReadLayer;
+            this.storageReader = storageReader;
         }
     }
 
@@ -86,8 +86,8 @@ public class KernelTransactionFactory
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
 
         StorageEngine storageEngine = mock( StorageEngine.class );
-        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
+        StorageReader storageReader = mock( StorageReader.class );
+        when( storageEngine.newReader() ).thenReturn( storageReader );
 
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                 mock( StatementOperationParts.class ),
@@ -109,7 +109,7 @@ public class KernelTransactionFactory
         transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit,
                 loginContext.authorize( s -> -1 ), 0L, 1L );
 
-        return new Instances( transaction, storageEngine, storeReadLayer );
+        return new Instances( transaction, storageEngine, storageReader );
     }
 
     static KernelTransaction kernelTransaction( LoginContext loginContext )

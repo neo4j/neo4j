@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.test.DoubleLatch;
 
@@ -379,7 +379,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         } ).when( storageEngine ).createCommands(
                 any( Collection.class ),
                 any( TransactionState.class ),
-                any( StoreReadLayer.class ),
+                any( StorageReader.class ),
                 any( ResourceLocker.class ),
                 anyLong() );
 

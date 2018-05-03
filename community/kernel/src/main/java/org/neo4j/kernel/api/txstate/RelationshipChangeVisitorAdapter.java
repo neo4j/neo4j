@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.txstate;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNull;
  * required it is recommended to use one of the other constructors, and override {@link #visitAddedRelationship(long)}
  * if any action is to be taken for added relationships.
  *
- * By invoking a constructor that takes a {@linkplain StoreReadLayer store layer} parameter, the default
+ * By invoking a constructor that takes a {@linkplain StorageReader store layer} parameter, the default
  * implementation of {@link #visitRemovedRelationship(long)} will retrieve the details of the visited relationship and
  * supply that information to the {@link #visitRemovedRelationship(long, int, long, long)}-method. If no details can be
  * found, the transaction state is inconsistent with the store, and an exception will be thrown. If no such details are
@@ -129,7 +129,7 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
         };
     }
 
-    DetailVisitor removed( final StoreReadLayer store )
+    DetailVisitor removed( final StorageReader store )
     {
         return new DetailVisitor()
         {
