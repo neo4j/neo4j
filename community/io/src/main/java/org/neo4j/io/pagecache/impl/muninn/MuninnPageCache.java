@@ -454,7 +454,7 @@ public class MuninnPageCache implements PageCache
     @Override
     public synchronized List<PagedFile> listExistingMappings() throws IOException
     {
-        assertHealthy();
+        assertNotClosed();
         ensureThreadsInitialised();
 
         List<PagedFile> list = new ArrayList<>();
@@ -959,10 +959,10 @@ public class MuninnPageCache implements PageCache
             {
                 try
                 {
+                    pageCountToEvict--;
                     if ( pages.tryEvict( pageRef, evictionRunEvent ) )
                     {
                         clearEvictorException();
-                        pageCountToEvict--;
                         addFreePageToFreelist( pageRef );
                     }
                 }
