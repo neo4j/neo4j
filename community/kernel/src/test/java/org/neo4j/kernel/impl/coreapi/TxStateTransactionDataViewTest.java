@@ -199,7 +199,7 @@ public class TxStateTransactionDataViewTest
         // Given
         int propertyKeyId = 1;
         Value prevValue = Values.of( "prevValue" );
-        state.nodeDoChangeProperty( 1L, propertyKeyId, prevValue, Values.of( "newValue" ) );
+        state.nodeDoChangeProperty( 1L, propertyKeyId, Values.of( "newValue" ) );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(

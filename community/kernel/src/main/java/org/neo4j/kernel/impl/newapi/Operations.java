@@ -95,8 +95,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
-import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext
-        .CONSTRAINT_CREATION;
+import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
@@ -505,7 +504,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             {
                 //the value has changed to a new value
                 autoIndexing.nodes().propertyChanged( this, node, propertyKey, existingValue, value );
-                ktx.txState().nodeDoChangeProperty( node, propertyKey, existingValue, value );
+                ktx.txState().nodeDoChangeProperty( node, propertyKey, value );
                 updater.onPropertyChange( nodeCursor, propertyCursor, propertyKey, existingValue, value );
             }
             return existingValue;
