@@ -172,7 +172,7 @@ public class RecoveryCleanupIT
                 "Schema index recovery completed",
                 "descriptor",
                 "file=",
-                "/" + subIndexProviderKey,
+                File.separator + subIndexProviderKey,
                 "cleaned crashed pointers",
                 "pages visited",
                 "Time spent" ) );
