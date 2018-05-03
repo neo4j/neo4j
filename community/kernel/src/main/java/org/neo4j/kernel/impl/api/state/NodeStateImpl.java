@@ -27,7 +27,6 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
@@ -35,7 +34,6 @@ import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.util.Collections.emptyIterator;
@@ -69,11 +67,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public void accept( PropertyContainerState.Visitor visitor )
-        {
-        }
-
-        @Override
         public ReadableDiffSets<Integer> labelDiffSets()
         {
             return ReadableDiffSets.Empty.instance();
@@ -83,11 +76,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
         {
             return degree;
-        }
-
-        @Override
-        public void accept( NodeState.Visitor visitor )
-        {
         }
 
         @Override
@@ -228,16 +216,6 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
             degree = relationshipsRemoved.augmentDegree( direction, degree, typeId );
         }
         return degree;
-    }
-
-    @Override
-    public void accept( NodeState.Visitor visitor ) throws ConstraintValidationException
-    {
-        super.accept( visitor );
-        if ( labelDiffSets != null )
-        {
-            visitor.visitLabelChanges( getId(), labelDiffSets.getAdded(), labelDiffSets.getRemoved() );
-        }
     }
 
     private boolean hasAddedRelationships()
