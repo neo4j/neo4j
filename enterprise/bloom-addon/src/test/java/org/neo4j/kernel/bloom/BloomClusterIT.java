@@ -24,6 +24,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.bloom.BloomIT.AWAIT_POPULATION;
 import static org.neo4j.kernel.bloom.BloomIT.GET_NODE_KEYS;
 import static org.neo4j.kernel.bloom.BloomIT.GET_REL_KEYS;
 import static org.neo4j.kernel.bloom.BloomIT.NODES;
@@ -75,13 +76,97 @@ public class BloomClusterIT
             db.execute( String.format( SET_REL_KEYS, "\"prop\"" ) );
             tx.success();
         } );
-        Thread.sleep( 2000 );
+        Thread.sleep( 4000 );
 
         // then
         query( asList( node1[0].getId(), node2[0].getId() ), String.format( NODES, "\"integration\"" ), "entityid", cluster );
         query( asList( node1[0].getId(), node2[0].getId() ), String.format( NODES, "\"test\"" ), "entityid", cluster );
         query( asList( node2[0].getId() ), String.format( NODES, "\"related\"" ), "entityid", cluster );
         query( asList( relationship[0].getId() ), String.format( RELS, "\"relate\"" ), "entityid", cluster );
+
+    }
+
+    @Test
+    public void shouldReplicateBloomIndexContentsWhenUpdatingAndChangingIndexedProperties() throws Exception
+    {
+        // when
+        final Node[] node1 = new Node[1];
+        final Node[] node2 = new Node[1];
+        final Relationship[] relationship = new Relationship[1];
+        cluster.coreTx( ( db, tx ) ->
+        {
+            db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"otherprop\"" ) );
+            db.execute( String.format( SET_REL_KEYS, "\"prop\"" ) );
+            tx.success();
+        } );
+        cluster.coreTx( ( db, tx ) ->
+        {
+            node1[0] = db.createNode();
+            node1[0].setProperty( "prop", "This is a integration test." );
+            node2[0] = db.createNode();
+            node2[0].setProperty( "otherprop", "This is a related integration test" );
+            relationship[0] = node1[0].createRelationshipTo( node2[0], RelationshipType.withName( "type" ) );
+            relationship[0].setProperty( "prop", "They relate" );
+            tx.success();
+        } );
+        Thread.sleep( 4000 );
+
+        // then
+        query( asList( node1[0].getId(), node2[0].getId() ), String.format( NODES, "\"integration\"" ), "entityid", cluster );
+        query( asList( node1[0].getId(), node2[0].getId() ), String.format( NODES, "\"test\"" ), "entityid", cluster );
+        query( asList( node2[0].getId() ), String.format( NODES, "\"related\"" ), "entityid", cluster );
+        query( asList( relationship[0].getId() ), String.format( RELS, "\"relate\"" ), "entityid", cluster );
+
+    }
+
+    @Test
+    public void shouldReplicateBloomIndexContentsWhenUpdating() throws Exception
+    {
+        // when
+        final Node[] node1 = new Node[1];
+        final Node[] node2 = new Node[1];
+        final Relationship[] relationship = new Relationship[1];
+        cluster.coreTx( ( db, tx ) ->
+        {
+            db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"otherprop\"" ) );
+            db.execute( String.format( SET_REL_KEYS, "\"prop\"" ) );
+            tx.success();
+        } );
+        cluster.coreTx( ( db, tx ) ->
+        {
+            node1[0] = db.createNode();
+            node1[0].setProperty( "prop", "This is a integration test." );
+            node2[0] = db.createNode();
+            node2[0].setProperty( "otherprop", "This is a related integration test" );
+            relationship[0] = node1[0].createRelationshipTo( node2[0], RelationshipType.withName( "type" ) );
+            relationship[0].setProperty( "prop", "They relate" );
+            tx.success();
+        } );
+        Thread.sleep( 2000 );
+
+
+        // then
+        query( asList( node1[0].getId(), node2[0].getId() ), String.format( NODES, "\"integration\"" ), "entityid", cluster );
+        query( asList( node1[0].getId(), node2[0].getId() ), String.format( NODES, "\"test\"" ), "entityid", cluster );
+        query( asList( node2[0].getId() ), String.format( NODES, "\"related\"" ), "entityid", cluster );
+        query( asList( relationship[0].getId() ), String.format( RELS, "\"relate\"" ), "entityid", cluster );
+
+        cluster.coreTx( ( db, tx ) ->
+        {
+            db.execute( String.format( SET_NODE_KEYS, "\"otherprop\"" ) );
+            db.execute( String.format( SET_REL_KEYS, "" ) );
+            tx.success();
+        } );
+        Thread.sleep( 2000 );
+        cluster.coreTx( ( db, tx ) ->
+        {
+            db.execute( AWAIT_POPULATION );
+            tx.success();
+        } );
+        query( asList( node2[0].getId() ), String.format( NODES, "\"integration\"" ), "entityid", cluster );
+        query( asList( node2[0].getId() ), String.format( NODES, "\"test\"" ), "entityid", cluster );
+        query( asList( node2[0].getId() ), String.format( NODES, "\"related\"" ), "entityid", cluster );
+        query( asList( ), String.format( RELS, "\"relate\"" ), "entityid", cluster );
 
     }
 

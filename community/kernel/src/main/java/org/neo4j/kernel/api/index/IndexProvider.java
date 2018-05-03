@@ -35,6 +35,8 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
+
 /**
  * Contract for implementing an index in Neo4j.
  *
@@ -133,6 +135,10 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
                 @Override
                 public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
                 {
+                    if ( type == UNIQUE )
+                    {
+                        return SchemaIndexDescriptorFactory.uniqueForLabelBySchema( schema );
+                    }
                     return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
                 }
 

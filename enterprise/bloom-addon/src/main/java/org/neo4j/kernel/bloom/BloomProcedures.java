@@ -78,7 +78,6 @@ public class BloomProcedures
         //TODO This is here because the core api really doesn't play nicely with multi token schema yet.
         try ( Statement stmt = tx.acquireStatement() )
         {
-            //noinspection StatementWithEmptyBody
             IndexDescriptor descriptor = stmt.readOperations().indexGetForName( indexName );
             InternalIndexState state;
             while ( (state = stmt.readOperations().indexGetState( descriptor )) != InternalIndexState.ONLINE )
