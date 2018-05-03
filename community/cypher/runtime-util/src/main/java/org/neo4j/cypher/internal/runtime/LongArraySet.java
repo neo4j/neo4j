@@ -37,7 +37,6 @@ public class LongArraySet
     private static final int SLOT_EMPTY = 0;
     private static final int VALUE_FOUND = 1;
     private static final int CONTINUE_PROBING = -1;
-    private static final double lnOf2 = Math.log( 2 );
 
     private Table table;
     private final int width;
@@ -61,7 +60,6 @@ public class LongArraySet
     {
         assert value.length == width : "all elements must have the same size";
         int slotNr = slotFor( value );
-        int probeCount = 0;
         while ( true )
         {
             int offset = slotNr * width;
@@ -73,7 +71,6 @@ public class LongArraySet
                     resize();
                     // Need to restart linear probe after resizing
                     slotNr = slotFor( value );
-                    probeCount = 0;
                 }
                 else
                 {
@@ -89,20 +86,12 @@ public class LongArraySet
                     {
                         // Found a different value in this slot
                         slotNr = (slotNr + 1) & table.tableMask;
-                        probeCount++;
                         break;
                     }
                     else if ( i == width - 1 )
                     {
                         return false;
                     }
-                }
-                if ( probeCount > table.maxProbeCount )
-                {
-                    resize();
-                    // Need to restart linear probe after resizing
-                    slotNr = slotFor( value );
-                    probeCount = 0;
                 }
             }
         }
@@ -178,7 +167,6 @@ public class LongArraySet
         private int resizeLimit;
 
         int tableMask;
-        int maxProbeCount;
 
         Table( int capacity )
         {
@@ -187,7 +175,6 @@ public class LongArraySet
             tableMask = Integer.highestOneBit( capacity ) - 1;
             inner = new long[capacity * width];
             java.util.Arrays.fill( inner, NOT_IN_USE );
-            maxProbeCount = (int) (Math.log( capacity ) / lnOf2);
         }
 
         boolean timeToResize()
