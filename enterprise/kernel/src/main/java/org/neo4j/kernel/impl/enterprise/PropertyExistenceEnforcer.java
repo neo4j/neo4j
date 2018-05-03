@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.iterator.MutableLongIterator;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.cursor.Cursor;
@@ -66,8 +67,8 @@ class PropertyExistenceEnforcer
 
     private final List<LabelSchemaDescriptor> nodeConstraints;
     private final List<RelationTypeSchemaDescriptor> relationshipConstraints;
-    private final MutableIntObjectMap<int[]> mandatoryNodePropertiesByLabel = new IntObjectHashMap<>();
-    private final MutableIntObjectMap<int[]> mandatoryRelationshipPropertiesByType = new IntObjectHashMap<>();
+    private final MutableLongObjectMap<int[]> mandatoryNodePropertiesByLabel = new LongObjectHashMap<>();
+    private final MutableLongObjectMap<int[]> mandatoryRelationshipPropertiesByType = new LongObjectHashMap<>();
 
     private PropertyExistenceEnforcer( List<LabelSchemaDescriptor> nodes, List<RelationTypeSchemaDescriptor> rels )
     {
@@ -85,7 +86,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private static void update( MutableIntObjectMap<int[]> map, int key, int[] sortedValues )
+    private static void update( MutableLongObjectMap<int[]> map, int key, int[] sortedValues )
     {
         int[] current = map.get( key );
         if ( current != null )
@@ -173,7 +174,7 @@ class PropertyExistenceEnforcer
         }
 
         @Override
-        public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
+        public void visitNodeLabelChanges( long id, LongSet added, LongSet removed )
                 throws ConstraintValidationException
         {
             validateNode( id );
@@ -214,7 +215,7 @@ class PropertyExistenceEnforcer
                 return;
             }
 
-            IntSet labelIds;
+            final LongSet labelIds;
             try ( Cursor<NodeItem> node = node( nodeId ) )
             {
                 if ( node.next() )
@@ -319,14 +320,14 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private void validateNodeProperties( long id, IntSet labelIds, IntSet propertyKeyIds )
+    private void validateNodeProperties( long id, LongSet labelIds, IntSet propertyKeyIds )
             throws NodePropertyExistenceException
     {
         if ( labelIds.size() > mandatoryNodePropertiesByLabel.size() )
         {
-            for ( IntIterator labels = mandatoryNodePropertiesByLabel.keySet().intIterator(); labels.hasNext(); )
+            for ( MutableLongIterator labels = mandatoryNodePropertiesByLabel.keySet().longIterator(); labels.hasNext(); )
             {
-                int label = labels.next();
+                final long label = labels.next();
                 if ( labelIds.contains( label ) )
                 {
                     validateNodeProperties( id, label, mandatoryNodePropertiesByLabel.get( label ), propertyKeyIds );
@@ -335,9 +336,9 @@ class PropertyExistenceEnforcer
         }
         else
         {
-            for ( IntIterator labels = labelIds.intIterator(); labels.hasNext(); )
+            for ( LongIterator labels = labelIds.longIterator(); labels.hasNext(); )
             {
-                int label = labels.next();
+                final long label = labels.next();
                 int[] keys = mandatoryNodePropertiesByLabel.get( label );
                 if ( keys != null )
                 {
@@ -347,7 +348,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private void validateNodeProperties( long id, int label, int[] requiredKeys, IntSet propertyKeyIds )
+    private void validateNodeProperties( long id, long label, int[] requiredKeys, IntSet propertyKeyIds )
             throws NodePropertyExistenceException
     {
         for ( int key : requiredKeys )
@@ -359,7 +360,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private void failNode( long id, int label, int propertyKey )
+    private void failNode( long id, long label, int propertyKey )
             throws NodePropertyExistenceException
     {
         for ( LabelSchemaDescriptor constraint : nodeConstraints )

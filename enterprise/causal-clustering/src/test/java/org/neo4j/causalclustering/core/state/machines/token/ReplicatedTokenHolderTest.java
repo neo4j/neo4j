@@ -127,7 +127,7 @@ public class ReplicatedTokenHolderTest
             txState.accept( new TxStateVisitor.Adapter()
             {
                 @Override
-                public void visitCreatedLabelToken( int id, String name )
+                public void visitCreatedLabelToken( long id, String name )
                 {
                     LabelTokenRecord before = new LabelTokenRecord( id );
                     LabelTokenRecord after = before.clone();

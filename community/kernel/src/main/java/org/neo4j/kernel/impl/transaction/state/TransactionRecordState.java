@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -427,7 +427,7 @@ public class TransactionRecordState implements RecordState
      * @param key The key of the property index, as a string.
      * @param id The property index record id.
      */
-    public void createPropertyKeyToken( String key, int id )
+    public void createPropertyKeyToken( String key, long id )
     {
         TokenCreator<PropertyKeyTokenRecord, Token> creator =
                 new TokenCreator<>( neoStores.getPropertyKeyTokenStore() );
@@ -440,7 +440,7 @@ public class TransactionRecordState implements RecordState
      * @param name The key of the property index, as a string.
      * @param id The property index record id.
      */
-    public void createLabelToken( String name, int id )
+    public void createLabelToken( String name, long id )
     {
         TokenCreator<LabelTokenRecord, Token> creator =
                 new TokenCreator<>( neoStores.getLabelTokenStore() );
@@ -454,7 +454,7 @@ public class TransactionRecordState implements RecordState
      * @param name The name of the relationship type.
      * @param id The id of the new relationship type record.
      */
-    public void createRelationshipTypeToken( String name, int id )
+    public void createRelationshipTypeToken( String name, long id )
     {
         TokenCreator<RelationshipTypeTokenRecord, RelationshipTypeToken> creator =
                 new TokenCreator<>( neoStores.getRelationshipTypeTokenStore() );
@@ -607,13 +607,13 @@ public class TransactionRecordState implements RecordState
         dynamicRecords.setDynamicRecords( schemaStore.allocateFrom( updatedRule ) );
     }
 
-    public void addLabelToNode( int labelId, long nodeId )
+    public void addLabelToNode( long labelId, long nodeId )
     {
         NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
         parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore() );
     }
 
-    public void removeLabelFromNode( int labelId, long nodeId )
+    public void removeLabelFromNode( long labelId, long nodeId )
     {
         NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
         parseLabelsField( nodeRecord ).remove( labelId, nodeStore );

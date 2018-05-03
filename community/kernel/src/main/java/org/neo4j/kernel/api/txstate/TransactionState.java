@@ -63,13 +63,13 @@ public interface TransactionState extends ReadableTransactionState
 
     void graphDoRemoveProperty( int propertyKeyId );
 
-    void nodeDoAddLabel( int labelId, long nodeId );
+    void nodeDoAddLabel( long labelId, long nodeId );
 
-    void nodeDoRemoveLabel( int labelId, long nodeId );
+    void nodeDoRemoveLabel( long labelId, long nodeId );
 
     // TOKEN RELATED
 
-    void labelDoCreateForName( String labelName, int id );
+    void labelDoCreateForName( String labelName, long id );
 
     void propertyKeyDoCreateForName( String propertyKeyName, int id );
 

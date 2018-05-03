@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.function.Consumer;
 
@@ -117,13 +117,13 @@ public class TxSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     }
 
     @Override
-    public MutableIntSet labels()
+    public MutableLongSet labels()
     {
-        return state.augmentLabels( nodeIsAddedInThisTx ? new IntHashSet() : this.cursor.get().labels(), nodeState );
+        return state.augmentLabels( nodeIsAddedInThisTx ? new LongHashSet() : this.cursor.get().labels(), nodeState );
     }
 
     @Override
-    public boolean hasLabel( int labelId )
+    public boolean hasLabel( long labelId )
     {
         if ( nodeIsAddedInThisTx || nodeState.labelDiffSets().getRemoved().contains( labelId ) )
         {

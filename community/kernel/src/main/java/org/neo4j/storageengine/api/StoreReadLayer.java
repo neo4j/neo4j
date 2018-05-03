@@ -202,7 +202,7 @@ public interface StoreReadLayer
      * @return label name for given label id.
      * @throws LabelNotFoundKernelException if no label by {@code labelId} was found.
      */
-    String labelGetName( int labelId ) throws LabelNotFoundKernelException;
+    String labelGetName( long labelId ) throws LabelNotFoundKernelException;
 
     /**
      * @param propertyKeyName name of property key.

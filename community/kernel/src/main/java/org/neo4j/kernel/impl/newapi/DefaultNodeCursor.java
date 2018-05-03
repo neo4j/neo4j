@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -111,10 +111,10 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             {
                 //Get labels from store and put in intSet, unfortunately we get longs back
                 long[] longs = NodeLabelsField.get( this, labelCursor() );
-                final MutableIntSet labels = new IntHashSet();
+                final MutableLongSet labels = new LongHashSet();
                 for ( long labelToken : longs )
                 {
-                    labels.add( (int) labelToken );
+                    labels.add( labelToken );
                 }
 
                 //Augment what was found in store with what we have in tx state

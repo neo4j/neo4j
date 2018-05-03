@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.LongSet;
 
-import java.util.Set;
-import java.util.function.IntConsumer;
+import java.util.function.LongConsumer;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -73,7 +72,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private void decrementCountForLabelsAndRelationships( NodeItem node )
     {
-        final IntSet labelIds = node.labels();
+        final LongSet labelIds = node.labels();
         labelIds.forEach( labelId ->
         {
             counts.incrementNodeCount( labelId, -1 );
@@ -107,20 +106,14 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     }
 
     @Override
-    public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
+    public void visitNodeLabelChanges( long id, final LongSet added, final LongSet removed )
             throws ConstraintValidationException
     {
         // update counts
         if ( !(added.isEmpty() && removed.isEmpty()) )
         {
-            for ( Integer label : added )
-            {
-                counts.incrementNodeCount( label, 1 );
-            }
-            for ( Integer label : removed )
-            {
-                counts.incrementNodeCount( label, -1 );
-            }
+            added.each( label -> counts.incrementNodeCount( label, 1 ) );
+            removed.each( label -> counts.incrementNodeCount( label, -1 ) );
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
             statement.acquireSingleNodeCursor( id )
@@ -133,13 +126,12 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         super.visitNodeLabelChanges( id, added, removed );
     }
 
-    private void updateRelationshipsCountsFromDegrees( IntSet labels, int type, long outgoing,
-            long incoming )
+    private void updateRelationshipsCountsFromDegrees( LongSet labels, int type, long outgoing, long incoming )
     {
         labels.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming ) );
     }
 
-    private boolean updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
+    private boolean updateRelationshipsCountsFromDegrees( int type, long label, long outgoing, long incoming )
     {
         // untyped
         counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing );
@@ -157,7 +149,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         visitLabels( endNode, labelId -> updateRelationshipsCountsFromDegrees( type, labelId, 0, delta ) );
     }
 
-    private void visitLabels( long nodeId, IntConsumer visitor )
+    private void visitLabels( long nodeId, LongConsumer visitor )
     {
         nodeCursor( statement, nodeId ).forAll( node -> node.labels().forEach( visitor::accept ) );
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
@@ -51,7 +52,7 @@ class KeyFormat implements CountsVisitor
      *  t - entry type - "{@link #NODE_COUNT}"
      *  l - label id
      * </pre>
-     * For value format, see {@link org.neo4j.kernel.impl.store.counts.CountsUpdater#incrementNodeCount(int, long)}.
+     * For value format, see {@link CountsAccessor.Updater#incrementNodeCount(long, long)}.
      */
     @Override
     public void visitNodeCount( int labelId, long count )
@@ -70,7 +71,7 @@ class KeyFormat implements CountsVisitor
      *  r - relationship type id
      *  e - end label id
      * </pre>
-     * For value format, see {@link org.neo4j.kernel.impl.store.counts.CountsUpdater#incrementRelationshipCount(int, int, int, long)}
+     * For value format, see {@link CountsAccessor.Updater#incrementRelationshipCount(long, int, long, long)}
      */
     @Override
     public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )

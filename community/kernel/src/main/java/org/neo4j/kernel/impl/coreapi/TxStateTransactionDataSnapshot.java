@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi;
 
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.ArrayList;
@@ -51,13 +52,14 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Math.toIntExact;
 import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 
 /**
@@ -266,10 +268,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( NodeState nodeState : state.modifiedNodes() )
             {
                 Iterator<StorageProperty> added = nodeState.addedAndChangedProperties();
+                long nodeId = nodeState.getId();
                 while ( added.hasNext() )
                 {
                     StorageProperty property = added.next();
-                    assignedNodeProperties.add( new NodePropertyEntryView( nodeState.getId(),
+                    assignedNodeProperties.add( new NodePropertyEntryView( nodeId,
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
                             committedValue( nodeState, property.propertyKeyId() ) ) );
                 }
@@ -277,19 +280,14 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 while ( removed.hasNext() )
                 {
                     Integer property = removed.next();
-                    removedNodeProperties.add( new NodePropertyEntryView( nodeState.getId(),
+                    removedNodeProperties.add( new NodePropertyEntryView( nodeId,
                             store.propertyKeyGetName( property ), null,
                             committedValue( nodeState, property ) ) );
                 }
-                ReadableDiffSets<Integer> labels = nodeState.labelDiffSets();
-                for ( Integer label : labels.getAdded() )
-                {
-                    assignedLabels.add( new LabelEntryView( nodeState.getId(), store.labelGetName( label ) ) );
-                }
-                for ( Integer label : labels.getRemoved() )
-                {
-                    removedLabels.add( new LabelEntryView( nodeState.getId(), store.labelGetName( label ) ) );
-                }
+                final LongDiffSets labels = nodeState.labelDiffSets();
+
+                addLabelEntriesTo( nodeId, labels.getAdded(), assignedLabels );
+                addLabelEntriesTo( nodeId, labels.getRemoved(), removedLabels );
             }
             for ( RelationshipState relState : state.modifiedRelationships() )
             {
@@ -312,10 +310,26 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 }
             }
         }
-        catch ( PropertyKeyIdNotFoundKernelException | LabelNotFoundKernelException e )
+        catch ( PropertyKeyIdNotFoundKernelException e )
         {
             throw new IllegalStateException( "An entity that does not exist was modified.", e );
         }
+    }
+
+    private void addLabelEntriesTo( long nodeId, LongSet labelIds, Collection<LabelEntry> target )
+    {
+        labelIds.each( labelId ->
+        {
+            try
+            {
+                final LabelEntry labelEntryView = new LabelEntryView( nodeId, store.labelGetName( toIntExact( labelId ) ) );
+                target.add( labelEntryView );
+            }
+            catch ( LabelNotFoundKernelException e )
+            {
+                throw new IllegalStateException( "An entity that does not exist was modified.", e );
+            }
+        } );
     }
 
     private Relationship relationship( long relId )

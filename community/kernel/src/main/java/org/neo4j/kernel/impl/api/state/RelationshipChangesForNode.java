@@ -20,13 +20,18 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -37,7 +42,7 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.storageengine.api.Direction;
 
-import static org.neo4j.collection.PrimitiveLongCollections.toPrimitiveIterator;
+import static java.lang.Math.toIntExact;
 
 /**
  * Maintains relationships that have been added for a specific node.
@@ -113,9 +118,9 @@ public class RelationshipChangesForNode
 
     private final DiffStrategy diffStrategy;
 
-    private Map<Integer /* Type */, Set<Long /* Id */>> outgoing;
-    private Map<Integer /* Type */, Set<Long /* Id */>> incoming;
-    private Map<Integer /* Type */, Set<Long /* Id */>> loops;
+    private MutableIntObjectMap<MutableLongSet> outgoing;
+    private MutableIntObjectMap<MutableLongSet> incoming;
+    private MutableIntObjectMap<MutableLongSet> loops;
 
     private int totalOutgoing;
     private int totalIncoming;
@@ -128,8 +133,8 @@ public class RelationshipChangesForNode
 
     public void addRelationship( long relId, int typeId, Direction direction )
     {
-        Map<Integer, Set<Long>> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-        Set<Long> rels = relTypeToRelsMap.computeIfAbsent( typeId, k -> new HashSet<>() );
+        final MutableIntObjectMap<MutableLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
+        final MutableLongSet rels = relTypeToRelsMap.getIfAbsentPut( typeId, LongHashSet::new );
 
         rels.add( relId );
 
@@ -151,33 +156,30 @@ public class RelationshipChangesForNode
 
     public boolean removeRelationship( long relId, int typeId, Direction direction )
     {
-        Map<Integer, Set<Long>> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-        Set<Long> rels = relTypeToRelsMap.get( typeId );
-        if ( rels != null )
+        final MutableIntObjectMap<MutableLongSet> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
+        final MutableLongSet rels = relTypeToRelsMap.get( typeId );
+        if ( rels != null && rels.remove( relId ) )
         {
-            if ( rels.remove( relId ) )
+            if ( rels.isEmpty() )
             {
-                if ( rels.isEmpty() )
-                {
-                    relTypeToRelsMap.remove( typeId );
-                }
-
-                switch ( direction )
-                {
-                    case INCOMING:
-                        totalIncoming--;
-                        break;
-                    case OUTGOING:
-                        totalOutgoing--;
-                        break;
-                    case BOTH:
-                        totalLoops--;
-                        break;
-                    default:
-                        throw new IllegalArgumentException( "Unknown direction: " + direction );
-                }
-                return true;
+                relTypeToRelsMap.remove( typeId );
             }
+
+            switch ( direction )
+            {
+            case INCOMING:
+                totalIncoming--;
+                break;
+            case OUTGOING:
+                totalOutgoing--;
+                break;
+            case BOTH:
+                totalLoops--;
+                break;
+            default:
+                throw new IllegalArgumentException( "Unknown direction: " + direction );
+            }
+            return true;
         }
         return false;
     }
@@ -298,36 +300,36 @@ public class RelationshipChangesForNode
         }
     }
 
-    private Map<Integer /* Type */, Set<Long /* Id */>> outgoing()
+    private MutableIntObjectMap<MutableLongSet> outgoing()
     {
         if ( outgoing == null )
         {
-            outgoing = new HashMap<>();
+            outgoing = new IntObjectHashMap<>();
         }
         return outgoing;
     }
 
-    private Map<Integer /* Type */, Set<Long /* Id */>> incoming()
+    private MutableIntObjectMap<MutableLongSet> incoming()
     {
         if ( incoming == null )
         {
-            incoming = new HashMap<>();
+            incoming = new IntObjectHashMap<>();
         }
         return incoming;
     }
 
-    private Map<Integer /* Type */, Set<Long /* Id */>> loops()
+    private MutableIntObjectMap<MutableLongSet> loops()
     {
         if ( loops == null )
         {
-            loops = new HashMap<>();
+            loops = new IntObjectHashMap<>();
         }
         return loops;
     }
 
-    private Map<Integer, Set<Long>> getTypeToRelMapForDirection( Direction direction )
+    private MutableIntObjectMap<MutableLongSet> getTypeToRelMapForDirection( Direction direction )
     {
-        Map<Integer /* Type */, Set<Long /* Id */>> relTypeToRelsMap = null;
+        final MutableIntObjectMap<MutableLongSet> relTypeToRelsMap;
         switch ( direction )
         {
             case INCOMING:
@@ -386,22 +388,22 @@ public class RelationshipChangesForNode
         }
     }
 
-    private LongIterator primitiveIds( Map<Integer, Set<Long>> map )
+    private static LongIterator primitiveIds( IntObjectMap<MutableLongSet> map )
     {
         if ( map == null )
         {
             return ImmutableEmptyLongIterator.INSTANCE;
         }
 
-        final int size = map.values().stream().mapToInt( Set::size ).sum();
-        final Set<Long> ids = new HashSet<>( size );
+        final int size = toIntExact( map.sumOfInt( LongSet::size ) );
+        final MutableLongSet ids = new LongHashSet( size );
         map.values().forEach( ids::addAll );
-        return toPrimitiveIterator( ids.iterator() );
+        return ids.longIterator();
     }
 
-    private LongIterator primitiveIdsByType( Map<Integer, Set<Long>> map, int type )
+    private static LongIterator primitiveIdsByType( IntObjectMap<MutableLongSet> map, int type )
     {
-        Set<Long> relationships = map.get( type );
-        return relationships == null ? ImmutableEmptyLongIterator.INSTANCE : toPrimitiveIterator( new HashSet<>( relationships ).iterator() );
+        final LongSet relationships = map.get( type );
+        return relationships == null ? ImmutableEmptyLongIterator.INSTANCE : relationships.freeze().longIterator();
     }
 }

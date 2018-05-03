@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Arrays;
-import java.util.Collection;
 
 import org.neo4j.internal.kernel.api.LabelSet;
-
-import static org.neo4j.collection.PrimitiveIntCollections.asLongArray;
 
 public class Labels implements LabelSet
 {
@@ -46,21 +43,9 @@ public class Labels implements LabelSet
         return new Labels( labels );
     }
 
-    static Labels from( Collection<Integer> integers )
+    static Labels from( LongSet set )
     {
-        int size = integers.size();
-        long[] tokens = new long[size];
-        int i = 0;
-        for ( Integer token : integers )
-        {
-            tokens[i++] = token;
-        }
-        return new Labels( tokens );
-    }
-
-    static Labels from( IntSet set )
-    {
-        return new Labels( asLongArray( set ) );
+        return new Labels( set.toArray() );
     }
 
     @Override
@@ -98,6 +83,7 @@ public class Labels implements LabelSet
         return "Labels" + Arrays.toString( labels );
     }
 
+    @Override
     public long[] all()
     {
         return labels;

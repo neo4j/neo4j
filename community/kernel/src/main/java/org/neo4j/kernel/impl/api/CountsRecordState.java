@@ -54,7 +54,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     }
 
     @Override
-    public void incrementNodeCount( int labelId, long delta )
+    public void incrementNodeCount( long labelId, long delta )
     {
         counts( nodeKey( labelId ) ).increment( 0L, delta );
     }
@@ -75,7 +75,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     }
 
     @Override
-    public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
+    public void incrementRelationshipCount( long startLabelId, int typeId, long endLabelId, long delta )
     {
         if ( delta != 0 )
         {
