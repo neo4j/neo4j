@@ -19,85 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.Test;
-
 import java.util.Iterator;
 
-import org.neo4j.kernel.impl.util.diffsets.DiffSets;
-
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.collection.PrimitiveLongCollections.iterator;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSamePrimitiveItems;
 
 public class LongDiffSetsTest
 {
 
     // TODO empty diffset EMPTY
     // TODO null/isEmpty elements
-
-    @Test
-    public void shouldContainSourceForEmptyDiffSets()
-    {
-        // given
-        DiffSets<Long> diffSets = new DiffSets<>( );
-        Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 2L ) );
-
-        // when
-        LongIterator actual = diffSets.augment( iterator( 1L, 2L ) );
-
-        // then
-        assertThat( expected, hasSamePrimitiveItems( actual ) );
-    }
-
-    @Test
-    public void shouldContainFilteredSourceForDiffSetsWithRemovedElements()
-    {
-        // given
-        DiffSets<Long> diffSets = new DiffSets<>( );
-        diffSets.remove( 17L );
-        diffSets.remove( 18L );
-        Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17L, 3L ) );
-
-        // when
-        LongIterator actual = diffSets.augment( iterator( 1L, 17L, 3L ) );
-
-        // then
-        assertThat( expected, hasSamePrimitiveItems( actual ) );
-    }
-
-    @Test
-    public void shouldContainFilteredSourceForDiffSetsWithAddedElements()
-    {
-        // given
-        DiffSets<Long> diffSets = new DiffSets<>( );
-        diffSets.add( 17L );
-        diffSets.add( 18L );
-        Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17L, 3L ) );
-
-        // when
-        LongIterator actual = diffSets.augment( iterator( 1L, 17L, 3L ) );
-
-        // then
-        assertThat( expected, hasSamePrimitiveItems( actual ) );
-    }
-
-    @Test
-    public void shouldContainAddedElementsForDiffSetsWithAddedElements()
-    {
-        // given
-        DiffSets<Long> diffSets = new DiffSets<>( );
-        diffSets.add( 19L );
-        diffSets.add( 20L );
-        Iterator<Long> expected = diffSets.apply( iteratorSource( 19L ) );
-
-        // when
-        LongIterator actual = diffSets.augment( iterator( 19L ) );
-
-        // then
-        assertThat( expected, hasSamePrimitiveItems( actual ) );
-    }
 
     private static Iterator<Long> iteratorSource( Long... values )
     {
