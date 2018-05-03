@@ -242,13 +242,11 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
 
     private int degreeForDirection( StoreSingleNodeCursor cursor, Direction direction )
     {
-        return disk
-                .degreeRelationshipsInGroup( disk.newStatement(), cursor.id(), cursor.nextGroupId(), direction, null );
+        return disk.degreeRelationshipsInGroup( cursor.id(), cursor.nextGroupId(), direction, null );
     }
     private int degreeForDirectionAndType( StoreSingleNodeCursor cursor, Direction direction, int relType )
     {
-        return disk.degreeRelationshipsInGroup( disk.newStatement(), cursor.id(), cursor.nextGroupId(), direction,
-                relType );
+        return disk.degreeRelationshipsInGroup( cursor.id(), cursor.nextGroupId(), direction, relType );
     }
 
     private void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain(
@@ -377,7 +375,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
 
     private Set<TestRelType> relTypes( StoreSingleNodeCursor cursor )
     {
-        return mapToSet( disk.relationshipTypes( disk.newStatement(), cursor.get() ).intIterator(), this::relTypeForId );
+        return mapToSet( disk.relationshipTypes( cursor.get() ).intIterator(), this::relTypeForId );
     }
 
     private void testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType... typesToDelete )
@@ -463,7 +461,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     private Set<TestDegreeItem> degrees( NodeItem nodeItem )
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
-        disk.degrees( disk.newStatement(), nodeItem,
+        disk.degrees( nodeItem,
                 ( type, outgoing, incoming ) -> degrees.add( new TestDegreeItem( type, outgoing, incoming ) ) );
         return degrees;
     }

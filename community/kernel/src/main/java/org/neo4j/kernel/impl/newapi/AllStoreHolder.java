@@ -80,8 +80,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.register.Register;
-import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -106,18 +104,17 @@ import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class AllStoreHolder extends Read
 {
-    private final StorageStatement.Nodes nodes;
-    private final StorageStatement.Groups groups;
-    private final StorageStatement.Properties properties;
-    private final StorageStatement.Relationships relationships;
-    private final StorageStatement statement;
+    private final StoreReadLayer.Nodes nodes;
+    private final StoreReadLayer.Groups groups;
+    private final StoreReadLayer.Properties properties;
+    private final StoreReadLayer.Relationships relationships;
     private final StoreReadLayer storeReadLayer;
     private final ExplicitIndexStore explicitIndexStore;
     private final Procedures procedures;
     private final SchemaState schemaState;
 
-    public AllStoreHolder( StorageEngine engine,
-            StorageStatement statement,
+    public AllStoreHolder(
+            StoreReadLayer storeReadLayer,
             KernelTransactionImplementation ktx,
             DefaultCursors cursors,
             ExplicitIndexStore explicitIndexStore,
@@ -125,12 +122,11 @@ public class AllStoreHolder extends Read
             SchemaState schemaState )
     {
         super( cursors, ktx );
-        this.storeReadLayer = engine.storeReadLayer();
-        this.statement = statement; // use provided statement, to assert no leakage
-        this.nodes = statement.nodes();
-        this.relationships = statement.relationships();
-        this.groups = statement.groups();
-        this.properties = statement.properties();
+        this.storeReadLayer = storeReadLayer;
+        this.nodes = storeReadLayer.nodes();
+        this.relationships = storeReadLayer.relationships();
+        this.groups = storeReadLayer.groups();
+        this.properties = storeReadLayer.properties();
         this.explicitIndexStore = explicitIndexStore;
         this.procedures = procedures;
         this.schemaState = schemaState;
@@ -167,7 +163,7 @@ public class AllStoreHolder extends Read
             {
                 TransactionState txState = ktx.txState();
                 txState.accept( new TransactionCountingStateVisitor( EMPTY, storeReadLayer,
-                        statement, txState, counts ) );
+                        txState, counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
@@ -198,7 +194,7 @@ public class AllStoreHolder extends Read
             {
                 TransactionState txState = ktx.txState();
                 txState.accept( new TransactionCountingStateVisitor( EMPTY, storeReadLayer,
-                        statement, txState, counts ) );
+                        txState, counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )
@@ -242,7 +238,7 @@ public class AllStoreHolder extends Read
     @Override
     long graphPropertiesReference()
     {
-        return statement.getGraphPropertyReference();
+        return storeReadLayer.getGraphPropertyReference();
     }
 
     @Override
@@ -251,14 +247,14 @@ public class AllStoreHolder extends Read
         SchemaIndexDescriptor schemaIndexDescriptor = index.isUnique() ?
                                                       SchemaIndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
                                                       SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
-        return fresh ? statement.getFreshIndexReader( schemaIndexDescriptor ) :
-               statement.getIndexReader( schemaIndexDescriptor );
+        return fresh ? storeReadLayer.getFreshIndexReader( schemaIndexDescriptor ) :
+               storeReadLayer.getIndexReader( schemaIndexDescriptor );
     }
 
     @Override
     LabelScanReader labelScanReader()
     {
-        return statement.getLabelScanReader();
+        return storeReadLayer.getLabelScanReader();
     }
 
     @Override
@@ -485,7 +481,7 @@ public class AllStoreHolder extends Read
     public long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException
     {
         ktx.assertOpen();
-        IndexReader reader = statement.getIndexReader( DefaultIndexReference.toDescriptor( index ) );
+        IndexReader reader = storeReadLayer.getIndexReader( DefaultIndexReference.toDescriptor( index ) );
         return reader.countIndexedNodes( nodeId, value );
     }
 

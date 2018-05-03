@@ -87,7 +87,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -95,8 +95,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
-import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext
-        .CONSTRAINT_CREATION;
+import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
@@ -116,7 +115,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
     private final KernelToken token;
-    private final StorageStatement statement;
+    private final StoreReadLayer statement;
     private final AutoIndexing autoIndexing;
     private DefaultNodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
@@ -129,7 +128,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public Operations(
             AllStoreHolder allStoreHolder,
             IndexTxStateUpdater updater,
-            StorageStatement statement,
+            StoreReadLayer statement,
             KernelTransactionImplementation ktx,
             KernelToken token,
             DefaultCursors cursors,

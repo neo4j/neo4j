@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.Clocks;
 
@@ -66,15 +65,13 @@ public class KernelTransactionFactory
         public KernelTransactionImplementation transaction;
         public StorageEngine storageEngine;
         public StoreReadLayer storeReadLayer;
-        public StorageStatement storageStatement;
 
         public Instances( KernelTransactionImplementation transaction, StorageEngine storageEngine,
-                StoreReadLayer storeReadLayer, StorageStatement storageStatement )
+                StoreReadLayer storeReadLayer )
         {
             this.transaction = transaction;
             this.storageEngine = storageEngine;
             this.storeReadLayer = storeReadLayer;
-            this.storageStatement = storageStatement;
         }
     }
 
@@ -90,8 +87,6 @@ public class KernelTransactionFactory
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        StorageStatement storageStatement = mock( StorageStatement.class );
-        when( storeReadLayer.newStatement() ).thenReturn( storageStatement );
         when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
 
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
@@ -114,7 +109,7 @@ public class KernelTransactionFactory
         transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit,
                 loginContext.authorize( s -> -1 ), 0L, 1L );
 
-        return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
+        return new Instances( transaction, storageEngine, storeReadLayer );
     }
 
     static KernelTransaction kernelTransaction( LoginContext loginContext )

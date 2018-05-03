@@ -66,7 +66,7 @@ public abstract class StorageLayerTest
         db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         this.disk = resolver.resolveDependency( StorageEngine.class ).storeReadLayer();
-        this.state = new KernelStatement( null, null, disk.newStatement(),
+        this.state = new KernelStatement( null, null, disk,
                 LockTracer.NONE, null, new ClockContext(), EmptyVersionContextSupplier.EMPTY );
     }
 

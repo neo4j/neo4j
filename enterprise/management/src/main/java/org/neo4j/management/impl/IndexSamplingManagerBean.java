@@ -21,6 +21,7 @@ package org.neo4j.management.impl;
 
 import javax.management.NotCompliantMBeanException;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.management.IndexSamplingManager;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 @Service.Implementation( ManagementBeanProvider.class )
@@ -89,12 +91,12 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
     {
         private static class State
         {
-            final StoreReadLayer storeLayer;
+            final StorageEngine storageEngine;
             final IndexingService indexingService;
 
-            State( StoreReadLayer storeLayer, IndexingService indexingService )
+            State( StorageEngine storageEngine, IndexingService indexingService )
             {
-                this.storeLayer = storeLayer;
+                this.storageEngine = storageEngine;
                 this.indexingService = indexingService;
             }
         }
@@ -103,8 +105,10 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
         @Override
         public void registered( NeoStoreDataSource dataSource )
         {
-            state = new State( dataSource.getStoreLayer(),
-                    dataSource.getDependencyResolver().resolveDependency( IndexingService.class ) );
+            DependencyResolver dependencyResolver = dataSource.getDependencyResolver();
+            state = new State(
+                    dependencyResolver.resolveDependency( StorageEngine.class ),
+                    dependencyResolver.resolveDependency( IndexingService.class ) );
         }
 
         @Override
@@ -120,8 +124,11 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
             State state = this.state;
             if ( state != null )
             {
-                labelKeyId = state.storeLayer.labelGetForName( labelKey );
-                propertyKeyId = state.storeLayer.propertyKeyGetForName( propertyKey );
+                try ( StoreReadLayer read = state.storageEngine.storeReadLayer() )
+                {
+                    labelKeyId = read.labelGetForName( labelKey );
+                    propertyKeyId = read.propertyKeyGetForName( propertyKey );
+                }
             }
             if ( state == null || labelKeyId == -1 || propertyKeyId == -1 )
             {
