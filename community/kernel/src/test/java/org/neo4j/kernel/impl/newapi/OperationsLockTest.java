@@ -62,7 +62,6 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -124,18 +123,17 @@ public class OperationsLockTest
         AutoIndexOperations autoIndexOperations = mock( AutoIndexOperations.class );
         when( autoindexing.nodes() ).thenReturn( autoIndexOperations );
         when( autoindexing.relationships() ).thenReturn( autoIndexOperations );
-        StorageStatement storageStatement = mock( StorageStatement.class );
         StorageEngine engine = mock( StorageEngine.class );
         storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
         when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
         when( storeReadLayer.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
-        allStoreHolder = new AllStoreHolder( engine, storageStatement,  transaction, cursors, mock(
+        allStoreHolder = new AllStoreHolder( engine.storeReadLayer(),  transaction, cursors, mock(
                 ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
-        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                storageStatement, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
+        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ), storeReadLayer,
+                transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
                 constraintIndexCreator, mock( ConstraintSemantics.class ) );
         operations.initialize();
 

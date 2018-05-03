@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -60,19 +61,25 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandCreationContext;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
+import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.Direction;
@@ -81,9 +88,10 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -106,37 +114,112 @@ public class StorageLayer implements StoreReadLayer
     private final LabelTokenHolder labelTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTokenHolder;
     private final IndexingService indexService;
+    private final NeoStores neoStores;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
-    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
+    private final RelationshipGroupStore relationshipGroupStore;
+    private final PropertyStore propertyStore;
     private final SchemaStorage schemaStorage;
     private final CountsTracker counts;
     private final PropertyLoader propertyLoader;
-    private final Supplier<StorageStatement> statementProvider;
     private final SchemaCache schemaCache;
+
+    // State from the old StoreStatement
+    private final InstanceCache<StoreSingleNodeCursor> singleNodeCursor;
+    private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
+    private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
+    private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
+    private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
+    private final InstanceCache<StorePropertyCursor> propertyCursorCache;
+
+    private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
+    private final Supplier<LabelScanReader> labelScanReaderSupplier;
+    private final RecordCursors recordCursors;
+    private final RecordStorageCommandCreationContext commandCreationContext;
+
+    private IndexReaderFactory indexReaderFactory;
+    private LabelScanReader labelScanReader;
+
+    private boolean acquired;
+    private boolean closed;
 
     public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
-            IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier, SchemaCache schemaCache )
+            IndexingService indexService, SchemaCache schemaCache,
+            Supplier<IndexReaderFactory> indexReaderFactory,
+            Supplier<LabelScanReader> labelScanReaderSupplier, LockService lockService,
+            RecordStorageCommandCreationContext commandCreationContext )
     {
+        this.neoStores = neoStores;
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
         this.indexService = indexService;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
-        this.statementProvider = storeStatementSupplier;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        this.propertyStore = neoStores.getPropertyStore();
         this.counts = neoStores.getCounts();
         this.propertyLoader = new PropertyLoader( neoStores );
         this.schemaCache = schemaCache;
-    }
+        this.indexReaderFactorySupplier = indexReaderFactory;
+        this.labelScanReaderSupplier = labelScanReaderSupplier;
+        this.commandCreationContext = commandCreationContext;
 
-    @Override
-    public StorageStatement newStatement()
-    {
-        return statementProvider.get();
+        this.recordCursors = new RecordCursors( neoStores );
+        this.singleNodeCursor = new InstanceCache<StoreSingleNodeCursor>()
+        {
+            @Override
+            protected StoreSingleNodeCursor create()
+            {
+                return new StoreSingleNodeCursor( nodeStore.newRecord(), this, recordCursors, lockService );
+            }
+        };
+        this.singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
+        {
+            @Override
+            protected StoreSingleRelationshipCursor create()
+            {
+                return new StoreSingleRelationshipCursor( relationshipStore.newRecord(), this, recordCursors,
+                        lockService );
+            }
+        };
+        this.iteratorRelationshipCursor = new InstanceCache<StoreIteratorRelationshipCursor>()
+        {
+            @Override
+            protected StoreIteratorRelationshipCursor create()
+            {
+                return new StoreIteratorRelationshipCursor( relationshipStore.newRecord(), this, recordCursors,
+                        lockService );
+            }
+        };
+        this.nodeRelationshipsCursor = new InstanceCache<StoreNodeRelationshipCursor>()
+        {
+            @Override
+            protected StoreNodeRelationshipCursor create()
+            {
+                return new StoreNodeRelationshipCursor( relationshipStore.newRecord(),
+                        relationshipGroupStore.newRecord(), this, recordCursors, lockService );
+            }
+        };
+
+        this.singlePropertyCursorCache = new InstanceCache<StoreSinglePropertyCursor>()
+        {
+            @Override
+            protected StoreSinglePropertyCursor create()
+            {
+                return new StoreSinglePropertyCursor( recordCursors, this );
+            }
+        };
+        this.propertyCursorCache = new InstanceCache<StorePropertyCursor>()
+        {
+            @Override
+            protected StorePropertyCursor create()
+            {
+                return new StorePropertyCursor( recordCursors, this );
+            }
+        };
     }
 
     @Override
@@ -181,9 +264,9 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetForLabel( StorageStatement statement, int labelId )
+    public PrimitiveLongResourceIterator nodesGetForLabel( int labelId )
     {
-        return statement.getLabelScanReader().nodesWithLabel( labelId );
+        return getLabelScanReader().nodesWithLabel( labelId );
     }
 
     @Override
@@ -427,49 +510,49 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem,
+    public Cursor<RelationshipItem> nodeGetRelationships( NodeItem nodeItem,
             Direction direction )
     {
-        return nodeGetRelationships( statement, nodeItem, direction, ALWAYS_TRUE_INT );
+        return nodeGetRelationships( nodeItem, direction, ALWAYS_TRUE_INT );
     }
 
     @Override
-    public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem node,
+    public Cursor<RelationshipItem> nodeGetRelationships( NodeItem node,
             Direction direction, IntPredicate relTypes )
     {
-        return statement.acquireNodeRelationshipCursor( node.isDense(), node.id(), node.nextRelationshipId(), direction,
+        return acquireNodeRelationshipCursor( node.isDense(), node.id(), node.nextRelationshipId(), direction,
                 relTypes );
     }
 
     @Override
-    public Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node, AssertOpen assertOpen )
+    public Cursor<PropertyItem> nodeGetProperties( NodeItem node, AssertOpen assertOpen )
     {
         Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquirePropertyCursor( node.nextPropertyId(), lock, assertOpen );
+        return acquirePropertyCursor( node.nextPropertyId(), lock, assertOpen );
     }
 
     @Override
-    public Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId,
+    public Cursor<PropertyItem> nodeGetProperty( NodeItem node, int propertyKeyId,
             AssertOpen assertOpen )
     {
         Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock, assertOpen );
+        return acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock, assertOpen );
     }
 
     @Override
-    public Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship,
+    public Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship,
             AssertOpen assertOpen )
     {
         Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquirePropertyCursor( relationship.nextPropertyId(), lock, assertOpen );
+        return acquirePropertyCursor( relationship.nextPropertyId(), lock, assertOpen );
     }
 
     @Override
-    public Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationship,
+    public Cursor<PropertyItem> relationshipGetProperty( RelationshipItem relationship,
             int propertyKeyId, AssertOpen assertOpen )
     {
         Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock, assertOpen );
+        return acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock, assertOpen );
     }
 
     @Override
@@ -562,13 +645,13 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public IntSet relationshipTypes( StorageStatement statement, NodeItem node )
+    public IntSet relationshipTypes( NodeItem node )
     {
         final MutableIntSet set = new IntHashSet();
         if ( node.isDense() )
         {
             RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();
-            RecordCursor<RelationshipGroupRecord> cursor = statement.recordCursors().relationshipGroup();
+            RecordCursor<RelationshipGroupRecord> cursor = recordCursors().relationshipGroup();
             for ( long id = node.nextGroupId(); id != NO_NEXT_RELATIONSHIP.intValue(); id = groupRecord.getNext() )
             {
                 if ( cursor.next( id, groupRecord, FORCE ) )
@@ -579,22 +662,22 @@ public class StorageLayer implements StoreReadLayer
         }
         else
         {
-            nodeGetRelationships( statement, node, Direction.BOTH )
+            nodeGetRelationships( node, Direction.BOTH )
                     .forAll( relationship -> set.add( relationship.type() ) );
         }
         return set;
     }
 
     @Override
-    public void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
+    public void degrees( NodeItem nodeItem, DegreeVisitor visitor )
     {
         if ( nodeItem.isDense() )
         {
-            visitDenseNode( statement, nodeItem, visitor );
+            visitDenseNode( nodeItem, visitor );
         }
         else
         {
-            visitNode( statement, nodeItem, visitor );
+            visitNode( nodeItem, visitor );
         }
     }
 
@@ -612,13 +695,13 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public int degreeRelationshipsInGroup( StorageStatement storeStatement, long nodeId, long groupId,
+    public int degreeRelationshipsInGroup( long nodeId, long groupId,
             Direction direction, Integer relType )
     {
         RelationshipRecord relationshipRecord = relationshipStore.newRecord();
         RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
         return countRelationshipsInGroup( groupId, direction, relType, nodeId, relationshipRecord,
-                relationshipGroupRecord, storeStatement.recordCursors() );
+                relationshipGroupRecord, recordCursors() );
     }
 
     @Override
@@ -627,9 +710,33 @@ public class StorageLayer implements StoreReadLayer
         return schemaCache.getOrCreateDependantState( type, factory, this );
     }
 
-    private void visitNode( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
+    @Override
+    public Nodes nodes()
     {
-        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, nodeItem, Direction.BOTH ) )
+        return nodeStore;
+    }
+
+    @Override
+    public Relationships relationships()
+    {
+        return relationshipStore;
+    }
+
+    @Override
+    public Groups groups()
+    {
+        return relationshipGroupStore;
+    }
+
+    @Override
+    public Properties properties()
+    {
+        return propertyStore;
+    }
+
+    private void visitNode( NodeItem nodeItem, DegreeVisitor visitor )
+    {
+        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( nodeItem, Direction.BOTH ) )
         {
             while ( relationships.next() )
             {
@@ -653,12 +760,12 @@ public class StorageLayer implements StoreReadLayer
         }
     }
 
-    private void visitDenseNode( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
+    private void visitDenseNode( NodeItem nodeItem, DegreeVisitor visitor )
     {
         RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
-        RecordCursor<RelationshipGroupRecord> relationshipGroupCursor = statement.recordCursors().relationshipGroup();
+        RecordCursor<RelationshipGroupRecord> relationshipGroupCursor = recordCursors().relationshipGroup();
         RelationshipRecord relationshipRecord = relationshipStore.newRecord();
-        RecordCursor<RelationshipRecord> relationshipCursor = statement.recordCursors().relationship();
+        RecordCursor<RelationshipRecord> relationshipCursor = recordCursors().relationship();
 
         long groupId = nodeItem.nextGroupId();
         while ( groupId != NO_NEXT_RELATIONSHIP.longValue() )
@@ -703,5 +810,142 @@ public class StorageLayer implements StoreReadLayer
     private static Iterator<SchemaIndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
     {
         return Iterators.map( IndexRule::getIndexDescriptor, rules.iterator() );
+    }
+
+    @Override
+    public void acquire()
+    {
+        assert !closed;
+        assert !acquired;
+        this.acquired = true;
+    }
+
+    @Override
+    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId )
+    {
+        neoStores.assertOpen();
+        return singleNodeCursor.get().init( nodeId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId )
+    {
+        neoStores.assertOpen();
+        return singleRelationshipCursor.get().init( relId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> acquireNodeRelationshipCursor( boolean isDense, long nodeId, long relationshipId,
+            Direction direction, IntPredicate relTypeFilter )
+    {
+        neoStores.assertOpen();
+        return nodeRelationshipsCursor.get().init( isDense, relationshipId, nodeId, direction, relTypeFilter );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationshipsGetAllCursor()
+    {
+        neoStores.assertOpen();
+        return iteratorRelationshipCursor.get().init( new AllIdIterator( relationshipStore ) );
+    }
+
+    @Override
+    public Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock lock, AssertOpen assertOpen )
+    {
+        return propertyCursorCache.get().init( propertyId, lock, assertOpen );
+    }
+
+    @Override
+    public Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock lock,
+            AssertOpen assertOpen )
+    {
+        return singlePropertyCursorCache.get().init( propertyId, propertyKeyId, lock, assertOpen );
+    }
+
+    @Override
+    public void release()
+    {
+        assert !closed;
+        assert acquired;
+        closeSchemaResources();
+        acquired = false;
+    }
+
+    @Override
+    public void close()
+    {
+        assert !closed;
+        closeSchemaResources();
+        recordCursors.close();
+        commandCreationContext.close();
+        closed = true;
+    }
+
+    private void closeSchemaResources()
+    {
+        if ( indexReaderFactory != null )
+        {
+            indexReaderFactory.close();
+            // we can actually keep this object around
+        }
+        if ( labelScanReader != null )
+        {
+            labelScanReader.close();
+            labelScanReader = null;
+        }
+    }
+
+    @Override
+    public LabelScanReader getLabelScanReader()
+    {
+        return labelScanReader != null ?
+               labelScanReader : (labelScanReader = labelScanReaderSupplier.get());
+    }
+
+    private IndexReaderFactory indexReaderFactory()
+    {
+        return indexReaderFactory != null ?
+               indexReaderFactory : (indexReaderFactory = indexReaderFactorySupplier.get());
+    }
+
+    @Override
+    public IndexReader getIndexReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexReaderFactory().newReader( descriptor );
+    }
+
+    @Override
+    public IndexReader getFreshIndexReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexReaderFactory().newUnCachedReader( descriptor );
+    }
+
+    @Override
+    public RecordCursors recordCursors()
+    {
+        return recordCursors;
+    }
+
+    public RecordStorageCommandCreationContext getCommandCreationContext()
+    {
+        return commandCreationContext;
+    }
+
+    @Override
+    public long reserveNode()
+    {
+        return commandCreationContext.nextId( StoreType.NODE );
+    }
+
+    @Override
+    public long reserveRelationship()
+    {
+        return commandCreationContext.nextId( StoreType.RELATIONSHIP );
+    }
+
+    @Override
+    public long getGraphPropertyReference()
+    {
+        return neoStores.getMetaDataStore().getGraphNextProp();
     }
 }

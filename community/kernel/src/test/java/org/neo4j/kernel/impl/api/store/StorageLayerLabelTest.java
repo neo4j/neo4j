@@ -57,7 +57,7 @@ public class StorageLayerLabelTest extends StorageLayerTest
         }
 
         // THEN
-        disk.newStatement().acquireSingleNodeCursor( nodeId ).forAll(
+        disk.acquireSingleNodeCursor( nodeId ).forAll(
                 node -> assertEquals( newSetWith( labelId1, labelId2 ), node.labels() ) );
     }
 
@@ -95,8 +95,8 @@ public class StorageLayerLabelTest extends StorageLayerTest
         int labelId2 = disk.labelGetForName( label2.name() );
 
         // WHEN
-        LongIterator nodesForLabel1 = disk.nodesGetForLabel( state.getStoreStatement(), labelId1 );
-        LongIterator nodesForLabel2 = disk.nodesGetForLabel( state.getStoreStatement(), labelId2 );
+        LongIterator nodesForLabel1 = disk.nodesGetForLabel( labelId1 );
+        LongIterator nodesForLabel2 = disk.nodesGetForLabel( labelId2 );
 
         // THEN
         assertEquals( asSet( node1.getId(), node2.getId() ), PrimitiveLongCollections.toSet( nodesForLabel1 ) );

@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.mockito.Mockito.mock;
@@ -37,30 +38,31 @@ import static org.mockito.Mockito.when;
 
 public class IndexSamplingManagerBeanTest
 {
+    private static final String EXISTING_LABEL = "label";
+    private static final String NON_EXISTING_LABEL = "bogusLabel";
+    private static final int LABEL_ID = 42;
+    private static final String EXISTING_PROPERTY = "prop";
+    private static final String NON_EXISTING_PROPERTY = "bogusProp";
+    private static final int PROPERTY_ID = 43;
 
-    public static final String EXISTING_LABEL = "label";
-    public static final String NON_EXISTING_LABEL = "bogusLabel";
-    public static final int LABEL_ID = 42;
-    public static final String EXISTING_PROPERTY = "prop";
-    public static final String NON_EXISTING_PROPERTY = "bogusProp";
-    public static final int PROPERTY_ID = 43;
     private NeoStoreDataSource dataSource;
-    private StoreReadLayer storeReadLayer;
     private IndexingService indexingService;
 
     @Before
     public void setup()
     {
         dataSource = mock( NeoStoreDataSource.class );
-        storeReadLayer = mock( StoreReadLayer.class );
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
         indexingService = mock( IndexingService.class );
-        when( dataSource.getStoreLayer() ).thenReturn( storeReadLayer );
         when( storeReadLayer.labelGetForName( EXISTING_LABEL ) ).thenReturn( LABEL_ID );
         when( storeReadLayer.propertyKeyGetForName( EXISTING_PROPERTY ) ).thenReturn( PROPERTY_ID );
         when( storeReadLayer.propertyKeyGetForName( NON_EXISTING_PROPERTY ) ).thenReturn( -1 );
         when( storeReadLayer.labelGetForName( NON_EXISTING_LABEL ) ).thenReturn( -1 );
         DependencyResolver resolver = mock( DependencyResolver.class );
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
+        when( resolver.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
         when( dataSource.getDependencyResolver() ).thenReturn( resolver );
     }
 

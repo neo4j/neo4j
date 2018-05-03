@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -407,7 +407,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
                 db.schema().awaitIndexesOnline( 5, TimeUnit.SECONDS );
 
                 int count;
-                StorageStatement storeStatement = ((KernelStatement) statement).getStoreStatement();
+                StoreReadLayer storeStatement = ((KernelStatement) statement).getStoreReadLayer();
                 IndexReader reader = storeStatement.getIndexReader( DefaultIndexReference.toDescriptor( index ) );
                 IndexQuery[] predicates = new IndexQuery[propertyKeyIds.length];
                 for ( int i = 0; i < propertyKeyIds.length; i++ )

@@ -25,7 +25,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.StorageStatement;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -89,23 +88,17 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
 
     private boolean nodeExists( long id )
     {
-        try ( StorageStatement statement = disk.newStatement() )
+        try ( Cursor<NodeItem> node = disk.acquireSingleNodeCursor( id ) )
         {
-            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
-            {
-                return node.next();
-            }
+            return node.next();
         }
     }
 
     private boolean relationshipExists( long id )
     {
-        try ( StorageStatement statement = disk.newStatement() )
+        try ( Cursor<RelationshipItem> relationship = disk.acquireSingleRelationshipCursor( id ) )
         {
-            try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( id ) )
-            {
-                return relationship.next();
-            }
+            return relationship.next();
         }
     }
 }

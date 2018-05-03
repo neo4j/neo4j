@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;
@@ -78,7 +78,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     private static final Deque<StackTraceElement[]> EMPTY_STATEMENT_HISTORY = new ArrayDeque<>( 0 );
 
     private final TxStateHolder txStateHolder;
-    private final StorageStatement storeStatement;
+    private final StoreReadLayer storestoreReadLayer;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
     private StatementLocks statementLocks;
@@ -92,7 +92,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
 
     public KernelStatement( KernelTransactionImplementation transaction,
             TxStateHolder txStateHolder,
-            StorageStatement storeStatement,
+            StoreReadLayer storeReadLayer,
             LockTracer systemLockTracer,
             StatementOperationParts statementOperations,
             ClockContext clockContext,
@@ -100,7 +100,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
-        this.storeStatement = storeStatement;
+        this.storestoreReadLayer = storeReadLayer;
         this.facade = new OperationsFacade( this, statementOperations );
         this.executingQueryList = ExecutingQueryList.EMPTY;
         this.systemLockTracer = systemLockTracer;
@@ -187,7 +187,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     {
         if ( referenceCount++ == 0 )
         {
-            storeStatement.acquire();
+            storestoreReadLayer.acquire();
             clockContext.initializeStatement();
         }
         recordOpenCloseMethods();
@@ -245,15 +245,15 @@ public class KernelStatement extends CloseableResourceManager implements TxState
         transaction.getStatistics().addWaitingTime( executingQuery.reportedWaitingTimeNanos() );
     }
 
-    public StorageStatement getStoreStatement()
+    public StoreReadLayer getStoreReadLayer()
     {
-        return storeStatement;
+        return storestoreReadLayer;
     }
 
     private void cleanupResources()
     {
         // closing is done by KTI
-        storeStatement.release();
+        storestoreReadLayer.release();
         executingQueryList = ExecutingQueryList.EMPTY;
         closeAllCloseableResources();
     }

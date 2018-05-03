@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.locking.LockTracer;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -36,7 +36,7 @@ public class StatementLifecycleTest
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        StorageStatement storageStatement = mock( StorageStatement.class );
+        StoreReadLayer storageStatement = mock( StoreReadLayer.class );
         KernelStatement statement = getKernelStatement( transaction, storageStatement );
         statement.acquire();
         verify( storageStatement ).acquire();
@@ -56,7 +56,7 @@ public class StatementLifecycleTest
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        StorageStatement storageStatement = mock( StorageStatement.class );
+        StoreReadLayer storageStatement = mock( StoreReadLayer.class );
         KernelStatement statement = getKernelStatement( transaction, storageStatement );
         statement.acquire();
 
@@ -75,7 +75,7 @@ public class StatementLifecycleTest
     }
 
     private KernelStatement getKernelStatement( KernelTransactionImplementation transaction,
-            StorageStatement storageStatement )
+            StoreReadLayer storageStatement )
     {
         return new KernelStatement( transaction, null, storageStatement,
                 LockTracer.NONE, mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );

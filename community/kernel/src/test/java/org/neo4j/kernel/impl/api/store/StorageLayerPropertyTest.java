@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -91,7 +91,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
 
         int propKey = disk.propertyKeyGetOrCreateForName( "prop" );
 
-        StorageStatement statement = state.getStoreStatement();
+        StoreReadLayer statement = state.getStoreReadLayer();
         for ( Object value : properties )
         {
             // given

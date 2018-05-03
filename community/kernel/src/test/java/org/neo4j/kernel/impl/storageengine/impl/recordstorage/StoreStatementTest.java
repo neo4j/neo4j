@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
+import org.neo4j.kernel.impl.api.store.StorageLayer;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.MockedNeoStores;
@@ -43,7 +44,7 @@ public class StoreStatementTest
         LabelScanReader scanReader = mock( LabelScanReader.class );
 
         when( scanStore.get() ).thenReturn( scanReader );
-        StoreStatement statement = new StoreStatement( MockedNeoStores.basicMockedNeoStores(), mock( Supplier.class ),
+        StorageLayer statement = new StorageLayer( null, null, null, null, MockedNeoStores.basicMockedNeoStores(), null, null, mock( Supplier.class ),
                 scanStore, LockService.NO_LOCK_SERVICE, mock( RecordStorageCommandCreationContext.class ) );
         statement.acquire();
 

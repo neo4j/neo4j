@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -43,7 +43,7 @@ public class KernelStatementTest
     public void shouldReleaseStorageStatementWhenForceClosed()
     {
         // given
-        StorageStatement storeStatement = mock( StorageStatement.class );
+        StoreReadLayer storeStatement = mock( StoreReadLayer.class );
         KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
                 null, storeStatement, LockTracer.NONE,
                 mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );
@@ -68,7 +68,7 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );
-        StorageStatement storeStatement = mock( StorageStatement.class );
+        StoreReadLayer storeStatement = mock( StoreReadLayer.class );
         KernelStatement statement = new KernelStatement( transaction, txStateHolder,
                 storeStatement, LockTracer.NONE, mock( StatementOperationParts.class ),
                 new ClockContext(), EmptyVersionContextSupplier.EMPTY );
@@ -81,7 +81,7 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );
-        StorageStatement storeStatement = mock( StorageStatement.class );
+        StoreReadLayer storeStatement = mock( StoreReadLayer.class );
 
         KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ) );
