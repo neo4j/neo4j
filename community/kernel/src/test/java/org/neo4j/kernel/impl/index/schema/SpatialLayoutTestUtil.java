@@ -30,9 +30,9 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
-import org.neo4j.values.RandomValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -87,7 +87,7 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
     }
 
     @Override
-    Value newUniqueValue( RandomValue random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
         PointValue pointValue;
         Long compareValue;

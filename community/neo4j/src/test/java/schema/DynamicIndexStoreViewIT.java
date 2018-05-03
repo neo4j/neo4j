@@ -42,7 +42,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.values.RandomValue;
+import org.neo4j.values.storable.RandomValues;
 
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
@@ -61,7 +61,7 @@ public class DynamicIndexStoreViewIT
                 new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
         try
         {
-            RandomValue randomValue = RandomValue.create();
+            RandomValues randomValues = RandomValues.create();
             int counter = 1;
             for ( int j = 0; j < 100; j++ )
             {
@@ -70,7 +70,7 @@ public class DynamicIndexStoreViewIT
                     for ( int i = 0; i < 5; i++ )
                     {
                         Node node = database.createNode( Label.label( "label" + counter ) );
-                        node.setProperty( "property", randomValue.nextValue().asObject() );
+                        node.setProperty( "property", randomValues.nextValue().asObject() );
                     }
                     transaction.success();
                 }
@@ -137,7 +137,7 @@ public class DynamicIndexStoreViewIT
         @Override
         public void run()
         {
-            RandomValue randomValue = RandomValue.create();
+            RandomValues randomValues = RandomValues.create();
             awaitLatch( startSignal );
             while ( !endSignal.get() )
             {
@@ -145,25 +145,25 @@ public class DynamicIndexStoreViewIT
                 {
                     try
                     {
-                        int operationType = randomValue.nextIntValue( 3 ).value();
+                        int operationType = randomValues.nextIntValue( 3 ).value();
                         switch ( operationType )
                         {
                         case 0:
-                            long targetNodeId = randomValue.nextLongValue( totalNodes ).value();
+                            long targetNodeId = randomValues.nextLongValue( totalNodes ).value();
                             databaseService.getNodeById( targetNodeId ).delete();
                             break;
                         case 1:
-                            long nodeId = randomValue.nextLongValue( totalNodes ).value();
+                            long nodeId = randomValues.nextLongValue( totalNodes ).value();
                             Node node = databaseService.getNodeById( nodeId );
                             Map<String,Object> allProperties = node.getAllProperties();
                             for ( String key : allProperties.keySet() )
                             {
-                                node.setProperty( key, randomValue.nextValue().asObject() );
+                                node.setProperty( key, randomValues.nextValue().asObject() );
                             }
                             break;
                         case 2:
                             Node nodeToUpdate = databaseService.createNode( Label.label( "label10" ) );
-                            nodeToUpdate.setProperty( "property", randomValue.nextValue().asObject()  );
+                            nodeToUpdate.setProperty( "property", randomValues.nextValue().asObject()  );
                             break;
                         default:
                             throw new UnsupportedOperationException( "Unknown type of index operation" );

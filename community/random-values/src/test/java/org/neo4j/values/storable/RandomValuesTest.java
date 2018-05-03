@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values;
+package org.neo4j.values.storable;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,24 +32,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.ByteValue;
-import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.DateValue;
-import org.neo4j.values.storable.DoubleValue;
-import org.neo4j.values.storable.DurationValue;
-import org.neo4j.values.storable.FloatValue;
-import org.neo4j.values.storable.IntValue;
-import org.neo4j.values.storable.LocalDateTimeValue;
-import org.neo4j.values.storable.LocalTimeValue;
-import org.neo4j.values.storable.LongValue;
-import org.neo4j.values.storable.NumberValue;
-import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.ShortValue;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.TimeValue;
-import org.neo4j.values.storable.Value;
+import org.neo4j.values.AnyValue;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
@@ -65,12 +48,12 @@ import static org.neo4j.values.storable.Values.ZERO_INT;
 import static org.neo4j.values.storable.Values.longValue;
 
 @RunWith( Parameterized.class )
-public class RandomValueTest
+public class RandomValuesTest
 {
     private static final int ITERATIONS = 500;
 
     @Parameterized.Parameter( 0 )
-    public RandomValue randomValue;
+    public RandomValues randomValues;
 
     @Parameterized.Parameter( 1 )
     public String name;
@@ -79,8 +62,8 @@ public class RandomValueTest
     public static Iterable<Object[]> generators()
     {
         return Arrays.asList(
-                new Object[]{RandomValue.create( ThreadLocalRandom.current() ), Random.class.getName()},
-                new Object[]{RandomValue.create( new SplittableRandom() ), SplittableRandom.class.getName()}
+                new Object[]{RandomValues.create( ThreadLocalRandom.current() ), Random.class.getName()},
+                new Object[]{RandomValues.create( new SplittableRandom() ), SplittableRandom.class.getName()}
         );
     }
 
@@ -117,14 +100,14 @@ public class RandomValueTest
     @Test
     public void nextLongValueUnbounded()
     {
-        checkDistribution( randomValue::nextLongValue );
+        checkDistribution( randomValues::nextLongValue );
     }
 
     @Test
     public void nextLongValueBounded()
     {
-        checkDistribution( () -> randomValue.nextLongValue( BOUND ) );
-        checkBounded( () -> randomValue.nextLongValue( BOUND ) );
+        checkDistribution( () -> randomValues.nextLongValue( BOUND ) );
+        checkBounded( () -> randomValues.nextLongValue( BOUND ) );
     }
 
     @Test
@@ -133,7 +116,7 @@ public class RandomValueTest
         Set<Value> values = new HashSet<>();
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            LongValue value = randomValue.nextLongValue( 1337, 1337 + BOUND );
+            LongValue value = randomValues.nextLongValue( 1337, 1337 + BOUND );
             assertThat( value, notNullValue() );
             assertThat( value.compareTo( longValue( 1337 ) ), greaterThanOrEqualTo( 0 ) );
             assertThat( value.toString(), value.compareTo( longValue( 1337 + BOUND ) ), lessThanOrEqualTo( 0 ) );
@@ -146,58 +129,58 @@ public class RandomValueTest
     @Test
     public void nextBooleanValue()
     {
-        checkDistribution( randomValue::nextBooleanValue );
+        checkDistribution( randomValues::nextBooleanValue );
     }
 
     @Test
     public void nextIntValueUnbounded()
     {
-        checkDistribution( randomValue::nextIntValue );
+        checkDistribution( randomValues::nextIntValue );
     }
 
     @Test
     public void nextIntValueBounded()
     {
-        checkDistribution( () -> randomValue.nextIntValue( BOUND ) );
-        checkBounded( () -> randomValue.nextIntValue( BOUND ) );
+        checkDistribution( () -> randomValues.nextIntValue( BOUND ) );
+        checkBounded( () -> randomValues.nextIntValue( BOUND ) );
     }
 
     @Test
     public void nextShortValueUnbounded()
     {
-        checkDistribution( randomValue::nextShortValue );
+        checkDistribution( randomValues::nextShortValue );
     }
 
     @Test
     public void nextShortValueBounded()
     {
-        checkDistribution( () -> randomValue.nextShortValue( BOUND ) );
-        checkBounded( () -> randomValue.nextShortValue( BOUND ) );
+        checkDistribution( () -> randomValues.nextShortValue( BOUND ) );
+        checkBounded( () -> randomValues.nextShortValue( BOUND ) );
     }
 
     @Test
     public void nextByteValueUnbounded()
     {
-        checkDistribution( randomValue::nextByteValue );
+        checkDistribution( randomValues::nextByteValue );
     }
 
     @Test
     public void nextByteValueBounded()
     {
-        checkDistribution( () -> randomValue.nextByteValue( BOUND ) );
-        checkBounded( () -> randomValue.nextByteValue( BOUND ) );
+        checkDistribution( () -> randomValues.nextByteValue( BOUND ) );
+        checkBounded( () -> randomValues.nextByteValue( BOUND ) );
     }
 
     @Test
     public void nextFloatValue()
     {
-        checkDistribution( randomValue::nextFloatValue );
+        checkDistribution( randomValues::nextFloatValue );
     }
 
     @Test
     public void nextDoubleValue()
     {
-        checkDistribution( randomValue::nextDoubleValue );
+        checkDistribution( randomValues::nextDoubleValue );
     }
 
     @Test
@@ -207,7 +190,7 @@ public class RandomValueTest
 
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            NumberValue numberValue = randomValue.nextNumberValue();
+            NumberValue numberValue = randomValues.nextNumberValue();
             assertThat( NUMBER_TYPES, hasItem( numberValue.getClass() ) );
             seen.remove( numberValue.getClass() );
         }
@@ -220,7 +203,7 @@ public class RandomValueTest
         Set<Integer> seenDigits = "0123456789".chars().boxed().collect( Collectors.toSet() );
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValue.nextDigitString( 5, 10 );
+            TextValue textValue = randomValues.nextDigitString( 5, 10 );
             String asString = textValue.stringValue();
             for ( int j = 0; j < asString.length(); j++ )
             {
@@ -239,7 +222,7 @@ public class RandomValueTest
                 .collect( Collectors.toSet() );
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValue.nextAlphaString( 5, 10 );
+            TextValue textValue = randomValues.nextAlphaString( 5, 10 );
             String asString = textValue.stringValue();
             for ( int j = 0; j < asString.length(); j++ )
             {
@@ -258,7 +241,7 @@ public class RandomValueTest
                 .collect( Collectors.toSet() );
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValue.nextAlphaNumericString( 10, 20 );
+            TextValue textValue = randomValues.nextAlphaNumericString( 10, 20 );
             String asString = textValue.stringValue();
             for ( int j = 0; j < asString.length(); j++ )
             {
@@ -276,7 +259,7 @@ public class RandomValueTest
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValue.nextAsciiString( 10, 20 );
+            TextValue textValue = randomValues.nextAsciiString( 10, 20 );
             String asString = textValue.stringValue();
             int length = asString.length();
             assertThat( length, greaterThanOrEqualTo( 10 ) );
@@ -289,7 +272,7 @@ public class RandomValueTest
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValue.nextPrintableAsciiString( 10, 20 );
+            TextValue textValue = randomValues.nextPrintableAsciiString( 10, 20 );
             String asString = textValue.stringValue();
             int length = asString.length();
             assertThat( length, greaterThanOrEqualTo( 10 ) );
@@ -302,7 +285,7 @@ public class RandomValueTest
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValue.nextString( 10, 20 );
+            TextValue textValue = randomValues.nextString( 10, 20 );
             String asString = textValue.stringValue();
             int length = asString.codePointCount( 0, asString.length() );
             assertThat( length, greaterThanOrEqualTo( 10 ) );
@@ -316,7 +299,7 @@ public class RandomValueTest
         HashSet<Class<? extends AnyValue>> seen = new HashSet<>( TYPES );
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            ArrayValue arrayValue = randomValue.nextArray();
+            ArrayValue arrayValue = randomValues.nextArray();
             assertThat( arrayValue.length(), greaterThanOrEqualTo( 1 ) );
             AnyValue value = arrayValue.value( 0 );
             assertKnownType( value.getClass(), TYPES );
@@ -335,7 +318,7 @@ public class RandomValueTest
 
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            Value value = randomValue.nextValue();
+            Value value = randomValues.nextValue();
             assertKnownType( value.getClass(), all );
             markSeen( value.getClass(), seen );
         }

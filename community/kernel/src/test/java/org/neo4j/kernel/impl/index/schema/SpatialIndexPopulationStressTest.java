@@ -23,7 +23,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.values.RandomValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
 public class SpatialIndexPopulationStressTest extends IndexPopulationStressTest
@@ -41,7 +41,7 @@ public class SpatialIndexPopulationStressTest extends IndexPopulationStressTest
     }
 
     @Override
-    Value randomValue( RandomValue random )
+    Value randomValue( RandomValues random )
     {
         return random.nextPointValue();
     }

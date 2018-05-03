@@ -17,12 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values;
+package org.neo4j.values.storable;
 
 import java.util.Arrays;
-
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
 
 class UTF8StringValueBuilder
 {

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.values.RandomValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
 public class TemporalIndexPopulationStressTest extends IndexPopulationStressTest
@@ -39,7 +39,7 @@ public class TemporalIndexPopulationStressTest extends IndexPopulationStressTest
     }
 
     @Override
-    Value randomValue( RandomValue random )
+    Value randomValue( RandomValues random )
     {
         return random.nextTemporalValue();
     }
