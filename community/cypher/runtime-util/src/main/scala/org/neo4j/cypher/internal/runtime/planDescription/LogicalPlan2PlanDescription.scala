@@ -36,7 +36,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, ReadOnlie
                      cardinalities: Cardinalities): InternalPlanDescription = {
     val readOnly = readOnlies.get(input.id)
     new LogicalPlan2PlanDescription(readOnly, cardinalities).create(input)
-      .addArgument(Version("CYPHER 3.4"))
+      .addArgument(Version("CYPHER "+plannerName.version))
       .addArgument(RuntimeVersion("3.4"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
