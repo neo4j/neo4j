@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
-import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -63,7 +63,6 @@ import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
-import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.values.storable.TextValue;
@@ -106,7 +105,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
     private RemovalsCountingDiffSets nodes;
-    private RemovalsCountingRelationshipsDiffSets relationships;
+    private RemovalsCountingDiffSets relationships;
 
     private MutableObjectLongMap<IndexBackedConstraintDescriptor> createdConstraintIndexesByConstraint;
 
@@ -164,9 +163,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( relationships != null )
         {
-
-            for ( long relId : relationships.getAdded() )
+            final LongIterator added = relationships.getAdded().longIterator();
+            while ( added.hasNext() )
             {
+                final long relId = added.next();
                 if ( !relationshipVisit( relId, visitor::visitCreatedRelationship ) )
                 {
                     throw new IllegalStateException( "No RelationshipState for added relationship!" );
@@ -626,16 +626,16 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableRelationshipDiffSets<Long> addedAndRemovedRelationships()
+    public LongDiffSets addedAndRemovedRelationships()
     {
-        return ReadableRelationshipDiffSets.Empty.ifNull( relationships );
+        return relationships == null ? LongDiffSets.EMPTY : relationships;
     }
 
-    private RemovalsCountingRelationshipsDiffSets relationships()
+    private RemovalsCountingDiffSets relationships()
     {
         if ( relationships == null )
         {
-            relationships = new RemovalsCountingRelationshipsDiffSets();
+            relationships = new RemovalsCountingDiffSets();
         }
         return relationships;
     }
@@ -1083,35 +1083,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                 return true;
             }
             return super.remove( elem );
-        }
-
-        private boolean wasRemoved( long id )
-        {
-            return (removedFromAdded != null && removedFromAdded.contains( id )) || super.isRemoved( id );
-        }
-    }
-
-    /**
-     * This class works around the fact that create-delete in the same transaction is a no-op in {@link DiffSets},
-     * whereas we need to know total number of explicit removals.
-     */
-    private class RemovalsCountingRelationshipsDiffSets extends RelationshipDiffSets<Long>
-    {
-        private MutableLongSet removedFromAdded;
-
-        @Override
-        public boolean remove( Long elem )
-        {
-            if ( added( false ).remove( elem ) )
-            {
-                if ( removedFromAdded == null )
-                {
-                    removedFromAdded = collectionsFactory.newLongSet();
-                }
-                removedFromAdded.add( elem );
-                return true;
-            }
-            return removed( true ).add( elem );
         }
 
         private boolean wasRemoved( long id )

@@ -62,7 +62,7 @@ public interface ReadableTransactionState
     /**
      * Returns rels that have been added and removed in this tx.
      */
-    ReadableRelationshipDiffSets<Long> addedAndRemovedRelationships();
+    LongDiffSets addedAndRemovedRelationships();
 
     /**
      * Nodes that have had labels, relationships, or properties modified in this tx.

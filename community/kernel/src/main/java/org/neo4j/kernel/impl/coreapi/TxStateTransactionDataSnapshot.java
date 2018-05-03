@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -239,7 +238,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     }
                 }
             } );
-            for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
+            state.addedAndRemovedRelationships().getRemoved().each( relId ->
             {
                 Relationship relationshipProxy = relationship( relId );
                 try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
@@ -257,10 +256,13 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                                         properties.get().value() ) );
                             }
                         }
-
+                        catch ( PropertyKeyIdNotFoundKernelException e )
+                        {
+                            throw new IllegalStateException( "An entity that does not exist was modified.", e );
+                        }
                     }
                 }
-            }
+            } );
             for ( NodeState nodeState : state.modifiedNodes() )
             {
                 Iterator<StorageProperty> added = nodeState.addedAndChangedProperties();
@@ -346,16 +348,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         return ids.asLazy().collect( id -> new NodeProxy( proxySpi, id ) );
     }
 
-    private Iterable<Relationship> map2Rels( Iterable<Long> ids )
+    private Iterable<Relationship> map2Rels( LongIterable ids )
     {
-        return new IterableWrapper<Relationship, Long>( ids )
-        {
-            @Override
-            protected Relationship underlyingObjectToObject( Long id )
-            {
-                return relationship( id );
-            }
-        };
+        return ids.asLazy().collect( this::relationship );
     }
 
     private Value committedValue( NodeState nodeState, int property )
