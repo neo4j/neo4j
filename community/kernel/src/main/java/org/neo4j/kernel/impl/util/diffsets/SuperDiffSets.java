@@ -45,11 +45,6 @@ abstract class SuperDiffSets<T> implements SuperReadableDiffSets<T>
     private Set<T> removedElements;
     private Predicate<T> filter;
 
-    SuperDiffSets()
-    {
-        this( null, null );
-    }
-
     SuperDiffSets( Set<T> addedElements, Set<T> removedElements )
     {
         this.addedElements = addedElements;
@@ -129,17 +124,6 @@ abstract class SuperDiffSets<T> implements SuperReadableDiffSets<T>
     public Set<T> getAdded()
     {
         return resultSet( addedElements );
-    }
-
-    @Override
-    public Set<T> getAddedSnapshot()
-    {
-        if ( addedElements == null )
-        {
-            return Collections.emptySet();
-        }
-        //TODO VersionedHashMap can probably do this more efficiently, but it is hidden behind layers
-        return new HashSet<>( addedElements );
     }
 
     @Override
