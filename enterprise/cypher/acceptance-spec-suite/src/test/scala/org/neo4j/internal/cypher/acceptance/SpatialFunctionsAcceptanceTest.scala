@@ -588,6 +588,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     failWithError(equalityConfig + Configs.Procs, query, Seq("Collections containing point values with different CRS can not be stored in properties."))
   }
 
+  // FIXME accessors should also work in compiled runtime. Split query into two so that compiled picks it up.
   test("accessors on 2D cartesian points") {
     val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2}) AS p RETURN p.x, p.y, p.crs, p.srid")
     result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.crs" -> "cartesian", "p.srid" -> 7203)))

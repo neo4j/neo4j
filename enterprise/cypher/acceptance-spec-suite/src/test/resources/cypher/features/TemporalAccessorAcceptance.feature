@@ -22,9 +22,14 @@ Feature: TemporalAccessorAcceptance
 
   Scenario: Should provide accessors for date
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: date({year:1984, month:10, day:11}) })
+      """
     When executing query:
       """
-      WITH date({year:1984, month:10, day:11}) as d
+      MATCH (v:Val)
+      WITH v.prop as d
       RETURN d.year, d.quarter, d.month, d.week, d.weekYear, d.day, d.ordinalDay, d.weekDay, d.dayOfQuarter
       """
     Then the result should be, in order:
