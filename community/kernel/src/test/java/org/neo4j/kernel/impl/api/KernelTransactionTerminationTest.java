@@ -31,11 +31,11 @@ import java.util.function.Consumer;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -46,8 +46,8 @@ import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.DefaultCursors;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
@@ -363,7 +363,7 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit, AUTH_DISABLED, 0L, 1L );
+            begin( 42, 42, new SimpleStatementLocks( new NoOpClient() ), Type.implicit, AUTH_DISABLED, 0L, 1L );
             monitor.reset();
             return this;
         }

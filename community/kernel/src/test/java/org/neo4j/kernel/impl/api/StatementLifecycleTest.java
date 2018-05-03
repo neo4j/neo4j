@@ -39,7 +39,7 @@ public class StatementLifecycleTest
         StorageReader storageReader = mock( StorageReader.class );
         KernelStatement statement = getKernelStatement( transaction, storageReader );
         statement.acquire();
-        verify( storageReader ).acquire();
+        verify( storageReader ).beginStatement();
         statement.acquire();
 
         // when
@@ -48,7 +48,7 @@ public class StatementLifecycleTest
 
         // then
         statement.close();
-        verify( storageReader ).release();
+        verify( storageReader ).endStatement();
     }
 
     @Test
@@ -71,7 +71,7 @@ public class StatementLifecycleTest
         }
 
         // then
-        verify( storageReader ).release();
+        verify( storageReader ).endStatement();
     }
 
     private KernelStatement getKernelStatement( KernelTransactionImplementation transaction, StorageReader storageReader )

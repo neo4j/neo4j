@@ -44,9 +44,9 @@ import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransacti
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.locking.LockTracer
-import org.neo4j.kernel.impl.newapi.DefaultCursors
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.DefaultCursors
 import org.neo4j.storageengine.api.StorageReader
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP

@@ -61,6 +61,11 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.AllStoreHolder;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.DefaultCursors;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.DefaultNodeCursor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.DefaultPropertyCursor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.DefaultRelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
@@ -87,7 +92,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 public class OperationsLockTest
 {
     private KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-    private Operations operations;
+    private WriteOperations writeOperations;
     private final Locks.Client locks = mock( Locks.Client.class );
     private final Write write = mock( Write.class );
     private InOrder order;
@@ -132,10 +137,10 @@ public class OperationsLockTest
         allStoreHolder = new AllStoreHolder( storageReader,  transaction, cursors, mock(
                 ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
-        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ), storageReader,
+        writeOperations = new WriteOperations( allStoreHolder, mock( IndexTxStateUpdater.class ), storageReader,
                 transaction, new KernelToken( storageReader, transaction ), cursors, autoindexing,
                 constraintIndexCreator, mock( ConstraintSemantics.class ) );
-        operations.initialize();
+        writeOperations.initialize();
 
         this.order = inOrder( locks, txState, storageReader );
     }
@@ -143,14 +148,14 @@ public class OperationsLockTest
     @After
     public void tearDown()
     {
-        operations.release();
+        writeOperations.release();
     }
 
     @Test
     public void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
     {
         // when
-        long rId = operations.relationshipCreate( 1, 2, 3 );
+        long rId = writeOperations.relationshipCreate( 1, 2, 3 );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
@@ -168,7 +173,7 @@ public class OperationsLockTest
 
         {
             // WHEN
-            operations.relationshipCreate( lowId, relationshipLabel, highId );
+            writeOperations.relationshipCreate( lowId, relationshipLabel, highId );
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
@@ -180,7 +185,7 @@ public class OperationsLockTest
 
         {
             // WHEN
-            operations.relationshipCreate( highId, relationshipLabel, lowId );
+            writeOperations.relationshipCreate( highId, relationshipLabel, lowId );
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
@@ -204,7 +209,7 @@ public class OperationsLockTest
             setStoreRelationship( relationshipId, lowId, highId, relationshipLabel );
 
             // WHEN
-            operations.relationshipDelete( relationshipId );
+            writeOperations.relationshipDelete( relationshipId );
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
@@ -220,7 +225,7 @@ public class OperationsLockTest
             setStoreRelationship( relationshipId, highId, lowId, relationshipLabel );
 
             // WHEN
-            operations.relationshipDelete( relationshipId );
+            writeOperations.relationshipDelete( relationshipId );
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
@@ -239,7 +244,7 @@ public class OperationsLockTest
         when( nodeCursor.labels() ).thenReturn( LabelSet.NONE );
 
         // when
-        operations.nodeAddLabel( 123L, 456 );
+        writeOperations.nodeAddLabel( 123L, 456 );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123L );
@@ -256,7 +261,7 @@ public class OperationsLockTest
 
         // when
         txState.nodeDoCreate( 123 );
-        operations.nodeAddLabel( 123, 456 );
+        writeOperations.nodeAddLabel( 123, 456 );
 
         // then
         verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
@@ -271,7 +276,7 @@ public class OperationsLockTest
 
         // when
         int labelId = 456;
-        operations.nodeAddLabel( 123, labelId );
+        writeOperations.nodeAddLabel( 123, labelId );
 
         // then
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
@@ -291,7 +296,7 @@ public class OperationsLockTest
         when( propertyCursor.propertyValue() ).thenReturn( NO_VALUE );
 
         // when
-        operations.nodeSetProperty( 123, propertyKeyId, value );
+        writeOperations.nodeSetProperty( 123, propertyKeyId, value );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
@@ -310,7 +315,7 @@ public class OperationsLockTest
         when( propertyCursor.propertyValue() ).thenReturn( NO_VALUE );
 
         // when
-        operations.relationshipSetProperty( 123, propertyKeyId, value );
+        writeOperations.relationshipSetProperty( 123, propertyKeyId, value );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
@@ -329,7 +334,7 @@ public class OperationsLockTest
         Value value = Values.of( 9 );
 
         // when
-        operations.nodeSetProperty( 123, propertyKeyId, value );
+        writeOperations.nodeSetProperty( 123, propertyKeyId, value );
 
         // then
         verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
@@ -347,7 +352,7 @@ public class OperationsLockTest
         Value value = Values.of( 9 );
 
         // when
-        operations.relationshipSetProperty( 123, propertyKeyId, value );
+        writeOperations.relationshipSetProperty( 123, propertyKeyId, value );
 
         // then
         verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
@@ -364,7 +369,7 @@ public class OperationsLockTest
         when( allStoreHolder.nodeExistsInStore( 123 ) ).thenReturn( true );
 
         // WHEN
-        operations.nodeDelete(  123 );
+        writeOperations.nodeDelete(  123 );
 
         //THEN
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
@@ -379,7 +384,7 @@ public class OperationsLockTest
         when( transaction.hasTxStateWithChanges() ).thenReturn( true );
 
         // WHEN
-        operations.nodeDelete( 123 );
+        writeOperations.nodeDelete( 123 );
 
         //THEN
         verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
@@ -449,7 +454,7 @@ public class OperationsLockTest
         when( storageReader.indexGetForSchema( any() )).thenReturn( index );
 
         // when
-        operations.indexDrop( DefaultIndexReference.fromDescriptor( index ) );
+        writeOperations.indexDrop( DefaultIndexReference.fromDescriptor( index ) );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 0 );
@@ -464,7 +469,7 @@ public class OperationsLockTest
         when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when
-        operations.uniquePropertyConstraintCreate( descriptor );
+        writeOperations.uniquePropertyConstraintCreate( descriptor );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
@@ -479,7 +484,7 @@ public class OperationsLockTest
         when( storageReader.constraintExists( constraint ) ).thenReturn( true );
 
         // when
-        operations.constraintDrop( constraint );
+        writeOperations.constraintDrop( constraint );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
@@ -493,7 +498,7 @@ public class OperationsLockTest
         returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
 
-        operations.nodeDetachDelete( nodeId );
+        writeOperations.nodeDetachDelete( nodeId );
 
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
         order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
@@ -507,7 +512,7 @@ public class OperationsLockTest
         returnRelationships( transaction, false,
                 new TestRelationshipChain( nodeId ).outgoing( 1, 2L, 42 ) );
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
-        operations.nodeDetachDelete( nodeId );
+        writeOperations.nodeDetachDelete( nodeId );
 
         order.verify( locks ).acquireExclusive(
                 LockTracer.NONE, ResourceTypes.NODE, nodeId, 2L );

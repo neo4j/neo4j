@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexCursor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
 import static org.junit.Assert.assertFalse;

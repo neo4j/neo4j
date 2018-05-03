@@ -17,31 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.ExplicitClient;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor>
-        implements RelationshipExplicitIndexCursor, ExplicitClient
+class DefaultNodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor>
+        implements org.neo4j.internal.kernel.api.NodeExplicitIndexCursor, ExplicitClient
 {
-    private Read read;
+    private RecordStorageReader read;
     private int expectedSize;
-    private long relationship;
+    private long node;
     private float score;
-    private final DefaultRelationshipScanCursor scanCursor;
 
     private final DefaultCursors pool;
 
-    DefaultRelationshipExplicitIndexCursor( DefaultRelationshipScanCursor scanCursor,
-            DefaultCursors pool )
+    DefaultNodeExplicitIndexCursor( DefaultCursors pool )
     {
-        this.scanCursor = scanCursor;
         this.pool = pool;
+        node = NO_ID;
     }
 
     @Override
@@ -54,8 +50,7 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     @Override
     public boolean acceptEntity( long reference, float score )
     {
-        this.relationship = reference;
-        read.singleRelationship( reference, scanCursor );
+        this.node = reference;
         this.score = score;
         return true;
     }
@@ -66,7 +61,7 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
         return innerNext();
     }
 
-    public void setRead( Read read )
+    public void setRead( RecordStorageReader read )
     {
         this.read = read;
     }
@@ -84,45 +79,15 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     }
 
     @Override
-    public void relationship( RelationshipScanCursor cursor )
+    public void node( NodeCursor cursor )
     {
-        read.singleRelationship( relationship, cursor );
+        read.singleNode( node, cursor );
     }
 
     @Override
-    public void sourceNode( NodeCursor cursor )
+    public long nodeReference()
     {
-        read.singleNode( sourceNodeReference(), cursor );
-    }
-
-    @Override
-    public void targetNode( NodeCursor cursor )
-    {
-        read.singleNode( targetNodeReference(), cursor );
-    }
-
-    @Override
-    public int type()
-    {
-        return scanCursor.type();
-    }
-
-    @Override
-    public long sourceNodeReference()
-    {
-        return scanCursor.sourceNodeReference();
-    }
-
-    @Override
-    public long targetNodeReference()
-    {
-        return scanCursor.targetNodeReference();
-    }
-
-    @Override
-    public long relationshipReference()
-    {
-        return relationship;
+        return node;
     }
 
     @Override
@@ -131,7 +96,7 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
         if ( !isClosed() )
         {
             super.close();
-            relationship = NO_ID;
+            node = NO_ID;
             score = 0;
             expectedSize = 0;
             read = null;
@@ -151,17 +116,17 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     {
         if ( isClosed() )
         {
-            return "RelationshipExplicitIndexCursor[closed state]";
+            return "NodeExplicitIndexCursor[closed state]";
         }
         else
         {
-            return "RelationshipExplicitIndexCursor[relationship=" + relationship + ", expectedSize=" + expectedSize + ", score=" + score +
-                    " ,underlying record=" + super.toString() + " ]";
+            return "NodeExplicitIndexCursor[node=" + node + ", expectedSize=" + expectedSize + ", score=" + score +
+                    ", underlying record=" + super.toString() + " ]";
         }
     }
 
     public void release()
     {
-        scanCursor.release();
+        // nothing to do
     }
 }

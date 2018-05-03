@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.util.Set;
 
@@ -42,7 +42,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         this.pool = pool;
     }
 
-    void scan( int type, Read read )
+    void scan( int type, RecordStorageReader read )
     {
         if ( getId() != NO_ID )
         {
@@ -59,7 +59,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         this.addedRelationships = emptySet();
     }
 
-    void single( long reference, Read read )
+    void single( long reference, RecordStorageReader read )
     {
         if ( getId() != NO_ID )
         {

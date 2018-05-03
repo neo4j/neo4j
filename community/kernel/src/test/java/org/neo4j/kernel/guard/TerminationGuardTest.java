@@ -84,7 +84,7 @@ public class TerminationGuardTest extends KernelTransactionTestBase
         KernelTransactionImplementation transaction = newNotInitializedTransaction();
         StatementLocks statementLocks = mock( StatementLocks.class, Answers.RETURNS_DEEP_STUBS );
         when( statementLocks.pessimistic().getLockSessionId() ).thenReturn( 1 );
-        transaction.initialize( 1L, 2L, statementLocks, KernelTransaction.Type.implicit,
+        transaction.begin( 1L, 2L, statementLocks, KernelTransaction.Type.implicit,
                 AUTH_DISABLED, 1L, 1L );
         return transaction;
     }

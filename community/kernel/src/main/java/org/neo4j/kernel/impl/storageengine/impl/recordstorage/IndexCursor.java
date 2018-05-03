@@ -17,28 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 
-class GroupReferenceEncoding
+abstract class IndexCursor<T extends IndexProgressor>
 {
-    private static final long DIRECT = 0x1000_0000_0000_0000L;
+    private T progressor;
 
-    /**
-     * Encode a relationship id as a group reference.
-     */
-    static long encodeRelationship( long relationshipId )
+    final void initialize( T progressor )
     {
-        return relationshipId | DIRECT | References.FLAG_MARKER;
+        if ( this.progressor != null )
+        {
+            this.progressor.close();
+        }
+        this.progressor = progressor;
     }
 
-    /**
-     * Check whether a group reference is an encoded relationship id.
-     */
-    static boolean isRelationship( long groupReference )
+    final boolean innerNext()
     {
-        assert groupReference != NO_ID;
-        return (groupReference & References.FLAG_MASK) == DIRECT;
+        return progressor != null && progressor.next();
+    }
+
+    void close()
+    {
+        if ( progressor != null )
+        {
+            progressor.close();
+        }
+        progressor = null;
+    }
+
+    boolean isClosed()
+    {
+        return progressor == null;
     }
 }

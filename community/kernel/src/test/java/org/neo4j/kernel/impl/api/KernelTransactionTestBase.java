@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.kernel.impl.newapi.DefaultCursors;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.DefaultCursors;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -152,7 +152,7 @@ public class KernelTransactionTestBase
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
         SecurityContext securityContext = loginContext.authorize( s -> -1 );
-        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP,statementLocks, Type.implicit,
+        tx.begin( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP,statementLocks, Type.implicit,
                 securityContext, transactionTimeout, 1L );
         return tx;
     }

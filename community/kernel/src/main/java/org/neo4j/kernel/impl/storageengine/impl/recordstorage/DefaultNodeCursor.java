@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.newapi.Labels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -41,7 +42,7 @@ import static java.util.Collections.emptySet;
 
 class DefaultNodeCursor extends NodeRecord implements NodeCursor
 {
-    private Read read;
+    private RecordStorageReader read;
     private RecordCursor<DynamicRecord> labelCursor;
     private PageCursor pageCursor;
     private long next;
@@ -57,7 +58,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         this.pool = pool;
     }
 
-    void scan( Read read )
+    void scan( RecordStorageReader read )
     {
         if ( getId() != NO_ID )
         {
@@ -74,7 +75,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         this.addedNodes = emptySet();
     }
 
-    void single( long reference, Read read )
+    void single( long reference, RecordStorageReader read )
     {
         if ( getId() != NO_ID )
         {

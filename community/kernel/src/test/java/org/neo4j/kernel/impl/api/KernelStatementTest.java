@@ -60,7 +60,7 @@ public class KernelStatementTest
         }
 
         // then
-        verify( storeStatement ).release();
+        verify( storeStatement ).endStatement();
     }
 
     @Test( expected = NotInTransactionException.class )

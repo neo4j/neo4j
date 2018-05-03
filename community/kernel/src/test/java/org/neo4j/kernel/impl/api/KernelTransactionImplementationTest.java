@@ -386,7 +386,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         try ( KernelTransactionImplementation transaction = newTransaction( loginContext() ) )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( mock( Locks.Client.class ) );
-            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
+            transaction.begin( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
                     SecurityContext.AUTH_DISABLED, 0L, 1L );
             transaction.txState();
             try ( KernelStatement statement = transaction.acquireStatement() )
@@ -448,7 +448,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         // WHEN
         transaction.close();
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
+        transaction.begin( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
                 loginContext().authorize( s -> -1 ), 0L, 1L );
 
         // THEN
@@ -670,7 +670,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( s -> -1 ), 0L, 0L );
+        tx.begin( 42, 42, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( s -> -1 ), 0L, 0L );
 
         assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
 
@@ -690,7 +690,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit,
+        tx.begin( 42, 42, statementLocks, KernelTransaction.Type.implicit,
                 loginContext().authorize( s -> -1 ), 0L, 0L );
 
         assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
@@ -758,7 +758,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         for ( int i = 0; i < times; i++ )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( s -> -1 ), 0L, 0L );
+            tx.begin( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( s -> -1 ), 0L, 0L );
             tx.close();
         }
     }

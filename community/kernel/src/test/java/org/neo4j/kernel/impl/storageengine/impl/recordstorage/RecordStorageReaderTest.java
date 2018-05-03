@@ -45,7 +45,7 @@ public class RecordStorageReaderTest
         when( scanStore.get() ).thenReturn( scanReader );
         RecordStorageReader statement = new RecordStorageReader( null, null, null, null, MockedNeoStores.basicMockedNeoStores(), null, null,
                 mock( Supplier.class ), scanStore, LockService.NO_LOCK_SERVICE, mock( RecordStorageCommandCreationContext.class ) );
-        statement.acquire();
+        statement.beginStatement();
 
         // when
         LabelScanReader actualReader = statement.getLabelScanReader();
