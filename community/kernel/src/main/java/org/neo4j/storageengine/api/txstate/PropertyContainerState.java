@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Iterator;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.StorageProperty;
 
 import static java.util.Collections.emptyIterator;
@@ -43,15 +42,6 @@ public interface PropertyContainerState
     Iterator<Integer> removedProperties();
 
     Iterator<StorageProperty> addedAndChangedProperties();
-
-    void accept( Visitor visitor ) throws ConstraintValidationException;
-
-    interface Visitor
-    {
-        void visitPropertyChanges( long entityId, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationException;
-    }
 
     boolean hasPropertyChanges();
 
@@ -89,11 +79,6 @@ public interface PropertyContainerState
         public Iterator<StorageProperty> addedAndChangedProperties()
         {
             return emptyIterator();
-        }
-
-        @Override
-        public void accept( Visitor visitor )
-        {
         }
 
         @Override

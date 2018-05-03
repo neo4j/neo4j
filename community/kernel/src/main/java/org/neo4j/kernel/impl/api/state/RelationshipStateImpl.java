@@ -68,11 +68,6 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
         }
 
         @Override
-        public void accept( Visitor visitor )
-        {
-        }
-
-        @Override
         public boolean hasPropertyChanges()
         {
             return false;

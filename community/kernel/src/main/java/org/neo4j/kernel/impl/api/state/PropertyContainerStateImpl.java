@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
@@ -163,15 +162,6 @@ class PropertyContainerStateImpl implements PropertyContainerState
             return toPropertyIterator( addedProperties );
         }
         return Iterators.concat( toPropertyIterator( addedProperties ), toPropertyIterator( changedProperties ) );
-    }
-
-    @Override
-    public void accept( Visitor visitor ) throws ConstraintValidationException
-    {
-        if ( addedProperties != null || removedProperties != null || changedProperties != null )
-        {
-            visitor.visitPropertyChanges( id, addedProperties(), changedProperties(), removedProperties() );
-        }
     }
 
     @Override

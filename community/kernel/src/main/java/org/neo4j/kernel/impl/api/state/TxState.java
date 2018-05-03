@@ -28,9 +28,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
@@ -44,7 +42,6 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
@@ -61,14 +58,12 @@ import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.values.storable.TextValue;
@@ -162,7 +157,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void accept( final TxStateVisitor visitor )
             throws ConstraintValidationException, CreateConstraintFailureException
     {
-        // Created nodes
         if ( nodes != null )
         {
             nodes.getAdded().each( visitor::visitCreatedNode );
@@ -170,14 +164,17 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( relationships != null )
         {
-            // Created relationships
-            relationships.accept( createdRelationshipsVisitor( this, visitor ) );
 
-            // Deleted relationships
-            relationships.accept( deletedRelationshipsVisitor( visitor ) );
+            for ( long relId : relationships.getAdded() )
+            {
+                if ( !relationshipVisit( relId, visitor::visitCreatedRelationship ) )
+                {
+                    throw new IllegalStateException( "No RelationshipState for added relationship!" );
+                }
+            }
+            relationships.getRemoved().forEach( visitor::visitDeletedRelationship );
         }
 
-        // Deleted nodes
         if ( nodes != null )
         {
             nodes.getRemoved().each( visitor::visitDeletedNode );
@@ -185,27 +182,31 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         for ( NodeState node : modifiedNodes() )
         {
-            node.accept( nodeVisitor( visitor ) );
+            visitor.visitNodePropertyChanges( node.getId(), node.addedProperties(), node.changedProperties(), node.removedProperties() );
+
+            final ReadableDiffSets<Integer> labelDiffSets = node.labelDiffSets();
+            visitor.visitNodeLabelChanges( node.getId(), labelDiffSets.getAdded(), labelDiffSets.getRemoved() );
         }
 
         for ( RelationshipState rel : modifiedRelationships() )
         {
-            rel.accept( relVisitor( visitor ) );
+            visitor.visitRelPropertyChanges( rel.getId(), rel.addedProperties(), rel.changedProperties(), rel.removedProperties() );
         }
 
         if ( graphState != null )
         {
-            graphState.accept( graphPropertyVisitor( visitor ) );
+            visitor.visitGraphPropertyChanges( graphState.addedProperties(), graphState.changedProperties(), graphState.removedProperties() );
         }
 
         if ( indexChanges != null )
         {
-            indexChanges.accept( indexVisitor( visitor ) );
+            indexChanges.getAdded().forEach( visitor::visitAddedIndex );
+            indexChanges.getRemoved().forEach( visitor::visitRemovedIndex );
         }
 
         if ( constraintsChanges != null )
         {
-            constraintsChanges.accept( constraintsVisitor( visitor ) );
+            constraintsChanges.accept( new ConstraintDiffSetsVisitor( visitor ) );
         }
 
         if ( createdLabelTokens != null )
@@ -222,85 +223,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             createdRelationshipTypeTokens.forEachKeyValue( visitor::visitCreatedRelationshipTypeToken );
         }
-    }
-
-    private static DiffSetsVisitor<Long> deletedRelationshipsVisitor( final TxStateVisitor visitor )
-    {
-        return new DiffSetsVisitor.Adapter<Long>()
-        {
-            @Override
-            public void visitRemoved( Long id )
-            {
-                visitor.visitDeletedRelationship( id );
-            }
-        };
-    }
-
-    private static DiffSetsVisitor<Long> createdRelationshipsVisitor( ReadableTransactionState tx, final TxStateVisitor visitor )
-    {
-        return new RelationshipChangeVisitorAdapter( tx )
-        {
-            @Override
-            protected void visitAddedRelationship( long relationshipId, int type, long startNode, long endNode )
-                    throws ConstraintValidationException
-            {
-                visitor.visitCreatedRelationship( relationshipId, type, startNode, endNode );
-            }
-        };
-    }
-
-    private static DiffSetsVisitor<ConstraintDescriptor> constraintsVisitor( final TxStateVisitor visitor )
-    {
-        return new ConstraintDiffSetsVisitor( visitor );
-    }
-
-    private static DiffSetsVisitor<SchemaIndexDescriptor> indexVisitor( final TxStateVisitor visitor )
-    {
-        return new DiffSetsVisitor<SchemaIndexDescriptor>()
-        {
-            @Override
-            public void visitAdded( SchemaIndexDescriptor index )
-            {
-                visitor.visitAddedIndex( index );
-            }
-
-            @Override
-            public void visitRemoved( SchemaIndexDescriptor index )
-            {
-                visitor.visitRemovedIndex( index );
-            }
-        };
-    }
-
-    private static NodeState.Visitor nodeVisitor( final TxStateVisitor visitor )
-    {
-        return new NodeState.Visitor()
-        {
-            @Override
-            public void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
-                    throws ConstraintValidationException
-            {
-                visitor.visitNodeLabelChanges( nodeId, added, removed );
-            }
-
-            @Override
-            public void visitPropertyChanges( long entityId, Iterator<StorageProperty> added,
-                    Iterator<StorageProperty> changed, Iterator<Integer> removed )
-                    throws ConstraintValidationException
-            {
-                visitor.visitNodePropertyChanges( entityId, added, changed, removed );
-            }
-        };
-    }
-
-    private static PropertyContainerState.Visitor relVisitor( final TxStateVisitor visitor )
-    {
-        return visitor::visitRelPropertyChanges;
-    }
-
-    private static PropertyContainerState.Visitor graphPropertyVisitor( final TxStateVisitor visitor )
-    {
-        return ( entityId, added, changed, removed ) -> visitor.visitGraphPropertyChanges( added, changed, removed );
     }
 
     @Override

@@ -21,9 +21,6 @@ package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import java.util.Set;
-
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 
 /**
@@ -37,12 +34,6 @@ import org.neo4j.kernel.impl.newapi.RelationshipDirection;
  */
 public interface NodeState extends PropertyContainerState
 {
-    interface Visitor extends PropertyContainerState.Visitor
-    {
-        void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
-                throws ConstraintValidationException;
-    }
-
     ReadableDiffSets<Integer> labelDiffSets();
 
     /**
@@ -50,8 +41,6 @@ public interface NodeState extends PropertyContainerState
      * total count = count(INCOMING) + count(OUTGOING) + count(LOOPS)
      */
     int augmentDegree( RelationshipDirection direction, int degree, int typeId );
-
-    void accept( NodeState.Visitor visitor ) throws ConstraintValidationException;
 
     long getId();
 
