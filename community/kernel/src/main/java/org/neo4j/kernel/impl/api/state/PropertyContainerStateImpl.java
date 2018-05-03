@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
@@ -41,17 +40,6 @@ class PropertyContainerStateImpl implements PropertyContainerState
     private Map<Integer, Value> addedProperties;
     private Map<Integer, Value> changedProperties;
     private Set<Integer> removedProperties;
-
-    private final Predicate<StorageProperty> excludePropertiesWeKnowAbout = new Predicate<StorageProperty>()
-    {
-        @Override
-        public boolean test( StorageProperty item )
-        {
-            return (removedProperties == null || !removedProperties.contains( item.propertyKeyId() ))
-                    && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))
-                    && (changedProperties == null || !changedProperties.containsKey( item.propertyKeyId() ));
-        }
-    };
 
     PropertyContainerStateImpl( long id )
     {
