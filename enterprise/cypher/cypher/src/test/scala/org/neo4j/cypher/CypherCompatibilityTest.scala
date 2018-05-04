@@ -54,7 +54,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       db =>
         db.execute(s"CYPHER 2.3 $QUERY").asScala.toList shouldBe empty
         db.execute(s"CYPHER 3.1 $QUERY").asScala.toList shouldBe empty
-        db.execute(s"CYPHER 3.4 $QUERY").asScala.toList shouldBe empty
+        db.execute(s"CYPHER 3.5 $QUERY").asScala.toList shouldBe empty
     }
   }
 
@@ -85,14 +85,14 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       db =>
         val result = db.execute(QUERY)
         result.asScala.toList shouldBe empty
-        result.getExecutionPlanDescription.getArguments.get("version") should equal("CYPHER 3.4")
+        result.getExecutionPlanDescription.getArguments.get("version") should equal("CYPHER 3.5")
     }
   }
 
   test("should handle profile in compiled runtime") {
     runWithConfig() {
       db =>
-        assertProfiled(db, "CYPHER 3.4 runtime=compiled PROFILE MATCH (n) RETURN n")
+        assertProfiled(db, "CYPHER 3.5 runtime=compiled PROFILE MATCH (n) RETURN n")
     }
   }
 
@@ -101,7 +101,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       engine =>
         assertProfiled(engine, "CYPHER 2.3 runtime=interpreted PROFILE MATCH (n) RETURN n")
         assertProfiled(engine, "CYPHER 3.1 runtime=interpreted PROFILE MATCH (n) RETURN n")
-        assertProfiled(engine, "CYPHER 3.4 runtime=interpreted PROFILE MATCH (n) RETURN n")
+        assertProfiled(engine, "CYPHER 3.5 runtime=interpreted PROFILE MATCH (n) RETURN n")
     }
   }
 
@@ -110,7 +110,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       engine =>
         assertExplained(engine, "CYPHER 2.3 EXPLAIN MATCH (n) RETURN n")
         assertExplained(engine, "CYPHER 3.1 EXPLAIN MATCH (n) RETURN n")
-        assertExplained(engine, "CYPHER 3.4 EXPLAIN MATCH (n) RETURN n")
+        assertExplained(engine, "CYPHER 3.5 EXPLAIN MATCH (n) RETURN n")
     }
   }
 

@@ -72,9 +72,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
         val expected = List(
           s"cacheFlushDetected",
-          s"cacheMiss: CYPHER 3.4 $query",
-          s"cacheHit: CYPHER 3.4 $query",
-          s"cacheHit: CYPHER 3.4 $query")
+          s"cacheMiss: CYPHER 3.5 $query",
+          s"cacheHit: CYPHER 3.5 $query",
+          s"cacheHit: CYPHER 3.5 $query")
 
         actual should equal(expected)
     }
