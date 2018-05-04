@@ -117,7 +117,9 @@ case class CardinalityCostModel(config: CypherCompilerConfiguration) extends Cos
   def apply(plan: LogicalPlan, input: QueryGraphSolverInput): Cost = {
     val cost = plan match {
       case CartesianProduct(lhs, rhs) =>
-        apply(lhs, input) + lhs.solved.estimatedCardinality * apply(rhs, input)
+        val lhsCardinality = Cardinality.max(Cardinality.SINGLE, lhs.solved.estimatedCardinality)
+
+        apply(lhs, input) + lhsCardinality * apply(rhs, input)
 
       case ApplyVariants(lhs, rhs) =>
         val lCost = apply(lhs, input)

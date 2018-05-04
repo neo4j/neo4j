@@ -119,6 +119,25 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     new GeneratedTestValues().test(executeOnDbWithInitialNumberOfNodes(explainAndAssert, _))
   }
 
+  test("cartesian products should not hide costs") {
+    val aNode = createLabeledNode("A", "B", "C", "D")
+    (0 to 100) foreach { _ =>
+      relate(aNode, createLabeledNode("X"))
+    }
+    (0 to 100) foreach { _ =>
+      relate(aNode, createLabeledNode("Y"))
+    }
+
+    val query =
+      """MATCH (a:A:B:C:D)-->(b)
+        |WHERE id(a) = 0 AND b:X or b:Y
+        |RETURN *
+      """.stripMargin
+
+    val result = innerExecute(s"EXPLAIN $query")
+    result.executionPlanDescription() should not(useOperators("CartesianProduct"))
+  }
+
   private def testPlanNodeIndexSeek(query: String, assertNumberOfIndexSeeks: Int): Unit = {
     val explainAndAssertNodeIndexSeekIsUsed = () => {
       val result = innerExecute(s"EXPLAIN $query")
