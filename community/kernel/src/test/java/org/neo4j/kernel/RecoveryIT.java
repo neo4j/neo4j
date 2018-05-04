@@ -178,6 +178,9 @@ public class RecoveryIT
         }
         logProvider.assertContainsMessageContaining( "10% completed" );
         logProvider.assertContainsMessageContaining( "100% completed" );
+
+        database.shutdown();
+        recoveredDatabase.shutdown();
     }
 
     @Test
