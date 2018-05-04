@@ -35,7 +35,6 @@ import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
-import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
@@ -220,7 +219,10 @@ public class ImportCommand implements AdminCommand
             Optional<Path> fileArgument = allArguments.getOptionalPath( "f" );
             if ( fileArgument.isPresent() )
             {
-                allArguments.parse( parseFileArgumentList( fileArgument.get().toFile() ) );
+                // Parsing the arguments inside the -f file and reassigning the "args" parameter, because it's the one
+                // carrying the arguments to the actual importer.
+                args = parseFileArgumentList( fileArgument.get().toFile() );
+                allArguments.parse( args );
             }
             database = allArguments.get( ARG_DATABASE );
             additionalConfigFile = allArguments.getOptionalPath( "additional-config" );
@@ -241,6 +243,8 @@ public class ImportCommand implements AdminCommand
             Validators.CONTAINS_NO_EXISTING_DATABASE
                     .validate( config.get( GraphDatabaseSettings.database_path ) );
 
+            // The "args" parameter may have been reassigned from what came into this method.
+            // This can happen if there was a -f argument in it, where arguments inside that file gets loaded into it.
             Importer importer = importerFactory.getImporterForMode( mode, Args.parse( args ), config, outsideWorld );
             importer.doImport();
         }
