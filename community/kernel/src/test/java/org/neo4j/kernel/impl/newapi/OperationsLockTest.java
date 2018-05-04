@@ -134,8 +134,8 @@ public class OperationsLockTest
         allStoreHolder = new AllStoreHolder( storageReader,  transaction, cursors, mock(
                 ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
-        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ), storageReader,
-                transaction, new KernelToken( storageReader, transaction ), cursors, autoindexing,
+        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),storageReader,
+                 transaction, new KernelToken( storageReader, transaction ), cursors, autoindexing,
                 constraintIndexCreator, mock( ConstraintSemantics.class ) );
         operations.initialize();
 

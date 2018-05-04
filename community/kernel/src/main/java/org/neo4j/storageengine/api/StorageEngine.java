@@ -20,12 +20,15 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -44,6 +47,8 @@ public interface StorageEngine
      * {@link #apply(CommandsToApply, TransactionApplicationMode) applied} to this storage.
      */
     StorageReader newReader();
+
+    IndexProvider.Descriptor indexProviderForOrDefault( Optional<String> providerName );
 
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
