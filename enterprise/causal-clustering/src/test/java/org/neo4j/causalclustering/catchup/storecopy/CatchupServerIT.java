@@ -148,7 +148,8 @@ public class CatchupServerIT
         assertTransactionIdMatches( prepareStoreCopyResponse.lastTransactionId() );
 
         //and
-        assertIndexIdsAreEmpty( prepareStoreCopyResponse.getIndexIds() );
+        assertTrue( "Expected an empty set of ids. Found size " + prepareStoreCopyResponse.getIndexIds().size(),
+                prepareStoreCopyResponse.getIndexIds().isEmpty() );
     }
 
     @Test
@@ -275,11 +276,6 @@ public class CatchupServerIT
         List<String> expectedStoreFiles = getExpectedStoreFiles( neoStoreDataSource );
         List<String> givenFile = Arrays.stream( files ).map( File::getName ).collect( toList() );
         assertThat( givenFile, containsInAnyOrder( expectedStoreFiles.toArray( new String[givenFile.size()] ) ) );
-    }
-
-    private void assertIndexIdsAreEmpty( PrimitiveLongSet indexIds )
-    {
-        assertTrue( indexIds.isEmpty() );
     }
 
     private PrimitiveLongSet getExpectedIndexIds( NeoStoreDataSource neoStoreDataSource )

@@ -26,6 +26,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -129,11 +131,11 @@ public class PrepareStoreCopyFilesTest
     }
 
     @Test
-    public void shouldReturnEmptySetOfIds()
+    public void shouldReturnEmptySetOfIdsAndIgnoreIndexListing()
     {
-        PrimitiveLongSet expectedIndexIds = Primitive.longSet();
-        expectedIndexIds.add( 42 );
-        when( indexListingMock.getIndexIds() ).thenReturn( expectedIndexIds );
+        PrimitiveLongSet existingIds = Primitive.longSet();
+        existingIds.add( 42 );
+        when( indexListingMock.getIndexIds() ).thenReturn( existingIds );
 
         PrimitiveLongSet actualIndexIndexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
