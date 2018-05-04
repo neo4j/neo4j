@@ -82,7 +82,9 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       Row(comparisonCount, plan.id, planText, planTextWithCosts, cost, cardinality, winner.id == plan.id)
     }
 
-    rows ++= theseRows
+    val divider = Row(comparisonCount, Id(0), "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-", "", Cost(0), Cardinality.SINGLE, winner = false)
+
+    rows ++= (divider +: theseRows)
     comparisonCount += 1
   }
 
@@ -185,7 +187,6 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       "est cardinality",
       "winner"
     ))
-
   }
 
   case class Row(comparisonId: Int, planId: Id, planText: String, planCosts: String, cost: Cost, cardinality: Cardinality, winner: Boolean)

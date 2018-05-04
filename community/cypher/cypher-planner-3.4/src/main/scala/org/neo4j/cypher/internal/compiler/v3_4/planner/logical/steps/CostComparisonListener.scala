@@ -51,7 +51,7 @@ object SystemOutCostLogger extends CostComparisonListener {
     def stringTo(level: Int, plan: LogicalPlan): String = {
       def indent(level: Int, in: String): String = level match {
         case 0 => in
-        case _ => "\n" + "  " * level + in
+        case _ => System.lineSeparator() + "  " * level + in
       }
 
       val cost = context.cost(plan, context.input, cardinalities)
