@@ -548,13 +548,16 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         int toNanos = to.isSupported( NANO_OF_SECOND ) ? to.get( NANO_OF_SECOND ) : 0;
         nanos = toNanos - fromNanos;
 
-        boolean specialZeroSecondCase = seconds == 0 && from.get( SECOND_OF_MINUTE ) != to.get( SECOND_OF_MINUTE );
+        boolean differenceIsLessThanOneSecond = seconds == 0
+                && from.isSupported( SECOND_OF_MINUTE )
+                && to.isSupported( SECOND_OF_MINUTE )
+                && from.get( SECOND_OF_MINUTE ) != to.get( SECOND_OF_MINUTE );
 
-        if ( nanos < 0 && ( seconds > 0 || specialZeroSecondCase ) )
+        if ( nanos < 0 && ( seconds > 0 || differenceIsLessThanOneSecond ) )
         {
             nanos = NANOS_PER_SECOND + nanos;
         }
-        else if ( nanos > 0 && ( seconds < 0 || specialZeroSecondCase ) )
+        else if ( nanos > 0 && ( seconds < 0 || differenceIsLessThanOneSecond ) )
         {
             nanos = nanos - NANOS_PER_SECOND;
         }
