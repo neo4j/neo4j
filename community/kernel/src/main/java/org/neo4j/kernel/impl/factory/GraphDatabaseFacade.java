@@ -68,6 +68,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -264,9 +265,16 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             Write write = transaction.dataWrite();
             long nodeId = write.nodeCreate();
-            for ( Label label : labels )
+            TokenWrite tokenWrite = transaction.tokenWrite();
+            int[] labelIds = new int[labels.length];
+            String[] labelNames = new String[labels.length];
+            for ( int i = 0; i < labelNames.length; i++ )
             {
-                int labelId = transaction.tokenWrite().labelGetOrCreateForName( label.name() );
+                labelNames[i] = labels[i].name();
+            }
+            tokenWrite.labelGetOrCreateForNames( labelNames, labelIds );
+            for ( int labelId : labelIds )
+            {
                 try
                 {
                     write.nodeAddLabel( nodeId, labelId );

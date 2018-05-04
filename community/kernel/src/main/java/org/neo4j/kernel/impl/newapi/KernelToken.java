@@ -58,6 +58,28 @@ public class KernelToken implements Token
         return store.labelGetOrCreateForName( labelName );
     }
 
+
+    @Override
+    public void labelGetOrCreateForNames( String[] labelNames, int[] labelIds )
+            throws IllegalTokenNameException, TooManyLabelsException
+    {
+        ktx.assertOpen();
+        if ( labelNames.length != labelIds.length )
+        {
+            throw new IllegalArgumentException( "Name and id arrays have different length." );
+        }
+        for ( int i = 0; i < labelNames.length; i++ )
+        {
+            labelIds[i] = store.labelGetForName( checkValidTokenName( labelNames[i] ) );
+            if ( labelIds[i] == TokenHolder.NO_ID )
+            {
+                ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
+                store.labelGetOrCreateForNames( labelNames, labelIds );
+                return;
+            }
+        }
+    }
+
     @Override
     public void labelCreateForName( String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException
     {

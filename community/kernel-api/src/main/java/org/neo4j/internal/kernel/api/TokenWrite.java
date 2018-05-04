@@ -31,6 +31,20 @@ public interface TokenWrite
     int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException;
 
     /**
+     * Get or create the label token ids for each of the given {@code labelNames}, and store them at the corresponding
+     * index in the given {@code labelIds} array.
+     *
+     * This is effectively a batching version of {@link #labelGetOrCreateForName(String)}.
+     *
+     * @param labelNames The array of label names for which to resolve or create their id.
+     * @param labelIds The array into which the resulting token ids will be stored.
+     * @throws TooManyLabelsException if too many labels would bve created by this call, compared to the token id space
+     * available.
+     */
+    void labelGetOrCreateForNames( String[] labelNames, int[] labelIds )
+            throws IllegalTokenNameException, TooManyLabelsException;
+
+    /**
      * Creates a label with the given id
      * @param labelName the name of the label
      * @param id the id of the label
