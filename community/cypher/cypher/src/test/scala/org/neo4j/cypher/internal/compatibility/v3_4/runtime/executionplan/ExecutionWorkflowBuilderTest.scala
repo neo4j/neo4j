@@ -52,7 +52,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
     builder.setQueryContext(context)
 
     // THEN
-    val result = build(builder, NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
+    val result = build(builder, NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, readOnly = false)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
@@ -68,7 +68,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
     builder.setQueryContext(context)
 
     // THEN
-    val result = build(builder, NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
+    val result = build(builder, NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, readOnly = true)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
@@ -87,7 +87,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
     builder.setQueryContext(context)
 
     // THEN
-    val result = build(builder, ExplainMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
+    val result = build(builder, ExplainMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, readOnly = true)
     result shouldBe a [ExplainExecutionResult]
   }
 
@@ -95,6 +95,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
                     planType: ExecutionMode,
                     params: MapValue,
                     notificationLogger: InternalNotificationLogger,
-                    runtimeName: RuntimeName) =
-    builder.build(planType, params, notificationLogger, PlannerName, runtimeName, readOnly = true, new StubCardinalities)
+                    runtimeName: RuntimeName,
+                    readOnly: Boolean) =
+    builder.build(planType, params, notificationLogger, PlannerName, runtimeName, readOnly, new StubCardinalities)
 }
