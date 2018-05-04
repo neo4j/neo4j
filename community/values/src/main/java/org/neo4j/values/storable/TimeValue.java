@@ -112,6 +112,11 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         return now( clock.withZone( parseZoneName( timezone ) ) );
     }
 
+    public static TimeValue now( Clock clock, Supplier<ZoneId> defaultZone )
+    {
+        return now( clock.withZone( defaultZone.get() ) );
+    }
+
     public static TimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
     {
         return StructureBuilder.build( builder( defaultZone ), map );
@@ -381,7 +386,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     private static final String OFFSET_PATTERN = "(?<zone>Z|[+-](?<zoneHour>[0-9]{2})(?::?(?<zoneMinute>[0-9]{2}))?)";
     static final String TIME_PATTERN = LocalTimeValue.TIME_PATTERN + "(?:" + OFFSET_PATTERN + ")?";
     private static final Pattern PATTERN = Pattern.compile( "(?:T)?" + TIME_PATTERN );
-    private static final Pattern OFFSET = Pattern.compile( OFFSET_PATTERN );
+    static final Pattern OFFSET = Pattern.compile( OFFSET_PATTERN );
 
     static ZoneOffset parseOffset( String offset )
     {

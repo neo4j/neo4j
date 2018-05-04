@@ -21,6 +21,8 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.neo4j.configuration.Description;
@@ -45,6 +47,7 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
+import org.neo4j.values.storable.DateTimeValue;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -382,7 +385,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
             options( Level.class ), "INFO" );
 
-    @Description( "Database timezone." )
+    @Description( "Database timezone. This setting influences which timezone the logs use." )
     public static final Setting<LogTimeZone> db_timezone =
             setting( "dbms.db.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
 
@@ -391,6 +394,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     @ReplacedBy( "dbms.db.timezone" )
     public static final Setting<LogTimeZone> log_timezone =
             setting( "dbms.logs.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
+
+    @Description( "Database timezone for temporal functions. All Time and DateTime values that are created without " +
+            "an explicit timezone will use the configured default timezone." )
+    public static final Setting<ZoneId> db_temporal_timezone =
+            setting( "db.temporal.timezone", DateTimeValue::parseZoneOffsetOrZoneName, ZoneOffset.UTC.toString() );
 
     @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
     @Internal

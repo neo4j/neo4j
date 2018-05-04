@@ -36,15 +36,15 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDate;
 @Description( "Create a Date instant." )
 class DateFunction extends TemporalFunction<DateValue>
 {
-    DateFunction()
+    DateFunction( Supplier<ZoneId> defaultZone )
     {
-        super( NTDate );
+        super( NTDate, defaultZone );
     }
 
     @Override
-    protected DateValue now( Clock clock, String timezone )
+    protected DateValue now( Clock clock, String timezone, Supplier<ZoneId> defaultZone )
     {
-        return timezone == null ? DateValue.now( clock ) : DateValue.now( clock, timezone );
+        return timezone == null ? DateValue.now( clock, defaultZone ) : DateValue.now( clock, timezone );
     }
 
     @Override
