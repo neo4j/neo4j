@@ -91,7 +91,10 @@ Feature: TemporalToStringAcceptance
               duration({seconds: -2, milliseconds: 1}),
               duration({seconds: -2, milliseconds: -1}),
               duration({days: 1, milliseconds: 1}),
-              duration({days: 1, milliseconds: -1})
+              duration({days: 1, milliseconds: -1}),
+              duration({seconds: 60, milliseconds: -1}),
+              duration({seconds: -60, milliseconds: 1}),
+              duration({seconds: -60, milliseconds: -1})
               ] as d
       RETURN toString(d) as ts, duration(toString(d)) = d as b
       """
@@ -105,6 +108,9 @@ Feature: TemporalToStringAcceptance
       | 'PT-2.001S'                     | true |
       | 'P1DT0.001S'                    | true |
       | 'P1DT-0.001S'                   | true |
+      | 'PT59.999S'                     | true |
+      | 'PT-59.999S'                    | true |
+      | 'PT-1M-0.001S'                  | true |
     And no side effects
 
   Scenario: Should serialize timezones correctly

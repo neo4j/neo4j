@@ -68,13 +68,54 @@ public class DurationValueTest
         // then
         assertEquals( "+nanos", 500_000_000, pos.get( NANOS ) );
         assertEquals( "+seconds", 1, pos.get( SECONDS ) );
-        assertEquals( "-nanos", -400_000_000, neg.get( NANOS ) );
-        assertEquals( "-seconds", -1, neg.get( SECONDS ) );
+        assertEquals( "+nanos", 600_000_000, neg.get( NANOS ) );
+        assertEquals( "-seconds", -2, neg.get( SECONDS ) );
 
         assertEquals( "+nanos", 0, evenPos.get( NANOS ) );
         assertEquals( "+seconds", 1, evenPos.get( SECONDS ) );
-        assertEquals( "-nanos", 0, evenNeg.get( NANOS ) );
+        assertEquals( "+nanos", 0, evenNeg.get( NANOS ) );
         assertEquals( "-seconds", -1, evenNeg.get( SECONDS ) );
+    }
+
+    @Test
+    public void shouldFormatDurationToString()
+    {
+        testDurationToString( 1, 0, "PT1S" );
+        testDurationToString( -1, 0, "PT-1S" );
+
+        testDurationToString( 59, -500_000_000, "PT58.5S" );
+        testDurationToString( 59, 500_000_000, "PT59.5S" );
+        testDurationToString( 60, -500_000_000, "PT59.5S" );
+        testDurationToString( 60, 500_000_000, "PT1M0.5S" );
+        testDurationToString( 61, -500_000_000, "PT1M0.5S" );
+
+        testDurationToString( -59, 500_000_000, "PT-58.5S" );
+        testDurationToString( -59, -500_000_000, "PT-59.5S" );
+        testDurationToString( -60, 500_000_000, "PT-59.5S" );
+        testDurationToString( -60, -500_000_000, "PT-1M-0.5S" );
+        testDurationToString( -61, 500_000_000, "PT-1M-0.5S" );
+        testDurationToString( -61, -500_000_000, "PT-1M-1.5S" );
+
+        testDurationToString( 0, 5, "PT0.000000005S" );
+        testDurationToString( 0, -5, "PT-0.000000005S" );
+        testDurationToString( 0, 999_999_999, "PT0.999999999S" );
+        testDurationToString( 0, -999_999_999, "PT-0.999999999S" );
+
+        testDurationToString( 1, 5, "PT1.000000005S" );
+        testDurationToString( -1, -5, "PT-1.000000005S" );
+        testDurationToString( 1, -5, "PT0.999999995S" );
+        testDurationToString( -1, 5, "PT-0.999999995S" );
+        testDurationToString( 1, 999999999, "PT1.999999999S" );
+        testDurationToString( -1, -999999999, "PT-1.999999999S" );
+        testDurationToString( 1, -999999999, "PT0.000000001S" );
+        testDurationToString( -1, 999999999, "PT-0.000000001S" );
+
+        testDurationToString( -78036, -143000000, "PT-21H-40M-36.143S" );
+    }
+
+    private void testDurationToString( long seconds, int nanos, String expectedValue )
+    {
+        assertEquals( expectedValue, duration( 0, 0, seconds, nanos ).prettyPrint() );
     }
 
     @Test
@@ -85,13 +126,20 @@ public class DurationValueTest
         DurationValue neg = duration( 0, 0, -5, 1_500_000_000 );
         DurationValue x = duration( 0, 0, 1, -1_400_000_000 );
 
+        DurationValue y = duration( 0, 0, -59, -500_000_000 );
+        DurationValue y2 = duration( 0, 0, -60, 500_000_000 );
+
         // then
         assertEquals( "+nanos", 600_000_000, pos.get( NANOS ) );
         assertEquals( "+seconds", 3, pos.get( SECONDS ) );
-        assertEquals( "-nanos", -500_000_000, neg.get( NANOS ) );
-        assertEquals( "-seconds", -3, neg.get( SECONDS ) );
-        assertEquals( "-nanos", -400_000_000, x.get( NANOS ) );
-        assertEquals( "-seconds", 0, x.get( SECONDS ) );
+        assertEquals( "+nanos", 500_000_000, neg.get( NANOS ) );
+        assertEquals( "-seconds", -4, neg.get( SECONDS ) );
+        assertEquals( "+nanos", 600_000_000, x.get( NANOS ) );
+        assertEquals( "-seconds", -1, x.get( SECONDS ) );
+        assertEquals( "+nanos", 500_000_000, y.get( NANOS ) );
+        assertEquals( "-seconds", -60, y.get( SECONDS ) );
+        assertEquals( "+nanos", 500_000_000, y2.get( NANOS ) );
+        assertEquals( "-seconds", -60, y2.get( SECONDS ) );
     }
 
     @Test
@@ -107,6 +155,10 @@ public class DurationValueTest
         assertEquals( "PT0.000000001S", prettyPrint( 0, 0, 0, 1 ) );
         assertEquals( "PT0.1S", prettyPrint( 0, 0, 0, 100_000_000 ) );
         assertEquals( "PT0S", prettyPrint( 0, 0, 0, 0 ) );
+        assertEquals( "PT1S", prettyPrint( 0, 0, 0, 1_000_000_000 ) );
+        assertEquals( "PT-1S", prettyPrint( 0, 0, 0, -1_000_000_000 ) );
+        assertEquals( "PT1.5S", prettyPrint( 0, 0, 1, 500_000_000 ) );
+        assertEquals( "PT-1.4S", prettyPrint( 0, 0, -1, -400_000_000 ) );
     }
 
     private static String prettyPrint( long months, long days, long seconds, int nanos )
