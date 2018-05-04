@@ -91,6 +91,7 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
     private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
     private volatile Map<MemberId,RoleInfo> coreRoles = Collections.emptyMap();
+    private volatile Optional<LeaderInfo> stepDownInfo = Optional.empty();
 
     private Thread startingThread;
     private volatile boolean stopped;
@@ -134,8 +135,9 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     @Override
     public void setLeader( LeaderInfo leaderInfo, String dbName )
     {
-        if ( this.leaderInfo.term() < leaderInfo.term() )
+        if ( this.leaderInfo.term() < leaderInfo.term() && localDBName.equals( dbName ) )
         {
+            log.info( "Leader %s updating leader info for database %s and term %s", myself, localDBName, leaderInfo.term() );
             this.leaderInfo = leaderInfo;
         }
     }
@@ -143,12 +145,16 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     @Override
     public void handleStepDown( long term, String dbName )
     {
-        boolean wasLeaderForTerm = Objects.equals( myself, leaderInfo.memberId() ) && term == leaderInfo.term();
-        if ( wasLeaderForTerm )
+        boolean wasLeaderForDbAndTerm =
+                Objects.equals( myself, leaderInfo.memberId() ) &&
+                localDBName.equals( dbName ) &&
+                term == leaderInfo.term();
+
+        if ( wasLeaderForDbAndTerm )
         {
             log.info( "Step down event detected. This topology member, with MemberId %s, was leader in term %s, now moving " +
                     "to follower.", myself, leaderInfo.term() );
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo.stepDown(), dbName );
+            stepDownInfo = Optional.of( leaderInfo.stepDown() );
         }
     }
 
@@ -367,9 +373,10 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
 
         if ( leaderInfo.memberId() != null && leaderInfo.memberId().equals( myself ) )
         {
-            log.info( "Leader %s updating leader info for database %s and term %s", myself, localDBName, leaderInfo.term() );
             HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName );
         }
+
+        stepDownInfo.ifPresent( s -> HazelcastClusterTopology.casLeaders( hazelcastInstance, s, localDBName ) );
 
         coreRoles = HazelcastClusterTopology.getCoreRoles( hazelcastInstance, allCoreServers().members().keySet() );
     }
