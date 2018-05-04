@@ -85,14 +85,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     public static DurationValue duration( long months, long days, long seconds, long nanos )
     {
-        seconds += nanos / NANOS_PER_SECOND;
-        nanos %= NANOS_PER_SECOND;
-        // normalize nanos to be between 0 and NANOS_PER_SECOND-1
-        if ( nanos < 0 )
-        {
-            seconds -= 1;
-            nanos += NANOS_PER_SECOND;
-        }
         return newDuration( months, days, seconds, (int) nanos );
     }
 
