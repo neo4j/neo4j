@@ -631,7 +631,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
                 return false;
             }
             transaction.dataRead().singleNode( nodeId, nodes );
-            return nodes.next() && nodes.labels().contains( labelId );
+            return nodes.next() && nodes.hasLabel( labelId );
         }
     }
 

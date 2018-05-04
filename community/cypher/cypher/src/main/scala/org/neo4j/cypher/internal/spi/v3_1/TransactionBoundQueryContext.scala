@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.interpreted.{JavaConversionSupport, ResourceManager}
+import org.neo4j.cypher.internal.runtime.interpreted.ResourceManager
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.{CursorIterator, PrimitiveCursorIterator}
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -175,7 +175,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
     val cursor = nodeCursor
     reads().singleNode(node, cursor)
     if (!cursor.next()) false
-    else cursor.labels().contains(label)
+    else cursor.hasLabel(label)
   }
 
 

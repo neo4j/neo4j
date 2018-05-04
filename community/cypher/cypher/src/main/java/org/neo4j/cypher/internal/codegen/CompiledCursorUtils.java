@@ -96,7 +96,7 @@ public final class CompiledCursorUtils
         }
         singleNode( read, nodeCursor, node );
 
-        return nodeCursor.labels().contains( label );
+        return nodeCursor.hasLabel( label );
     }
 
     public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
