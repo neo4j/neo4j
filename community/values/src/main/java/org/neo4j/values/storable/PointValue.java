@@ -418,7 +418,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     /**
      * For accessors from cypher.
      */
-    public AnyValue get( String fieldName )
+    public Value get( String fieldName )
     {
         switch ( fieldName.toLowerCase() )
         {
