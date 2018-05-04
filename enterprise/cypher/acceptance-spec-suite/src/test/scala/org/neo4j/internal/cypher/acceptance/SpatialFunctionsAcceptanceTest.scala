@@ -589,33 +589,53 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("accessors on 2D cartesian points") {
-    val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2}) AS p RETURN p.x, p.y, p.crs, p.srid")
-    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.crs" -> "cartesian", "p.srid" -> 7203)))
+    // given
+    graph.execute("CREATE (:P {p : point({x: 1, y: 2})})")
 
-    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.latitude", Seq("Field: latitude is not available"))
-    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.z", Seq("Field: z is not available"))
+    // when
+    val result = executeWith(Configs.All - Configs.OldAndRule, "MATCH (n:P) WITH n.p AS p RETURN p.x, p.y, p.crs, p.srid")
+
+    // then
+    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.crs" -> "cartesian", "p.srid" -> 7203)))
+    failWithError(Configs.All - Configs.OldAndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.latitude", Seq("Field: latitude is not available"))
+    failWithError(Configs.All - Configs.OldAndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.z", Seq("Field: z is not available"))
   }
 
   test("accessors on 3D cartesian points") {
-    val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2, z:3}) AS p RETURN p.x, p.y, p.z, p.crs, p.srid")
-    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0, "p.crs" -> "cartesian-3d", "p.srid" -> 9157)))
+    // given
+    graph.execute("CREATE (:P {p : point({x: 1, y: 2, z:3})})")
 
-    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2, z:3}) AS p RETURN p.latitude", Seq("Field: latitude is not available"))
+    // when
+    val result = executeWith(Configs.All - Configs.OldAndRule, "MATCH (n:P) WITH n.p AS p RETURN p.x, p.y, p.z, p.crs, p.srid")
+
+    // then
+    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0, "p.crs" -> "cartesian-3d", "p.srid" -> 9157)))
+    failWithError(Configs.All - Configs.OldAndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.latitude", Seq("Field: latitude is not available"))
   }
 
   test("accessors on 2D geographic points") {
-    val result = executeWith(latestPointConfig, "WITH point({longitude: 1, latitude: 2}) AS p RETURN p.longitude, p.latitude, p.crs, p.x, p.y, p.srid")
-    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.crs" -> "wgs-84", "p.x" -> 1.0, "p.y" -> 2.0, "p.srid" -> 4326)))
+    // given
+    graph.execute("CREATE (:P {p : point({longitude: 1, latitude: 2})})")
 
-    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.height", Seq("Field: height is not available"))
-    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.z", Seq("Field: z is not available"))
+    // when
+    val result = executeWith(Configs.All - Configs.OldAndRule,  "MATCH (n:P) WITH n.p AS p RETURN p.longitude, p.latitude, p.crs, p.x, p.y, p.srid")
+
+    // then
+    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.crs" -> "wgs-84", "p.x" -> 1.0, "p.y" -> 2.0, "p.srid" -> 4326)))
+    failWithError(Configs.All - Configs.OldAndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.height", Seq("Field: height is not available"))
+    failWithError(Configs.All - Configs.OldAndRule + Configs.Procs, "MATCH (n:P) WITH n.p AS p RETURN p.z", Seq("Field: z is not available"))
   }
 
   test("accessors on 3D geographic points") {
-    val result = executeWith(latestPointConfig,
-      "WITH point({longitude: 1, latitude: 2, height:3}) AS p RETURN p.longitude, p.latitude, p.height, p.crs, p.x, p.y, p.z, p.srid")
+    // given
+    graph.execute("CREATE (:P {p : point({longitude: 1, latitude: 2, height:3})})")
+
+    // when
+    val result = executeWith(Configs.All - Configs.OldAndRule,
+                             "MATCH (n:P) WITH n.p AS p RETURN p.longitude, p.latitude, p.height, p.crs, p.x, p.y, p.z, p.srid")
+
+    // then
     result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.height" -> 3.0, "p.crs" -> "wgs-84-3d", "p.srid" -> 4979,
                                      "p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0)))
   }
-
 }
