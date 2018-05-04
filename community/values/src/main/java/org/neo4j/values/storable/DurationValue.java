@@ -87,12 +87,8 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
         seconds += nanos / NANOS_PER_SECOND;
         nanos %= NANOS_PER_SECOND;
-        if ( seconds < 0 && nanos > 0 )
-        {
-            seconds += 1;
-            nanos -= NANOS_PER_SECOND;
-        }
-        else if ( seconds > 0 && nanos < 0 )
+        // normalize nanos to be between 0 and NANOS_PER_SECOND-1
+        if ( nanos < 0 )
         {
             seconds -= 1;
             nanos += NANOS_PER_SECOND;
@@ -214,12 +210,8 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
         seconds += nanos / NANOS_PER_SECOND;
         nanos %= NANOS_PER_SECOND;
-        if ( seconds < 0 && nanos > 0 )
-        {
-            seconds += 1;
-            nanos -= NANOS_PER_SECOND;
-        }
-        else if ( seconds > 0 && nanos < 0 )
+        // normalize nanos to be between 0 and NANOS_PER_SECOND-1
+        if ( nanos < 0 )
         {
             seconds -= 1;
             nanos += NANOS_PER_SECOND;
@@ -614,28 +606,40 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         append( str, days, 'D' );
         if ( seconds != 0 || nanos != 0 )
         {
+            boolean negative = seconds < 0;
+            long s = seconds;
+            int n = nanos;
+            if ( negative && nanos != 0 )
+            {
+                s++;
+                n -= NANOS_PER_SECOND;
+            }
             str.append( 'T' );
-            long s = seconds % 3600;
-            append( str, seconds / 3600, 'H' );
+            append( str, s / 3600, 'H' );
+            s %= 3600;
             append( str, s / 60, 'M' );
             s %= 60;
             if ( s != 0 )
             {
-                str.append( s );
-                if ( nanos != 0 )
+                if ( negative && s >= 0 && n != 0 )
                 {
-                    nanos( str );
+                    str.append( '-' );
+                }
+                str.append( s );
+                if ( n != 0 )
+                {
+                    nanos( str, n );
                 }
                 str.append( 'S' );
             }
-            else if ( nanos != 0 )
+            else if ( n != 0 )
             {
-                if ( nanos < 0 )
+                if ( negative )
                 {
                     str.append( '-' );
                 }
                 str.append( '0' );
-                nanos( str );
+                nanos( str, n );
                 str.append( 'S' );
             }
         }
@@ -646,7 +650,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return str.toString();
     }
 
-    private void nanos( StringBuilder str )
+    private void nanos( StringBuilder str, int nanos )
     {
         str.append( '.' );
         int n = nanos < 0 ? -nanos : nanos;

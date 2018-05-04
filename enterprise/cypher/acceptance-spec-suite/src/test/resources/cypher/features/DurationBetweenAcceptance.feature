@@ -373,7 +373,7 @@ Feature: DurationBetweenAcceptance
       | 'PT0.4S'      |
       | 'PT0.6S'      |
       | 'PT10M0.6S'   |
-      | 'PT-9M-59.4S' |
+      | 'PT-10M0.6S'  |
       | 'PT-0.3S'     |
       | 'PT9M59.7S'   |
       | 'PT-10M-0.3S' |
