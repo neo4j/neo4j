@@ -134,7 +134,7 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
         |RETURN *
       """.stripMargin
 
-    val result = innerExecute(s"EXPLAIN $query")
+    val result = execute(s"EXPLAIN $query")
     result.executionPlanDescription() should not(useOperators("CartesianProduct"))
   }
 
