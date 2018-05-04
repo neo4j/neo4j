@@ -26,6 +26,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -42,6 +44,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -122,21 +125,21 @@ public class PrepareStoreCopyFilesTest
     @Test
     public void shouldHandleEmptyDescriptors()
     {
-        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getIndexIds();
+        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
         assertEquals( 0, indexIds.size() );
     }
 
     @Test
-    public void shouldReturnExpectedDescriptors()
+    public void shouldReturnEmptySetOfIdsAndIgnoreIndexListing()
     {
-        PrimitiveLongSet expectedIndexIds = Primitive.longSet();
-        expectedIndexIds.add( 42 );
-        when( indexListingMock.getIndexIds() ).thenReturn( expectedIndexIds );
+        PrimitiveLongSet existingIds = Primitive.longSet();
+        existingIds.add( 42 );
+        when( indexListingMock.getIndexIds() ).thenReturn( existingIds );
 
-        PrimitiveLongSet actualIndexIndexIds = prepareStoreCopyFiles.getIndexIds();
+        PrimitiveLongSet actualIndexIndexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
-        assertEquals( expectedIndexIds, actualIndexIndexIds );
+        assertTrue( actualIndexIndexIds.isEmpty() );
     }
 
     private String getRelativePath( StoreFileMetadata f )

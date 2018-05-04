@@ -25,14 +25,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreFileIndexListing;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.io.fs.FileUtils.relativePath;
@@ -51,21 +50,26 @@ public class PrepareStoreCopyFiles implements AutoCloseable
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
 
-    PrimitiveLongSet getIndexIds()
+    PrimitiveLongSet getNonAtomicIndexIds()
     {
-        NeoStoreFileListing neoStoreFileListing = neoStoreDataSource.getNeoStoreFileListing();
-        NeoStoreFileIndexListing indexListing = neoStoreFileListing.getNeoStoreFileIndexListing();
-        return indexListing.getIndexIds();
+        return Primitive.longSet();
     }
 
     StoreResource[] getAtomicFilesSnapshot() throws IOException
     {
         ResourceIterator<StoreFileMetadata> neoStoreFilesIterator =
                 closeablesListener.add( neoStoreDataSource.getNeoStoreFileListing().builder().excludeAll().includeNeoStoreFiles().build() );
-        ResourceIterator<StoreFileMetadata> explicitIndexIterator = closeablesListener.add(
-                neoStoreDataSource.getNeoStoreFileListing().builder().excludeAll().includeExplicitIndexStoreStoreFiles().includeAdditionalProviders().build() );
+        ResourceIterator<StoreFileMetadata> indexIterator = closeablesListener.add( neoStoreDataSource
+                .getNeoStoreFileListing()
+                .builder()
+                .excludeAll()
+                .includeExplicitIndexStoreStoreFiles()
+                .includeAdditionalProviders()
+                .includeLabelScanStoreFiles()
+                .includeSchemaIndexStoreFiles()
+                .build() );
 
-        return Stream.concat( neoStoreFilesIterator.stream().filter( isCountFile() ), explicitIndexIterator.stream() ).map( mapToStoreResource() ).toArray(
+        return Stream.concat( neoStoreFilesIterator.stream().filter( isCountFile() ), indexIterator.stream() ).map( mapToStoreResource() ).toArray(
                 StoreResource[]::new );
     }
 
