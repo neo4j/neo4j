@@ -34,54 +34,108 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public final class MapValue extends VirtualValue
+public abstract class MapValue extends VirtualValue
 {
-    private final Map<String,AnyValue> map;
-
-    MapValue( Map<String,AnyValue> map )
+    final static class MapWrappingMapValue extends MapValue
     {
-        this.map = map;
-    }
+        private final Map<String,AnyValue> map;
 
-    @Override
-    public boolean equals( VirtualValue other )
-    {
-        if ( other == null || other.getClass() != MapValue.class )
+        MapWrappingMapValue( Map<String,AnyValue> map )
         {
-            return false;
+            this.map = map;
         }
-        MapValue that = (MapValue) other;
-        return map.equals( that.map );
+
+        @Override
+        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+        {
+            writer.beginMap( map.size() );
+            for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
+            {
+                writer.writeString( entry.getKey() );
+                entry.getValue().writeTo( writer );
+            }
+            writer.endMap();
+        }
+
+        public ListValue keys()
+        {
+            String[] strings = keySet().toArray( new String[map.size()] );
+            return VirtualValues.fromArray( Values.stringArray( strings ) );
+        }
+
+        public Set<String> keySet()
+        {
+            return map.keySet();
+        }
+
+        public void foreach( BiConsumer<String,AnyValue> f )
+        {
+            map.forEach( f );
+        }
+
+
+        public Set<Map.Entry<String,AnyValue>> entrySet()
+        {
+            return map.entrySet();
+        }
+
+        public boolean containsKey( String key )
+        {
+            return map.containsKey( key );
+        }
+
+        public AnyValue get( String key )
+        {
+            return map.getOrDefault( key, NO_VALUE );
+        }
+
+        public int size()
+        {
+            return map.size();
+        }
     }
 
     @Override
     public int computeHash()
     {
-        return map.hashCode();
+        int h = 0;
+        for ( Map.Entry<String,AnyValue> entry : entrySet() )
+        {
+            h += entry.getKey().hashCode() ^ entry.getValue().hashCode();
+        }
+        return h;
     }
 
     @Override
-    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+    public boolean equals( VirtualValue other )
     {
-        writer.beginMap( map.size() );
-        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
+        if ( !(other instanceof MapValue) )
         {
-            writer.writeString( entry.getKey() );
-            entry.getValue().writeTo( writer );
+            return false;
         }
-        writer.endMap();
+        MapValue that = (MapValue) other;
+        int size = size();
+        if ( size != that.size() )
+        {
+            return false;
+        }
+
+        Set<String> keys = keySet();
+        for ( String key : keys )
+        {
+            if ( get( key ).equals( that.get( key ) ) )
+            {
+                return false;
+            }
+        }
+
+        return false;
     }
 
-    public ListValue keys()
-    {
-        String[] strings = keySet().toArray( new String[map.size()] );
-        return VirtualValues.fromArray( Values.stringArray( strings ) );
-    }
+    public abstract ListValue keys();
 
-    public Set<String> keySet()
-    {
-        return map.keySet();
-    }
+    public abstract Set<String> keySet();
+
 
     @Override
     public VirtualValueGroup valueGroup()
@@ -92,13 +146,13 @@ public final class MapValue extends VirtualValue
     @Override
     public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( other == null || other.getClass() != MapValue.class )
+        if ( !(other instanceof MapValue) )
         {
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }
-        Map<String,AnyValue> otherMap = ((MapValue) other).map;
-        int size = map.size();
-        int compare = Integer.compare( size(), otherMap.size() );
+        MapValue otherMap = (MapValue) other;
+        int size = size();
+        int compare = Integer.compare( size, otherMap.size() );
         if ( compare == 0 )
         {
             String[] thisKeys = keySet().toArray( new String[size] );
@@ -117,7 +171,7 @@ public final class MapValue extends VirtualValue
             for ( int i = 0; i < size; i++ )
             {
                 String key = thisKeys[i];
-                compare = comparator.compare( map.get( key ), otherMap.get( key ) );
+                compare = comparator.compare( get( key ), otherMap.get( key ) );
                 if ( compare != 0 )
                 {
                     return compare;
@@ -138,8 +192,8 @@ public final class MapValue extends VirtualValue
         {
             return Boolean.FALSE;
         }
-        Map<String,AnyValue> otherMap = ((MapValue) other).map;
-        int size = map.size();
+        MapValue otherMap = (MapValue) other;
+        int size = size();
         if ( size != otherMap.size() )
         {
             return Boolean.FALSE;
@@ -160,7 +214,7 @@ public final class MapValue extends VirtualValue
         for ( int i = 0; i < size; i++ )
         {
             String key = thisKeys[i];
-            Boolean s = map.get( key ).ternaryEquals( otherMap.get( key ) );
+            Boolean s = get( key ).ternaryEquals( otherMap.get( key ) );
             if ( s == null )
             {
                 equalityResult = null;
@@ -179,29 +233,26 @@ public final class MapValue extends VirtualValue
         return mapper.mapMap( this );
     }
 
-    public void foreach( BiConsumer<String,AnyValue> f )
-    {
-        map.forEach( f );
-    }
+    public abstract void foreach( BiConsumer<String,AnyValue> f );
 
-    public Set<Map.Entry<String,AnyValue>> entrySet()
-    {
-        return map.entrySet();
-    }
 
-    public boolean containsKey( String key )
-    {
-        return map.containsKey( key );
-    }
+    //TODO remove??
+    public abstract Set<Map.Entry<String,AnyValue>> entrySet();
 
-    public AnyValue get( String key )
-    {
-      return map.getOrDefault( key, NO_VALUE );
-    }
+    public abstract boolean containsKey( String key );
 
+    public abstract AnyValue get( String key );
+
+    //TODO remove
     public Map<String,AnyValue> getMapCopy()
     {
-        return new HashMap<>( map );
+
+        HashMap<String,AnyValue> copy = new HashMap<>( size() );
+        for ( Map.Entry<String,AnyValue> entry : entrySet() )
+        {
+            copy.put( entry.getKey(), entry.getValue() );
+        }
+        return copy;
     }
 
     @Override
@@ -209,7 +260,7 @@ public final class MapValue extends VirtualValue
     {
         StringBuilder sb = new StringBuilder( "Map{" );
         String sep = "";
-        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
+        for ( Map.Entry<String,AnyValue> entry : entrySet() )
         {
             sb.append( sep );
             sb.append( entry.getKey() );
@@ -222,8 +273,5 @@ public final class MapValue extends VirtualValue
         return sb.toString();
     }
 
-    public int size()
-    {
-        return map.size();
-    }
+    public abstract int size();
 }

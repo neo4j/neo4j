@@ -37,7 +37,7 @@ import org.neo4j.values.virtual.PathValue.DirectPathValue;
 @SuppressWarnings( "WeakerAccess" )
 public final class VirtualValues
 {
-    public static final MapValue EMPTY_MAP = new MapValue( Collections.emptyMap() );
+    public static final MapValue EMPTY_MAP = new MapValue.MapWrappingMapValue( Collections.emptyMap() );
     public static final ListValue EMPTY_LIST = new ListValue.ArrayListValue( new AnyValue[0] );
 
     private VirtualValues()
@@ -148,7 +148,7 @@ public final class VirtualValues
         {
             map.put( keys[i], values[i] );
         }
-        return new MapValue( map );
+        return new MapValue.MapWrappingMapValue( map );
     }
 
     public static MapValue combine( MapValue a, MapValue b )
@@ -161,7 +161,7 @@ public final class VirtualValues
 
     public static MapValue map( Map<String,AnyValue> map )
     {
-        return new MapValue( map );
+        return new MapValue.MapWrappingMapValue( map );
     }
 
     @SafeVarargs
@@ -176,7 +176,7 @@ public final class VirtualValues
         {
             hashMap.put( entry.first(), entry.other() );
         }
-        return new MapValue( hashMap );
+        return new MapValue.MapWrappingMapValue( hashMap );
     }
 
     public static NodeReference node( long id )
