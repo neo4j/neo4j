@@ -76,7 +76,9 @@ class ReportCostComparisonsAsRows extends CostComparisonListener {
       Row(comparisonCount, planText, planTextWithCosts, cost, cardinality, winner == plan)
     }
 
-    rows ++= theseRows
+    val divider = Row(comparisonCount, "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-", "", Cost(0), Cardinality.SINGLE, false)
+
+    rows ++= (divider +: theseRows)
     comparisonCount += 1
   }
 
