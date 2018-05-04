@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 import scala.annotation.tailrec
 
-case class Selector(pickBestFactory: (LogicalPlanningContext, Solveds, Cardinalities) => CandidateSelector,
+case class Selector(pickBestFactory: CandidateSelectorFactory,
                     planGenerators: CandidateGenerator[LogicalPlan]*) extends PlanTransformer[QueryGraph] {
   def apply(input: LogicalPlan, queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
     val pickBest = pickBestFactory(context, solveds, cardinalities)

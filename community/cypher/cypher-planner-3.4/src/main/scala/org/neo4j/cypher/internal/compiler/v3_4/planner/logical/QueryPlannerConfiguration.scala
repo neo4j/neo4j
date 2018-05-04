@@ -77,7 +77,7 @@ object QueryPlannerConfiguration {
 case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
                                      applySelections: PlanTransformer[QueryGraph],
                                      optionalSolvers: Seq[OptionalSolver],
-                                     pickBestCandidate: (LogicalPlanningContext, Solveds, Cardinalities) => CandidateSelector,
+                                     pickBestCandidate: CandidateSelectorFactory,
                                      updateStrategy: UpdateStrategy) {
 
   def toKit(context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): QueryPlannerKit =
