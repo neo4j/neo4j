@@ -249,6 +249,8 @@ public interface Status
                 "The database was unable to plan a hinted join." ),
         NoApplicableIndexWarning( ClientNotification,
                 "Adding a schema index may speed up this query." ),
+        SuboptimalIndexForWildcardQuery( ClientNotification,
+                "Index cannot execute wildcard query efficiently" ),
         UnboundedVariableLengthPatternWarning( ClientNotification,
                 "The provided pattern is unbounded, consider adding an upper limit to the number of node hops." ),
         ExhaustiveShortestPathWarning( ClientNotification,

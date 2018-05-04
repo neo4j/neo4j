@@ -193,7 +193,11 @@ public enum NotificationCode
     EXPERIMENTAL_FEATURE(
             SeverityLevel.WARNING,
             Status.Statement.ExperimentalFeature,
-            "You are using an experimental feature" );
+            "You are using an experimental feature" ),
+    SUBOPTIMAL_INDEX_FOR_WILDCARD_QUERY(
+            SeverityLevel.INFORMATION,
+            Status.Statement.SuboptimalIndexForWildcardQuery,
+            "Index cannot execute wildcard query efficiently" );
 
     private final Status status;
     private final String description;
