@@ -110,7 +110,7 @@ case class CardinalityCostModel(config: CypherCompilerConfiguration) extends Cos
     case _: NodeIndexContainsScan | _: NodeIndexEndsWithScan =>
       Cardinality(5)
     case _ =>
-      Cardinality.SINGLE
+      Cardinality.EMPTY
   }
 
   private val planWithMinimumCardinalityEstimates: Boolean = config.planWithMinimumCardinalityEstimates
