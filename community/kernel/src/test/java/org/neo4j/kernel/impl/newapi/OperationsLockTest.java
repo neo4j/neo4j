@@ -135,8 +135,8 @@ public class OperationsLockTest
                 ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                storageStatement, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
-                constraintIndexCreator, mock( ConstraintSemantics.class ) );
+                                     storageStatement, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
+                                     constraintIndexCreator, mock( ConstraintSemantics.class ) );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storeReadLayer );

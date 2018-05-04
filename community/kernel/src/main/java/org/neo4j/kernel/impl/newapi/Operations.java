@@ -25,6 +25,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.helpers.collection.Iterators;
@@ -71,6 +72,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
@@ -81,6 +83,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -861,14 +864,27 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     @Override
     public IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
     {
+        return indexCreate( descriptor, Optional.empty(), Optional.empty() );
+    }
+
+    @Override
+    public IndexReference indexCreate( SchemaDescriptor descriptor,
+                                       Optional<String> provider,
+                                       Optional<String> name ) throws SchemaKernelException
+    {
         acquireExclusiveLabelLock( descriptor.keyId() );
         ktx.assertOpen();
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
 
-        SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
-        ktx.txState().indexRuleDoAdd( indexDescriptor );
-        return DefaultIndexReference.fromDescriptor( indexDescriptor );
+        IndexProvider.Descriptor providerDescriptor = ktx.indexProviderForOrDefault( provider );
+        SchemaIndexDescriptor index =
+                SchemaIndexDescriptorFactory.forSchema( descriptor,
+                                                        name,
+                                                        providerDescriptor.getKey(),
+                                                        providerDescriptor.getVersion() );
+        ktx.txState().indexRuleDoAdd( index );
+        return index;
     }
 
     @Override

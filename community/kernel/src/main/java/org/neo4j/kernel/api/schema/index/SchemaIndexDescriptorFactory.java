@@ -20,6 +20,8 @@
 package org.neo4j.kernel.api.schema.index;
 
 
+import java.util.Optional;
+
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
@@ -44,11 +46,16 @@ public class SchemaIndexDescriptorFactory
 
     public static SchemaIndexDescriptor forSchema( SchemaDescriptor schema )
     {
-        return new SchemaIndexDescriptor( schema, GENERAL );
+        return new SchemaIndexDescriptor( schema, GENERAL, null, null, null );
+    }
+
+    public static SchemaIndexDescriptor forSchema( SchemaDescriptor schema, Optional<String> name, String providerKey, String providerVersion )
+    {
+        return new SchemaIndexDescriptor( schema, GENERAL, name, providerKey, providerVersion );
     }
 
     public static SchemaIndexDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        return new SchemaIndexDescriptor( schema, UNIQUE );
+        return new SchemaIndexDescriptor( schema, UNIQUE, null, null, null );
     }
 }

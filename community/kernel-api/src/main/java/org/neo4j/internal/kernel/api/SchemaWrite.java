@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Optional;
+
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
@@ -37,6 +39,10 @@ public interface SchemaWrite
      * @return the newly created index
      */
     IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
+
+    IndexReference indexCreate( SchemaDescriptor descriptor,
+                                Optional<String> provider,
+                                Optional<String> name ) throws SchemaKernelException;
 
     /**
      * Drop the given index

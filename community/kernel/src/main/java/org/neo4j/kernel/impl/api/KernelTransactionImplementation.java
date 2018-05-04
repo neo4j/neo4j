@@ -66,6 +66,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -1046,6 +1047,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Statistics getStatistics()
     {
         return statistics;
+    }
+
+    public IndexProvider.Descriptor indexProviderForOrDefault( Optional<String> provider )
+    {
+        return storageEngine.indexProviderForOrDefault( provider );
     }
 
     public static class Statistics

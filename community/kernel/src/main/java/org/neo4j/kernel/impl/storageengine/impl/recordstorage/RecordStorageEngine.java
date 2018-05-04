@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -39,6 +40,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.LoggingMonitor;
@@ -259,6 +261,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreReadLayer storeReadLayer()
     {
         return storeLayer;
+    }
+
+    @Override
+    public IndexProvider.Descriptor indexProviderForOrDefault( Optional<String> providerName )
+    {
+        return indexProviderMap.getDefaultProvider().getProviderDescriptor();
     }
 
     @Override
