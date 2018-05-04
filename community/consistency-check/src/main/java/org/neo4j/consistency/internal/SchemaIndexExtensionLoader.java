@@ -64,9 +64,8 @@ public class SchemaIndexExtensionLoader
             PropertyKeyTokenHolder propkeyTokenHolder, LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
         Dependencies deps = new Dependencies();
-        //TODO figure out a way to not depend on procedures here, it is caused by the fulltext index.
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, propkeyTokenHolder, labelTokenHolder,
-                relationshipTypeTokenHolder, new Procedures() );
+                relationshipTypeTokenHolder );
         @SuppressWarnings( "rawtypes" )
         Iterable kernelExtensions = Service.load( KernelExtensionFactory.class );
         KernelContext kernelContext = new SimpleKernelContext( storeDir, databaseInfo, deps );

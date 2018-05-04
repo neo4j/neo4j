@@ -28,6 +28,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -254,8 +255,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
     {
         try ( SchemaStore store = neoStores.getSchemaStore() )
         {
-            //TODO empty index provider map, investigate if we need a rel one.
-            final SchemaStorage storage = new SchemaStorage( store, new DefaultIndexProviderMap( EMPTY ) );
+            final SchemaStorage storage = new SchemaStorage( store, IndexProviderMap.EMPTY );
             new DumpStore<DynamicRecord,SchemaStore>( System.out )
             {
                 @Override

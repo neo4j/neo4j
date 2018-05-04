@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextIndex;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextIndexAccessor;
@@ -103,7 +104,7 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDes
         }
         catch ( TokenNotFoundException e )
         {
-            //TODO maybe MalformedSchemaRuleException?
+            // This should only ever happen when called via org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider.indexDescriptorFor(java.lang.String, org.neo4j.storageengine.api.EntityType, java.lang.String[], java.lang.String...)
             throw new RuntimeException( e );
         }
     }
@@ -182,7 +183,7 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDes
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties )
+    public IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties ) throws InvalidArgumentsException
     {
         if ( Arrays.stream( properties ).anyMatch( prop -> prop.equals( FulltextAdapter.FIELD_ENTITY_ID ) ) )
         {
@@ -198,7 +199,14 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDes
             entityTokenIds = Arrays.stream( entityTokens ).mapToInt( relationshipTypeTokenHolder::getOrCreateId ).toArray();
         }
         int[] propertyIds = Arrays.stream( properties ).mapToInt( propertyKeyTokenHolder::getOrCreateId ).toArray();
-        return indexDescriptorFor( SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds ), NON_SCHEMA, name, analyzerClassName );
+        try
+        {
+            return indexDescriptorFor( SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds ), NON_SCHEMA, name, analyzerClassName );
+        }
+        catch ( RuntimeException e )
+        {
+            throw new InvalidArgumentsException( "One or more of the supplied tokens are invalid.", e );
+        }
     }
 
     @Override

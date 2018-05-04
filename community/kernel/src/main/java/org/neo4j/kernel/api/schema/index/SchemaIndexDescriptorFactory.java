@@ -50,13 +50,11 @@ public class SchemaIndexDescriptorFactory
 
     public static SchemaIndexDescriptor forLabelBySchema( SchemaDescriptor schema )
     {
-        //TODO this method is ugly
         return forSchema( SchemaDescriptorFactory.forLabel( schema.getEntityTokenIds()[0], schema.getPropertyIds() ) );
     }
 
     public static SchemaIndexDescriptor uniqueForLabelBySchema( SchemaDescriptor schema )
     {
-        //TODO this method is ugly
         return uniqueForSchema( SchemaDescriptorFactory.forLabel( schema.getEntityTokenIds()[0], schema.getPropertyIds() ) );
     }
 

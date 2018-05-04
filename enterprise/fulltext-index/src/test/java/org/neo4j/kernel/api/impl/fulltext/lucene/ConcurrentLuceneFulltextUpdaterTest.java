@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -61,12 +62,12 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         race = new Race();
     }
 
-    private IndexDescriptor getNewDescriptor( String[] entityTokens )
+    private IndexDescriptor getNewDescriptor( String[] entityTokens ) throws InvalidArgumentsException
     {
         return fulltextAdapter.indexDescriptorFor( "nodes", NODE, entityTokens, "otherProp" );
     }
 
-    private IndexDescriptor getExistingDescriptor( String[] entityTokens )
+    private IndexDescriptor getExistingDescriptor( String[] entityTokens ) throws InvalidArgumentsException
     {
         return fulltextAdapter.indexDescriptorFor( "nodes", NODE, entityTokens, PROP );
     }

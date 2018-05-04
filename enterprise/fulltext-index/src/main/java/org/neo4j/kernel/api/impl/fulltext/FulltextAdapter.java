@@ -24,6 +24,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -35,7 +36,7 @@ public interface FulltextAdapter
 
     Stream<String> propertyKeyStrings( IndexDescriptor descriptor );
 
-    IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties );
+    IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties ) throws InvalidArgumentsException;
 
     ScoreEntityIterator query( String indexName, String queryString ) throws IOException, IndexNotFoundKernelException, ParseException;
 }
