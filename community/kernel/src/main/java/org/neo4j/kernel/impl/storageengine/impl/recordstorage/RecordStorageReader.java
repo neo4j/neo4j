@@ -125,6 +125,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.TransactionalDependencies;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -192,9 +193,7 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
 
     private boolean acquired;
     private boolean closed;
-    private TxStateHolder txStateHolder;
-    private AccessMode accessMode;
-    private AssertOpen assertOpen;
+    private TransactionalDependencies transactionalDependencies;
 
     RecordStorageReader( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
@@ -860,11 +859,9 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
     }
 
     @Override
-    public void beginTransaction( TxStateHolder txStateHolder, AccessMode accessMode, AssertOpen assertOpen )
+    public void beginTransaction( TransactionalDependencies transactionalDependencies )
     {
-        this.txStateHolder = txStateHolder;
-        this.accessMode = accessMode;
-        this.assertOpen = assertOpen;
+        this.transactionalDependencies = transactionalDependencies;
     }
 
     @Override
@@ -1084,7 +1081,7 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
     {
         IndexReader reader = indexReader( index, true );
-        // TODO don't instantiate here hard-coded
+        // TODO don't instantiate a new cursor here
         DefaultNodeValueIndexCursor cursor = new DefaultNodeValueIndexCursor( null );
         cursor.setRead( this, reader );
         IndexProgressor.NodeValueClient target = withFullValuePrecision( cursor, predicates, reader );
@@ -1114,7 +1111,7 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
     {
         for ( int prop : index.properties() )
         {
-            if ( !accessMode.allowsPropertyReads( prop ) )
+            if ( !transactionalDependencies.securityContext().mode().allowsPropertyReads( prop ) )
             {
                 return true;
             }
@@ -1438,7 +1435,7 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
 
     AccessMode accessMode()
     {
-        return accessMode;
+        return transactionalDependencies.securityContext().mode();
     }
 
     long nodeHighMark()
@@ -1453,7 +1450,7 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
 
     void assertOpen()
     {
-        assertOpen.assertOpen();
+        transactionalDependencies.assertOpen();
     }
 
     @Override
@@ -1556,19 +1553,19 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
     @Override
     public TransactionState txState()
     {
-        return txStateHolder.txState();
+        return transactionalDependencies.txState();
     }
 
     @Override
     public ExplicitIndexTransactionState explicitIndexTxState()
     {
-        return txStateHolder.explicitIndexTxState();
+        return transactionalDependencies.explicitIndexTxState();
     }
 
     @Override
     public boolean hasTxStateWithChanges()
     {
-        return txStateHolder.hasTxStateWithChanges();
+        return transactionalDependencies.hasTxStateWithChanges();
     }
 
     private ExplicitIndex explicitNodeIndex( String index ) throws ExplicitIndexNotFoundKernelException

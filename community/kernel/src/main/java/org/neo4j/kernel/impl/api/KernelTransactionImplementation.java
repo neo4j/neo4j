@@ -98,6 +98,7 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.TransactionalDependencies;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
@@ -109,7 +110,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
  * as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
-public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics
+public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics, TransactionalDependencies
 {
     /*
      * IMPORTANT:
@@ -220,7 +221,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.tokens = new KernelToken( storageReader, this );
         this.writeOperations =
                 new WriteOperations(
-                        new IndexTxStateUpdater( storageReader, indexingService, this ), storageReader,
+                        new IndexTxStateUpdater( storageReader, indexingService, this ),
+                        storageReader, readOperations,
                         this, tokens, autoIndexing, constraintIndexCreator,
                         constraintSemantics, explicitIndexStore );
         this.collectionsFactory = collectionsFactorySupplier.create();

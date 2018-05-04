@@ -227,7 +227,6 @@ public class IndexIT extends KernelIntegrationTest
             assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
                           "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
         }
-        commit();
     }
 
     @Test

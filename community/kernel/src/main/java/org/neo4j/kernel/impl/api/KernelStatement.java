@@ -165,7 +165,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
         this.statementLocks = statementLocks;
         this.pageCursorTracer = pageCursorCounters;
         this.clockContext.initializeTransaction();
-        this.storageReader.beginTransaction( txStateHolder, transaction.securityContext().mode(), this );
+        this.storageReader.beginTransaction( transaction );
     }
 
     public StatementLocks locks()
@@ -249,6 +249,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     private void cleanupResources()
     {
         // closing is done by KTI
+        storageReader.endStatement();
         executingQueryList = ExecutingQueryList.EMPTY;
         closeAllCloseableResources();
     }

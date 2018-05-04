@@ -41,14 +41,12 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -63,7 +61,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
  * Abstraction for accessing data from a {@link StorageEngine}.
  * <p>
  * A {@link StorageReader} must be initialized before use in a
- * {@link #beginTransaction(TxStateHolder, AccessMode, AssertOpen) transaction}/{@link #beginStatement() statement}. After use there must
+ * {@link #beginTransaction(TransactionalDependencies) transaction}/{@link #beginStatement() statement}. After use there must
  * be a call to end {@link #endStatement() statement}/{@link #endTransaction() transaction}.
  * After released the reader can be acquired again.
  * <p>
@@ -75,11 +73,9 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
     /**
      * Initializes some dependencies that this reader needs. Typically called once per transaction.
      *
-     * @param txStateHolder {@link TxStateHolder} for accessing transaction state.
-     * @param accessMode {@link AccessMode} to perform reads with.
-     * @param assertOpen {@link AssertOpen} for running inside processing before streaming data to user.
+     * @param dependencies {@link TransactionalDependencies} needed to implement transaction-aware cursors.
      */
-    void beginTransaction( TxStateHolder txStateHolder, AccessMode accessMode, AssertOpen assertOpen );
+    void beginTransaction( TransactionalDependencies dependencies );
 
     /**
      * Acquires this statement so that it can be used, should later be {@link #endStatement() released}.
@@ -96,7 +92,7 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
 
     /**
      * Releases resources tied to this transaction makes this reader able to be
-     * {@link #beginTransaction(TxStateHolder, AccessMode, AssertOpen) acquired} again.
+     * {@link #beginTransaction(TransactionalDependencies) acquired} again.
      */
     void endTransaction();
 

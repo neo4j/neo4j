@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -98,12 +97,12 @@ import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelExcept
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.toDescriptor;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -115,8 +114,9 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
 {
     private final KernelTransactionImplementation ktx;
+    private final StorageReader storageReader;
+    private final ReadOperations read;
     private final KernelToken token;
-    private final StorageReader read;
     private final AutoIndexing autoIndexing;
     private final IndexTxStateUpdater updater;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -129,7 +129,8 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
 
     public WriteOperations(
             IndexTxStateUpdater updater,
-            StorageReader read,
+            StorageReader storageReader,
+            ReadOperations read,
             KernelTransactionImplementation ktx,
             KernelToken token,
             AutoIndexing autoIndexing,
@@ -137,10 +138,11 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
             ConstraintSemantics constraintSemantics,
             ExplicitIndexStore explicitIndexStore )
     {
+        this.storageReader = storageReader;
+        this.read = read;
         this.token = token;
         this.autoIndexing = autoIndexing;
         this.ktx = ktx;
-        this.read = read;
         this.updater = updater;
         this.constraintIndexCreator = constraintIndexCreator;
         this.constraintSemantics = constraintSemantics;
@@ -149,16 +151,16 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
 
     public void initialize()
     {
-        this.nodeCursor = read.allocateNodeCursor();
-        this.propertyCursor = read.allocatePropertyCursor();
-        this.relationshipCursor = read.allocateRelationshipScanCursor();
+        this.nodeCursor = storageReader.allocateNodeCursor();
+        this.propertyCursor = storageReader.allocatePropertyCursor();
+        this.relationshipCursor = storageReader.allocateRelationshipScanCursor();
     }
 
     @Override
     public long nodeCreate()
     {
         ktx.assertOpen();
-        long nodeId = read.reserveNode();
+        long nodeId = storageReader.reserveNode();
         ktx.txState().nodeDoCreate( nodeId );
         return nodeId;
     }
@@ -204,7 +206,7 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
         assertNodeExists( sourceNode );
         assertNodeExists( targetNode );
 
-        long id = read.reserveRelationship();
+        long id = storageReader.reserveRelationship();
         ktx.txState().relationshipDoCreate( id, relationshipType, sourceNode, targetNode );
         return id;
     }
@@ -398,43 +400,42 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode )
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        try ( NodeValueIndexCursor valueCursor = read.allocateNodeValueIndexCursor() )
+        long existingNode;
+        try
         {
             SchemaIndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
-            assertIndexOnline( schemaIndexDescriptor );
             SchemaDescriptor schema = schemaIndexDescriptor.schema();
+            CapableIndexReference index = read.index( schema.keyId(), schema.getPropertyIds() );
+            assertIndexOnline( index );
             int labelId = schema.keyId();
 
-            //Take a big fat lock, and check for existing node in index
-            ktx.statementLocks().optimistic().acquireExclusive(
-                    ktx.lockTracer(), INDEX_ENTRY,
-                    indexEntryResourceId( labelId, propertyValues )
-            );
+            // Take a big fat lock, and check for existing node in index
+            ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), INDEX_ENTRY, indexEntryResourceId( labelId, propertyValues ) );
 
-            CapableIndexReference index = read.index( labelId, schema.getPropertyIds() );
-            long existingNode = read.lockingNodeUniqueIndexSeek( index, propertyValues );
-            if ( existingNode != modifiedNode )
-            {
-                throw new UniquePropertyValueValidationException( constraint, VALIDATION,
-                        new IndexEntryConflictException( existingNode, NO_SUCH_NODE,
-                                IndexQuery.asValueTuple( propertyValues ) ) );
-            }
+            existingNode = read.lockingNodeUniqueIndexSeek( index, propertyValues );
         }
         catch ( KernelException e )
         {
             throw new UnableToValidateConstraintException( constraint, e );
         }
+
+        if ( existingNode != NO_ID && existingNode != modifiedNode )
+        {
+            throw new UniquePropertyValueValidationException( constraint, VALIDATION,
+                    new IndexEntryConflictException( existingNode, NO_SUCH_NODE,
+                            IndexQuery.asValueTuple( propertyValues ) ) );
+        }
     }
 
-    private void assertIndexOnline( SchemaIndexDescriptor descriptor )
+    private void assertIndexOnline( IndexReference index )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        switch ( read.indexGetState( descriptor ) )
+        switch ( read.indexGetState( index ) )
         {
         case ONLINE:
             return;
         default:
-            throw new IndexBrokenKernelException( read.indexGetFailure( descriptor.schema() ) );
+            throw new IndexBrokenKernelException( read.indexGetFailure( index ) );
         }
     }
 
@@ -460,7 +461,6 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
     @Override
     public Value nodeSetProperty( long node, int propertyKey, Value value )
             throws EntityNotFoundException, ConstraintValidationException, AutoIndexingKernelException
-
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
@@ -833,14 +833,14 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
         org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor = labelDescriptor( index );
         try
         {
-            SchemaIndexDescriptor existingIndex = read.indexGetForSchema( descriptor );
+            IndexReference existingIndex = read.index( index.label(), index.properties() );
 
-            if ( existingIndex == null )
+            if ( existingIndex == CapableIndexReference.NO_INDEX )
             {
                 throw new NoSuchIndexException( descriptor );
             }
 
-            if ( existingIndex.type() == UNIQUE )
+            if ( existingIndex.isUnique() )
             {
                 if ( read.indexGetOwningUniquenessConstraintId( existingIndex ) != null )
                 {
@@ -890,7 +890,7 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor );
 
         //enforce constraints
-        try ( NodeLabelIndexCursor nodes = read.allocateNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor nodes = storageReader.allocateNodeLabelIndexCursor() )
         {
             read.nodeLabelScan( descriptor.getLabelId(), nodes );
             constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, descriptor );
@@ -915,7 +915,7 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
         assertConstraintDoesNotExist( constraint );
 
         //enforce constraints
-        try ( NodeLabelIndexCursor nodes = read.allocateNodeLabelIndexCursor() )
+        try ( NodeLabelIndexCursor nodes = storageReader.allocateNodeLabelIndexCursor() )
         {
             read.nodeLabelScan( descriptor.getLabelId(), nodes );
             constraintSemantics
@@ -992,13 +992,13 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
     private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context,
             SchemaDescriptor descriptor ) throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        SchemaIndexDescriptor existingIndex = read.indexGetForSchema( descriptor );
-        if ( existingIndex != null )
+        IndexReference existingIndex = read.index( descriptor.keyId(), descriptor.getPropertyIds() );
+        if ( existingIndex != CapableIndexReference.NO_INDEX )
         {
             // OK so we found a matching constraint index. We check whether or not it has an owner
             // because this may have been a left-over constraint index from a previously failed
             // constraint creation, due to crash or similar, hence the missing owner.
-            if ( existingIndex.type() == UNIQUE )
+            if ( existingIndex.isUnique() )
             {
                 if ( context != CONSTRAINT_CREATION || constraintIndexHasOwner( existingIndex ) )
                 {
@@ -1081,9 +1081,9 @@ public class WriteOperations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private boolean constraintIndexHasOwner( SchemaIndexDescriptor descriptor )
+    private boolean constraintIndexHasOwner( IndexReference index )
     {
-        return read.indexGetOwningUniquenessConstraintId( descriptor ) != null;
+        return read.indexGetOwningUniquenessConstraintId( index ) != null;
     }
 
     private void assertConstraintDoesNotExist( ConstraintDescriptor constraint )

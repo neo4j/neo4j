@@ -363,11 +363,13 @@ public class ReadOperations implements TxStateHolder,
         locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
         try ( NodeValueIndexCursor cursor = storageReader.allocateNodeValueIndexCursor() )
         {
-            if ( storageReader.lockingNodeUniqueIndexSeek( index, predicates ) == NO_ID )
+            long existingNode = storageReader.lockingNodeUniqueIndexSeek( index, predicates );
+            if ( existingNode == NO_ID )
             {
                 locks.releaseShared( INDEX_ENTRY, indexEntryId );
                 locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
-                if ( storageReader.lockingNodeUniqueIndexSeek( index, predicates ) != NO_ID ) // we found it under the exclusive lock
+                existingNode = storageReader.lockingNodeUniqueIndexSeek( index, predicates );
+                if ( existingNode != NO_ID ) // we found it under the exclusive lock
                 {
                     // downgrade to a shared lock
                     locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
@@ -375,7 +377,7 @@ public class ReadOperations implements TxStateHolder,
                 }
             }
 
-            return cursor.nodeReference();
+            return existingNode;
         }
     }
 
@@ -418,7 +420,7 @@ public class ReadOperations implements TxStateHolder,
     public void allNodesScan( NodeCursor cursor )
     {
         ktx.assertOpen();
-        storageReader.allNodesScan();
+        storageReader.allNodesScan( cursor );
     }
 
     @Override

@@ -186,7 +186,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext securityContext = loginContext.authorize( propertyKeyTokenHolder::getIdByName );
+        SecurityContext securityContext = loginContext.authorize( propertyKeyTokenHolder::getOrCreateId );
         try
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )

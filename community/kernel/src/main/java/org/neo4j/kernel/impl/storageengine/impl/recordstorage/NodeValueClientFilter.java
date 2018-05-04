@@ -23,6 +23,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
@@ -69,16 +72,16 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
 {
     private static final Comparator<IndexQuery> ASCENDING_BY_KEY = Comparator.comparingInt( IndexQuery::propertyKeyId );
     private final NodeValueClient target;
-    private final DefaultNodeCursor node;
-    private final DefaultPropertyCursor property;
+    private final NodeCursor node;
+    private final PropertyCursor property;
     private final IndexQuery[] filters;
-    private final RecordStorageReader read;
+    private final Read read;
     private int[] keys;
     private IndexProgressor progressor;
 
     NodeValueClientFilter(
             NodeValueClient target,
-            DefaultNodeCursor node, DefaultPropertyCursor property, RecordStorageReader read, IndexQuery... filters )
+            NodeCursor node, PropertyCursor property, Read read, IndexQuery... filters )
     {
         this.target = target;
         this.node = node;
@@ -105,14 +108,13 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
         }
         else
         {
-            node.single( reference, read );
+            read.singleNode( reference, node );
             if ( node.next() )
             {
-                node.properties( property );
+                read.nodeProperties( reference, node.propertiesReference(), property );
             }
             else
             {
-                property.clear();
                 return false;
             }
             return filterByCursors( reference, values );

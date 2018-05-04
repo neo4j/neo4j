@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexCursor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
 import static org.junit.Assert.assertFalse;
