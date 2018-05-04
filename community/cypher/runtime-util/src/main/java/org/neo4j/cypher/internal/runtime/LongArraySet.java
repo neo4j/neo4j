@@ -101,7 +101,7 @@ public class LongArraySet
     /***
      * Returns true if the value is in the set.
      * @param value The value to check for
-    1     * @return whether the value is in the set or not.
+    * @return whether the value is in the set or not.
      */
     public boolean contains( long[] value )
     {

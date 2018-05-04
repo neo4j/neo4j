@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime
 
 abstract class PrefetchingIterator[T] extends Iterator[T] {
-  private var buffer: Option[T] = null
+  private var buffer: Option[T] = _
 
   def produceNext(): Option[T]
 
@@ -31,15 +31,12 @@ abstract class PrefetchingIterator[T] extends Iterator[T] {
   }
 
   override def next(): T = {
-    if (buffer == null)
+    if (!hasNext)
+      throw new NoSuchElementException("next on empty iterator")
+    else {
+      val current = buffer.get
       pullNextElementFromSource()
-
-    buffer match {
-      case None =>
-        Iterator.empty.next()
-      case Some(x) =>
-        pullNextElementFromSource()
-        x
+      current
     }
   }
 
