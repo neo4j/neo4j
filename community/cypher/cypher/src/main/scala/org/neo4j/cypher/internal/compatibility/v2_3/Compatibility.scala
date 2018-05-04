@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, Ex
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, ExplainMode => ExplainModev2_3, NormalMode => NormalModev2_3, ProfileMode => ProfileModev2_3, _}
-import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, FineToReuse, NeedsReplan}
-import org.neo4j.cypher.internal.frontend.v3_4
+import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, FineToReuse, NeedsReplan}
+import org.neo4j.cypher.internal.frontend.v3_5
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
@@ -78,7 +78,7 @@ trait Compatibility {
                                 Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
       def plan(transactionalContext: TransactionalContextWrapper,
-               tracer: v3_4.phases.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any], Seq[String]) = exceptionHandler
+               tracer: v3_5.phases.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any], Seq[String]) = exceptionHandler
         .runSafely {
           val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
           val (planImpl, extractedParameters) = compiler

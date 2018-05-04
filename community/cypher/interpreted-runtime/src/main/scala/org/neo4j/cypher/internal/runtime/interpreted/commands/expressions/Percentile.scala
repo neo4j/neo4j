@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.{PercentileContFunction, PercentileDiscFunction}
-import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_5.symbols._
 
 case class PercentileCont(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new PercentileContFunction(anInner, percentile)

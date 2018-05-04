@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
-import org.neo4j.cypher.internal.util.v3_4.attribution.{Attributes, SameId}
-import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.util.v3_5.attribution.{Attributes, SameId}
+import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 /**
   * Detect logical plan parts derived from MERGE, and inject ActiveRead operators above the

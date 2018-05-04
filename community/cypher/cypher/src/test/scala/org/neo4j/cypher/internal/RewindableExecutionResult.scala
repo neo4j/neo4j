@@ -23,8 +23,8 @@ import org.neo4j.cypher.exceptionHandler
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.internal.compatibility.v2_3.{ExecutionResultWrapper => ExecutionResultWrapperFor2_3, exceptionHandler => exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compatibility.v3_1.{ExecutionResultWrapper => ExecutionResultWrapperFor3_1, exceptionHandler => exceptionHandlerFor3_1}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
 import org.neo4j.cypher.internal.compiler.{v2_3, v3_1}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime._

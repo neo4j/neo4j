@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.attribution.Id
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 
 class InternalPlanDescriptionTest extends CypherFunSuite {
 

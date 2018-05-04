@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal.runtime.slotted
 import java.time.Clock
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics
-import org.neo4j.cypher.internal.compiler.v3_4.planner.{HardcodedGraphStatistics, LogicalPlanningTestSupport2}
-import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.VarPatternLength
-import org.neo4j.cypher.internal.planner.v3_4.spi.{IDPPlannerName, PlanContext}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration.Size
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.v3_5.planner.{HardcodedGraphStatistics, LogicalPlanningTestSupport2}
+import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
@@ -39,14 +39,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.expressions.{NodeProperty, RelationshipProperty, SlottedExpressionConverters}
-import org.neo4j.cypher.internal.runtime.slotted.pipes
 import org.neo4j.cypher.internal.runtime.slotted.pipes._
-import org.neo4j.cypher.internal.util.v3_4.symbols.{CTAny, CTList, CTNode, CTRelationship}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.{LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.v3_4.logical.plans
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.util.v3_5.symbols.{CTAny, CTList, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 //noinspection NameBooleanParameters
 class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

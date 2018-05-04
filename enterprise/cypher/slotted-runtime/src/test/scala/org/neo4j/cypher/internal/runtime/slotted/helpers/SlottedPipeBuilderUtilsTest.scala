@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.runtime.slotted.helpers
 
 import SlottedPipeBuilderUtils._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.neo4j.cypher.internal.util.v3_4.AssertionUtils._
-import org.neo4j.cypher.internal.util.v3_4.ParameterWrongTypeException
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.AssertionUtils._
+import org.neo4j.cypher.internal.util.v3_5.ParameterWrongTypeException
+import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues

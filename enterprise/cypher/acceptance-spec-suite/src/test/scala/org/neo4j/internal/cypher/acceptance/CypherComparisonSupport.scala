@@ -21,16 +21,16 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.NewRuntimeSuccessRateMonitor
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.NewRuntimeSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, RuntimeVersion => IPDRuntimeVersion, PlannerVersion => IPDPlannerVersion}
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
-import org.neo4j.cypher.internal.util.v3_4.Eagerly
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.v3_5.Eagerly
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -362,7 +362,7 @@ object CypherComparisonSupport {
   }
 
   object Versions {
-    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_3, V3_4)
+    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_3, v3_5)
 
     implicit def versionToVersions(version: Version): Versions = Versions(version)
 
@@ -379,7 +379,7 @@ object CypherComparisonSupport {
       override val acceptedRuntimeVersionNames = Set("3.4")
     }
 
-    object V3_4 extends Version("3.4")
+    object v3_5 extends Version("3.4")
 
     object Default extends Version("") {
       override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.3", "3.4")
@@ -603,7 +603,7 @@ object CypherComparisonSupport {
 
   object Configs {
 
-    def Compiled: TestConfiguration = TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
+    def Compiled: TestConfiguration = TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
 
     def Morsel: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
 
@@ -627,7 +627,7 @@ object CypherComparisonSupport {
 
     def Cost3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
 
-    def Cost3_4: TestConfiguration = TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
+    def Cost3_4: TestConfiguration = TestScenario(Versions.v3_5, Planners.Cost, Runtimes.Default)
 
     def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
 
@@ -642,7 +642,7 @@ object CypherComparisonSupport {
     def Version3_3: TestConfiguration = TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes.Default)
 
     def Version3_4: TestConfiguration =
-      TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+      TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
@@ -677,7 +677,7 @@ object CypherComparisonSupport {
       * test coverage is kept up-to-date with new features.
       */
     def AbsolutelyAll: TestConfiguration =
-      TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+      TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted,
                                                                        Runtimes.ProcedureOrSchema)) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +

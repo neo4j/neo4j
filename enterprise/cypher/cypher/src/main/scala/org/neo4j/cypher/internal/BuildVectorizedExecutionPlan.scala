@@ -20,24 +20,24 @@
 package org.neo4j.cypher.internal
 
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.StandardInternalExecutionResult.IterateByAccepting
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{NewRuntimeSuccessRateMonitor, StandardInternalExecutionResult}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.InternalWrapping.asKernelNotification
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, FineToReuse}
-import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_4.notification.ExperimentalFeatureNotification
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.StandardInternalExecutionResult.IterateByAccepting
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{NewRuntimeSuccessRateMonitor, StandardInternalExecutionResult, ExecutionPlan => RuntimeExecutionPlan}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, FineToReuse}
+import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_5.notification.ExperimentalFeatureNotification
+import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.frontend.v3_5.phases._
+import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, LogicalPlan2PlanDescription}
@@ -46,8 +46,8 @@ import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, Sing
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.MorselExpressionConverters
 import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, _}
-import org.neo4j.cypher.internal.util.v3_4.TaskCloser
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.v3_5.TaskCloser
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.values.virtual.MapValue
@@ -106,7 +106,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
                                      dispatcher: Dispatcher,
                                      notificationLogger: InternalNotificationLogger,
                                      readOnlies: ReadOnlies,
-                                     cardinalities: Cardinalities) extends executionplan.ExecutionPlan {
+                                     cardinalities: Cardinalities) extends RuntimeExecutionPlan {
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)

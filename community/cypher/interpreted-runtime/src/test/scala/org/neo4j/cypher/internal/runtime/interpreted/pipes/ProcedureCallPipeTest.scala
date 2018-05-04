@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryContextAdaptation, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.{EagerReadWriteCallMode, LazyReadOnlyCallMode, QueryContext}
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{IntValue, LongValue}
 

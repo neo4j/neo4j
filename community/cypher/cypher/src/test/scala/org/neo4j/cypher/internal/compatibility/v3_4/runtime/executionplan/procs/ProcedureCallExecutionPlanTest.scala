@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
+package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs
 
 import org.mockito.ArgumentMatchers.{any, anyInt}
 import org.mockito.Mockito.when
@@ -25,11 +25,11 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{CloseableResource, NormalMode, QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.util.v3_4.DummyPosition
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.util.v3_5.DummyPosition
+import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
