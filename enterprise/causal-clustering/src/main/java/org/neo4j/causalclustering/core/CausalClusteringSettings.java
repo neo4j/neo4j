@@ -469,8 +469,7 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.load_balancing.plugin", STRING, "server_policies" );
 
     @Description( "Time out for protocol negotiation handshake" )
-    public static final Setting<Duration> handshake_timeout =
-            setting( "causal_clustering.handshake_timeout", DURATION, "5000ms" );
+    public static final Setting<Duration> handshake_timeout = setting( "causal_clustering.handshake_timeout", DURATION, "20s" );
 
     @Description( "The configuration must be valid for the configured plugin and usually exists" +
             "under matching subkeys, e.g. ..config.server_policies.*" +
