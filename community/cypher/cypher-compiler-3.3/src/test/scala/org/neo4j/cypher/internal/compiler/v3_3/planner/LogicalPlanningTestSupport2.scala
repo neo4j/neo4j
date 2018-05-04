@@ -209,6 +209,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
+  class givenPlanWithMinimumCardinalityEnabled
+    extends StubbedLogicalPlanningConfiguration(RealLogicalPlanningConfiguration(cypherCompilerConfig.copy(planWithMinimumCardinalityEstimates = true)))
+
   class fromDbStructure(dbStructure: Visitable[DbStructureVisitor])
     extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(cypherCompilerConfig)(dbStructure))
 
