@@ -385,7 +385,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
             options( Level.class ), "INFO" );
 
-    @Description( "Database timezone. This setting influences which timezone the logs use." )
+    @Description( "Database timezone. Among other things, this setting influences which timezone the logs and monitoring procedures use." )
     public static final Setting<LogTimeZone> db_timezone =
             setting( "dbms.db.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
 
@@ -396,7 +396,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             setting( "dbms.logs.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
 
     @Description( "Database timezone for temporal functions. All Time and DateTime values that are created without " +
-            "an explicit timezone will use the configured default timezone." )
+            "an explicit timezone will use this configured default timezone." )
     public static final Setting<ZoneId> db_temporal_timezone =
             setting( "db.temporal.timezone", DateTimeValue::parseZoneOffsetOrZoneName, ZoneOffset.UTC.toString() );
 
