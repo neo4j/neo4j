@@ -37,9 +37,7 @@ class AstQueryCache[STATEMENT <: AnyRef](override val maximumSize: Int,
 ) extends QueryCache[STATEMENT, ExecutionPlan](maximumSize,
                                                AstQueryCache.stalenessCaller(clock, divergence, lastCommittedTxIdProvider),
                                                tracer,
-                                               AstQueryCache.BEING_RECOMPILED) {
-
-}
+                                               AstQueryCache.BEING_RECOMPILED)
 
 object AstQueryCache {
   val BEING_RECOMPILED: ExecutionPlan =

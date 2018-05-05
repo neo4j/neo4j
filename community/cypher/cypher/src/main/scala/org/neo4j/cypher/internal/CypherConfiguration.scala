@@ -73,6 +73,4 @@ case class CypherConfiguration(version: CypherVersion,
                                errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                                errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
                                legacyCsvQuoteEscaping: Boolean,
-                               planWithMinimumCardinalityEstimates: Boolean) {
-
-}
+                               planWithMinimumCardinalityEstimates: Boolean)
