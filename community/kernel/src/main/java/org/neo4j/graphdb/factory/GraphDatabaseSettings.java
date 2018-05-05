@@ -295,7 +295,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "when an index exists, because of a lower estimated cost." )
     @Internal
     public static final Setting<Boolean> cypher_plan_with_minimum_cardinality_estimates =
-            setting( "unsupported.cypher.plan_with_minimum_cardinality_estimates", BOOLEAN, FALSE );
+            setting( "unsupported.cypher.plan_with_minimum_cardinality_estimates", BOOLEAN, TRUE );
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
