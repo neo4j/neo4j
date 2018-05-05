@@ -34,8 +34,8 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
-  val PlannerName = IDPPlannerName
-  val logicalPlan = Argument()
+  private val PlannerName = IDPPlannerName
+  private val logicalPlan = Argument()
 
   test("produces eager results for updating queries") {
     // GIVEN
@@ -45,15 +45,14 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
     when(context.resources).thenReturn(mock[CloseableResource])
 
-    val pipeInfo = PipeInfo(pipe, updating = true, None, None, PlannerName)
-    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val builderFactory = InterpretedExecutionResultBuilderFactory(pipe, readOnly = false, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()
     builder.setQueryContext(context)
 
     // THEN
-    val result = build(builder, NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
+    val result = build(builder, NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, readOnly = false)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
@@ -62,15 +61,14 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
-    val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
-    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipe, readOnly = true, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()
     builder.setQueryContext(context)
 
     // THEN
-    val result = build(builder, NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
+    val result = build(builder, NormalMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, readOnly = true)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
@@ -82,15 +80,14 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
     when(context.resources).thenReturn(mock[CloseableResource])
-    val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
-    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val builderFactory = InterpretedExecutionResultBuilderFactory(pipe, readOnly = true, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()
     builder.setQueryContext(context)
 
     // THEN
-    val result = build(builder, ExplainMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName)
+    val result = build(builder, ExplainMode, EMPTY_MAP, devNullLogger, InterpretedRuntimeName, readOnly = true)
     result shouldBe a [ExplainExecutionResult]
   }
 
@@ -98,5 +95,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
                     planType: ExecutionMode,
                     params: MapValue,
                     notificationLogger: InternalNotificationLogger,
-                    runtimeName: RuntimeName) = builder.build(planType, params, notificationLogger, runtimeName, new StubReadOnlies, new StubCardinalities)
+                    runtimeName: RuntimeName,
+                    readOnly: Boolean) =
+    builder.build(planType, params, notificationLogger, PlannerName, runtimeName, readOnly, new StubCardinalities)
 }

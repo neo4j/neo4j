@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal
 
 import org.bitbucket.inkytonik.kiama.output.PrettyPrinter._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 import org.neo4j.cypher.internal.util.v3_5.{CypherException, InternalException}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
@@ -54,12 +53,12 @@ trait DebugPrettyPrinter {
     println("\u001b[30m")
   }
 
-  protected def printPipeInfo(slotConfigurations: SlotConfigurations, pipeInfo: PipeInfo) = {
+  protected def printPipe(slotConfigurations: SlotConfigurations, pipe: Pipe) = {
     if (PRINT_PIPELINE_INFO) {
       println(s"\n\u001b[36m[SLOT CONFIGURATIONS]\n") // Cyan
       prettyPrintPipelines(slotConfigurations)
       println(s"\n\u001b[34m[PIPE INFO]\n") // Blue
-      prettyPrintPipeInfo(pipeInfo)
+      prettyPrintPipe(pipe)
     }
     println("\u001b[30m")
   }
@@ -132,8 +131,8 @@ trait DebugPrettyPrinter {
     println(prettyDoc.layout)
   }
 
-  protected def prettyPrintPipeInfo(pipeInfo: PipeInfo): Unit = {
-    val prettyDoc = pretty(any(pipeInfo), w = 120)
+  protected def prettyPrintPipe(pipe: Pipe): Unit = {
+    val prettyDoc = pretty(any(pipe), w = 120)
     println(prettyDoc.layout)
   }
 }

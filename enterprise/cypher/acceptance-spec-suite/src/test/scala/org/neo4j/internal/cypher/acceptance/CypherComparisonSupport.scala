@@ -21,27 +21,20 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.NewRuntimeSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
-import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, RuntimeVersion => IPDRuntimeVersion, PlannerVersion => IPDPlannerVersion}
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, PlannerVersion => IPDPlannerVersion, Runtime => IPDRuntime, RuntimeVersion => IPDRuntimeVersion}
 import org.neo4j.cypher.internal.util.v3_5.Eagerly
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.helpers.Exceptions
-import org.neo4j.internal.cypher.acceptance.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 import org.scalatest.Assertions
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 trait CypherComparisonSupport extends CypherTestSupport {
@@ -93,7 +86,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
   override protected def initTest() {
     super.initTest()
     self.kernelMonitors.addMonitorListener(newPlannerMonitor)
-    self.kernelMonitors.addMonitorListener(newRuntimeMonitor)
   }
 
   protected def failWithError(expectedSpecificFailureFrom: TestConfiguration,
@@ -107,7 +99,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
     val explicitlyRequestedExperimentalScenarios = expectedSpecificFailureFromEffective.scenarios intersect Configs.Experimental.scenarios
     val scenariosToExecute = Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios
     for (thisScenario <- scenariosToExecute) {
-      thisScenario.prepare()
       val expectedToFailWithSpecificMessage = expectedSpecificFailureFromEffective.containsScenario(thisScenario)
 
       val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params))
@@ -190,7 +181,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
       }
 
       val baseScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
-      baseScenario.prepare()
       executeBefore()
       val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
       baseResult
@@ -217,7 +207,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
                               params: Map[String, Any],
                               resultAssertionInTx: Option[(InternalExecutionResult) => Unit],
                               rollback: Boolean = true) = {
-    scenario.prepare()
 
     def execute = {
       executeBefore()
@@ -296,24 +285,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
   }
 }
 
-class NewRuntimeMonitor extends NewRuntimeSuccessRateMonitor {
-  private var traceBuilder = List.newBuilder[NewRuntimeMonitorCall]
-
-  override def unableToHandlePlan(plan: LogicalPlan, e: CantCompileQueryException) {
-    traceBuilder += UnableToCompileQuery(Exceptions.stringify(e))
-  }
-
-  override def newPlanSeen(plan: LogicalPlan) {
-    traceBuilder += NewPlanSeen(plan.toString)
-  }
-
-  def trace = traceBuilder.result()
-
-  def clear() {
-    traceBuilder.clear()
-  }
-}
-
 object NewPlannerMonitor {
 
   sealed trait NewPlannerMonitorCall {
@@ -351,8 +322,6 @@ object NewRuntimeMonitor {
 object CypherComparisonSupport {
 
   val newPlannerMonitor = NewPlannerMonitor
-
-  val newRuntimeMonitor = new NewRuntimeMonitor
 
   case class Versions(versions: Version*) {
     def +(other: Version): Versions = {
@@ -511,8 +480,6 @@ object CypherComparisonSupport {
     }
 
     def preparserOptions: String = s"${version.name} ${planner.preparserOption} ${runtime.preparserOption}"
-
-    def prepare(): Unit = newRuntimeMonitor.clear()
 
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
       val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersion: String) = extractConfiguration(internalExecutionResult)

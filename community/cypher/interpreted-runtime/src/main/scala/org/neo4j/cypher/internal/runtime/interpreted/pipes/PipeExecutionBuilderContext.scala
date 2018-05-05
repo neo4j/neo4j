@@ -17,16 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime
+package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics
-import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 
-case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel,
-                                       semanticTable: SemanticTable,
-                                       plannerName: PlannerName,
-                                       readOnlies: ReadOnlies,
-                                       cardinalities: Cardinalities
-                                      )
+case class PipeExecutionBuilderContext(semanticTable: SemanticTable,
+                                       readOnly: Boolean,
+                                       cardinalities: Cardinalities)

@@ -21,18 +21,15 @@ package org.neo4j.cypher.internal.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.pipes.DropResultPipe
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.interpreted.{InterpretedPipeBuilder, ExecutionContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{KeyTokenResolver, expressions => commandExpressions}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{DropResultPipe, ColumnOrder => _, _}
 import org.neo4j.cypher.internal.runtime.slotted.helpers.SlottedPipeBuilderUtils
 import org.neo4j.cypher.internal.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.{expressions => slottedExpressions}
@@ -46,17 +43,16 @@ import org.neo4j.cypher.internal.v3_5.{expressions => frontEndAst}
 
 class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
-                         monitors: Monitors,
                          physicalPlan: PhysicalPlan,
                          readOnly: Boolean,
                          rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
-                        (implicit context: PipeExecutionBuilderContext, planContext: PlanContext)
+                        (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext)
   extends PipeBuilder {
 
   private val convertExpressions: (frontEndAst.Expression) => commandExpressions.Expression =
     rewriteAstExpression andThen expressionConverters.toCommandExpression
 
-  override def build(plan: LogicalPlan): Pipe = {
+  override def onLeaf(plan: LogicalPlan): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
     val id = plan.id
@@ -88,7 +84,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         ArgumentSlottedPipe(slots, argumentSize)(id)
 
       case _ =>
-        fallback.build(plan)
+        fallback.onLeaf(plan)
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
@@ -114,7 +110,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
   }
 
-  override def build(plan: LogicalPlan, source: Pipe): Pipe = {
+  override def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
     val id = plan.id
@@ -268,7 +264,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
            _: Limit |
            _: ErrorPlan |
            _: Skip =>
-        fallback.build(plan, source)
+        fallback.onOneChildPlan(plan, source)
 
       case Sort(_, sortItems) =>
         SortSlottedPipe(source, sortItems.map(translateColumnOrder(slots, _)), slots)(id = id)
@@ -283,7 +279,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
            _: DetachDeleteNode |
            _: DetachDeletePath |
            _: DetachDeleteExpression =>
-        fallback.build(plan, source)
+        fallback.onOneChildPlan(plan, source)
 
       case _: SetLabels |
            _: SetNodeProperty |
@@ -292,14 +288,13 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
            _: SetRelationshipPropertiesFromMap |
            _: SetProperty |
            _: RemoveLabels =>
-        fallback.build(plan, source)
+        fallback.onOneChildPlan(plan, source)
 
       case _: LockNodes =>
-        fallback.build(plan, source)
+        fallback.onOneChildPlan(plan, source)
 
       case _ =>
-        fallback.build(plan, source)
-        //throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+        fallback.onOneChildPlan(plan, source)
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
@@ -338,14 +333,16 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   }
 
   private def buildPredicate(expr: frontEndAst.Expression)
-                            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
+                            (implicit context: PipeExecutionBuilderContext): Predicate = {
     val rewrittenExpr: frontEndAst.Expression = rewriteAstExpression(expr)
 
-    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext))
+    expressionConverters
+      .toCommandPredicate(rewrittenExpr)
+      .rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext))
       .asInstanceOf[Predicate]
   }
 
-  override def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
+  override def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
     val slotConfigs = physicalPlan.slotConfigurations
@@ -359,7 +356,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case _: AbstractSemiApply |
            _: AbstractSelectOrSemiApply =>
-        fallback.build(plan, lhs, rhs)
+        fallback.onTwoChildPlan(plan, lhs, rhs)
 
       case RollUpApply(_, rhsPlan, collectionName, identifierToCollect, nullables) =>
         val rhsSlots = slotConfigs(rhsPlan.id)
@@ -447,11 +444,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
           SlottedPipeBuilder.computeUnionMapping(rhsSlots, slots))(id = id)
 
       case _: AssertSameNode =>
-        fallback.build(plan, lhs, rhs)
+        fallback.onTwoChildPlan(plan, lhs, rhs)
 
       case _ =>
-        fallback.build(plan, lhs, rhs)
-        //throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+        fallback.onTwoChildPlan(plan, lhs, rhs)
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
@@ -525,15 +521,15 @@ object SlottedPipeBuilder {
 
   case class Factory(physicalPlan: PhysicalPlan)
     extends PipeBuilderFactory {
-    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
+    override def apply(recurse: LogicalPlan => Pipe, readOnly: Boolean,
               expressionConverters: ExpressionConverters)
-             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
+             (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): PipeBuilder = {
 
-      val expressionToExpression = recursePipes(recurse, planContext) _
+      val expressionToExpression = recursePipes(recurse) _
 
-      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, expressionConverters, expressionToExpression)
+      val fallback = InterpretedPipeBuilder(recurse, readOnly, expressionConverters, expressionToExpression, tokenContext)(context.semanticTable)
 
-      new SlottedPipeBuilder(fallback, expressionConverters, monitors, physicalPlan, readOnly, expressionToExpression)
+      new SlottedPipeBuilder(fallback, expressionConverters, physicalPlan, readOnly, expressionToExpression)
     }
   }
 

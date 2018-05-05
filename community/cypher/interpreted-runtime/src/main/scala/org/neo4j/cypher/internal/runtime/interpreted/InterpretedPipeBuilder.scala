@@ -17,16 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime
+package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.pipes.DropResultPipe
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Literal, ShortestPathExpression}
@@ -43,19 +40,20 @@ import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
  * Responsible for turning a logical plan with argument pipes into a new pipe.
  * When adding new Pipes and LogicalPlans, this is where you should be looking.
  */
-case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
-                                expressionConverters: ExpressionConverters,
-                                rewriteAstExpression: (ASTExpression) => ASTExpression)
-                               (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
-
+case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
+                                  readOnly: Boolean,
+                                  expressionConverters: ExpressionConverters,
+                                  rewriteAstExpression: (ASTExpression) => ASTExpression,
+                                  tokenContext: TokenContext)
+                                 (implicit semanticTable: SemanticTable) extends PipeBuilder {
 
   private val buildExpression =
     rewriteAstExpression andThen
       expressionConverters.toCommandExpression andThen
-      (expression => expression.rewrite(KeyTokenResolver.resolveExpressions(_, planContext)))
+      (expression => expression.rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext)))
 
 
-  def build(plan: LogicalPlan): Pipe = {
+  def onLeaf(plan: LogicalPlan): Pipe = {
     val id = plan.id
     plan match {
       case Argument(_) =>
@@ -93,7 +91,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
 
       case NodeIndexScan(ident, label, propertyKey, _) =>
         NodeIndexScanPipe(ident, label, propertyKey)(id = id)
-//TODO: Check out this warning
+
       case NodeIndexContainsScan(ident, label, propertyKey, valueExpr, _) =>
         NodeIndexContainsScanPipe(ident, label, propertyKey, buildExpression(valueExpr))(id = id)
 
@@ -102,7 +100,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
   }
 
-  def build(plan: LogicalPlan, source: Pipe): Pipe = {
+  def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe = {
     val id = plan.id
     plan match {
       case Projection(_, expressions) =>
@@ -256,10 +254,10 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         MergeCreateNodePipe(source, idName, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
 
       case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        CreateRelationshipPipe(source, idName, startNode, LazyType(typ)(context.semanticTable), endNode, props.map(buildExpression))(id = id)
+        CreateRelationshipPipe(source, idName, startNode, LazyType(typ)(semanticTable), endNode, props.map(buildExpression))(id = id)
 
       case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        MergeCreateRelationshipPipe(source, idName, startNode, LazyType(typ)(context.semanticTable), endNode, props.map(buildExpression))(id = id)
+        MergeCreateRelationshipPipe(source, idName, startNode, LazyType(typ)(semanticTable), endNode, props.map(buildExpression))(id = id)
 
       case SetLabels(_, name, labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
@@ -340,7 +338,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
 
     //partition predicates on whether they deal with nodes or rels
-    val (nodePreds, relPreds) = predicates.partition(e => table.seen(e._1) && table.isNode(e._1))
+    val (nodePreds, relPreds) = predicates.partition(e => semanticTable.seen(e._1) && semanticTable.isNode(e._1))
     val nodeCommand = asCommand(nodePreds)
     val relCommand = asCommand(relPreds)
 
@@ -351,7 +349,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
   }
 
-  def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
+  def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
     val id = plan.id
     plan match {
       case CartesianProduct(_, _) =>
@@ -421,12 +419,10 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
   }
 
-  implicit val table: SemanticTable = context.semanticTable
-
-  private def buildPredicate(expr: ASTExpression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
+  private def buildPredicate(expr: ASTExpression): Predicate = {
     val rewrittenExpr: ASTExpression = rewriteAstExpression(expr)
 
-    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
+    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext)).asInstanceOf[Predicate]
   }
 
   private def translateColumnOrder(s: ColumnOrder): org.neo4j.cypher.internal.runtime.interpreted.pipes.ColumnOrder = s match {
