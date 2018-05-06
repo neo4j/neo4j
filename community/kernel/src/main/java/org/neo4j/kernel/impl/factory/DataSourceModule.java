@@ -262,10 +262,11 @@ public class DataSourceModule
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
         EmbeddedProxySPI proxySPI = platform.dependencies.resolveDependency( EmbeddedProxySPI.class );
 
+        ProcedureConfig procedureConfig = new ProcedureConfig( platform.config );
         Procedures procedures = new Procedures( proxySPI,
                 new SpecialBuiltInProcedures( Version.getNeo4jVersion(),
                         platform.databaseInfo.edition.toString() ),
-                pluginDir, internalLog, new ProcedureConfig( platform.config ) );
+                pluginDir, internalLog, procedureConfig );
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
@@ -300,7 +301,7 @@ public class DataSourceModule
         // Edition procedures
         try
         {
-            editionModule.registerProcedures( procedures );
+            editionModule.registerProcedures( procedures, procedureConfig );
         }
         catch ( KernelException e )
         {

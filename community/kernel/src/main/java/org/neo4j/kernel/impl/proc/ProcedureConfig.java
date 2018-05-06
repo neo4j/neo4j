@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
+import static java.time.ZoneOffset.UTC;
 import static java.util.Arrays.stream;
 
 public class ProcedureConfig
@@ -45,6 +47,7 @@ public class ProcedureConfig
     private final List<ProcMatcher> matchers;
     private final List<Pattern> accessPatterns;
     private final List<Pattern> whiteList;
+    private final ZoneId defaultTemporalTimeZone;
 
     private ProcedureConfig()
     {
@@ -52,6 +55,7 @@ public class ProcedureConfig
         this.matchers = Collections.emptyList();
         this.accessPatterns = Collections.emptyList();
         this.whiteList = Collections.singletonList( compilePattern( "*" ) );
+        this.defaultTemporalTimeZone = UTC;
     }
 
     public ProcedureConfig( Config config )
@@ -78,6 +82,7 @@ public class ProcedureConfig
         this.whiteList =
                 parseMatchers( GraphDatabaseSettings.procedure_whitelist.name(), config, PROCEDURE_DELIMITER,
                         ProcedureConfig::compilePattern );
+        this.defaultTemporalTimeZone = config.get( GraphDatabaseSettings.db_temporal_timezone );
     }
 
     private <T> List<T> parseMatchers( String configName, Config config, String delimiter, Function<String,T>
@@ -132,6 +137,11 @@ public class ProcedureConfig
     }
 
     static final ProcedureConfig DEFAULT = new ProcedureConfig();
+
+    public ZoneId getDefaultTemporalTimeZone()
+    {
+        return defaultTemporalTimeZone;
+    }
 
     private static class ProcMatcher
     {

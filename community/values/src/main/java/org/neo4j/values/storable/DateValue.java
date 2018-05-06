@@ -105,6 +105,11 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         return now( clock.withZone( parseZoneName( timezone ) ) );
     }
 
+    public static DateValue now( Clock clock, Supplier<ZoneId> defaultZone )
+    {
+        return now( clock.withZone( defaultZone.get() ) );
+    }
+
     public static DateValue build( MapValue map, Supplier<ZoneId> defaultZone )
     {
         return StructureBuilder.build( builder( defaultZone ), map );
