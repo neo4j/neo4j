@@ -86,6 +86,11 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         return now( clock.withZone( parseZoneName( timezone ) ) );
     }
 
+    public static LocalTimeValue now( Clock clock, Supplier<ZoneId> defaultZone )
+    {
+        return now( clock.withZone( defaultZone.get() ) );
+    }
+
     public static LocalTimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
     {
         return StructureBuilder.build( builder( defaultZone ), map );
