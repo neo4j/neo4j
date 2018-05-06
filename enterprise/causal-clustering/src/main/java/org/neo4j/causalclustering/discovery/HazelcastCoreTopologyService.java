@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
@@ -85,7 +86,9 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
 
-    private volatile LeaderInfo leaderInfo = LeaderInfo.INITIAL;
+    private final AtomicReference<LeaderInfo> leaderInfo = new AtomicReference<>( LeaderInfo.INITIAL );
+    private final AtomicReference<Optional<LeaderInfo>> stepDownInfo = new AtomicReference<>( Optional.empty() );
+
     private volatile HazelcastInstance hazelcastInstance;
     private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
@@ -132,23 +135,37 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     }
 
     @Override
-    public void setLeader( LeaderInfo leaderInfo, String dbName )
+    public void setLeader( LeaderInfo newLeaderInfo, String dbName )
     {
-        if ( this.leaderInfo.term() < leaderInfo.term() )
+        leaderInfo.updateAndGet( currentLeaderInfo ->
         {
-            this.leaderInfo = leaderInfo;
-        }
+            if ( currentLeaderInfo.term() < newLeaderInfo.term() && localDBName.equals( dbName ) )
+            {
+                log.info( "Leader %s updating leader info for database %s and term %s", myself, localDBName, newLeaderInfo.term() );
+                return newLeaderInfo;
+            }
+            else
+            {
+                return currentLeaderInfo;
+            }
+        } );
     }
 
     @Override
     public void handleStepDown( long term, String dbName )
     {
-        boolean wasLeaderForTerm = Objects.equals( myself, leaderInfo.memberId() ) && term == leaderInfo.term();
-        if ( wasLeaderForTerm )
+        LeaderInfo localLeaderInfo = leaderInfo.get();
+
+        boolean wasLeaderForDbAndTerm =
+                Objects.equals( myself, localLeaderInfo.memberId() ) &&
+                localDBName.equals( dbName ) &&
+                term == localLeaderInfo.term();
+
+        if ( wasLeaderForDbAndTerm )
         {
             log.info( "Step down event detected. This topology member, with MemberId %s, was leader in term %s, now moving " +
-                    "to follower.", myself, leaderInfo.term() );
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo.stepDown(), dbName );
+                    "to follower.", myself, localLeaderInfo.term() );
+            stepDownInfo.set( Optional.of( localLeaderInfo.stepDown() ) );
         }
     }
 
@@ -364,11 +381,17 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private void refreshRoles() throws InterruptedException
     {
         waitOnHazelcastInstanceCreation();
+        LeaderInfo localLeaderInfo = leaderInfo.get();
+        Optional<LeaderInfo> localStepDownInfo = stepDownInfo.get();
 
-        if ( leaderInfo.memberId() != null && leaderInfo.memberId().equals( myself ) )
+        if ( localStepDownInfo.isPresent() )
         {
-            log.info( "Leader %s updating leader info for database %s and term %s", myself, localDBName, leaderInfo.term() );
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName );
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, localStepDownInfo.get(), localDBName );
+            stepDownInfo.compareAndSet( localStepDownInfo, Optional.empty() );
+        }
+        else if ( localLeaderInfo.memberId() != null && localLeaderInfo.memberId().equals( myself ) )
+        {
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, localLeaderInfo, localDBName );
         }
 
         coreRoles = HazelcastClusterTopology.getCoreRoles( hazelcastInstance, allCoreServers().members().keySet() );
