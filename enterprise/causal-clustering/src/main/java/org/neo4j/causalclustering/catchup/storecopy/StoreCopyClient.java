@@ -60,12 +60,10 @@ public class StoreCopyClient
     private final CatchUpClient catchUpClient;
     private final EventHandlerProvider eventHandlerProvider;
     private TimeoutStrategy backOffStrategy;
-    private final Monitors monitors;
 
-    public StoreCopyClient( CatchUpClient catchUpClient, Monitors monitors, EventHandlerProvider eventHandlerProvider, TimeoutStrategy backOffStrategy )
+    public StoreCopyClient( CatchUpClient catchUpClient, EventHandlerProvider eventHandlerProvider, TimeoutStrategy backOffStrategy )
     {
         this.catchUpClient = catchUpClient;
-        this.monitors = monitors;
         this.eventHandlerProvider = eventHandlerProvider;
         this.backOffStrategy = backOffStrategy;
     }
@@ -101,18 +99,12 @@ public class StoreCopyClient
             StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions, EventHandler eventHandler, File destDir )
             throws StoreCopyFailedException
     {
-        StoreCopyClientMonitor
-                storeCopyClientMonitor = monitors.newMonitor( StoreCopyClientMonitor.class );
-        storeCopyClientMonitor.startReceivingStoreFiles();
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         for ( File file : prepareStoreCopyResponse.getFiles() )
         {
-            storeCopyClientMonitor.startReceivingStoreFile( Paths.get( destDir.toString(), file.getName() ).toString() );
             persistentCallToSecondary( new GetStoreFileRequest( expectedStoreId, file, lastTransactionId, generateId() ),
                                        filesCopyAdaptor( storeFileStream, eventHandler ), addressProvider, terminationConditions.get(), eventHandler );
-            storeCopyClientMonitor.finishReceivingStoreFile( Paths.get( destDir.toString(), file.getName() ).toString() );
         }
-        storeCopyClientMonitor.finishReceivingStoreFiles();
     }
 
     private void copyIndexSnapshotIndividually( PrepareStoreCopyResponse prepareStoreCopyResponse, StoreId expectedStoreId,
@@ -120,20 +112,14 @@ public class StoreCopyClient
             EventHandler eventHandler )
             throws StoreCopyFailedException
     {
-        StoreCopyClientMonitor
-                storeCopyClientMonitor = monitors.newMonitor( StoreCopyClientMonitor.class );
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         LongIterator indexIds = prepareStoreCopyResponse.getIndexIds().longIterator();
-        storeCopyClientMonitor.startReceivingIndexSnapshots();
         while ( indexIds.hasNext() )
         {
             long indexId = indexIds.next();
-            storeCopyClientMonitor.startReceivingIndexSnapshot( indexId );
             persistentCallToSecondary( new GetIndexFilesRequest( expectedStoreId, indexId, lastTransactionId, generateId() ),
                                        filesCopyAdaptor( storeFileStream, eventHandler ), addressProvider, terminationConditions.get(), eventHandler );
-            storeCopyClientMonitor.finishReceivingIndexSnapshot( indexId );
         }
-        storeCopyClientMonitor.finishReceivingIndexSnapshots();
     }
 
     private void persistentCallToSecondary( CatchUpRequest request, CatchUpResponseAdaptor<StoreCopyFinishedResponse> copyHandler,

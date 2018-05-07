@@ -59,7 +59,7 @@ public class TxPullClient
         pullRequestMonitor.txPullRequest( previousTxId );
         EventId eventId = EventId.create();
         EventHandler eventHandler = eventHandlerProvider.eventHandler( eventId );
-        eventHandler.on( Begin, param( "Previous txId", previousTxId ), param( "Address", fromAddress ) );
+        eventHandler.on( Begin, "Pulling transactions", param( "From tx", previousTxId ), param( "Address", fromAddress ) );
         return catchUpClient.makeBlockingRequest( fromAddress, new TxPullRequest( previousTxId, storeId, eventId.toString() ),
                 new CatchUpResponseAdaptor<TxPullRequestResult>()
         {
@@ -76,7 +76,7 @@ public class TxPullClient
             public void onTxStreamFinishedResponse( CompletableFuture<TxPullRequestResult> signal, TxStreamFinishedResponse response )
             {
                 signal.complete( new TxPullRequestResult( response.status(), lastTxIdReceived ) );
-                eventHandler.on( End, param( "Response status", response.status() ), param( "Last TxId", response.latestTxId() ) );
+                eventHandler.on( End, "Pulling transactions", param( "Response status", response.status() ), param( "Last tx", response.latestTxId() ) );
             }
         } );
     }

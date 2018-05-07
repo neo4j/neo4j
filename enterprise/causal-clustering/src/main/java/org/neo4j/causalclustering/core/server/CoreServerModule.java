@@ -240,7 +240,7 @@ public class CoreServerModule
                 new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
 
         RemoteStore remoteStore = new RemoteStore( logProvider, platformModule.fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient, platformModule.monitors, new LoggingEventHandlerProvider( logProvider.getLog( StoreCopyClient.class ) ),
+                new StoreCopyClient( catchUpClient, new LoggingEventHandlerProvider( logProvider.getLog( StoreCopyClient.class ) ),
                         storeCopyBackoffStrategy ),
                 new TxPullClient( catchUpClient, platformModule.monitors, new LoggingEventHandlerProvider( logProvider.getLog( TxPullClient.class ) ) ),
                 new TransactionLogCatchUpFactory(), config, platformModule.monitors );

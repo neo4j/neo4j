@@ -120,7 +120,7 @@ public class StoreCopyClientIT
         ConstantTimeTimeoutStrategy storeCopyBackoffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );
 
         Monitors monitors = new Monitors();
-        subject = new StoreCopyClient( catchUpClient, monitors, new LoggingEventHandlerProvider( logProvider.getLog( StoreCopyClient.class ) ),
+        subject = new StoreCopyClient( catchUpClient, new LoggingEventHandlerProvider( logProvider.getLog( StoreCopyClient.class ) ),
                                        storeCopyBackoffStrategy );
     }
 

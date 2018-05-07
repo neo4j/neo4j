@@ -32,8 +32,9 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
-import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -45,17 +46,19 @@ import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
+import org.neo4j.causalclustering.messaging.CompositeEventHandlerProvider;
+import org.neo4j.causalclustering.messaging.EventHandler;
 import org.neo4j.causalclustering.messaging.LoggingEventHandlerProvider;
-import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -74,9 +77,8 @@ public class StoreCopyClientTest
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
 
     private StoreCopyClient subject;
-    private final LoggingEventHandlerProvider eventHandler = new LoggingEventHandlerProvider(
-            FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out ).getLog( StoreCopyClient.class ) );
-    private final Monitors monitors = new Monitors();
+    private final CompositeEventHandlerProvider eventHandler = CompositeEventHandlerProvider.merge( new LoggingEventHandlerProvider(
+            FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out ).getLog( StoreCopyClient.class ) ) );
 
     // params
     private final AdvertisedSocketAddress expectedAdvertisedAddress = new AdvertisedSocketAddress( "host", 1234 );
@@ -94,7 +96,7 @@ public class StoreCopyClientTest
     public void setup()
     {
         backOffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );
-        subject = new StoreCopyClient( catchUpClient, monitors, eventHandler, backOffStrategy );
+        subject = new StoreCopyClient( catchUpClient, eventHandler, backOffStrategy );
     }
 
     @Test
@@ -148,15 +150,14 @@ public class StoreCopyClientTest
     public void shouldFailIfTerminationConditionFails() throws CatchUpClientException
     {
         // given a file will fail an expected number of times
-        subject = new StoreCopyClient( catchUpClient, monitors, eventHandler, backOffStrategy );
+        subject = new StoreCopyClient( catchUpClient, eventHandler, backOffStrategy );
 
         // and requesting the individual file will fail
         when( catchUpClient.makeBlockingRequest( any(), any(), any() ) ).thenReturn(
                 new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND ) );
 
         // and the initial list+count store files request is successful
-        PrepareStoreCopyResponse initialListingOfFilesResponse = PrepareStoreCopyResponse.success( serverFiles,
-                indexIds, -123L );
+        PrepareStoreCopyResponse initialListingOfFilesResponse = PrepareStoreCopyResponse.success( serverFiles, indexIds, -123L );
         when( catchUpClient.makeBlockingRequest( any(), any( PrepareStoreCopyRequest.class ), any() ) ).thenReturn( initialListingOfFilesResponse );
 
         // when we perform catchup
@@ -210,11 +211,15 @@ public class StoreCopyClientTest
     }
 
     @Test
-    public void storeFileEventsAreReported() throws Exception
+    public void shouldFollowExpectedEventPattern() throws Exception
     {
         // given
         PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( serverFiles, indexIds, -123L );
         when( catchUpClient.makeBlockingRequest( any(), any( PrepareStoreCopyRequest.class ), any() ) ).thenReturn( prepareStoreCopyResponse );
+
+        // and
+        StateCountingEventHandler stateCountingEventHandler = new StateCountingEventHandler();
+        eventHandler.add( id -> stateCountingEventHandler );
 
         // and
         StoreCopyFinishedResponse success = new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.SUCCESS );
@@ -223,54 +228,33 @@ public class StoreCopyClientTest
         // and
         when( catchUpClient.makeBlockingRequest( any(), any( GetIndexFilesRequest.class ), any() ) ).thenReturn( success );
 
-        // and
-        StoreCopyClientMonitor storeCopyClientMonitor = mock( StoreCopyClientMonitor.class );
-        monitors.addMonitorListener( storeCopyClientMonitor );
-
         // when
         subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely(), targetLocation );
 
         // then
-        verify( storeCopyClientMonitor ).startReceivingStoreFiles();
-        for ( File storeFileRequested : serverFiles )
-        {
-            verify( storeCopyClientMonitor ).startReceivingStoreFile( Paths.get( targetLocation.toString(), storeFileRequested.toString() ).toString() );
-            verify( storeCopyClientMonitor ).finishReceivingStoreFile( Paths.get( targetLocation.toString(), storeFileRequested.toString() ).toString() );
-        }
-        verify( storeCopyClientMonitor ).finishReceivingStoreFiles();
+        Map<EventHandler.EventState,Integer> states = stateCountingEventHandler.states;
+        assertThat( states.get( EventHandler.EventState.Begin ), equalTo( 1 ) );
+        assertTrue( states.get( EventHandler.EventState.Info ) > 1 );
+        assertThat( states.get( EventHandler.EventState.End ), equalTo( 1 ) );
     }
 
-    @Test
-    public void snapshotEventsAreReported() throws Exception
+    private class StateCountingEventHandler implements EventHandler
     {
-        // given
-        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( serverFiles, indexIds, -123L );
-        when( catchUpClient.makeBlockingRequest( any(), any( PrepareStoreCopyRequest.class ), any() ) ).thenReturn( prepareStoreCopyResponse );
+        final Map<EventState,Integer> states = new HashMap<>();
 
-        // and
-        StoreCopyFinishedResponse success = new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.SUCCESS );
-        when( catchUpClient.makeBlockingRequest( any(), any( GetStoreFileRequest.class ), any() ) ).thenReturn( success );
-
-        // and
-        when( catchUpClient.makeBlockingRequest( any(), any( GetIndexFilesRequest.class ), any() ) ).thenReturn( success );
-
-        // and
-        StoreCopyClientMonitor storeCopyClientMonitor = mock( StoreCopyClientMonitor.class );
-        monitors.addMonitorListener( storeCopyClientMonitor );
-
-        // when
-        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely(), targetLocation );
-
-        // then
-        verify( storeCopyClientMonitor ).startReceivingIndexSnapshots();
-        LongIterator iterator = indexIds.longIterator();
-        while ( iterator.hasNext() )
+        StateCountingEventHandler()
         {
-            long indexSnapshotIdRequested = iterator.next();
-            verify( storeCopyClientMonitor ).startReceivingIndexSnapshot( indexSnapshotIdRequested );
-            verify( storeCopyClientMonitor ).finishReceivingIndexSnapshot( indexSnapshotIdRequested );
+            for ( EventState eventState : EventState.values() )
+            {
+                states.putIfAbsent( eventState, 0 );
+            }
         }
-        verify( storeCopyClientMonitor ).finishReceivingIndexSnapshots();
+
+        @Override
+        public void on( EventState eventState, String message, Throwable throwable, Param... params )
+        {
+            states.put( eventState, states.get( eventState ) + 1 );
+        }
     }
 
     private List<CatchUpRequest> getRequests() throws CatchUpClientException

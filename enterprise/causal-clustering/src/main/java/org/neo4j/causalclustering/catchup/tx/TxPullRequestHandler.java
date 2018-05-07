@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static java.lang.String.format;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_INVALID_REQUEST;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
@@ -132,9 +131,8 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
                         {
                             if ( !f.isSuccess() )
                             {
-                                eventHandler.on( Warn, "Failed " +
-                                                format( "streaming transactions [%d--%d] to %s", firstTxId, txStream.lastTxId(), ctx.channel().remoteAddress() ),
-                                        f.cause() );
+                                eventHandler.on( Warn, "Failed streaming transactions", f.cause(), param( "FromId", firstTxId ),
+                                        param( "ToId", txStream.lastTxId() ), param( "Address", ctx.channel().remoteAddress() ) );
                             }
                         } );
                         responseStatus = SUCCESS_END_OF_STREAM;

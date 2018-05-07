@@ -17,22 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.helper;
+package org.neo4j.causalclustering.messaging;
 
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
-import static java.lang.Integer.min;
-
-public class RandomStringUtil
+public class EventHandlers implements EventHandler
 {
-    public static String generateId()
+    private final List<EventHandler> eventHandlers = new ArrayList<>();
+
+    @Override
+    public void on( EventState eventState, String message, Throwable throwable, Param... params )
     {
-        return generateId( 5 );
+        eventHandlers.forEach( eventHandler -> eventHandler.on( eventState, message, throwable, params ) );
     }
 
-    public static String generateId( int maxLength )
+    void add( EventHandler eventHandler )
     {
-        String string = UUID.randomUUID().toString();
-        return string.substring( 0, min( maxLength, string.length() ) );
+        eventHandlers.add( eventHandler );
     }
 }
