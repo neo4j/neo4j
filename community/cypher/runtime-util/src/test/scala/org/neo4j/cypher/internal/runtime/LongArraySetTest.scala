@@ -38,7 +38,7 @@ class LongArraySetTest extends FunSuite with Matchers {
       val validator = new mutable.HashSet[Array[Long]]()
       (0 to size) foreach { _ =>
         val tuple = new Array[Long](width)
-        (0 until width) foreach { i => tuple(i) = r.nextLong() }
+        (0 until width) foreach { i => tuple(i) = randomLong() }
         tested.add(tuple)
         validator.add(tuple)
       }
@@ -50,7 +50,7 @@ class LongArraySetTest extends FunSuite with Matchers {
 
       (0 to size) foreach { _ =>
         val tuple = new Array[Long](width)
-        (0 until width) foreach { i => tuple(i) = r.nextLong() }
+        (0 until width) foreach { i => tuple(i) = randomLong() }
         val a = tested.contains(tuple)
         val b = validator.contains(tuple)
 
@@ -58,6 +58,14 @@ class LongArraySetTest extends FunSuite with Matchers {
           fail(s"Value: ${util.Arrays.toString(tuple)} LongArraySet $a mutable.HashSet")
       }
     }
+  }
+
+  private def randomLong(): Long = {
+    val x = r.nextLong()
+    if (x == -1 || x == -2)
+      randomLong()
+    else
+      x
   }
 
   test("manual test to help with debugging") {

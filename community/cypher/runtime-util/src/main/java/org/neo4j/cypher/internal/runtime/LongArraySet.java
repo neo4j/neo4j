@@ -23,11 +23,11 @@ package org.neo4j.cypher.internal.runtime;
  * When you need to have a set of arrays of longs representing entities - look no further
  * <p>
  * This set will keep all it's state in a single long[] array, marking unused slots
- * using 0xF000000000000000L, a value that should never be used for node or relationship id's.
+ * using -2, a value that should never be used for node or relationship id's.
  * <p>
  * The set will be resized when either probing has to go on for too long when doing inserts,
  * or the load factor reaches 75%.
- *
+ * <p>
  * The word "offset" here means the index into an array,
  * and slot is a number that multiplied by the width of the values will return the offset.
  */
@@ -38,6 +38,7 @@ public class LongArraySet
     private static final int SLOT_EMPTY = 0;
     private static final int VALUE_FOUND = 1;
     private static final int CONTINUE_PROBING = -1;
+    private static final double LOAD_FACTOR = 0.75;
 
     private Table table;
     private final int width;
@@ -59,7 +60,7 @@ public class LongArraySet
      */
     public boolean add( long[] value )
     {
-        assert value.length == width : "all elements must have the same size";
+        assert validValue( value );
         int slotNr = slotFor( value );
         while ( true )
         {
@@ -101,11 +102,11 @@ public class LongArraySet
     /***
      * Returns true if the value is in the set.
      * @param value The value to check for
-    * @return whether the value is in the set or not.
+     * @return whether the value is in the set or not.
      */
     public boolean contains( long[] value )
     {
-        assert value.length == width : "all elements must have the same size";
+        assert validValue( value );
         int slot = slotFor( value );
 
         int result;
@@ -116,6 +117,25 @@ public class LongArraySet
         }
         while ( result == CONTINUE_PROBING );
         return result == VALUE_FOUND;
+    }
+
+    /*
+    Only called from assert
+     */
+    private boolean validValue( long[] arr )
+    {
+        if ( arr.length != width )
+        {
+            throw new AssertionError( "all elements in the set must have the same size" );
+        }
+        for ( long l : arr )
+        {
+            if ( l == -1 || l == -2 )
+            {
+                throw new AssertionError( "magic values -1 and -2 not allowed in set" );
+            }
+        }
+        return true;
     }
 
     private int hashCode( long[] arr, int from, int numberOfElements )
@@ -193,7 +213,7 @@ public class LongArraySet
         Table( int capacity )
         {
             this.capacity = capacity;
-            resizeLimit = (int) (capacity * 0.75);
+            resizeLimit = (int) (capacity * LOAD_FACTOR);
             tableMask = Integer.highestOneBit( capacity ) - 1;
             inner = new long[capacity * width];
             java.util.Arrays.fill( inner, NOT_IN_USE );
