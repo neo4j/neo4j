@@ -200,7 +200,7 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Iterator<SchemaIndexDescriptor> indexesGetAll()
     {
-        return toIndexDescriptors( schemaCache.indexRules() );
+        return (Iterator)schemaCache.indexRules().iterator();
     }
 
     @Override
@@ -601,7 +601,7 @@ public class StorageLayer implements StoreReadLayer
     {
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            if ( rule.getIndexDescriptor().equals( index ) )
+            if ( rule.equals( index ) )
             {
                 return rule;
             }
@@ -697,10 +697,5 @@ public class StorageLayer implements StoreReadLayer
         throw new InvalidRecordException(
                 "Node " + nodeId + " neither start nor end node of relationship " + relationshipId +
                         " with startNode:" + startNode + " and endNode:" + endNode );
-    }
-
-    private static Iterator<SchemaIndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
-    {
-        return Iterators.map( IndexRule::getIndexDescriptor, rules.iterator() );
     }
 }

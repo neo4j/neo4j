@@ -201,8 +201,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexProxy indexProxy;
 
                 long indexId = indexRule.getId();
-                SchemaIndexDescriptor descriptor = indexRule.getIndexDescriptor();
-                IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
+                SchemaIndexDescriptor descriptor = indexRule;
+                IndexProvider.Descriptor providerDescriptor = indexRule.providerDescriptor();
                 IndexProvider provider = providerMap.apply( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexId, descriptor );
                 indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() )
@@ -722,8 +722,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     indexMap.putIndexProxy( ruleId, index );
                     continue;
                 }
-                final SchemaIndexDescriptor descriptor = rule.getIndexDescriptor();
-                Descriptor providerDescriptor = rule.getProviderDescriptor();
+                final SchemaIndexDescriptor descriptor = rule;
+                Descriptor providerDescriptor = rule.providerDescriptor();
                 boolean flipToTentative = rule.canSupportUniqueConstraint();
                 if ( state == State.RUNNING )
                 {

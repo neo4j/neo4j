@@ -180,7 +180,7 @@ public class DropBrokenUniquenessConstraintIT
 
     private void setOwnerNull( SchemaStore schemaStore, IndexRule rule )
     {
-        rule = constraintIndexRule( rule.getId(), rule.getIndexDescriptor(), rule.getProviderDescriptor(), null );
+        rule = constraintIndexRule( rule.getId(), rule, rule.providerDescriptor(), null );
         List<DynamicRecord> dynamicRecords = schemaStore.allocateFrom( rule );
         for ( DynamicRecord record : dynamicRecords )
         {

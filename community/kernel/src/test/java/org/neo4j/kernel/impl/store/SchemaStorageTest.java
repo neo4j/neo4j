@@ -145,7 +145,7 @@ public class SchemaStorageTest
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( d ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( e ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( f ) ) );
-        assertEquals( SchemaIndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+        assertEquals( SchemaIndexDescriptor.Type.GENERAL, rule.type() );
     }
 
     @Test
@@ -171,7 +171,7 @@ public class SchemaStorageTest
         {
             assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( prop ) ) );
         }
-        assertEquals( SchemaIndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+        assertEquals( SchemaIndexDescriptor.Type.GENERAL, rule.type() );
     }
 
     @Test
@@ -335,7 +335,7 @@ public class SchemaStorageTest
     {
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
-        assertEquals( type, rule.getIndexDescriptor().type() );
+        assertEquals( type, rule.type() );
     }
 
     private void assertRule( ConstraintRule rule, String label, String propertyKey, ConstraintDescriptor.Type type )

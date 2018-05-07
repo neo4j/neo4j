@@ -457,9 +457,9 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized.getIndexDescriptor(), equalTo( index ) );
+        assertThat( deserialized, equalTo( index ) );
         assertThat( deserialized.schema(), equalTo( index.schema() ) );
-        assertThat( deserialized.getProviderDescriptor(), equalTo( indexProvider ) );
+        assertThat( deserialized.providerDescriptor(), equalTo( indexProvider ) );
         assertThat( deserialized.getName(), is( name ) );
         assertException( deserialized::getOwningConstraint, IllegalStateException.class );
     }
@@ -478,9 +478,9 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized.getIndexDescriptor(), equalTo( index ) );
+        assertThat( deserialized, equalTo( index ) );
         assertThat( deserialized.schema(), equalTo( index.schema() ) );
-        assertThat( deserialized.getProviderDescriptor(), equalTo( indexProvider ) );
+        assertThat( deserialized.providerDescriptor(), equalTo( indexProvider ) );
         assertThat( deserialized.getOwningConstraint(), equalTo( constraintId ) );
         assertThat( deserialized.getName(), is( name ) );
     }
@@ -575,9 +575,9 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         IndexRule deserialized = assertIndexRule( serialiseAndDeserialise( indexRule ) );
 
         assertThat( deserialized.getId(), equalTo( indexRule.getId() ) );
-        assertThat( deserialized.getIndexDescriptor(), equalTo( indexRule.getIndexDescriptor() ) );
+        assertThat( deserialized, equalTo( indexRule ) );
         assertThat( deserialized.schema(), equalTo( indexRule.schema() ) );
-        assertThat( deserialized.getProviderDescriptor(), equalTo( indexRule.getProviderDescriptor() ) );
+        assertThat( deserialized.providerDescriptor(), equalTo( indexRule.providerDescriptor() ) );
     }
 
     private IndexRule assertIndexRule( SchemaRule schemaRule )

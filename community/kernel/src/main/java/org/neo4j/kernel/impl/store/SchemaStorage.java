@@ -56,7 +56,7 @@ public class SchemaStorage implements SchemaRuleAccess
      */
     public IndexRule indexGetForSchema( final SchemaIndexDescriptor descriptor )
     {
-        Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::isSame, IndexRule.class, false );
+        Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::equals, IndexRule.class, false );
 
         IndexRule foundRule = null;
 

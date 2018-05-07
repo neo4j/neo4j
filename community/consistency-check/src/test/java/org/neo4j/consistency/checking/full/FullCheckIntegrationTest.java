@@ -454,8 +454,8 @@ public class FullCheckIntegrationTest
         {
             IndexRule rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = storeAccess.indexes().apply( rule.getProviderDescriptor() )
-                .getPopulator( rule.getId(), rule.getIndexDescriptor(), samplingConfig );
+            IndexPopulator populator = storeAccess.indexes().apply( rule.providerDescriptor() )
+                .getPopulator( rule.getId(), rule, samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 
@@ -563,9 +563,9 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            SchemaIndexDescriptor descriptor = indexRule.getIndexDescriptor();
+            SchemaIndexDescriptor descriptor = indexRule;
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
-                    apply( indexRule.getProviderDescriptor() ).getOnlineAccessor(
+                    apply( indexRule.providerDescriptor() ).getOnlineAccessor(
                             indexRule.getId(), descriptor, samplingConfig );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
             {
@@ -600,10 +600,10 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().apply( indexRule.getProviderDescriptor() )
-                    .getOnlineAccessor( indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
+            IndexAccessor accessor = fixture.directStoreAccess().indexes().apply( indexRule.providerDescriptor() )
+                    .getOnlineAccessor( indexRule.getId(), indexRule, samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
-            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );
+            updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );
             updater.close();
             accessor.force( IOLimiter.unlimited() );
             accessor.close();

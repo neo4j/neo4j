@@ -96,8 +96,8 @@ public class SchemaStoreTest
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.schema(), readIndexRule.schema() );
-        assertEquals( indexRule.getIndexDescriptor(), readIndexRule.getIndexDescriptor() );
-        assertEquals( indexRule.getProviderDescriptor(), readIndexRule.getProviderDescriptor() );
+        assertEquals( indexRule, readIndexRule );
+        assertEquals( indexRule.providerDescriptor(), readIndexRule.providerDescriptor() );
     }
 
     @Test
@@ -115,8 +115,8 @@ public class SchemaStoreTest
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.schema(), readIndexRule.schema() );
-        assertEquals( indexRule.getIndexDescriptor(), readIndexRule.getIndexDescriptor() );
-        assertEquals( indexRule.getProviderDescriptor(), readIndexRule.getProviderDescriptor() );
+        assertEquals( indexRule, readIndexRule );
+        assertEquals( indexRule.providerDescriptor(), readIndexRule.providerDescriptor() );
     }
 
     @Test
@@ -133,8 +133,8 @@ public class SchemaStoreTest
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.schema(), readIndexRule.schema() );
-        assertEquals( indexRule.getIndexDescriptor(), readIndexRule.getIndexDescriptor() );
-        assertEquals( indexRule.getProviderDescriptor(), readIndexRule.getProviderDescriptor() );
+        assertEquals( indexRule, readIndexRule );
+        assertEquals( indexRule.providerDescriptor(), readIndexRule.providerDescriptor() );
     }
 
     @Test

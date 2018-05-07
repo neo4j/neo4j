@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+import org.neo4j.kernel.api.index.IndexProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Filter.GENERAL;
@@ -83,20 +84,17 @@ public class SchemaIndexDescriptor implements SchemaDescriptorSupplier, IndexRef
     private final SchemaDescriptor schema;
     private final SchemaIndexDescriptor.Type type;
     private final Optional<String> name;
-    private final String providerKey;
-    private final String providerVersion;
+    private final IndexProvider.Descriptor providerDescriptor;
 
     public SchemaIndexDescriptor( SchemaDescriptor schema,
                                   Type type,
                                   Optional<String> name,
-                                  String providerKey,
-                                  String providerVersion )
+                                  IndexProvider.Descriptor providerDescriptor )
     {
         this.schema = schema;
         this.type = type;
         this.name = name;
-        this.providerKey = providerKey;
-        this.providerVersion = providerVersion;
+        this.providerDescriptor = providerDescriptor;
     }
 
     // METHODS
@@ -132,6 +130,16 @@ public class SchemaIndexDescriptor implements SchemaDescriptorSupplier, IndexRef
     public int[] properties()
     {
         return schema.getPropertyIds();
+    }
+
+    public Optional<String> name()
+    {
+        return name;
+    }
+
+    public IndexProvider.Descriptor providerDescriptor()
+    {
+        return providerDescriptor;
     }
 
     /**

@@ -262,7 +262,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         while ( indexRules.hasNext() )
         {
             IndexRule rule = indexRules.next();
-            indexes.put( rule.getId(), rule.getIndexDescriptor() );
+            indexes.put( rule.getId(), rule );
         }
         return indexes;
     }
