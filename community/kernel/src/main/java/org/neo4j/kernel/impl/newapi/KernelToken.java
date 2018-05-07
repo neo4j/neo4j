@@ -64,10 +64,7 @@ public class KernelToken implements Token
             throws IllegalTokenNameException, TooManyLabelsException
     {
         ktx.assertOpen();
-        if ( labelNames.length != labelIds.length )
-        {
-            throw new IllegalArgumentException( "Name and id arrays have different length." );
-        }
+        assertSameLength( labelNames, labelIds );
         for ( int i = 0; i < labelNames.length; i++ )
         {
             labelIds[i] = store.labelGetForName( checkValidTokenName( labelNames[i] ) );
@@ -77,6 +74,14 @@ public class KernelToken implements Token
                 store.labelGetOrCreateForNames( labelNames, labelIds );
                 return;
             }
+        }
+    }
+
+    private void assertSameLength( String[] names, int[] ids )
+    {
+        if ( names.length != ids.length )
+        {
+            throw new IllegalArgumentException( "Name and id arrays have different length." );
         }
     }
 
@@ -112,6 +117,23 @@ public class KernelToken implements Token
         }
         ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return store.propertyKeyGetOrCreateForName( propertyKeyName );
+    }
+
+    @Override
+    public void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids ) throws IllegalTokenNameException
+    {
+        ktx.assertOpen();
+        assertSameLength( propertyKeys, ids );
+        for ( int i = 0; i < propertyKeys.length; i++ )
+        {
+            ids[i] = store.propertyKeyGetForName( checkValidTokenName( propertyKeys[i] ) );
+            if ( ids[i] == TokenHolder.NO_ID )
+            {
+                ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
+                store.propertyKeyGetOrCreateForNames( propertyKeys, ids );
+                return;
+            }
+        }
     }
 
     @Override

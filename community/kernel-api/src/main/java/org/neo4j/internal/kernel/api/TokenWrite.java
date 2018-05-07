@@ -72,6 +72,17 @@ public interface TokenWrite
     int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException;
 
     /**
+     * Get or create the property token ids for each of the given {@code propertyKeys}, and store them at the
+     * corresponding index in the given {@code ids} array.
+     *
+     * This is effectively a batching version of {@link #propertyKeyGetOrCreateForName(String)}.
+     *
+     * @param propertyKeys The array of property names for which to resolve or create their id.
+     * @param ids The array into which the resulting token ids will be stored.
+     */
+    void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids ) throws IllegalTokenNameException;
+
+    /**
      * Returns the id associated with the relationship type or creates a new one.
      * @param relationshipTypeName the name of the relationship
      * @return the id associated with the name

@@ -22,9 +22,11 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import org.junit.Test;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -32,7 +34,10 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
@@ -43,7 +48,7 @@ import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void should_get_all_node_properties()
+    public void shouldGetAllNodeProperties()
     {
         // GIVEN
         String longString =
@@ -123,7 +128,7 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void should_create_property_key_if_not_exists()
+    public void shouldCreatePropertyKeyIfNotExists()
     {
         // WHEN
         long id = storageReader.propertyKeyGetOrCreateForName( propertyKey );
@@ -133,7 +138,25 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void should_get_previously_created_property_key()
+    public void shouldBeAbleToGetOrCreateMultiplePropertyKeys() throws Exception
+    {
+        int idB = disk.propertyKeyGetOrCreateForName( "b" );
+
+        String[] names = {"a", "b", "c"};
+        int[] ids = new int[3];
+        Arrays.fill( ids, TokenHolder.NO_ID );
+
+        disk.propertyKeyGetOrCreateForNames( names, ids );
+        assertThat( ids[0], is( disk.propertyKeyGetForName( "a" ) ) );
+        assertThat( ids[1], is( idB ) );
+        assertThat( ids[2], is( disk.propertyKeyGetForName( "c" ) ) );
+        assertThat( ids[0], greaterThanOrEqualTo( 0 ) );
+        assertThat( ids[1], greaterThanOrEqualTo( 0 ) );
+        assertThat( ids[2], greaterThanOrEqualTo( 0 ) );
+    }
+
+    @Test
+    public void shouldGetPreviouslyCreatedPropertyKey()
     {
         // GIVEN
         long id = storageReader.propertyKeyGetOrCreateForName( propertyKey );
@@ -146,7 +169,7 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void should_be_able_to_get_or_create_previously_created_property_key()
+    public void shouldBeAbleToGetOrCreatePreviouslyCreatedPropertyKey()
     {
         // GIVEN
         long id = storageReader.propertyKeyGetOrCreateForName( propertyKey );
@@ -159,7 +182,7 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void should_fail_if_get_non_existent_property_key()
+    public void shouldFailIfGetNonExistentPropertyKey()
     {
         // WHEN
         int propertyKey = storageReader.propertyKeyGetForName( "non-existent-property-key" );

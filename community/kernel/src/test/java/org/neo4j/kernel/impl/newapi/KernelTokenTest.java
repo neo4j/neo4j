@@ -74,6 +74,18 @@ public class KernelTokenTest
     }
 
     @Test
+    public void propertyGetOrCreateForNames() throws Exception
+    {
+        assertIllegalToken( () -> token.propertyKeyGetOrCreateForNames( new String[]{null}, new int[1] ) );
+        assertIllegalToken( () -> token.propertyKeyGetOrCreateForNames( new String[]{""}, new int[1] ) );
+        String[] names = {"a", "b"};
+        int[] ids = new int[2];
+        when( storeReadLayer.propertyKeyGetForName( "a" ) ).thenReturn( TokenHolder.NO_ID );
+        token.propertyKeyGetOrCreateForNames( names, ids );
+        verify( storeReadLayer ).propertyKeyGetOrCreateForNames( names, ids );
+    }
+
+    @Test
     public void relationshipTypeGetOrCreateForName() throws IllegalTokenNameException
     {
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( null ) );

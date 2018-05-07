@@ -351,6 +351,17 @@ public interface StorageReader extends AutoCloseable
     String labelGetName( long labelId ) throws LabelNotFoundKernelException;
 
     /**
+     * Get or create the property token ids for each of the given {@code propertyKeys}, and store them at the
+     * corresponding index in the given {@code ids} array.
+     *
+     * This is effectively a batching version of {@link #propertyKeyGetOrCreateForName(String)}.
+     *
+     * @param propertyKeys The array of property names for which to resolve or create their id.
+     * @param ids The array into which the resulting token ids will be stored.
+     */
+    void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids );
+
+    /**
      * @param propertyKeyName name of property key.
      * @return token id of property key.
      */

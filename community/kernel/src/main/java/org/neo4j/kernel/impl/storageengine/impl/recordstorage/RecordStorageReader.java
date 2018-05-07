@@ -255,10 +255,8 @@ class RecordStorageReader implements StorageReader
         }
         catch ( TransactionFailureException e )
         {
-            // Temporary workaround for the property store based label
-            // implementation. Actual
-            // implementation should not depend on internal kernel exception
-            // messages like this.
+            // Temporary workaround for the property store based label implementation.
+            // Actual implementation should not depend on internal kernel exception messages like this.
             if ( e.getCause() instanceof UnderlyingStorageException &&
                     e.getCause().getMessage().equals( "Id capacity exceeded" ) )
             {
@@ -425,6 +423,12 @@ class RecordStorageReader implements StorageReader
     public int propertyKeyGetOrCreateForName( String propertyKey )
     {
         return propertyKeyTokenHolder.getOrCreateId( propertyKey );
+    }
+
+    @Override
+    public void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids )
+    {
+        propertyKeyTokenHolder.getOrCreateIds( propertyKeys, ids );
     }
 
     @Override
