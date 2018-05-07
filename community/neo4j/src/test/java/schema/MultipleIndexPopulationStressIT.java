@@ -19,7 +19,6 @@
  */
 package schema;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.Randoms;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.RandomRule;
@@ -97,7 +95,6 @@ public class MultipleIndexPopulationStressIT
     private final TestDirectory directory = TestDirectory.testDirectory();
 
     private final RandomRule random = new RandomRule();
-    private RandomValues randomValues;
     private final CleanupRule cleanup = new CleanupRule();
     private final RepeatRule repeat = new RepeatRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
@@ -105,12 +102,6 @@ public class MultipleIndexPopulationStressIT
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( random ).around( repeat ).around( directory )
                                                 .around( cleanup ).around( fileSystemRule );
-
-    @Before
-    public void setup()
-    {
-        this.randomValues = RandomValues.create( random.random(), getConfiguration() );
-    }
 
     @Test
     public void populateMultipleIndexWithSeveralNodesSingleThreaded() throws Exception
@@ -286,7 +277,7 @@ public class MultipleIndexPopulationStressIT
             Node node = db.getNodeById( nodeId );
             Object[] keys = Iterables.asCollection( node.getPropertyKeys() ).toArray();
             String key = (String) random.among( keys );
-            if ( random.nextFloatValue().value() < 0.1 )
+            if ( random.nextFloat() < 0.1 )
             {   // REMOVE
                 node.removeProperty( key );
             }
@@ -312,9 +303,9 @@ public class MultipleIndexPopulationStressIT
         importer.doImport( new RandomDataInput( count ) );
     }
 
-    private class RandomNodeGenerator extends GeneratingInputIterator<Randoms>
+    private class RandomNodeGenerator extends GeneratingInputIterator<RandomValues>
     {
-        RandomNodeGenerator( int count, Generator<Randoms> randomsGenerator )
+        RandomNodeGenerator( int count, Generator<RandomValues> randomsGenerator )
         {
             super( count, 1_000, new RandomsStates( random.seed() ), randomsGenerator, 0 );
         }
@@ -339,12 +330,12 @@ public class MultipleIndexPopulationStressIT
         public InputIterable nodes()
         {
             return InputIterable.replayable( () -> new RandomNodeGenerator( count, ( state, visitor, id ) -> {
-                String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
+                String[] keys = random.randomValues().selection( TOKENS, 1, TOKENS.length, false );
                 for ( String key : keys )
                 {
-                    visitor.property( key, randomValues.nextValue() );
+                    visitor.property( key, random.nextValueAsObject() );
                 }
-                visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
+                visitor.labels( random.selection( TOKENS, 1, TOKENS.length, false ) );
             } ) );
         }
 
@@ -375,35 +366,4 @@ public class MultipleIndexPopulationStressIT
         }
     }
 
-    private RandomValues.Configuration getConfiguration()
-    {
-        return new RandomValues.Configuration()
-        {
-            private Randoms.Configuration conf = random.configuration();
-
-            @Override
-            public int stringMinLength()
-            {
-                return conf.stringMinLength();
-            }
-
-            @Override
-            public int stringMaxLength()
-            {
-                return conf.stringMaxLength();
-            }
-
-            @Override
-            public int arrayMinLength()
-            {
-                return conf.arrayMinLength();
-            }
-
-            @Override
-            public int arrayMaxLength()
-            {
-                return conf.arrayMaxLength();
-            }
-        };
-    }
 }

@@ -34,7 +34,6 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -94,43 +93,10 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
                 }
                 else
                 {
-                    value = newUniqueValue( RandomValues.create( random.random(), getConfiguration() ),
-                            uniqueCompareValues, uniqueValues );
+                    value = newUniqueValue( random.randomValues(), uniqueCompareValues, uniqueValues );
                 }
 
                 return add( currentEntityId++, value );
-            }
-
-            private RandomValues.Configuration getConfiguration()
-            {
-                return new RandomValues.Configuration()
-                {
-                    private Randoms.Configuration conf = random.configuration();
-
-                    @Override
-                    public int stringMinLength()
-                    {
-                        return conf.stringMinLength();
-                    }
-
-                    @Override
-                    public int stringMaxLength()
-                    {
-                        return conf.stringMaxLength();
-                    }
-
-                    @Override
-                    public int arrayMinLength()
-                    {
-                        return conf.arrayMinLength();
-                    }
-
-                    @Override
-                    public int arrayMaxLength()
-                    {
-                        return conf.arrayMaxLength();
-                    }
-                };
             }
 
             private Value existingNonUniqueValue( RandomRule randomRule )

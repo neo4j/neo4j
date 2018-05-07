@@ -89,8 +89,8 @@ class UTF8StringValueBuilder
         else
         {
             //Require four bytes - will be laid out like:
-            //b1       b2       b3
-            //11110xxx 10xxxxxx 10xxxxxx
+            //b1       b2       b3       b4
+            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
             add( (byte) (0b1111_0000 | (0b0001_1111 & (codePoint >> 18))) );
             add( (byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 12))) );
             add( (byte) (0b1000_0000 | (0b0011_1111 & (codePoint >> 6))) );

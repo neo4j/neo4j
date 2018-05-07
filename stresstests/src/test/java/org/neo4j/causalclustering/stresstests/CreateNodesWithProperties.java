@@ -30,7 +30,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helper.Workload;
 import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.logging.Log;
-import org.neo4j.test.Randoms;
+import org.neo4j.values.storable.RandomValues;
 
 class CreateNodesWithProperties extends Workload
 {
@@ -65,7 +65,7 @@ class CreateNodesWithProperties extends Workload
     protected void doWork()
     {
         txLogger.info( "SuccessCount: " + txSuccessCount + " FailCount: " + txFailCount );
-        Randoms randoms = new Randoms();
+        RandomValues randomValues = RandomValues.create();
 
         try
         {
@@ -74,7 +74,7 @@ class CreateNodesWithProperties extends Workload
                 Node node = db.createNode( label );
                 for ( int i = 1; i <= 8; i++ )
                 {
-                    node.setProperty( prop( i ), randoms.propertyValue() );
+                    node.setProperty( prop( i ), randomValues.nextValue().asObject() );
                 }
                 tx.success();
             } );

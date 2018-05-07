@@ -50,9 +50,9 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -360,21 +360,19 @@ public class LuceneSchemaIndexUniquenessVerificationIT
 
     private Set<Value> randomArrays( int minLength, int maxLength )
     {
-        Randoms randoms = new Randoms( ThreadLocalRandom.current(), new ArraySizeConfig( minLength, maxLength ) );
+        RandomValues randoms = RandomValues.create( new ArraySizeConfig( minLength, maxLength ) );
 
         return IntStream.range( 0, nodesToCreate )
-                .mapToObj( i -> randoms.array() )
-                .map( Values::of )
+                .mapToObj( i -> randoms.nextArray() )
                 .collect( toSet() );
     }
 
     private Set<Value> randomValues()
     {
-        Randoms randoms = new Randoms( ThreadLocalRandom.current(), new ArraySizeConfig( 5, 100 ) );
+        RandomValues randoms = RandomValues.create( new ArraySizeConfig( 5, 100 ) );
 
         return IntStream.range( 0, nodesToCreate )
-                .mapToObj( i -> randoms.propertyValue() )
-                .map( Values::of )
+                .mapToObj( i -> randoms.nextValue() )
                 .collect( toSet() );
     }
 
@@ -424,7 +422,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         return ThreadLocalRandom.current().nextDouble( min, max );
     }
 
-    private static class ArraySizeConfig extends Randoms.Default
+    private static class ArraySizeConfig extends RandomValues.Default
     {
         final int minLength;
         final int maxLength;

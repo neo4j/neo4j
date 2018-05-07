@@ -83,7 +83,7 @@ abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,Nativ
         TextValue candidate;
         do
         {
-            candidate = random.nextString();
+            candidate = random.nextTextValue();
         }
         while ( !uniqueCompareValues.add( candidate.stringValue() ) );
         uniqueValues.add( candidate );

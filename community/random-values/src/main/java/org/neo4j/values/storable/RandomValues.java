@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import java.lang.reflect.Array;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -33,10 +34,6 @@ import java.util.Random;
 import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-
-import org.neo4j.values.Generator;
-import org.neo4j.values.RandomGenerator;
-import org.neo4j.values.SplittableRandomGenerator;
 
 import static java.lang.Math.abs;
 import static java.time.LocalDate.ofEpochDay;
@@ -126,6 +123,8 @@ public class RandomValues
         }
     }
 
+    public static Configuration DEFAULT_CONFIGURATION = new Default();
+
     private final Generator generator;
     private final Configuration configuration;
 
@@ -133,7 +132,7 @@ public class RandomValues
 
     private RandomValues( Generator generator )
     {
-        this( generator, new Default() );
+        this( generator, DEFAULT_CONFIGURATION );
     }
 
     private RandomValues( Generator generator, Configuration configuration )
@@ -251,6 +250,16 @@ public class RandomValues
     }
 
     /**
+     * Returns the next pseudorandom uniformly distributed {@code boolean}
+     *
+     * @return the next pseudorandom uniformly distributed {@code boolean}
+     */
+    public boolean nextBoolean()
+    {
+        return generator.nextBoolean();
+    }
+
+    /**
      * Returns the next pseudorandom uniformly distributed {@link IntValue}
      *
      * @return the next pseudorandom uniformly distributed {@link IntValue}
@@ -258,6 +267,16 @@ public class RandomValues
     public IntValue nextIntValue()
     {
         return intValue( generator.nextInt() );
+    }
+
+    /**
+     * Returns the next pseudorandom uniformly distributed {@code int}
+     *
+     * @return the next pseudorandom uniformly distributed {@code int}
+     */
+    public int nextInt()
+    {
+        return generator.nextInt();
     }
 
     /**
@@ -333,13 +352,25 @@ public class RandomValues
     }
 
     /**
-     * Returns the next pseudorandom uniformly distributed {@link FloatValue}
+     * Returns the next pseudorandom uniformly distributed {@link FloatValue} between 0 (inclusive) and the specified
+     * 1.0 (exclusive)
      *
      * @return the next pseudorandom uniformly distributed {@link FloatValue}
      */
     public FloatValue nextFloatValue()
     {
         return floatValue( generator.nextFloat() );
+    }
+
+    /**
+     * Returns the next pseudorandom uniformly distributed {@code float} between 0 (inclusive) and the specified
+     * 1.0 (exclusive)
+     *
+     * @return the next pseudorandom uniformly distributed {@code float}
+     */
+    public float nextFloat()
+    {
+        return generator.nextFloat();
     }
 
     /**
@@ -419,9 +450,9 @@ public class RandomValues
      *
      * @return a {@link TextValue} consisting only of ascii alphabetic characters.
      */
-    public TextValue nextAlphaString()
+    public TextValue nextAlphaTextValue()
     {
-        return nextAlphaString( configuration.stringMinLength(), configuration.stringMaxLength() );
+        return nextAlphaTextValue( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
     /**
@@ -431,7 +462,7 @@ public class RandomValues
      * @param maxLength the maximum length of the string
      * @return a {@link TextValue} consisting only of ascii alphabetic characters.
      */
-    public TextValue nextAlphaString( int minLength, int maxLength )
+    public TextValue nextAlphaTextValue( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         byte[] bytes = new byte[length];
@@ -458,9 +489,9 @@ public class RandomValues
      *
      * @return a {@link TextValue} consisting only of ascii alphabetic and numerical characters.
      */
-    public TextValue nextAlphaNumericString()
+    public TextValue nextAlphaNumericTextValue()
     {
-        return nextAlphaNumericString( configuration.stringMinLength(), configuration.stringMaxLength() );
+        return nextAlphaNumericTextValue( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
     /**
@@ -470,7 +501,7 @@ public class RandomValues
      * @param maxLength the maximum length of the string
      * @return a {@link TextValue} consisting only of ascii alphabetic and numerical characters.
      */
-    public TextValue nextAlphaNumericString( int minLength, int maxLength )
+    public TextValue nextAlphaNumericTextValue( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         byte[] bytes = new byte[length];
@@ -506,9 +537,9 @@ public class RandomValues
      *
      * @return a {@link TextValue} consisting only of ascii characters.
      */
-    public TextValue nextAsciiString()
+    public TextValue nextAsciiTextValue()
     {
-        return nextAsciiString( configuration.stringMinLength(), configuration.stringMaxLength() );
+        return nextAsciiTextValue( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
     /**
@@ -518,7 +549,7 @@ public class RandomValues
      * @param maxLength the maximum length of the string
      * @return a {@link TextValue} consisting only of ascii characters.
      */
-    public TextValue nextAsciiString( int minLength, int maxLength )
+    public TextValue nextAsciiTextValue( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         byte[] bytes = new byte[length];
@@ -538,9 +569,9 @@ public class RandomValues
      *
      * @return a {@link TextValue} consisting only of printable ascii characters.
      */
-    public TextValue nextPrintableAsciiString()
+    public TextValue nextPrintableAsciiTextValue()
     {
-        return nextPrintableAsciiString( configuration.stringMinLength(), configuration.stringMaxLength() );
+        return nextPrintableAsciiTextValue( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
     /**
@@ -550,7 +581,7 @@ public class RandomValues
      * @param maxLength the maximum length of the string
      * @return a {@link TextValue} consisting only of printable ascii characters.
      */
-    public TextValue nextPrintableAsciiString( int minLength, int maxLength )
+    public TextValue nextPrintableAsciiTextValue( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         byte[] bytes = new byte[length];
@@ -570,9 +601,9 @@ public class RandomValues
      *
      * @return a generator {@link TextValue}.
      */
-    public TextValue nextString()
+    public TextValue nextTextValue()
     {
-        return nextString( configuration.stringMinLength(), configuration.stringMaxLength() );
+        return nextTextValue( configuration.stringMinLength(), configuration.stringMaxLength() );
     }
 
     /**
@@ -582,7 +613,7 @@ public class RandomValues
      * @param maxLength the maximum length of the string
      * @return a generator {@link TextValue}.
      */
-    public TextValue nextString( int minLength, int maxLength )
+    public TextValue nextTextValue( int minLength, int maxLength )
     {
         int length = intBetween( minLength, maxLength );
         UTF8StringValueBuilder builder = new UTF8StringValueBuilder( nextPowerOf2( length ) );
@@ -634,7 +665,7 @@ public class RandomValues
         case SHORT:
             return nextShortValue();
         case STRING:
-            return nextString();
+            return nextTextValue();
         case INT:
             return nextIntValue();
         case LONG:
@@ -1097,7 +1128,7 @@ public class RandomValues
         String[] strings = new String[length];
         for ( int i = 0; i < length; i++ )
         {
-            strings[i] = nextString().stringValue();
+            strings[i] = nextTextValue().stringValue();
         }
         return Values.stringArray( strings );
     }
@@ -1289,6 +1320,61 @@ public class RandomValues
         }
     }
 
+    public int intBetween( int min, int max )
+    {
+        return min + generator.nextInt( max - min + 1 );
+    }
+
+    public long nextLong( long bound )
+    {
+        return abs( generator.nextLong() ) % bound;
+    }
+
+    public long nextLong( )
+    {
+        return generator.nextLong();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <T> T[] selection( T[] among, int min, int max, boolean allowDuplicates )
+    {
+        assert min <= max;
+        int diff = min == max ? 0 : generator.nextInt( max - min );
+        int length = min + diff;
+        T[] result = (T[]) Array.newInstance( among.getClass().getComponentType(), length );
+        for ( int i = 0; i < length; i++ )
+        {
+            while ( true )
+            {
+                T candidate = among( among );
+                if ( !allowDuplicates && contains( result, candidate ) )
+                {   // Try again
+                    continue;
+                }
+                result[i] = candidate;
+                break;
+            }
+        }
+        return result;
+    }
+
+    private static <T> boolean contains( T[] array, T contains )
+    {
+        for ( T item : array )
+        {
+            if ( nullSafeEquals( item, contains ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static <T> boolean nullSafeEquals( T first, T other )
+    {
+        return first == null ? other == null : first.equals( other );
+    }
+
     private Instant randomInstant()
     {
         return Instant.ofEpochSecond(
@@ -1299,16 +1385,6 @@ public class RandomValues
     private int nextPowerOf2( int i )
     {
         return 1 << (32 - Integer.numberOfLeadingZeros( i ));
-    }
-
-    private int intBetween( int min, int max )
-    {
-        return min + generator.nextInt( max - min + 1 );
-    }
-
-    private long nextLong( long bound )
-    {
-        return abs( generator.nextLong() ) % bound;
     }
 
     private long nextLong( long origin, long bound )

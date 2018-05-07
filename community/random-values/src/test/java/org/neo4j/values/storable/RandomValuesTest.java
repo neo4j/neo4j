@@ -222,7 +222,7 @@ public class RandomValuesTest
                 .collect( Collectors.toSet() );
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValues.nextAlphaString( 5, 10 );
+            TextValue textValue = randomValues.nextAlphaTextValue( 5, 10 );
             String asString = textValue.stringValue();
             for ( int j = 0; j < asString.length(); j++ )
             {
@@ -241,7 +241,7 @@ public class RandomValuesTest
                 .collect( Collectors.toSet() );
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValues.nextAlphaNumericString( 10, 20 );
+            TextValue textValue = randomValues.nextAlphaNumericTextValue( 10, 20 );
             String asString = textValue.stringValue();
             for ( int j = 0; j < asString.length(); j++ )
             {
@@ -259,7 +259,7 @@ public class RandomValuesTest
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValues.nextAsciiString( 10, 20 );
+            TextValue textValue = randomValues.nextAsciiTextValue( 10, 20 );
             String asString = textValue.stringValue();
             int length = asString.length();
             assertThat( length, greaterThanOrEqualTo( 10 ) );
@@ -272,7 +272,7 @@ public class RandomValuesTest
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValues.nextPrintableAsciiString( 10, 20 );
+            TextValue textValue = randomValues.nextPrintableAsciiTextValue( 10, 20 );
             String asString = textValue.stringValue();
             int length = asString.length();
             assertThat( length, greaterThanOrEqualTo( 10 ) );
@@ -285,7 +285,7 @@ public class RandomValuesTest
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
-            TextValue textValue = randomValues.nextString( 10, 20 );
+            TextValue textValue = randomValues.nextTextValue( 10, 20 );
             String asString = textValue.stringValue();
             int length = asString.codePointCount( 0, asString.length() );
             assertThat( length, greaterThanOrEqualTo( 10 ) );
