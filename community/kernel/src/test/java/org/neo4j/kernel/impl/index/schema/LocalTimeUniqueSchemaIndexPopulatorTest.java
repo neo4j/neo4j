@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -37,6 +37,6 @@ public class LocalTimeUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaI
     protected LayoutTestUtil<LocalTimeSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
         return new UniqueLayoutTestUtil<>(
-                new LocalTimeLayoutTestUtil( SchemaIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+                new LocalTimeLayoutTestUtil( IndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
     }
 }

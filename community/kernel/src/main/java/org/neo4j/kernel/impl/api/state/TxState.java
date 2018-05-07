@@ -46,7 +46,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -113,7 +113,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private MutableIntObjectMap<String> createdRelationshipTypeTokens;
 
     private GraphState graphState;
-    private DiffSets<SchemaIndexDescriptor> indexChanges;
+    private DiffSets<PendingIndexDescriptor> indexChanges;
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
     private RemovalsCountingDiffSets nodes;
@@ -303,18 +303,18 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return new ConstraintDiffSetsVisitor( visitor );
     }
 
-    private static DiffSetsVisitor<SchemaIndexDescriptor> indexVisitor( final TxStateVisitor visitor )
+    private static DiffSetsVisitor<PendingIndexDescriptor> indexVisitor( final TxStateVisitor visitor )
     {
-        return new DiffSetsVisitor<SchemaIndexDescriptor>()
+        return new DiffSetsVisitor<PendingIndexDescriptor>()
         {
             @Override
-            public void visitAdded( SchemaIndexDescriptor index )
+            public void visitAdded( PendingIndexDescriptor index )
             {
                 visitor.visitAddedIndex( index );
             }
 
             @Override
-            public void visitRemoved( SchemaIndexDescriptor index )
+            public void visitRemoved( PendingIndexDescriptor index )
             {
                 visitor.visitRemovedIndex( index );
             }
@@ -784,9 +784,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     @Override
     public void
-    indexRuleDoAdd( SchemaIndexDescriptor descriptor )
+    indexRuleDoAdd( PendingIndexDescriptor descriptor )
     {
-        DiffSets<SchemaIndexDescriptor> diff = indexChangesDiffSets();
+        DiffSets<PendingIndexDescriptor> diff = indexChangesDiffSets();
         if ( !diff.unRemove( descriptor ) )
         {
             diff.add( descriptor );
@@ -795,31 +795,31 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void indexDoDrop( SchemaIndexDescriptor descriptor )
+    public void indexDoDrop( PendingIndexDescriptor descriptor )
     {
         indexChangesDiffSets().remove( descriptor );
         changed();
     }
 
     @Override
-    public boolean indexDoUnRemove( SchemaIndexDescriptor descriptor )
+    public boolean indexDoUnRemove( PendingIndexDescriptor descriptor )
     {
         return indexChangesDiffSets().unRemove( descriptor );
     }
 
     @Override
-    public ReadableDiffSets<SchemaIndexDescriptor> indexDiffSetsByLabel( int labelId )
+    public ReadableDiffSets<PendingIndexDescriptor> indexDiffSetsByLabel( int labelId )
     {
         return indexChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasLabel( labelId ) );
     }
 
     @Override
-    public ReadableDiffSets<SchemaIndexDescriptor> indexChanges()
+    public ReadableDiffSets<PendingIndexDescriptor> indexChanges()
     {
         return ReadableDiffSets.Empty.ifNull( indexChanges );
     }
 
-    private DiffSets<SchemaIndexDescriptor> indexChangesDiffSets()
+    private DiffSets<PendingIndexDescriptor> indexChangesDiffSets()
     {
         if ( indexChanges == null )
         {
@@ -975,7 +975,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Iterable<SchemaIndexDescriptor> constraintIndexesCreatedInTx()
+    public Iterable<PendingIndexDescriptor> constraintIndexesCreatedInTx()
     {
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
         {
@@ -992,7 +992,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForScan( SchemaIndexDescriptor descriptor )
+    public PrimitiveLongReadableDiffSets indexUpdatesForScan( PendingIndexDescriptor descriptor )
     {
         if ( indexUpdates == null )
         {
@@ -1013,7 +1013,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( SchemaIndexDescriptor descriptor, IndexQuery query )
+    public PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( PendingIndexDescriptor descriptor, IndexQuery query )
     {
         assert descriptor.schema().getPropertyIds().length == 1 :
                 "Suffix and contains queries are only supported for single property queries";
@@ -1041,14 +1041,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor descriptor, ValueTuple values )
+    public PrimitiveLongReadableDiffSets indexUpdatesForSeek( PendingIndexDescriptor descriptor, ValueTuple values )
     {
         PrimitiveLongDiffSets indexUpdatesForSeek = getIndexUpdatesForSeek( descriptor.schema(), values, /*create=*/false );
         return indexUpdatesForSeek == null ? PrimitiveLongReadableDiffSets.EMPTY : indexUpdatesForSeek;
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor descriptor, ValueGroup valueGroup,
+    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( PendingIndexDescriptor descriptor, ValueGroup valueGroup,
                                                                    Value lower, boolean includeLower,
                                                                    Value upper, boolean includeUpper )
     {
@@ -1106,7 +1106,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( SchemaIndexDescriptor descriptor, String prefix )
+    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( PendingIndexDescriptor descriptor, String prefix )
     {
         TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
@@ -1246,7 +1246,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return createdConstraintIndexesByConstraint;
     }
 
-    private SchemaIndexDescriptor getIndexForIndexBackedConstraint( IndexBackedConstraintDescriptor constraint )
+    private PendingIndexDescriptor getIndexForIndexBackedConstraint( IndexBackedConstraintDescriptor constraint )
     {
         return constraint.ownedIndexDescriptor();
     }

@@ -48,8 +48,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -433,9 +433,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected SchemaIndexDescriptor extractIndexDescriptor()
+        protected PendingIndexDescriptor extractIndexDescriptor()
         {
-            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
+            return IndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
         }
 
         @Override
@@ -498,9 +498,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected SchemaIndexDescriptor extractIndexDescriptor()
+        protected PendingIndexDescriptor extractIndexDescriptor()
         {
-            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
+            return IndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
         }
 
         @Override
@@ -562,9 +562,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected SchemaIndexDescriptor extractIndexDescriptor()
+        protected PendingIndexDescriptor extractIndexDescriptor()
         {
-            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
+            return IndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
         }
 
         @Override
@@ -633,9 +633,9 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected SchemaIndexDescriptor extractIndexDescriptor()
+        protected PendingIndexDescriptor extractIndexDescriptor()
         {
-            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
+            return IndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
         }
 
         @Override
@@ -715,7 +715,7 @@ public class MultipleOpenCursorsTest
         int numberPropId2;
         int stringPropId1;
         int stringPropId2;
-        SchemaIndexDescriptor indexDescriptor;
+        PendingIndexDescriptor indexDescriptor;
 
         IndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1,
                 String stringProp2 )
@@ -774,7 +774,7 @@ public class MultipleOpenCursorsTest
             indexDescriptor = extractIndexDescriptor();
         }
 
-        protected abstract SchemaIndexDescriptor extractIndexDescriptor();
+        protected abstract PendingIndexDescriptor extractIndexDescriptor();
 
         void createIndex( DatabaseRule db )
         {
@@ -822,7 +822,7 @@ public class MultipleOpenCursorsTest
 
         abstract void doCreateIndex( DatabaseRule db );
 
-        NodeValueIndexCursor indexQuery( KernelTransaction ktx, SchemaIndexDescriptor indexDescriptor,
+        NodeValueIndexCursor indexQuery( KernelTransaction ktx, PendingIndexDescriptor indexDescriptor,
                 IndexQuery... indexQueries )
 
                 throws KernelException

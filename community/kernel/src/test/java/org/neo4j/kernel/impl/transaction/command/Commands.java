@@ -27,12 +27,12 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -148,9 +148,9 @@ public class Commands
     public static SchemaRuleCommand createIndexRule( IndexProvider.Descriptor provider,
             long id, LabelSchemaDescriptor descriptor )
     {
-        SchemaRule rule = IndexRule.indexRule(
+        SchemaRule rule = IndexDescriptor.indexRule(
                 id,
-                SchemaIndexDescriptorFactory.forSchema( descriptor ),
+                IndexDescriptorFactory.forSchema( descriptor ),
                 provider );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );

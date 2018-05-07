@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -129,8 +129,8 @@ public class IndexingServiceIntegrationTest
         int foodId = labelTokenHolder.getIdByName( FOOD_LABEL );
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
-        IndexRule rule = IndexRule.indexRule(
-                schemaStore.nextId(), SchemaIndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
+        IndexDescriptor rule = IndexDescriptor.indexRule(
+                schemaStore.nextId(), IndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
 
@@ -202,7 +202,7 @@ public class IndexingServiceIntegrationTest
         int indexLabel7 = labelTokenHolder.getIdByName( indexLabelPrefix + 7 );
         int indexProperty7 = propertyKeyTokenHolder.getIdByName( indexPropertyPrefix + 7 );
 
-        IndexProxy index = indexingService.getIndexProxy( SchemaIndexDescriptorFactory
+        IndexProxy index = indexingService.getIndexProxy( IndexDescriptorFactory
                 .forLabel( indexLabel7, indexProperty7).schema() );
 
         index.drop();

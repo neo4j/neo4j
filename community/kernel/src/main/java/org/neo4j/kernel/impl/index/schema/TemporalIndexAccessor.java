@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -49,10 +49,10 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.PartAccessor<?>> implements IndexAccessor
 {
-    private final SchemaIndexDescriptor descriptor;
+    private final PendingIndexDescriptor descriptor;
 
     TemporalIndexAccessor( long indexId,
-                           SchemaIndexDescriptor descriptor,
+                           PendingIndexDescriptor descriptor,
                            IndexSamplingConfig samplingConfig,
                            PageCache pageCache,
                            FileSystemAbstraction fs,
@@ -173,7 +173,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     static class PartAccessor<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexAccessor<KEY, NativeSchemaValue>
     {
         private final Layout<KEY,NativeSchemaValue> layout;
-        private final SchemaIndexDescriptor descriptor;
+        private final PendingIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
 
         PartAccessor( PageCache pageCache,
@@ -181,7 +181,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
                       TemporalIndexFiles.FileLayout<KEY> fileLayout,
                       RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                       IndexProvider.Monitor monitor,
-                      SchemaIndexDescriptor descriptor,
+                      PendingIndexDescriptor descriptor,
                       long indexId,
                       IndexSamplingConfig samplingConfig ) throws IOException
         {
@@ -205,7 +205,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         private final FileSystemAbstraction fs;
         private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
         private final IndexProvider.Monitor monitor;
-        private final SchemaIndexDescriptor descriptor;
+        private final PendingIndexDescriptor descriptor;
         private final long indexId;
         private final IndexSamplingConfig samplingConfig;
         private final TemporalIndexFiles temporalIndexFiles;
@@ -214,7 +214,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
                      FileSystemAbstraction fs,
                      RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                      IndexProvider.Monitor monitor,
-                     SchemaIndexDescriptor descriptor,
+                     PendingIndexDescriptor descriptor,
                      long indexId,
                      IndexSamplingConfig samplingConfig,
                      TemporalIndexFiles temporalIndexFiles )

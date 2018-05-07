@@ -30,7 +30,7 @@ import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -40,7 +40,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 {
     protected IndexAccessor accessor;
 
-    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
+    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, PendingIndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }

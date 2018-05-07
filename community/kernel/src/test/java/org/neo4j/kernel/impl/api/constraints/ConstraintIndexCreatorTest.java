@@ -44,8 +44,8 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -82,7 +82,7 @@ public class ConstraintIndexCreatorTest
     private static final long INDEX_ID = 2468L;
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
-    private final SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( 123, 456 );
+    private final PendingIndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
     private final CapableIndexReference indexReference =
             new DefaultCapableIndexReference( true, IndexCapability.NO_CAPABILITY,
                     new IndexProvider.Descriptor( "foo", "1.872" ), LABEL_ID, PROPERTY_KEY_ID );
@@ -154,7 +154,7 @@ public class ConstraintIndexCreatorTest
         }
         assertEquals( 2, kernel.transactions.size() );
         TransactionState tx1 = kernel.transactions.get( 0 ).txState();
-        SchemaIndexDescriptor newIndex = SchemaIndexDescriptorFactory.uniqueForLabel( 123, 456 );
+        PendingIndexDescriptor newIndex = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
         verify( tx1 ).indexRuleDoAdd( newIndex );
         verifyNoMoreInteractions( tx1 );
         verify( schemaRead ).indexGetCommittedId( indexReference );

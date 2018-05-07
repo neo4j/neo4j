@@ -46,8 +46,8 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.storageengine.api.Direction;
@@ -100,9 +100,9 @@ public class TxStateTest
         return RuleChain.outerRule( new RepeatRule() ).around( random );
     }
 
-    private final SchemaIndexDescriptor indexOn_1_1 = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
-    private final SchemaIndexDescriptor indexOn_1_2 = SchemaIndexDescriptorFactory.forLabel( 1, 2 );
-    private final SchemaIndexDescriptor indexOn_2_1 = SchemaIndexDescriptorFactory.forLabel( 2, 1 );
+    private final PendingIndexDescriptor indexOn_1_1 = IndexDescriptorFactory.forLabel( 1, 1 );
+    private final PendingIndexDescriptor indexOn_1_2 = IndexDescriptorFactory.forLabel( 1, 2 );
+    private final PendingIndexDescriptor indexOn_2_1 = IndexDescriptorFactory.forLabel( 2, 1 );
 
     private CollectionsFactory collectionsFactory;
     private TxState state;
@@ -1738,7 +1738,7 @@ public class TxStateTest
         void withBooleanProperties( Collection<Pair<Long,Boolean>> nodesWithValues );
     }
 
-    private IndexUpdater addNodesToIndex( final SchemaIndexDescriptor descriptor )
+    private IndexUpdater addNodesToIndex( final PendingIndexDescriptor descriptor )
     {
         return new IndexUpdater()
         {

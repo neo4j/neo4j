@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
+package org.neo4j.kernel.api.schema.index;
 
 import java.util.Optional;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
@@ -31,45 +30,45 @@ import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
-public class IndexRule extends SchemaIndexDescriptor implements SchemaRule
+public class IndexDescriptor extends PendingIndexDescriptor implements SchemaRule
 {
     private final long id;
     private final Long owningConstraintId;
 
-    public static IndexRule indexRule( long id, SchemaIndexDescriptor descriptor,
-                                       IndexProvider.Descriptor providerDescriptor )
+    public static IndexDescriptor indexRule( long id, PendingIndexDescriptor descriptor,
+                                             IndexProvider.Descriptor providerDescriptor )
     {
-        return new IndexRule( id, providerDescriptor, descriptor, null );
+        return new IndexDescriptor( id, providerDescriptor, descriptor, null );
     }
 
-    public static IndexRule constraintIndexRule( long id, SchemaIndexDescriptor descriptor,
-                                                 IndexProvider.Descriptor providerDescriptor,
-                                                 Long owningConstraint )
+    public static IndexDescriptor constraintIndexRule( long id, PendingIndexDescriptor descriptor,
+                                                       IndexProvider.Descriptor providerDescriptor,
+                                                       Long owningConstraint )
     {
-        return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
+        return new IndexDescriptor( id, providerDescriptor, descriptor, owningConstraint );
     }
 
-    public static IndexRule indexRule( long id, SchemaIndexDescriptor descriptor,
-                                       IndexProvider.Descriptor providerDescriptor, String name )
+    public static IndexDescriptor indexRule( long id, PendingIndexDescriptor descriptor,
+                                             IndexProvider.Descriptor providerDescriptor, String name )
     {
-        return new IndexRule( id, providerDescriptor, descriptor, null, name );
+        return new IndexDescriptor( id, providerDescriptor, descriptor, null, name );
     }
 
-    public static IndexRule constraintIndexRule( long id, SchemaIndexDescriptor descriptor,
-                                                 IndexProvider.Descriptor providerDescriptor,
-                                                 Long owningConstraint, String name )
+    public static IndexDescriptor constraintIndexRule( long id, PendingIndexDescriptor descriptor,
+                                                       IndexProvider.Descriptor providerDescriptor,
+                                                       Long owningConstraint, String name )
     {
-        return new IndexRule( id, providerDescriptor, descriptor, owningConstraint, name );
+        return new IndexDescriptor( id, providerDescriptor, descriptor, owningConstraint, name );
     }
 
-    IndexRule( long id, IndexProvider.Descriptor providerDescriptor,
-               SchemaIndexDescriptor descriptor, Long owningConstraintId )
+    IndexDescriptor( long id, IndexProvider.Descriptor providerDescriptor,
+                     PendingIndexDescriptor descriptor, Long owningConstraintId )
     {
         this( id, providerDescriptor, descriptor, owningConstraintId, null );
     }
 
-    IndexRule( long id, IndexProvider.Descriptor providerDescriptor,
-               SchemaIndexDescriptor descriptor, Long owningConstraintId, String name )
+    IndexDescriptor( long id, IndexProvider.Descriptor providerDescriptor,
+                     PendingIndexDescriptor descriptor, Long owningConstraintId, String name )
     {
         super( descriptor.schema(),
                descriptor.type(),
@@ -88,7 +87,7 @@ public class IndexRule extends SchemaIndexDescriptor implements SchemaRule
 
     public boolean canSupportUniqueConstraint()
     {
-        return type() == SchemaIndexDescriptor.Type.UNIQUE;
+        return type() == PendingIndexDescriptor.Type.UNIQUE;
     }
 
     /**
@@ -118,7 +117,7 @@ public class IndexRule extends SchemaIndexDescriptor implements SchemaRule
         return canSupportUniqueConstraint() && getOwningConstraint() == null;
     }
 
-    public IndexRule withOwningConstraint( long constraintId )
+    public IndexDescriptor withOwningConstraint( long constraintId )
     {
         if ( !canSupportUniqueConstraint() )
         {

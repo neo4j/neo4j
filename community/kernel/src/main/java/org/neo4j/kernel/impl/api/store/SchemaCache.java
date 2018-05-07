@@ -39,10 +39,10 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.util.Collections.emptyIterator;
@@ -61,7 +61,7 @@ public class SchemaCache
         this.schemaCacheState = new SchemaCacheState( constraintSemantics, initialRules );
     }
 
-    public Iterable<IndexRule> indexRules()
+    public Iterable<IndexDescriptor> indexRules()
     {
         return schemaCacheState.indexRules();
     }
@@ -155,17 +155,17 @@ public class SchemaCache
         }
     }
 
-    public SchemaIndexDescriptor indexDescriptor( SchemaDescriptor descriptor )
+    public PendingIndexDescriptor indexDescriptor( SchemaDescriptor descriptor )
     {
         return schemaCacheState.indexDescriptor( descriptor );
     }
 
-    public Iterator<SchemaIndexDescriptor> indexDescriptorsForLabel( int labelId )
+    public Iterator<PendingIndexDescriptor> indexDescriptorsForLabel( int labelId )
     {
         return schemaCacheState.indexDescriptorsForLabel( labelId );
     }
 
-    public Iterator<SchemaIndexDescriptor> indexesByProperty( int propertyId )
+    public Iterator<PendingIndexDescriptor> indexesByProperty( int propertyId )
     {
         return schemaCacheState.indexesByProperty( propertyId );
     }
@@ -174,14 +174,14 @@ public class SchemaCache
     {
         private final ConstraintSemantics constraintSemantics;
         private final Set<ConstraintDescriptor> constraints;
-        private final MutableLongObjectMap<IndexRule> indexRuleById;
+        private final MutableLongObjectMap<IndexDescriptor> indexRuleById;
         private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
 
-        private final Map<SchemaDescriptor,SchemaIndexDescriptor> indexDescriptors;
-        private final MutableIntObjectMap<Set<SchemaIndexDescriptor>> indexDescriptorsByLabel;
+        private final Map<SchemaDescriptor,PendingIndexDescriptor> indexDescriptors;
+        private final MutableIntObjectMap<Set<PendingIndexDescriptor>> indexDescriptorsByLabel;
 
         private final Map<Class<?>,Object> dependantState;
-        private final MutableIntObjectMap<List<SchemaIndexDescriptor>> indexByProperty;
+        private final MutableIntObjectMap<List<PendingIndexDescriptor>> indexByProperty;
 
         SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules )
         {
@@ -218,7 +218,7 @@ public class SchemaCache
             }
         }
 
-        Iterable<IndexRule> indexRules()
+        Iterable<IndexDescriptor> indexRules()
         {
             return indexRuleById.values();
         }
@@ -248,20 +248,20 @@ public class SchemaCache
             return constraints.iterator();
         }
 
-        SchemaIndexDescriptor indexDescriptor( SchemaDescriptor descriptor )
+        PendingIndexDescriptor indexDescriptor( SchemaDescriptor descriptor )
         {
             return indexDescriptors.get( descriptor );
         }
 
-        Iterator<SchemaIndexDescriptor> indexesByProperty( int propertyId )
+        Iterator<PendingIndexDescriptor> indexesByProperty( int propertyId )
         {
-            List<SchemaIndexDescriptor> indexes = indexByProperty.get( propertyId );
+            List<PendingIndexDescriptor> indexes = indexByProperty.get( propertyId );
             return (indexes == null) ? emptyIterator() : indexes.iterator();
         }
 
-        Iterator<SchemaIndexDescriptor> indexDescriptorsForLabel( int labelId )
+        Iterator<PendingIndexDescriptor> indexDescriptorsForLabel( int labelId )
         {
-            Set<SchemaIndexDescriptor> forLabel = indexDescriptorsByLabel.get( labelId );
+            Set<PendingIndexDescriptor> forLabel = indexDescriptorsByLabel.get( labelId );
             return forLabel == null ? emptyIterator() : forLabel.iterator();
         }
 
@@ -278,21 +278,21 @@ public class SchemaCache
                 constraintRuleById.put( constraintRule.getId(), constraintRule );
                 constraints.add( constraintSemantics.readConstraint( constraintRule ) );
             }
-            else if ( rule instanceof IndexRule )
+            else if ( rule instanceof IndexDescriptor )
             {
-                IndexRule indexRule = (IndexRule) rule;
+                IndexDescriptor indexRule = (IndexDescriptor) rule;
                 indexRuleById.put( indexRule.getId(), indexRule );
                 SchemaDescriptor schemaDescriptor = indexRule.schema();
-                SchemaIndexDescriptor schemaIndexDescriptor = indexRule;
+                PendingIndexDescriptor schemaIndexDescriptor = indexRule;
                 indexDescriptors.put( schemaDescriptor, schemaIndexDescriptor );
 
-                Set<SchemaIndexDescriptor> forLabel =
+                Set<PendingIndexDescriptor> forLabel =
                         indexDescriptorsByLabel.getIfAbsentPut( schemaDescriptor.keyId(), HashSet::new );
                 forLabel.add( schemaIndexDescriptor );
 
                 for ( int propertyId : indexRule.schema().getPropertyIds() )
                 {
-                    List<SchemaIndexDescriptor> indexesForProperty =
+                    List<PendingIndexDescriptor> indexesForProperty =
                             indexByProperty.getIfAbsentPut( propertyId, ArrayList::new );
                     indexesForProperty.add( schemaIndexDescriptor );
                 }
@@ -308,11 +308,11 @@ public class SchemaCache
             }
             else if ( indexRuleById.containsKey( id ) )
             {
-                IndexRule rule = indexRuleById.remove( id );
+                IndexDescriptor rule = indexRuleById.remove( id );
                 SchemaDescriptor schema = rule.schema();
                 indexDescriptors.remove( schema );
 
-                Set<SchemaIndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.keyId() );
+                Set<PendingIndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.keyId() );
                 forLabel.remove( rule );
                 if ( forLabel.isEmpty() )
                 {
@@ -321,7 +321,7 @@ public class SchemaCache
 
                 for ( int propertyId : rule.schema().getPropertyIds() )
                 {
-                    List<SchemaIndexDescriptor> forProperty = indexByProperty.get( propertyId );
+                    List<PendingIndexDescriptor> forProperty = indexByProperty.get( propertyId );
                     forProperty.remove( rule );
                     if ( forProperty.isEmpty() )
                     {

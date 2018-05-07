@@ -39,8 +39,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -104,7 +104,7 @@ public abstract class NativeIndexProviderTest
         provider = newProvider();
 
         // when
-        SchemaIndexDescriptor descriptor = descriptorUnique();
+        PendingIndexDescriptor descriptor = descriptorUnique();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() );
               IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
@@ -352,14 +352,14 @@ public abstract class NativeIndexProviderTest
         return new IndexSamplingConfig( Config.defaults() );
     }
 
-    private SchemaIndexDescriptor descriptor()
+    private PendingIndexDescriptor descriptor()
     {
-        return SchemaIndexDescriptorFactory.forLabel( labelId, propId );
+        return IndexDescriptorFactory.forLabel( labelId, propId );
     }
 
-    private SchemaIndexDescriptor descriptorUnique()
+    private PendingIndexDescriptor descriptorUnique()
     {
-        return SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propId );
+        return IndexDescriptorFactory.uniqueForLabel( labelId, propId );
     }
 
     private PageCache pageCache()

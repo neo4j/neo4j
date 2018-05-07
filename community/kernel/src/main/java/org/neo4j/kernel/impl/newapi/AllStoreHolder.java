@@ -55,8 +55,8 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.ClockContext;
@@ -248,9 +248,9 @@ public class AllStoreHolder extends Read
     @Override
     IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
     {
-        SchemaIndexDescriptor schemaIndexDescriptor = index.isUnique() ?
-                                                      SchemaIndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
-                                                      SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
+        PendingIndexDescriptor schemaIndexDescriptor = index.isUnique() ?
+                                                       IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
+                                                       IndexDescriptorFactory.forLabel( index.label(), index.properties() );
         return fresh ? statement.getFreshIndexReader( schemaIndexDescriptor ) :
                statement.getIndexReader( schemaIndexDescriptor );
     }
@@ -334,10 +334,10 @@ public class AllStoreHolder extends Read
             // This means we have invalid label or property ids.
             return CapableIndexReference.NO_INDEX;
         }
-        SchemaIndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
+        PendingIndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<SchemaIndexDescriptor> diffSets =
+            ReadableDiffSets<PendingIndexDescriptor> diffSets =
                     ktx.txState().indexDiffSetsByLabel( label );
             if ( indexDescriptor != null )
             {
@@ -352,7 +352,7 @@ public class AllStoreHolder extends Read
             }
             else
             {
-                Iterator<SchemaIndexDescriptor> fromTxState = filter(
+                Iterator<PendingIndexDescriptor> fromTxState = filter(
                         SchemaDescriptor.equalTo( descriptor ),
                         diffSets.apply( emptyResourceIterator() ) );
                 if ( fromTxState.hasNext() )
@@ -375,7 +375,7 @@ public class AllStoreHolder extends Read
         sharedOptimisticLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
 
-        Iterator<SchemaIndexDescriptor> iterator = storeReadLayer.indexesGetForLabel( labelId );
+        Iterator<PendingIndexDescriptor> iterator = storeReadLayer.indexesGetForLabel( labelId );
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
@@ -388,7 +388,7 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        Iterator<SchemaIndexDescriptor> iterator = storeReadLayer.indexesGetAll();
+        Iterator<PendingIndexDescriptor> iterator = storeReadLayer.indexesGetAll();
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexChanges().apply( storeReadLayer.indexesGetAll() );
@@ -416,7 +416,7 @@ public class AllStoreHolder extends Read
     {
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
-        SchemaIndexDescriptor descriptor = indexDescriptor( index );
+        PendingIndexDescriptor descriptor = indexDescriptor( index );
 
         if ( ktx.hasTxStateWithChanges() )
         {
@@ -446,15 +446,15 @@ public class AllStoreHolder extends Read
         return storeReadLayer.indexGetCommittedId( indexDescriptor( index ) );
     }
 
-    SchemaIndexDescriptor indexDescriptor( IndexReference index )
+    PendingIndexDescriptor indexDescriptor( IndexReference index )
     {
         if ( index.isUnique() )
         {
-            return SchemaIndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() );
+            return IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() );
         }
         else
         {
-            return SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
+            return IndexDescriptorFactory.forLabel( index.label(), index.properties() );
         }
     }
 
@@ -524,7 +524,7 @@ public class AllStoreHolder extends Read
                 SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
     }
 
-    CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    CapableIndexReference indexGetCapability( PendingIndexDescriptor schemaIndexDescriptor )
     {
         try
         {
@@ -536,7 +536,7 @@ public class AllStoreHolder extends Read
         }
     }
 
-    InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    InternalIndexState indexGetState( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
         if ( ktx.hasTxStateWithChanges() )
@@ -551,15 +551,15 @@ public class AllStoreHolder extends Read
         return storeReadLayer.indexGetState( descriptor );
     }
 
-    Long indexGetOwningUniquenessConstraintId( SchemaIndexDescriptor index )
+    Long indexGetOwningUniquenessConstraintId( PendingIndexDescriptor index )
     {
         return storeReadLayer.indexGetOwningUniquenessConstraintId( index );
     }
 
-    SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
+    PendingIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
-        SchemaIndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
-        Iterator<SchemaIndexDescriptor> rules = iterator( indexDescriptor );
+        PendingIndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
+        Iterator<PendingIndexDescriptor> rules = iterator( indexDescriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
             rules = filter(
@@ -569,7 +569,7 @@ public class AllStoreHolder extends Read
         return singleOrNull( rules );
     }
 
-    private boolean checkIndexState( SchemaIndexDescriptor index, ReadableDiffSets<SchemaIndexDescriptor> diffSet )
+    private boolean checkIndexState( PendingIndexDescriptor index, ReadableDiffSets<PendingIndexDescriptor> diffSet )
             throws IndexNotFoundKernelException
     {
         if ( diffSet.isAdded( index ) )
@@ -784,7 +784,7 @@ public class AllStoreHolder extends Read
         explicitIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
     }
 
-    String indexGetFailure( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    String indexGetFailure( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return storeReadLayer.indexGetFailure( descriptor.schema() );
     }

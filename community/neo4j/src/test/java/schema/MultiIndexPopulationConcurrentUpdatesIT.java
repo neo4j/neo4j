@@ -62,7 +62,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -80,7 +80,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
@@ -114,7 +114,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @Rule
     public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
-    private IndexRule[] rules;
+    private IndexDescriptor[] rules;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IndexProvider.Descriptor> parameters()
@@ -382,14 +382,15 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         indexProxy.activate();
     }
 
-    private IndexRule[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
+    private IndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         return labelNameIdMap.values().stream()
-                .map( index -> IndexRule.indexRule( index, SchemaIndexDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ) )
-                .toArray( IndexRule[]::new );
+                .map( index -> IndexDescriptor
+                        .indexRule( index, IndexDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ) )
+                .toArray( IndexDescriptor[]::new );
     }
 
-    private List<IndexRule> getIndexRules( NeoStores neoStores )
+    private List<IndexDescriptor> getIndexRules( NeoStores neoStores )
     {
         return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() );
     }
@@ -659,13 +660,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor =
                     SchemaDescriptorFactory.forLabel( labelIdToDropIndexFor, propertyId );
-            IndexRule rule = findRuleForLabel( descriptor );
+            IndexDescriptor rule = findRuleForLabel( descriptor );
             indexService.dropIndex( rule );
         }
 
-        private IndexRule findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
+        private IndexDescriptor findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
         {
-            for ( IndexRule rule : rules )
+            for ( IndexDescriptor rule : rules )
             {
                 if ( rule.schema().equals( schemaDescriptor ) )
                 {

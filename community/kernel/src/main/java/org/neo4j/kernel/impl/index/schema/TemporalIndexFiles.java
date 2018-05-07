@@ -27,7 +27,7 @@ import java.util.List;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.values.storable.ValueGroup;
 
 class TemporalIndexFiles
@@ -40,7 +40,7 @@ class TemporalIndexFiles
     private FileLayout<ZonedTimeSchemaKey> zonedTime;
     private FileLayout<DurationSchemaKey> duration;
 
-    TemporalIndexFiles( IndexDirectoryStructure directoryStructure, long indexId, SchemaIndexDescriptor descriptor, FileSystemAbstraction fs )
+    TemporalIndexFiles( IndexDirectoryStructure directoryStructure, long indexId, PendingIndexDescriptor descriptor, FileSystemAbstraction fs )
     {
         this.fs = fs;
         File indexDirectory = directoryStructure.directoryForIndex( indexId );

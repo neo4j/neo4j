@@ -51,7 +51,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -441,10 +441,10 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
 
     private class IndexRecoveryTracker extends IndexingService.MonitorAdapter
     {
-        Map<SchemaIndexDescriptor,InternalIndexState> initialStateMap = new HashMap<>();
+        Map<PendingIndexDescriptor,InternalIndexState> initialStateMap = new HashMap<>();
 
         @Override
-        public void initialState( SchemaIndexDescriptor descriptor, InternalIndexState state )
+        public void initialState( PendingIndexDescriptor descriptor, InternalIndexState state )
         {
             initialStateMap.put( descriptor, state );
         }

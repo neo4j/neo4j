@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -48,7 +48,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combi
 class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.PartPopulator<?>> implements IndexPopulator
 {
     TemporalIndexPopulator( long indexId,
-                            SchemaIndexDescriptor descriptor,
+                            PendingIndexDescriptor descriptor,
                             IndexSamplingConfig samplingConfig,
                             TemporalIndexFiles temporalIndexFiles,
                             PageCache pageCache,
@@ -145,7 +145,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     static class PartPopulator<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexPopulator<KEY, NativeSchemaValue>
     {
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout,
-                       IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
+                       IndexProvider.Monitor monitor, PendingIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
         {
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
         }
@@ -163,12 +163,12 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         private final FileSystemAbstraction fs;
         private final TemporalIndexFiles temporalIndexFiles;
         private final long indexId;
-        private final SchemaIndexDescriptor descriptor;
+        private final PendingIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
         private final IndexProvider.Monitor monitor;
 
         PartFactory( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles temporalIndexFiles, long indexId,
-                     SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexProvider.Monitor monitor )
+                     PendingIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexProvider.Monitor monitor )
         {
             this.pageCache = pageCache;
             this.fs = fs;

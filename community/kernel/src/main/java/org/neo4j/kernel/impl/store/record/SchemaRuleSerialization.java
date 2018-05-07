@@ -33,8 +33,9 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
 
@@ -77,9 +78,9 @@ public class SchemaRuleSerialization
      */
     public static byte[] serialize( SchemaRule schemaRule )
     {
-        if ( schemaRule instanceof IndexRule )
+        if ( schemaRule instanceof IndexDescriptor )
         {
-            return serialize( (IndexRule)schemaRule );
+            return serialize( (IndexDescriptor)schemaRule );
         }
         else if ( schemaRule instanceof ConstraintRule )
         {
@@ -122,7 +123,7 @@ public class SchemaRuleSerialization
      * @param indexRule the IndexRule to serialize
      * @throws IllegalStateException if the IndexRule is of type unique, but the owning constrain has not been set
      */
-    public static byte[] serialize( IndexRule indexRule )
+    public static byte[] serialize( IndexDescriptor indexRule )
     {
         ByteBuffer target = ByteBuffer.allocate( lengthOf( indexRule ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
@@ -132,7 +133,7 @@ public class SchemaRuleSerialization
         UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
         UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
 
-        SchemaIndexDescriptor schemaIndexDescriptor = indexRule;
+        PendingIndexDescriptor schemaIndexDescriptor = indexRule;
         switch ( schemaIndexDescriptor.type() )
         {
         case GENERAL:
@@ -200,7 +201,7 @@ public class SchemaRuleSerialization
      * @param indexRule the IndexRule
      * @return the byte size of indexRule
      */
-    public static int lengthOf( IndexRule indexRule )
+    public static int lengthOf( IndexDescriptor indexRule )
     {
         int length = 4; // legacy label or relType id
         length += 1;    // schema rule type
@@ -210,8 +211,8 @@ public class SchemaRuleSerialization
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
 
         length += 1; // index type
-        SchemaIndexDescriptor schemaIndexDescriptor = indexRule;
-        if ( schemaIndexDescriptor.type() == SchemaIndexDescriptor.Type.UNIQUE )
+        PendingIndexDescriptor schemaIndexDescriptor = indexRule;
+        if ( schemaIndexDescriptor.type() == PendingIndexDescriptor.Type.UNIQUE )
         {
             length += 8; // owning constraint id
         }
@@ -247,7 +248,7 @@ public class SchemaRuleSerialization
 
     // READ INDEX
 
-    private static IndexRule readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
+    private static IndexDescriptor readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
     {
         IndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
         LabelSchemaDescriptor schema;
@@ -258,14 +259,14 @@ public class SchemaRuleSerialization
         case GENERAL_INDEX:
             schema = readLabelSchema( source );
             name = readRuleName( source );
-            return IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forSchema( schema ), indexProvider, name );
+            return IndexDescriptor.indexRule( id, IndexDescriptorFactory.forSchema( schema ), indexProvider, name );
 
         case UNIQUE_INDEX:
             long owningConstraint = source.getLong();
             schema = readLabelSchema( source );
-            SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.uniqueForSchema( schema );
+            PendingIndexDescriptor descriptor = IndexDescriptorFactory.uniqueForSchema( schema );
             name = readRuleName( source );
-            return IndexRule.constraintIndexRule( id, descriptor, indexProvider,
+            return IndexDescriptor.constraintIndexRule( id, descriptor, indexProvider,
                     owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );
 
         default:

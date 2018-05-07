@@ -36,8 +36,8 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -97,7 +97,7 @@ public class HalfCreatedConstraintIT
                     ((GraphDatabaseAPI) database).getDependencyResolver().provideDependency( ThreadToStatementContextBridge.class ).get();
             KernelTransaction kernelTransaction = statementBridge.getKernelTransactionBoundToThisThread( true );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
-            SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForSchema( descriptor );
+            PendingIndexDescriptor index = IndexDescriptorFactory.uniqueForSchema( descriptor );
             ((KernelTransactionImplementation) kernelTransaction).txState().indexRuleDoAdd( index );
             transaction.success();
         }

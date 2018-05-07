@@ -23,7 +23,7 @@ import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
@@ -58,7 +58,7 @@ public class IndexEntryConflictException extends Exception
      * was caught but it should not have been allowed to be thrown in the first place.
      * Typically where the index we performed an operation on is not a unique index.
      */
-    public RuntimeException notAllowed( SchemaIndexDescriptor descriptor )
+    public RuntimeException notAllowed( PendingIndexDescriptor descriptor )
     {
         return new IllegalStateException( String.format(
                 "Index for (%s) should not require unique values.",
