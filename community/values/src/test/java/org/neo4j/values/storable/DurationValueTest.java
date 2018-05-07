@@ -167,6 +167,13 @@ public class DurationValueTest
     }
 
     @Test
+    public void shouldHandleLargeNanos()
+    {
+        DurationValue duration = DurationValue.duration( 0L, 0L, 0L, Long.MAX_VALUE );
+        assertEquals( Long.MAX_VALUE, duration.get( "nanoseconds" ).value() );
+    }
+
+    @Test
     public void shouldParseDuration()
     {
         assertEquals(
