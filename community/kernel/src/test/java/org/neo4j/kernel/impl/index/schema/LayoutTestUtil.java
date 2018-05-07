@@ -34,7 +34,9 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -86,16 +88,49 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
             {
                 Value value;
                 if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
-                        random.nextFloat() < fractionDuplicates )
+                     random.nextFloat() < fractionDuplicates )
                 {
                     value = existingNonUniqueValue( random );
                 }
                 else
                 {
-                    value = newUniqueValue( random, uniqueCompareValues, uniqueValues );
+                    value = newUniqueValue( RandomValues.create( random.random(), getConfiguration() ),
+                            uniqueCompareValues, uniqueValues );
                 }
 
                 return add( currentEntityId++, value );
+            }
+
+            private RandomValues.Configuration getConfiguration()
+            {
+                return new RandomValues.Configuration()
+                {
+                    private Randoms.Configuration conf = random.configuration();
+
+                    @Override
+                    public int stringMinLength()
+                    {
+                        return conf.stringMinLength();
+                    }
+
+                    @Override
+                    public int stringMaxLength()
+                    {
+                        return conf.stringMaxLength();
+                    }
+
+                    @Override
+                    public int arrayMinLength()
+                    {
+                        return conf.arrayMinLength();
+                    }
+
+                    @Override
+                    public int arrayMaxLength()
+                    {
+                        return conf.arrayMaxLength();
+                    }
+                };
             }
 
             private Value existingNonUniqueValue( RandomRule randomRule )
@@ -105,7 +140,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
         };
     }
 
-    abstract Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues );
+    abstract Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues );
 
     Value[] extractValuesFromUpdates( IndexEntryUpdate<SchemaIndexDescriptor>[] updates )
     {
@@ -123,7 +158,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
 
     abstract IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues();
 
-    abstract  IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues();
+    abstract IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues();
 
     IndexEntryUpdate<SchemaIndexDescriptor>[] generateAddUpdatesFor( Object[] values )
     {

@@ -19,13 +19,13 @@
  */
 package schema;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -47,13 +47,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
-import org.neo4j.kernel.impl.index.schema.DateLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.DateTimeLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.DurationLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.LocalDateTimeLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.LocalTimeLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.SpatialLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.TimeLayoutTestUtil;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -78,6 +71,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.System.currentTimeMillis;
@@ -103,6 +97,7 @@ public class MultipleIndexPopulationStressIT
     private final TestDirectory directory = TestDirectory.testDirectory();
 
     private final RandomRule random = new RandomRule();
+    private RandomValues randomValues;
     private final CleanupRule cleanup = new CleanupRule();
     private final RepeatRule repeat = new RepeatRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
@@ -110,6 +105,12 @@ public class MultipleIndexPopulationStressIT
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( random ).around( repeat ).around( directory )
                                                 .around( cleanup ).around( fileSystemRule );
+
+    @Before
+    public void setup()
+    {
+        this.randomValues = RandomValues.create( random.random(), getConfiguration() );
+    }
 
     @Test
     public void populateMultipleIndexWithSeveralNodesSingleThreaded() throws Exception
@@ -193,10 +194,10 @@ public class MultipleIndexPopulationStressIT
             {
                 executor.submit( () ->
                 {
-                    Randoms random = new Randoms();
+                    RandomValues randomValues = RandomValues.create();
                     while ( !end.get() )
                     {
-                        changeRandomNode( db, nodeCount, random );
+                        changeRandomNode( db, nodeCount, randomValues );
                     }
                 } );
             }
@@ -277,21 +278,21 @@ public class MultipleIndexPopulationStressIT
         }
     }
 
-    private void changeRandomNode( GraphDatabaseService db, int nodeCount, Randoms random )
+    private void changeRandomNode( GraphDatabaseService db, int nodeCount, RandomValues random )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            long nodeId = random.random().nextInt( nodeCount );
+            long nodeId = random.nextLongValue( nodeCount ).value();
             Node node = db.getNodeById( nodeId );
             Object[] keys = Iterables.asCollection( node.getPropertyKeys() ).toArray();
             String key = (String) random.among( keys );
-            if ( random.random().nextFloat() < 0.1 )
+            if ( random.nextFloatValue().value() < 0.1 )
             {   // REMOVE
                 node.removeProperty( key );
             }
             else
             {   // CHANGE
-                node.setProperty( key, randomPropertyValue( random ) );
+                node.setProperty( key, random.nextValue().asObject() );
             }
             tx.success();
         }
@@ -309,31 +310,6 @@ public class MultipleIndexPopulationStressIT
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),
                 null, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR );
         importer.doImport( new RandomDataInput( count ) );
-    }
-
-    static Object randomPropertyValue( Randoms random )
-    {
-        switch ( random.nextInt( 9 ) )
-        {
-        case 0:
-            return random.nextInt( 100 );
-        case 1:
-            return random.string();
-        case 2:
-            return DateTimeLayoutTestUtil.randomDateTime( random );
-        case 3:
-            return TimeLayoutTestUtil.randomTime( random );
-        case 4:
-            return DateLayoutTestUtil.randomDate( random );
-        case 5:
-            return LocalDateTimeLayoutTestUtil.randomLocalDateTime( random );
-        case 6:
-            return LocalTimeLayoutTestUtil.randomLocalTime( random );
-        case 7:
-            return DurationLayoutTestUtil.randomDuration( random );
-        default:
-            return SpatialLayoutTestUtil.randomPoint( random );
-        }
     }
 
     private class RandomNodeGenerator extends GeneratingInputIterator<Randoms>
@@ -366,7 +342,7 @@ public class MultipleIndexPopulationStressIT
                 String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
                 for ( String key : keys )
                 {
-                    visitor.property( key, randomPropertyValue( state ) );
+                    visitor.property( key, randomValues.nextValue() );
                 }
                 visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
             } ) );
@@ -397,5 +373,37 @@ public class MultipleIndexPopulationStressIT
         {
             return knownEstimates( count, 0, count * TOKENS.length / 2, 0, count * TOKENS.length / 2 * Long.BYTES, 0, 0 );
         }
+    }
+
+    private RandomValues.Configuration getConfiguration()
+    {
+        return new RandomValues.Configuration()
+        {
+            private Randoms.Configuration conf = random.configuration();
+
+            @Override
+            public int stringMinLength()
+            {
+                return conf.stringMinLength();
+            }
+
+            @Override
+            public int stringMaxLength()
+            {
+                return conf.stringMaxLength();
+            }
+
+            @Override
+            public int arrayMinLength()
+            {
+                return conf.arrayMinLength();
+            }
+
+            @Override
+            public int arrayMaxLength()
+            {
+                return conf.arrayMaxLength();
+            }
+        };
     }
 }

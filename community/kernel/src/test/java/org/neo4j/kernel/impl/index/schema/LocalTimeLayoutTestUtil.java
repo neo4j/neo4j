@@ -29,13 +29,10 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.test.Randoms;
-import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-
-import static org.neo4j.kernel.impl.index.schema.TimeLayoutTestUtil.MAX_NANOS_PER_DAY;
 
 public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, NativeSchemaValue>
 {
@@ -48,11 +45,6 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, 
             LocalTime.of(23,59,59,999_999_998 ),
             LocalTime.of(23,59,59,999_999_999 )
     };
-
-    public static LocalTimeValue randomLocalTime( Randoms random )
-    {
-        return LocalTimeValue.localTime( random.randomLocalTime() );
-    }
 
     LocalTimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
@@ -84,12 +76,12 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, 
     }
 
     @Override
-    Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
         LocalTimeValue candidate;
         do
         {
-            candidate = randomLocalTime( random.randoms() );
+            candidate = random.nextLocalTimeValue();
         }
         while ( !uniqueCompareValues.add( candidate ) );
         uniqueValues.add( candidate );

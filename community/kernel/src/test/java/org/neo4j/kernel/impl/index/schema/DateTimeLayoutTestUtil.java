@@ -30,10 +30,8 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.test.Randoms;
-import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.DateTimeValue;
-import org.neo4j.values.storable.TemporalValue;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -50,11 +48,6 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
             ZonedDateTime.of( 0, 1, 1, 0,0,0,0, ZoneOffset.ofHours( 18 ) ),
             ZonedDateTime.of( -1, 12, 31, 23,59,59,999_999_999, UTC )
     };
-
-    public static DateTimeValue randomDateTime( Randoms random )
-    {
-        return DateTimeValue.datetime( random.randomDateTime() );
-    }
 
     DateTimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
@@ -86,12 +79,12 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
     }
 
     @Override
-    Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
         DateTimeValue candidate;
         do
         {
-            candidate = randomDateTime( random.randoms() );
+            candidate = random.nextDateTimeValue();
         }
         while ( !uniqueCompareValues.add( candidate ) );
         uniqueValues.add( candidate );
