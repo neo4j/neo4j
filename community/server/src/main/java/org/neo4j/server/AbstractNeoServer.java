@@ -144,6 +144,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected ConnectorPortRegister connectorPortRegister;
     private HttpConnector httpConnector;
     private Optional<HttpConnector> httpsConnector;
+    private AsyncRequestLog requestLog;
 
     protected abstract Iterable<ServerModule> createServerModules();
 
@@ -362,7 +363,7 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
-        AsyncRequestLog requestLog = new AsyncRequestLog(
+        requestLog = new AsyncRequestLog(
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
                 config.get( db_timezone ).getZoneId(),
                 config.get( http_log_path ).toString(),
@@ -392,11 +393,15 @@ public abstract class AbstractNeoServer implements NeoServer
         life.stop();
     }
 
-    private void stopWebServer()
+    private void stopWebServer() throws Exception
     {
         if ( webServer != null )
         {
             webServer.stop();
+        }
+        if ( requestLog != null )
+        {
+            requestLog.stop();
         }
     }
 
@@ -530,7 +535,7 @@ public abstract class AbstractNeoServer implements NeoServer
         }
 
         @Override
-        public void stop()
+        public void stop() throws Exception
         {
             stopWebServer();
             stopModules();

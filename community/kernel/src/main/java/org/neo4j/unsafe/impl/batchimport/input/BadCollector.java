@@ -153,6 +153,7 @@ public class BadCollector implements Collector
         finally
         {
             out.flush();
+            out.close();
         }
     }
 
