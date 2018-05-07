@@ -24,14 +24,14 @@ import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.FakeEntityTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeTestSupport, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.slotted.expressions.{NodeFromSlot, ReferenceFromSlot}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_5.InternalException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._

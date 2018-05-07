@@ -32,8 +32,10 @@ import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.server.HTTP;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -41,8 +43,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
-import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.mode;
 import static org.neo4j.cluster.ClusterSettings.server_id;
+import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.mode;
+import static org.neo4j.server.enterprise.EnterpriseServerSettings.bolt_routing_discoverable_address;
 
 public class EnterpriseServerIT
 {
@@ -59,6 +62,7 @@ public class EnterpriseServerIT
         NeoServer server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
+                .withProperty( bolt_routing_discoverable_address.name(), "bolt+routing://hello.world" )
                 .withProperty( server_id.name(), "1" )
                 .withProperty( cluster_server.name(), ":" + clusterPort )
                 .withProperty( initial_hosts.name(), ":" + clusterPort )
@@ -70,13 +74,15 @@ public class EnterpriseServerIT
             server.start();
             server.getDatabase();
 
-            assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
+            assertThat( server.getDatabase().getGraph(), is( instanceOf( HighlyAvailableGraphDatabase.class ) ) );
 
-            Client client = Client.create();
-            ClientResponse r = client.resource( getHaEndpoint( server ) )
-                    .accept( APPLICATION_JSON ).get( ClientResponse.class );
-            assertEquals( 200, r.getStatus() );
-            assertThat( r.getEntity( String.class ), containsString( "master" ) );
+            HTTP.Response haEndpoint = HTTP.GET( getHaEndpoint( server ) );
+            assertEquals( 200, haEndpoint.status() );
+            assertThat( haEndpoint.rawContent(), containsString( "master" ) );
+
+            HTTP.Response discovery = HTTP.GET( server.baseUri().toASCIIString() );
+            assertEquals( 200, discovery.status() );
+            assertThat( discovery.get( "bolt_routing" ), equalTo( "bolt+routing://hello.world" ) );
         }
         finally
         {

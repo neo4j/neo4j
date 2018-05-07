@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime
+package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
-import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
-import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
-import org.neo4j.cypher.internal.util.v3_4.NonEmptyList
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions._
-import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, ProduceResult, Selection, _}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
+import org.neo4j.cypher.internal.frontend.v3_5.ast._
+import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
+import org.neo4j.cypher.internal.util.v3_5.attribution.{Id, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_5.NonEmptyList
+import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, ProduceResult, Selection, _}
 
 class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
   implicit val idGen = new SequentialIdGen()

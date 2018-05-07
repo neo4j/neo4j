@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.symbols
 
-import org.neo4j.cypher.internal.util.v3_4.{CypherException, CypherTypeException, SyntaxException}
-import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_5.{CypherException, CypherTypeException, SyntaxException}
+import org.neo4j.cypher.internal.util.v3_5.symbols._
 
 import scala.collection.Map
 

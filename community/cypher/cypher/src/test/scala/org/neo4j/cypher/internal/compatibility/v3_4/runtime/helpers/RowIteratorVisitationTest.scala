@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers
+package org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers
 
 import org.mockito.Mockito.verifyZeroInteractions
 import org.neo4j.cypher.internal.runtime.RuntimeJavaValueConverter
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{intValue, stringValue}

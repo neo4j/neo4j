@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.vectorized.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.vectorized.MorselExecutionContext
 import org.neo4j.cypher.internal.runtime.vectorized.operators.DummyExpression
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.virtual.VirtualValues.list

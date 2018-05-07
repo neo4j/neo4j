@@ -31,9 +31,18 @@ public class MappingSerializer extends Serializer
         this.writer = writer;
     }
 
+    /**
+     * @deprecated please use {@link #putAbsoluteUri(String, URI)}
+     */
+    @Deprecated
     void putAbsoluteUri( String key, String path )
     {
         writer.writeValue( RepresentationType.URI, key, path );
+    }
+
+    void putAbsoluteUri( String key, URI path )
+    {
+        writer.writeValue( RepresentationType.URI, key, path.toASCIIString() );
     }
 
     public void putRelativeUri( String key, String path )

@@ -67,6 +67,7 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.ConfigAdapter;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
@@ -132,6 +133,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected Database database;
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
+    protected DiscoverableURIs discoverableURIs;
     protected Supplier<AuthManager> authManagerSupplier;
     protected Supplier<UserManagerSupplier> userManagerSupplier;
     protected Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
@@ -140,8 +142,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private TransactionHandleRegistry transactionRegistry;
     private boolean initialized;
-    private LifecycleAdapter serverComponents;
-    protected ConnectorPortRegister connectorPortRegister;
+    private ConnectorPortRegister connectorPortRegister;
     private HttpConnector httpConnector;
     private Optional<HttpConnector> httpsConnector;
 
@@ -197,8 +198,7 @@ public abstract class AbstractNeoServer implements NeoServer
             registerModule( moduleClass );
         }
 
-        serverComponents = new ServerComponentsLifecycleAdapter();
-        life.add( serverComponents );
+        life.add( new ServerComponentsLifecycleAdapter() );
 
         this.initialized = true;
     }
@@ -210,7 +210,6 @@ public abstract class AbstractNeoServer implements NeoServer
         try
         {
             life.start();
-
         }
         catch ( Throwable t )
         {
@@ -468,8 +467,8 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new TransactionFilter( database ) );
         singletons.add( new LoggingProvider( logProvider ) );
         singletons.add( providerForSingleton( logProvider.getLog( NeoServer.class ), Log.class ) );
-
         singletons.add( providerForSingleton( resolveDependency( UsageData.class ), UsageData.class ) );
+        singletons.add( providerForSingleton( discoverableURIs, DiscoverableURIs.class ) );
 
         return singletons;
     }
@@ -517,6 +516,8 @@ public abstract class AbstractNeoServer implements NeoServer
             transactionFacade = createTransactionalActions();
 
             cypherExecutor = new CypherExecutor( database, logProvider );
+
+            discoverableURIs = DiscoverableURIs.defaults( config, connectorPortRegister );
 
             configureWebServer();
 

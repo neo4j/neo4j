@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
-import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException}
+import org.neo4j.cypher.internal.util.v3_5.symbols.CypherType
+import org.neo4j.cypher.internal.util.v3_5.{CypherTypeException, InternalException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
 

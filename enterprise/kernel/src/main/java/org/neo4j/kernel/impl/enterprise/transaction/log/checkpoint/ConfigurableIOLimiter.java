@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint;
 
 import java.io.Flushable;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
@@ -29,6 +28,7 @@ import java.util.function.ObjLongConsumer;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.util.VisibleForTesting;
 
 public class ConfigurableIOLimiter implements IOLimiter
 {
@@ -56,7 +56,7 @@ public class ConfigurableIOLimiter implements IOLimiter
         this( config, LockSupport::parkNanos );
     }
 
-    // Only visible for testing.
+    @VisibleForTesting
     ConfigurableIOLimiter( Config config, ObjLongConsumer<Object> pauseNanos )
     {
         this.pauseNanos = pauseNanos;

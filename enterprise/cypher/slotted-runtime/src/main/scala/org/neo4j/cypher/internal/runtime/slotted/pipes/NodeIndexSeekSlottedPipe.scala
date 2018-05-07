@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
-import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.v3_4.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.util.v3_5.attribution.Id
+import org.neo4j.cypher.internal.v3_5.expressions.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.v3_5.logical.plans.QueryExpression
 import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference}
 
 case class NodeIndexSeekSlottedPipe(ident: String,

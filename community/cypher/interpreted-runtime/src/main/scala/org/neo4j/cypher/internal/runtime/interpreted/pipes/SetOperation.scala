@@ -24,7 +24,7 @@ import java.util.function.BiConsumer
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.cypher.internal.util.v3_5.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._

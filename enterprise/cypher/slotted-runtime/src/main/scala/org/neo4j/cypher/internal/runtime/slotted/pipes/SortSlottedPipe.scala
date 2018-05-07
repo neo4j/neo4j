@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import java.util.Comparator
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, Slot, SlotConfiguration}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 import org.neo4j.values.{AnyValue, AnyValues}
 
 case class SortSlottedPipe(source: Pipe,

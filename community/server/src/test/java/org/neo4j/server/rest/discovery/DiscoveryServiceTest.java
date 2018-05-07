@@ -90,9 +90,13 @@ public class DiscoveryServiceTest
 
     private DiscoveryService testDiscoveryService() throws URISyntaxException
     {
-        Config mockConfig = mockConfig();
-        return new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ),
-                neoServer );
+        return testDiscoveryService( mockConfig() );
+    }
+
+    private DiscoveryService testDiscoveryService( Config config ) throws URISyntaxException
+    {
+        return new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ),
+                DiscoverableURIs.defaults( config, null ) );
     }
 
     @Test
@@ -124,6 +128,16 @@ public class DiscoveryServiceTest
     }
 
     @Test
+    public void shouldAllowOverridingBoltURI() throws Exception
+    {
+        Config config = mockConfig();
+        config.augment( ServerSettings.bolt_discoverable_address, "bolt+routing://hello.com:7687" );
+        Response response = testDiscoveryService( config ).getDiscoveryDocument( uriInfo( "localhost" ) );
+        String json = new String( (byte[]) response.getEntity() );
+        assertThat( json, containsString( "\"bolt\" : \"bolt+routing://hello.com:7687" ) );
+    }
+
+    @Test
     public void shouldReturnDataURI() throws Exception
     {
         Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( "localhost" ) );
@@ -147,8 +161,9 @@ public class DiscoveryServiceTest
         when( mockConfig.get( ServerSettings.browser_path ) ).thenReturn( browserUri );
 
         String baseUri = "http://www.example.com:5435";
-        DiscoveryService ds = new DiscoveryService( mockConfig,
-                new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ), neoServer );
+        DiscoveryService ds =
+                new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ),
+                        DiscoverableURIs.defaults( mockConfig, null ) );
 
         Response response = ds.redirectToBrowser();
 

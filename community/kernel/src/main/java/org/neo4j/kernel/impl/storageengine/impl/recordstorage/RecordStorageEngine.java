@@ -116,6 +116,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
@@ -531,6 +532,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
      * are important tests which asserts details about the neo stores that are very important to test,
      * but to convert all those tests might be a bigger piece of work.
      */
+    @VisibleForTesting
     public NeoStores testAccessNeoStores()
     {
         return neoStores;

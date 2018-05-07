@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.util.VisibleForTesting;
 
 public class StatementLocksFactorySelector
 {
@@ -76,10 +77,10 @@ public class StatementLocksFactorySelector
 
     /**
      * Load all available factories via {@link Service}.
-     * <b>Visible for testing only.</b>
      *
      * @return list of available factories.
      */
+    @VisibleForTesting
     List<StatementLocksFactory> serviceLoadFactories()
     {
         return Iterables.asList( Service.load( StatementLocksFactory.class ) );

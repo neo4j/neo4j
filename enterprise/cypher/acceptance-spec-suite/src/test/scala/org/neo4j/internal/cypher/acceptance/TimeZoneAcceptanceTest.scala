@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.time.{ZoneId, ZonedDateTime}
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs

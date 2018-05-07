@@ -5,7 +5,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
-  <version>3.4.0-SNAPSHOT</version>
+  <version>3.5.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
@@ -71,7 +71,7 @@
     <java9.exports/>
     <test.runner.jvm/>
     <test.runner.jvm.settings.additional/>
-    <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError
+    <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError -XX:+ExitOnOutOfMemoryError
       -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.CHECK_NATIVE_ACCESS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
@@ -91,7 +91,7 @@
     <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
-    <asm.version>6.0</asm.version>
+    <asm.version>6.1.1</asm.version>
     <metrics.version>4.0.2</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
     <scala.java9.arg/>

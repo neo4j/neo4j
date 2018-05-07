@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.CountFunction
-import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_5.symbols._
 
 case class Count(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new CountFunction(anInner)

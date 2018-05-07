@@ -19,11 +19,14 @@
  */
 package org.neo4j.server.enterprise;
 
+import java.net.URI;
 import java.time.Duration;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
@@ -48,4 +51,12 @@ public class EnterpriseServerSettings implements LoadableConfig
     @Description( "Configure the policy for outgoing Neo4j Browser connections." )
     public static final Setting<Boolean> browser_allowOutgoingBrowserConnections =
             setting( "browser.allow_outgoing_connections", BOOLEAN, TRUE );
+
+    @Description( "Publicly discoverable bolt+routing:// URI to use for Neo4j Drivers wanting to access a cluster " +
+            "that this instance is a member of." )
+    @DocumentedDefaultValue( "Defaults to empty in single-instance deployments, and a bolt+routing://-schemed URI " +
+            "of the advertised address of the first found bolt connector in clustered deployments." )
+    public static final Setting<URI> bolt_routing_discoverable_address =
+            setting( "dbms.discoverable_bolt_routing_address", Settings.URI, "" );
+
 }

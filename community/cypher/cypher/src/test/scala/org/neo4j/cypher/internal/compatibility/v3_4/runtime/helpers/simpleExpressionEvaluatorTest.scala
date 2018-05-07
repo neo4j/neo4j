@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers
+package org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers
 
-import org.neo4j.cypher.internal.util.v3_4.DummyPosition
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.simpleExpressionEvaluator.isNonDeterministic
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, FunctionName}
+import org.neo4j.cypher.internal.util.v3_5.DummyPosition
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.simpleExpressionEvaluator.isNonDeterministic
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.{FunctionInvocation, FunctionName}
 
 class SimpleExpressionEvaluatorTest extends CypherFunSuite {
   private val pos = DummyPosition(-1)
