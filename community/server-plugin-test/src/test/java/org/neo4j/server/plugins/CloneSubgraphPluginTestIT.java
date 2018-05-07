@@ -22,7 +22,6 @@ package org.neo4j.server.plugins;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -183,7 +182,7 @@ public class CloneSubgraphPluginTestIT extends ExclusiveServerTestBase
         response = new RestRequest().post( clonedSubgraphUri,
                 "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH, MediaType.APPLICATION_FORM_URLENCODED_TYPE );
 
-        Assert.assertEquals( response.getEntity(), 200, response.getStatus() );
+        assertEquals( response.getEntity(), 200, response.getStatus() );
 
         int doubleTheNumberOfNodes = originalCount * 2;
         assertEquals( doubleTheNumberOfNodes, nodeCount() );

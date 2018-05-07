@@ -36,12 +36,11 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
-import org.neo4j.test.assertion.Assert;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -52,10 +51,9 @@ import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodeKeyConstraintValidationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT
-        .NodePropertyExistenceConstraintValidationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT
-        .RelationshipPropertyExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodePropertyExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.RelationshipPropertyExistenceConstraintValidationIT;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
@@ -88,7 +86,7 @@ public class PropertyConstraintValidationIT
             SchemaHelper.createNodeKeyConstraint( db, label,  "property2", "property3" );
             SchemaHelper.createNodeKeyConstraint( db, label,  "property3", "property4" );
 
-            Assert.assertException( () ->
+            assertException( () ->
             {
                 try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
                 {
@@ -100,7 +98,7 @@ public class PropertyConstraintValidationIT
             }, ConstraintViolationException.class,
                     "Node(0) with label `multiNodeKeyLabel` must have the properties `property2, property3`" );
 
-            Assert.assertException( () ->
+            assertException( () ->
             {
                 try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
                 {

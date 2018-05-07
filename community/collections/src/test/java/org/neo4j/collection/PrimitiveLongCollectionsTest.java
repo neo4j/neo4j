@@ -23,7 +23,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -192,10 +191,10 @@ public class PrimitiveLongCollectionsTest
         // WHEN/THEN
         assertTrue( iterator.hasNext() );
         assertTrue( iterator.hasNext() );
-        Assert.assertEquals( 1L, iterator.next() );
+        assertEquals( 1L, iterator.next() );
         assertTrue( iterator.hasNext() );
         assertTrue( iterator.hasNext() );
-        Assert.assertEquals( 0L, iterator.next() );
+        assertEquals( 0L, iterator.next() );
         assertFalse( iterator.hasNext() );
         assertFalse( iterator.hasNext() );
         assertEquals( -1L, count.get() );
@@ -209,7 +208,7 @@ public class PrimitiveLongCollectionsTest
         assertTrue( longSet.contains( 1L ) );
         assertTrue( longSet.contains( 4L ) );
         assertTrue( longSet.contains( 7L ) );
-        Assert.assertEquals( 3, longSet.size() );
+        assertEquals( 3, longSet.size() );
     }
 
     @Test
@@ -237,7 +236,7 @@ public class PrimitiveLongCollectionsTest
     private void assertNextEquals( long expected, LongIterator iterator )
     {
         assertTrue( iterator + " should have had more items", iterator.hasNext() );
-        Assert.assertEquals( expected, iterator.next() );
+        assertEquals( expected, iterator.next() );
     }
 
     private void assertItems( LongIterator iterator, long... expectedItems )
