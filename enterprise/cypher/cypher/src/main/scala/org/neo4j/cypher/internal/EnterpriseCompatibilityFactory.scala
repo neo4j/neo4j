@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherPlanner
-import org.neo4j.cypher.internal.compatibility.v3_4.Compatibility
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContextCreator
+import org.neo4j.cypher.internal.compatibility.v3_5.Compatibility
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
-import org.neo4j.cypher.internal.compiler.v3_4._
+import org.neo4j.cypher.internal.compiler.v3_5._
+import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContextCreator
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{ParallelDispatcher, SingleThreadedExecutor}
-import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Config
@@ -45,7 +45,7 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
   override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3compat.Compatibility[_,_,_] =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_4, config: CypherCompilerConfiguration): Compatibility[_,_] =
+  override def create(spec: PlannerSpec_v3_5, config: CypherCompilerConfiguration): Compatibility[_,_] =
     (spec.planner, spec.runtime) match {
       case (CypherPlanner.rule, _) => inner.create(spec, config)
 

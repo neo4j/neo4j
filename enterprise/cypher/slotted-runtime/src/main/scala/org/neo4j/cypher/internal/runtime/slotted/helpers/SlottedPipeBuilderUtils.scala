@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.slotted.helpers
 
 import NullChecker.entityIsNull
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, Slot}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, Slot}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.util.v3_4.{AssertionUtils, InternalException, ParameterWrongTypeException}
-import org.neo4j.cypher.internal.util.v3_4.symbols.{CTNode, CTRelationship, CypherType}
+import org.neo4j.cypher.internal.util.v3_5.{AssertionUtils, InternalException, ParameterWrongTypeException}
+import org.neo4j.cypher.internal.util.v3_5.symbols.{CTNode, CTRelationship, CypherType}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue, VirtualValues}

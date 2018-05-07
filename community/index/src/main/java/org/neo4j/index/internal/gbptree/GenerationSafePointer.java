@@ -135,7 +135,6 @@ class GenerationSafePointer
         return checksum == checksumOf( generation, pointer );
     }
 
-    // package visible for test purposes
     /**
      * Calculates a 2-byte checksum from GSP data.
      *
@@ -144,7 +143,7 @@ class GenerationSafePointer
      *
      * @return a {@code short} which is the checksum of the generation-pointer.
      */
-    public static short checksumOf( long generation, long pointer )
+    static short checksumOf( long generation, long pointer )
     {
         short result = 0;
         result ^= ((short) generation) & UNSIGNED_SHORT_MASK;

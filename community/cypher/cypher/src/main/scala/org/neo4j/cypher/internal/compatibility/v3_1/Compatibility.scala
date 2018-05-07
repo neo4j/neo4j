@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan => ExecutionPlan_v3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_1.{CompilationPhaseTracer, InfoLogger, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
-import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, FineToReuse, NeedsReplan}
+import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, FineToReuse, NeedsReplan}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper => TransactionalContextWrapperV3_4}
+import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper => TransactionalContextWrapperv3_5}
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => TransactionalContextWrapperV3_1, _}
 import org.neo4j.cypher.internal.{frontend, _}
@@ -74,8 +74,8 @@ trait Compatibility {
                                          preParsedQuery.planner.name,
                                          Some(helpers.as3_1(preParsedQuery.offset)), tracer))
     new ParsedQuery {
-      override def plan(transactionalContext: TransactionalContextWrapperV3_4,
-                        tracer: frontend.v3_4.phases.CompilationPhaseTracer):
+      override def plan(transactionalContext: TransactionalContextWrapperv3_5,
+                        tracer: frontend.v3_5.phases.CompilationPhaseTracer):
       (ExecutionPlan, Map[String, Any], Seq[String]) =
         exceptionHandler.runSafely {
           val tc = TransactionalContextWrapperV3_1(transactionalContext.tc)
@@ -100,13 +100,13 @@ trait Compatibility {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
-    private def queryContext(transactionalContext: TransactionalContextWrapperV3_4) = {
+    private def queryContext(transactionalContext: TransactionalContextWrapperv3_5) = {
       val ctx = new TransactionBoundQueryContext(TransactionalContextWrapperV3_1(transactionalContext.tc))(
         searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def run(transactionalContext: TransactionalContextWrapperV3_4, executionMode: CypherExecutionMode,
+    def run(transactionalContext: TransactionalContextWrapperv3_5, executionMode: CypherExecutionMode,
             params: Map[String, Any]): Result = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev3_1
@@ -128,7 +128,7 @@ trait Compatibility {
 
     def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperV3_4): CacheCheckResult = {
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperv3_5): CacheCheckResult = {
       val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.dataRead, ctx.schemaRead))
       if (stale)
         NeedsReplan(0)
@@ -138,7 +138,7 @@ trait Compatibility {
 
     override val plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
 
-    override def run(transactionalContext: TransactionalContextWrapperV3_4, executionMode: CypherExecutionMode, params: MapValue): Result = {
+    override def run(transactionalContext: TransactionalContextWrapperv3_5, executionMode: CypherExecutionMode, params: MapValue): Result = {
       var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
       params.foreach(new BiConsumer[String, AnyValue] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))

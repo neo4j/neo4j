@@ -6,12 +6,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.0-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <artifactId>cypher-parent</artifactId>
-  <version>3.4.0-SNAPSHOT</version>
+  <version>3.5.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Neo4j - Community Cypher Build</name>
   <description>Project that builds the Neo4j Cypher modules as part of the Community distribution.</description>
@@ -37,14 +37,14 @@
         </property>
       </activation>
       <modules>
-        <module>frontend-3.4</module>
-        <module>util-3.4</module>
-        <module>ir-3.4</module>
-        <module>cypher-planner-3.4</module>
-        <module>planner-spi-3.4</module>
-        <module>expressions-3.4</module>
+        <module>frontend-3.5</module>
+        <module>util-3.5</module>
+        <module>ir-3.5</module>
+        <module>cypher-planner-3.5</module>
+        <module>planner-spi-3.5</module>
+        <module>expressions-3.5</module>
         <module>cypher</module>
-        <module>cypher-logical-plans-3.4</module>
+        <module>cypher-logical-plans-3.5</module>
         <module>runtime-util</module>
         <module>interpreted-runtime</module>
       </modules>

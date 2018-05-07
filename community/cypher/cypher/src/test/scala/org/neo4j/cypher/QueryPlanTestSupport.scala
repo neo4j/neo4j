@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
+import org.neo4j.cypher.internal.frontend.v3_5.helpers.StringHelper._
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.v3_4.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.v3_5.logical.plans.NodeHashJoin
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 trait QueryPlanTestSupport {

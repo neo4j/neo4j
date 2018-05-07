@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.WindowsStringSafe
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.WindowsStringSafe
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.v3_4.logical.plans.{CartesianProduct, NodeIndexSeek}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CartesianProduct, NodeIndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, _}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

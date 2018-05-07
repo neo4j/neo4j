@@ -24,7 +24,7 @@ import java.util
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{ExecutionPlanDescription, Result}
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException

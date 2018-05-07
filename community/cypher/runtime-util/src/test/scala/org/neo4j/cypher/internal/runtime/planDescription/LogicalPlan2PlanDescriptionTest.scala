@@ -19,26 +19,25 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.util.v3_4._
-import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions.{SemanticDirection, LabelName => AstLabelName, _}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.util.v3_5._
+import org.neo4j.cypher.internal.util.v3_5.attribution.{Id, IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.{SemanticDirection, LabelName => AstLabelName, _}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
   test("tests") {
-    implicit val idGen = new SequentialIdGen()
-    val readOnlies = new ReadOnlies
+    implicit val idGen: IdGen = new SequentialIdGen()
+    val readOnly = true
     val cardinalities = new Cardinalities
     val id = Id.INVALID_ID
 
     def attach(plan: LogicalPlan, cardinality: Cardinality): LogicalPlan = {
-      readOnlies.set(plan.id, true)
       cardinalities.set(plan.id, cardinality)
       plan
     }
@@ -85,9 +84,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     forAll(modeCombinations) {
       case (logicalPlan: LogicalPlan, expectedPlanDescription: PlanDescriptionImpl) =>
-        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, readOnlies, cardinalities)
+        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, readOnly, cardinalities)
 
-        def shouldBeEqual(a: InternalPlanDescription, b: InternalPlanDescription) = {
+        def shouldBeEqual(a: InternalPlanDescription, b: InternalPlanDescription): Unit = {
           withClue("name")(a.name should equal(b.name))
           withClue("arguments")(a.arguments should equal(b.arguments))
           withClue("variables")(a.variables should equal(b.variables))
