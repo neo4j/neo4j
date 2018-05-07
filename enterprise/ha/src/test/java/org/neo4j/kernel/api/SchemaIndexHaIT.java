@@ -525,9 +525,9 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+        public IndexCapability getCapability()
         {
-            return delegate.getCapability( schemaIndexDescriptor );
+            return delegate.getCapability();
         }
 
         @Override
