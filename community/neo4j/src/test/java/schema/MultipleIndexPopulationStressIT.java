@@ -282,7 +282,7 @@ public class MultipleIndexPopulationStressIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            long nodeId = random.nextLongValue( nodeCount ).value();
+            long nodeId = random.nextInt( nodeCount );
             Node node = db.getNodeById( nodeId );
             Object[] keys = Iterables.asCollection( node.getPropertyKeys() ).toArray();
             String key = (String) random.among( keys );

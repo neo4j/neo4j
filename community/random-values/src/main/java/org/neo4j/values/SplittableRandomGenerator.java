@@ -57,6 +57,7 @@ public class SplittableRandomGenerator implements Generator
     @Override
     public float nextFloat()
     {
+        //this is a safe cast since nextDouble returns values in [0,1.0)
         return (float) random.nextDouble();
     }
 

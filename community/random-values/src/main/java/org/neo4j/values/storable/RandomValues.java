@@ -274,6 +274,19 @@ public class RandomValues
     }
 
     /**
+     * Returns the next pseudorandom uniformly distributed {@code int} between 0 (inclusive) and the specified
+     * value (exclusive)
+     *
+     * @param bound the upper bound (exclusive).  Must be positive.
+     * @return the next pseudorandom, uniformly distributed {@link IntValue}
+     * value between zero (inclusive) and {@code bound} (exclusive)
+     */
+    public int nextInt( int bound )
+    {
+        return generator.nextInt( bound );
+    }
+
+    /**
      * Returns the next pseudorandom uniformly distributed {@link ShortValue}
      *
      * @return the next pseudorandom uniformly distributed {@link ShortValue}
@@ -336,7 +349,7 @@ public class RandomValues
      */
     public DoubleValue nextDoubleValue()
     {
-        return doubleValue( generator.nextFloat() );
+        return doubleValue( generator.nextDouble() );
     }
 
     /**

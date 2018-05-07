@@ -19,17 +19,48 @@
  */
 package org.neo4j.values;
 
+/**
+ * This class is meant as a gap so that we don't need a direct dependency on a random number generator.
+ * <p>
+ * For example by wrapping in a generator we can support both {@code java.util.Random} and {@code java.util
+ * .SplittableRandom}
+ */
 public interface Generator
 {
+    /**
+     * Return a pseudorandom normally distributed long
+     * @return a pseudorandom normally distributed long
+     */
     long nextLong();
 
+    /**
+     * Return a pseudorandom normally distributed boolean
+     * @return a pseudorandom normally distributed boolean
+     */
     boolean nextBoolean();
 
+    /**
+     * Return a pseudorandom normally distributed int
+     * @return a pseudorandom normally distributed int
+     */
     int nextInt();
 
+    /**
+     * Return a pseudorandom normally distributed long between 0 (inclusive) and the given bound(exlusive)
+     * @param bound the exclusive upper bound for the number generation
+     * @return a pseudorandom normally distributed int
+     */
     int nextInt( int bound );
 
+    /**
+     * Return a pseudorandom normally distributed float
+     * @return a pseudorandom normally distributed float
+     */
     float nextFloat();
 
+    /**
+     * Return a pseudorandom normally distributed double
+     * @return a pseudorandom normally distributed double
+     */
     double nextDouble();
 }
