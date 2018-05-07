@@ -178,7 +178,7 @@ class IndexProxyCreator
 
     private IndexMeta indexMetaFromProvider( long ruleId, IndexProvider.Descriptor providerDescriptor, SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        IndexCapability indexCapability = providerMap.apply( providerDescriptor ).getCapability( schemaIndexDescriptor );
+        IndexCapability indexCapability = providerMap.apply( providerDescriptor ).getCapability();
         return new IndexMeta( ruleId, schemaIndexDescriptor, providerDescriptor, indexCapability );
     }
 }

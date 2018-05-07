@@ -111,7 +111,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability()
     {
         return IndexCapability.NO_CAPABILITY;
     }

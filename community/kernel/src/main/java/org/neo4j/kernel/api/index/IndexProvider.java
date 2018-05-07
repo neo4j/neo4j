@@ -141,7 +141,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
                 }
 
                 @Override
-                public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+                public IndexCapability getCapability()
                 {
                     return IndexCapability.NO_CAPABILITY;
                 }
@@ -218,11 +218,9 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
     public abstract InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor );
 
     /**
-     * Return {@link IndexCapability} for this index provider for a given {@link SchemaIndexDescriptor}.
-     *
-     * @param schemaIndexDescriptor {@link SchemaIndexDescriptor} to get IndexCapability for.
+     * Return {@link IndexCapability} for this index provider.
      */
-    public abstract IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor );
+    public abstract IndexCapability getCapability();
 
     /**
      * @return a description of this index provider

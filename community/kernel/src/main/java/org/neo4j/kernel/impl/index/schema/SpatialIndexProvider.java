@@ -164,7 +164,7 @@ public class SpatialIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor indexDescriptor )
+    public IndexCapability getCapability()
     {
         return CAPABILITY;
     }

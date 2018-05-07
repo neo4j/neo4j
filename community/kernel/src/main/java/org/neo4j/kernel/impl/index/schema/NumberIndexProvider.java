@@ -85,7 +85,7 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability()
     {
         return CAPABILITY;
     }

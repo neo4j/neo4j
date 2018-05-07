@@ -179,12 +179,12 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability()
     {
         IndexCapability[] capabilities = new IndexCapability[providers.length];
         for ( int i = 0; i < providers.length; i++ )
         {
-            capabilities[i] = providers[i].getCapability( schemaIndexDescriptor );
+            capabilities[i] = providers[i].getCapability();
         }
         return new UnionIndexCapability( capabilities )
         {
