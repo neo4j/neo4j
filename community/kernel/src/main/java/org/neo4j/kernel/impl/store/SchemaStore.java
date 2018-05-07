@@ -73,7 +73,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = getRecord( rule.getId(), nextRecord(), CHECK );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), this );
-        allocateRecordsFromBytes( records, rule.serialize(), recordAllocator );
+        allocateRecordsFromBytes( records, SchemaRuleSerialization.serialize( rule ), recordAllocator );
         return records;
     }
 

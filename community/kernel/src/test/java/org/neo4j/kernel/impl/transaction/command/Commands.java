@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
@@ -154,7 +155,7 @@ public class Commands
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );
         record.setCreated();
-        record.setData( rule.serialize() );
+        record.setData( SchemaRuleSerialization.serialize( rule ) );
         return new SchemaRuleCommand( Collections.emptyList(), singletonList( record ), rule );
     }
 

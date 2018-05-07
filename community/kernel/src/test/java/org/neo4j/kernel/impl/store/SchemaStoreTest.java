@@ -91,7 +91,7 @@ public class SchemaStoreTest
 
         // WHEN
         IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( indexRule.serialize() ) );
+                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -110,7 +110,7 @@ public class SchemaStoreTest
 
         // WHEN
         IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( indexRule.serialize() ) );
+                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -128,7 +128,7 @@ public class SchemaStoreTest
 
         // WHEN
         IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( indexRule.serialize() ) );
+                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
