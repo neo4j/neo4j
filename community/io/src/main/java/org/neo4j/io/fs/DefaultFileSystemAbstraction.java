@@ -37,9 +37,13 @@ import java.nio.file.CopyOption;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.WatchService;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.io.IOUtils;
@@ -128,6 +132,23 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     public boolean fileExists( File fileName )
     {
         return fileName.exists();
+    }
+
+    @Override
+    public void setPermissions( File fileName, FilePermission... permissions ) throws IOException
+    {
+        Set<PosixFilePermission> posixPerms = Arrays.stream( permissions )
+                .map( p -> PosixFilePermission.valueOf( p.name() ) )
+                .collect( Collectors.toSet() );
+        Files.setPosixFilePermissions( fileName.toPath(), posixPerms );
+    }
+
+    @Override
+    public Set<FilePermission> getPermissions( File fileName ) throws IOException
+    {
+        return Files.getPosixFilePermissions( fileName.toPath() ).stream()
+                .map( p -> FilePermission.valueOf( p.name() ) )
+                .collect( Collectors.toSet());
     }
 
     @Override
