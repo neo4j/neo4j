@@ -217,8 +217,6 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
     @Override
     public void close()
     {
-        // todo ak
-//        removedElements.close();
-//        addedElements.close();
+        // nop
     }
 }

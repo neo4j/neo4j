@@ -1284,40 +1284,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
      */
     public void release()
     {
-        if ( !collectionsFactory.collectionsMustBeReleased() )
-        {
-            return;
-        }
-        // todo ak
-//        if ( labelStatesMap != null )
-//        {
-//            labelStatesMap.close();
-//        }
-//        if ( createdLabelTokens != null )
-//        {
-//            createdLabelTokens.close();
-//        }
-//        if ( createdRelationshipTypeTokens != null )
-//        {
-//            createdRelationshipTypeTokens.close();
-//        }
-//        if ( nodeStatesMap != null )
-//        {
-//            nodeStatesMap.close();
-//        }
-//        if ( relationshipStatesMap != null )
-//        {
-//            relationshipStatesMap.close();
-//        }
-        // todo ak
-//        if ( nodes != null && nodes.removedFromAdded != null )
-//        {
-//            nodes.removedFromAdded.close();
-//        }
-//        if ( relationships != null && relationships.removedFromAdded != null )
-//        {
-//            relationships.removedFromAdded.close();
-//        }
+        // nop
     }
 
     private static class ConstraintDiffSetsVisitor implements DiffSetsVisitor<ConstraintDescriptor>
