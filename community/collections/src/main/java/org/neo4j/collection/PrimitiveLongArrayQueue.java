@@ -64,11 +64,6 @@ public class PrimitiveLongArrayQueue
         return (tail - head) & (values.length - 1);
     }
 
-    public void close()
-    {
-        values = PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-    }
-
     public LongIterator longIterator()
     {
         return new PrimitiveLongArrayQueueIterator();
