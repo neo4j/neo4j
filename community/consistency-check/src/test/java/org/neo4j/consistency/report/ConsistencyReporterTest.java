@@ -413,12 +413,18 @@ public class ConsistencyReporterTest
 
         private SchemaRule simpleSchemaRule()
         {
-            return new SchemaRule( 0 )
+            return new SchemaRule()
             {
                 @Override
-                public byte[] serialize()
+                public long getId()
                 {
-                    return new byte[0];
+                    return 0;
+                }
+
+                @Override
+                public String getName()
+                {
+                    return null;
                 }
 
                 @Override

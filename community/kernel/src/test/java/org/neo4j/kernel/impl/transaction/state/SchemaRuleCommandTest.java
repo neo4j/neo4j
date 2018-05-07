@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.transaction.command.BaseCommandReader;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
@@ -225,7 +226,7 @@ public class SchemaRuleCommandTest
     private SchemaRecord serialize( SchemaRule rule, long id, boolean inUse, boolean created )
     {
         DynamicRecord record = new DynamicRecord( id );
-        record.setData( rule.serialize() );
+        record.setData( SchemaRuleSerialization.serialize( rule ) );
         if ( created )
         {
             record.setCreated();

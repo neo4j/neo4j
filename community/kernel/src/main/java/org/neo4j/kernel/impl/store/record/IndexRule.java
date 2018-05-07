@@ -30,11 +30,13 @@ import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
-public class IndexRule extends SchemaRule implements SchemaIndexDescriptor.Supplier
+public class IndexRule implements SchemaRule, SchemaIndexDescriptor.Supplier
 {
     private final IndexProvider.Descriptor providerDescriptor;
     private final SchemaIndexDescriptor descriptor;
     private final Long owningConstraint;
+    private final long id;
+    private final String name;
 
     public static IndexRule indexRule( long id, SchemaIndexDescriptor descriptor,
                                        IndexProvider.Descriptor providerDescriptor )
@@ -71,7 +73,8 @@ public class IndexRule extends SchemaRule implements SchemaIndexDescriptor.Suppl
     IndexRule( long id, IndexProvider.Descriptor providerDescriptor,
                SchemaIndexDescriptor descriptor, Long owningConstraint, String name )
     {
-        super( id, name );
+        this.id = id;
+        this.name = SchemaRule.nameOrDefault( name, "index_" + id );
         if ( providerDescriptor == null )
         {
             throw new IllegalArgumentException( "null provider descriptor prohibited" );
@@ -129,12 +132,6 @@ public class IndexRule extends SchemaRule implements SchemaIndexDescriptor.Suppl
     }
 
     @Override
-    public byte[] serialize()
-    {
-        return SchemaRuleSerialization.serialize( this );
-    }
-
-    @Override
     public String toString()
     {
         String ownerString = "";
@@ -174,5 +171,17 @@ public class IndexRule extends SchemaRule implements SchemaIndexDescriptor.Suppl
     public int hashCode()
     {
         return this.descriptor.hashCode();
+    }
+
+    @Override
+    public long getId()
+    {
+        return id;
+    }
+
+    @Override
+    public String getName()
+    {
+        return name;
     }
 }

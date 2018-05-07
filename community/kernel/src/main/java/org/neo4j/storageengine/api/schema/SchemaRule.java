@@ -26,41 +26,32 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 
 /**
  * Represents a stored schema rule.
  */
-public abstract class SchemaRule implements SchemaDescriptorSupplier
+public interface SchemaRule extends SchemaDescriptorSupplier
 {
-    protected final long id;
-    protected final String name;
-
-    protected SchemaRule( long id )
+    static String nameOrDefault( String name, String defaultName )
     {
-        this( id, null );
-    }
-
-    protected SchemaRule( long id, String name )
-    {
-        this.id = id;
-        this.name = name == null ? generateName( id, getClass() ) : checkName( name );
-    }
-
-    private String checkName( String name )
-    {
-        int length = name.length();
-        if ( length == 0 )
+        if ( name == null )
+        {
+            return defaultName;
+        }
+        else if ( name.isEmpty() )
         {
             throw new IllegalArgumentException( "Schema rule name cannot be the empty string" );
         }
-        for ( int i = 0; i < length; i++ )
+        else
         {
-            char ch = name.charAt( i );
-            if ( ch == '\0' )
+            int length = name.length();
+            for ( int i = 0; i < length; i++ )
             {
-                throw new IllegalArgumentException( "Illegal schema rule name: '" + name + "'" );
+                char ch = name.charAt( i );
+                if ( ch == '\0' )
+                {
+                    throw new IllegalArgumentException( "Illegal schema rule name: '" + name + "'" );
+                }
             }
         }
         return name;
@@ -69,33 +60,12 @@ public abstract class SchemaRule implements SchemaDescriptorSupplier
     /**
      * The persistence id for this rule.
      */
-    public final long getId()
-    {
-        return this.id;
-    }
+    long getId();
 
     /**
      * @return The (possibly user supplied) name of this schema rule.
      */
-    public final String getName()
-    {
-        return name;
-    }
-
-    public abstract byte[] serialize();
-
-    public static String generateName( long id, Class<? extends SchemaRule> type )
-    {
-        if ( type == IndexRule.class )
-        {
-            return "index_" + id;
-        }
-        if ( type == ConstraintRule.class )
-        {
-            return "constraint_" + id;
-        }
-        return "schema_" + id;
-    }
+    String getName();
 
     /**
      * This enum is used for the legacy schema store, and should not be extended.

@@ -95,23 +95,6 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( constraintExistsRelType.getName(), is( "constraint_2" ) );
         assertThat( constraintCompositeLabel.getName(), is( "constraint_1" ) );
         assertThat( constraintCompositeRelType.getName(), is( "constraint_2" ) );
-
-        assertThat( generateName( indexRegular ), is( "index_1" ) );
-        assertThat( generateName( indexUnique ), is( "index_2" ) );
-        assertThat( generateName( indexCompositeRegular ), is( "index_1" ) );
-        assertThat( generateName( indexCompositeUnique ), is( "index_2" ) );
-        assertThat( generateName( indexBigComposite ), is( "index_1" ) );
-        assertThat( generateName( constraintExistsLabel ), is( "constraint_1" ) );
-        assertThat( generateName( constraintUniqueLabel ), is( "constraint_2" ) );
-        assertThat( generateName( constraintNodeKeyLabel ), is( "constraint_2" ) );
-        assertThat( generateName( constraintExistsRelType ), is( "constraint_2" ) );
-        assertThat( generateName( constraintCompositeLabel ), is( "constraint_1" ) );
-        assertThat( generateName( constraintCompositeRelType ), is( "constraint_2" ) );
-    }
-
-    private static String generateName( SchemaRule rule )
-    {
-        return SchemaRule.generateName( rule.getId(), rule.getClass() );
     }
 
     @Test
@@ -618,13 +601,13 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
     private SchemaRule serialiseAndDeserialise( ConstraintRule constraintRule ) throws MalformedSchemaRuleException
     {
-        ByteBuffer buffer = ByteBuffer.wrap( constraintRule.serialize() );
+        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization.serialize( constraintRule ) );
         return SchemaRuleSerialization.deserialize( constraintRule.getId(), buffer );
     }
 
     private SchemaRule serialiseAndDeserialise( IndexRule indexRule ) throws MalformedSchemaRuleException
     {
-        ByteBuffer buffer = ByteBuffer.wrap( indexRule.serialize() );
+        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization.serialize( indexRule ) );
         return SchemaRuleSerialization.deserialize( indexRule.getId(), buffer );
     }
 
@@ -640,7 +623,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     private void assertCorrectLength( IndexRule indexRule )
     {
         // GIVEN
-        ByteBuffer buffer = ByteBuffer.wrap( indexRule.serialize() );
+        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization.serialize( indexRule ) );
 
         // THEN
         assertThat( SchemaRuleSerialization.lengthOf( indexRule ), equalTo( buffer.capacity() ) );
@@ -649,7 +632,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     private void assertCorrectLength( ConstraintRule constraintRule )
     {
         // GIVEN
-        ByteBuffer buffer = ByteBuffer.wrap( constraintRule.serialize() );
+        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization.serialize( constraintRule ) );
 
         // THEN
         assertThat( SchemaRuleSerialization.lengthOf( constraintRule ), equalTo( buffer.capacity() ) );

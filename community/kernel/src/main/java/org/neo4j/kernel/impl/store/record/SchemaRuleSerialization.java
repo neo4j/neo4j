@@ -71,7 +71,26 @@ public class SchemaRuleSerialization
     // PUBLIC
 
     /**
+     * Serialize the provided SchemaRule onto the target buffer
+     *
+     * @param schemaRule the SchemaRule to serialize
+     */
+    public static byte[] serialize( SchemaRule schemaRule )
+    {
+        if ( schemaRule instanceof IndexRule )
+        {
+            return serialize( (IndexRule)schemaRule );
+        }
+        else if ( schemaRule instanceof ConstraintRule )
+        {
+            return serialize( (ConstraintRule)schemaRule );
+        }
+        throw new IllegalStateException( "Unknown schema rule type: "+schemaRule.getClass() );
+    }
+
+    /**
      * Parse a SchemaRule from the provided buffer.
+     *
      * @param id the id to give the returned Schema Rule
      * @param source the buffer to parse from
      * @return a SchemaRule
@@ -99,6 +118,7 @@ public class SchemaRuleSerialization
 
     /**
      * Serialize the provided IndexRule onto the target buffer
+     *
      * @param indexRule the IndexRule to serialize
      * @throws IllegalStateException if the IndexRule is of type unique, but the owning constrain has not been set
      */
@@ -237,14 +257,14 @@ public class SchemaRuleSerialization
         {
         case GENERAL_INDEX:
             schema = readLabelSchema( source );
-            name = readRuleName( id, IndexRule.class, source );
+            name = readRuleName( source );
             return IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forSchema( schema ), indexProvider, name );
 
         case UNIQUE_INDEX:
             long owningConstraint = source.getLong();
             schema = readLabelSchema( source );
             SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.uniqueForSchema( schema );
-            name = readRuleName( id, IndexRule.class, source );
+            name = readRuleName( source );
             return IndexRule.constraintIndexRule( id, descriptor, indexProvider,
                     owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );
 
@@ -282,21 +302,21 @@ public class SchemaRuleSerialization
         {
         case EXISTS_CONSTRAINT:
             schema = readSchema( source );
-            name = readRuleName( id, ConstraintRule.class, source );
+            name = readRuleName( source );
             return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForSchema( schema ), name );
 
         case UNIQUE_CONSTRAINT:
             long ownedUniqueIndex = source.getLong();
             schema = readSchema( source );
             UniquenessConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForSchema( schema );
-            name = readRuleName( id, ConstraintRule.class, source );
+            name = readRuleName( source );
             return ConstraintRule.constraintRule( id, descriptor, ownedUniqueIndex, name );
 
         case UNIQUE_EXISTS_CONSTRAINT:
             long ownedNodeKeyIndex = source.getLong();
             schema = readSchema( source );
             NodeKeyConstraintDescriptor nodeKeyConstraintDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
-            name = readRuleName( id, ConstraintRule.class, source );
+            name = readRuleName( source );
             return ConstraintRule.constraintRule( id, nodeKeyConstraintDescriptor, ownedNodeKeyIndex, name );
 
         default:
@@ -304,16 +324,16 @@ public class SchemaRuleSerialization
         }
     }
 
-    private static String readRuleName( long id, Class<? extends SchemaRule> type, ByteBuffer source )
+    private static String readRuleName( ByteBuffer source )
     {
         String ruleName = null;
         if ( source.remaining() >= UTF8.MINIMUM_SERIALISED_LENGTH_BYTES )
         {
             ruleName = UTF8.getDecodedStringFrom( source );
-        }
-        if ( ruleName == null || ruleName.isEmpty() )
-        {
-            ruleName = SchemaRule.generateName( id, type );
+            if ( ruleName.isEmpty() )
+            {
+                ruleName = null;
+            }
         }
         return ruleName;
     }
