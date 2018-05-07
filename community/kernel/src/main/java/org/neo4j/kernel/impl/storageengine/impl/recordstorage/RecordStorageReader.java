@@ -286,7 +286,7 @@ class RecordStorageReader implements StorageReader
     @Override
     public Iterator<SchemaIndexDescriptor> indexesGetAll()
     {
-        return toIndexDescriptors( schemaCache.indexRules() );
+        return (Iterator)schemaCache.indexRules().iterator();
     }
 
     @Override
@@ -687,7 +687,7 @@ class RecordStorageReader implements StorageReader
     {
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            if ( rule.getIndexDescriptor().equals( index ) )
+            if ( rule.equals( index ) )
             {
                 return rule;
             }
@@ -807,11 +807,6 @@ class RecordStorageReader implements StorageReader
         throw new InvalidRecordException(
                 "Node " + nodeId + " neither start nor end node of relationship " + relationshipId +
                         " with startNode:" + startNode + " and endNode:" + endNode );
-    }
-
-    private static Iterator<SchemaIndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
-    {
-        return Iterators.map( IndexRule::getIndexDescriptor, rules.iterator() );
     }
 
     @Override

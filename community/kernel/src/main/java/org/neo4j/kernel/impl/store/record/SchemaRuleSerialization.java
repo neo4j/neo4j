@@ -128,11 +128,11 @@ public class SchemaRuleSerialization
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( INDEX_RULE );
 
-        IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
+        IndexProvider.Descriptor providerDescriptor = indexRule.providerDescriptor();
         UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
         UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
 
-        SchemaIndexDescriptor schemaIndexDescriptor = indexRule.getIndexDescriptor();
+        SchemaIndexDescriptor schemaIndexDescriptor = indexRule;
         switch ( schemaIndexDescriptor.type() )
         {
         case GENERAL:
@@ -205,12 +205,12 @@ public class SchemaRuleSerialization
         int length = 4; // legacy label or relType id
         length += 1;    // schema rule type
 
-        IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
+        IndexProvider.Descriptor providerDescriptor = indexRule.providerDescriptor();
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() );
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
 
         length += 1; // index type
-        SchemaIndexDescriptor schemaIndexDescriptor = indexRule.getIndexDescriptor();
+        SchemaIndexDescriptor schemaIndexDescriptor = indexRule;
         if ( schemaIndexDescriptor.type() == SchemaIndexDescriptor.Type.UNIQUE )
         {
             length += 8; // owning constraint id

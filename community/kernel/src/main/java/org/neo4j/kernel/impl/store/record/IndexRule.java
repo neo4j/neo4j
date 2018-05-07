@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.Optional;
+
 import org.neo4j.graphdb.Label;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -30,13 +31,10 @@ import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
-public class IndexRule implements SchemaRule, SchemaIndexDescriptor.Supplier
+public class IndexRule extends SchemaIndexDescriptor implements SchemaRule
 {
-    private final IndexProvider.Descriptor providerDescriptor;
-    private final SchemaIndexDescriptor descriptor;
-    private final Long owningConstraint;
     private final long id;
-    private final String name;
+    private final Long owningConstraintId;
 
     public static IndexRule indexRule( long id, SchemaIndexDescriptor descriptor,
                                        IndexProvider.Descriptor providerDescriptor )
@@ -65,34 +63,32 @@ public class IndexRule implements SchemaRule, SchemaIndexDescriptor.Supplier
     }
 
     IndexRule( long id, IndexProvider.Descriptor providerDescriptor,
-               SchemaIndexDescriptor descriptor, Long owningConstraint )
+               SchemaIndexDescriptor descriptor, Long owningConstraintId )
     {
-        this( id, providerDescriptor, descriptor, owningConstraint, null );
+        this( id, providerDescriptor, descriptor, owningConstraintId, null );
     }
 
     IndexRule( long id, IndexProvider.Descriptor providerDescriptor,
-               SchemaIndexDescriptor descriptor, Long owningConstraint, String name )
+               SchemaIndexDescriptor descriptor, Long owningConstraintId, String name )
     {
+        super( descriptor.schema(),
+               descriptor.type(),
+               Optional.of( descriptor.name().orElse( "index_" + id ) ),
+               descriptor.providerDescriptor() );
+
         this.id = id;
-        this.name = SchemaRule.nameOrDefault( name, "index_" + id );
-        if ( providerDescriptor == null )
+
+        if ( descriptor.providerDescriptor() == null )
         {
             throw new IllegalArgumentException( "null provider descriptor prohibited" );
         }
 
-        this.descriptor = descriptor;
-        this.owningConstraint = owningConstraint;
-        this.providerDescriptor = providerDescriptor;
-    }
-
-    public IndexProvider.Descriptor getProviderDescriptor()
-    {
-        return providerDescriptor;
+        this.owningConstraintId = owningConstraintId;
     }
 
     public boolean canSupportUniqueConstraint()
     {
-        return descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
+        return type() == SchemaIndexDescriptor.Type.UNIQUE;
     }
 
     /**
@@ -114,7 +110,7 @@ public class IndexRule implements SchemaRule, SchemaIndexDescriptor.Supplier
         {
             throw new IllegalStateException( "Can only get owner from constraint indexes." );
         }
-        return owningConstraint;
+        return owningConstraintId;
     }
 
     public boolean isIndexWithoutOwningConstraint()
@@ -128,7 +124,7 @@ public class IndexRule implements SchemaRule, SchemaIndexDescriptor.Supplier
         {
             throw new IllegalStateException( this + " is not a constraint index" );
         }
-        return constraintIndexRule( id, descriptor, providerDescriptor, constraintId );
+        return constraintIndexRule( id, this, this.providerDescriptor(), constraintId );
     }
 
     @Override
@@ -137,40 +133,11 @@ public class IndexRule implements SchemaRule, SchemaIndexDescriptor.Supplier
         String ownerString = "";
         if ( canSupportUniqueConstraint() )
         {
-            ownerString = ", owner=" + owningConstraint;
+            ownerString = ", owner=" + owningConstraintId;
         }
 
-        return "IndexRule[id=" + id + ", descriptor=" + descriptor.userDescription( idTokenNameLookup ) +
-               ", provider=" + providerDescriptor + ownerString + "]";
-    }
-
-    @Override
-    public SchemaDescriptor schema()
-    {
-        return descriptor.schema();
-    }
-
-    @Override
-    public SchemaIndexDescriptor getIndexDescriptor()
-    {
-        return descriptor;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( o instanceof IndexRule )
-        {
-            IndexRule that = (IndexRule) o;
-            return this.descriptor.equals( that.descriptor );
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return this.descriptor.hashCode();
+        return "IndexRule[id=" + id + ", descriptor=" + this.userDescription( idTokenNameLookup ) +
+               ", provider=" + this.providerDescriptor() + ownerString + "]";
     }
 
     @Override
@@ -182,6 +149,6 @@ public class IndexRule implements SchemaRule, SchemaIndexDescriptor.Supplier
     @Override
     public String getName()
     {
-        return name;
+        return name().get();
     }
 }

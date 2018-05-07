@@ -67,7 +67,7 @@ public class IndexAccessors implements Closeable
                     else
                     {
                         if ( InternalIndexState.ONLINE ==
-                                provider( providers, indexRule ).getInitialState( indexRule.getId(), indexRule.getIndexDescriptor() ) )
+                                provider( providers, indexRule ).getInitialState( indexRule.getId(), indexRule ) )
                         {
                             onlineIndexRules.add( indexRule );
                         }
@@ -92,13 +92,13 @@ public class IndexAccessors implements Closeable
         {
             long indexId = indexRule.getId();
             accessors.put( indexId, provider( providers, indexRule )
-                    .getOnlineAccessor( indexId, indexRule.getIndexDescriptor(), samplingConfig ) );
+                    .getOnlineAccessor( indexId, indexRule, samplingConfig ) );
         }
     }
 
     private IndexProvider provider( IndexProviderMap providers, IndexRule indexRule )
     {
-        return providers.apply( indexRule.getProviderDescriptor() );
+        return providers.apply( indexRule.providerDescriptor() );
     }
 
     public Collection<IndexRule> notOnlineRules()

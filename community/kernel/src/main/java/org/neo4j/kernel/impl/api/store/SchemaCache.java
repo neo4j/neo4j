@@ -284,7 +284,7 @@ public class SchemaCache
                 IndexRule indexRule = (IndexRule) rule;
                 indexRuleById.put( indexRule.getId(), indexRule );
                 SchemaDescriptor schemaDescriptor = indexRule.schema();
-                SchemaIndexDescriptor schemaIndexDescriptor = indexRule.getIndexDescriptor();
+                SchemaIndexDescriptor schemaIndexDescriptor = indexRule;
                 indexDescriptors.put( schemaDescriptor, schemaIndexDescriptor );
 
                 Set<SchemaIndexDescriptor> forLabel =
@@ -314,7 +314,7 @@ public class SchemaCache
                 indexDescriptors.remove( schema );
 
                 Set<SchemaIndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.keyId() );
-                forLabel.remove( rule.getIndexDescriptor() );
+                forLabel.remove( rule );
                 if ( forLabel.isEmpty() )
                 {
                     indexDescriptorsByLabel.remove( schema.keyId() );
@@ -323,7 +323,7 @@ public class SchemaCache
                 for ( int propertyId : rule.schema().getPropertyIds() )
                 {
                     List<SchemaIndexDescriptor> forProperty = indexByProperty.get( propertyId );
-                    forProperty.remove( rule.getIndexDescriptor() );
+                    forProperty.remove( rule );
                     if ( forProperty.isEmpty() )
                     {
                         indexByProperty.remove( propertyId );

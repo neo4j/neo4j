@@ -895,8 +895,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         SchemaIndexDescriptor index =
                 SchemaIndexDescriptorFactory.forSchema( descriptor,
                                                         name,
-                                                        providerDescriptor.getKey(),
-                                                        providerDescriptor.getVersion() );
+                                                        providerDescriptor );
         ktx.txState().indexRuleDoAdd( index );
         return index;
     }
