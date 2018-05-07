@@ -20,9 +20,8 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
-import java.util.regex.Pattern;
-import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
@@ -235,8 +234,7 @@ public class TransactionStateMachine implements StatementProcessor
                                 BoltResultHandle resultHandle = executeQuery( ctx, spi, statement, params, noop() );
                                 ctx.currentResultHandle = resultHandle;
                                 ctx.currentResult = resultHandle.start();
-                                ctx.currentTransaction = null; // Periodic commit will change the current transaction, so
-                                // we can't trust this to point to the actual current transaction;
+                                ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
                                 return AUTO_COMMIT;
                             }
                             else
