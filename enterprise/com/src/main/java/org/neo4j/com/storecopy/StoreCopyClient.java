@@ -23,8 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -94,8 +92,7 @@ public class StoreCopyClient
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
             FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics )
     {
-        this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMoveProvider( pageCache,
-                fs ) );
+        this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMoveProvider( fs ) );
     }
 
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
@@ -118,16 +115,11 @@ public class StoreCopyClient
         File tempStore = new File( storeDir, StoreUtil.TEMP_COPY_DIRECTORY_NAME );
         try
         {
-            // The ToFileStoreWriter will add FileMoveActions for *RecordStores* that have to be
-            // *moved via the PageCache*!
-            // We have to move these files via the page cache, because that is the *only way* that we can communicate
-            // with any block storage that might have been configured for this instance.
-            List<FileMoveAction> moveActions = new ArrayList<>();
             cleanDirectory( tempStore );
 
             // Request store files and transactions that will need recovery
             monitor.startReceivingStoreFiles();
-            ToFileStoreWriter storeWriter = new ToFileStoreWriter( tempStore, fs, monitor, pageCache, moveActions );
+            ToFileStoreWriter storeWriter = new ToFileStoreWriter( tempStore, fs, monitor );
             try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator( storeWriter ) ) )
             {
                 monitor.finishReceivingStoreFiles();
@@ -147,10 +139,10 @@ public class StoreCopyClient
             recoverDatabase( tempStore );
 
             // All is well, move the streamed files to the real store directory.
-            // Start with the files written through the page cache. Should only be record store files.
+            // Should only be record store files.
             // Note that the stream is lazy, so the file system traversal won't happen until *after* the store files
             // have been moved. Thus we ensure that we only attempt to move them once.
-            moveFromTemporaryLocationToCorrect( moveActions, tempStore, moveAfterCopy );
+            moveFromTemporaryLocationToCorrect( tempStore, moveAfterCopy );
         }
         finally
         {
@@ -159,13 +151,11 @@ public class StoreCopyClient
         }
     }
 
-    private void moveFromTemporaryLocationToCorrect(
-            List<FileMoveAction> storeFileMoveActions, File tempStore, MoveAfterCopy moveAfterCopy ) throws Exception
+    private void moveFromTemporaryLocationToCorrect( File tempStore, MoveAfterCopy moveAfterCopy ) throws Exception
     {
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache ).withConfig( config ).build();
 
-        Stream<FileMoveAction> moveActionStream =
-                Stream.concat( storeFileMoveActions.stream(), fileMoveProvider.traverseForMoving( tempStore ) );
+        Stream<FileMoveAction> moveActionStream = fileMoveProvider.traverseForMoving( tempStore ) ;
         Function<File,File> destinationMapper =
                 file -> logFiles.isLogFile( file ) ? logFiles.logFilesDirectory() : storeDir;
         moveAfterCopy.move( moveActionStream, tempStore, destinationMapper );

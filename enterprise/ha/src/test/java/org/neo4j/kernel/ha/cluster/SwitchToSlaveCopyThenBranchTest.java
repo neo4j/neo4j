@@ -333,7 +333,6 @@ public class SwitchToSlaveCopyThenBranchTest
         FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
         when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) )
                 .thenReturn( mockStream );
-        when( pageCacheMock.getCachedFileSystem() ).thenReturn( fileSystemAbstraction );
         return newSwitchToSlaveSpy( pageCacheMock, storeCopyClient );
     }
 

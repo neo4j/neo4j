@@ -87,8 +87,6 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
 
     private void ensureDirectoryExist() throws IOException
     {
-        // This will create the directory on the "normal" file system.
-        // When native index is put on blockdevice, page cache file system should be used instead.
         gbpTreeFileUtil.mkdirs( storeFile.getParentFile() );
     }
 

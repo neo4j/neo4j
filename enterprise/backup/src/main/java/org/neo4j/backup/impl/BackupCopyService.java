@@ -103,7 +103,7 @@ class BackupCopyService
 
     boolean backupExists( Path destination )
     {
-        File[] files = pageCache.getCachedFileSystem().listFiles( destination.toFile() );
+        File[] files = fs.listFiles( destination.toFile() );
         return files != null && Arrays.stream( files ).anyMatch(
                 f -> f.isFile() && f.getName().endsWith( MetaDataStore.DEFAULT_NAME ) );
     }

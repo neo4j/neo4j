@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.index.labelscan.GBPTreePageCacheFileUtil;
 import org.neo4j.kernel.impl.index.schema.GBPTreeFileSystemFileUtil;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -60,9 +59,7 @@ public class GBPTreeFileUtilTest extends AbstractGBPTreeFileUtilTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<GBPTreeFileUtil> fileUtils()
     {
-        return Arrays.asList(
-                new GBPTreePageCacheFileUtil( pageCacheAndDependenciesRule.pageCache() ),
-                new GBPTreeFileSystemFileUtil( pageCacheAndDependenciesRule.fileSystem() ) );
+        return Arrays.asList( new GBPTreeFileSystemFileUtil( pageCacheAndDependenciesRule.fileSystem() ) );
     }
 
     @Parameterized.Parameter

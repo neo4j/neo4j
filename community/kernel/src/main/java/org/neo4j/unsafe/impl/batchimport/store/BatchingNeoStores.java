@@ -208,14 +208,13 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private void deleteStoreFiles( String storeName, Predicate<StoreType> storesToKeep )
     {
-        FileSystemAbstraction fs = pageCache.getCachedFileSystem();
         for ( StoreType type : StoreType.values() )
         {
             if ( type.isRecordStore() && !storesToKeep.test( type ) )
             {
                 for ( StoreFileType fileType : StoreFileType.values() )
                 {
-                    fs.deleteFile( new File( storeDir, fileType.augment( storeName + type.getStoreFile().fileNamePart() ) ) );
+                    fileSystem.deleteFile( new File( storeDir, fileType.augment( storeName + type.getStoreFile().fileNamePart() ) ) );
                 }
             }
         }
@@ -225,7 +224,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         life = new LifeSupport();
         life.start();
-        labelScanStore = new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, false, new Monitors(),
+        labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
         life.add( labelScanStore );
     }

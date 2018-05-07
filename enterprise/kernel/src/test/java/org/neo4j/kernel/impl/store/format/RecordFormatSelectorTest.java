@@ -152,7 +152,7 @@ public class RecordFormatSelectorTest
     @Test
     public void selectForStoreWithNoStore()
     {
-        assertNull( selectForStore( storeDir, getPageCache(), LOG ) );
+        assertNull( selectForStore( storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
@@ -160,10 +160,9 @@ public class RecordFormatSelectorTest
     {
         createNeoStoreFile();
         PageCache pageCache = mock( PageCache.class );
-        when( pageCache.getCachedFileSystem() ).thenReturn( fs );
         when( pageCache.pageSize() ).thenReturn( PageCache.PAGE_SIZE );
         when( pageCache.map( any(), anyInt(), any() ) ).thenThrow( new IOException( "No reading..." ) );
-        assertNull( selectForStore( storeDir, pageCache, LOG ) );
+        assertNull( selectForStore( storeDir, fs, pageCache, LOG ) );
         verify( pageCache ).map( any(), anyInt(), any() );
     }
 
@@ -172,7 +171,7 @@ public class RecordFormatSelectorTest
     {
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( "v9.Z.9", pageCache );
-        assertNull( selectForStore( storeDir, getPageCache(), LOG ) );
+        assertNull( selectForStore( storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
@@ -183,7 +182,7 @@ public class RecordFormatSelectorTest
 
         Config config = config( Standard.LATEST_NAME );
 
-        assertSame( Standard.LATEST_RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, pageCache, LOG ) );
+        assertSame( Standard.LATEST_RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
 
     @Test
@@ -194,7 +193,7 @@ public class RecordFormatSelectorTest
 
         Config config = config( HighLimit.NAME );
 
-        assertSame( HighLimit.RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, pageCache, LOG ) );
+        assertSame( HighLimit.RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
 
     @Test
@@ -207,7 +206,7 @@ public class RecordFormatSelectorTest
 
         try
         {
-            selectForStoreOrConfig( config, storeDir, pageCache, LOG );
+            selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -224,7 +223,7 @@ public class RecordFormatSelectorTest
 
         Config config = Config.defaults();
 
-        assertSame( Standard.LATEST_RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, pageCache, LOG ) );
+        assertSame( Standard.LATEST_RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
 
     @Test
@@ -235,7 +234,7 @@ public class RecordFormatSelectorTest
 
         Config config = Config.defaults();
 
-        assertSame( HighLimit.RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, pageCache, LOG ) );
+        assertSame( HighLimit.RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
 
     @Test
@@ -245,7 +244,7 @@ public class RecordFormatSelectorTest
 
         Config config = config( Standard.LATEST_NAME );
 
-        assertSame( Standard.LATEST_RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, pageCache, LOG ) );
+        assertSame( Standard.LATEST_RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
 
     @Test
@@ -255,7 +254,7 @@ public class RecordFormatSelectorTest
 
         Config config = config( HighLimit.NAME );
 
-        assertSame( HighLimit.RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, pageCache, LOG ) );
+        assertSame( HighLimit.RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
 
     @Test
@@ -267,7 +266,7 @@ public class RecordFormatSelectorTest
 
         try
         {
-            selectForStoreOrConfig( config, storeDir, pageCache, LOG );
+            selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG );
         }
         catch ( Exception e )
         {
@@ -278,21 +277,21 @@ public class RecordFormatSelectorTest
     @Test
     public void selectForStoreOrConfigWithoutConfiguredAndStoredFormats()
     {
-        assertSame( defaultFormat(), selectForStoreOrConfig( Config.defaults(), storeDir, getPageCache(), LOG ) );
+        assertSame( defaultFormat(), selectForStoreOrConfig( Config.defaults(), storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
     public void selectNewestFormatWithConfiguredStandardFormat()
     {
         assertSame( Standard.LATEST_RECORD_FORMATS,
-                selectNewestFormat( config( Standard.LATEST_NAME ), storeDir, getPageCache(), LOG ) );
+                selectNewestFormat( config( Standard.LATEST_NAME ), storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
     public void selectNewestFormatWithConfiguredHighLimitFormat()
     {
         assertSame( HighLimit.RECORD_FORMATS,
-                selectNewestFormat( config( HighLimit.NAME ), storeDir, getPageCache(), LOG ) );
+                selectNewestFormat( config( HighLimit.NAME ), storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
@@ -300,7 +299,7 @@ public class RecordFormatSelectorTest
     {
         try
         {
-            selectNewestFormat( config( "unknown_format" ), storeDir, getPageCache(), LOG );
+            selectNewestFormat( config( "unknown_format" ), storeDir, fs, getPageCache(), LOG );
         }
         catch ( Exception e )
         {
@@ -311,7 +310,7 @@ public class RecordFormatSelectorTest
     @Test
     public void selectNewestFormatWithoutConfigAndStore()
     {
-        assertSame( defaultFormat(), selectNewestFormat( Config.defaults(), storeDir, getPageCache(), LOG ) );
+        assertSame( defaultFormat(), selectNewestFormat( Config.defaults(), storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
@@ -322,7 +321,7 @@ public class RecordFormatSelectorTest
 
         Config config = Config.defaults();
 
-        assertSame( Standard.LATEST_RECORD_FORMATS, selectNewestFormat( config, storeDir, getPageCache(), LOG ) );
+        assertSame( Standard.LATEST_RECORD_FORMATS, selectNewestFormat( config, storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
@@ -333,7 +332,7 @@ public class RecordFormatSelectorTest
 
         Config config = Config.defaults();
 
-        assertSame( HighLimit.RECORD_FORMATS, selectNewestFormat( config, storeDir, getPageCache(), LOG ) );
+        assertSame( HighLimit.RECORD_FORMATS, selectNewestFormat( config, storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
@@ -344,7 +343,7 @@ public class RecordFormatSelectorTest
 
         Config config = Config.defaults();
 
-        assertSame( defaultFormat(), selectNewestFormat( config, storeDir, getPageCache(), LOG ) );
+        assertSame( defaultFormat(), selectNewestFormat( config, storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
@@ -374,7 +373,7 @@ public class RecordFormatSelectorTest
     private void verifySelectForStore( PageCache pageCache, RecordFormats format ) throws IOException
     {
         prepareNeoStoreFile( format.storeVersion(), pageCache );
-        assertSame( format, selectForStore( storeDir, pageCache, LOG ) );
+        assertSame( format, selectForStore( storeDir, fs, pageCache, LOG ) );
     }
 
     private File prepareNeoStoreFile( String storeVersion, PageCache pageCache ) throws IOException

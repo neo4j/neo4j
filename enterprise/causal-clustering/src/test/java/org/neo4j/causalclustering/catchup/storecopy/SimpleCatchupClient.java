@@ -60,7 +60,7 @@ class SimpleCatchupClient implements AutoCloseable
         from = getCatchupServerAddress();
         correctStoreId = getStoreIdFromKernelStoreId( graphDb );
         clientPageCache = createPageCache();
-        streamToDiskProvider = new StreamToDiskProvider( temporaryDirectory, fsa, clientPageCache, new Monitors() );
+        streamToDiskProvider = new StreamToDiskProvider( temporaryDirectory, fsa, new Monitors() );
         log = logProvider.getLog( SimpleCatchupClient.class );
         this.logProvider = logProvider;
     }

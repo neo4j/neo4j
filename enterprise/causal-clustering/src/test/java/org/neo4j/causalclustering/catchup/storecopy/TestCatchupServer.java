@@ -20,12 +20,9 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupProtocolServerInstaller;
-import org.neo4j.causalclustering.catchup.CatchupServerHandler;
-import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.RegularCatchupServerHandler;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -95,7 +92,7 @@ class TestCatchupServer extends Server
 
         RegularCatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( new Monitors(), logProvider,
                 () -> storeId, dependencies.provideDependency( TransactionIdStore.class ), dependencies.provideDependency( LogicalTransactionStore.class ),
-                dataSource, availability, fileSystem, pageCache, storeCopyCheckPointMutex, null, checkPointer );
+                dataSource, availability, fileSystem, storeCopyCheckPointMutex, null, checkPointer );
 
         NettyPipelineBuilderFactory pipelineBuilder = new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER );
         CatchupProtocolServerInstaller.Factory catchupProtocolServerInstaller = new CatchupProtocolServerInstaller.Factory( pipelineBuilder, logProvider,

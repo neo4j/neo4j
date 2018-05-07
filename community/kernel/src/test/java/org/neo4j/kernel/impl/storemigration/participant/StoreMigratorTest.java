@@ -110,7 +110,7 @@ public class StoreMigratorTest
 
         // ... and with migrator
         StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
-        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
 
         // then
         assertEquals( expected, actual );
@@ -134,7 +134,7 @@ public class StoreMigratorTest
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP ) );
         // ... and with migrator
         StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
-        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
 
         // then
         assertEquals( txId, actual.transactionId() );
@@ -205,7 +205,7 @@ public class StoreMigratorTest
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP ) );
         // ... and with migrator
         StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
-        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
 
         // then
         assertEquals( txId, actual.transactionId() );
