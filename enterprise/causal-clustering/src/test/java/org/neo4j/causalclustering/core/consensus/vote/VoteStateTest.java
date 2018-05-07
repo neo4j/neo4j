@@ -19,14 +19,17 @@
  */
 package org.neo4j.causalclustering.core.consensus.vote;
 
-import java.util.UUID;
-
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.UUID;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class VoteStateTest
 {
@@ -51,7 +54,7 @@ public class VoteStateTest
         VoteState voteState = new VoteState();
 
         // then
-        Assert.assertNull( voteState.votedFor() );
+        assertNull( voteState.votedFor() );
     }
 
     @Test
@@ -83,7 +86,7 @@ public class VoteStateTest
         voteState.update( null, 1 );
 
         // then
-        Assert.assertNull( voteState.votedFor() );
+        assertNull( voteState.votedFor() );
     }
 
     @Test
@@ -138,11 +141,11 @@ public class VoteStateTest
         MemberId member2 = new MemberId( UUID.randomUUID() );
 
         // when
-        Assert.assertTrue( voteState.update( null, 0 ) );
-        Assert.assertFalse( voteState.update( null, 0 ) );
-        Assert.assertTrue( voteState.update( member1, 0 ) );
-        Assert.assertFalse( voteState.update( member1, 0 ) );
-        Assert.assertTrue( voteState.update( member2, 1 ) );
-        Assert.assertFalse( voteState.update( member2, 1 ) );
+        assertTrue( voteState.update( null, 0 ) );
+        assertFalse( voteState.update( null, 0 ) );
+        assertTrue( voteState.update( member1, 0 ) );
+        assertFalse( voteState.update( member1, 0 ) );
+        assertTrue( voteState.update( member2, 1 ) );
+        assertFalse( voteState.update( member2, 1 ) );
     }
 }

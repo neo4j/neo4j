@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -29,6 +28,9 @@ import java.util.List;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class LonelyProcessingStepTest
 {
@@ -48,11 +50,11 @@ public class LonelyProcessingStepTest
 
         endOfUpstreamLatch.await();
 
-        Assert.assertTrue( "On upstream end step should be already on panic in case of exception",
+        assertTrue( "On upstream end step should be already on panic in case of exception",
                 faultyStep.isPanicOnEndUpstream() );
-        Assert.assertTrue( faultyStep.isPanic() );
-        Assert.assertFalse( faultyStep.stillWorking() );
-        Assert.assertTrue( faultyStep.isCompleted() );
+        assertTrue( faultyStep.isPanic() );
+        assertFalse( faultyStep.stillWorking() );
+        assertTrue( faultyStep.isCompleted() );
     }
 
     private class FaultyLonelyProcessingStepTest extends LonelyProcessingStep

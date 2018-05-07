@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -69,7 +68,6 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.stream.Streams;
-import org.neo4j.test.assertion.Assert;
 
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -77,6 +75,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols.RAFT_1;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.COMPRESSION;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )
 public class NettyInstalledProtocolsIT
@@ -125,10 +124,10 @@ public class NettyInstalledProtocolsIT
         client.send( networkMessage ).syncUninterruptibly();
 
         // then
-        Assert.assertEventually(
+        assertEventually(
                 messages -> String.format( "Received messages %s should contain message decorating %s", messages, raftMessage ),
                 () -> server.received(),
-                contains( messageMatches( networkMessage ) ), TIMEOUT_SECONDS, TimeUnit.SECONDS );
+                contains( messageMatches( networkMessage ) ), TIMEOUT_SECONDS, SECONDS );
     }
 
     private Server server;

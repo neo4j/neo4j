@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.transport.integration;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -549,7 +548,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         @Override
         protected boolean matchesSafely( ResponseMessage t )
         {
-            Assert.assertThat( t, instanceOf( FailureMessage.class ) );
+            assertThat( t, instanceOf( FailureMessage.class ) );
             FailureMessage msg = (FailureMessage) t;
             if ( !msg.status().equals( Status.Security.Unauthorized ) ||
                  !msg.message().contains( "The client is unauthorized due to authentication failure." ) )

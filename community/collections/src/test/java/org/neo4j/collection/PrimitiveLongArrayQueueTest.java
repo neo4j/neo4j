@@ -20,7 +20,6 @@
 package org.neo4j.collection;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.NoSuchElementException;
@@ -173,7 +172,7 @@ public class PrimitiveLongArrayQueueTest
         for ( int j = 10; j < 24; j++ )
         {
             assertTrue( iterator.hasNext() );
-            Assert.assertEquals( j, iterator.next() );
+            assertEquals( j, iterator.next() );
         }
         assertFalse( iterator.hasNext() );
     }
