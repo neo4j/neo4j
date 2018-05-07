@@ -88,4 +88,15 @@ public interface TokenWrite
      * @return the id associated with the name
      */
     int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
+
+    /**
+     * Get or create the relationship type token ids for each of the given {@code relationshipTypes}, and store them at
+     * the corresponding index in the given {@code ids} array.
+     *
+     * This is effectively a batching version of {@link #relationshipTypeGetOrCreateForName(String)}.
+     *
+     * @param relationshipTypes The array of relationship type names for which to resolve or create their id.
+     * @param ids The array into which the resulting token ids will be stored.
+     */
+    void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids ) throws IllegalTokenNameException;
 }

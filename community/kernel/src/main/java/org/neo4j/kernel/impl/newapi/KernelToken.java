@@ -150,6 +150,24 @@ public class KernelToken implements Token
     }
 
     @Override
+    public void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids )
+            throws IllegalTokenNameException
+    {
+        ktx.assertOpen();
+        assertSameLength( relationshipTypes, ids );
+        for ( int i = 0; i < relationshipTypes.length; i++ )
+        {
+            ids[i] = store.relationshipTypeGetForName( checkValidTokenName( relationshipTypes[i] ) );
+            if ( ids[i] == TokenHolder.NO_ID )
+            {
+                ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
+                store.relationshipTypeGetOrCreateForNames( relationshipTypes, ids );
+                return;
+            }
+        }
+    }
+
+    @Override
     public String nodeLabelName( int labelId ) throws LabelNotFoundKernelException
     {
         ktx.assertOpen();

@@ -513,6 +513,12 @@ class RecordStorageReader implements StorageReader
     }
 
     @Override
+    public void relationshipTypeGetOrCreateForNames( String[] relationshipTypeNames, int[] ids )
+    {
+        relationshipTokenHolder.getOrCreateIds( relationshipTypeNames, ids );
+    }
+
+    @Override
     public <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
     {

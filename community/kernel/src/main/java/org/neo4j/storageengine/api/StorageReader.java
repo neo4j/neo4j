@@ -445,6 +445,17 @@ public interface StorageReader extends AutoCloseable
     int relationshipTypeGetOrCreateForName( String relationshipTypeName );
 
     /**
+     * Get or create the relationship type token ids for each of the given {@code relationshipTypeNames}, and store
+     * them at the corresponding index in the given {@code ids} array.
+     *
+     * This is effectively a batching version of {@link #relationshipTypeGetOrCreateForName(String)}.
+     *
+     * @param relationshipTypeNames The array of label names for which to resolve or create their id.
+     * @param ids The array into which the resulting token ids will be stored.
+     */
+    void relationshipTypeGetOrCreateForNames( String[] relationshipTypeNames, int[] ids );
+
+    /**
      * Visits data about a relationship. The given {@code relationshipVisitor} will be notified.
      *
      * @param relationshipId the id of the relationship to access.

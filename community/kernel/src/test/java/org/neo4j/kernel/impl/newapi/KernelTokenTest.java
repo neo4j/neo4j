@@ -95,6 +95,18 @@ public class KernelTokenTest
         assertThat( token.relationshipTypeGetOrCreateForName( "rel" ), is( 42 ) );
     }
 
+    @Test
+    public void relationshipTypeOrCreateForNames() throws Exception
+    {
+        assertIllegalToken( () -> token.relationshipTypeGetOrCreateForNames( new String[]{null}, new int[1] ) );
+        assertIllegalToken( () -> token.relationshipTypeGetOrCreateForNames( new String[]{""}, new int[1] ) );
+        String[] names = {"a", "b"};
+        int[] ids = new int[2];
+        when( storeReadLayer.relationshipTypeGetForName( "a" ) ).thenReturn( TokenHolder.NO_ID );
+        token.relationshipTypeGetOrCreateForNames( names, ids );
+        verify( storeReadLayer ).relationshipTypeGetOrCreateForNames( names, ids );
+    }
+
     private void assertIllegalToken( ThrowingAction<KernelException> f )
     {
         assertException( f, IllegalTokenNameException.class );
