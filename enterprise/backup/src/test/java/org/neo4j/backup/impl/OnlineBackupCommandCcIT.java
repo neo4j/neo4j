@@ -263,8 +263,6 @@ public class OnlineBackupCommandCcIT
         assertTrue( output.contains( "Start receiving transactions from " ) );
         assertTrue( output.contains( "Finish receiving transactions at " ) );
         assertTrue( output.contains( "Start receiving index snapshots" ) );
-        assertTrue( output.contains( "Start receiving index snapshot id 1" ) );
-        assertTrue( output.contains( "Finished receiving index snapshot id 1" ) );
         assertTrue( output.contains( "Finished receiving index snapshots" ) );
     }
 

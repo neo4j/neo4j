@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal
 
-
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.StandardInternalExecutionResult.IterateByAccepting
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{NewRuntimeSuccessRateMonitor, StandardInternalExecutionResult, ExecutionPlan => RuntimeExecutionPlan}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{StandardInternalExecutionResult, ExecutionPlan => RuntimeExecutionPlan}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
@@ -36,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_5.phases._
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
@@ -60,7 +59,6 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
   override def description: String = "build pipes"
 
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
-    val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val (physicalPlan, pipelines) = rewritePlan(context, from.logicalPlan, from.semanticTable())
       val converters: ExpressionConverters = new ExpressionConverters(MorselExpressionConverters,
@@ -76,15 +74,12 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
       context.notificationLogger.log(
         ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
                                           "not recommended to be run on production systems"))
-      val readOnlies = new ReadOnlies
-      from.solveds.mapTo(readOnlies, _.readOnly)
+      val readOnly = from.solveds(from.logicalPlan.id).readOnly
       val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames,
-                                             dispatcher, context.notificationLogger, readOnlies, from.cardinalities)
-      runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
+                                             dispatcher, context.notificationLogger, readOnly, from.cardinalities)
       new CompilationState(from, Success(execPlan))
     } catch {
       case e: CantCompileQueryException =>
-        runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, e)
         new CompilationState(from, Failure(e))
     }
   }
@@ -105,14 +100,14 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
                                      fieldNames: Array[String],
                                      dispatcher: Dispatcher,
                                      notificationLogger: InternalNotificationLogger,
-                                     readOnlies: ReadOnlies,
+                                     readOnly: Boolean,
                                      cardinalities: Cardinalities) extends RuntimeExecutionPlan {
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
       val planDescription =
-        () => LogicalPlan2PlanDescription(physicalPlan, plannerUsed, readOnlies, cardinalities)
+        () => LogicalPlan2PlanDescription(physicalPlan, plannerUsed, readOnly, cardinalities)
           .addArgument(Runtime(MorselRuntimeName.toTextOutput))
           .addArgument(RuntimeImpl(MorselRuntimeName.name))
 

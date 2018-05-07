@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.planner.v3_5.spi
+package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.util.v3_5.Cardinality
-import org.neo4j.cypher.internal.util.v3_5.attribution.Attribute
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 
-object PlanningAttributes {
-  class Solveds extends Attribute[PlannerQuery]
-  class Cardinalities extends Attribute[Cardinality]
+case class DropResultPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends Pipe {
+
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = Iterator.empty
 }

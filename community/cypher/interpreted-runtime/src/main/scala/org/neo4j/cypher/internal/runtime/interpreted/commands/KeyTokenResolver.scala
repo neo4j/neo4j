@@ -17,13 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime.pipes
+package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 
-case class DropResultPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends Pipe {
-
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = Iterator.empty
+object KeyTokenResolver {
+  /*this is what you should use!*/
+  def resolveExpressions(expr: Expression, ctx: TokenContext): Expression = expr match {
+    case (keyToken: KeyToken) => keyToken.resolve(ctx)
+    case _                    => expr
+  }
 }

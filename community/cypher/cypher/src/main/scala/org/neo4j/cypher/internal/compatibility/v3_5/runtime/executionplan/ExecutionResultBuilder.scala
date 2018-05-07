@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
 import org.neo4j.cypher.internal.util.v3_5.CypherException
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
+import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_5.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
 import org.neo4j.values.virtual.MapValue
@@ -35,8 +36,9 @@ trait ExecutionResultBuilder {
   def build(planType: ExecutionMode,
             params: MapValue,
             notificationLogger: InternalNotificationLogger,
+            plannerName: PlannerName,
             runtimeName: RuntimeName,
-            readOnlies: ReadOnlies,
+            readOnly: Boolean,
             cardinalities: Cardinalities): InternalExecutionResult
 }
 

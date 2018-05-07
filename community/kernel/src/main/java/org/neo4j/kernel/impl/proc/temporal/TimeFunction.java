@@ -36,15 +36,15 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
 @Description( "Create a Time instant." )
 class TimeFunction extends TemporalFunction<TimeValue>
 {
-    TimeFunction()
+    TimeFunction( Supplier<ZoneId> defaultZone )
     {
-        super( NTTime );
+        super( NTTime, defaultZone );
     }
 
     @Override
-    protected TimeValue now( Clock clock, String timezone )
+    protected TimeValue now( Clock clock, String timezone, Supplier<ZoneId> defaultZone )
     {
-        return timezone == null ? TimeValue.now( clock ) : TimeValue.now( clock, timezone );
+        return timezone == null ? TimeValue.now( clock, defaultZone ) : TimeValue.now( clock, timezone );
     }
 
     @Override

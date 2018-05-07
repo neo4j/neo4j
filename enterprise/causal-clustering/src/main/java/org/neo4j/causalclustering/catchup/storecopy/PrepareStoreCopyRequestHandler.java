@@ -95,7 +95,7 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
 
     private PrepareStoreCopyResponse createSuccessfulResponse( CheckPointer checkPointer, PrepareStoreCopyFiles prepareStoreCopyFiles ) throws IOException
     {
-        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getIndexIds();
+        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
         File[] files = prepareStoreCopyFiles.listReplayableFiles();
         long lastCommittedTxId = checkPointer.lastCheckPointedTransactionId();
         return PrepareStoreCopyResponse.success( files, indexIds, lastCommittedTxId );

@@ -29,9 +29,9 @@ import org.neo4j.values.AnyValue
 import scala.collection.mutable
 
 case class ArrayResultExecutionContextFactory(columns: Seq[(String, Expression)]) {
-  val columnExpressionArray = columns.map(_._2).toArray
-  val columnArraySize = columnExpressionArray.size
-  val columnIndexMap = {
+  private val columnExpressionArray = columns.map(_._2).toArray
+  private val columnArraySize = columnExpressionArray.size
+  private val columnIndexMap = {
     val m = new mutable.OpenHashMap[String, Int](columns.length)
     var index = 0
     columns.foreach {

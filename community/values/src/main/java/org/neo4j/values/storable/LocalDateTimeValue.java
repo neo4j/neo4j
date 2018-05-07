@@ -103,6 +103,11 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         return now( clock.withZone( parseZoneName( timezone ) ) );
     }
 
+    public static LocalDateTimeValue now( Clock clock, Supplier<ZoneId> defaultZone )
+    {
+        return now( clock.withZone( defaultZone.get() ) );
+    }
+
     public static LocalDateTimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
     {
         return StructureBuilder.build( builder( defaultZone ), map );

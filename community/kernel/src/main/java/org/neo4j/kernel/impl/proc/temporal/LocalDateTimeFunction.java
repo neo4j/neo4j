@@ -36,15 +36,15 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTLocalDateTime;
 @Description( "Create a LocalDateTime instant." )
 class LocalDateTimeFunction extends TemporalFunction<LocalDateTimeValue>
 {
-    LocalDateTimeFunction()
+    LocalDateTimeFunction( Supplier<ZoneId> defaultZone )
     {
-        super( NTLocalDateTime );
+        super( NTLocalDateTime, defaultZone );
     }
 
     @Override
-    protected LocalDateTimeValue now( Clock clock, String timezone )
+    protected LocalDateTimeValue now( Clock clock, String timezone, Supplier<ZoneId> defaultZone )
     {
-        return timezone == null ? LocalDateTimeValue.now( clock ) : LocalDateTimeValue.now( clock, timezone );
+        return timezone == null ? LocalDateTimeValue.now( clock, defaultZone ) : LocalDateTimeValue.now( clock, timezone );
     }
 
     @Override

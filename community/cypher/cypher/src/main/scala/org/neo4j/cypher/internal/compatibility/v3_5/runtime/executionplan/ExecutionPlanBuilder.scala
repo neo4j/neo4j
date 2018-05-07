@@ -19,22 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
-case class PipeInfo(pipe: Pipe,
-                    updating: Boolean,
-                    periodicCommit: Option[PeriodicCommitInfo] = None,
-                    fingerprint: Option[PlanFingerprint] = None,
-                    plannerUsed: PlannerName)
+case class PipeInfo(pipe: Pipe, periodicCommit: Option[PeriodicCommitInfo] = None)
 
 case class PeriodicCommitInfo(size: Option[Long]) {
   def batchRowCount = size.getOrElse(/* defaultSize */ 1000L)
-}
-
-trait NewRuntimeSuccessRateMonitor {
-  def newPlanSeen(plan: LogicalPlan)
-  def unableToHandlePlan(plan: LogicalPlan, origin: CantCompileQueryException)
 }

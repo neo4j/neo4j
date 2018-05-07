@@ -36,7 +36,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -67,7 +66,6 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.neo4j.causalclustering.discovery.RoleInfo.FOLLOWER;
 import static org.neo4j.causalclustering.discovery.RoleInfo.LEADER;
@@ -314,7 +312,7 @@ public class ClusterOverviewIT
         Function<List<MemberInfo>, String> printableMemberInfos =
                 memberInfos -> memberInfos.stream().map( MemberInfo::toString ).collect( Collectors.joining( ", " ) );
         assertEventually( memberInfos -> "should have overview from core " + coreServerId + " but view was " + printableMemberInfos.apply( memberInfos ),
-                () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 60, SECONDS );
+                () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 90, SECONDS );
     }
 
     @SafeVarargs

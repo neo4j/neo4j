@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Key;
+import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
@@ -54,19 +55,26 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public abstract class TemporalFunction<T extends AnyValue> implements CallableUserFunction
 {
-    public static void registerTemporalFunctions( Procedures procedures ) throws ProcedureException
+    public static void registerTemporalFunctions( Procedures procedures, ProcedureConfig procedureConfig ) throws ProcedureException
     {
-        register( new DateTimeFunction(), procedures );
-        register( new LocalDateTimeFunction(), procedures );
-        register( new DateFunction(), procedures );
-        register( new TimeFunction(), procedures );
-        register( new LocalTimeFunction(), procedures );
+        Supplier<ZoneId> defaultZone = procedureConfig::getDefaultTemporalTimeZone;
+        register( new DateTimeFunction( defaultZone ), procedures );
+        register( new LocalDateTimeFunction( defaultZone ), procedures );
+        register( new DateFunction( defaultZone ), procedures );
+        register( new TimeFunction( defaultZone ), procedures );
+        register( new LocalTimeFunction( defaultZone ), procedures );
         DurationFunction.register( procedures );
     }
 
     private static final Key<Clock> DEFAULT_CLOCK = Context.STATEMENT_CLOCK;
 
-    protected abstract T now( Clock clock, String timezone );
+    /**
+     * @param clock the clock to use
+     * @param timezone an explicit timezone or {@code null}. In the latter case, the defaultZone is used
+     * @param defaultZone configured default time zone.
+     * @return the current time/date
+     */
+    protected abstract T now( Clock clock, String timezone, Supplier<ZoneId> defaultZone );
 
     protected abstract T parse( TextValue value, Supplier<ZoneId> defaultZone );
 
@@ -81,9 +89,11 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     private static final List<FieldSignature> INPUT_SIGNATURE = singletonList( inputField(
             "input", Neo4jTypes.NTAny, nullValue( Neo4jTypes.NTAny ) ) );
     private static final String[] ALLOWED = {};
-    private final UserFunctionSignature signature;
 
-    TemporalFunction( Neo4jTypes.AnyType result )
+    private final UserFunctionSignature signature;
+    private final Supplier<ZoneId> defaultZone;
+
+    TemporalFunction( Neo4jTypes.AnyType result, Supplier<ZoneId> defaultZone )
     {
         String basename = basename( getClass() );
         assert result.getClass().getSimpleName().equals( basename + "Type" ) : "result type should match function name";
@@ -92,6 +102,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                 new QualifiedName( new String[0], basename.toLowerCase() ),
                 INPUT_SIGNATURE, result, null, ALLOWED,
                 description == null ? null : description.value(), true );
+        this.defaultZone = defaultZone;
     }
 
     private static void register( TemporalFunction<?> base, Procedures procedures ) throws ProcedureException
@@ -147,7 +158,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     {
         if ( input == null || input.length == 0 || input[0] == NO_VALUE || input[0] == null )
         {
-            return now( ctx.get( DEFAULT_CLOCK ), null );
+            return now( ctx.get( DEFAULT_CLOCK ), null, defaultZone );
         }
         else if ( input.length > 1 )
         {
@@ -155,11 +166,11 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         }
         else if ( input[0] instanceof TextValue )
         {
-            return parse( (TextValue) input[0], defaultZone( ctx ) );
+            return parse( (TextValue) input[0], defaultZone );
         }
         else if ( input[0] instanceof TemporalValue )
         {
-            return select( input[0], defaultZone( ctx ) );
+            return select( input[0], defaultZone );
         }
         else if ( input[0] instanceof MapValue )
         {
@@ -167,20 +178,14 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             String timezone = onlyTimezone( map );
             if ( timezone != null )
             {
-                return now( ctx.get( DEFAULT_CLOCK ), timezone );
+                return now( ctx.get( DEFAULT_CLOCK ), timezone, defaultZone );
             }
-            return build( map, defaultZone( ctx ) );
+            return build( map, defaultZone );
         }
         else
         {
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );
         }
-    }
-
-    private static Supplier<ZoneId> defaultZone( Context ctx ) throws ProcedureException
-    {
-        Clock clock = ctx.get( DEFAULT_CLOCK );
-        return clock::getZone;
     }
 
     private static String onlyTimezone( MapValue map )
@@ -256,12 +261,12 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             if ( input == null || input.length == 0 ||
                     ((input[0] == NO_VALUE || input[0] == null) && input.length == 1) )
             {
-                return function.now( ctx.get( key ), null );
+                return function.now( ctx.get( key ), null, function.defaultZone );
             }
             else if ( input.length == 1 && input[0] instanceof TextValue )
             {
                 TextValue timezone = (TextValue) input[0];
-                return function.now( ctx.get( key ), timezone.stringValue() );
+                return function.now( ctx.get( key ), timezone.stringValue(), function.defaultZone );
             }
             else
             {
@@ -298,7 +303,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                             unit( ((TextValue) unit).stringValue() ),
                             (TemporalValue)input,
                             (MapValue) fields,
-                            defaultZone( ctx ) );
+                            function.defaultZone );
                 }
             }
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "Invalid call signature" );

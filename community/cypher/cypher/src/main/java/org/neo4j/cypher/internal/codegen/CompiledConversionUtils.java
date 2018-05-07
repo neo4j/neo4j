@@ -49,6 +49,9 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -651,6 +654,19 @@ public abstract class CompiledConversionUtils
             Map<String,Object> map = (Map<String,Object>) object;
             return map.get( key );
         }
+        if ( object instanceof TemporalValue<?,?> )
+        {
+            return ((TemporalValue<?,?>) object).get( key );
+        }
+        if ( object instanceof DurationValue )
+        {
+            return ((DurationValue) object).get( key );
+        }
+        if ( object instanceof PointValue )
+        {
+            return ((PointValue) object).get( key );
+        }
+
         // NOTE: VirtualNodeValue and VirtualRelationshipValue will fall through to here
         // To handle these we would need specialized cursor code
         throw new CypherTypeException( String.format( "Type mismatch: expected a map but was %s", object ), null );

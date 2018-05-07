@@ -49,15 +49,15 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDateTime;
 @Description( "Create a DateTime instant." )
 class DateTimeFunction extends TemporalFunction<DateTimeValue>
 {
-    DateTimeFunction()
+    DateTimeFunction( Supplier<ZoneId> defaultZone )
     {
-        super( NTDateTime );
+        super( NTDateTime, defaultZone );
     }
 
     @Override
-    protected DateTimeValue now( Clock clock, String timezone )
+    protected DateTimeValue now( Clock clock, String timezone, Supplier<ZoneId> defaultZone )
     {
-        return timezone == null ? DateTimeValue.now( clock ) : DateTimeValue.now( clock, timezone );
+        return timezone == null ? DateTimeValue.now( clock, defaultZone ) : DateTimeValue.now( clock, timezone );
     }
 
     @Override
