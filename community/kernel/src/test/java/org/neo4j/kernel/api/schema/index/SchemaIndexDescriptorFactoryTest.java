@@ -35,57 +35,57 @@ public class SchemaIndexDescriptorFactoryTest
     @Test
     public void shouldCreateIndexDescriptors()
     {
-        SchemaIndexDescriptor desc;
+        PendingIndexDescriptor desc;
 
-        desc = SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( SchemaIndexDescriptor.Type.GENERAL ) );
+        desc = IndexDescriptorFactory.forLabel( LABEL_ID, 1 );
+        assertThat( desc.type(), equalTo( PendingIndexDescriptor.Type.GENERAL ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test
     public void shouldCreateUniqueIndexDescriptors()
     {
-        SchemaIndexDescriptor desc;
+        PendingIndexDescriptor desc;
 
-        desc = SchemaIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( SchemaIndexDescriptor.Type.UNIQUE ) );
+        desc = IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
+        assertThat( desc.type(), equalTo( PendingIndexDescriptor.Type.UNIQUE ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test
     public void shouldCreateIndexDescriptorsFromSchema()
     {
-        SchemaIndexDescriptor desc;
+        PendingIndexDescriptor desc;
 
-        desc = SchemaIndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
-        assertThat( desc.type(), equalTo( SchemaIndexDescriptor.Type.GENERAL ) );
+        desc = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
+        assertThat( desc.type(), equalTo( PendingIndexDescriptor.Type.GENERAL ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
 
-        desc = SchemaIndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
-        assertThat( desc.type(), equalTo( SchemaIndexDescriptor.Type.UNIQUE) );
+        desc = IndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
+        assertThat( desc.type(), equalTo( PendingIndexDescriptor.Type.UNIQUE) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test
     public void shouldCreateEqualDescriptors()
     {
-        SchemaIndexDescriptor desc1;
-        SchemaIndexDescriptor desc2;
-        desc1 = SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
-        desc2 = SchemaIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
+        PendingIndexDescriptor desc1;
+        PendingIndexDescriptor desc2;
+        desc1 = IndexDescriptorFactory.forLabel( LABEL_ID, 1 );
+        desc2 = IndexDescriptorFactory.forLabel( LABEL_ID, 1 );
         assertEquality( desc1, desc2 );
 
-        desc1 = SchemaIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
-        desc2 = SchemaIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
+        desc1 = IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
+        desc2 = IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         assertEquality( desc1, desc2 );
     }
 
     @Test
     public void shouldGiveNiceUserDescriptions()
     {
-        assertThat( SchemaIndexDescriptorFactory.forLabel( 1, 2 ).userDescription( simpleNameLookup ),
-                equalTo( "Index( GENERAL, :Label1(property2) )" ) );
-        assertThat( SchemaIndexDescriptorFactory.uniqueForLabel( 2, 4 ).userDescription( simpleNameLookup ),
-                equalTo( "Index( UNIQUE, :Label2(property4) )" ) );
+        assertThat( IndexDescriptorFactory.forLabel( 1, 2 ).userDescription( simpleNameLookup ),
+                    equalTo( "Index( GENERAL, :Label1(property2) )" ) );
+        assertThat( IndexDescriptorFactory.uniqueForLabel( 2, 4 ).userDescription( simpleNameLookup ),
+                    equalTo( "Index( UNIQUE, :Label2(property4) )" ) );
     }
 }

@@ -23,8 +23,8 @@ import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 public class DefaultIndexReference implements IndexReference
 {
@@ -67,22 +67,22 @@ public class DefaultIndexReference implements IndexReference
         return new DefaultIndexReference( false, label, properties );
     }
 
-    public static IndexReference fromDescriptor( SchemaIndexDescriptor descriptor )
+    public static IndexReference fromDescriptor( PendingIndexDescriptor descriptor )
     {
-        boolean unique = descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
+        boolean unique = descriptor.type() == PendingIndexDescriptor.Type.UNIQUE;
         SchemaDescriptor schema = descriptor.schema();
         return new DefaultIndexReference( unique, schema.keyId(), schema.getPropertyIds() );
     }
 
-    public static SchemaIndexDescriptor toDescriptor( IndexReference reference )
+    public static PendingIndexDescriptor toDescriptor( IndexReference reference )
     {
         if ( reference.isUnique() )
         {
-            return SchemaIndexDescriptorFactory.uniqueForLabel( reference.label(), reference.properties() );
+            return IndexDescriptorFactory.uniqueForLabel( reference.label(), reference.properties() );
         }
         else
         {
-            return SchemaIndexDescriptorFactory.forLabel( reference.label(), reference.properties() );
+            return IndexDescriptorFactory.forLabel( reference.label(), reference.properties() );
         }
     }
 

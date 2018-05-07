@@ -25,7 +25,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -39,9 +39,9 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<NativeSchemaValue>> implements IndexReader
 {
-    private final SchemaIndexDescriptor descriptor;
+    private final PendingIndexDescriptor descriptor;
 
-    SpatialIndexReader( SchemaIndexDescriptor descriptor, SpatialIndexAccessor accessor )
+    SpatialIndexReader( PendingIndexDescriptor descriptor, SpatialIndexAccessor accessor )
     {
         super( new PartFactory( accessor ) );
         this.descriptor = descriptor;

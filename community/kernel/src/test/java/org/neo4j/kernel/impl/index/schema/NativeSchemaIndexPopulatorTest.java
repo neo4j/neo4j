@@ -23,7 +23,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -36,18 +35,15 @@ import java.util.Optional;
 import java.util.Random;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Values;
@@ -162,7 +158,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
         // given
         populator.create();
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<PendingIndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
         populator.add( Arrays.asList( updates ) );
@@ -177,11 +173,11 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
     {
         // given
         populator.create();
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<PendingIndexDescriptor>[] updates = layoutUtil.someUpdates();
         try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
         {
             // when
-            for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+            for ( IndexEntryUpdate<PendingIndexDescriptor> update : updates )
             {
                 updater.process( update );
             }
@@ -221,7 +217,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
         // given
         populator.create();
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<PendingIndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
         applyInterleaved( updates, populator );
@@ -372,7 +368,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
         populator.create();
         random.reset();
         Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<SchemaIndexDescriptor>> updates = layoutUtil.randomUpdateGenerator( random );
+        Iterator<IndexEntryUpdate<PendingIndexDescriptor>> updates = layoutUtil.randomUpdateGenerator( random );
 
         // when
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
@@ -487,7 +483,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
     }
 
     private int interleaveLargeAmountOfUpdates( Random updaterRandom,
-            Iterator<IndexEntryUpdate<SchemaIndexDescriptor>> updates ) throws IOException, IndexEntryConflictException
+            Iterator<IndexEntryUpdate<PendingIndexDescriptor>> updates ) throws IOException, IndexEntryConflictException
     {
         int count = 0;
         for ( int i = 0; i < LARGE_AMOUNT_OF_UPDATES; i++ )
@@ -542,13 +538,13 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
         return RandomStringUtils.random( length, true, true );
     }
 
-    private void applyInterleaved( IndexEntryUpdate<SchemaIndexDescriptor>[] updates, NativeSchemaIndexPopulator<KEY,VALUE> populator )
+    private void applyInterleaved( IndexEntryUpdate<PendingIndexDescriptor>[] updates, NativeSchemaIndexPopulator<KEY,VALUE> populator )
             throws IOException, IndexEntryConflictException
     {
         boolean useUpdater = true;
-        Collection<IndexEntryUpdate<SchemaIndexDescriptor>> populatorBatch = new ArrayList<>();
+        Collection<IndexEntryUpdate<PendingIndexDescriptor>> populatorBatch = new ArrayList<>();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
-        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<PendingIndexDescriptor> update : updates )
         {
             if ( random.nextInt( 100 ) < 20 )
             {
@@ -583,11 +579,11 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
         }
     }
 
-    private void verifyUpdates( Iterator<IndexEntryUpdate<SchemaIndexDescriptor>> indexEntryUpdateIterator, int count )
+    private void verifyUpdates( Iterator<IndexEntryUpdate<PendingIndexDescriptor>> indexEntryUpdateIterator, int count )
             throws IOException
     {
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = new IndexEntryUpdate[count];
+        IndexEntryUpdate<PendingIndexDescriptor>[] updates = new IndexEntryUpdate[count];
         for ( int i = 0; i < count; i++ )
         {
             updates[i] = indexEntryUpdateIterator.next();

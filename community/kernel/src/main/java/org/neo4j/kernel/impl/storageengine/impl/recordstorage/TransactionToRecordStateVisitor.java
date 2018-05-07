@@ -32,12 +32,12 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -164,18 +164,18 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedIndex( SchemaIndexDescriptor index )
+    public void visitAddedIndex( PendingIndexDescriptor index )
     {
         IndexProvider.Descriptor providerDescriptor =
                 indexProviderMap.getDefaultProvider().getProviderDescriptor();
-        IndexRule rule = IndexRule.indexRule( schemaStorage.newRuleId(), index, providerDescriptor );
+        IndexDescriptor rule = IndexDescriptor.indexRule( schemaStorage.newRuleId(), index, providerDescriptor );
         recordState.createSchemaRule( rule );
     }
 
     @Override
-    public void visitRemovedIndex( SchemaIndexDescriptor index )
+    public void visitRemovedIndex( PendingIndexDescriptor index )
     {
-        IndexRule rule = schemaStorage.indexGetForSchema( index );
+        IndexDescriptor rule = schemaStorage.indexGetForSchema( index );
         if ( rule != null )
         {
             recordState.dropSchemaRule( rule );
@@ -210,7 +210,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId )
     {
-        IndexRule indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
+        IndexDescriptor indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
         recordState.createSchemaRule( constraintSemantics.createUniquenessConstraintRule(
                 constraintId, uniqueConstraint, indexRule.getId() ) );
         recordState.setConstraintIndexOwner( indexRule, constraintId );
@@ -219,7 +219,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId )
             throws CreateConstraintFailureException
     {
-        IndexRule indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
+        IndexDescriptor indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
         recordState.createSchemaRule( constraintSemantics.createNodeKeyConstraintRule(
                 constraintId, uniqueConstraint, indexRule.getId() ) );
         recordState.setConstraintIndexOwner( indexRule, constraintId );

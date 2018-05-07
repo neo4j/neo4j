@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
@@ -41,7 +41,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     private final int[] propertyKeyIds;
     private final UniqueIndexSampler sampler;
 
-    public UniqueLuceneIndexPopulator( SchemaIndex index, SchemaIndexDescriptor descriptor )
+    public UniqueLuceneIndexPopulator( SchemaIndex index, PendingIndexDescriptor descriptor )
     {
         super( index );
         this.propertyKeyIds = descriptor.schema().getPropertyIds();

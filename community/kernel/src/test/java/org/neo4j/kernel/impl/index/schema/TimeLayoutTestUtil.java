@@ -29,7 +29,7 @@ import java.util.Set;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
@@ -49,7 +49,7 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
             OffsetTime.of( 23,59,59,999_999_999, ZoneOffset.ofHours( -18 ) ),
     };
 
-    TimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
+    TimeLayoutTestUtil( PendingIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }
@@ -61,7 +61,7 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<PendingIndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
     }
@@ -92,13 +92,13 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<PendingIndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( ALL_EXTREME_VALUES );
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<PendingIndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }

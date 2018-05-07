@@ -30,8 +30,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.PointValue;
@@ -67,7 +67,7 @@ import static org.neo4j.values.storable.TimeValue.time;
 public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     public SimpleIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite,
-            SchemaIndexDescriptor descriptor )
+            PendingIndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -218,7 +218,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100 ) );
+            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100 ) );
         }
 
         @Test
@@ -426,7 +426,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
+            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
         }
 
         @Test

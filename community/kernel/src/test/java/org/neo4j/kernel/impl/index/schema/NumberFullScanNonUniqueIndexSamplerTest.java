@@ -27,7 +27,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -64,7 +64,7 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeSchemaIndexTe
 
     private Number[] generateNumberValues()
     {
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<PendingIndexDescriptor>[] updates = layoutUtil.someUpdates();
         Number[] result = new Number[updates.length];
         for ( int i = 0; i < updates.length; i++ )
         {

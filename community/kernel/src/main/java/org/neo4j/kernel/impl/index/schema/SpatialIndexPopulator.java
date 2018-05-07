@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -52,7 +52,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combi
 class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator> implements IndexPopulator
 {
     SpatialIndexPopulator( long indexId,
-            SchemaIndexDescriptor descriptor,
+            PendingIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             SpatialIndexFiles spatialIndexFiles,
             PageCache pageCache,
@@ -154,8 +154,8 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         private final SpaceFillingCurveSettings settings;
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
-                IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig,
-                SpaceFillingCurveConfiguration configuration )
+                       IndexProvider.Monitor monitor, PendingIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig,
+                       SpaceFillingCurveConfiguration configuration )
         {
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
             this.configuration = configuration;
@@ -187,14 +187,14 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         private final FileSystemAbstraction fs;
         private final SpatialIndexFiles spatialIndexFiles;
         private final long indexId;
-        private final SchemaIndexDescriptor descriptor;
+        private final PendingIndexDescriptor descriptor;
         private final IndexProvider.Monitor monitor;
         private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration configuration;
 
         PartFactory( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles spatialIndexFiles, long indexId,
-                SchemaIndexDescriptor descriptor, IndexProvider.Monitor monitor, IndexSamplingConfig samplingConfig,
-                SpaceFillingCurveConfiguration configuration )
+                     PendingIndexDescriptor descriptor, IndexProvider.Monitor monitor, IndexSamplingConfig samplingConfig,
+                     SpaceFillingCurveConfiguration configuration )
         {
             this.pageCache = pageCache;
             this.fs = fs;

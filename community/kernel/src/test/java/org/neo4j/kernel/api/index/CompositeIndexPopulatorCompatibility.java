@@ -28,8 +28,8 @@ import java.util.Arrays;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -50,7 +50,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
     public CompositeIndexPopulatorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
+            IndexProviderCompatibilityTestSuite testSuite, PendingIndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -60,7 +60,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
+            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
         }
 
         @Test
@@ -95,7 +95,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
 
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
+            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
         }
 
         @Test

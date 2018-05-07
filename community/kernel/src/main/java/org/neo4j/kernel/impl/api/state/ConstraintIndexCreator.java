@@ -45,9 +45,9 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Type;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -196,7 +196,7 @@ public class ConstraintIndexCreator
     /**
      * You MUST hold a schema write lock before you call this method.
      */
-    public void dropUniquenessConstraintIndex( SchemaIndexDescriptor descriptor )
+    public void dropUniquenessConstraintIndex( PendingIndexDescriptor descriptor )
             throws TransactionFailureException
     {
         try ( Session session = kernelSupplier.get().beginSession( AUTH_DISABLED );
@@ -208,15 +208,15 @@ public class ConstraintIndexCreator
         }
     }
 
-    private SchemaIndexDescriptor asDescriptor( CapableIndexReference indexReference )
+    private PendingIndexDescriptor asDescriptor( CapableIndexReference indexReference )
     {
         if ( indexReference.isUnique() )
         {
-            return SchemaIndexDescriptorFactory.uniqueForLabel( indexReference.label(), indexReference.properties() );
+            return IndexDescriptorFactory.uniqueForLabel( indexReference.label(), indexReference.properties() );
         }
         else
         {
-            return SchemaIndexDescriptorFactory.forLabel( indexReference.label(), indexReference.properties() );
+            return IndexDescriptorFactory.forLabel( indexReference.label(), indexReference.properties() );
         }
     }
 
@@ -266,20 +266,20 @@ public class ConstraintIndexCreator
             // There's already an index for this schema descriptor, which isn't of the type we're after.
             throw new AlreadyIndexedException( schema, CONSTRAINT_CREATION );
         }
-        SchemaIndexDescriptor indexDescriptor = createConstraintIndex( schema );
+        PendingIndexDescriptor indexDescriptor = createConstraintIndex( schema );
         IndexProxy indexProxy = indexingService.getIndexProxy( indexDescriptor.schema() );
         return new DefaultCapableIndexReference( indexDescriptor.type() == Type.UNIQUE, indexProxy.getIndexCapability(),
                 indexProxy.getProviderDescriptor(), indexDescriptor.schema().keyId(),
                 indexDescriptor.schema().getPropertyIds() );
     }
 
-    public SchemaIndexDescriptor createConstraintIndex( final SchemaDescriptor schema )
+    public PendingIndexDescriptor createConstraintIndex( final SchemaDescriptor schema )
     {
         try ( Session session = kernelSupplier.get().beginSession( AUTH_DISABLED );
               Transaction transaction = session.beginTransaction( Transaction.Type.implicit );
               Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
         {
-            SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForSchema( schema );
+            PendingIndexDescriptor index = IndexDescriptorFactory.uniqueForSchema( schema );
             ((KernelTransactionImplementation) transaction).txState().indexRuleDoAdd( index );
             transaction.success();
             return index;

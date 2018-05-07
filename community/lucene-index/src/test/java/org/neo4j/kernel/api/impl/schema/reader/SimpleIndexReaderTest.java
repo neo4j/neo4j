@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -151,13 +151,13 @@ public class SimpleIndexReaderTest
 
     private SimpleIndexReader getNonUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, SchemaIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
-                taskCoordinator );
+        return new SimpleIndexReader( partitionSearcher, IndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
+                                      taskCoordinator );
     }
 
     private SimpleIndexReader getUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, SchemaIndexDescriptorFactory.uniqueForLabel( 0, 0 ),
-                samplingConfig, taskCoordinator );
+        return new SimpleIndexReader( partitionSearcher, IndexDescriptorFactory.uniqueForLabel( 0, 0 ),
+                                      samplingConfig, taskCoordinator );
     }
 }

@@ -23,22 +23,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 public interface IndexReaderFactory
 {
-    IndexReader newReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexReader newReader( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    IndexReader newUnCachedReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexReader newUnCachedReader( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     void close();
 
     class Caching implements IndexReaderFactory
     {
-        private Map<SchemaIndexDescriptor,IndexReader> indexReaders;
+        private Map<PendingIndexDescriptor,IndexReader> indexReaders;
         private final IndexingService indexingService;
 
         public Caching( IndexingService indexingService )
@@ -47,7 +47,7 @@ public interface IndexReaderFactory
         }
 
         @Override
-        public IndexReader newReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexReader newReader( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             if ( indexReaders == null )
             {
@@ -64,7 +64,7 @@ public interface IndexReaderFactory
         }
 
         @Override
-        public IndexReader newUnCachedReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexReader newUnCachedReader( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             IndexProxy index = indexingService.getIndexProxy( descriptor.schema() );
             return index.newReader();

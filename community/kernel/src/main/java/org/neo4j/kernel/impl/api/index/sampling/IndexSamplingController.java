@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -106,7 +106,7 @@ public class IndexSamplingController
 
     public interface RecoveryCondition
     {
-        boolean test( long indexId, SchemaIndexDescriptor descriptor );
+        boolean test( long indexId, PendingIndexDescriptor descriptor );
     }
 
     private void scheduleSampling( IndexSamplingMode mode, IndexMap indexMap )

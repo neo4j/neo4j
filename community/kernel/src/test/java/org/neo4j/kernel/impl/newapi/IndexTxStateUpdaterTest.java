@@ -33,8 +33,8 @@ import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -73,13 +73,13 @@ public class IndexTxStateUpdaterTest
     private TransactionState txState;
     private IndexTxStateUpdater indexTxUpdater;
 
-    private SchemaIndexDescriptor indexOn1_1 = SchemaIndexDescriptorFactory.forLabel( labelId1, propId1 );
-    private SchemaIndexDescriptor indexOn2_new = SchemaIndexDescriptorFactory.forLabel( labelId2, newPropId );
-    private SchemaIndexDescriptor uniqueOn1_2 = SchemaIndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
-    private SchemaIndexDescriptor indexOn1_1_new = SchemaIndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
-    private SchemaIndexDescriptor uniqueOn2_2_3 = SchemaIndexDescriptorFactory
+    private PendingIndexDescriptor indexOn1_1 = IndexDescriptorFactory.forLabel( labelId1, propId1 );
+    private PendingIndexDescriptor indexOn2_new = IndexDescriptorFactory.forLabel( labelId2, newPropId );
+    private PendingIndexDescriptor uniqueOn1_2 = IndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
+    private PendingIndexDescriptor indexOn1_1_new = IndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
+    private PendingIndexDescriptor uniqueOn2_2_3 = IndexDescriptorFactory
             .uniqueForLabel( labelId2, propId2, propId3 );
-    private List<SchemaIndexDescriptor> indexes =
+    private List<PendingIndexDescriptor> indexes =
             Arrays.asList( indexOn1_1, indexOn2_new, uniqueOn1_2, indexOn1_1_new, uniqueOn2_2_3 );
     private StubNodeCursor node;
     private StubPropertyCursor propertyCursor;

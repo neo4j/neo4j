@@ -31,10 +31,10 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -54,15 +54,15 @@ public class SchemaStorage implements SchemaRuleAccess
      * @throws  IllegalStateException if more than one matching rule.
      * @param descriptor the target IndexDescriptor
      */
-    public IndexRule indexGetForSchema( final SchemaIndexDescriptor descriptor )
+    public IndexDescriptor indexGetForSchema( final PendingIndexDescriptor descriptor )
     {
-        Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::equals, IndexRule.class, false );
+        Iterator<IndexDescriptor> rules = loadAllSchemaRules( descriptor::equals, IndexDescriptor.class, false );
 
-        IndexRule foundRule = null;
+        IndexDescriptor foundRule = null;
 
         while ( rules.hasNext() )
         {
-            IndexRule candidate = rules.next();
+            IndexDescriptor candidate = rules.next();
             if ( foundRule != null )
             {
                 throw new IllegalStateException( String.format(
@@ -74,9 +74,9 @@ public class SchemaStorage implements SchemaRuleAccess
         return foundRule;
     }
 
-    public Iterator<IndexRule> indexesGetAll()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexRule.class, false );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexDescriptor.class, false );
     }
 
     public Iterator<ConstraintRule> constraintsGetAll()

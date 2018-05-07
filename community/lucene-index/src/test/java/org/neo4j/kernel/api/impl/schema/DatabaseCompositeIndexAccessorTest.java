@@ -45,8 +45,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -68,7 +68,8 @@ public class DatabaseCompositeIndexAccessorTest
 {
     private static final int PROP_ID1 = 1;
     private static final int PROP_ID2 = 2;
-    private static final SchemaIndexDescriptor DESCRIPTOR = SchemaIndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
+    private static final PendingIndexDescriptor
+            DESCRIPTOR = IndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
     private static final Config config = Config.defaults();
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
@@ -84,9 +85,9 @@ public class DatabaseCompositeIndexAccessorTest
     private final Object[] values = {"value1", "values2"};
     private final Object[] values2 = {40, 42};
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final SchemaIndexDescriptor SCHEMA_INDEX_DESCRIPTOR = SchemaIndexDescriptorFactory
+    private static final PendingIndexDescriptor SCHEMA_INDEX_DESCRIPTOR = IndexDescriptorFactory
             .forLabel( 0, PROP_ID1, PROP_ID2 );
-    private static final SchemaIndexDescriptor UNIQUE_SCHEMA_INDEX_DESCRIPTOR = SchemaIndexDescriptorFactory
+    private static final PendingIndexDescriptor UNIQUE_SCHEMA_INDEX_DESCRIPTOR = IndexDescriptorFactory
             .uniqueForLabel( 1, PROP_ID1, PROP_ID2 );
 
     @Parameterized.Parameters( name = "{0}" )

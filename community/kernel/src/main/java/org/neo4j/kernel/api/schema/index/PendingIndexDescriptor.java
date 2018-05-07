@@ -33,14 +33,14 @@ import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.index.IndexProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Filter.GENERAL;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Filter.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Filter.GENERAL;
+import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Filter.UNIQUE;
 
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
  */
-public class SchemaIndexDescriptor implements SchemaDescriptorSupplier, IndexReference
+public class PendingIndexDescriptor implements SchemaDescriptorSupplier, IndexReference
 {
     public enum Type
     {
@@ -48,12 +48,12 @@ public class SchemaIndexDescriptor implements SchemaDescriptorSupplier, IndexRef
         UNIQUE
     }
 
-    public enum Filter implements Predicate<SchemaIndexDescriptor>
+    public enum Filter implements Predicate<PendingIndexDescriptor>
     {
         GENERAL
                 {
                     @Override
-                    public boolean test( SchemaIndexDescriptor index )
+                    public boolean test( PendingIndexDescriptor index )
                     {
                         return index.type == Type.GENERAL;
                     }
@@ -61,7 +61,7 @@ public class SchemaIndexDescriptor implements SchemaDescriptorSupplier, IndexRef
         UNIQUE
                 {
                     @Override
-                    public boolean test( SchemaIndexDescriptor index )
+                    public boolean test( PendingIndexDescriptor index )
                     {
                         return index.type == Type.UNIQUE;
                     }
@@ -69,7 +69,7 @@ public class SchemaIndexDescriptor implements SchemaDescriptorSupplier, IndexRef
         ANY
                 {
                     @Override
-                    public boolean test( SchemaIndexDescriptor index )
+                    public boolean test( PendingIndexDescriptor index )
                     {
                         return true;
                     }
@@ -78,18 +78,18 @@ public class SchemaIndexDescriptor implements SchemaDescriptorSupplier, IndexRef
 
     public interface Supplier
     {
-        SchemaIndexDescriptor getIndexDescriptor();
+        PendingIndexDescriptor getIndexDescriptor();
     }
 
     private final SchemaDescriptor schema;
-    private final SchemaIndexDescriptor.Type type;
+    private final PendingIndexDescriptor.Type type;
     private final Optional<String> name;
     private final IndexProvider.Descriptor providerDescriptor;
 
-    public SchemaIndexDescriptor( SchemaDescriptor schema,
-                                  Type type,
-                                  Optional<String> name,
-                                  IndexProvider.Descriptor providerDescriptor )
+    public PendingIndexDescriptor( SchemaDescriptor schema,
+                                   Type type,
+                                   Optional<String> name,
+                                   IndexProvider.Descriptor providerDescriptor )
     {
         this.schema = schema;
         this.type = type;
@@ -151,22 +151,12 @@ public class SchemaIndexDescriptor implements SchemaDescriptorSupplier, IndexRef
         return format( "Index( %s, %s )", type.name(), schema.userDescription( tokenNameLookup ) );
     }
 
-    /**
-     * Checks whether an index descriptor Supplier supplies this index descriptor.
-     * @param supplier supplier to get a index descriptor from
-     * @return true if the supplied index descriptor equals this index descriptor
-     */
-    public boolean isSame( Supplier supplier )
-    {
-        return this.equals( supplier.getIndexDescriptor() );
-    }
-
     @Override
     public boolean equals( Object o )
     {
-        if ( o instanceof SchemaIndexDescriptor )
+        if ( o instanceof PendingIndexDescriptor )
         {
-            SchemaIndexDescriptor that = (SchemaIndexDescriptor)o;
+            PendingIndexDescriptor that = (PendingIndexDescriptor)o;
             return this.type() == that.type() && this.schema().equals( that.schema() );
         }
         return false;
@@ -191,9 +181,9 @@ public class SchemaIndexDescriptor implements SchemaDescriptorSupplier, IndexRef
      * @param indexes Indexes to sort
      * @return sorted indexes
      */
-    public static Iterator<SchemaIndexDescriptor> sortByType( Iterator<SchemaIndexDescriptor> indexes )
+    public static Iterator<PendingIndexDescriptor> sortByType( Iterator<PendingIndexDescriptor> indexes )
     {
-        List<SchemaIndexDescriptor> materialized = Iterators.asList( indexes );
+        List<PendingIndexDescriptor> materialized = Iterators.asList( indexes );
         return Iterators.concat(
                 Iterators.filter( GENERAL, materialized.iterator() ),
                 Iterators.filter( UNIQUE, materialized.iterator() ) );

@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
@@ -62,10 +62,10 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extend
         this.readOnly = readOnly;
     }
 
-    abstract Layout<KEY,VALUE> layout( SchemaIndexDescriptor descriptor );
+    abstract Layout<KEY,VALUE> layout( PendingIndexDescriptor descriptor );
 
     @Override
-    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, PendingIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
@@ -76,22 +76,22 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extend
         return newIndexPopulator( storeFile, layout( descriptor ), descriptor, indexId, samplingConfig );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY, VALUE> layout, SchemaIndexDescriptor descriptor, long indexId,
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY, VALUE> layout, PendingIndexDescriptor descriptor, long indexId,
                                                          IndexSamplingConfig samplingConfig );
 
     @Override
     public IndexAccessor getOnlineAccessor(
-            long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+            long indexId, PendingIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         File storeFile = nativeIndexFileFromIndexId( indexId );
         return newIndexAccessor( storeFile, layout( descriptor ), descriptor, indexId, samplingConfig );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout, SchemaIndexDescriptor descriptor,
+    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout, PendingIndexDescriptor descriptor,
             long indexId, IndexSamplingConfig samplingConfig ) throws IOException;
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, PendingIndexDescriptor descriptor ) throws IllegalStateException
     {
         try
         {
@@ -109,7 +109,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extend
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( long indexId, PendingIndexDescriptor descriptor )
     {
         try
         {

@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 public class SpatialUniqueSchemaIndexAccessorTest extends SpatialSchemaIndexAccessorTest
 {
     @Override
     protected LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil<>( new SpatialLayoutTestUtil( SchemaIndexDescriptorFactory.uniqueForLabel( 42, 666 ), settings, crs ) );
+        return new UniqueLayoutTestUtil<>( new SpatialLayoutTestUtil( IndexDescriptorFactory.uniqueForLabel( 42, 666 ), settings, crs ) );
     }
 }

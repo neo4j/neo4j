@@ -30,8 +30,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
@@ -105,7 +105,7 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException
     {
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
+        PendingIndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 456 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( fromDescriptor( index ) );
@@ -119,7 +119,7 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException
     {
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0, 1 );
+        PendingIndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0, 1 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
         when( tokenRead.propertyKey( "name" ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( "lastName" ) ).thenReturn( 1 );
@@ -154,7 +154,7 @@ public class ResampleIndexProcedureTest
     public void shouldTriggerResampling()
             throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 123, 456 );
+        PendingIndexDescriptor index = IndexDescriptorFactory.forLabel( 123, 456 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( fromDescriptor( index ) );
 
         procedure.resampleIndex( ":Person(name)" );

@@ -27,7 +27,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -41,9 +41,9 @@ import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.UNKNOWN;
 
 class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexReader
 {
-    private final SchemaIndexDescriptor descriptor;
+    private final PendingIndexDescriptor descriptor;
 
-    FusionIndexReader( SlotSelector slotSelector, LazyInstanceSelector<IndexReader> instanceSelector, SchemaIndexDescriptor descriptor )
+    FusionIndexReader( SlotSelector slotSelector, LazyInstanceSelector<IndexReader> instanceSelector, PendingIndexDescriptor descriptor )
     {
         super( slotSelector, instanceSelector );
         this.descriptor = descriptor;

@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
 import static org.mockito.Mockito.mock;
@@ -34,7 +34,7 @@ public class BridgingIndexProgressorTest
     @Test
     public void closeMustCloseAll()
     {
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 1, 2, 3 );
+        PendingIndexDescriptor index = IndexDescriptorFactory.forLabel( 1, 2, 3 );
         BridgingIndexProgressor progressor = new BridgingIndexProgressor( null, index.schema().getPropertyIds() );
 
         IndexProgressor[] parts = {mock(IndexProgressor.class), mock(IndexProgressor.class)};

@@ -37,19 +37,19 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 public class IndexAccessors implements Closeable
 {
     private final MutableLongObjectMap<IndexAccessor> accessors = new LongObjectHashMap<>();
-    private final List<IndexRule> onlineIndexRules = new ArrayList<>();
-    private final List<IndexRule> notOnlineIndexRules = new ArrayList<>();
+    private final List<IndexDescriptor> onlineIndexRules = new ArrayList<>();
+    private final List<IndexDescriptor> notOnlineIndexRules = new ArrayList<>();
 
     public IndexAccessors( IndexProviderMap providers,
                            RecordStore<DynamicRecord> schemaStore,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        Iterator<IndexRule> rules = new SchemaStorage( schemaStore ).indexesGetAll();
+        Iterator<IndexDescriptor> rules = new SchemaStorage( schemaStore ).indexesGetAll();
         for (; ; )
         {
             try
@@ -59,7 +59,7 @@ public class IndexAccessors implements Closeable
                     // we intentionally only check indexes that are online since
                     // - populating indexes will be rebuilt on next startup
                     // - failed indexes have to be dropped by the user anyways
-                    IndexRule indexRule = rules.next();
+                    IndexDescriptor indexRule = rules.next();
                     if ( indexRule.isIndexWithoutOwningConstraint() )
                     {
                         notOnlineIndexRules.add( indexRule );
@@ -88,7 +88,7 @@ public class IndexAccessors implements Closeable
             }
         }
 
-        for ( IndexRule indexRule : onlineIndexRules )
+        for ( IndexDescriptor indexRule : onlineIndexRules )
         {
             long indexId = indexRule.getId();
             accessors.put( indexId, provider( providers, indexRule )
@@ -96,22 +96,22 @@ public class IndexAccessors implements Closeable
         }
     }
 
-    private IndexProvider provider( IndexProviderMap providers, IndexRule indexRule )
+    private IndexProvider provider( IndexProviderMap providers, IndexDescriptor indexRule )
     {
         return providers.apply( indexRule.providerDescriptor() );
     }
 
-    public Collection<IndexRule> notOnlineRules()
+    public Collection<IndexDescriptor> notOnlineRules()
     {
         return notOnlineIndexRules;
     }
 
-    public IndexAccessor accessorFor( IndexRule indexRule )
+    public IndexAccessor accessorFor( IndexDescriptor indexRule )
     {
         return accessors.get( indexRule.getId() );
     }
 
-    public Iterable<IndexRule> onlineRules()
+    public Iterable<IndexDescriptor> onlineRules()
     {
         return onlineIndexRules;
     }

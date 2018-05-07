@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DoubleLatch;
@@ -51,9 +51,9 @@ public class IndexSamplingJobTrackerTest
     LabelSchemaDescriptor descriptor11 = SchemaDescriptorFactory.forLabel( 1, 1 );
     LabelSchemaDescriptor descriptor12 = SchemaDescriptorFactory.forLabel( 1, 2 );
     LabelSchemaDescriptor descriptor22 = SchemaDescriptorFactory.forLabel( 2, 2 );
-    SchemaIndexDescriptor index11 = SchemaIndexDescriptorFactory.forSchema( descriptor11 );
-    SchemaIndexDescriptor index12 = SchemaIndexDescriptorFactory.forSchema( descriptor12 );
-    SchemaIndexDescriptor index22 = SchemaIndexDescriptorFactory.forSchema( descriptor22 );
+    PendingIndexDescriptor index11 = IndexDescriptorFactory.forSchema( descriptor11 );
+    PendingIndexDescriptor index12 = IndexDescriptorFactory.forSchema( descriptor12 );
+    PendingIndexDescriptor index22 = IndexDescriptorFactory.forSchema( descriptor22 );
     long indexId11;
     long indexId12 = 1;
     long indexId22 = 2;

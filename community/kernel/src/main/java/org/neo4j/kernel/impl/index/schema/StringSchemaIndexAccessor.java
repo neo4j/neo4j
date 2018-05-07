@@ -29,7 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.IndexTextValueLengthValidator;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.util.Validator;
@@ -50,7 +50,7 @@ public class StringSchemaIndexAccessor extends NativeSchemaIndexAccessor<StringS
             Layout<StringSchemaKey,NativeSchemaValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             IndexProvider.Monitor monitor,
-            SchemaIndexDescriptor descriptor,
+            PendingIndexDescriptor descriptor,
             long indexId,
             IndexSamplingConfig samplingConfig ) throws IOException
     {

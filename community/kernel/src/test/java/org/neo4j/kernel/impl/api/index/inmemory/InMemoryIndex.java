@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -48,7 +48,7 @@ class InMemoryIndex
     private InternalIndexState state = InternalIndexState.POPULATING;
     String failure;
 
-    InMemoryIndex( SchemaIndexDescriptor descriptor )
+    InMemoryIndex( PendingIndexDescriptor descriptor )
     {
         this( new HashBasedIndex( descriptor ) );
     }

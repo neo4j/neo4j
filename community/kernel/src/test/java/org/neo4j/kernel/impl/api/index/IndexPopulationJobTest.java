@@ -53,8 +53,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -584,7 +584,7 @@ public class IndexPopulationJobTest
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        SchemaIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
+        PendingIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         return new InMemoryIndexProvider().getPopulator( 21, descriptor, samplingConfig );
     }
 
@@ -612,7 +612,7 @@ public class IndexPopulationJobTest
                                                       LogProvider logProvider, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        SchemaIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
+        PendingIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
@@ -623,16 +623,16 @@ public class IndexPopulationJobTest
         return job;
     }
 
-    private SchemaIndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
+    private PendingIndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         try ( Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
-            SchemaIndexDescriptor descriptor = constraint ?
-                                               SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
-                                               SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+            PendingIndexDescriptor descriptor = constraint ?
+                                                IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
+                                                IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
             tx.success();
             return descriptor;
         }

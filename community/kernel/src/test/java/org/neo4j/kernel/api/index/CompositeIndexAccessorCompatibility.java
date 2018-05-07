@@ -23,8 +23,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
@@ -44,7 +44,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     public CompositeIndexAccessorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
+            IndexProviderCompatibilityTestSuite testSuite, PendingIndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -110,7 +110,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
+            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
         }
 
         @Test
@@ -152,7 +152,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
+            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
         }
 
         @Test

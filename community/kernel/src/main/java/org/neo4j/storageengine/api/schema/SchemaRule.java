@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 
 /**
  * Represents a stored schema rule.
@@ -108,7 +108,7 @@ public interface SchemaRule extends SchemaDescriptorSupplier
             throw new MalformedSchemaRuleException( null, "Unknown kind id %d", id );
         }
 
-        public static Kind map( SchemaIndexDescriptor descriptor )
+        public static Kind map( PendingIndexDescriptor descriptor )
         {
             switch ( descriptor.type() )
             {

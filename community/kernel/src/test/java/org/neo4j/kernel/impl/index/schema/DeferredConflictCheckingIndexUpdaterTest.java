@@ -28,8 +28,8 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
@@ -52,7 +52,7 @@ public class DeferredConflictCheckingIndexUpdaterTest
 {
     private final int labelId = 1;
     private final int[] propertyKeyIds = {2, 3};
-    private final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyIds );
+    private final PendingIndexDescriptor descriptor = IndexDescriptorFactory.forLabel( labelId, propertyKeyIds );
 
     @Test
     public void shouldQueryAboutAddedAndChangedValueTuples() throws Exception
@@ -62,7 +62,7 @@ public class DeferredConflictCheckingIndexUpdaterTest
         IndexReader reader = mock( IndexReader.class );
         when( reader.query( anyVararg() ) ).thenAnswer( invocation -> iterator( 0 ) );
         long nodeId = 0;
-        List<IndexEntryUpdate<SchemaIndexDescriptor>> updates = new ArrayList<>();
+        List<IndexEntryUpdate<PendingIndexDescriptor>> updates = new ArrayList<>();
         updates.add( add( nodeId++, descriptor, tuple( 10, 11 ) ) );
         updates.add( change( nodeId++, descriptor, tuple( "abc", "def" ), tuple( "ghi", "klm" ) ) );
         updates.add( remove( nodeId++, descriptor, tuple( 1001L, 1002L ) ) );
@@ -71,7 +71,7 @@ public class DeferredConflictCheckingIndexUpdaterTest
         try ( DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor ) )
         {
             // when
-            for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+            for ( IndexEntryUpdate<PendingIndexDescriptor> update : updates )
             {
                 updater.process( update );
                 verify( actual ).process( update );
@@ -79,7 +79,7 @@ public class DeferredConflictCheckingIndexUpdaterTest
         }
 
         // then
-        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<PendingIndexDescriptor> update : updates )
         {
             if ( update.updateMode() == UpdateMode.ADDED || update.updateMode() == UpdateMode.CHANGED )
             {
