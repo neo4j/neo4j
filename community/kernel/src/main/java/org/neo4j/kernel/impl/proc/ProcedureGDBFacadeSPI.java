@@ -126,7 +126,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            return sourceModule.queryExecutor.get().executeQuery( query, parameters, tc );
+            return sourceModule.queryExecutor.get().executeQuery( query, parameters, tc, false );
         }
         catch ( QueryExecutionKernelException e )
         {
@@ -140,7 +140,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            return sourceModule.queryExecutor.get().executeQuery( query, parameters, tc );
+            return sourceModule.queryExecutor.get().executeQuery( query, parameters, tc, false );
         }
         catch ( QueryExecutionKernelException e )
         {

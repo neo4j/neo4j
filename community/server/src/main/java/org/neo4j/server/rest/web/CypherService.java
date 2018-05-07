@@ -123,12 +123,12 @@ public class CypherService
             Result result;
             if ( profile )
             {
-                result = executionEngine.profileQuery( query, params, tc );
+                result = executionEngine.profileQuery( query, params, tc, false );
                 includePlan = true;
             }
             else
             {
-                result = executionEngine.executeQuery( query, params, tc );
+                result = executionEngine.executeQuery( query, params, tc, false );
                 includePlan = result.getQueryExecutionType().requestedExecutionPlanDescription();
             }
 

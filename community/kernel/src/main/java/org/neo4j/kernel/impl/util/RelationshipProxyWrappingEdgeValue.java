@@ -70,6 +70,14 @@ public class RelationshipProxyWrappingEdgeValue extends EdgeValue
         writer.writeEdge( id(), startNode().id(), endNode().id(), type(), p );
     }
 
+    public void populate()
+    {
+        type();
+        properties();
+        startNode();
+        endNode();
+    }
+
     @Override
     public NodeValue startNode()
     {

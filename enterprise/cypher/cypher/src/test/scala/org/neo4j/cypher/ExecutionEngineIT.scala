@@ -65,10 +65,10 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   implicit class RichExecutionEngine(engine: ExecutionEngine) {
     def profile(query: String, params: Map[String, Any]): Result =
-      engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params))
+      engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params), false)
 
     def execute(query: String, params: Map[String, Any]): Result =
-      engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params))
+      engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params), false)
   }
 
   class AllNodesProcedure extends CallableProcedure {

@@ -40,7 +40,8 @@ class QueryState(val query: QueryContext,
                  val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] =
-                   new SingleThreadedLRUCache(maxSize = 16)) {
+                   new SingleThreadedLRUCache(maxSize = 16),
+                 val prePopulateResult: Boolean = false ) {
   private var _pathValueBuilder: PathValueBuilder = _
 
   def createOrGetInitialContext(): ExecutionContext = initialContext.getOrElse(ExecutionContext.empty)
@@ -62,10 +63,10 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState, repeatableReads, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState, repeatableReads, cachedIn, prePopulateResult)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), triadicState, repeatableReads, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), triadicState, repeatableReads, cachedIn, prePopulateResult)
 
   /**
     * When running on the RHS of an Apply, this method will fill an execution context with argument data
@@ -76,7 +77,7 @@ class QueryState(val query: QueryContext,
   def copyArgumentStateTo(ctx: ExecutionContext): Unit = initialContext.foreach(initData => initData.copyTo(ctx))
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState, repeatableReads, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState, repeatableReads, cachedIn, prePopulateResult)
 }
 
 object QueryState {

@@ -43,7 +43,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   private def runQuery(query: String): (ExecutingQuery, Result) = {
     val context = db.transactionalContext(query = query -> Map.empty)
     val executingQuery = context.executingQuery()
-    val executionResult = engine.execute(executingQuery.queryText(), executingQuery.queryParameters(), context)
+    val executionResult = engine.execute(executingQuery.queryText(), executingQuery.queryParameters(), context, false)
     (executingQuery, executionResult)
   }
 
@@ -246,7 +246,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val context = db.transactionalContext(query = "CYPHER 2.3 CREATE()" -> Map.empty)
 
     // when
-    val result = engine.execute(context.queryText(), context.queryParameters(), context)
+    val result = engine.execute(context.queryText(), context.queryParameters(), context, false)
 
     // then
     verify(monitor, times(1)).startQueryExecution(context)
@@ -258,7 +258,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val context = db.transactionalContext(query = "CYPHER 3.1 RETURN [1, 2, 3, 4, 5]" -> Map.empty)
 
     // when
-    val result = engine.profile(context.queryText(), context.queryParameters(), context)
+    val result = engine.profile(context.queryText(), context.queryParameters(), context, false)
 
     //then
     verify(monitor, times(1)).startQueryExecution(context)

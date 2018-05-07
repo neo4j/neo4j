@@ -105,13 +105,13 @@ trait ExecutionEngineHelper {
   def eengine: ExecutionEngine
 
   def execute(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.execute(q, params.toMap, graph.transactionalContext(query = q -> params.toMap)))
+    RewindableExecutionResult(eengine.execute(q, params.toMap, graph.transactionalContext(query = q -> params.toMap), false))
 
   def profile(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.profile(q, params.toMap, graph.transactionalContext(query = q -> params.toMap)))
+    RewindableExecutionResult(eengine.profile(q, params.toMap, graph.transactionalContext(query = q -> params.toMap), false))
 
   def executeScalar[T](q: String, params: (String, Any)*): T = {
-    val res = eengine.execute(q, params.toMap, graph.transactionalContext(query = q -> params.toMap))
+    val res = eengine.execute(q, params.toMap, graph.transactionalContext(query = q -> params.toMap), false)
     scalar[T](asScalaResult(res).toList)
   }
 
@@ -132,9 +132,9 @@ trait ExecutionEngineHelper {
 
   implicit class RichExecutionEngine(engine: ExecutionEngine) {
     def profile(query: String, params: Map[String, Any]): Result =
-      engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params))
+      engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params), false)
 
     def execute(query: String, params: Map[String, Any]): Result =
-      engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params))
+      engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params), false)
   }
 }

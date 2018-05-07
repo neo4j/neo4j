@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
+import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{ListValue, MapValue}
 
 case class ProduceResultSlottedPipe(source: Pipe, columns: Seq[(String, Expression)])
                                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) with Pipe {
@@ -34,10 +37,34 @@ case class ProduceResultSlottedPipe(source: Pipe, columns: Seq[(String, Expressi
       original =>
         val m = MutableMaps.create(columns.size)
         columns.foreach {
-          case (name, exp) => m.put(name, exp(original, state))
+          case (name, exp) => {
+            val value = exp(original, state)
+            if (state.prePopulateResult) {
+              populate(value)
+            }
+            m.put(name, value)
+          }
         }
-
         ExecutionContext(m)
+    }
+  }
+
+  def populate(value: AnyValue): Unit = {
+    value match {
+      case n: NodeProxyWrappingNodeValue =>
+        n.populate()
+      case r: RelationshipProxyWrappingEdgeValue =>
+        r.populate()
+      case l: ListValue =>
+        val it = l.iterator()
+        while (it.hasNext) {
+          populate(it.next())
+        }
+      case m: MapValue =>
+        val it = m.entrySet().iterator()
+        while (it.hasNext) {
+          populate(it.next().getValue)
+        }
     }
   }
 }

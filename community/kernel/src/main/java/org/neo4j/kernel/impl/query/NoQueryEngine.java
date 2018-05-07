@@ -29,13 +29,13 @@ enum NoQueryEngine implements QueryExecutionEngine
     INSTANCE;
 
     @Override
-    public Result executeQuery( String query, MapValue parameters, TransactionalContext context )
+    public Result executeQuery( String query, MapValue parameters, TransactionalContext context, Boolean prePopulate )
     {
         throw noQueryEngine();
     }
 
     @Override
-    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context, Boolean prePopulate )
     {
         throw noQueryEngine();
     }
@@ -47,7 +47,7 @@ enum NoQueryEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result profileQuery( String query, Map<String,Object> parameter, TransactionalContext context )
+    public Result profileQuery( String query, Map<String,Object> parameter, TransactionalContext context, Boolean prePopulate )
     {
         throw noQueryEngine();
     }

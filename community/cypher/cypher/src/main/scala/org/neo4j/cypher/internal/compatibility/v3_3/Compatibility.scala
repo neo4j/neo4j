@@ -170,7 +170,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
     }
 
     def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode,
-            params: MapValue): Result = {
+            params: MapValue, prePopulate: Boolean): Result = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainMode
         case CypherExecutionMode.profile => ProfileMode
@@ -180,7 +180,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
 
         val context = queryContext(transactionalContext)
 
-        val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, params)
+        val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, params, prePopulate)
         new ExecutionResult(new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
           innerResult.withNotifications(preParsingNotifications.toSeq:_*),

@@ -230,7 +230,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   }
 
   protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val result: Result = eengine.execute(queryText, params.toMap, graph.transactionalContext(query = queryText -> params.toMap))
+    val result: Result = eengine.execute(queryText, params.toMap, graph.transactionalContext(query = queryText -> params.toMap), false)
     rewindableResult(result)
   }
 

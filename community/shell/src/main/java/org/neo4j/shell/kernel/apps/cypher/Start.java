@@ -121,7 +121,7 @@ public class Start extends TransactionProvidingApp
     {
         Map<String,Object> parameters = getParameters( session );
         TransactionalContext tc = createTransactionContext( query, parameters, session );
-        return getEngine().executeQuery( query, parameters, tc );
+        return getEngine().executeQuery( query, parameters, tc, false );
     }
 
     private String trimQuery( String query )

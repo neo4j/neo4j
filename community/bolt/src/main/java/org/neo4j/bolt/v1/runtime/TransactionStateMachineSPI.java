@@ -143,7 +143,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
             {
                 try
                 {
-                    Result result = queryExecutionEngine.executeQuery( statement, params, transactionalContext );
+                    Result result = queryExecutionEngine.executeQuery( statement, params, transactionalContext, true );
                     if ( result instanceof QueryResultProvider )
                     {
                         return new CypherAdapterStream( ((QueryResultProvider) result).queryResult(), clock );

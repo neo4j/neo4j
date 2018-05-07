@@ -25,9 +25,9 @@ import org.neo4j.graphdb.Result
 import org.neo4j.values.virtual.{MapValue, VirtualValues}
 
 case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
-  def execute(transactionalContext: TransactionalContextWrapper, params: MapValue): Result =
-    plan.run(transactionalContext, executionMode, VirtualValues.combine(params,ValueConversion.asValues(extractedParams)))
+  def execute(transactionalContext: TransactionalContextWrapper, params: MapValue, prePopulate: Boolean): Result =
+    plan.run(transactionalContext, executionMode, VirtualValues.combine(params,ValueConversion.asValues(extractedParams)), prePopulate)
 
-  def profile(transactionalContext: TransactionalContextWrapper, params: MapValue): Result =
-    plan.run(transactionalContext, CypherExecutionMode.profile, VirtualValues.combine(params,ValueConversion.asValues(extractedParams)))
+  def profile(transactionalContext: TransactionalContextWrapper, params: MapValue, prePopulate: Boolean): Result =
+    plan.run(transactionalContext, CypherExecutionMode.profile, VirtualValues.combine(params,ValueConversion.asValues(extractedParams)), prePopulate)
 }
