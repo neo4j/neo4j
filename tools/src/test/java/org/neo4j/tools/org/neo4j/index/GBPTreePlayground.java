@@ -69,6 +69,7 @@ public class GBPTreePlayground
 
     private void run() throws InterruptedException, IOException
     {
+        System.out.println( "Working on: " + indexFile.getAbsolutePath() );
         setupIndex();
 
         LifeSupport life = new LifeSupport();
@@ -225,8 +226,17 @@ public class GBPTreePlayground
 
     public static void main( String[] args ) throws InterruptedException, IOException
     {
+        File indexFile;
+        if ( args.length > 0 )
+        {
+            indexFile = new File( args[0] );
+        }
+        else
+        {
+            indexFile = new File( "index" );
+        }
+
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File indexFile = new File( "index" );
         Runtime.getRuntime().addShutdownHook( new Thread( () -> fs.deleteFile( indexFile ) ) );
         new GBPTreePlayground( fs, indexFile ).run();
     }
