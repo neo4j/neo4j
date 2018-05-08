@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.ClockContext;
@@ -408,7 +409,7 @@ public class AllStoreHolder extends Read
         assertValidIndex( index );
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
-        return indexGetState( indexDescriptor( index ) );
+        return indexGetState( (IndexDescriptor) index );
     }
 
     @Override
@@ -417,7 +418,7 @@ public class AllStoreHolder extends Read
     {
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
-        IndexDescriptor descriptor = indexDescriptor( index );
+        IndexDescriptor descriptor = (IndexDescriptor) index;
 
         if ( ktx.hasTxStateWithChanges() )
         {
@@ -436,7 +437,14 @@ public class AllStoreHolder extends Read
     {
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
-        return indexGetOwningUniquenessConstraintId( indexDescriptor( index ) );
+        if ( index instanceof StoreIndexDescriptor )
+        {
+            return ((StoreIndexDescriptor) index).getOwningConstraint();
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override
@@ -444,18 +452,13 @@ public class AllStoreHolder extends Read
     {
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
-        return storeReadLayer.indexGetCommittedId( indexDescriptor( index ) );
-    }
-
-    IndexDescriptor indexDescriptor( IndexReference index )
-    {
-        if ( index.isUnique() )
+        if ( index instanceof StoreIndexDescriptor )
         {
-            return IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() );
+            return ((StoreIndexDescriptor) index).getId();
         }
         else
         {
-            return IndexDescriptorFactory.forLabel( index.label(), index.properties() );
+            return -1L;
         }
     }
 
