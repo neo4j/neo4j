@@ -26,19 +26,19 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactory
 {
-    private final IndexMeta indexMeta;
+    private final CapableIndexDescriptor capableIndexDescriptor;
     private final IndexPopulator populator;
     private final String indexUserDescription;
     private final IndexCountsRemover indexCountsRemover;
     private final LogProvider logProvider;
 
-    FailedPopulatingIndexProxyFactory( IndexMeta indexMeta,
+    FailedPopulatingIndexProxyFactory( CapableIndexDescriptor capableIndexDescriptor,
             IndexPopulator populator,
             String indexUserDescription,
             IndexCountsRemover indexCountsRemover,
             LogProvider logProvider )
     {
-        this.indexMeta = indexMeta;
+        this.capableIndexDescriptor = capableIndexDescriptor;
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
         this.indexCountsRemover = indexCountsRemover;
@@ -48,7 +48,7 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     @Override
     public IndexProxy create( Throwable failure )
     {
-        return new FailedIndexProxy( indexMeta, indexUserDescription, populator, failure( failure ),
+        return new FailedIndexProxy( capableIndexDescriptor, indexUserDescription, populator, failure( failure ),
                 indexCountsRemover, logProvider );
     }
 }

@@ -73,7 +73,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * Usage of this class should be something like:
  * <ol>
  * <li>Instantiation.</li>
- * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexMeta, FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
+ * <li>One or more calls to {@link #addPopulator(IndexPopulator, CapableIndexDescriptor, FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #indexAllNodes()} (blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueUpdate(IndexEntryUpdate)} are accepted.</li>
@@ -109,18 +109,18 @@ public class MultipleIndexPopulator implements IndexPopulator
         this.log = logProvider.getLog( IndexPopulationJob.class );
     }
 
-    IndexPopulation addPopulator( IndexPopulator populator, IndexMeta indexMeta, FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
+    IndexPopulation addPopulator( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
             String indexUserDescription )
     {
         IndexPopulation population =
-                createPopulation( populator, indexMeta, flipper, failedIndexProxyFactory, indexUserDescription );
+                createPopulation( populator, capableIndexDescriptor, flipper, failedIndexProxyFactory, indexUserDescription );
         populations.add( population );
         return population;
     }
 
-    private IndexPopulation createPopulation( IndexPopulator populator, IndexMeta indexMeta, FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
+    private IndexPopulation createPopulation( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
     {
-        return new IndexPopulation( populator, indexMeta, flipper, failedIndexProxyFactory, indexUserDescription );
+        return new IndexPopulation( populator, capableIndexDescriptor, flipper, failedIndexProxyFactory, indexUserDescription );
     }
 
     boolean hasPopulators()
@@ -476,7 +476,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         public final IndexPopulator populator;
         final FlippableIndexProxy flipper;
         private final long indexId;
-        private final IndexMeta indexMeta;
+        private final CapableIndexDescriptor capableIndexDescriptor;
         private final IndexCountsRemover indexCountsRemover;
         private final FailedIndexProxyFactory failedIndexProxyFactory;
         private final String indexUserDescription;
@@ -485,11 +485,11 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         List<IndexEntryUpdate<?>> batchedUpdates;
 
-        IndexPopulation( IndexPopulator populator, IndexMeta indexMeta, FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
+        IndexPopulation( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
         {
             this.populator = populator;
-            this.indexMeta = indexMeta;
-            this.indexId = indexMeta.getId();
+            this.capableIndexDescriptor = capableIndexDescriptor;
+            this.indexId = capableIndexDescriptor.getId();
             this.flipper = flipper;
             this.failedIndexProxyFactory = failedIndexProxyFactory;
             this.indexUserDescription = indexUserDescription;
@@ -499,7 +499,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         private void flipToFailed( IndexPopulationFailure failure )
         {
-            flipper.flipTo( new FailedIndexProxy( indexMeta, indexUserDescription, populator, failure, indexCountsRemover, logProvider ) );
+            flipper.flipTo( new FailedIndexProxy( capableIndexDescriptor, indexUserDescription, populator, failure, indexCountsRemover, logProvider ) );
         }
 
         void create() throws IOException
@@ -580,7 +580,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         @Override
         public SchemaDescriptor schema()
         {
-            return indexMeta.schema();
+            return capableIndexDescriptor.schema();
         }
 
         public boolean batch( IndexEntryUpdate<?> update )

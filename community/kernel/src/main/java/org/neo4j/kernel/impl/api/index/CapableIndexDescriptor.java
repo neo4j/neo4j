@@ -26,11 +26,11 @@ import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 
-public class IndexMeta extends IndexDescriptor implements CapableIndexReference
+public class CapableIndexDescriptor extends IndexDescriptor implements CapableIndexReference
 {
     private final IndexCapability indexCapability;
 
-    public IndexMeta( IndexDescriptor indexDescriptor, IndexCapability indexCapability )
+    public CapableIndexDescriptor( IndexDescriptor indexDescriptor, IndexCapability indexCapability )
     {
         super( indexDescriptor.getId(), indexDescriptor.providerDescriptor(), indexDescriptor, indexDescriptor.getOwningConstraint() );
         this.indexCapability = indexCapability;

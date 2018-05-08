@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 public class PopulatingIndexProxyTest
 {
     @Mock
-    private IndexMeta indexMeta;
+    private CapableIndexDescriptor capableIndexDescriptor;
     @Mock
     private IndexPopulationJob indexPopulationJob;
     @Mock
@@ -41,7 +41,7 @@ public class PopulatingIndexProxyTest
     @Before
     public void setUp()
     {
-        populatingIndexProxy = new PopulatingIndexProxy( indexMeta, indexPopulationJob, indexPopulation );
+        populatingIndexProxy = new PopulatingIndexProxy( capableIndexDescriptor, indexPopulationJob, indexPopulation );
     }
 
     @Test

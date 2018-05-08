@@ -41,7 +41,7 @@ import org.neo4j.values.storable.Value;
 public class OnlineIndexProxy implements IndexProxy
 {
     private final long indexId;
-    private final IndexMeta indexMeta;
+    private final CapableIndexDescriptor capableIndexDescriptor;
     final IndexAccessor accessor;
     private final IndexStoreView storeView;
     private final IndexCountsRemover indexCountsRemover;
@@ -73,11 +73,11 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    OnlineIndexProxy( IndexMeta indexMeta, IndexAccessor accessor, IndexStoreView storeView, boolean forcedIdempotentMode )
+    OnlineIndexProxy( CapableIndexDescriptor capableIndexDescriptor, IndexAccessor accessor, IndexStoreView storeView, boolean forcedIdempotentMode )
     {
         assert accessor != null;
-        this.indexId = indexMeta.getId();
-        this.indexMeta = indexMeta;
+        this.indexId = capableIndexDescriptor.getId();
+        this.capableIndexDescriptor = capableIndexDescriptor;
         this.accessor = accessor;
         this.storeView = storeView;
         this.forcedIdempotentMode = forcedIdempotentMode;
@@ -134,19 +134,19 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return indexMeta;
+        return capableIndexDescriptor;
     }
 
     @Override
     public SchemaDescriptor schema()
     {
-        return indexMeta.schema();
+        return capableIndexDescriptor.schema();
     }
 
     @Override
     public IndexProvider.Descriptor getProviderDescriptor()
     {
-        return indexMeta.providerDescriptor();
+        return capableIndexDescriptor.providerDescriptor();
     }
 
     @Override
@@ -158,7 +158,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexCapability getIndexCapability()
     {
-        return indexMeta;
+        return capableIndexDescriptor;
     }
 
     @Override
@@ -236,7 +236,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + indexMeta + "]";
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + capableIndexDescriptor + "]";
     }
 
     @Override

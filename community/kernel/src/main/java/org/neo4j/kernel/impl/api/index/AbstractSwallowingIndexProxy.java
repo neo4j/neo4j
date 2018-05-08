@@ -31,12 +31,12 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 {
-    private final IndexMeta indexMeta;
+    private final CapableIndexDescriptor capableIndexDescriptor;
     private final IndexPopulationFailure populationFailure;
 
-    AbstractSwallowingIndexProxy( IndexMeta indexMeta, IndexPopulationFailure populationFailure )
+    AbstractSwallowingIndexProxy( CapableIndexDescriptor capableIndexDescriptor, IndexPopulationFailure populationFailure )
     {
-        this.indexMeta = indexMeta;
+        this.capableIndexDescriptor = capableIndexDescriptor;
         this.populationFailure = populationFailure;
     }
 
@@ -73,7 +73,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     @Override
     public IndexCapability getIndexCapability()
     {
-        return indexMeta;
+        return capableIndexDescriptor;
     }
 
     @Override
@@ -84,19 +84,19 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return indexMeta;
+        return capableIndexDescriptor;
     }
 
     @Override
     public SchemaDescriptor schema()
     {
-        return indexMeta.schema();
+        return capableIndexDescriptor.schema();
     }
 
     @Override
     public IndexProvider.Descriptor getProviderDescriptor()
     {
-        return indexMeta.providerDescriptor();
+        return capableIndexDescriptor.providerDescriptor();
     }
 
     @Override
@@ -113,6 +113,6 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     @Override
     public long getIndexId()
     {
-        return indexMeta.getId();
+        return capableIndexDescriptor.getId();
     }
 }

@@ -63,18 +63,17 @@ class IndexProxyCreator
 
         final String indexUserDescription = indexUserDescription( descriptor );
         IndexPopulator populator = populatorFromProvider( descriptor, samplingConfig );
-        IndexMeta indexMeta = indexMetaFromProvider( descriptor );
+        CapableIndexDescriptor capableIndexDescriptor = indexMetaFromProvider( descriptor );
 
-        FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory(
-                indexMeta,
+        FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory( capableIndexDescriptor,
                 populator,
                 indexUserDescription,
                 new IndexCountsRemover( storeView, descriptor.getId() ),
                 logProvider );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation = populationJob
-                .addPopulator( populator, indexMeta, indexUserDescription, flipper, failureDelegateFactory );
-        PopulatingIndexProxy populatingIndex = new PopulatingIndexProxy( indexMeta, populationJob, indexPopulation );
+                .addPopulator( populator, capableIndexDescriptor, indexUserDescription, flipper, failureDelegateFactory );
+        PopulatingIndexProxy populatingIndex = new PopulatingIndexProxy( capableIndexDescriptor, populationJob, indexPopulation );
 
         flipper.flipTo( populatingIndex );
 
@@ -82,7 +81,7 @@ class IndexProxyCreator
         flipper.setFlipTarget( () ->
         {
             monitor.populationCompleteOn( descriptor );
-            OnlineIndexProxy onlineProxy = new OnlineIndexProxy( indexMeta, onlineAccessorFromProvider( descriptor, samplingConfig ),
+            OnlineIndexProxy onlineProxy = new OnlineIndexProxy( capableIndexDescriptor, onlineAccessorFromProvider( descriptor, samplingConfig ),
                             storeView,
                             true );
             if ( flipToTentative )
@@ -97,8 +96,8 @@ class IndexProxyCreator
 
     IndexProxy createRecoveringIndexProxy( IndexDescriptor descriptor )
     {
-        IndexMeta indexMeta = indexMetaFromProvider( descriptor );
-        IndexProxy proxy = new RecoveringIndexProxy( indexMeta );
+        CapableIndexDescriptor capableIndexDescriptor = indexMetaFromProvider( descriptor );
+        IndexProxy proxy = new RecoveringIndexProxy( capableIndexDescriptor );
         return new ContractCheckingIndexProxy( proxy, true );
     }
 
@@ -107,9 +106,9 @@ class IndexProxyCreator
         try
         {
             IndexAccessor onlineAccessor = onlineAccessorFromProvider( descriptor, samplingConfig );
-            IndexMeta indexMeta = indexMetaFromProvider( descriptor );
+            CapableIndexDescriptor capableIndexDescriptor = indexMetaFromProvider( descriptor );
             IndexProxy proxy;
-            proxy = new OnlineIndexProxy( indexMeta, onlineAccessor, storeView, false );
+            proxy = new OnlineIndexProxy( capableIndexDescriptor, onlineAccessor, storeView, false );
             proxy = new ContractCheckingIndexProxy( proxy, true );
             return proxy;
         }
@@ -125,11 +124,10 @@ class IndexProxyCreator
     IndexProxy createFailedIndexProxy( IndexDescriptor descriptor, IndexPopulationFailure populationFailure )
     {
         IndexPopulator indexPopulator = populatorFromProvider( descriptor, samplingConfig );
-        IndexMeta indexMeta = indexMetaFromProvider( descriptor );
+        CapableIndexDescriptor capableIndexDescriptor = indexMetaFromProvider( descriptor );
         String indexUserDescription = indexUserDescription( descriptor );
         IndexProxy proxy;
-        proxy = new FailedIndexProxy(
-                indexMeta,
+        proxy = new FailedIndexProxy( capableIndexDescriptor,
                 indexUserDescription,
                 indexPopulator,
                 populationFailure,
@@ -157,9 +155,9 @@ class IndexProxyCreator
         return indexProvider.getOnlineAccessor( descriptor, samplingConfig );
     }
 
-    private IndexMeta indexMetaFromProvider( IndexDescriptor indexDescriptor )
+    private CapableIndexDescriptor indexMetaFromProvider( IndexDescriptor indexDescriptor )
     {
         IndexCapability indexCapability = providerMap.apply( indexDescriptor.providerDescriptor() ).getCapability();
-        return new IndexMeta( indexDescriptor, indexCapability );
+        return new CapableIndexDescriptor( indexDescriptor, indexCapability );
     }
 }

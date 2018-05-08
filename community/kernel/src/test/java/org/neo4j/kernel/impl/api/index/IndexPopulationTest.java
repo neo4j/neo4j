@@ -142,9 +142,9 @@ public class IndexPopulationTest
         };
     }
 
-    private IndexMeta dummyMeta()
+    private CapableIndexDescriptor dummyMeta()
     {
-        return new IndexMeta( IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 0, 0 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR ),
+        return new CapableIndexDescriptor( IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 0, 0 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR ),
                 IndexCapability.NO_CAPABILITY );
     }
 

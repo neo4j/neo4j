@@ -79,8 +79,8 @@ public class FailedIndexProxyTest
         );
     }
 
-    private IndexMeta indexMeta( IndexDescriptor descriptor )
+    private CapableIndexDescriptor indexMeta( IndexDescriptor descriptor )
     {
-        return new IndexMeta( descriptor, indexCapability );
+        return new CapableIndexDescriptor( descriptor, indexCapability );
     }
 }
