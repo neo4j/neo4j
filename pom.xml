@@ -929,9 +929,20 @@
         <jdk>9</jdk>
       </activation>
       <properties>
-        <java9.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-modules java.xml.bind</java9.exports>
+        <!--
+        Compiling on Java 9+ with IntelliJ IDEA.
+
+        Open Preferences and go to "Build, Execution, Deployment" -> "Compiler" -> "Java Compiler", and make these changes:
+
+        * Uncheck the "Use '––release' …" flag.
+        * Copy the "java9.exports" property value to the "Additional command line parameters:" text field.
+
+        Lastly, make sure that you have a Java 9+ Project SDK set for the Project.
+        -->
+        <java9.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=jdk.unsupported/sun.misc=ALL-UNNAMED --add-modules java.xml.bind</java9.exports>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <scala.java9.arg>-nobootcp</scala.java9.arg>
+        <maven.compiler.target>9</maven.compiler.target>
       </properties>
     </profile>
 
