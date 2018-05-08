@@ -64,11 +64,13 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
     private final DefaultCursors pool;
+    private final boolean txStateAware;
 
-    DefaultPropertyCursor( DefaultCursors pool )
+    DefaultPropertyCursor( DefaultCursors pool, boolean txStateAware )
     {
         super( NO_ID );
         this.pool = pool;
+        this.txStateAware = txStateAware;
     }
 
     void initNode( long nodeReference, long reference, RecordStorageReader read )
@@ -78,7 +80,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         init( reference, read );
 
         // Transaction state
-        if ( read.hasTxStateWithChanges() )
+        if ( txStateAware && read.hasTxStateWithChanges() )
         {
             this.propertiesState = read.txState().getNodeState( nodeReference );
             this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
@@ -92,7 +94,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         init( reference, read );
 
         // Transaction state
-        if ( read.hasTxStateWithChanges() )
+        if ( txStateAware && read.hasTxStateWithChanges() )
         {
             this.propertiesState = read.txState().getRelationshipState( relationshipReference );
             this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
@@ -104,7 +106,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         init( reference, read );
 
         // Transaction state
-        if ( read.hasTxStateWithChanges() )
+        if ( txStateAware && read.hasTxStateWithChanges() )
         {
             this.propertiesState = read.txState().getGraphState( );
             if ( this.propertiesState != null )
@@ -234,7 +236,10 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
             read = null;
             clear();
 
-            pool.accept( this );
+            if ( pool != null )
+            {
+                pool.accept( this );
+            }
         }
     }
 

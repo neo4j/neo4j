@@ -48,6 +48,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     private RecordStorageReader read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
     private final DefaultCursors pool;
+    private final boolean txStateAware;
 
     private BufferedGroup bufferedGroup;
     private PageCursor page;
@@ -56,10 +57,11 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     private final MutableIntSet txTypes = new IntHashSet();
     private IntIterator txTypeIterator;
 
-    DefaultRelationshipGroupCursor( DefaultCursors pool )
+    DefaultRelationshipGroupCursor( DefaultCursors pool, boolean txStateAware )
     {
         super( NO_ID );
         this.pool = pool;
+        this.txStateAware = txStateAware;
     }
 
     void buffer( long nodeReference, long relationshipReference, RecordStorageReader read )
@@ -221,7 +223,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
      */
     private void checkTxStateForUpdates()
     {
-        if ( read.hasTxStateWithChanges() )
+        if ( txStateAware && read.hasTxStateWithChanges() )
         {
             NodeState nodeState = read.txState().getNodeState( getOwningNode() );
             LongIterator addedRelationships = nodeState.getAddedRelationships();
@@ -270,9 +272,14 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         {
             count = count( outgoingRawId() );
         }
-        return read.hasTxStateWithChanges()
-               ? read.txState().getNodeState( getOwningNode() )
-                       .augmentDegree( RelationshipDirection.OUTGOING, count, getType() ) : count;
+        return augmentDegreeWithTxState( count, RelationshipDirection.OUTGOING );
+    }
+
+    private int augmentDegreeWithTxState( int count, RelationshipDirection direction )
+    {
+        return txStateAware && read.hasTxStateWithChanges()
+               ? read.txState().getNodeState( getOwningNode() ).augmentDegree( direction, count, getType() )
+               : count;
     }
 
     @Override
@@ -288,9 +295,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         {
             count = count( incomingRawId() );
         }
-        return read.hasTxStateWithChanges()
-               ? read.txState().getNodeState( getOwningNode() )
-                       .augmentDegree( RelationshipDirection.INCOMING, count, getType() ) : count;
+        return augmentDegreeWithTxState( count, RelationshipDirection.INCOMING );
     }
 
     @Override
@@ -306,9 +311,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
             count = count( loopsRawId() );
         }
 
-        return read.hasTxStateWithChanges()
-               ? read.txState().getNodeState( getOwningNode() )
-                       .augmentDegree( RelationshipDirection.LOOP, count, getType() ) : count;
+        return augmentDegreeWithTxState( count, RelationshipDirection.LOOP );
 
     }
 
@@ -322,7 +325,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         {
             edgePage = read.relationshipPage( reference );
         }
-        read.relationship( edge, reference, edgePage );
+        read.relationshipFull( edge, reference, edgePage );
         if ( edge.getFirstNode() == getOwningNode() )
         {
             return (int) edge.getFirstPrevRel();

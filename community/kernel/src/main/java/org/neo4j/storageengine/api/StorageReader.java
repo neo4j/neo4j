@@ -33,7 +33,12 @@ import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -93,16 +98,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      */
     @Override
     void close();
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
-     * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
-     * to place the cursor over the first item and then more calls to move the cursor through the selection.
-     *
-     * @param nodeId id of node to get cursor for.
-     * @return a {@link Cursor} over {@link NodeItem} for the given {@code nodeId}.
-     */
-    Cursor<NodeItem> acquireSingleNodeCursor( long nodeId );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
@@ -528,4 +523,20 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
     int degreeRelationshipsInGroup( long id, long groupId, Direction direction, Integer relType );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
+
+    /*
+     * Allocates cursors which are transaction-state-unaware
+     *
+     * Reading from storage in combination with transaction-state is a bit entangle now, since the introduction of the new kernel API,
+     * where transaction-state awareness happens inside the actual cursors. The current approach is to disable transaction-state
+     * awareness per cursor so that those few places that need reading only from storage will allocate cursors using the methods below.
+     */
+
+    NodeCursor allocateNodeCursorCommitted();
+
+    PropertyCursor allocatePropertyCursorCommitted();
+
+    RelationshipScanCursor allocateRelationshipScanCursorCommitted();
+
+    RelationshipGroupCursor allocateRelationshipGroupCursorCommitted();
 }

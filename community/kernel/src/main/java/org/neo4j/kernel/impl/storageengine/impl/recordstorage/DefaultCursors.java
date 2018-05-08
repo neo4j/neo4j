@@ -51,7 +51,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( nodeCursor == null )
         {
-            return trace( new DefaultNodeCursor( this ) );
+            return trace( new DefaultNodeCursor( this, true ) );
         }
 
         try
@@ -78,7 +78,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipScanCursor == null )
         {
-            return trace( new DefaultRelationshipScanCursor( this ) );
+            return trace( new DefaultRelationshipScanCursor( this, true ) );
         }
 
         try
@@ -105,7 +105,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipTraversalCursor == null )
         {
-            return trace( new DefaultRelationshipTraversalCursor( new DefaultRelationshipGroupCursor( null ), this ) );
+            return trace( new DefaultRelationshipTraversalCursor( new DefaultRelationshipGroupCursor( null, true ), this ) );
         }
 
         try
@@ -132,7 +132,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( propertyCursor == null )
         {
-            return trace( new DefaultPropertyCursor( this ) );
+            return trace( new DefaultPropertyCursor( this, true ) );
         }
 
         try
@@ -159,7 +159,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipGroupCursor == null )
         {
-            return trace( new DefaultRelationshipGroupCursor( this ) );
+            return trace( new DefaultRelationshipGroupCursor( this, true ) );
         }
 
         try
@@ -267,7 +267,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipExplicitIndexCursor == null )
         {
-            return trace( new DefaultRelationshipExplicitIndexCursor( new DefaultRelationshipScanCursor( null ), this ) );
+            return trace( new DefaultRelationshipExplicitIndexCursor( new DefaultRelationshipScanCursor( null, true ), this ) );
         }
 
         try

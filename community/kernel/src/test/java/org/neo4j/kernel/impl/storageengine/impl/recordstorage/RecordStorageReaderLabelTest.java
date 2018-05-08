@@ -20,15 +20,20 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.helpers.Nodes;
 
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
@@ -57,8 +62,10 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         }
 
         // THEN
-        storageReader.acquireSingleNodeCursor( nodeId ).forAll(
-                node -> assertEquals( newSetWith( labelId1, labelId2 ), node.labels() ) );
+        NodeCursor nodeCursor = storageReader.allocateNodeCursor();
+        storageReader.singleNode( nodeId, nodeCursor );
+        assertTrue( nodeCursor.next() );
+        assertEquals( newSetWith( labelId1, labelId2 ), asLongSet( nodeCursor.labels() ) );
     }
 
     @Test
@@ -101,5 +108,12 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         // THEN
         assertEquals( asSet( node1.getId(), node2.getId() ), PrimitiveLongCollections.toSet( nodesForLabel1 ) );
         assertEquals( asSet( node2.getId() ), PrimitiveLongCollections.toSet( nodesForLabel2 ) );
+    }
+
+    private LongHashSet asLongSet( LabelSet labels )
+    {
+        LongHashSet set = newSetWith();
+        Nodes.visitLabels( labels, set::add );
+        return set;
     }
 }

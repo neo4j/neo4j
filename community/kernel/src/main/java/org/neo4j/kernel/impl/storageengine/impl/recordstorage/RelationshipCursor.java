@@ -30,10 +30,12 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     RecordStorageReader read;
     private boolean hasChanges;
     private boolean checkHasChanges;
+    private final boolean txStateAware;
 
-    RelationshipCursor()
+    RelationshipCursor( boolean txStateAware )
     {
         super( NO_ID );
+        this.txStateAware = txStateAware;
     }
 
     protected void init( RecordStorageReader read )
@@ -106,7 +108,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     {
         if ( checkHasChanges )
         {
-            hasChanges = read.hasTxStateWithChanges();
+            hasChanges = txStateAware && read.hasTxStateWithChanges();
             if ( hasChanges )
             {
                 collectAddedTxStateSnapshot();

@@ -175,7 +175,6 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
     private final SchemaCache schemaCache;
 
     // State from the old StoreStatement
-    private final InstanceCache<StoreSingleNodeCursor> singleNodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
@@ -192,7 +191,7 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
 
     private boolean acquired;
     private boolean closed;
-    private TransactionalDependencies transactionalDependencies;
+    private TransactionalDependencies transactionalDependencies = TransactionalDependencies.EMPTY;
     private DefaultNodeValueIndexCursor nodeValueIndexCursorForUniquenessCheck;
 
     RecordStorageReader( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
@@ -220,14 +219,6 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
         this.commandCreationContext = commandCreationContext;
 
         this.recordCursors = new RecordCursors( neoStores );
-        this.singleNodeCursor = new InstanceCache<StoreSingleNodeCursor>()
-        {
-            @Override
-            protected StoreSingleNodeCursor create()
-            {
-                return new StoreSingleNodeCursor( nodeStore.newRecord(), this, recordCursors, lockService );
-            }
-        };
         this.singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
         {
             @Override
@@ -864,13 +855,6 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
         assert !closed;
         assert !acquired;
         this.acquired = true;
-    }
-
-    @Override
-    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId )
-    {
-        neoStores.assertOpen();
-        return singleNodeCursor.get().init( nodeId );
     }
 
     @Override
@@ -1659,5 +1643,29 @@ class RecordStorageReader extends DefaultCursors implements StorageReader, TxSta
     public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName )
     {
         throw new UnsupportedOperationException( "Implemented on a higher level instead" );
+    }
+
+    @Override
+    public NodeCursor allocateNodeCursorCommitted()
+    {
+        return new DefaultNodeCursor( null, false );
+    }
+
+    @Override
+    public PropertyCursor allocatePropertyCursorCommitted()
+    {
+        return new DefaultPropertyCursor( null, false );
+    }
+
+    @Override
+    public RelationshipScanCursor allocateRelationshipScanCursorCommitted()
+    {
+        return new DefaultRelationshipScanCursor( null, false );
+    }
+
+    @Override
+    public DefaultRelationshipGroupCursor allocateRelationshipGroupCursorCommitted()
+    {
+        return new DefaultRelationshipGroupCursor( null, false );
     }
 }

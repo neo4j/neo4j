@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.Arrays;
@@ -30,7 +29,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.values.storable.Value;
@@ -45,98 +43,6 @@ public class StubCursors
 {
     private StubCursors()
     {
-    }
-
-    public static Cursor<NodeItem> asNodeCursor( long... nodeIds )
-    {
-        NodeItem[] nodeItems = new NodeItem[nodeIds.length];
-        for ( int i = 0; i < nodeIds.length; i++ )
-        {
-            nodeItems[i] = new StubNodeItem( nodeIds[i], -1, LongSets.mutable.empty() );
-        }
-        return cursor( nodeItems );
-    }
-
-    public static Cursor<NodeItem> asNodeCursor( long nodeId )
-    {
-        return asNodeCursor( nodeId, -1 );
-    }
-
-    public static Cursor<NodeItem> asNodeCursor( long nodeId, long propertyId )
-    {
-        return asNodeCursor( nodeId, propertyId, LongSets.mutable.empty() );
-    }
-
-    public static Cursor<NodeItem> asNodeCursor( long nodeId, MutableLongSet labels )
-    {
-        return cursor( new StubNodeItem( nodeId, -1, labels ) );
-    }
-
-    public static Cursor<NodeItem> asNodeCursor( long nodeId, long propertyId, MutableLongSet labels )
-    {
-        return cursor( new StubNodeItem( nodeId, propertyId, labels ) );
-    }
-
-    private static class StubNodeItem implements NodeItem
-    {
-        private final long nodeId;
-        private final long propertyId;
-        private final MutableLongSet labels;
-
-        private StubNodeItem( long nodeId, long propertyId, MutableLongSet labels )
-        {
-            this.nodeId = nodeId;
-            this.propertyId = propertyId;
-            this.labels = labels;
-        }
-
-        @Override
-        public long id()
-        {
-            return nodeId;
-        }
-
-        @Override
-        public boolean hasLabel( long labelId )
-        {
-            return labels.contains( labelId );
-        }
-
-        @Override
-        public long nextGroupId()
-        {
-            throw new UnsupportedOperationException( "not supported" );
-        }
-
-        @Override
-        public long nextRelationshipId()
-        {
-            throw new UnsupportedOperationException( "not supported" );
-        }
-
-        @Override
-        public long nextPropertyId()
-        {
-            return propertyId;
-        }
-
-        @Override
-        public Lock lock()
-        {
-            return NO_LOCK;
-        }
-
-        @Override
-        public MutableLongSet labels()
-        {
-            return labels;
-        }
-
-        @Override
-        public boolean isDense()
-        {
-            throw new UnsupportedOperationException(  );
-        }
     }
 
     public static RelationshipItem relationship( long id, int type, long start, long end )

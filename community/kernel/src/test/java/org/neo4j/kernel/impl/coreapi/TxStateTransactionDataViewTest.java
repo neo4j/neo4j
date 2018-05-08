@@ -30,6 +30,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
+import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
+import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -45,7 +47,6 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -54,19 +55,16 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asRelationshipCursor;
-import static org.neo4j.kernel.impl.api.state.StubCursors.labels;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class TxStateTransactionDataViewTest
 {
@@ -74,13 +72,20 @@ public class TxStateTransactionDataViewTest
     private final Statement stmt = mock( Statement.class );
     private final StorageReader ops = mock( StorageReader.class );
     private final KernelTransaction transaction = mock( KernelTransaction.class );
-
     private final TransactionState state = new TxState();
+
+    private StubNodeCursor nodeCursor;
+    private StubPropertyCursor propertyCursor;
 
     @Before
     public void setup()
     {
         when( bridge.get() ).thenReturn( stmt );
+
+        nodeCursor = new StubNodeCursor();
+        when( ops.allocateNodeCursorCommitted() ).thenReturn( nodeCursor );
+        propertyCursor = new StubPropertyCursor();
+        when( ops.allocatePropertyCursorCommitted() ).thenReturn( propertyCursor );
     }
 
     @Test
@@ -100,15 +105,8 @@ public class TxStateTransactionDataViewTest
         // Given
         state.nodeDoDelete( 1L );
         state.nodeDoDelete( 2L );
-
-        when( ops.acquireSingleNodeCursor( 2L ) ).thenReturn( asNodeCursor( 2L, 20L, labels( 15 ) ) );
-
-        when( ops.acquirePropertyCursor( eq( 20L ), any( Lock.class ), any( AssertOpen.class ) ) )
-                .thenReturn( asPropertyCursor( new PropertyKeyValue( 1, Values.of( "p" ) ) ) );
-
-        when( ops.acquireSingleNodeCursor( 1L ) ).thenReturn( asNodeCursor( 1L, 21L, labels() ) );
-        when( ops.acquirePropertyCursor( eq( 21L ), any( Lock.class ), any( AssertOpen.class ) ) )
-                .thenReturn( asPropertyCursor() );
+        nodeCursor.withNode( 1, new long[0] );
+        nodeCursor.withNode( 2, new long[]{15}, genericMap( 1, stringValue( "p" ) ) );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
         when( ops.labelGetName( 15 ) ).thenReturn( "label" );
@@ -164,9 +162,7 @@ public class TxStateTransactionDataViewTest
         state.nodeDoDelete( 1L );
         Node node = mock( Node.class );
         when( node.getId() ).thenReturn( 1L );
-        when( ops.acquireSingleNodeCursor( 1 ) ).thenReturn( asNodeCursor( 1, -1 ) );
-        when( ops.acquirePropertyCursor( -1, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor() );
+        nodeCursor.withNode( 1 );
 
         // When & Then
         assertThat( snapshot().isDeleted( node ), equalTo( true ) );
@@ -199,11 +195,7 @@ public class TxStateTransactionDataViewTest
         state.nodeDoChangeProperty( 1L, propertyKeyId, Values.of( "newValue" ) );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
-        when( ops.acquireSingleNodeCursor( 1L ) ).thenReturn(
-                asNodeCursor( 1L, propertyId, labels() ) );
-        when( ops
-                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, prevValue ) ) );
+        nodeCursor.withNode( 1, new long[0], genericMap( propertyKeyId, prevValue ) );
 
         // When
         Iterable<PropertyEntry<Node>> propertyEntries = snapshot().assignedNodeProperties();
@@ -225,11 +217,7 @@ public class TxStateTransactionDataViewTest
         state.nodeDoRemoveProperty( 1L, propertyKeyId );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
-        when( ops.acquireSingleNodeCursor( 1L ) ).thenReturn(
-                asNodeCursor( 1L, propertyId, labels() ) );
-        when( ops
-                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, prevValue ) ) );
+        nodeCursor.withNode( 1, new long[0], genericMap( propertyKeyId, prevValue ) );
 
         // When
         Iterable<PropertyEntry<Node>> propertyEntries = snapshot().removedNodeProperties();
@@ -299,7 +287,7 @@ public class TxStateTransactionDataViewTest
         // Given
         state.nodeDoAddLabel( 2, 1L );
         when( ops.labelGetName( 2 ) ).thenReturn( "theLabel" );
-        when( ops.acquireSingleNodeCursor( 1 ) ).thenReturn( asNodeCursor( 1 ) );
+        nodeCursor.withNode( 1 );
 
         // When
         Iterable<LabelEntry> labelEntries = snapshot().assignedLabels();

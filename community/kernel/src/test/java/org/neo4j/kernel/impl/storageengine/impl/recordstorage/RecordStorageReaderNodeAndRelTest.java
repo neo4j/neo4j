@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.junit.Assert.assertFalse;
@@ -88,9 +88,10 @@ public class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBa
 
     private boolean nodeExists( long id )
     {
-        try ( Cursor<NodeItem> node = storageReader.acquireSingleNodeCursor( id ) )
+        try ( NodeCursor nodeCursor = storageReader.allocateNodeCursor() )
         {
-            return node.next();
+            storageReader.singleNode( id, nodeCursor );
+            return nodeCursor.next();
         }
     }
 
