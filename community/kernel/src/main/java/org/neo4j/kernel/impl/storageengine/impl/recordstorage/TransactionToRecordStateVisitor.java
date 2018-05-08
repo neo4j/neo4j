@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -164,7 +164,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedIndex( PendingIndexDescriptor index )
+    public void visitAddedIndex( IndexDescriptor index )
     {
         IndexProvider.Descriptor providerDescriptor =
                 indexProviderMap.getDefaultProvider().getProviderDescriptor();
@@ -173,7 +173,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitRemovedIndex( PendingIndexDescriptor index )
+    public void visitRemovedIndex( IndexDescriptor index )
     {
         StoreIndexDescriptor rule = schemaStorage.indexGetForSchema( index );
         if ( rule != null )

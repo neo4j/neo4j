@@ -71,7 +71,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -599,7 +599,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return new BaseNodeConstraintCreator( new BatchSchemaActions(), label );
     }
 
-    private void createUniqueIndexAndOwningConstraint( PendingIndexDescriptor schemaIndexDescriptor,
+    private void createUniqueIndexAndOwningConstraint( IndexDescriptor schemaIndexDescriptor,
             IndexBackedConstraintDescriptor constraintDescriptor )
     {
         // TODO: Do not create duplicate index
@@ -1305,10 +1305,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         private static final int batchSize = 1_000;
         private final IndexPopulator populator;
-        private final PendingIndexDescriptor index;
+        private final IndexDescriptor index;
         private Collection<IndexEntryUpdate<?>> batchedUpdates = new ArrayList<>( batchSize );
 
-        IndexPopulatorWithSchema( IndexPopulator populator, PendingIndexDescriptor index )
+        IndexPopulatorWithSchema( IndexPopulator populator, IndexDescriptor index )
         {
             this.populator = populator;
             this.index = index;
@@ -1320,7 +1320,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return index.schema();
         }
 
-        public PendingIndexDescriptor index()
+        public IndexDescriptor index()
         {
             return index;
         }

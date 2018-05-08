@@ -43,7 +43,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -56,7 +56,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
 
 @RunWith( Parameterized.class )
@@ -73,7 +73,7 @@ public class CompositeIndexingIT
     @Rule
     public Timeout globalTimeout = Timeout.seconds( 200 );
 
-    private final PendingIndexDescriptor index;
+    private final IndexDescriptor index;
     private GraphDatabaseAPI graphDatabaseAPI;
 
     @Before
@@ -146,7 +146,7 @@ public class CompositeIndexingIT
         );
     }
 
-    public CompositeIndexingIT( PendingIndexDescriptor nodeDescriptor )
+    public CompositeIndexingIT( IndexDescriptor nodeDescriptor )
     {
         this.index = nodeDescriptor;
     }

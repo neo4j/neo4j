@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor => CypherIndexDescriptor}
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, PendingIndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
 
 trait IndexDescriptorCompatibility {
   def cypherToKernel(index: CypherIndexDescriptor): KernelIndexDescriptor =

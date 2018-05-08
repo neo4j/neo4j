@@ -32,7 +32,7 @@ import java.util.UUID;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.TestDirectory;
@@ -49,7 +49,7 @@ public class LuceneSchemaIndexTest
 
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private SchemaIndex index;
-    private final PendingIndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 3, 5 );
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 3, 5 );
 
     @After
     public void closeIndex() throws Exception

@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.StringJoiner;
 
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -44,7 +44,7 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void recoveryCompleted( PendingIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
+    public void recoveryCompleted( IndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
     {
         StringJoiner joiner = new StringJoiner( ", ", "Schema index recovery completed: ", "" );
         joiner.add( "descriptor=" + schemaIndexDescriptor );

@@ -25,7 +25,7 @@ import java.util.Set;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
@@ -47,7 +47,7 @@ class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Nativ
     }
 
     @Override
-    IndexEntryUpdate<PendingIndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return delegate.someUpdatesNoDuplicateValues();
     }
@@ -71,13 +71,13 @@ class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Nativ
     }
 
     @Override
-    IndexEntryUpdate<PendingIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return delegate.someUpdatesNoDuplicateValues();
     }
 
     @Override
-    IndexEntryUpdate<PendingIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         return delegate.someUpdatesWithDuplicateValues();
     }

@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
@@ -133,7 +133,7 @@ public class SchemaRuleSerialization
         UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
         UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
 
-        PendingIndexDescriptor schemaIndexDescriptor = indexRule;
+        IndexDescriptor schemaIndexDescriptor = indexRule;
         switch ( schemaIndexDescriptor.type() )
         {
         case GENERAL:
@@ -211,8 +211,8 @@ public class SchemaRuleSerialization
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
 
         length += 1; // index type
-        PendingIndexDescriptor schemaIndexDescriptor = indexRule;
-        if ( schemaIndexDescriptor.type() == PendingIndexDescriptor.Type.UNIQUE )
+        IndexDescriptor schemaIndexDescriptor = indexRule;
+        if ( schemaIndexDescriptor.type() == IndexDescriptor.Type.UNIQUE )
         {
             length += 8; // owning constraint id
         }
@@ -264,7 +264,7 @@ public class SchemaRuleSerialization
         case UNIQUE_INDEX:
             long owningConstraint = source.getLong();
             schema = readLabelSchema( source );
-            PendingIndexDescriptor descriptor = IndexDescriptorFactory.uniqueForSchema( schema );
+            IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForSchema( schema );
             name = readRuleName( source );
             return StoreIndexDescriptor.constraintIndexRule( id, descriptor, indexProvider,
                     owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );

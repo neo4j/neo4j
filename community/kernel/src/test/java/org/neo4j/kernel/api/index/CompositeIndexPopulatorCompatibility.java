@@ -29,7 +29,7 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -50,7 +50,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
     public CompositeIndexPopulatorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, PendingIndexDescriptor descriptor )
+            IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }

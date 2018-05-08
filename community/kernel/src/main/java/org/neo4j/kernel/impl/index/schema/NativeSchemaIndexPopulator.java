@@ -54,8 +54,8 @@ import org.neo4j.util.concurrent.Work;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.

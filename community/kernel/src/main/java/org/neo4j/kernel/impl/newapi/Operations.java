@@ -78,7 +78,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -100,7 +100,7 @@ import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelExcept
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
-import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
@@ -416,7 +416,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
         {
-            PendingIndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
+            IndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( schemaIndexDescriptor );
             int labelId = schemaIndexDescriptor.schema().keyId();
 
@@ -441,7 +441,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void assertIndexOnline( PendingIndexDescriptor descriptor )
+    private void assertIndexOnline( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         switch ( allStoreHolder.indexGetState( descriptor ) )
@@ -890,7 +890,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
 
         IndexProvider.Descriptor providerDescriptor = ktx.indexProviderForOrDefault( provider );
-        PendingIndexDescriptor index =
+        IndexDescriptor index =
                 IndexDescriptorFactory.forSchema( descriptor,
                                                   name,
                                                   providerDescriptor );
@@ -908,7 +908,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor = labelDescriptor( index );
         try
         {
-            PendingIndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
+            IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
 
             if ( existingIndex == null )
             {
@@ -1067,7 +1067,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context,
             SchemaDescriptor descriptor ) throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        PendingIndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
+        IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
         if ( existingIndex != null )
         {
             // OK so we found a matching constraint index. We check whether or not it has an owner
@@ -1156,7 +1156,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private boolean constraintIndexHasOwner( PendingIndexDescriptor descriptor )
+    private boolean constraintIndexHasOwner( IndexDescriptor descriptor )
     {
         return allStoreHolder.indexGetOwningUniquenessConstraintId( descriptor ) != null;
     }

@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -67,7 +67,7 @@ import static org.neo4j.values.storable.TimeValue.time;
 public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     public SimpleIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite,
-            PendingIndexDescriptor descriptor )
+            IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }

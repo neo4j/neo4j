@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
@@ -63,7 +63,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public void initialize( PendingIndexDescriptor descriptor, IndexProgressor progressor,
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
                             IndexQuery[] query )
     {
         assert query != null && query.length > 0;
@@ -235,7 +235,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void prefixQuery( PendingIndexDescriptor descriptor, IndexQuery.StringPrefixPredicate predicate )
+    private void prefixQuery( IndexDescriptor descriptor, IndexQuery.StringPrefixPredicate predicate )
     {
         needsValues = true;
         if ( read.hasTxStateWithChanges() )
@@ -248,7 +248,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void rangeQuery( PendingIndexDescriptor descriptor, IndexQuery.RangePredicate<?> predicate )
+    private void rangeQuery( IndexDescriptor descriptor, IndexQuery.RangePredicate<?> predicate )
     {
         ValueGroup valueGroup = predicate.valueGroup();
         ValueCategory category = valueGroup.category();
@@ -265,7 +265,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void scanQuery( PendingIndexDescriptor descriptor )
+    private void scanQuery( IndexDescriptor descriptor )
     {
         needsValues = true;
         if ( read.hasTxStateWithChanges() )
@@ -277,7 +277,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void suffixOrContainsQuery( PendingIndexDescriptor descriptor, IndexQuery query )
+    private void suffixOrContainsQuery( IndexDescriptor descriptor, IndexQuery query )
     {
         needsValues = true;
         if ( read.hasTxStateWithChanges() )
@@ -289,7 +289,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void seekQuery( PendingIndexDescriptor descriptor, IndexQuery[] query )
+    private void seekQuery( IndexDescriptor descriptor, IndexQuery[] query )
     {
         needsValues = false;
         IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( query );

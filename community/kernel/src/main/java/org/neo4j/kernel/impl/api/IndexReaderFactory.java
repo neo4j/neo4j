@@ -23,22 +23,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 public interface IndexReaderFactory
 {
-    IndexReader newReader( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexReader newReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    IndexReader newUnCachedReader( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexReader newUnCachedReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     void close();
 
     class Caching implements IndexReaderFactory
     {
-        private Map<PendingIndexDescriptor,IndexReader> indexReaders;
+        private Map<IndexDescriptor,IndexReader> indexReaders;
         private final IndexingService indexingService;
 
         public Caching( IndexingService indexingService )
@@ -47,7 +47,7 @@ public interface IndexReaderFactory
         }
 
         @Override
-        public IndexReader newReader( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexReader newReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             if ( indexReaders == null )
             {
@@ -64,7 +64,7 @@ public interface IndexReaderFactory
         }
 
         @Override
-        public IndexReader newUnCachedReader( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexReader newUnCachedReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             IndexProxy index = indexingService.getIndexProxy( descriptor.schema() );
             return index.newReader();

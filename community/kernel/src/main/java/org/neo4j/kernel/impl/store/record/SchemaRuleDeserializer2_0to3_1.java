@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule.Kind;
@@ -96,9 +96,9 @@ public class SchemaRuleDeserializer2_0to3_1
     {
         IndexProvider.Descriptor providerDescriptor = readIndexProviderDescriptor( serialized );
         int[] propertyKeyIds = readIndexPropertyKeys( serialized );
-        PendingIndexDescriptor descriptor = constraintIndex ?
-                                            IndexDescriptorFactory.uniqueForLabel( label, propertyKeyIds ) :
-                                            IndexDescriptorFactory.forLabel( label, propertyKeyIds );
+        IndexDescriptor descriptor = constraintIndex ?
+                                     IndexDescriptorFactory.uniqueForLabel( label, propertyKeyIds ) :
+                                     IndexDescriptorFactory.forLabel( label, propertyKeyIds );
         long owningConstraint = constraintIndex ? readOwningConstraint( serialized ) : NO_OWNING_CONSTRAINT;
         return StoreIndexDescriptor.constraintIndexRule( id, descriptor, providerDescriptor, owningConstraint );
     }

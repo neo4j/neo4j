@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -73,7 +73,7 @@ public class DumpCountsStoreTest
     private static final String INDEX_PROPERTY = "indexProperty";
 
     private static final long indexId = 0;
-    private static final PendingIndexDescriptor descriptor =
+    private static final IndexDescriptor descriptor =
             IndexDescriptorFactory.forLabel( INDEX_LABEL_ID, INDEX_PROPERTY_KEY_ID );
 
     @Rule

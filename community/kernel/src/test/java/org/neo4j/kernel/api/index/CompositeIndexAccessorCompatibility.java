@@ -23,7 +23,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -44,7 +44,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     public CompositeIndexAccessorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, PendingIndexDescriptor descriptor )
+            IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }

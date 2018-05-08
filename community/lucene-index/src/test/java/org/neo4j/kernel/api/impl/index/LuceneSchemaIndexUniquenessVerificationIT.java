@@ -47,7 +47,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.TestDirectory;
@@ -65,7 +65,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
 {
     private static final int DOCS_PER_PARTITION = ThreadLocalRandom.current().nextInt( 10, 100 );
     private static final int PROPERTY_KEY_ID = 42;
-    private static final PendingIndexDescriptor descriptor = IndexDescriptorFactory
+    private static final IndexDescriptor descriptor = IndexDescriptorFactory
             .uniqueForLabel( 0, PROPERTY_KEY_ID );
 
     @Rule

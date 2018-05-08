@@ -67,7 +67,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -150,7 +150,7 @@ public class IndexingServiceTest
     private final SchemaState schemaState = mock( SchemaState.class );
     private final int labelId = 7;
     private final int propertyKeyId = 15;
-    private final PendingIndexDescriptor index = IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+    private final IndexDescriptor index = IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
     private final IndexPopulator populator = mock( IndexPopulator.class );
     private final IndexUpdater updater = mock( IndexUpdater.class );
     private final IndexProvider indexProvider = mock( IndexProvider.class );
@@ -571,7 +571,7 @@ public class IndexingServiceTest
         // given
         long indexId = 0;
         IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
-        PendingIndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 1 );
+        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 1 );
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
                                                                                     StoreIndexDescriptor
                                                                                             .indexRule( indexId, descriptor, PROVIDER_DESCRIPTOR ) );
@@ -797,7 +797,7 @@ public class IndexingServiceTest
         IndexingService.Monitor monitor = new IndexingService.MonitorAdapter()
         {
             @Override
-            public void awaitingPopulationOfRecoveredIndex( long index, PendingIndexDescriptor descriptor )
+            public void awaitingPopulationOfRecoveredIndex( long index, IndexDescriptor descriptor )
             {
                 // When we see that we start to await the index to populate, notify the slow-as-heck
                 // populator that it can actually go and complete its job.

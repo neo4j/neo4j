@@ -29,7 +29,7 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.IndexQuery;
 
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
@@ -152,7 +152,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Override
-    public void initialize( PendingIndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
     {
         events.add( new Event.Initialize( progressor, descriptor.schema().getPropertyIds() ) );
     }

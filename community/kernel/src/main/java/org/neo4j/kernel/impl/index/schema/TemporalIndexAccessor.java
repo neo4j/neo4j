@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -50,7 +50,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.PartAccessor<?>> implements IndexAccessor
 {
-    private final PendingIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
 
     TemporalIndexAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, PageCache pageCache, FileSystemAbstraction fs,
                            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, TemporalIndexFiles temporalIndexFiles ) throws IOException
@@ -168,7 +168,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     static class PartAccessor<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexAccessor<KEY, NativeSchemaValue>
     {
         private final Layout<KEY,NativeSchemaValue> layout;
-        private final PendingIndexDescriptor descriptor;
+        private final IndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
 
         PartAccessor( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,

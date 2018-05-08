@@ -56,7 +56,7 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.ClockContext;
@@ -242,9 +242,9 @@ public class AllStoreHolder extends Read
     @Override
     IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
     {
-        PendingIndexDescriptor schemaIndexDescriptor = index.isUnique() ?
-                                                       IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
-                                                       IndexDescriptorFactory.forLabel( index.label(), index.properties() );
+        IndexDescriptor schemaIndexDescriptor = index.isUnique() ?
+                                                IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
+                                                IndexDescriptorFactory.forLabel( index.label(), index.properties() );
         return fresh ? storageReader.getFreshIndexReader( schemaIndexDescriptor ) :
                storageReader.getIndexReader( schemaIndexDescriptor );
     }
@@ -331,7 +331,7 @@ public class AllStoreHolder extends Read
         CapableIndexDescriptor indexDescriptor = storageReader.indexGetForSchema( descriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<PendingIndexDescriptor> diffSets = ktx.txState().indexDiffSetsByLabel( label );
+            ReadableDiffSets<IndexDescriptor> diffSets = ktx.txState().indexDiffSetsByLabel( label );
             if ( indexDescriptor != null )
             {
                 if ( diffSets.isRemoved( indexDescriptor ) )
@@ -345,7 +345,7 @@ public class AllStoreHolder extends Read
             }
             else
             {
-                Iterator<PendingIndexDescriptor> fromTxState =
+                Iterator<IndexDescriptor> fromTxState =
                         filter( SchemaDescriptor.equalTo( descriptor ), diffSets.getAdded().iterator() );
                 if ( fromTxState.hasNext() )
                 {
@@ -367,7 +367,7 @@ public class AllStoreHolder extends Read
         sharedOptimisticLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
 
-        Iterator<? extends PendingIndexDescriptor> iterator = storageReader.indexesGetForLabel( labelId );
+        Iterator<? extends IndexDescriptor> iterator = storageReader.indexesGetForLabel( labelId );
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
@@ -380,7 +380,7 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        Iterator<? extends PendingIndexDescriptor> iterator = storageReader.indexesGetAll();
+        Iterator<? extends IndexDescriptor> iterator = storageReader.indexesGetAll();
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexChanges().apply( storageReader.indexesGetAll() );
@@ -408,7 +408,7 @@ public class AllStoreHolder extends Read
     {
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
-        PendingIndexDescriptor descriptor = indexDescriptor( index );
+        IndexDescriptor descriptor = indexDescriptor( index );
 
         if ( ktx.hasTxStateWithChanges() )
         {
@@ -438,7 +438,7 @@ public class AllStoreHolder extends Read
         return storageReader.indexGetCommittedId( indexDescriptor( index ) );
     }
 
-    PendingIndexDescriptor indexDescriptor( IndexReference index )
+    IndexDescriptor indexDescriptor( IndexReference index )
     {
         if ( index.isUnique() )
         {
@@ -516,7 +516,7 @@ public class AllStoreHolder extends Read
                 SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
     }
 
-    CapableIndexReference indexGetCapability( PendingIndexDescriptor schemaIndexDescriptor )
+    CapableIndexReference indexGetCapability( IndexDescriptor schemaIndexDescriptor )
     {
         try
         {
@@ -528,7 +528,7 @@ public class AllStoreHolder extends Read
         }
     }
 
-    InternalIndexState indexGetState( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
         if ( ktx.hasTxStateWithChanges() )
@@ -543,15 +543,15 @@ public class AllStoreHolder extends Read
         return storageReader.indexGetState( descriptor );
     }
 
-    Long indexGetOwningUniquenessConstraintId( PendingIndexDescriptor index )
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
         return storageReader.indexGetOwningUniquenessConstraintId( index );
     }
 
-    PendingIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
+    IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
-        PendingIndexDescriptor indexDescriptor = storageReader.indexGetForSchema( descriptor );
-        Iterator<PendingIndexDescriptor> rules = iterator( indexDescriptor );
+        IndexDescriptor indexDescriptor = storageReader.indexGetForSchema( descriptor );
+        Iterator<IndexDescriptor> rules = iterator( indexDescriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
             rules = filter(
@@ -561,7 +561,7 @@ public class AllStoreHolder extends Read
         return singleOrNull( rules );
     }
 
-    private boolean checkIndexState( PendingIndexDescriptor index, ReadableDiffSets<PendingIndexDescriptor> diffSet )
+    private boolean checkIndexState( IndexDescriptor index, ReadableDiffSets<IndexDescriptor> diffSet )
             throws IndexNotFoundKernelException
     {
         if ( diffSet.isAdded( index ) )
@@ -776,7 +776,7 @@ public class AllStoreHolder extends Read
         explicitIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
     }
 
-    String indexGetFailure( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return storageReader.indexGetFailure( descriptor.schema() );
     }

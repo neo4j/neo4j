@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 class NumberNonUniqueLayoutTestUtil extends NumberLayoutTestUtil
@@ -38,7 +38,7 @@ class NumberNonUniqueLayoutTestUtil extends NumberLayoutTestUtil
     }
 
     @Override
-    IndexEntryUpdate<PendingIndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
     }

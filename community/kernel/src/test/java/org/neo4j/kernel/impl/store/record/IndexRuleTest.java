@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.record;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -38,7 +38,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     public void shouldCreateGeneralIndex()
     {
         // GIVEN
-        PendingIndexDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_ID_1 );
+        IndexDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_ID_1 );
         StoreIndexDescriptor indexRule = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
 
         // THEN
@@ -55,7 +55,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     public void shouldCreateUniqueIndex()
     {
         // GIVEN
-        PendingIndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
+        IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
         StoreIndexDescriptor indexRule = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
 
         // THEN
@@ -83,13 +83,13 @@ public class IndexRuleTest extends SchemaRuleTestBase
     @Test
     public void detectUniqueIndexWithoutOwningConstraint()
     {
-        PendingIndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
+        IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
         StoreIndexDescriptor indexRule = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
 
         assertTrue( indexRule.isIndexWithoutOwningConstraint() );
     }
 
-    private void assertEqualityByDescriptor( PendingIndexDescriptor descriptor )
+    private void assertEqualityByDescriptor( IndexDescriptor descriptor )
     {
         StoreIndexDescriptor rule1 = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
         StoreIndexDescriptor rule2 = StoreIndexDescriptor.indexRule( RULE_ID_2, descriptor, PROVIDER_DESCRIPTOR_2 );

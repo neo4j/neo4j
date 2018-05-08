@@ -26,7 +26,7 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Values;
 
@@ -41,7 +41,7 @@ public abstract class NativeNonUniqueSchemaIndexPopulatorTest<KEY extends Native
     {
         // given
         populator.create();
-        IndexEntryUpdate<PendingIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
         populator.add( Arrays.asList( updates ) );
@@ -56,11 +56,11 @@ public abstract class NativeNonUniqueSchemaIndexPopulatorTest<KEY extends Native
     {
         // given
         populator.create();
-        IndexEntryUpdate<PendingIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
         try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
         {
             // when
-            for ( IndexEntryUpdate<PendingIndexDescriptor> update : updates )
+            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {
                 updater.process( update );
             }
@@ -76,9 +76,9 @@ public abstract class NativeNonUniqueSchemaIndexPopulatorTest<KEY extends Native
     {
         // GIVEN
         populator.create();
-        IndexEntryUpdate<PendingIndexDescriptor>[] scanUpdates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] scanUpdates = layoutUtil.someUpdates();
         populator.add( Arrays.asList( scanUpdates ) );
-        Iterator<IndexEntryUpdate<PendingIndexDescriptor>> generator = layoutUtil.randomUpdateGenerator( random );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> generator = layoutUtil.randomUpdateGenerator( random );
         Object[] updates = new Object[5];
         updates[0] = generator.next().values()[0].asObject();
         updates[1] = generator.next().values()[0].asObject();
@@ -90,7 +90,7 @@ public abstract class NativeNonUniqueSchemaIndexPopulatorTest<KEY extends Native
             long nodeId = 1000;
             for ( Object value : updates )
             {
-                IndexEntryUpdate<PendingIndexDescriptor> update = layoutUtil.add( nodeId++, Values.of( value ) );
+                IndexEntryUpdate<IndexDescriptor> update = layoutUtil.add( nodeId++, Values.of( value ) );
                 updater.process( update );
                 populator.includeSample( update );
             }

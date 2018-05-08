@@ -27,7 +27,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -105,14 +105,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
             }
 
             @Override
-            public void recoveryCompleted( PendingIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
+            public void recoveryCompleted( IndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
             {   // no-op
             }
         }
 
         void failedToOpenIndex( StoreIndexDescriptor schemaIndexDescriptor, String action, Exception cause );
 
-        void recoveryCompleted( PendingIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data );
+        void recoveryCompleted( IndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data );
     }
 
     public static final IndexProvider EMPTY =

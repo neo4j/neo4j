@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
@@ -209,7 +209,7 @@ public interface StorageReader extends AutoCloseable
 
     /**
      * @param labelId label to list indexes for.
-     * @return {@link PendingIndexDescriptor} associated with the given {@code labelId}.
+     * @return {@link IndexDescriptor} associated with the given {@code labelId}.
      */
     Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId );
 
@@ -228,14 +228,14 @@ public interface StorageReader extends AutoCloseable
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( PendingIndexDescriptor index );
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
 
     /**
-     * @param index {@link PendingIndexDescriptor} to get schema rule id for.
+     * @param index {@link IndexDescriptor} to get schema rule id for.
      * @return schema rule id for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    long indexGetCommittedId( PendingIndexDescriptor index )
+    long indexGetCommittedId( IndexDescriptor index )
             throws SchemaRuleNotFoundException;
 
     /**
@@ -297,20 +297,20 @@ public interface StorageReader extends AutoCloseable
     /**
      * Returns state of a stored index.
      *
-     * @param descriptor {@link PendingIndexDescriptor} to get state for.
+     * @param descriptor {@link IndexDescriptor} to get state for.
      * @return {@link InternalIndexState} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    InternalIndexState indexGetState( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Return index reference of a stored index.
      *
-     * @param descriptor {@link PendingIndexDescriptor} to get provider reference for.
+     * @param descriptor {@link IndexDescriptor} to get provider reference for.
      * @return {@link IndexProvider.Descriptor} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    CapableIndexReference indexReference( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    CapableIndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param descriptor {@link SchemaDescriptor} to get population progress for.

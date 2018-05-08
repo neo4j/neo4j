@@ -35,42 +35,42 @@ public class SchemaIndexDescriptorFactoryTest
     @Test
     public void shouldCreateIndexDescriptors()
     {
-        PendingIndexDescriptor desc;
+        IndexDescriptor desc;
 
         desc = IndexDescriptorFactory.forLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( PendingIndexDescriptor.Type.GENERAL ) );
+        assertThat( desc.type(), equalTo( IndexDescriptor.Type.GENERAL ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test
     public void shouldCreateUniqueIndexDescriptors()
     {
-        PendingIndexDescriptor desc;
+        IndexDescriptor desc;
 
         desc = IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( PendingIndexDescriptor.Type.UNIQUE ) );
+        assertThat( desc.type(), equalTo( IndexDescriptor.Type.UNIQUE ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test
     public void shouldCreateIndexDescriptorsFromSchema()
     {
-        PendingIndexDescriptor desc;
+        IndexDescriptor desc;
 
         desc = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
-        assertThat( desc.type(), equalTo( PendingIndexDescriptor.Type.GENERAL ) );
+        assertThat( desc.type(), equalTo( IndexDescriptor.Type.GENERAL ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
 
         desc = IndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
-        assertThat( desc.type(), equalTo( PendingIndexDescriptor.Type.UNIQUE) );
+        assertThat( desc.type(), equalTo( IndexDescriptor.Type.UNIQUE) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test
     public void shouldCreateEqualDescriptors()
     {
-        PendingIndexDescriptor desc1;
-        PendingIndexDescriptor desc2;
+        IndexDescriptor desc1;
+        IndexDescriptor desc2;
         desc1 = IndexDescriptorFactory.forLabel( LABEL_ID, 1 );
         desc2 = IndexDescriptorFactory.forLabel( LABEL_ID, 1 );
         assertEquality( desc1, desc2 );

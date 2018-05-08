@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -135,7 +135,7 @@ public class HaCountsIT
     {
         // when creating a node on the master
         createANode( master, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
-        PendingIndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
+        IndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
         long indexId = awaitOnline( master, schemaIndexDescriptor );
 
         // and the slaves got the updates
@@ -155,7 +155,7 @@ public class HaCountsIT
     {
         // when creating a node on the master
         createANode( slave1, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
-        PendingIndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
+        IndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
         long indexId = awaitOnline( master, schemaIndexDescriptor );
 
         // and the updates are propagate in the cluster
@@ -180,7 +180,7 @@ public class HaCountsIT
         }
     }
 
-    private PendingIndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
+    private IndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
             throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
@@ -250,7 +250,7 @@ public class HaCountsIT
         return db.getDependencyResolver().resolveDependency( IndexingService.class );
     }
 
-    private long awaitOnline( HighlyAvailableGraphDatabase db, PendingIndexDescriptor index )
+    private long awaitOnline( HighlyAvailableGraphDatabase db, IndexDescriptor index )
             throws KernelException
     {
         long start = System.currentTimeMillis();

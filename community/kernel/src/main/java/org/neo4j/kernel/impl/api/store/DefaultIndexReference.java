@@ -22,9 +22,8 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 public class DefaultIndexReference implements IndexReference
 {
@@ -79,7 +78,7 @@ public class DefaultIndexReference implements IndexReference
         return new DefaultIndexReference( false, label, properties );
     }
 
-    public static PendingIndexDescriptor toDescriptor( IndexReference reference )
+    public static IndexDescriptor toDescriptor( IndexReference reference )
     {
         if ( reference.isUnique() )
         {
