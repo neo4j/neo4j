@@ -899,35 +899,35 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public void indexDrop( IndexReference index ) throws SchemaKernelException
+    public void indexDrop( IndexReference indexReference ) throws SchemaKernelException
     {
+        IndexDescriptor index = (IndexDescriptor) indexReference;
         assertValidIndex( index );
 
-        acquireExclusiveLabelLock( index.label() );
+        acquireExclusiveLabelLock( indexReference.label() );
         ktx.assertOpen();
-        org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor = labelDescriptor( index );
         try
         {
-            IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
+            IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( index.schema() );
 
             if ( existingIndex == null )
             {
-                throw new NoSuchIndexException( descriptor );
+                throw new NoSuchIndexException( index.schema() );
             }
 
             if ( existingIndex.type() == UNIQUE )
             {
                 if ( allStoreHolder.indexGetOwningUniquenessConstraintId( existingIndex ) != null )
                 {
-                    throw new IndexBelongsToConstraintException( descriptor );
+                    throw new IndexBelongsToConstraintException( index.schema() );
                 }
             }
         }
         catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
         {
-            throw new DropIndexFailureException( descriptor, e );
+            throw new DropIndexFailureException( index.schema(), e );
         }
-        ktx.txState().indexDoDrop( allStoreHolder.indexDescriptor( index ) );
+        ktx.txState().indexDoDrop( index );
     }
 
     @Override
@@ -1245,11 +1245,11 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void assertValidIndex( IndexReference index ) throws NoSuchIndexException
+    private void assertValidIndex( IndexDescriptor index ) throws NoSuchIndexException
     {
         if ( index == CapableIndexReference.NO_INDEX )
         {
-            throw new NoSuchIndexException( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
+            throw new NoSuchIndexException( index.schema() );
         }
     }
 }
