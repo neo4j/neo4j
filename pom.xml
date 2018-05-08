@@ -1383,11 +1383,6 @@
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.mozilla</groupId>
-        <artifactId>rhino</artifactId>
-        <version>1.7.9</version>
-      </dependency>
-      <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk15on</artifactId>
         <version>${bouncycastle.version}</version>

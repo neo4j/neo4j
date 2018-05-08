@@ -25,7 +25,6 @@ import org.apache.lucene.search.Sort;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -64,7 +63,6 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Paths;
-import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
@@ -75,11 +73,6 @@ import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.PropertySettingStrategy;
 import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
-import org.neo4j.server.rest.domain.TraversalDescriptionBuilder;
-import org.neo4j.server.rest.domain.TraverserReturnType;
-import org.neo4j.server.rest.paging.Lease;
-import org.neo4j.server.rest.paging.LeaseManager;
-import org.neo4j.server.rest.paging.PagedTraverser;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ConstraintDefinitionRepresentation;
 import org.neo4j.server.rest.repr.DatabaseRepresentation;
@@ -115,9 +108,7 @@ public class DatabaseActions
     public static final String RELEVANCE_ORDER = "relevance";
     public static final String INDEX_ORDER = "index";
     private final GraphDatabaseAPI graphDb;
-    private final LeaseManager leases;
 
-    private final TraversalDescriptionBuilder traversalDescriptionBuilder;
     private final PropertySettingStrategy propertySetter;
 
     public static class Provider extends InjectableProvider<DatabaseActions>
@@ -140,21 +131,10 @@ public class DatabaseActions
     private final Function<ConstraintDefinition,Representation> CONSTRAINT_DEF_TO_REPRESENTATION =
             ConstraintDefinitionRepresentation::new;
 
-    public DatabaseActions( LeaseManager leaseManager, ScriptExecutionMode executionMode,
-            GraphDatabaseAPI graphDatabaseAPI )
+    public DatabaseActions( GraphDatabaseAPI graphDatabaseAPI )
     {
-        this.leases = leaseManager;
         this.graphDb = graphDatabaseAPI;
-        this.traversalDescriptionBuilder = new TraversalDescriptionBuilder( executionMode );
         this.propertySetter = new PropertySettingStrategy( graphDb );
-    }
-
-    /**
-     * This method is only meant for testing.
-     */
-    public DatabaseActions( LeaseManager leaseManager, GraphDatabaseAPI graphDatabaseAPI )
-    {
-        this( leaseManager, ScriptExecutionMode.SANDBOXED, graphDatabaseAPI );
     }
 
     private Node node( long id ) throws NodeNotFoundException
@@ -1080,87 +1060,6 @@ public class DatabaseActions
         final ReadableIndex<Relationship> index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
         final IndexHits<Relationship> results = query != null ? index.query( query ) : null;
         return toListRelationshipRepresentation( results, null );
-    }
-
-    // Traversal
-
-    public ListRepresentation traverse( long startNode,
-            Map<String,Object> description, final TraverserReturnType returnType )
-    {
-        Node node = graphDb.getNodeById( startNode );
-
-        TraversalDescription traversalDescription = traversalDescriptionBuilder.from( description );
-        final Iterable<Path> paths = traversalDescription.traverse( node );
-        return toListPathRepresentation( paths, returnType );
-    }
-
-    private ListRepresentation toListPathRepresentation( final Iterable<Path> paths,
-            final TraverserReturnType returnType )
-    {
-        IterableWrapper<Representation,Path> result = new IterableWrapper<Representation,Path>( paths )
-        {
-            @Override
-            protected Representation underlyingObjectToObject( Path position )
-            {
-                return returnType.toRepresentation( position );
-            }
-        };
-        return new ListRepresentation( returnType.repType, result );
-    }
-
-    public ListRepresentation pagedTraverse( String traverserId,
-            TraverserReturnType returnType )
-    {
-        Lease lease = leases.getLeaseById( traverserId );
-        if ( lease == null )
-        {
-            throw new NotFoundException( String.format(
-                    "The traverser with id [%s] was not found", traverserId ) );
-        }
-
-        PagedTraverser traverser = lease.getLeasedItemAndRenewLease();
-        List<Path> paths = traverser.next();
-
-        if ( paths != null )
-        {
-            return toListPathRepresentation( paths, returnType );
-        }
-        else
-        {
-            leases.remove( traverserId );
-            // Yuck.
-            throw new NotFoundException(
-                    String.format(
-                            "The results for paged traverser with id [%s] have been fully enumerated",
-                            traverserId ) );
-        }
-    }
-
-    public String createPagedTraverser( long nodeId,
-            Map<String,Object> description, int pageSize, int leaseTime )
-    {
-        Node node = graphDb.getNodeById( nodeId );
-
-        TraversalDescription traversalDescription = traversalDescriptionBuilder.from( description );
-
-        PagedTraverser traverser = new PagedTraverser(
-                traversalDescription.traverse( node ), pageSize );
-
-        return leases.createLease( leaseTime, traverser ).getId();
-    }
-
-    public boolean removePagedTraverse( String traverserId )
-    {
-        Lease lease = leases.getLeaseById( traverserId );
-        if ( lease == null )
-        {
-            return false;
-        }
-        else
-        {
-            leases.remove( lease.getId() );
-            return true;
-        }
     }
 
     // Graph algos

@@ -203,18 +203,6 @@ public class ServerSettings implements LoadableConfig
     @Internal
     public static final Setting<URI> browser_path = setting( "unsupported.dbms.uris.browser", Settings.URI, "/browser/" );
 
-    @Deprecated
-    @Description( "Whether to allow executing scripts inside the server, from external sources, e.g. via traversal " +
-                  "endpoints. This setting is in the 'unsupported' namespace, because the scripting feature will be " +
-                  "removed entirely in a future release." )
-    public static final Setting<Boolean> script_enabled =
-            setting( "unsupported.dbms.security.script_enabled", BOOLEAN, FALSE );
-
-    @Deprecated
-    @Internal
-    public static final Setting<Boolean> script_sandboxing_enabled =
-            setting( "unsupported.dbms.security.script_sandboxing_enabled", BOOLEAN, TRUE );
-
     @Internal
     public static final Setting<Boolean> wadl_enabled = setting( "unsupported.dbms.wadl_generation_enabled", BOOLEAN,
             FALSE );

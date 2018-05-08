@@ -98,9 +98,6 @@ Eclipse Public License - v 1.0
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
 
-Mozilla Public License, Version 2.0
-  Mozilla Rhino
-
 Dependencies with multiple licenses
 -----------------------------------
 

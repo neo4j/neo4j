@@ -203,16 +203,11 @@
             <artifactId>jackson-jaxrs</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.mozilla</groupId>
-            <artifactId>rhino</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
-        </dependency>
-        <!-- This dependency is needed for Netty to be able to generate
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk15on</artifactId>
+    </dependency>
+    <!-- This dependency is needed for Netty to be able to generate
     self signed certificate on a JDK without sun.security.* package -->
         <dependency>
             <groupId>org.bouncycastle</groupId>

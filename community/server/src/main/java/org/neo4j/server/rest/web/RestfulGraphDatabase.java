@@ -21,8 +21,6 @@ package org.neo4j.server.rest.web;
 
 import org.apache.commons.configuration.Configuration;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,15 +48,12 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
-import org.neo4j.server.rest.domain.EvaluationException;
 import org.neo4j.server.rest.domain.PropertySettingStrategy;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
-import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.InvalidArgumentsException;
-import org.neo4j.server.rest.repr.ListEntityRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
@@ -104,7 +99,6 @@ public class RestfulGraphDatabase
     private static final String PATH_NODE_RELATIONSHIPS_W_DIR_N_TYPES = PATH_NODE_RELATIONSHIPS_W_DIR + "/{types}";
     private static final String PATH_RELATIONSHIP_PROPERTIES = PATH_RELATIONSHIP + "/properties";
     private static final String PATH_RELATIONSHIP_PROPERTY = PATH_RELATIONSHIP_PROPERTIES + "/{key}";
-    private static final String PATH_NODE_TRAVERSE = PATH_NODE + "/traverse/{returnType}";
     private static final String PATH_NODE_PATH = PATH_NODE + "/path";
     private static final String PATH_NODE_PATHS = PATH_NODE + "/paths";
     private static final String PATH_NODE_LABELS = PATH_NODE + "/labels";
@@ -155,9 +149,6 @@ public class RestfulGraphDatabase
     public static final String NODE_AUTO_INDEX_TYPE = "node";
     public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";
 
-    private static final String SIXTY_SECONDS = "60";
-    private static final String FIFTY_ENTRIES = "50";
-
     private static final String UNIQUENESS_MODE_GET_OR_CREATE = "get_or_create";
     private static final String UNIQUENESS_MODE_CREATE_OR_FAIL = "create_or_fail";
 
@@ -165,9 +156,6 @@ public class RestfulGraphDatabase
     private Configuration config;
     private final OutputFormat output;
     private final InputFormat input;
-
-    public static final String PATH_TO_CREATE_PAGED_TRAVERSERS = PATH_NODE + "/paged/traverse/{returnType}";
-    public static final String PATH_TO_PAGED_TRAVERSERS = PATH_NODE + "/paged/traverse/{returnType}/{traverserId}";
 
     private enum UniqueIndexType
     {
@@ -1524,112 +1512,6 @@ public class RestfulGraphDatabase
         catch ( Exception e )
         {
             return output.serverError( e );
-        }
-    }
-
-    // Traversal
-
-    @POST
-    @Path( PATH_NODE_TRAVERSE )
-    public Response traverse( @PathParam( "nodeId" ) long startNode,
-                              @PathParam( "returnType" ) TraverserReturnType returnType, String body )
-    {
-        try
-        {
-            return output.ok( actions.traverse( startNode, input.readMap( body ), returnType ) );
-        }
-        catch ( EvaluationException | BadInputException e )
-        {
-            return output.badRequest( e );
-        }
-        catch ( NotFoundException e )
-        {
-            return output.notFound( e );
-        }
-    }
-
-    // Paged traversal
-
-    @DELETE
-    @Path( PATH_TO_PAGED_TRAVERSERS )
-    public Response removePagedTraverser( @PathParam( "traverserId" ) String traverserId )
-    {
-        if ( actions.removePagedTraverse( traverserId ) )
-        {
-            return output.ok();
-        }
-        else
-        {
-            return output.notFound();
-        }
-    }
-
-    @GET
-    @Path( PATH_TO_PAGED_TRAVERSERS )
-    public Response pagedTraverse( @PathParam( "traverserId" ) String traverserId,
-            @PathParam( "returnType" ) TraverserReturnType returnType )
-    {
-        try
-        {
-            return output.ok( actions.pagedTraverse( traverserId, returnType ) );
-        }
-        catch ( EvaluationException e )
-        {
-            return output.badRequest( e );
-        }
-        catch ( NotFoundException e )
-        {
-            return output.notFound( e );
-        }
-    }
-
-    @POST
-    @Path( PATH_TO_CREATE_PAGED_TRAVERSERS )
-    public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
-            @PathParam( "returnType" ) TraverserReturnType returnType,
-            @QueryParam( "pageSize" ) @DefaultValue( FIFTY_ENTRIES ) int pageSize,
-            @QueryParam( "leaseTime" ) @DefaultValue( SIXTY_SECONDS ) int leaseTimeInSeconds, String body )
-    {
-        try
-        {
-            validatePageSize( pageSize );
-            validateLeaseTime( leaseTimeInSeconds );
-
-            String traverserId = actions.createPagedTraverser( startNode, input.readMap( body ), pageSize,
-                    leaseTimeInSeconds );
-
-            URI uri = new URI( "node/" + startNode + "/paged/traverse/" + returnType + "/" + traverserId );
-
-            return output.created( new ListEntityRepresentation( actions.pagedTraverse( traverserId, returnType ),
-                    uri.normalize() ) );
-        }
-        catch ( EvaluationException | BadInputException e )
-        {
-            return output.badRequest( e );
-        }
-        catch ( NotFoundException e )
-        {
-            return output.notFound( e );
-        }
-        catch ( URISyntaxException e )
-        {
-            return output.serverError( e );
-        }
-    }
-
-    private void validateLeaseTime( int leaseTimeInSeconds ) throws BadInputException
-    {
-        if ( leaseTimeInSeconds < 1 )
-        {
-            throw new InvalidArgumentsException( "Lease time less than 1 second is not supported" );
-        }
-    }
-
-    private void validatePageSize( int pageSize ) throws BadInputException
-    {
-        if ( pageSize < 1 )
-        {
-            throw new InvalidArgumentsException( "Page size less than 1 is not permitted" );
         }
     }
 

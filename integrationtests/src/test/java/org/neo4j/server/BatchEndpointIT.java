@@ -46,8 +46,7 @@ public class BatchEndpointIT
                     getRelativePath( getSharedTestTemporaryFolder(), GraphDatabaseSettings.logs_directory ) )
             .withConfig( ServerSettings.http_logging_enabled, "true" )
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" )
-            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-            .withConfig( ServerSettings.script_enabled, Settings.TRUE );
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
     @Test
     public void requestsShouldNotFailWhenHttpLoggingIsOn()
