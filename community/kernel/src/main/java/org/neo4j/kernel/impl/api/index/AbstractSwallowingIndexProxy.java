@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -82,7 +83,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public PendingIndexDescriptor getDescriptor()
+    public IndexDescriptor getDescriptor()
     {
         return indexMeta.indexDescriptor();
     }
@@ -96,7 +97,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     @Override
     public IndexProvider.Descriptor getProviderDescriptor()
     {
-        return indexMeta.providerDescriptor();
+        return indexMeta.indexDescriptor().providerDescriptor();
     }
 
     @Override
@@ -113,6 +114,6 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     @Override
     public long getIndexId()
     {
-        return indexMeta.getIndexId();
+        return indexMeta.indexDescriptor().getId();
     }
 }

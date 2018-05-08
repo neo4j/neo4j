@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.Race;
@@ -54,11 +54,12 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySu
 
 public abstract class IndexPopulationStressTest
 {
+    private static final IndexProvider.Descriptor PROVIDER = new IndexProvider.Descriptor( "provider", "1.0" );
     @Rule
     public PageCacheAndDependenciesRule rules =
             new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, this.getClass() );
 
-    protected final PendingIndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 0 );
+    protected final IndexDescriptor descriptor = IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 0, 0 ), PROVIDER );
 
     private IndexPopulator populator;
 
@@ -76,14 +77,13 @@ public abstract class IndexPopulationStressTest
     public void setup() throws IOException
     {
         File storeDir = rules.directory().graphDbDir();
-        IndexDirectoryStructure.Factory directory =
-                directoriesBySubProvider( directoriesByProvider( storeDir ).forProvider( new IndexProvider.Descriptor( "provider", "1.0" ) ) );
+        IndexDirectoryStructure.Factory directory = directoriesBySubProvider( directoriesByProvider( storeDir ).forProvider( PROVIDER ) );
 
         IndexProvider indexProvider = newProvider( directory );
 
         rules.fileSystem().mkdirs( indexProvider.directoryStructure().rootDirectory() );
 
-        populator = indexProvider.getPopulator( 0, descriptor, new IndexSamplingConfig( 1000, 0.2, true ) );
+        populator = indexProvider.getPopulator( descriptor, new IndexSamplingConfig( 1000, 0.2, true ) );
     }
 
     @After

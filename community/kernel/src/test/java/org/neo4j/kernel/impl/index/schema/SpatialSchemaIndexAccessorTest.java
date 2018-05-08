@@ -44,7 +44,7 @@ abstract class SpatialSchemaIndexAccessorTest extends NativeSchemaIndexAccessorT
         fileLayout = new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
         SpatialIndexFiles.SpatialFileLayout fileLayout =
                 new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
-        return new SpatialIndexAccessor.PartAccessor( pageCache, fs, fileLayout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig,
+        return new SpatialIndexAccessor.PartAccessor( pageCache, fs, fileLayout, IMMEDIATE, monitor, indexDescriptor, samplingConfig,
                 new StandardConfiguration() );
     }
 

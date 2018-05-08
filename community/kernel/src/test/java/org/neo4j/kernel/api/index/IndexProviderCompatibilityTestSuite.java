@@ -33,6 +33,7 @@ import java.util.List;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -75,7 +76,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         protected File graphDbDir;
         protected FileSystemAbstraction fs;
         protected IndexProvider indexProvider;
-        protected PendingIndexDescriptor descriptor;
+        protected IndexDescriptor descriptor;
         final IndexProviderCompatibilityTestSuite testSuite;
         final List<NodeAndValue> valueSet1;
         final List<NodeAndValue> valueSet2;
@@ -92,7 +93,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         public Compatibility( IndexProviderCompatibilityTestSuite testSuite, PendingIndexDescriptor descriptor )
         {
             this.testSuite = testSuite;
-            this.descriptor = descriptor;
+            this.descriptor = IndexDescriptor.indexRule( 17, descriptor, indexProvider.getProviderDescriptor() );
             this.valueSet1 = allValues(
                     testSuite.supportsSpatial(),
                     testSuite.supportsTemporal(),

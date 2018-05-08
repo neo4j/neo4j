@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
@@ -89,7 +89,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public PendingIndexDescriptor getDescriptor()
+    public IndexDescriptor getDescriptor()
     {
         return indexMeta.indexDescriptor();
     }
@@ -103,7 +103,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public IndexProvider.Descriptor getProviderDescriptor()
     {
-        return indexMeta.providerDescriptor();
+        return indexMeta.indexDescriptor().providerDescriptor();
     }
 
     @Override
@@ -170,7 +170,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public long getIndexId()
     {
-        return indexMeta.getIndexId();
+        return indexMeta.indexDescriptor().getId();
     }
 
     @Override

@@ -49,31 +49,31 @@ public class IndexAccessors implements Closeable
                            RecordStore<DynamicRecord> schemaStore,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        Iterator<IndexDescriptor> rules = new SchemaStorage( schemaStore ).indexesGetAll();
+        Iterator<IndexDescriptor> indexes = new SchemaStorage( schemaStore ).indexesGetAll();
         for (; ; )
         {
             try
             {
-                if ( rules.hasNext() )
+                if ( indexes.hasNext() )
                 {
                     // we intentionally only check indexes that are online since
                     // - populating indexes will be rebuilt on next startup
                     // - failed indexes have to be dropped by the user anyways
-                    IndexDescriptor indexRule = rules.next();
-                    if ( indexRule.isIndexWithoutOwningConstraint() )
+                    IndexDescriptor indexDescriptor = indexes.next();
+                    if ( indexDescriptor.isIndexWithoutOwningConstraint() )
                     {
-                        notOnlineIndexRules.add( indexRule );
+                        notOnlineIndexRules.add( indexDescriptor );
                     }
                     else
                     {
                         if ( InternalIndexState.ONLINE ==
-                                provider( providers, indexRule ).getInitialState( indexRule.getId(), indexRule ) )
+                                provider( providers, indexDescriptor ).getInitialState( indexDescriptor ) )
                         {
-                            onlineIndexRules.add( indexRule );
+                            onlineIndexRules.add( indexDescriptor );
                         }
                         else
                         {
-                            notOnlineIndexRules.add( indexRule );
+                            notOnlineIndexRules.add( indexDescriptor );
                         }
                     }
                 }
@@ -92,7 +92,7 @@ public class IndexAccessors implements Closeable
         {
             long indexId = indexRule.getId();
             accessors.put( indexId, provider( providers, indexRule )
-                    .getOnlineAccessor( indexId, indexRule, samplingConfig ) );
+                    .getOnlineAccessor( indexRule, samplingConfig ) );
         }
     }
 

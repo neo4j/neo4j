@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -51,16 +51,10 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combi
 
 class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator> implements IndexPopulator
 {
-    SpatialIndexPopulator( long indexId,
-            PendingIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig,
-            SpatialIndexFiles spatialIndexFiles,
-            PageCache pageCache,
-            FileSystemAbstraction fs,
-            IndexProvider.Monitor monitor,
-            SpaceFillingCurveConfiguration configuration )
+    SpatialIndexPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpatialIndexFiles spatialIndexFiles, PageCache pageCache,
+            FileSystemAbstraction fs, IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
     {
-        super( new PartFactory( pageCache, fs, spatialIndexFiles, indexId, descriptor, monitor, samplingConfig, configuration ) );
+        super( new PartFactory( pageCache, fs, spatialIndexFiles, descriptor, monitor, samplingConfig, configuration ) );
     }
 
     @Override
@@ -153,11 +147,10 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         private final SpaceFillingCurveConfiguration configuration;
         private final SpaceFillingCurveSettings settings;
 
-        PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
-                       IndexProvider.Monitor monitor, PendingIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig,
-                       SpaceFillingCurveConfiguration configuration )
+        PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, IndexProvider.Monitor monitor,
+                IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration configuration )
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
+            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, samplingConfig );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
         }
@@ -186,20 +179,17 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
         private final SpatialIndexFiles spatialIndexFiles;
-        private final long indexId;
-        private final PendingIndexDescriptor descriptor;
+        private final IndexDescriptor descriptor;
         private final IndexProvider.Monitor monitor;
         private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration configuration;
 
-        PartFactory( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles spatialIndexFiles, long indexId,
-                     PendingIndexDescriptor descriptor, IndexProvider.Monitor monitor, IndexSamplingConfig samplingConfig,
-                     SpaceFillingCurveConfiguration configuration )
+        PartFactory( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles spatialIndexFiles, IndexDescriptor descriptor, IndexProvider.Monitor monitor, IndexSamplingConfig samplingConfig,
+                SpaceFillingCurveConfiguration configuration )
         {
             this.pageCache = pageCache;
             this.fs = fs;
             this.spatialIndexFiles = spatialIndexFiles;
-            this.indexId = indexId;
             this.descriptor = descriptor;
             this.monitor = monitor;
             this.samplingConfig = samplingConfig;
@@ -214,7 +204,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
 
         private PartPopulator create( SpatialIndexFiles.SpatialFileLayout fileLayout ) throws IOException
         {
-            PartPopulator populator = new PartPopulator( pageCache, fs, fileLayout, monitor, descriptor, indexId, samplingConfig, configuration );
+            PartPopulator populator = new PartPopulator( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig, configuration );
             populator.create();
             return populator;
         }

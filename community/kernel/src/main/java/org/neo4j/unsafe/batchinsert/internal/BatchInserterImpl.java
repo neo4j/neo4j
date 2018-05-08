@@ -488,18 +488,17 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return;
         }
 
-        final IndexDescriptor[] rules = getIndexesNeedingPopulation();
-        final List<IndexPopulatorWithSchema> populators = new ArrayList<>( rules.length );
+        final IndexDescriptor[] indexDescriptors = getIndexesNeedingPopulation();
+        final List<IndexPopulatorWithSchema> populators = new ArrayList<>( indexDescriptors.length );
 
-        final SchemaDescriptor[] descriptors = new LabelSchemaDescriptor[rules.length];
+        final SchemaDescriptor[] descriptors = new LabelSchemaDescriptor[indexDescriptors.length];
 
-        for ( int i = 0; i < rules.length; i++ )
+        for ( int i = 0; i < indexDescriptors.length; i++ )
         {
-            IndexDescriptor rule = rules[i];
-            PendingIndexDescriptor index = rule;
+            IndexDescriptor index = indexDescriptors[i];
             descriptors[i] = index.schema();
-            IndexPopulator populator = schemaIndexProviders.apply( rule.providerDescriptor() )
-                                                .getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
+            IndexPopulator populator = schemaIndexProviders.apply( index.providerDescriptor() )
+                                                .getPopulator( index, new IndexSamplingConfig( config ) );
             populator.create();
             populators.add( new IndexPopulatorWithSchema( populator, index ) );
         }
@@ -586,7 +585,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         for ( IndexDescriptor rule : schemaCache.indexRules() )
         {
             IndexProvider provider = schemaIndexProviders.apply( rule.providerDescriptor() );
-            if ( provider.getInitialState( rule.getId(), rule ) != InternalIndexState.FAILED )
+            if ( provider.getInitialState( rule ) != InternalIndexState.FAILED )
             {
                 indexesNeedingPopulation.add( rule );
             }

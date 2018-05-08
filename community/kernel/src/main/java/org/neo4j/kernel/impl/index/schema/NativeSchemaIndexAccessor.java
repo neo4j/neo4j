@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -48,18 +49,10 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey<KEY>
     private final NativeSchemaIndexUpdater<KEY,VALUE> singleUpdater;
     final IndexSamplingConfig samplingConfig;
 
-    NativeSchemaIndexAccessor(
-            PageCache pageCache,
-            FileSystemAbstraction fs,
-            File storeFile,
-            Layout<KEY,VALUE> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            IndexProvider.Monitor monitor,
-            PendingIndexDescriptor descriptor,
-            long indexId,
-            IndexSamplingConfig samplingConfig ) throws IOException
+    NativeSchemaIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor );
         singleUpdater = new NativeSchemaIndexUpdater<>( layout.newKey(), layout.newValue() );
         this.samplingConfig = samplingConfig;
         instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );

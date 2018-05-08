@@ -28,11 +28,14 @@ import java.util.Set;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, NativeSchemaValue>
 {
@@ -46,9 +49,9 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, 
             LocalTime.of(23,59,59,999_999_999 )
     };
 
-    LocalTimeLayoutTestUtil( PendingIndexDescriptor schemaIndexDescriptor )
+    LocalTimeLayoutTestUtil( PendingIndexDescriptor indexDescriptor )
     {
-        super( schemaIndexDescriptor );
+        super( IndexDescriptor.indexRule( 0, indexDescriptor, PROVIDER_DESCRIPTOR ) );
     }
 
     @Override

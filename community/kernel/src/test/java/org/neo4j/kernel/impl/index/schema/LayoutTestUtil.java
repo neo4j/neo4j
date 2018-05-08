@@ -33,22 +33,25 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+
 abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
 {
     private static final Comparator<IndexEntryUpdate<PendingIndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
             Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );
 
-    final PendingIndexDescriptor schemaIndexDescriptor;
+    final IndexDescriptor indexDescriptor;
 
-    LayoutTestUtil( PendingIndexDescriptor schemaIndexDescriptor )
+    LayoutTestUtil( PendingIndexDescriptor indexDescriptor )
     {
-        this.schemaIndexDescriptor = schemaIndexDescriptor;
+        this.indexDescriptor = IndexDescriptor.indexRule( 0, indexDescriptor, PROVIDER_DESCRIPTOR );
     }
 
     abstract Layout<KEY,VALUE> createLayout();
@@ -64,9 +67,9 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
 
     abstract int compareIndexedPropertyValue( KEY key1, KEY key2 );
 
-    PendingIndexDescriptor indexDescriptor()
+    IndexDescriptor indexDescriptor()
     {
-        return schemaIndexDescriptor;
+        return indexDescriptor;
     }
 
     void copyValue( VALUE value, VALUE intoValue )
@@ -139,7 +142,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
 
     protected IndexEntryUpdate<PendingIndexDescriptor> add( long nodeId, Value value )
     {
-        return IndexEntryUpdate.add( nodeId, schemaIndexDescriptor, value );
+        return IndexEntryUpdate.add( nodeId, indexDescriptor, value );
     }
 
     static int countUniqueValues( IndexEntryUpdate<PendingIndexDescriptor>[] updates )

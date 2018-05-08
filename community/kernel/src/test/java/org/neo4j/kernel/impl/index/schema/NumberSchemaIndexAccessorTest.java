@@ -44,8 +44,7 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
     @Override
     NumberSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NumberSchemaIndexAccessor( pageCache, fs, getIndexFile(), layout, IMMEDIATE, monitor,
-                schemaIndexDescriptor, indexId, samplingConfig );
+        return new NumberSchemaIndexAccessor( pageCache, fs, getIndexFile(), layout, IMMEDIATE, monitor, indexDescriptor, samplingConfig );
     }
 
     @Test

@@ -32,7 +32,7 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
@@ -49,12 +49,12 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
@@ -167,13 +167,13 @@ public class FusionIndexProviderTest
         IllegalStateException failure = new IllegalStateException( "not failed" );
         for ( IndexProvider provider : aliveProviders )
         {
-            when( provider.getPopulationFailure( anyLong(), any( PendingIndexDescriptor.class ) ) ).thenThrow( failure );
+            when( provider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenThrow( failure );
         }
 
         // then
         try
         {
-            fusionIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
+            fusionIndexProvider.getPopulationFailure( IndexDescriptor.indexRule( 0, forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ) );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -193,16 +193,17 @@ public class FusionIndexProviderTest
             {
                 if ( provider == failingProvider )
                 {
-                    when( provider.getPopulationFailure( anyLong(), any( PendingIndexDescriptor.class ) ) ).thenReturn( failure );
+                    when( provider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenReturn( failure );
                 }
                 else
                 {
-                    when( provider.getPopulationFailure( anyLong(), any( PendingIndexDescriptor.class ) ) ).thenThrow( exception );
+                    when( provider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenThrow( exception );
                 }
             }
 
             // then
-            assertThat( fusionIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( failure ) );
+            assertThat( fusionIndexProvider.getPopulationFailure( IndexDescriptor.indexRule( 0, forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ) ),
+                    containsString( failure ) );
         }
     }
 
@@ -215,11 +216,11 @@ public class FusionIndexProviderTest
         {
             String failureMessage = "FAILURE[" + aliveProvider + "]";
             failureMessages.add( failureMessage );
-            when( aliveProvider.getPopulationFailure( anyLong(), any( PendingIndexDescriptor.class ) ) ).thenReturn( failureMessage );
+            when( aliveProvider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenReturn( failureMessage );
         }
 
         // then
-        String populationFailure = fusionIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
+        String populationFailure = fusionIndexProvider.getPopulationFailure( IndexDescriptor.indexRule( 0, forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ) );
         for ( String failureMessage : failureMessages )
         {
             assertThat( populationFailure, containsString( failureMessage ) );
@@ -231,7 +232,7 @@ public class FusionIndexProviderTest
     {
         // given
         IndexProvider provider = fusionIndexProvider;
-        PendingIndexDescriptor schemaIndexDescriptor = IndexDescriptorFactory.forLabel( 1, 1 );
+        IndexDescriptor indexDescriptor = IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 1, 1 ), PROVIDER_DESCRIPTOR );
 
         for ( InternalIndexState state : InternalIndexState.values() )
         {
@@ -242,7 +243,7 @@ public class FusionIndexProviderTest
                 {
                     setInitialState( aliveProvider, failedProvider == aliveProvider ? InternalIndexState.FAILED : state );
                 }
-                InternalIndexState initialState = provider.getInitialState( 0, schemaIndexDescriptor );
+                InternalIndexState initialState = provider.getInitialState( indexDescriptor );
 
                 // then
                 assertEquals( InternalIndexState.FAILED, initialState );
@@ -254,7 +255,7 @@ public class FusionIndexProviderTest
     public void shouldReportPopulatingIfAnyIsPopulating()
     {
         // given
-        PendingIndexDescriptor schemaIndexDescriptor = IndexDescriptorFactory.forLabel( 1, 1 );
+        IndexDescriptor indexDescriptor = IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 1, 1 ), PROVIDER_DESCRIPTOR );
 
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
         {
@@ -265,7 +266,7 @@ public class FusionIndexProviderTest
                 {
                     setInitialState( aliveProvider, populatingProvider == aliveProvider ? InternalIndexState.POPULATING : state );
                 }
-                InternalIndexState initialState = fusionIndexProvider.getInitialState( 0, schemaIndexDescriptor );
+                InternalIndexState initialState = fusionIndexProvider.getInitialState( indexDescriptor );
 
                 // then
                 assertEquals( InternalIndexState.POPULATING, initialState );
@@ -330,7 +331,7 @@ public class FusionIndexProviderTest
 
     private void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
     {
-        when( mockedProvider.getInitialState( anyLong(), any( PendingIndexDescriptor.class ) ) ).thenReturn( state );
+        when( mockedProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( state );
     }
 
     private IndexProvider orLucene( IndexProvider provider )

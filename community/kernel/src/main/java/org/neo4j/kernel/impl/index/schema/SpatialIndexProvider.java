@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
@@ -94,27 +94,27 @@ public class SpatialIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, PendingIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
-        return new SpatialIndexPopulator( indexId, descriptor, samplingConfig, files, pageCache, fs, monitor, configuration );
+        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, settingsFactory );
+        return new SpatialIndexPopulator( descriptor, samplingConfig, files, pageCache, fs, monitor, configuration );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, PendingIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
-        return new SpatialIndexAccessor( indexId, descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
+        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, settingsFactory );
+        return new SpatialIndexAccessor( descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
     }
 
     @Override
-    public String getPopulationFailure( long indexId, PendingIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
     {
-        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
+        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, settingsFactory );
 
         try
         {
@@ -131,13 +131,13 @@ public class SpatialIndexProvider extends IndexProvider
         {
             throw new RuntimeException( e );
         }
-        throw new IllegalStateException( "Index " + indexId + " isn't failed" );
+        throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, PendingIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor )
     {
-        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
+        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, settingsFactory );
 
         final Iterable<SpatialIndexFiles.SpatialFileLayout> existing = spatialIndexFiles.existing();
         InternalIndexState state = InternalIndexState.ONLINE;
@@ -156,7 +156,7 @@ public class SpatialIndexProvider extends IndexProvider
             }
             catch ( MetadataMismatchException | IOException e )
             {
-                monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
+                monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
                 return InternalIndexState.POPULATING;
             }
         }

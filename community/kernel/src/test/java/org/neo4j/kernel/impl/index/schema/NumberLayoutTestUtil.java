@@ -26,10 +26,13 @@ import java.util.Set;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,NativeSchemaValue>
 {
@@ -55,9 +58,9 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
                     1234567890123456789L
             };
 
-    NumberLayoutTestUtil( PendingIndexDescriptor schemaIndexDescriptor )
+    NumberLayoutTestUtil( PendingIndexDescriptor indexDescriptor )
     {
-        super( schemaIndexDescriptor );
+        super( IndexDescriptor.indexRule( 0, indexDescriptor, PROVIDER_DESCRIPTOR ) );
     }
 
     @Override
