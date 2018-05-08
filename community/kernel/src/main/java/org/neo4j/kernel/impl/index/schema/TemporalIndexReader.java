@@ -25,7 +25,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -38,9 +38,9 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>> implements IndexReader
 {
-    private final PendingIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
 
-    TemporalIndexReader( PendingIndexDescriptor descriptor, TemporalIndexAccessor accessor )
+    TemporalIndexReader( IndexDescriptor descriptor, TemporalIndexAccessor accessor )
     {
         super( new PartFactory( accessor ) );
         this.descriptor = descriptor;

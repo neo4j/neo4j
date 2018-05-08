@@ -34,7 +34,7 @@ import java.util.Set;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -50,7 +50,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
 {
     private Map<List<Object>,Set<Long>> data;
 
-    HashBasedIndex( PendingIndexDescriptor descriptor )
+    HashBasedIndex( IndexDescriptor descriptor )
     {
         super( descriptor );
     }

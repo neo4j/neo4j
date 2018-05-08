@@ -36,14 +36,14 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.ValueCategory;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Filter.GENERAL;
-import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Filter.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.UNIQUE;
 
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
  */
-public class PendingIndexDescriptor implements SchemaDescriptorSupplier, CapableIndexReference
+public class IndexDescriptor implements SchemaDescriptorSupplier, CapableIndexReference
 {
     public enum Type
     {
@@ -51,12 +51,12 @@ public class PendingIndexDescriptor implements SchemaDescriptorSupplier, Capable
         UNIQUE
     }
 
-    public enum Filter implements Predicate<PendingIndexDescriptor>
+    public enum Filter implements Predicate<IndexDescriptor>
     {
         GENERAL
                 {
                     @Override
-                    public boolean test( PendingIndexDescriptor index )
+                    public boolean test( IndexDescriptor index )
                     {
                         return index.type == Type.GENERAL;
                     }
@@ -64,7 +64,7 @@ public class PendingIndexDescriptor implements SchemaDescriptorSupplier, Capable
         UNIQUE
                 {
                     @Override
-                    public boolean test( PendingIndexDescriptor index )
+                    public boolean test( IndexDescriptor index )
                     {
                         return index.type == Type.UNIQUE;
                     }
@@ -72,7 +72,7 @@ public class PendingIndexDescriptor implements SchemaDescriptorSupplier, Capable
         ANY
                 {
                     @Override
-                    public boolean test( PendingIndexDescriptor index )
+                    public boolean test( IndexDescriptor index )
                     {
                         return true;
                     }
@@ -81,18 +81,18 @@ public class PendingIndexDescriptor implements SchemaDescriptorSupplier, Capable
 
     public interface Supplier
     {
-        PendingIndexDescriptor getIndexDescriptor();
+        IndexDescriptor getIndexDescriptor();
     }
 
     protected final SchemaDescriptor schema;
-    protected final PendingIndexDescriptor.Type type;
+    protected final IndexDescriptor.Type type;
     protected final Optional<String> name;
     protected final IndexProvider.Descriptor providerDescriptor;
 
-    public PendingIndexDescriptor( SchemaDescriptor schema,
-                                   Type type,
-                                   Optional<String> name,
-                                   IndexProvider.Descriptor providerDescriptor )
+    public IndexDescriptor( SchemaDescriptor schema,
+                            Type type,
+                            Optional<String> name,
+                            IndexProvider.Descriptor providerDescriptor )
     {
         this.schema = schema;
         this.type = type;
@@ -181,9 +181,9 @@ public class PendingIndexDescriptor implements SchemaDescriptorSupplier, Capable
     @Override
     public boolean equals( Object o )
     {
-        if ( o instanceof PendingIndexDescriptor )
+        if ( o instanceof IndexDescriptor )
         {
-            PendingIndexDescriptor that = (PendingIndexDescriptor)o;
+            IndexDescriptor that = (IndexDescriptor)o;
             return this.type() == that.type() && this.schema().equals( that.schema() );
         }
         return false;
@@ -208,9 +208,9 @@ public class PendingIndexDescriptor implements SchemaDescriptorSupplier, Capable
      * @param indexes Indexes to sort
      * @return sorted indexes
      */
-    public static Iterator<PendingIndexDescriptor> sortByType( Iterator<PendingIndexDescriptor> indexes )
+    public static Iterator<IndexDescriptor> sortByType( Iterator<IndexDescriptor> indexes )
     {
-        List<PendingIndexDescriptor> materialized = Iterators.asList( indexes );
+        List<IndexDescriptor> materialized = Iterators.asList( indexes );
         return Iterators.concat(
                 Iterators.filter( GENERAL, materialized.iterator() ),
                 Iterators.filter( UNIQUE, materialized.iterator() ) );

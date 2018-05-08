@@ -35,11 +35,11 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
 
 public enum DbStructureArgumentFormatter implements ArgumentFormatter
 {
@@ -53,7 +53,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             NodeKeyConstraintDescriptor.class.getCanonicalName(),
             SchemaDescriptor.class.getCanonicalName(),
             SchemaDescriptorFactory.class.getCanonicalName(),
-            PendingIndexDescriptor.class.getCanonicalName(),
+            IndexDescriptor.class.getCanonicalName(),
             IndexDescriptorFactory.class.getCanonicalName()
     );
 
@@ -102,9 +102,9 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
                 builder.append( 'd' );
             }
         }
-        else if ( arg instanceof PendingIndexDescriptor )
+        else if ( arg instanceof IndexDescriptor )
         {
-            PendingIndexDescriptor descriptor = (PendingIndexDescriptor) arg;
+            IndexDescriptor descriptor = (IndexDescriptor) arg;
             String className = IndexDescriptorFactory.class.getSimpleName();
             int labelId = descriptor.schema().keyId();
             String methodName = descriptor.type() == GENERAL ? "forLabel" : "uniqueForLabel";

@@ -27,7 +27,7 @@ import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
@@ -43,10 +43,10 @@ public class TxStateCompositeIndexTest
 {
     private TransactionState state;
 
-    private final PendingIndexDescriptor indexOn_1_1_2 = IndexDescriptorFactory.forLabel( 1, 1, 2 );
-    private final PendingIndexDescriptor indexOn_1_2_3 = IndexDescriptorFactory.forLabel( 1, 2, 3 );
-    private final PendingIndexDescriptor indexOn_2_2_3 = IndexDescriptorFactory.uniqueForLabel( 2, 2, 3 );
-    private final PendingIndexDescriptor indexOn_2_2_3_4 = IndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
+    private final IndexDescriptor indexOn_1_1_2 = IndexDescriptorFactory.forLabel( 1, 1, 2 );
+    private final IndexDescriptor indexOn_1_2_3 = IndexDescriptorFactory.forLabel( 1, 2, 3 );
+    private final IndexDescriptor indexOn_2_2_3 = IndexDescriptorFactory.uniqueForLabel( 2, 2, 3 );
+    private final IndexDescriptor indexOn_2_2_3_4 = IndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
 
     @Before
     public void before()
@@ -179,7 +179,7 @@ public class TxStateCompositeIndexTest
         assertSeek( indexOn_2_2_3_4, values3, 1000 );
     }
 
-    private void addEntries( PendingIndexDescriptor index, ValueTuple[] values, long nodeIdStart )
+    private void addEntries( IndexDescriptor index, ValueTuple[] values, long nodeIdStart )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -187,7 +187,7 @@ public class TxStateCompositeIndexTest
         }
     }
 
-    private void assertSeek( PendingIndexDescriptor index, ValueTuple[] values, long nodeIdStart )
+    private void assertSeek( IndexDescriptor index, ValueTuple[] values, long nodeIdStart )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -208,7 +208,7 @@ public class TxStateCompositeIndexTest
         void addDefaultStringProperties( long... nodeIds );
     }
 
-    private IndexUpdater modifyIndex( final PendingIndexDescriptor descriptor )
+    private IndexUpdater modifyIndex( final IndexDescriptor descriptor )
     {
         return new IndexUpdater()
         {

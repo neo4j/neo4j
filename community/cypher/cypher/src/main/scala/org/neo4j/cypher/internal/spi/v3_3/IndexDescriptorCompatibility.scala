@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_3
 
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor => CypherIndexDescriptor}
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
-import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, PendingIndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 
 trait IndexDescriptorCompatibility {

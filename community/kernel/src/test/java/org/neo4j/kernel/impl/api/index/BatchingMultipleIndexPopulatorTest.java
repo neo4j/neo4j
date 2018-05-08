@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -71,8 +71,8 @@ public class BatchingMultipleIndexPopulatorTest
 {
     public static final int propertyId = 1;
     public static final int labelId = 1;
-    private final PendingIndexDescriptor index1 = IndexDescriptorFactory.forLabel( 1, 1);
-    private final PendingIndexDescriptor index42 = IndexDescriptorFactory.forLabel( 42, 42);
+    private final IndexDescriptor index1 = IndexDescriptorFactory.forLabel( 1, 1);
+    private final IndexDescriptor index42 = IndexDescriptorFactory.forLabel( 42, 42);
 
     @After
     public void tearDown()
@@ -257,7 +257,7 @@ public class BatchingMultipleIndexPopulatorTest
                     NullLogProvider.getInstance() );
 
             populator = addPopulator( batchingPopulator, index1 );
-            List<IndexEntryUpdate<PendingIndexDescriptor>> expected = forUpdates( index1, update1, update2 );
+            List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
             doThrow( batchFlushError ).when( populator ).add( expected );
 
             batchingPopulator.indexAllNodes().run();
@@ -322,7 +322,7 @@ public class BatchingMultipleIndexPopulatorTest
         verify( executor, atLeast( 5 ) ).execute( any( Runnable.class ) );
     }
 
-    private List<IndexEntryUpdate<PendingIndexDescriptor>> forUpdates( PendingIndexDescriptor index, NodeUpdates... updates )
+    private List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, NodeUpdates... updates )
     {
         return Iterables.asList(
                 Iterables.concat(
@@ -340,7 +340,7 @@ public class BatchingMultipleIndexPopulatorTest
                 .build();
     }
 
-    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, PendingIndexDescriptor descriptor )
+    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, IndexDescriptor descriptor )
     {
         IndexPopulator populator = mock( IndexPopulator.class );
 

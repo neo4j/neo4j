@@ -33,31 +33,31 @@ import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
-public class StoreIndexDescriptor extends PendingIndexDescriptor implements SchemaRule
+public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
 {
     private final long id;
     private final Long owningConstraintId;
 
-    public static StoreIndexDescriptor indexRule( long id, PendingIndexDescriptor descriptor,
+    public static StoreIndexDescriptor indexRule( long id, IndexDescriptor descriptor,
                                                   IndexProvider.Descriptor providerDescriptor )
     {
         return new StoreIndexDescriptor( id, providerDescriptor, descriptor, null );
     }
 
-    public static StoreIndexDescriptor constraintIndexRule( long id, PendingIndexDescriptor descriptor,
+    public static StoreIndexDescriptor constraintIndexRule( long id, IndexDescriptor descriptor,
                                                             IndexProvider.Descriptor providerDescriptor,
                                                             Long owningConstraint )
     {
         return new StoreIndexDescriptor( id, providerDescriptor, descriptor, owningConstraint );
     }
 
-    public static StoreIndexDescriptor indexRule( long id, PendingIndexDescriptor descriptor,
+    public static StoreIndexDescriptor indexRule( long id, IndexDescriptor descriptor,
                                                   IndexProvider.Descriptor providerDescriptor, String name )
     {
         return new StoreIndexDescriptor( id, providerDescriptor, descriptor, null, name );
     }
 
-    public static StoreIndexDescriptor constraintIndexRule( long id, PendingIndexDescriptor descriptor,
+    public static StoreIndexDescriptor constraintIndexRule( long id, IndexDescriptor descriptor,
                                                             IndexProvider.Descriptor providerDescriptor,
                                                             Long owningConstraint, String name )
     {
@@ -65,13 +65,13 @@ public class StoreIndexDescriptor extends PendingIndexDescriptor implements Sche
     }
 
     protected StoreIndexDescriptor( long id, IndexProvider.Descriptor providerDescriptor,
-                                    PendingIndexDescriptor descriptor, Long owningConstraintId )
+                                    IndexDescriptor descriptor, Long owningConstraintId )
     {
         this( id, providerDescriptor, descriptor, owningConstraintId, null );
     }
 
     protected StoreIndexDescriptor( long id, IndexProvider.Descriptor providerDescriptor,
-                                    PendingIndexDescriptor descriptor, Long owningConstraintId, String name )
+                                    IndexDescriptor descriptor, Long owningConstraintId, String name )
     {
         super( descriptor.schema(),
                descriptor.type(),
@@ -90,7 +90,7 @@ public class StoreIndexDescriptor extends PendingIndexDescriptor implements Sche
 
     public boolean canSupportUniqueConstraint()
     {
-        return type() == PendingIndexDescriptor.Type.UNIQUE;
+        return type() == IndexDescriptor.Type.UNIQUE;
     }
 
     /**

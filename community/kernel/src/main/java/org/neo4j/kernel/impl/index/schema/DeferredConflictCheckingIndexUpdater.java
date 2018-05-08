@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.ValueTuple;
 
@@ -62,10 +62,10 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
 {
     private final IndexUpdater actual;
     private final Supplier<IndexReader> readerSupplier;
-    private final PendingIndexDescriptor schemaIndexDescriptor;
+    private final IndexDescriptor schemaIndexDescriptor;
     private final Set<ValueTuple> touchedTuples = new HashSet<>();
 
-    public DeferredConflictCheckingIndexUpdater( IndexUpdater actual, Supplier<IndexReader> readerSupplier, PendingIndexDescriptor schemaIndexDescriptor )
+    public DeferredConflictCheckingIndexUpdater( IndexUpdater actual, Supplier<IndexReader> readerSupplier, IndexDescriptor schemaIndexDescriptor )
     {
         this.actual = actual;
         this.readerSupplier = readerSupplier;

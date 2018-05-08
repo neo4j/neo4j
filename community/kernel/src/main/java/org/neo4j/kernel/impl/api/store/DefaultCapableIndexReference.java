@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 
 public class DefaultCapableIndexReference implements CapableIndexReference
@@ -124,9 +124,9 @@ public class DefaultCapableIndexReference implements CapableIndexReference
         return result;
     }
 
-    public static CapableIndexReference fromDescriptor( PendingIndexDescriptor descriptor )
+    public static CapableIndexReference fromDescriptor( IndexDescriptor descriptor )
     {
-        boolean unique =  descriptor.type() == PendingIndexDescriptor.Type.UNIQUE;
+        boolean unique =  descriptor.type() == IndexDescriptor.Type.UNIQUE;
         final SchemaDescriptor schema = descriptor.schema();
         return new DefaultCapableIndexReference( unique, IndexCapability.NO_CAPABILITY, IndexProvider.UNDECIDED,
                 schema.keyId(), schema.getPropertyIds() );

@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -95,7 +95,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey<KEY>
         layoutUtil.copyValue( value, intoValue );
     }
 
-    void verifyUpdates( IndexEntryUpdate<PendingIndexDescriptor>[] updates )
+    void verifyUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
             throws IOException
     {
         Hit<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
@@ -166,11 +166,11 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey<KEY>
         return new SimpleHit<>( intoKey, intoValue );
     }
 
-    private Hit<KEY,VALUE>[] convertToHits( IndexEntryUpdate<PendingIndexDescriptor>[] updates,
+    private Hit<KEY,VALUE>[] convertToHits( IndexEntryUpdate<IndexDescriptor>[] updates,
             Layout<KEY,VALUE> layout )
     {
         List<Hit<KEY,VALUE>> hits = new ArrayList<>( updates.length );
-        for ( IndexEntryUpdate<PendingIndexDescriptor> u : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> u : updates )
         {
             KEY key = layout.newKey();
             key.from( u.getEntityId(), u.values() );

@@ -34,7 +34,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
@@ -90,7 +90,7 @@ public abstract class IndexProviderCompatibilityTestSuite
             indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
         }
 
-        public Compatibility( IndexProviderCompatibilityTestSuite testSuite, PendingIndexDescriptor descriptor )
+        public Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
         {
             this.testSuite = testSuite;
             this.descriptor = StoreIndexDescriptor.indexRule( 17, descriptor, indexProvider.getProviderDescriptor() );

@@ -26,8 +26,8 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
-import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class IndexDescriptorFactory
 {
@@ -35,30 +35,30 @@ public class IndexDescriptorFactory
     {
     }
 
-    public static PendingIndexDescriptor forLabel( int labelId, int... propertyIds )
+    public static IndexDescriptor forLabel( int labelId, int... propertyIds )
     {
         return forSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
-    public static PendingIndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
+    public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
         return uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
-    public static PendingIndexDescriptor forSchema( SchemaDescriptor schema )
+    public static IndexDescriptor forSchema( SchemaDescriptor schema )
     {
-        return new PendingIndexDescriptor( schema, GENERAL, null, null );
+        return new IndexDescriptor( schema, GENERAL, null, null );
     }
 
-    public static PendingIndexDescriptor forSchema( SchemaDescriptor schema,
-                                                    Optional<String> name,
-                                                    IndexProvider.Descriptor providerDescriptor )
+    public static IndexDescriptor forSchema( SchemaDescriptor schema,
+                                             Optional<String> name,
+                                             IndexProvider.Descriptor providerDescriptor )
     {
-        return new PendingIndexDescriptor( schema, GENERAL, name, providerDescriptor );
+        return new IndexDescriptor( schema, GENERAL, name, providerDescriptor );
     }
 
-    public static PendingIndexDescriptor uniqueForSchema( SchemaDescriptor schema )
+    public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        return new PendingIndexDescriptor( schema, UNIQUE, null, null );
+        return new IndexDescriptor( schema, UNIQUE, null, null );
     }
 }

@@ -55,7 +55,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -585,7 +585,7 @@ public class IndexPopulationJobTest
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        PendingIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
+        IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         return new InMemoryIndexProvider().getPopulator( StoreIndexDescriptor
                                                                  .indexRule( 21, descriptor, PROVIDER_DESCRIPTOR ), samplingConfig );
     }
@@ -614,7 +614,7 @@ public class IndexPopulationJobTest
                                                       LogProvider logProvider, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        PendingIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
+        IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
@@ -625,16 +625,16 @@ public class IndexPopulationJobTest
         return job;
     }
 
-    private PendingIndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
+    private IndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         try ( Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
-            PendingIndexDescriptor descriptor = constraint ?
-                                                IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
-                                                IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+            IndexDescriptor descriptor = constraint ?
+                                         IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
+                                         IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
             tx.success();
             return descriptor;
         }

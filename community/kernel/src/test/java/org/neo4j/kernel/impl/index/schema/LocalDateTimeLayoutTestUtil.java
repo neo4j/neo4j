@@ -28,7 +28,7 @@ import java.util.Set;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -46,7 +46,7 @@ public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeSch
             LocalDateTime.of( -1, 12, 31, 23,59,59,999_999_999 )
     };
 
-    LocalDateTimeLayoutTestUtil( PendingIndexDescriptor schemaIndexDescriptor )
+    LocalDateTimeLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }
@@ -58,7 +58,7 @@ public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeSch
     }
 
     @Override
-    IndexEntryUpdate<PendingIndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
     }
@@ -89,13 +89,13 @@ public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeSch
     }
 
     @Override
-    IndexEntryUpdate<PendingIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( ALL_EXTREME_VALUES );
     }
 
     @Override
-    IndexEntryUpdate<PendingIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }

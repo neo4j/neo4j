@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -44,7 +44,7 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
     final File storeFile;
     final Layout<KEY,VALUE> layout;
     final FileSystemAbstraction fileSystem;
-    final PendingIndexDescriptor descriptor;
+    final IndexDescriptor descriptor;
     private final IndexProvider.Monitor monitor;
 
     protected GBPTree<KEY,VALUE> tree;

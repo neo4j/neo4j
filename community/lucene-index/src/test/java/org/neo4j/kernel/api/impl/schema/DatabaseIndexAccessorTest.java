@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -76,7 +76,7 @@ public class DatabaseIndexAccessorTest
     public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Parameterized.Parameter( 0 )
-    public PendingIndexDescriptor index;
+    public IndexDescriptor index;
     @Parameterized.Parameter( 1 )
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
 
@@ -86,8 +86,8 @@ public class DatabaseIndexAccessorTest
     private final Object value = "value";
     private final Object value2 = 40;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final PendingIndexDescriptor GENERAL_INDEX = IndexDescriptorFactory.forLabel( 0, PROP_ID );
-    private static final PendingIndexDescriptor UNIQUE_INDEX = IndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
+    private static final IndexDescriptor GENERAL_INDEX = IndexDescriptorFactory.forLabel( 0, PROP_ID );
+    private static final IndexDescriptor UNIQUE_INDEX = IndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
     private static final Config CONFIG = Config.defaults();
 
     @Parameterized.Parameters( name = "{0}" )
@@ -123,7 +123,7 @@ public class DatabaseIndexAccessorTest
     }
 
     private static Object[] arg(
-            PendingIndexDescriptor index,
+            IndexDescriptor index,
             IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
     {
         return new Object[]{index, foo};

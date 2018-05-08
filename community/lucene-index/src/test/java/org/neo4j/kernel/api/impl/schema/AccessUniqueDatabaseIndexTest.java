@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -53,7 +53,7 @@ public class AccessUniqueDatabaseIndexTest
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final File storeDirectory = new File( "db" );
-    private final PendingIndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 1000, 100 );
+    private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 1000, 100 );
 
     @Test
     public void shouldAddUniqueEntries() throws Exception

@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
@@ -209,7 +209,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( PendingIndexDescriptor index )
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
         StoreIndexDescriptor rule = indexRule( index );
         if ( rule != null )
@@ -222,7 +222,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( PendingIndexDescriptor index )
+    public long indexGetCommittedId( IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         StoreIndexDescriptor rule = indexRule( index );
@@ -234,12 +234,12 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public InternalIndexState indexGetState( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getState();
     }
 
-    public CapableIndexReference indexReference( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public CapableIndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy indexProxy = indexService.getIndexProxy( descriptor.schema() );
         return indexProxy.getDescriptor();
@@ -585,7 +585,7 @@ public class StorageLayer implements StoreReadLayer
         }
     }
 
-    private StoreIndexDescriptor indexRule( PendingIndexDescriptor index )
+    private StoreIndexDescriptor indexRule( IndexDescriptor index )
     {
         for ( StoreIndexDescriptor rule : schemaCache.indexRules() )
         {

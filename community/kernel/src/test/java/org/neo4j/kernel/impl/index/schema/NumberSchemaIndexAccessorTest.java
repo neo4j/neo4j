@@ -28,7 +28,7 @@ import java.util.Arrays;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
@@ -51,7 +51,7 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
     public void respectIndexOrder() throws Exception
     {
         // given
-        IndexEntryUpdate<PendingIndexDescriptor>[] someUpdates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] someUpdates = layoutUtil.someUpdates();
         processAll( someUpdates );
         Value[] expectedValues = layoutUtil.extractValuesFromUpdates( someUpdates );
 

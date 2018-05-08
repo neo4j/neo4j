@@ -52,7 +52,7 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -123,7 +123,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
         void indexPopulationScanComplete();
 
-        void awaitingPopulationOfRecoveredIndex( long indexId, PendingIndexDescriptor descriptor );
+        void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor );
     }
 
     public static class MonitorAdapter implements Monitor
@@ -149,7 +149,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
 
         @Override
-        public void awaitingPopulationOfRecoveredIndex( long indexId, PendingIndexDescriptor descriptor )
+        public void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor )
         {   // Do nothing
         }
     }
@@ -303,7 +303,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         // This is why we now go and wait for those indexes to be fully populated.
         rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
                 {
-                    if ( descriptor.getIndexDescriptor().type() != PendingIndexDescriptor.Type.UNIQUE )
+                    if ( descriptor.getIndexDescriptor().type() != IndexDescriptor.Type.UNIQUE )
                     {
                         // It's not a uniqueness constraint, so don't wait for it to be rebuilt
                         return;
