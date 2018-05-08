@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, NameId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Selectivity}
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference
 
 object TransactionBoundGraphStatistics {
   def apply(read: Read, schemaRead: SchemaRead) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead))

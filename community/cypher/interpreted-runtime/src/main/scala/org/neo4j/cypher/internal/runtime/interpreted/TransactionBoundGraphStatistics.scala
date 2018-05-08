@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescrip
 import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 object TransactionBoundGraphStatistics {
