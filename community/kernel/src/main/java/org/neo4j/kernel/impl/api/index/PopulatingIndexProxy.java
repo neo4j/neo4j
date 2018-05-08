@@ -39,13 +39,13 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 public class PopulatingIndexProxy implements IndexProxy
 {
-    private final IndexMeta indexMeta;
+    private final CapableIndexDescriptor capableIndexDescriptor;
     private final IndexPopulationJob job;
     private final MultipleIndexPopulator.IndexPopulation indexPopulation;
 
-    PopulatingIndexProxy( IndexMeta indexMeta, IndexPopulationJob job, MultipleIndexPopulator.IndexPopulation indexPopulation )
+    PopulatingIndexProxy( CapableIndexDescriptor capableIndexDescriptor, IndexPopulationJob job, MultipleIndexPopulator.IndexPopulation indexPopulation )
     {
-        this.indexMeta = indexMeta;
+        this.capableIndexDescriptor = capableIndexDescriptor;
         this.job = job;
         this.indexPopulation = indexPopulation;
     }
@@ -91,19 +91,19 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return indexMeta;
+        return capableIndexDescriptor;
     }
 
     @Override
     public SchemaDescriptor schema()
     {
-        return indexMeta.schema();
+        return capableIndexDescriptor.schema();
     }
 
     @Override
     public IndexProvider.Descriptor getProviderDescriptor()
     {
-        return indexMeta.providerDescriptor();
+        return capableIndexDescriptor.providerDescriptor();
     }
 
     @Override
@@ -115,7 +115,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public IndexCapability getIndexCapability()
     {
-        return indexMeta;
+        return capableIndexDescriptor;
     }
 
     @Override
@@ -170,7 +170,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public long getIndexId()
     {
-        return indexMeta.getId();
+        return capableIndexDescriptor.getId();
     }
 
     @Override

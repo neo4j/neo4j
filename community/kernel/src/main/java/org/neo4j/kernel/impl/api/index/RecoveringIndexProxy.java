@@ -28,9 +28,9 @@ import org.neo4j.values.storable.Value;
 
 public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
 {
-    RecoveringIndexProxy( IndexMeta indexMeta )
+    RecoveringIndexProxy( CapableIndexDescriptor capableIndexDescriptor )
     {
-        super( indexMeta, null );
+        super( capableIndexDescriptor, null );
     }
 
     @Override

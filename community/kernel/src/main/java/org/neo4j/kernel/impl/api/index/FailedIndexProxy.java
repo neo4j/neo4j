@@ -39,14 +39,14 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     private final IndexCountsRemover indexCountsRemover;
     private final Log log;
 
-    FailedIndexProxy( IndexMeta indexMeta,
+    FailedIndexProxy( CapableIndexDescriptor capableIndexDescriptor,
             String indexUserDescription,
             IndexPopulator populator,
             IndexPopulationFailure populationFailure,
             IndexCountsRemover indexCountsRemover,
             LogProvider logProvider )
     {
-        super( indexMeta, populationFailure );
+        super( capableIndexDescriptor, populationFailure );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
         this.indexCountsRemover = indexCountsRemover;
