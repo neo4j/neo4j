@@ -1022,7 +1022,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     @SuppressWarnings( "unused" )
-    void printTree() throws IOException
+    public void printTree() throws IOException
     {
         printTree( false, false, false, false );
     }
@@ -1046,6 +1046,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 .printTree( cursor, writer.cursor, System.out, printValues, printPosition, printState, printHeader );
         }
     }
+
+    // Utility method
+    public void printState() throws IOException
+    {
+        try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            TreePrinter.printTreeState( cursor, System.out );
+        }
+    }
+
     // Utility method
     /**
      * Print node with given id to System.out, if node with id exists.
@@ -1069,7 +1079,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     // Utility method
-    boolean consistencyCheck() throws IOException
+    public boolean consistencyCheck() throws IOException
     {
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
