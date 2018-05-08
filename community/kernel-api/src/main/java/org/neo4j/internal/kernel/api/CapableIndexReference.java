@@ -27,10 +27,6 @@ import org.neo4j.values.storable.ValueCategory;
  */
 public interface CapableIndexReference extends IndexReference, IndexCapability
 {
-    String providerKey();
-
-    String providerVersion();
-
     CapableIndexReference NO_INDEX = new CapableIndexReference()
     {
         @Override

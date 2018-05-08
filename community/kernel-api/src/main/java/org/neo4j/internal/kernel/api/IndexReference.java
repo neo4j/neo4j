@@ -39,6 +39,10 @@ public interface IndexReference
 
     int[] properties();
 
+    String providerKey();
+
+    String providerVersion();
+
     /**
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
