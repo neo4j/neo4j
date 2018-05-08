@@ -120,7 +120,7 @@ public class GBPTreePlayground
         @Override
         public String toString()
         {
-            return "print state of tree";
+            return "Print state of tree";
         }
     }
 
