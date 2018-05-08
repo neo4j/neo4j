@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
@@ -45,10 +45,10 @@ import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
-    private final IndexDescriptor descriptor;
+    private final StoreIndexDescriptor descriptor;
     private final DropAction dropAction;
 
-    FusionIndexAccessor( IndexAccessor[] accessors, Selector selector, IndexDescriptor descriptor, DropAction dropAction )
+    FusionIndexAccessor( IndexAccessor[] accessors, Selector selector, StoreIndexDescriptor descriptor, DropAction dropAction )
     {
         super( accessors, selector );
         this.descriptor = descriptor;

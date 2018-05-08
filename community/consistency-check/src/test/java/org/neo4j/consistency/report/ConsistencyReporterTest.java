@@ -58,7 +58,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -387,10 +387,10 @@ public class ConsistencyReporterTest
             {
                 return SchemaRule.Kind.INDEX_RULE;
             }
-            if ( type == IndexDescriptor.class )
+            if ( type == StoreIndexDescriptor.class )
             {
-                return IndexDescriptor.indexRule( 1, IndexDescriptorFactory.forLabel( 2, 3 ),
-                                                  new IndexProvider.Descriptor( "provider", "version" ) );
+                return StoreIndexDescriptor.indexRule( 1, IndexDescriptorFactory.forLabel( 2, 3 ),
+                                                       new IndexProvider.Descriptor( "provider", "version" ) );
             }
             if ( type == SchemaRule.class )
             {

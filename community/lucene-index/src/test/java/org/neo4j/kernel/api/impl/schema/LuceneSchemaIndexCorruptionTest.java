@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -76,7 +76,8 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor descriptor = IndexDescriptor.indexRule( faultyIndexId, IndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
+        StoreIndexDescriptor descriptor = StoreIndexDescriptor
+                .indexRule( faultyIndexId, IndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
@@ -94,7 +95,8 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor descriptor = IndexDescriptor.indexRule( faultyIndexId, IndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
+        StoreIndexDescriptor descriptor = StoreIndexDescriptor
+                .indexRule( faultyIndexId, IndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
@@ -112,7 +114,8 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor descriptor = IndexDescriptor.indexRule( faultyIndexId, IndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
+        StoreIndexDescriptor descriptor = StoreIndexDescriptor
+                .indexRule( faultyIndexId, IndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then

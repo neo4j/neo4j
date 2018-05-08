@@ -33,7 +33,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -60,7 +60,8 @@ public class LuceneIndexProviderTest
 
     private File graphDbDir;
     private FileSystemAbstraction fs;
-    private static final IndexDescriptor descriptor = IndexDescriptor.indexRule( 1, IndexDescriptorFactory.forLabel( 1, 1 ), PROVIDER_DESCRIPTOR );
+    private static final StoreIndexDescriptor
+            descriptor = StoreIndexDescriptor.indexRule( 1, IndexDescriptorFactory.forLabel( 1, 1 ), PROVIDER_DESCRIPTOR );
 
     @Before
     public void setup()

@@ -21,15 +21,13 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.test.Race;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.indexRule;
+import static org.neo4j.kernel.api.schema.index.StoreIndexDescriptor.indexRule;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 

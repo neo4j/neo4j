@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -350,8 +350,8 @@ public class BatchingMultipleIndexPopulatorTest
         flipper.setFlipTarget( indexProxyFactory );
 
         batchingPopulator.addPopulator( populator,
-                new CapableIndexDescriptor( IndexDescriptor.indexRule( 1, descriptor, new IndexProvider.Descriptor( "foo", "1" ) ), NO_CAPABILITY ), flipper,
-                failedIndexProxyFactory, "testIndex" );
+                                        new CapableIndexDescriptor( StoreIndexDescriptor.indexRule( 1, descriptor, new IndexProvider.Descriptor( "foo", "1" ) ), NO_CAPABILITY ), flipper,
+                                        failedIndexProxyFactory, "testIndex" );
 
         return populator;
     }

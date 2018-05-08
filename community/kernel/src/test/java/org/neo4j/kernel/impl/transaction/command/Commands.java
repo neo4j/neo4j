@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -148,7 +148,7 @@ public class Commands
     public static SchemaRuleCommand createIndexRule( IndexProvider.Descriptor provider,
             long id, LabelSchemaDescriptor descriptor )
     {
-        SchemaRule rule = IndexDescriptor.indexRule(
+        SchemaRule rule = StoreIndexDescriptor.indexRule(
                 id,
                 IndexDescriptorFactory.forSchema( descriptor ),
                 provider );

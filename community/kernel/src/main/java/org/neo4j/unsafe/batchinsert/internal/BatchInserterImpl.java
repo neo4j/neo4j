@@ -128,7 +128,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -467,7 +467,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private void createIndexRule( int labelId, int[] propertyKeyIds )
     {
-        IndexDescriptor schemaRule = IndexDescriptor.indexRule(
+        StoreIndexDescriptor schemaRule = StoreIndexDescriptor.indexRule(
                 schemaStore.nextId(),
                 IndexDescriptorFactory.forLabel( labelId, propertyKeyIds ),
                 indexProviderMap.getDefaultProvider().getProviderDescriptor() );
@@ -488,14 +488,14 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return;
         }
 
-        final IndexDescriptor[] indexDescriptors = getIndexesNeedingPopulation();
+        final StoreIndexDescriptor[] indexDescriptors = getIndexesNeedingPopulation();
         final List<IndexPopulatorWithSchema> populators = new ArrayList<>( indexDescriptors.length );
 
         final SchemaDescriptor[] descriptors = new LabelSchemaDescriptor[indexDescriptors.length];
 
         for ( int i = 0; i < indexDescriptors.length; i++ )
         {
-            IndexDescriptor index = indexDescriptors[i];
+            StoreIndexDescriptor index = indexDescriptors[i];
             descriptors[i] = index.schema();
             IndexPopulator populator = indexProviderMap.apply( index.providerDescriptor() )
                                                 .getPopulator( index, new IndexSamplingConfig( config ) );
@@ -579,10 +579,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    private IndexDescriptor[] getIndexesNeedingPopulation()
+    private StoreIndexDescriptor[] getIndexesNeedingPopulation()
     {
-        List<IndexDescriptor> indexesNeedingPopulation = new ArrayList<>();
-        for ( IndexDescriptor rule : schemaCache.indexRules() )
+        List<StoreIndexDescriptor> indexesNeedingPopulation = new ArrayList<>();
+        for ( StoreIndexDescriptor rule : schemaCache.indexRules() )
         {
             IndexProvider provider = indexProviderMap.apply( rule.providerDescriptor() );
             if ( provider.getInitialState( rule ) != InternalIndexState.FAILED )
@@ -590,7 +590,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 indexesNeedingPopulation.add( rule );
             }
         }
-        return indexesNeedingPopulation.toArray( new IndexDescriptor[indexesNeedingPopulation.size()] );
+        return indexesNeedingPopulation.toArray( new StoreIndexDescriptor[indexesNeedingPopulation.size()] );
     }
 
     @Override
@@ -607,8 +607,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         long indexRuleId = schemaStore.nextId();
         long constraintRuleId = schemaStore.nextId();
 
-        IndexDescriptor indexRule =
-                IndexDescriptor.constraintIndexRule(
+        StoreIndexDescriptor indexRule =
+                StoreIndexDescriptor.constraintIndexRule(
                         indexRuleId,
                         schemaIndexDescriptor,
                         this.indexProviderMap.getDefaultProvider().getProviderDescriptor(),

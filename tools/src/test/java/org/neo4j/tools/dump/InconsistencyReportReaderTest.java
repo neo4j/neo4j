@@ -30,7 +30,7 @@ import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -66,8 +66,8 @@ public class InconsistencyReportReaderTest
                 "Some error", "something" );
         logger.error( RecordType.INDEX, new IndexEntry( indexNodeId ), "Some index error", "Something wrong with index" );
         logger.error( RecordType.NODE, new NodeRecord( nodeNotInTheIndexId ), "Some index error",
-                      IndexDescriptor.indexRule( indexId, IndexDescriptorFactory.forLabel( 1, 2 ),
-                                                 new IndexProvider.Descriptor( "key", "version" ) ).toString() );
+                      StoreIndexDescriptor.indexRule( indexId, IndexDescriptorFactory.forLabel( 1, 2 ),
+                                                      new IndexProvider.Descriptor( "key", "version" ) ).toString() );
         String text = out.toString();
 
         // WHEN

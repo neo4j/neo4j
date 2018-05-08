@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.record;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,7 +39,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         PendingIndexDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_ID_1 );
-        IndexDescriptor indexRule = IndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
+        StoreIndexDescriptor indexRule = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
@@ -56,7 +56,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         PendingIndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        IndexDescriptor indexRule = IndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
+        StoreIndexDescriptor indexRule = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
@@ -66,7 +66,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
         assertThat( indexRule.providerDescriptor(), equalTo( PROVIDER_DESCRIPTOR ) );
         assertThat( indexRule.getOwningConstraint(), equalTo( null ) );
 
-        IndexDescriptor withConstraint = indexRule.withOwningConstraint( RULE_ID_2 );
+        StoreIndexDescriptor withConstraint = indexRule.withOwningConstraint( RULE_ID_2 );
         assertThat( withConstraint.getOwningConstraint(), equalTo( RULE_ID_2 ) );
         assertThat( indexRule.getOwningConstraint(), equalTo( null ) ); // this is unchanged
     }
@@ -84,15 +84,15 @@ public class IndexRuleTest extends SchemaRuleTestBase
     public void detectUniqueIndexWithoutOwningConstraint()
     {
         PendingIndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        IndexDescriptor indexRule = IndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
+        StoreIndexDescriptor indexRule = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
 
         assertTrue( indexRule.isIndexWithoutOwningConstraint() );
     }
 
     private void assertEqualityByDescriptor( PendingIndexDescriptor descriptor )
     {
-        IndexDescriptor rule1 = IndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
-        IndexDescriptor rule2 = IndexDescriptor.indexRule( RULE_ID_2, descriptor, PROVIDER_DESCRIPTOR_2 );
+        StoreIndexDescriptor rule1 = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
+        StoreIndexDescriptor rule2 = StoreIndexDescriptor.indexRule( RULE_ID_2, descriptor, PROVIDER_DESCRIPTOR_2 );
 
         assertEquality( rule1, rule2 );
     }

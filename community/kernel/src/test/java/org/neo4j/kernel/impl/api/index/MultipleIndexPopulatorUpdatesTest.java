@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -118,11 +118,12 @@ public class MultipleIndexPopulatorUpdatesTest
     private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
             IndexPopulator indexPopulator, long indexId, PendingIndexDescriptor descriptor )
     {
-        return addPopulator( multipleIndexPopulator, IndexDescriptor.indexRule( indexId, descriptor, PROVIDER_DESCRIPTOR ), indexPopulator,
-                mock( FlippableIndexProxy.class ), mock( FailedIndexProxyFactory.class ) );
+        return addPopulator( multipleIndexPopulator, StoreIndexDescriptor
+                                     .indexRule( indexId, descriptor, PROVIDER_DESCRIPTOR ), indexPopulator,
+                             mock( FlippableIndexProxy.class ), mock( FailedIndexProxyFactory.class ) );
     }
 
-    private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor descriptor,
+    private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, StoreIndexDescriptor descriptor,
             IndexPopulator indexPopulator, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, new CapableIndexDescriptor( descriptor, NO_CAPABILITY ),

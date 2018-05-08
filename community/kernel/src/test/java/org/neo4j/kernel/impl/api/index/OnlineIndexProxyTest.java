@@ -25,7 +25,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 
@@ -47,7 +47,7 @@ public class OnlineIndexProxyTest
     {
         // given
         CapableIndexDescriptor
-                capableIndexDescriptor = new CapableIndexDescriptor( IndexDescriptor.indexRule( indexId, descriptor, providerDescriptor ), NO_CAPABILITY );
+                capableIndexDescriptor = new CapableIndexDescriptor( StoreIndexDescriptor.indexRule( indexId, descriptor, providerDescriptor ), NO_CAPABILITY );
         OnlineIndexProxy index = new OnlineIndexProxy( capableIndexDescriptor, accessor, storeView, false );
 
         // when

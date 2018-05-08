@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -154,8 +154,8 @@ public class DumpCountsStoreTest
     {
         SchemaStorage schemaStorage = mock(SchemaStorage.class);
         IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
-        IndexDescriptor rule = IndexDescriptor.indexRule( indexId, descriptor, providerDescriptor );
-        ArrayList<IndexDescriptor> rules = new ArrayList<>();
+        StoreIndexDescriptor rule = StoreIndexDescriptor.indexRule( indexId, descriptor, providerDescriptor );
+        ArrayList<StoreIndexDescriptor> rules = new ArrayList<>();
         rules.add( rule );
 
         when( schemaStorage.indexesGetAll() ).thenReturn( rules.iterator() );

@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.Race;
 
@@ -77,8 +77,8 @@ public class SchemaCacheTest
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
         SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules, IndexProviderMap.EMPTY );
 
-        IndexDescriptor rule1 = newIndexRule( 10, 11, 12 );
-        IndexDescriptor rule2 = newIndexRule( 13, 14, 15 );
+        StoreIndexDescriptor rule1 = newIndexRule( 10, 11, 12 );
+        StoreIndexDescriptor rule2 = newIndexRule( 13, 14, 15 );
         cache.addSchemaRule( rule1 );
         cache.addSchemaRule( rule2 );
 
@@ -338,9 +338,9 @@ public class SchemaCacheTest
         }
     }
 
-    private IndexDescriptor newIndexRule( long id, int label, int propertyKey )
+    private StoreIndexDescriptor newIndexRule( long id, int label, int propertyKey )
     {
-        return IndexDescriptor
+        return StoreIndexDescriptor
                 .indexRule( id, IndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
     }
 

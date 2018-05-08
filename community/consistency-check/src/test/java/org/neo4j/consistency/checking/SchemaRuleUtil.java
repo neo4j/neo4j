@@ -23,7 +23,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 public class SchemaRuleUtil
 {
@@ -49,23 +49,25 @@ public class SchemaRuleUtil
                 ConstraintDescriptorFactory.existsForRelType( labelId, propertyId ) );
     }
 
-    public static IndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProvider.Descriptor
+    public static StoreIndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProvider.Descriptor
             descriptor )
     {
-        return IndexDescriptor.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
+        return StoreIndexDescriptor
+                .indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
     }
 
-    public static IndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
-                                                       IndexProvider.Descriptor descriptor, long constraintId )
+    public static StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
+                                                            IndexProvider.Descriptor descriptor, long constraintId )
     {
-        return IndexDescriptor.constraintIndexRule( ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
-                                                    descriptor, constraintId );
+        return StoreIndexDescriptor
+                .constraintIndexRule( ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
+                                      descriptor, constraintId );
     }
 
-    public static IndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
-                                                       IndexProvider.Descriptor descriptor )
+    public static StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
+                                                            IndexProvider.Descriptor descriptor )
     {
-        return IndexDescriptor.indexRule( ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
-                                          descriptor );
+        return StoreIndexDescriptor.indexRule( ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
+                                               descriptor );
     }
 }

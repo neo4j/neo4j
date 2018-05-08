@@ -53,7 +53,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
@@ -586,7 +586,8 @@ public class IndexPopulationJobTest
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         PendingIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
-        return new InMemoryIndexProvider().getPopulator( IndexDescriptor.indexRule( 21, descriptor, PROVIDER_DESCRIPTOR ), samplingConfig );
+        return new InMemoryIndexProvider().getPopulator( StoreIndexDescriptor
+                                                                 .indexRule( 21, descriptor, PROVIDER_DESCRIPTOR ), samplingConfig );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator,
@@ -619,7 +620,7 @@ public class IndexPopulationJobTest
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider );
         IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, stateHolder );
-        job.addPopulator( populator, new CapableIndexDescriptor( IndexDescriptor.indexRule( indexId, descriptor, PROVIDER_DESCRIPTOR ), NO_CAPABILITY ),
+        job.addPopulator( populator, new CapableIndexDescriptor( StoreIndexDescriptor.indexRule( indexId, descriptor, PROVIDER_DESCRIPTOR ), NO_CAPABILITY ),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
     }

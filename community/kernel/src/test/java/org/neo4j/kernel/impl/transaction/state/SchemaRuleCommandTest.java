@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.transaction.command.BaseCommandReader;
@@ -92,9 +92,9 @@ public class SchemaRuleCommandTest
             labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
             new PropertyPhysicalToLogicalConverter( propertyStore ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
-    private final IndexDescriptor
-            rule = IndexDescriptor.indexRule( id, IndexDescriptorFactory.forLabel( labelId, propertyKey ),
-                                              PROVIDER_DESCRIPTOR );
+    private final StoreIndexDescriptor
+            rule = StoreIndexDescriptor.indexRule( id, IndexDescriptorFactory.forLabel( labelId, propertyKey ),
+                                                   PROVIDER_DESCRIPTOR );
 
     @Test
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception

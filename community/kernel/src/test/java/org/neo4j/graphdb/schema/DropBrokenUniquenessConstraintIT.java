@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -38,7 +38,7 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.single;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.constraintIndexRule;
+import static org.neo4j.kernel.api.schema.index.StoreIndexDescriptor.constraintIndexRule;
 
 public class DropBrokenUniquenessConstraintIT
 {
@@ -61,7 +61,7 @@ public class DropBrokenUniquenessConstraintIT
         // when intentionally breaking the schema by setting the backing index rule to unused
         RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         SchemaStore schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
-        SchemaRule indexRule = single( filter( rule -> rule instanceof IndexDescriptor, schemaStore.loadAllSchemaRules() ) );
+        SchemaRule indexRule = single( filter( rule -> rule instanceof StoreIndexDescriptor, schemaStore.loadAllSchemaRules() ) );
         setSchemaRecordNotInUse( schemaStore, indexRule.getId() );
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
@@ -92,8 +92,8 @@ public class DropBrokenUniquenessConstraintIT
         // when intentionally breaking the schema by setting the backing index rule to unused
         RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         SchemaStore schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
-        SchemaRule indexRule = single( filter( rule -> rule instanceof IndexDescriptor, schemaStore.loadAllSchemaRules() ) );
-        setOwnerNull( schemaStore, (IndexDescriptor) indexRule );
+        SchemaRule indexRule = single( filter( rule -> rule instanceof StoreIndexDescriptor, schemaStore.loadAllSchemaRules() ) );
+        setOwnerNull( schemaStore, (StoreIndexDescriptor) indexRule );
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
         try ( Transaction tx = db.beginTx() )
@@ -158,8 +158,8 @@ public class DropBrokenUniquenessConstraintIT
         SchemaStore schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
         SchemaRule constraintRule = single( filter( rule -> rule instanceof ConstraintRule, schemaStore.loadAllSchemaRules() ) );
         setSchemaRecordNotInUse( schemaStore, constraintRule.getId() );
-        SchemaRule indexRule = single( filter( rule -> rule instanceof IndexDescriptor, schemaStore.loadAllSchemaRules() ) );
-        setOwnerNull( schemaStore, (IndexDescriptor) indexRule );
+        SchemaRule indexRule = single( filter( rule -> rule instanceof StoreIndexDescriptor, schemaStore.loadAllSchemaRules() ) );
+        setOwnerNull( schemaStore, (StoreIndexDescriptor) indexRule );
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
         try ( Transaction tx = db.beginTx() )
@@ -178,7 +178,7 @@ public class DropBrokenUniquenessConstraintIT
         }
     }
 
-    private void setOwnerNull( SchemaStore schemaStore, IndexDescriptor rule )
+    private void setOwnerNull( SchemaStore schemaStore, StoreIndexDescriptor rule )
     {
         rule = constraintIndexRule( rule.getId(), rule, rule.providerDescriptor(), null );
         List<DynamicRecord> dynamicRecords = schemaStore.allocateFrom( rule );

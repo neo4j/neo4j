@@ -24,13 +24,13 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport>
 {
-    private final IndexDescriptor indexRule;
+    private final StoreIndexDescriptor indexRule;
 
-    public IndexCheck( IndexDescriptor indexRule )
+    public IndexCheck( StoreIndexDescriptor indexRule )
     {
         this.indexRule = indexRule;
     }

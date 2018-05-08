@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -258,10 +258,10 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     private static Map<Long,PendingIndexDescriptor> getAllIndexesFrom( SchemaStorage storage )
     {
         HashMap<Long,PendingIndexDescriptor> indexes = new HashMap<>();
-        Iterator<IndexDescriptor> indexRules = storage.indexesGetAll();
+        Iterator<StoreIndexDescriptor> indexRules = storage.indexesGetAll();
         while ( indexRules.hasNext() )
         {
-            IndexDescriptor rule = indexRules.next();
+            StoreIndexDescriptor rule = indexRules.next();
             indexes.put( rule.getId(), rule );
         }
         return indexes;

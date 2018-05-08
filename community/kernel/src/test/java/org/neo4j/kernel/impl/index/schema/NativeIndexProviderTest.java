@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -105,7 +105,7 @@ public abstract class NativeIndexProviderTest
         provider = newProvider();
 
         // when
-        IndexDescriptor descriptor = descriptorUnique();
+        StoreIndexDescriptor descriptor = descriptorUnique();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig() );
               IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
@@ -353,14 +353,16 @@ public abstract class NativeIndexProviderTest
         return new IndexSamplingConfig( Config.defaults() );
     }
 
-    private IndexDescriptor descriptor()
+    private StoreIndexDescriptor descriptor()
     {
-        return IndexDescriptor.indexRule( indexId, IndexDescriptorFactory.forLabel( labelId, propId ), PROVIDER_DESCRIPTOR );
+        return StoreIndexDescriptor
+                .indexRule( indexId, IndexDescriptorFactory.forLabel( labelId, propId ), PROVIDER_DESCRIPTOR );
     }
 
-    private IndexDescriptor descriptorUnique()
+    private StoreIndexDescriptor descriptorUnique()
     {
-        return IndexDescriptor.indexRule( indexId, IndexDescriptorFactory.uniqueForLabel( labelId, propId ), PROVIDER_DESCRIPTOR );
+        return StoreIndexDescriptor
+                .indexRule( indexId, IndexDescriptorFactory.uniqueForLabel( labelId, propId ), PROVIDER_DESCRIPTOR );
     }
 
     private PageCache pageCache()

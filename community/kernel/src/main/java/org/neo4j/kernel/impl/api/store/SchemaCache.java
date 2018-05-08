@@ -39,7 +39,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -287,9 +287,9 @@ public class SchemaCache
                 constraintRuleById.put( constraintRule.getId(), constraintRule );
                 constraints.add( constraintSemantics.readConstraint( constraintRule ) );
             }
-            else if ( rule instanceof IndexDescriptor )
+            else if ( rule instanceof StoreIndexDescriptor )
             {
-                CapableIndexDescriptor index = ((IndexDescriptor) rule).withCapabilities( indexProviderMap );
+                CapableIndexDescriptor index = ((StoreIndexDescriptor) rule).withCapabilities( indexProviderMap );
                 indexRuleById.put( index.getId(), index );
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );

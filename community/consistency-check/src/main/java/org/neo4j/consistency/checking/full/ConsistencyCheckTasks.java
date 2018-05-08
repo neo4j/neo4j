@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
@@ -190,7 +190,7 @@ public class ConsistencyCheckTasks
         if ( checkIndexes )
         {
             tasks.add( new IndexDirtyCheckTask() );
-            for ( IndexDescriptor indexRule : indexes.onlineRules() )
+            for ( StoreIndexDescriptor indexRule : indexes.onlineRules() )
             {
                 tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),
                         new IndexIterator( indexes.accessorFor( indexRule ) ),
@@ -258,7 +258,7 @@ public class ConsistencyCheckTasks
         @Override
         public void run()
         {
-            for ( IndexDescriptor indexRule : indexes.onlineRules() )
+            for ( StoreIndexDescriptor indexRule : indexes.onlineRules() )
             {
                 if ( indexes.accessorFor( indexRule ).isDirty() )
                 {

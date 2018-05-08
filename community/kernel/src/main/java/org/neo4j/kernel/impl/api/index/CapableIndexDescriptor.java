@@ -23,11 +23,11 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 
-public class CapableIndexDescriptor extends IndexDescriptor
+public class CapableIndexDescriptor extends StoreIndexDescriptor
 {
     private final IndexCapability indexCapability;
 
@@ -41,7 +41,7 @@ public class CapableIndexDescriptor extends IndexDescriptor
         this.indexCapability = indexCapability;
     }
 
-    public CapableIndexDescriptor( IndexDescriptor indexDescriptor, IndexCapability indexCapability )
+    public CapableIndexDescriptor( StoreIndexDescriptor indexDescriptor, IndexCapability indexCapability )
     {
         super( indexDescriptor.getId(), indexDescriptor.providerDescriptor(), indexDescriptor, indexDescriptor.getOwningConstraint() );
         this.indexCapability = indexCapability;

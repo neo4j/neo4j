@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
@@ -57,7 +57,7 @@ public class InMemoryIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
         InMemoryIndex index = indexes.get( descriptor.getId() );
         return index != null ? index.getState() : InternalIndexState.POPULATING;
@@ -76,7 +76,7 @@ public class InMemoryIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = descriptor.type() == UNIQUE
                 ? new UniqueInMemoryIndex( descriptor ) : new InMemoryIndex( descriptor );
@@ -85,7 +85,7 @@ public class InMemoryIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = indexes.get( descriptor.getId() );
         if ( index == null || index.getState() != InternalIndexState.ONLINE )
@@ -102,7 +102,7 @@ public class InMemoryIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
     {
         String failure = indexes.get( descriptor.getId() ).failure;
         if ( failure == null )

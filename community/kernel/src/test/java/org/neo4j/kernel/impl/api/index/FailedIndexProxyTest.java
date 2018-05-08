@@ -26,7 +26,7 @@ import java.io.IOException;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -50,7 +50,8 @@ public class FailedIndexProxyTest
         // given
         String userDescription = "description";
         FailedIndexProxy index =
-                new FailedIndexProxy( indexMeta( IndexDescriptor.indexRule( 1, IndexDescriptorFactory.forLabel( 1, 2 ), IndexProvider.UNDECIDED ) ),
+                new FailedIndexProxy( indexMeta( StoreIndexDescriptor
+                                                         .indexRule( 1, IndexDescriptorFactory.forLabel( 1, 2 ), IndexProvider.UNDECIDED ) ),
                 userDescription, indexPopulator, indexPopulationFailure, indexCountsRemover, NullLogProvider.getInstance() );
 
         // when
@@ -69,7 +70,8 @@ public class FailedIndexProxyTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        new FailedIndexProxy( indexMeta( IndexDescriptor.indexRule( 1, IndexDescriptorFactory.forLabel( 0, 0 ), IndexProvider.UNDECIDED ) ),
+        new FailedIndexProxy( indexMeta( StoreIndexDescriptor
+                                                 .indexRule( 1, IndexDescriptorFactory.forLabel( 0, 0 ), IndexProvider.UNDECIDED ) ),
                 "foo", mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ),
                 indexCountsRemover, logProvider ).drop();
 
@@ -79,7 +81,7 @@ public class FailedIndexProxyTest
         );
     }
 
-    private CapableIndexDescriptor indexMeta( IndexDescriptor descriptor )
+    private CapableIndexDescriptor indexMeta( StoreIndexDescriptor descriptor )
     {
         return new CapableIndexDescriptor( descriptor, indexCapability );
     }
