@@ -19,27 +19,44 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.values.storable.ValueCategory;
 
-public class IndexMeta
+public class IndexMeta extends IndexDescriptor implements CapableIndexReference
 {
-    private final IndexDescriptor schemaIndexDescriptor;
     private final IndexCapability indexCapability;
 
     public IndexMeta( IndexDescriptor indexDescriptor, IndexCapability indexCapability )
     {
-        this.schemaIndexDescriptor = indexDescriptor;
+        super( indexDescriptor.getId(), indexDescriptor.providerDescriptor(), indexDescriptor, indexDescriptor.getOwningConstraint() );
         this.indexCapability = indexCapability;
     }
 
-    public IndexDescriptor indexDescriptor()
+    @Override
+    public String providerKey()
     {
-        return schemaIndexDescriptor;
+        return providerDescriptor.getKey();
     }
 
-    public IndexCapability indexCapability()
+    @Override
+    public String providerVersion()
     {
-        return indexCapability;
+        return providerDescriptor.getVersion();
+    }
+
+    @Override
+    public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+    {
+        return indexCapability.orderCapability( valueCategories );
+    }
+
+    @Override
+    public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+    {
+        return indexCapability.valueCapability( valueCategories );
     }
 }

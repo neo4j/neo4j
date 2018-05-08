@@ -61,13 +61,13 @@ public class IndexDescriptor extends PendingIndexDescriptor implements SchemaRul
         return new IndexDescriptor( id, providerDescriptor, descriptor, owningConstraint, name );
     }
 
-    IndexDescriptor( long id, IndexProvider.Descriptor providerDescriptor,
+    protected IndexDescriptor( long id, IndexProvider.Descriptor providerDescriptor,
                      PendingIndexDescriptor descriptor, Long owningConstraintId )
     {
         this( id, providerDescriptor, descriptor, owningConstraintId, null );
     }
 
-    IndexDescriptor( long id, IndexProvider.Descriptor providerDescriptor,
+    protected IndexDescriptor( long id, IndexProvider.Descriptor providerDescriptor,
                      PendingIndexDescriptor descriptor, Long owningConstraintId, String name )
     {
         super( descriptor.schema(),

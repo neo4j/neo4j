@@ -81,10 +81,10 @@ public class PendingIndexDescriptor implements SchemaDescriptorSupplier, IndexRe
         PendingIndexDescriptor getIndexDescriptor();
     }
 
-    private final SchemaDescriptor schema;
-    private final PendingIndexDescriptor.Type type;
-    private final Optional<String> name;
-    private final IndexProvider.Descriptor providerDescriptor;
+    protected final SchemaDescriptor schema;
+    protected final PendingIndexDescriptor.Type type;
+    protected final Optional<String> name;
+    protected final IndexProvider.Descriptor providerDescriptor;
 
     public PendingIndexDescriptor( SchemaDescriptor schema,
                                    Type type,
