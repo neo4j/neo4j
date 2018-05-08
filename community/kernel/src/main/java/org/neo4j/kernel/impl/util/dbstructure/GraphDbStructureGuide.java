@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.util.dbstructure;
 
 import java.util.Iterator;
 
-import javax.xml.validation.SchemaFactory;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -39,12 +37,11 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -146,7 +143,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
                     .userDescription( nameLookup );
             double uniqueValuesPercentage = schemaRead.indexUniqueValuesSelectivity( reference );
             long size = schemaRead.indexSize( reference );
-            visitor.visitIndex( DefaultIndexReference.toDescriptor( reference ), userDescription, uniqueValuesPercentage, size );
+            visitor.visitIndex( (IndexDescriptor) reference, userDescription, uniqueValuesPercentage, size );
         }
     }
 

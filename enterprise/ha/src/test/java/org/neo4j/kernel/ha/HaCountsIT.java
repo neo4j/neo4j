@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -188,7 +187,7 @@ public class HaCountsIT
             IndexReference index = ktx.schemaWrite()
                                                    .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
             tx.success();
-            return DefaultIndexReference.toDescriptor( index );
+            return (IndexDescriptor) index;
         }
     }
 

@@ -318,7 +318,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def lockingUniqueIndexSeek(indexReference: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] = {
     indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
-    val index = DefaultIndexReference.general(indexReference.label(), indexReference.properties():_*)
+    val index = transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(indexReference.label(), indexReference.properties():_*)
     val nodeId = reads().lockingNodeUniqueIndexSeek(index, queries:_*)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
@@ -658,7 +658,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropIndexRule(descriptor: IndexDescriptor): Unit =
     transactionalContext.kernelTransaction.schemaWrite().indexDrop(
-      DefaultIndexReference.general(descriptor.label, descriptor.properties.map(_.id):_*)
+      transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(descriptor.label, descriptor.properties.map(_.id):_*)
     )
 
   override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = try {

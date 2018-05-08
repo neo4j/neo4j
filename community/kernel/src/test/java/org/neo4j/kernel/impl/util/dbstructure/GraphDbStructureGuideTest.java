@@ -48,7 +48,6 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.toDescriptor;
 
 public class GraphDbStructureGuideTest
 {
@@ -141,7 +140,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitIndex( toDescriptor( reference ), ":Person(name)", 1.0d, 0L );
+        verify( visitor ).visitIndex( (IndexDescriptor) reference, ":Person(name)", 1.0d, 0L );
     }
 
     @Test

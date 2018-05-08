@@ -56,7 +56,6 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -409,7 +408,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
 
                 int count;
                 StorageStatement storeStatement = ((KernelStatement) statement).getStoreStatement();
-                IndexReader reader = storeStatement.getIndexReader( DefaultIndexReference.toDescriptor( index ) );
+                IndexReader reader = storeStatement.getIndexReader( (IndexDescriptor) index );
                 IndexQuery[] predicates = new IndexQuery[propertyKeyIds.length];
                 for ( int i = 0; i < propertyKeyIds.length; i++ )
                 {
