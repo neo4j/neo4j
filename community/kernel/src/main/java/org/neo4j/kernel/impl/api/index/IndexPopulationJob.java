@@ -169,7 +169,7 @@ public class IndexPopulationJob implements Runnable
      */
     public void update( IndexEntryUpdate<?> update )
     {
-        multiPopulator.queue( update );
+        multiPopulator.queueUpdate( update );
     }
 
     @Override

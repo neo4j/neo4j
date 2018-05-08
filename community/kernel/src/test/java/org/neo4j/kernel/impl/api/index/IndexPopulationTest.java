@@ -26,7 +26,6 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -42,7 +41,6 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class IndexPopulationTest
 {
@@ -60,7 +58,7 @@ public class IndexPopulationTest
         MultipleIndexPopulator multipleIndexPopulator = new MultipleIndexPopulator( storeView, logProvider );
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 multipleIndexPopulator.addPopulator( populator, 0, dummyMeta(), flipper, t -> failedProxy, "userDescription" );
-        multipleIndexPopulator.queue( someUpdate() );
+        multipleIndexPopulator.queueUpdate( someUpdate() );
         multipleIndexPopulator.indexAllNodes().run();
 
         // when

@@ -65,7 +65,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * and generate updates that are fed into the {@link IndexPopulator populators}. Only a single call to this
  * method should be made during the life time of a {@link MultipleIndexPopulator} and should be called by the
  * same thread instantiating this instance.</li>
- * <li>{@link #queue(IndexEntryUpdate)} which queues updates which will be read by the thread currently executing
+ * <li>{@link #queueUpdate(IndexEntryUpdate)} which queues updates which will be read by the thread currently executing
  * {@link #indexAllNodes()} and incorporated into that data stream. Calls to this method may come from any number
  * of concurrent threads.</li>
  * </ul>
@@ -77,7 +77,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #indexAllNodes()} (blocking call).</li>
- * <li>While all nodes are being indexed, calls to {@link #queue(IndexEntryUpdate)} are accepted.</li>
+ * <li>While all nodes are being indexed, calls to {@link #queueUpdate(IndexEntryUpdate)} are accepted.</li>
  * <li>Call to {@link #flipAfterPopulation()} after successful population, or {@link #fail(Throwable)} if not</li>
  * </ol>
  */
@@ -91,7 +91,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
-    protected final Queue<IndexEntryUpdate<?>> queue = new LinkedBlockingQueue<>();
+    final Queue<IndexEntryUpdate<?>> updatesQueue = new LinkedBlockingQueue<>();
 
     // Populators are added into this list. The same thread adding populators will later call #indexAllNodes.
     // Multiple concurrent threads might fail individual populations.
@@ -124,7 +124,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         return population;
     }
 
-    protected IndexPopulation createPopulation( IndexPopulator populator, long indexId, IndexMeta indexMeta,
+    private IndexPopulation createPopulation( IndexPopulator populator, long indexId, IndexMeta indexMeta,
             FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
     {
         return new IndexPopulation( populator, indexId, indexMeta, flipper, failedIndexProxyFactory, indexUserDescription );
@@ -181,9 +181,9 @@ public class MultipleIndexPopulator implements IndexPopulator
      *
      * @param update {@link IndexEntryUpdate} to queue.
      */
-    public void queue( IndexEntryUpdate<?> update )
+    public void queueUpdate( IndexEntryUpdate<?> update )
     {
-        queue.add( update );
+        updatesQueue.add( update );
     }
 
     /**
@@ -347,22 +347,22 @@ public class MultipleIndexPopulator implements IndexPopulator
         return populations.remove( indexPopulation );
     }
 
-    void populateFromQueueBatched( long currentlyIndexedNodeId )
+    void populateFromUpdateQueueBatched( long currentlyIndexedNodeId )
     {
-        if ( isQueueThresholdReached() )
+        if ( isUpdateQueueThresholdReached() )
         {
-            populateFromQueue( currentlyIndexedNodeId );
+            populateFromUpdateQueue( currentlyIndexedNodeId );
         }
     }
 
-    private boolean isQueueThresholdReached()
+    private boolean isUpdateQueueThresholdReached()
     {
-        return queue.size() >= QUEUE_THRESHOLD;
+        return updatesQueue.size() >= QUEUE_THRESHOLD;
     }
 
-    protected void populateFromQueue( long currentlyIndexedNodeId )
+    protected void populateFromUpdateQueue( long currentlyIndexedNodeId )
     {
-        populateFromQueueIfAvailable( currentlyIndexedNodeId );
+        populateFromUpdateQueueIfAvailable( currentlyIndexedNodeId );
     }
 
     void flushAll()
@@ -382,19 +382,19 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    private void populateFromQueueIfAvailable( long currentlyIndexedNodeId )
+    private void populateFromUpdateQueueIfAvailable( long currentlyIndexedNodeId )
     {
-        if ( !queue.isEmpty() )
+        if ( !updatesQueue.isEmpty() )
         {
             try ( MultipleIndexUpdater updater = newPopulatingUpdater( storeView ) )
             {
                 do
                 {
                     // no need to check for null as nobody else is emptying this queue
-                    IndexEntryUpdate<?> update = queue.poll();
+                    IndexEntryUpdate<?> update = updatesQueue.poll();
                     storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
                 }
-                while ( !queue.isEmpty() );
+                while ( !updatesQueue.isEmpty() );
             }
         }
     }
@@ -569,7 +569,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                     if ( populationOngoing )
                     {
                         populator.add( takeCurrentBatch() );
-                        populateFromQueueIfAvailable( Long.MAX_VALUE );
+                        populateFromUpdateQueueIfAvailable( Long.MAX_VALUE );
                         if ( populations.contains( IndexPopulation.this ) )
                         {
                             IndexSample sample = populator.sampleResult();
@@ -621,7 +621,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         public boolean visit( NodeUpdates updates )
         {
             add( updates );
-            populateFromQueueBatched( updates.getNodeId() );
+            populateFromUpdateQueueBatched( updates.getNodeId() );
             return false;
         }
 
