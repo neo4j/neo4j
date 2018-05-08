@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.List;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
@@ -162,25 +164,22 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> extends Lifecyc
     {
         // We redo the resolving under the lock, to make sure that these ids are really missing, and won't be
         // created concurrently with us.
-        PrimitiveIntSet unresolvedIndexes = Primitive.intSet();
+        MutableIntSet unresolvedIndexes = new IntHashSet();
         resolveIds( names, ids, i -> !unresolvedIndexes.add( i ) );
         if ( !unresolvedIndexes.isEmpty() )
         {
             // We still have unresolved ids to create.
             createUnresolvedTokens( unresolvedIndexes, names, ids );
-            unresolvedIndexes.visitKeys( i ->
-            {
-                tokenCache.put( tokenFactory.newToken( names[i], ids[i] ) );
-                return false;
-            } );
+            unresolvedIndexes.forEach( i ->
+                    tokenCache.put( tokenFactory.newToken( names[i], ids[i] ) ) );
         }
     }
 
-    private void createUnresolvedTokens( PrimitiveIntSet unresolvedIndexes, String[] names, int[] ids )
+    private void createUnresolvedTokens( IntSet unresolvedIndexes, String[] names, int[] ids )
     {
         try
         {
-            tokenCreator.createTokens( names, ids, unresolvedIndexes );
+            tokenCreator.createTokens( names, ids, unresolvedIndexes::contains );
         }
         catch ( ReadOnlyDbException e )
         {

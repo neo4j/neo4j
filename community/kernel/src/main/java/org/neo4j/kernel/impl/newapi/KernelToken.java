@@ -58,7 +58,6 @@ public class KernelToken implements Token
         return store.labelGetOrCreateForName( labelName );
     }
 
-
     @Override
     public void labelGetOrCreateForNames( String[] labelNames, int[] labelIds )
             throws IllegalTokenNameException, TooManyLabelsException
