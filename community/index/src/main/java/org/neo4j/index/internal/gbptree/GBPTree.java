@@ -1047,6 +1047,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
+    // Utility method
     public void printState() throws IOException
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
@@ -1054,6 +1055,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             TreePrinter.printTreeState( cursor, System.out );
         }
     }
+
     // Utility method
     /**
      * Print node with given id to System.out, if node with id exists.
@@ -1077,7 +1079,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     // Utility method
-    boolean consistencyCheck() throws IOException
+    public boolean consistencyCheck() throws IOException
     {
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {

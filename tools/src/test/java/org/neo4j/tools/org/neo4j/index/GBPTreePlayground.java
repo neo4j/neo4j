@@ -81,6 +81,7 @@ public class GBPTreePlayground
         consoleInput.add( "autoprint", new ToggleAutoPrintCommand() );
         consoleInput.add( "restart", new RestartCommand() );
         consoleInput.add( "state", new PrintStateCommand() );
+        consoleInput.add( "cc", new ConsistencyCheckCommand() );
 
         life.start();
         try
@@ -239,6 +240,23 @@ public class GBPTreePlayground
         public String toString()
         {
             return "Close and open gbptree. No checkpoint is performed.";
+        }
+    }
+
+    private class ConsistencyCheckCommand implements Command
+    {
+        @Override
+        public void run( String[] args, PrintStream out ) throws Exception
+        {
+            System.out.println( "Checking consistency..." );
+            tree.consistencyCheck();
+            System.out.println( "Consistency check finished!");
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Check consistency of GBPTree";
         }
     }
 
