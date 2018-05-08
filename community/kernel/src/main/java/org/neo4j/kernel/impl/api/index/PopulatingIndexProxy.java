@@ -28,8 +28,8 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -91,19 +91,19 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return indexMeta.indexDescriptor();
+        return indexMeta;
     }
 
     @Override
     public SchemaDescriptor schema()
     {
-        return indexMeta.indexDescriptor().schema();
+        return indexMeta.schema();
     }
 
     @Override
     public IndexProvider.Descriptor getProviderDescriptor()
     {
-        return indexMeta.indexDescriptor().providerDescriptor();
+        return indexMeta.providerDescriptor();
     }
 
     @Override
@@ -115,7 +115,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public IndexCapability getIndexCapability()
     {
-        return indexMeta.indexCapability();
+        return indexMeta;
     }
 
     @Override
@@ -170,7 +170,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public long getIndexId()
     {
-        return indexMeta.indexDescriptor().getId();
+        return indexMeta.getId();
     }
 
     @Override

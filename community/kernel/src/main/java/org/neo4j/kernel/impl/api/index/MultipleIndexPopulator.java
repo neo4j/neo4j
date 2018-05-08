@@ -489,7 +489,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             this.populator = populator;
             this.indexMeta = indexMeta;
-            this.indexId = indexMeta.indexDescriptor().getId();
+            this.indexId = indexMeta.getId();
             this.flipper = flipper;
             this.failedIndexProxyFactory = failedIndexProxyFactory;
             this.indexUserDescription = indexUserDescription;
@@ -580,7 +580,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         @Override
         public SchemaDescriptor schema()
         {
-            return indexMeta.indexDescriptor().schema();
+            return indexMeta.schema();
         }
 
         public boolean batch( IndexEntryUpdate<?> update )

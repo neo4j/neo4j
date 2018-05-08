@@ -76,7 +76,7 @@ public class OnlineIndexProxy implements IndexProxy
     OnlineIndexProxy( IndexMeta indexMeta, IndexAccessor accessor, IndexStoreView storeView, boolean forcedIdempotentMode )
     {
         assert accessor != null;
-        this.indexId = indexMeta.indexDescriptor().getId();
+        this.indexId = indexMeta.getId();
         this.indexMeta = indexMeta;
         this.accessor = accessor;
         this.storeView = storeView;
@@ -134,19 +134,19 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return indexMeta.indexDescriptor();
+        return indexMeta;
     }
 
     @Override
     public SchemaDescriptor schema()
     {
-        return indexMeta.indexDescriptor().schema();
+        return indexMeta.schema();
     }
 
     @Override
     public IndexProvider.Descriptor getProviderDescriptor()
     {
-        return indexMeta.indexDescriptor().providerDescriptor();
+        return indexMeta.providerDescriptor();
     }
 
     @Override
@@ -158,7 +158,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexCapability getIndexCapability()
     {
-        return indexMeta.indexCapability();
+        return indexMeta;
     }
 
     @Override
@@ -236,7 +236,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + indexMeta.indexDescriptor() + "]";
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + indexMeta + "]";
     }
 
     @Override
