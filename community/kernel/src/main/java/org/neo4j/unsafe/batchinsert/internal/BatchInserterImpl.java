@@ -184,7 +184,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final BatchTokenHolder relationshipTypeTokens;
     private final BatchTokenHolder labelTokens;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final IndexProviderMap schemaIndexProviders;
+    private final IndexProviderMap indexProviderMap;
     private final LabelScanStore labelScanStore;
     private final Log msgLog;
     private final SchemaCache schemaCache;
@@ -279,28 +279,28 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         schemaStore = neoStores.getSchemaStore();
         labelTokenStore = neoStores.getLabelTokenStore();
 
+        Dependencies deps = new Dependencies();
+        KernelExtensions extensions = life.add( new KernelExtensions(
+                new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),
+                kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
+        IndexProvider provider = extensions.resolveDependency( IndexProvider.class,
+                                                               HighestSelectionStrategy.INSTANCE );
+        indexProviderMap = new DefaultIndexProviderMap( provider );
+
         List<Token> indexes = propertyKeyTokenStore.getTokens( 10000 );
         propertyKeyTokens = new BatchTokenHolder( indexes );
         labelTokens = new BatchTokenHolder( labelTokenStore.getTokens( Integer.MAX_VALUE ) );
         List<RelationshipTypeToken> types = relationshipTypeTokenStore.getTokens( Integer.MAX_VALUE );
         relationshipTypeTokens = new BatchTokenHolder( types );
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
-        schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore );
+        schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore, indexProviderMap );
 
         indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
 
-        Dependencies deps = new Dependencies();
         Monitors monitors = new Monitors();
         deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors,
                 RecoveryCleanupWorkCollector.IMMEDIATE );
 
-        KernelExtensions extensions = life.add( new KernelExtensions(
-                new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),
-                kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
-
-        IndexProvider provider = extensions.resolveDependency( IndexProvider.class,
-                HighestSelectionStrategy.INSTANCE );
-        schemaIndexProviders = new DefaultIndexProviderMap( provider );
         labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
         life.add( labelScanStore );
@@ -470,7 +470,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         IndexDescriptor schemaRule = IndexDescriptor.indexRule(
                 schemaStore.nextId(),
                 IndexDescriptorFactory.forLabel( labelId, propertyKeyIds ),
-                schemaIndexProviders.getDefaultProvider().getProviderDescriptor() );
+                indexProviderMap.getDefaultProvider().getProviderDescriptor() );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
         {
@@ -497,7 +497,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             IndexDescriptor index = indexDescriptors[i];
             descriptors[i] = index.schema();
-            IndexPopulator populator = schemaIndexProviders.apply( index.providerDescriptor() )
+            IndexPopulator populator = indexProviderMap.apply( index.providerDescriptor() )
                                                 .getPopulator( index, new IndexSamplingConfig( config ) );
             populator.create();
             populators.add( new IndexPopulatorWithSchema( populator, index ) );
@@ -584,7 +584,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         List<IndexDescriptor> indexesNeedingPopulation = new ArrayList<>();
         for ( IndexDescriptor rule : schemaCache.indexRules() )
         {
-            IndexProvider provider = schemaIndexProviders.apply( rule.providerDescriptor() );
+            IndexProvider provider = indexProviderMap.apply( rule.providerDescriptor() );
             if ( provider.getInitialState( rule ) != InternalIndexState.FAILED )
             {
                 indexesNeedingPopulation.add( rule );
@@ -611,7 +611,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 IndexDescriptor.constraintIndexRule(
                         indexRuleId,
                         schemaIndexDescriptor,
-                        this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
+                        this.indexProviderMap.getDefaultProvider().getProviderDescriptor(),
                         constraintRuleId
                 );
         ConstraintRule constraintRule =

@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
@@ -156,5 +157,11 @@ public class IndexDescriptor extends PendingIndexDescriptor implements SchemaRul
     public CapableIndexDescriptor withoutCapabilities()
     {
         return new CapableIndexDescriptor( id, providerDescriptor, this, owningConstraintId, IndexCapability.NO_CAPABILITY );
+    }
+
+    public CapableIndexDescriptor withCapabilities( IndexProviderMap indexProviderMap )
+    {
+        IndexCapability capability = indexProviderMap.apply( providerDescriptor ).getCapability();
+        return new CapableIndexDescriptor( id, providerDescriptor, this, owningConstraintId, capability );
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
@@ -28,7 +27,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 
-public class CapableIndexDescriptor extends IndexDescriptor implements CapableIndexReference
+public class CapableIndexDescriptor extends IndexDescriptor
 {
     private final IndexCapability indexCapability;
 

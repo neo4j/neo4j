@@ -55,17 +55,17 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
-import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
@@ -94,11 +94,9 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
-import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.fromDescriptor;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
@@ -330,11 +328,10 @@ public class AllStoreHolder extends Read
             // This means we have invalid label or property ids.
             return CapableIndexReference.NO_INDEX;
         }
-        PendingIndexDescriptor indexDescriptor = storageReader.indexGetForSchema( descriptor );
+        CapableIndexDescriptor indexDescriptor = storageReader.indexGetForSchema( descriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<PendingIndexDescriptor> diffSets =
-                    ktx.txState().indexDiffSetsByLabel( label );
+            ReadableDiffSets<PendingIndexDescriptor> diffSets = ktx.txState().indexDiffSetsByLabel( label );
             if ( indexDescriptor != null )
             {
                 if ( diffSets.isRemoved( indexDescriptor ) )
@@ -343,17 +340,16 @@ public class AllStoreHolder extends Read
                 }
                 else
                 {
-                    return indexGetCapability( indexDescriptor );
+                    return indexDescriptor;
                 }
             }
             else
             {
-                Iterator<PendingIndexDescriptor> fromTxState = filter(
-                        SchemaDescriptor.equalTo( descriptor ),
-                        diffSets.apply( emptyResourceIterator() ) );
+                Iterator<PendingIndexDescriptor> fromTxState =
+                        filter( SchemaDescriptor.equalTo( descriptor ), diffSets.getAdded().iterator() );
                 if ( fromTxState.hasNext() )
                 {
-                    return DefaultCapableIndexReference.fromDescriptor( fromTxState.next() );
+                    return fromTxState.next();
                 }
                 else
                 {
@@ -362,7 +358,7 @@ public class AllStoreHolder extends Read
             }
         }
 
-        return indexDescriptor != null ? indexGetCapability( indexDescriptor ) : CapableIndexReference.NO_INDEX;
+        return indexDescriptor != null ? indexDescriptor : CapableIndexReference.NO_INDEX;
     }
 
     @Override
@@ -371,12 +367,12 @@ public class AllStoreHolder extends Read
         sharedOptimisticLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
 
-        Iterator<PendingIndexDescriptor> iterator = storageReader.indexesGetForLabel( labelId );
+        Iterator<? extends PendingIndexDescriptor> iterator = storageReader.indexesGetForLabel( labelId );
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
         }
-        return Iterators.map( DefaultIndexReference::fromDescriptor, iterator );
+        return (Iterator)iterator;
     }
 
     @Override
@@ -384,7 +380,7 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        Iterator<PendingIndexDescriptor> iterator = storageReader.indexesGetAll();
+        Iterator<? extends PendingIndexDescriptor> iterator = storageReader.indexesGetAll();
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexChanges().apply( storageReader.indexesGetAll() );
@@ -393,7 +389,7 @@ public class AllStoreHolder extends Read
         return Iterators.map( indexDescriptor ->
         {
             sharedOptimisticLock( ResourceTypes.LABEL, indexDescriptor.schema().keyId() );
-            return fromDescriptor( indexDescriptor );
+            return indexDescriptor;
         }, iterator );
     }
 

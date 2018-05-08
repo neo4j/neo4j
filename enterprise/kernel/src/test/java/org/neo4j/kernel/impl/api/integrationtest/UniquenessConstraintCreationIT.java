@@ -30,6 +30,7 @@ import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -65,7 +66,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
-import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.fromDescriptor;
 
 public class UniquenessConstraintCreationIT
         extends AbstractConstraintCreationIT<ConstraintDescriptor,LabelSchemaDescriptor>
@@ -184,7 +184,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         Transaction transaction = newTransaction();
-        assertEquals( asSet( fromDescriptor( uniqueIndex ) ), asSet( transaction.schemaRead().indexesGetAll() ) );
+        assertEquals( asSet( uniqueIndex ), asSet( transaction.schemaRead().indexesGetAll() ) );
         commit();
     }
 
@@ -194,7 +194,7 @@ public class UniquenessConstraintCreationIT
         // given
         Transaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
         transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor );
-        assertEquals( asSet( fromDescriptor( uniqueIndex ) ), asSet( transaction.schemaRead().indexesGetAll() ) );
+        assertEquals( asSet( uniqueIndex ), asSet( transaction.schemaRead().indexesGetAll() ) );
 
         // when
         rollback();
@@ -273,7 +273,7 @@ public class UniquenessConstraintCreationIT
         Transaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
         ConstraintDescriptor constraint =
                 transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor );
-        assertEquals( asSet( fromDescriptor( uniqueIndex ) ), asSet( transaction.schemaRead().indexesGetAll() ) );
+        assertEquals( asSet( uniqueIndex ), asSet( transaction.schemaRead().indexesGetAll() ) );
         commit();
 
         // when

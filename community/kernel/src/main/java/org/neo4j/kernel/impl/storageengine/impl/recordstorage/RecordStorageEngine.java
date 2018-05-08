@@ -201,7 +201,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
-            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList() );
+            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList(), indexProviderMap );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );

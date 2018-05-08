@@ -260,7 +260,7 @@ public class HaCountsIT
             try ( Transaction tx = db.beginTx() )
             {
                 KernelTransaction transaction = kernelTransaction( db );
-                switch ( transaction.schemaRead().indexGetState( DefaultIndexReference.fromDescriptor( index  ) ) )
+                switch ( transaction.schemaRead().indexGetState( index ) )
                 {
                 case ONLINE:
                     return indexingService( db ).getIndexId( index.schema() );

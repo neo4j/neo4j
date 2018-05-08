@@ -83,9 +83,9 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T>
         }
 
         @Override
-        public Iterator<T> apply( Iterator<T> source )
+        public Iterator<T> apply( Iterator<? extends T> source )
         {
-            return source;
+            return (Iterator)source;
         }
 
         @Override

@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
@@ -270,25 +271,25 @@ class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public PendingIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
+    public CapableIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override
-    public Iterator<PendingIndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schemaCache.indexDescriptorsForLabel( labelId );
     }
 
     @Override
-    public Iterator<PendingIndexDescriptor> indexesGetAll()
+    public Iterator<CapableIndexDescriptor> indexesGetAll()
     {
-        return (Iterator)schemaCache.indexRules().iterator();
+        return schemaCache.indexRules().iterator();
     }
 
     @Override
-    public Iterator<PendingIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<CapableIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
     {
         return schemaCache.indexesByProperty( propertyId );
     }

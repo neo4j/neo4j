@@ -32,4 +32,25 @@ public interface IndexProviderMap extends Function<IndexProvider.Descriptor,Inde
     IndexProvider getDefaultProvider();
 
     void accept( Consumer<IndexProvider> visitor );
+
+    IndexProviderMap EMPTY = new IndexProviderMap()
+    {
+        @Override
+        public IndexProvider apply( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException
+        {
+            return IndexProvider.EMPTY;
+        }
+
+        @Override
+        public IndexProvider getDefaultProvider()
+        {
+            return IndexProvider.EMPTY;
+        }
+
+        @Override
+        public void accept( Consumer<IndexProvider> visitor )
+        {
+            // yey!
+        }
+    };
 }

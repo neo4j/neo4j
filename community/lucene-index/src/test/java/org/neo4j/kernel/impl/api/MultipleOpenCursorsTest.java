@@ -51,7 +51,6 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -829,8 +828,8 @@ public class MultipleOpenCursorsTest
                 throws KernelException
         {
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
-            ktx.dataRead().nodeIndexSeek( DefaultIndexReference.fromDescriptor( indexDescriptor ),
-                    cursor, IndexOrder.NONE, indexQueries );
+            ktx.dataRead().nodeIndexSeek( indexDescriptor,
+                                          cursor, IndexOrder.NONE, indexQueries );
             return cursor;
         }
     }

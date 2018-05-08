@@ -43,18 +43,19 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -447,11 +448,12 @@ public class OperationsLockTest
     public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        PendingIndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
+        CapableIndexDescriptor index = IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 0, 0 ),
+                                                                  IndexProvider.UNDECIDED ).withoutCapabilities();
         when( storageReader.indexGetForSchema( any() )).thenReturn( index );
 
         // when
-        operations.indexDrop( DefaultIndexReference.fromDescriptor( index ) );
+        operations.indexDrop( index );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 0 );
