@@ -23,19 +23,15 @@ import org.junit.Test;
 
 import java.lang.reflect.Array;
 
-import org.neo4j.cursor.Cursor;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 
 /**
  * Test read access to committed properties.
@@ -89,6 +85,8 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
         };
 
         int propKey = storageReader.propertyKeyGetOrCreateForName( "prop" );
+        NodeCursor nodeCursor = storageReader.allocateNodeCursor();
+        PropertyCursor propertyCursor = storageReader.allocatePropertyCursor();
 
         for ( Object value : properties )
         {
@@ -96,29 +94,15 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            try ( Cursor<NodeItem> node = storageReader.acquireSingleNodeCursor( nodeId ) )
-            {
-                node.next();
+            storageReader.singleNode( nodeId, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            nodeCursor.properties( propertyCursor );
+            assertTrue( propertyCursor.next() );
+            assertEquals( propKey, propertyCursor.propertyKey() );
+            Value propVal = propertyCursor.propertyValue();
 
-                Lock lock = node.get().lock();
-                try ( Cursor<PropertyItem> props = storageReader
-                        .acquireSinglePropertyCursor( node.get().nextPropertyId(), propKey, lock, ALWAYS_OPEN ) )
-                {
-                    if ( props.next() )
-                    {
-                        Value propVal = props.get().value();
-
-                        //then
-                        assertTrue( propVal + ".equals(" + value + ")",
-                                propVal.equals( Values.of( value ) ) );
-                    }
-                    else
-                    {
-                        fail();
-                    }
-                }
-            }
-
+            // then
+            assertTrue( propVal + ".equals(" + value + ")", propVal.equals( Values.of( value ) ) );
         }
     }
 

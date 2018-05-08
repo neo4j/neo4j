@@ -134,6 +134,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
 
     DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group, DefaultCursors pool )
     {
+        super( true );
         this.group = group;
         this.pool = pool;
     }

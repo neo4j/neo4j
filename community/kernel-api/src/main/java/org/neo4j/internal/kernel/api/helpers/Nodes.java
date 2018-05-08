@@ -19,7 +19,11 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import java.util.function.IntConsumer;
+import java.util.function.LongConsumer;
+
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -287,6 +291,20 @@ public final class Nodes
                 }
                 return count;
             }
+        }
+    }
+
+    /**
+     * Loops through all label ids in the {@code labelIds} {@link LabelSet} and lets the {@code visitor} consume them.
+     *
+     * @param labelIds {@link LabelSet} containing the label ids.
+     * @param visitor {@link IntConsumer} to pass the label ids to.
+     */
+    public static void visitLabels( LabelSet labelIds, LongConsumer visitor )
+    {
+        for ( int i = 0; i < labelIds.numberOfLabels(); i++ )
+        {
+            visitor.accept( labelIds.label( i ) );
         }
     }
 }

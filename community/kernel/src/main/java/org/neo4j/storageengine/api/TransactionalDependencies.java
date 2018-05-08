@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,8 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 
 /**
@@ -35,4 +37,36 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 public interface TransactionalDependencies extends TxStateHolder, AssertOpen
 {
     SecurityContext securityContext();
+
+    TransactionalDependencies EMPTY = new TransactionalDependencies()
+    {
+        @Override
+        public SecurityContext securityContext()
+        {
+            return SecurityContext.AUTH_DISABLED;
+        }
+
+        @Override
+        public void assertOpen()
+        {
+        }
+
+        @Override
+        public TransactionState txState()
+        {
+            throw new UnsupportedOperationException( "Should not be called" );
+        }
+
+        @Override
+        public ExplicitIndexTransactionState explicitIndexTxState()
+        {
+            throw new UnsupportedOperationException( "Should not be called" );
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges()
+        {
+            return false;
+        }
+    };
 }

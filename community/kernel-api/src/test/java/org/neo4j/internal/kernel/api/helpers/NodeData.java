@@ -24,6 +24,8 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.values.storable.Value;
 
+import static java.lang.Math.toIntExact;
+
 class NodeData
 {
     final long id;
@@ -50,7 +52,7 @@ class NodeData
             @Override
             public int label( int offset )
             {
-                return labels.length;
+                return toIntExact( labels[offset] );
             }
 
             @Override
