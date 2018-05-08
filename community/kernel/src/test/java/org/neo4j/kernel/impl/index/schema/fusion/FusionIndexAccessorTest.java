@@ -37,7 +37,7 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -135,7 +135,7 @@ public class FusionIndexAccessorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexAccessor = new FusionIndexAccessor(  fusionVersion.slotSelector(), new InstanceSelector<>( accessors),  mock( IndexDescriptor.class ), dropAction );
+        fusionIndexAccessor = new FusionIndexAccessor(  fusionVersion.slotSelector(), new InstanceSelector<>( accessors),  mock( StoreIndexDescriptor.class ), dropAction );
     }
 
     private void resetMocks()

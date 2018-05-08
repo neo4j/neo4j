@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -106,7 +106,7 @@ public class NeoTransactionIndexApplierTest
     public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
-        final IndexDescriptor indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
+        final StoreIndexDescriptor indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
@@ -125,9 +125,9 @@ public class NeoTransactionIndexApplierTest
         verify( indexingService ).createIndexes( indexRule );
     }
 
-    private IndexDescriptor indexRule( long ruleId, int labelId, int propertyId, Descriptor descriptor )
+    private StoreIndexDescriptor indexRule( long ruleId, int labelId, int propertyId, Descriptor descriptor )
     {
-        return IndexDescriptor
+        return StoreIndexDescriptor
                 .indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
     }
 
@@ -135,7 +135,7 @@ public class NeoTransactionIndexApplierTest
     public void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
-        final IndexDescriptor indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
+        final StoreIndexDescriptor indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 

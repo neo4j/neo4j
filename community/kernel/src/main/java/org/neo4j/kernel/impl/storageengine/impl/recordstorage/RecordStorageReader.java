@@ -47,7 +47,7 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
@@ -297,7 +297,7 @@ class RecordStorageReader implements StorageReader
     @Override
     public Long indexGetOwningUniquenessConstraintId( PendingIndexDescriptor index )
     {
-        IndexDescriptor rule = indexRule( index );
+        StoreIndexDescriptor rule = indexRule( index );
         if ( rule != null )
         {
             // Think of the index as being orphaned if the owning constraint is missing or broken.
@@ -311,7 +311,7 @@ class RecordStorageReader implements StorageReader
     public long indexGetCommittedId( PendingIndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        IndexDescriptor rule = indexRule( index );
+        StoreIndexDescriptor rule = indexRule( index );
         if ( rule == null )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
@@ -671,9 +671,9 @@ class RecordStorageReader implements StorageReader
         }
     }
 
-    private IndexDescriptor indexRule( PendingIndexDescriptor index )
+    private StoreIndexDescriptor indexRule( PendingIndexDescriptor index )
     {
-        for ( IndexDescriptor rule : schemaCache.indexRules() )
+        for ( StoreIndexDescriptor rule : schemaCache.indexRules() )
         {
             if ( rule.equals( index ) )
             {

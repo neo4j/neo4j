@@ -33,7 +33,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
@@ -47,11 +47,11 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
     private static final Comparator<IndexEntryUpdate<PendingIndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
             Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );
 
-    final IndexDescriptor indexDescriptor;
+    final StoreIndexDescriptor indexDescriptor;
 
     LayoutTestUtil( PendingIndexDescriptor indexDescriptor )
     {
-        this.indexDescriptor = IndexDescriptor.indexRule( 0, indexDescriptor, PROVIDER_DESCRIPTOR );
+        this.indexDescriptor = StoreIndexDescriptor.indexRule( 0, indexDescriptor, PROVIDER_DESCRIPTOR );
     }
 
     abstract Layout<KEY,VALUE> createLayout();
@@ -67,7 +67,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
 
     abstract int compareIndexedPropertyValue( KEY key1, KEY key2 );
 
-    IndexDescriptor indexDescriptor()
+    StoreIndexDescriptor indexDescriptor()
     {
         return indexDescriptor;
     }

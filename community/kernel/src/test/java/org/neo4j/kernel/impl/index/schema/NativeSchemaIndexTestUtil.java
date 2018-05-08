@@ -38,7 +38,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -65,7 +65,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey<KEY>
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
-    IndexDescriptor indexDescriptor;
+    StoreIndexDescriptor indexDescriptor;
     LayoutTestUtil<KEY,VALUE> layoutUtil;
     Layout<KEY,VALUE> layout;
     private File indexFile;

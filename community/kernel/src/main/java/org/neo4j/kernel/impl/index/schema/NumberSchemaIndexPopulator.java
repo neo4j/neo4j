@@ -25,13 +25,13 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 class NumberSchemaIndexPopulator extends NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue>
 {
-    NumberSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexProvider.Monitor monitor, IndexDescriptor descriptor,
+    NumberSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );

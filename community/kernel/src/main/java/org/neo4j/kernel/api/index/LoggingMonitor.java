@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.util.Map;
 import java.util.StringJoiner;
 
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.logging.Log;
 
@@ -38,7 +38,7 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void failedToOpenIndex( IndexDescriptor descriptor, String action, Exception cause )
+    public void failedToOpenIndex( StoreIndexDescriptor descriptor, String action, Exception cause )
     {
         log.error( "Failed to open index:" + descriptor.getId() + ". " + action, cause );
     }

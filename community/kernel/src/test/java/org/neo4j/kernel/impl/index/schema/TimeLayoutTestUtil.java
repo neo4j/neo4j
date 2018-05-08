@@ -29,7 +29,7 @@ import java.util.Set;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TimeValue;
@@ -54,7 +54,7 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
 
     TimeLayoutTestUtil( PendingIndexDescriptor indexDescriptor )
     {
-        super( IndexDescriptor.indexRule( 0, indexDescriptor, PROVIDER_DESCRIPTOR ) );
+        super( StoreIndexDescriptor.indexRule( 0, indexDescriptor, PROVIDER_DESCRIPTOR ) );
     }
 
     @Override

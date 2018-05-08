@@ -53,7 +53,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -719,7 +719,7 @@ public class IndexStatisticsTest
         private final Set<IndexReference> onlineIndexes = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
         @Override
-        public void populationCompleteOn( IndexDescriptor descriptor )
+        public void populationCompleteOn( StoreIndexDescriptor descriptor )
         {
             onlineIndexes.add( descriptor );
         }

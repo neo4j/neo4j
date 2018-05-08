@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -51,9 +51,9 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAccessor> implements IndexAccessor
 {
-    private final IndexDescriptor descriptor;
+    private final StoreIndexDescriptor descriptor;
 
-    SpatialIndexAccessor( IndexDescriptor descriptor,
+    SpatialIndexAccessor( StoreIndexDescriptor descriptor,
                            IndexSamplingConfig samplingConfig,
                            PageCache pageCache,
                            FileSystemAbstraction fs,
@@ -181,12 +181,12 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     static class PartAccessor extends NativeSchemaIndexAccessor<SpatialSchemaKey, NativeSchemaValue>
     {
         private final Layout<SpatialSchemaKey,NativeSchemaValue> layout;
-        private final IndexDescriptor descriptor;
+        private final StoreIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration searchConfiguration;
 
         PartAccessor( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                IndexProvider.Monitor monitor, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
+                      IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
         {
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
             this.layout = fileLayout.layout;
@@ -209,7 +209,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         private final FileSystemAbstraction fs;
         private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
         private final IndexProvider.Monitor monitor;
-        private final IndexDescriptor descriptor;
+        private final StoreIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
         private final SpatialIndexFiles spatialIndexFiles;
         private final SpaceFillingCurveConfiguration searchConfiguration;
@@ -218,7 +218,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                      FileSystemAbstraction fs,
                      RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                      IndexProvider.Monitor monitor,
-                     IndexDescriptor descriptor,
+                     StoreIndexDescriptor descriptor,
                      IndexSamplingConfig samplingConfig,
                      SpatialIndexFiles spatialIndexFiles,
                      SpaceFillingCurveConfiguration searchConfiguration )

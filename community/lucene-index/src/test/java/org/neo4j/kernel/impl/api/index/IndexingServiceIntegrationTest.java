@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -129,7 +129,7 @@ public class IndexingServiceIntegrationTest
         int foodId = labelTokenHolder.getIdByName( FOOD_LABEL );
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
-        IndexDescriptor rule = IndexDescriptor.indexRule(
+        StoreIndexDescriptor rule = StoreIndexDescriptor.indexRule(
                 schemaStore.nextId(), IndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );

@@ -28,7 +28,7 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -57,7 +57,7 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
 
     SpatialLayoutTestUtil( PendingIndexDescriptor descriptor, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
     {
-        super( IndexDescriptor.indexRule( 0, descriptor, PROVIDER_DESCRIPTOR ) );
+        super( StoreIndexDescriptor.indexRule( 0, descriptor, PROVIDER_DESCRIPTOR ) );
         this.curve = settings.curve();
         this.crs = crs;
         // The layout is the same, but we might consider supporting other CRS here, too.

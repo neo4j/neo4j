@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
@@ -99,7 +99,7 @@ public final class IndexMap implements Cloneable
 
     public void putIndexProxy( IndexProxy indexProxy )
     {
-        IndexDescriptor descriptor = indexProxy.getDescriptor();
+        StoreIndexDescriptor descriptor = indexProxy.getDescriptor();
         SchemaDescriptor schema = descriptor.schema();
         indexesById.put( descriptor.getId(), indexProxy );
         indexesByDescriptor.put( schema, indexProxy );

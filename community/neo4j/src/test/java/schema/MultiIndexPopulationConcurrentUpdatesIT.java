@@ -80,7 +80,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
@@ -114,7 +114,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @Rule
     public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
-    private IndexDescriptor[] rules;
+    private StoreIndexDescriptor[] rules;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IndexProvider.Descriptor> parameters()
@@ -382,15 +382,15 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         indexProxy.activate();
     }
 
-    private IndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
+    private StoreIndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         return labelNameIdMap.values().stream()
-                .map( index -> IndexDescriptor
+                .map( index -> StoreIndexDescriptor
                         .indexRule( index, IndexDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ) )
-                .toArray( IndexDescriptor[]::new );
+                .toArray( StoreIndexDescriptor[]::new );
     }
 
-    private List<IndexDescriptor> getIndexRules( NeoStores neoStores )
+    private List<StoreIndexDescriptor> getIndexRules( NeoStores neoStores )
     {
         return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() );
     }
@@ -659,13 +659,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor =
                     SchemaDescriptorFactory.forLabel( labelIdToDropIndexFor, propertyId );
-            IndexDescriptor rule = findRuleForLabel( descriptor );
+            StoreIndexDescriptor rule = findRuleForLabel( descriptor );
             indexService.dropIndex( rule );
         }
 
-        private IndexDescriptor findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
+        private StoreIndexDescriptor findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
         {
-            for ( IndexDescriptor rule : rules )
+            for ( StoreIndexDescriptor rule : rules )
             {
                 if ( rule.schema().equals( schemaDescriptor ) )
                 {

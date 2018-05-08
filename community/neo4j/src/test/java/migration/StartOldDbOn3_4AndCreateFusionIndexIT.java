@@ -52,7 +52,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -436,7 +436,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         Map<PendingIndexDescriptor,InternalIndexState> initialStateMap = new HashMap<>();
 
         @Override
-        public void initialState( IndexDescriptor descriptor, InternalIndexState state )
+        public void initialState( StoreIndexDescriptor descriptor, InternalIndexState state )
         {
             initialStateMap.put( descriptor, state );
         }

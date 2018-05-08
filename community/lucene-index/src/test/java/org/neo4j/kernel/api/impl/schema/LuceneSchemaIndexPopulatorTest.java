@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -77,7 +77,7 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexReader reader;
     private IndexSearcher searcher;
     private static final int propertyKeyId = 666;
-    private IndexDescriptor index;
+    private StoreIndexDescriptor index;
 
     @Before
     public void before() throws Exception
@@ -89,7 +89,7 @@ public class LuceneSchemaIndexPopulatorTest
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        index = IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() );
+        index = StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() );
         indexPopulator = provider.getPopulator( index, samplingConfig );
         indexPopulator.create();
     }
