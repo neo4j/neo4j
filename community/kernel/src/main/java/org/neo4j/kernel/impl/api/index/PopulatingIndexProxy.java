@@ -22,15 +22,12 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.File;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
@@ -89,7 +86,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public CapableIndexDescriptor getDescriptor()
     {
         return capableIndexDescriptor;
     }
@@ -101,21 +98,9 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexProvider.Descriptor getProviderDescriptor()
-    {
-        return capableIndexDescriptor.providerDescriptor();
-    }
-
-    @Override
     public InternalIndexState getState()
     {
         return InternalIndexState.POPULATING;
-    }
-
-    @Override
-    public IndexCapability getIndexCapability()
-    {
-        return capableIndexDescriptor;
     }
 
     @Override
@@ -165,12 +150,6 @@ public class PopulatingIndexProxy implements IndexProxy
     public void validateBeforeCommit( Value[] tuple )
     {
         // It's OK to put whatever values in while populating because it will take the natural path of failing the population.
-    }
-
-    @Override
-    public long getIndexId()
-    {
-        return capableIndexDescriptor.getId();
     }
 
     @Override

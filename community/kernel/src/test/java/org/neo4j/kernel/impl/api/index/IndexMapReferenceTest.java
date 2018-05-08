@@ -29,6 +29,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.indexRule;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public class IndexMapReferenceTest
@@ -97,7 +99,7 @@ public class IndexMapReferenceTest
         {
             existing[i] = mock( IndexProxy.class );
             when( existing[i].getDescriptor() ).thenReturn(
-                    IndexDescriptor.indexRule( i, IndexDescriptorFactory.forLabel( base + i, 1 ), PROVIDER_DESCRIPTOR ) );
+                    indexRule( i, forLabel( base + i, 1 ), PROVIDER_DESCRIPTOR ).withoutCapabilities() );
         }
         return existing;
     }

@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -34,9 +33,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
@@ -70,13 +66,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexCapability getIndexCapability()
-    {
-        return getDelegate().getIndexCapability();
-    }
-
-    @Override
-    public IndexDescriptor getDescriptor()
+    public CapableIndexDescriptor getDescriptor()
     {
         return getDelegate().getDescriptor();
     }
@@ -85,12 +75,6 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     public SchemaDescriptor schema()
     {
         return getDelegate().schema();
-    }
-
-    @Override
-    public IndexProvider.Descriptor getProviderDescriptor()
-    {
-        return getDelegate().getProviderDescriptor();
     }
 
     @Override
@@ -157,12 +141,6 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     public String toString()
     {
         return String.format( "%s -> %s", getClass().getSimpleName(), getDelegate().toString() );
-    }
-
-    @Override
-    public long getIndexId()
-    {
-        return getDelegate().getIndexId();
     }
 
     @Override

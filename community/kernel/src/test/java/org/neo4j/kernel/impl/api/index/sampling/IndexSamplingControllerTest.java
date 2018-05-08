@@ -24,9 +24,8 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -44,6 +43,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.indexRule;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
 
@@ -367,10 +368,10 @@ public class IndexSamplingControllerTest
     private final long anotherIndexId = 3;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
-    private final IndexDescriptor descriptor =
-            IndexDescriptor.indexRule( indexId, IndexDescriptorFactory.forLabel( 3, 4 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
-    private final IndexDescriptor anotherDescriptor =
-            IndexDescriptor.indexRule( anotherIndexId, IndexDescriptorFactory.forLabel( 5, 6 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
+    private final CapableIndexDescriptor descriptor =
+            indexRule( indexId, forLabel( 3, 4 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR ).withoutCapabilities();
+    private final CapableIndexDescriptor anotherDescriptor =
+            indexRule( anotherIndexId, forLabel( 5, 6 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR ).withoutCapabilities();
     private final IndexSamplingJob job = mock( IndexSamplingJob.class );
     private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
 

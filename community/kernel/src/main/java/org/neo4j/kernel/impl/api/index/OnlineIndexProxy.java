@@ -23,16 +23,13 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -132,7 +129,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public CapableIndexDescriptor getDescriptor()
     {
         return capableIndexDescriptor;
     }
@@ -144,21 +141,9 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexProvider.Descriptor getProviderDescriptor()
-    {
-        return capableIndexDescriptor.providerDescriptor();
-    }
-
-    @Override
     public InternalIndexState getState()
     {
         return InternalIndexState.ONLINE;
-    }
-
-    @Override
-    public IndexCapability getIndexCapability()
-    {
-        return capableIndexDescriptor;
     }
 
     @Override
@@ -207,12 +192,6 @@ public class OnlineIndexProxy implements IndexProxy
     public void validateBeforeCommit( Value[] tuple )
     {
         accessor.validateBeforeCommit( tuple );
-    }
-
-    @Override
-    public long getIndexId()
-    {
-        return indexId;
     }
 
     @Override

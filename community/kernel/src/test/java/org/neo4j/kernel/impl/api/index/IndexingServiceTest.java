@@ -1119,7 +1119,9 @@ public class IndexingServiceTest
     private IndexProxy createIndexProxyMock()
     {
         IndexProxy proxy = mock( IndexProxy.class );
-        IndexDescriptor descriptor = IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 1, 2 ), PROVIDER_DESCRIPTOR );
+        CapableIndexDescriptor descriptor =
+                IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 1, 2 ), PROVIDER_DESCRIPTOR )
+                        .withoutCapabilities();
         when( proxy.getDescriptor() ).thenReturn( descriptor );
         return proxy;
     }
