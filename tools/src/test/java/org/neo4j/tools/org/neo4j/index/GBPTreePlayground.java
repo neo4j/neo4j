@@ -237,7 +237,6 @@ public class GBPTreePlayground
         }
 
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        Runtime.getRuntime().addShutdownHook( new Thread( () -> fs.deleteFile( indexFile ) ) );
         new GBPTreePlayground( fs, indexFile ).run();
     }
 }
