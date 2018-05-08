@@ -23,8 +23,8 @@ import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 
 public class DefaultIndexReference implements IndexReference
 {
@@ -55,6 +55,18 @@ public class DefaultIndexReference implements IndexReference
     public int[] properties()
     {
         return properties;
+    }
+
+    @Override
+    public String providerKey()
+    {
+        throw new UnsupportedOperationException( "not yet" );
+    }
+
+    @Override
+    public String providerVersion()
+    {
+        throw new UnsupportedOperationException( "not yet" );
     }
 
     public static IndexReference unique( int label, int...properties )

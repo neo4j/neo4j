@@ -132,6 +132,18 @@ public class PendingIndexDescriptor implements SchemaDescriptorSupplier, IndexRe
         return schema.getPropertyIds();
     }
 
+    @Override
+    public String providerKey()
+    {
+        return providerDescriptor.getKey();
+    }
+
+    @Override
+    public String providerVersion()
+    {
+        return providerDescriptor.getVersion();
+    }
+
     public Optional<String> name()
     {
         return name;
