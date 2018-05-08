@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -63,20 +64,20 @@ public interface StoreReadLayer
      * @param labelId label to list indexes for.
      * @return {@link PendingIndexDescriptor} associated with the given {@code labelId}.
      */
-    Iterator<PendingIndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId );
 
     /**
-     * @return all {@link PendingIndexDescriptor} in storage.
+     * @return all {@link CapableIndexDescriptor} in storage.
      */
-    Iterator<PendingIndexDescriptor> indexesGetAll();
+    Iterator<CapableIndexDescriptor> indexesGetAll();
 
     /**
      * Returns all indexes (including unique) related to a property.
      */
-    Iterator<PendingIndexDescriptor> indexesGetRelatedToProperty( int propertyId );
+    Iterator<CapableIndexDescriptor> indexesGetRelatedToProperty( int propertyId );
 
     /**
-     * @param index {@link PendingIndexDescriptor} to get related uniqueness constraint for.
+     * @param index {@link CapableIndexDescriptor} to get related uniqueness constraint for.
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.
      */
@@ -143,9 +144,9 @@ public interface StoreReadLayer
      * Looks for a stored index by given {@code descriptor}
      *
      * @param descriptor a description of the index.
-     * @return {@link PendingIndexDescriptor} for matching index, or {@code null} if not found.
+     * @return {@link CapableIndexDescriptor} for matching index, or {@code null} if not found.
      */
-    PendingIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
+    CapableIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
 
     /**
      * Returns state of a stored index.

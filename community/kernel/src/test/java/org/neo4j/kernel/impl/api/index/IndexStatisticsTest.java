@@ -721,7 +721,7 @@ public class IndexStatisticsTest
         @Override
         public void populationCompleteOn( IndexDescriptor descriptor )
         {
-            onlineIndexes.add( DefaultIndexReference.fromDescriptor( descriptor ) );
+            onlineIndexes.add( descriptor );
         }
 
         public boolean isIndexOnline( IndexReference descriptor )

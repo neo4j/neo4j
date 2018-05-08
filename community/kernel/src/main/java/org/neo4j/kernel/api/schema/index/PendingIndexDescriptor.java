@@ -25,12 +25,15 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.values.storable.ValueCategory;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Filter.GENERAL;
@@ -40,7 +43,7 @@ import static org.neo4j.kernel.api.schema.index.PendingIndexDescriptor.Filter.UN
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
  */
-public class PendingIndexDescriptor implements SchemaDescriptorSupplier, IndexReference
+public class PendingIndexDescriptor implements SchemaDescriptorSupplier, CapableIndexReference
 {
     public enum Type
     {
@@ -152,6 +155,18 @@ public class PendingIndexDescriptor implements SchemaDescriptorSupplier, IndexRe
     public IndexProvider.Descriptor providerDescriptor()
     {
         return providerDescriptor;
+    }
+
+    @Override
+    public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+    {
+        return ORDER_NONE;
+    }
+
+    @Override
+    public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+    {
+        return IndexValueCapability.NO;
     }
 
     /**

@@ -47,9 +47,11 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
@@ -67,7 +69,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
@@ -184,25 +185,25 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public PendingIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
+    public CapableIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override
-    public Iterator<PendingIndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schemaCache.indexDescriptorsForLabel( labelId );
     }
 
     @Override
-    public Iterator<PendingIndexDescriptor> indexesGetAll()
+    public Iterator<CapableIndexDescriptor> indexesGetAll()
     {
-        return (Iterator)schemaCache.indexRules().iterator();
+        return schemaCache.indexRules().iterator();
     }
 
     @Override
-    public Iterator<PendingIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<CapableIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
     {
         return schemaCache.indexesByProperty( propertyId );
     }

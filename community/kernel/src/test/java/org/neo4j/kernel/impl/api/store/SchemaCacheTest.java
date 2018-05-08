@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -63,7 +64,7 @@ public class SchemaCacheTest
     {
         // GIVEN
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules, IndexProviderMap.EMPTY );
 
         // THEN
         assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
@@ -74,7 +75,7 @@ public class SchemaCacheTest
     public void addRemoveIndexes()
     {
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules, IndexProviderMap.EMPTY );
 
         IndexDescriptor rule1 = newIndexRule( 10, 11, 12 );
         IndexDescriptor rule2 = newIndexRule( 13, 14, 15 );
@@ -361,7 +362,8 @@ public class SchemaCacheTest
     private static SchemaCache newSchemaCache( SchemaRule... rules )
     {
         return new SchemaCache( new ConstraintSemantics(), (rules == null || rules.length == 0)
-                                                           ? Collections.emptyList() : Arrays.asList( rules ) );
+                                                           ? Collections.emptyList() : Arrays.asList( rules ),
+                                IndexProviderMap.EMPTY );
     }
 
     private static class ConstraintSemantics extends StandardConstraintSemantics

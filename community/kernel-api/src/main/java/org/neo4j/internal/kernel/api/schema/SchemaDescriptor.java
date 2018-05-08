@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.kernel.api.schema;
 
+import java.util.Arrays;
 import java.util.function.Predicate;
 
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.storageengine.api.lock.ResourceType;
 

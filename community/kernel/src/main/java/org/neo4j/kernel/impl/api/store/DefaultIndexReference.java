@@ -79,13 +79,6 @@ public class DefaultIndexReference implements IndexReference
         return new DefaultIndexReference( false, label, properties );
     }
 
-    public static IndexReference fromDescriptor( PendingIndexDescriptor descriptor )
-    {
-        boolean unique = descriptor.type() == PendingIndexDescriptor.Type.UNIQUE;
-        SchemaDescriptor schema = descriptor.schema();
-        return new DefaultIndexReference( unique, schema.keyId(), schema.getPropertyIds() );
-    }
-
     public static PendingIndexDescriptor toDescriptor( IndexReference reference )
     {
         if ( reference.isUnique() )
