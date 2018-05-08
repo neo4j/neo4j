@@ -68,28 +68,6 @@ public class DefaultIndexReference implements IndexReference
         throw new UnsupportedOperationException( "not yet" );
     }
 
-    public static IndexReference unique( int label, int...properties )
-    {
-        return new DefaultIndexReference( true, label, properties );
-    }
-
-    public static IndexReference general( int label, int...properties )
-    {
-        return new DefaultIndexReference( false, label, properties );
-    }
-
-    public static IndexDescriptor toDescriptor( IndexReference reference )
-    {
-        if ( reference.isUnique() )
-        {
-            return IndexDescriptorFactory.uniqueForLabel( reference.label(), reference.properties() );
-        }
-        else
-        {
-            return IndexDescriptorFactory.forLabel( reference.label(), reference.properties() );
-        }
-    }
-
     @Override
     public boolean equals( Object o )
     {

@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -362,6 +361,12 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public CapableIndexReference indexReferenceUnchecked( int label, int... properties )
+    {
+        return IndexDescriptorFactory.forLabel( label, properties );
+    }
+
+    @Override
     public Iterator<IndexReference> indexesGetForLabel( int labelId )
     {
         sharedOptimisticLock( ResourceTypes.LABEL, labelId );
@@ -477,7 +482,7 @@ public class AllStoreHolder extends Read
     public long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException
     {
         ktx.assertOpen();
-        IndexReader reader = storageReader.getIndexReader( DefaultIndexReference.toDescriptor( index ) );
+        IndexReader reader = storageReader.getIndexReader( (IndexDescriptor) index );
         return reader.countIndexedNodes( nodeId, value );
     }
 

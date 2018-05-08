@@ -160,11 +160,11 @@ public interface StorageReader extends AutoCloseable
      * Reader returned from this method should not be closed. All such readers will be closed during {@link #close()}
      * of the current statement.
      *
-     * @param index {@link PendingIndexDescriptor} to get reader for.
+     * @param index {@link IndexDescriptor} to get reader for.
      * @return {@link IndexReader} capable of searching entity ids given property values.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
-    IndexReader getIndexReader( PendingIndexDescriptor index ) throws IndexNotFoundKernelException;
+    IndexReader getIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Returns an {@link IndexReader} for searching entity ids given property values. A new reader is allocated
@@ -174,11 +174,11 @@ public interface StorageReader extends AutoCloseable
      * <b>NOTE:</b>
      * It is caller's responsibility to close the returned reader.
      *
-     * @param index {@link PendingIndexDescriptor} to get reader for.
+     * @param index {@link IndexDescriptor} to get reader for.
      * @return {@link IndexReader} capable of searching entity ids given property values.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
-    IndexReader getFreshIndexReader( PendingIndexDescriptor index ) throws IndexNotFoundKernelException;
+    IndexReader getFreshIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Access to low level record cursors

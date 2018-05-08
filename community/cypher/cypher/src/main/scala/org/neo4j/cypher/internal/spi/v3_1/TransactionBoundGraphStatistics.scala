@@ -44,7 +44,7 @@ object TransactionBoundGraphStatistics {
 
         // Probability of any node with the given label, to have a property with a given value
         val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(
-          DefaultIndexReference.general(label.id, property.id)
+          schemaRead.indexReferenceUnchecked(label.id, property.id)
         )
         val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
         val indexSelectivity = frequencyOfNodesWithSameValue / labeledNodes
@@ -60,7 +60,7 @@ object TransactionBoundGraphStatistics {
         val labeledNodes = read.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a given property
-        val indexSize = schemaRead.indexSize(DefaultIndexReference.general(label.id, property.id))
+        val indexSize = schemaRead.indexSize(schemaRead.indexReferenceUnchecked(label.id, property.id))
         val indexSelectivity = indexSize / labeledNodes
 
         Selectivity.of(indexSelectivity)

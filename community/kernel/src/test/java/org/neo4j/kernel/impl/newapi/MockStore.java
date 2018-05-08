@@ -635,6 +635,12 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public CapableIndexReference indexReferenceUnchecked( int label, int... properties )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public Iterator<IndexReference> indexesGetForLabel( int labelId )
     {
         throw new UnsupportedOperationException( "not implemented" );

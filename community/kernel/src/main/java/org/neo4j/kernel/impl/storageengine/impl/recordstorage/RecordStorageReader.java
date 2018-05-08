@@ -894,13 +894,13 @@ class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public IndexReader getIndexReader( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexReader getIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory().newReader( descriptor );
     }
 
     @Override
-    public IndexReader getFreshIndexReader( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory().newUnCachedReader( descriptor );
     }

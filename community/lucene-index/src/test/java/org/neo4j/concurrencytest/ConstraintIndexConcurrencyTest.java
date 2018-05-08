@@ -86,7 +86,7 @@ public class ConstraintIndexConcurrencyTest
             Read read = ktx.dataRead();
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                read.nodeIndexSeek( DefaultIndexReference.unique( labelId, propertyKeyId ), cursor, IndexOrder.NONE,
+                read.nodeIndexSeek( ktx.schemaRead().index( labelId, propertyKeyId ), cursor, IndexOrder.NONE,
                         IndexQuery.exact( index.schema().getPropertyId(),
                                 "The value is irrelevant, we just want to perform some sort of lookup against this " +
                                 "index" ) );
