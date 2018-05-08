@@ -80,6 +80,7 @@ public class GBPTreePlayground
         consoleInput.add( "cp", new Checkpoint() );
         consoleInput.add( "autoprint", new ToggleAutoPrintCommand() );
         consoleInput.add( "restart", new RestartCommand() );
+        consoleInput.add( "state", new PrintStateCommand() );
 
         life.start();
         try
@@ -103,7 +104,22 @@ public class GBPTreePlayground
         @Override
         public String toString()
         {
-            return "print tree";
+            return "Print tree";
+        }
+    }
+
+    private class PrintStateCommand implements Command
+    {
+        @Override
+        public void run( String[] args, PrintStream out ) throws Exception
+        {
+            tree.printState();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "print state of tree";
         }
     }
 
@@ -114,11 +130,10 @@ public class GBPTreePlayground
         {
             tree.checkpoint( IOLimiter.unlimited() );
         }
-
         @Override
         public String toString()
         {
-            return "checkpoint tree";
+            return "Checkpoint tree";
         }
     }
 
@@ -149,7 +164,6 @@ public class GBPTreePlayground
             }
             maybePrint();
         }
-
         @Override
         public String toString()
         {
@@ -182,7 +196,6 @@ public class GBPTreePlayground
             }
             maybePrint();
         }
-
         @Override
         public String toString()
         {
@@ -204,7 +217,6 @@ public class GBPTreePlayground
                 autoPrint.setTrue();
             }
         }
-
         @Override
         public String toString()
         {
@@ -223,7 +235,6 @@ public class GBPTreePlayground
             setupIndex();
             System.out.println( "Tree started!" );
         }
-
         @Override
         public String toString()
         {

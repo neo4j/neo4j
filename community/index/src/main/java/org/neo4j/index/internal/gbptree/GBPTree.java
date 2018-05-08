@@ -1046,6 +1046,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 .printTree( cursor, writer.cursor, System.out, printValues, printPosition, printState, printHeader );
         }
     }
+
+    public void printState() throws IOException
+    {
+        try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            TreePrinter.printTreeState( cursor, System.out );
+        }
+    }
     // Utility method
     /**
      * Print node with given id to System.out, if node with id exists.
