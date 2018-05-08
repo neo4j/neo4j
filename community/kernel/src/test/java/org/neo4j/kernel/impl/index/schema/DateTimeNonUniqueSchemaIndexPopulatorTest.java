@@ -30,7 +30,7 @@ public class DateTimeNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSc
     {
         TemporalIndexFiles.FileLayout<ZonedDateTimeSchemaKey> fileLayout =
                 new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_DATE_TIME );
-        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override

@@ -37,7 +37,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -318,7 +318,7 @@ public class LuceneIndexRecoveryIT
                         IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override
-                    public InternalIndexState getInitialState( long indexId, PendingIndexDescriptor descriptor )
+                    public InternalIndexState getInitialState( IndexDescriptor descriptor )
                     {
                         return InternalIndexState.POPULATING;
                     }

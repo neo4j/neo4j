@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.ValueCategory;
@@ -63,27 +63,27 @@ public class TemporalIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, PendingIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
-        return new TemporalIndexPopulator( indexId, descriptor, samplingConfig, files, pageCache, fs, monitor );
+        TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
+        return new TemporalIndexPopulator( descriptor, samplingConfig, files, pageCache, fs, monitor );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, PendingIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
-        return new TemporalIndexAccessor( indexId, descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files );
+        TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
+        return new TemporalIndexAccessor( descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files );
     }
 
     @Override
-    public String getPopulationFailure( long indexId, PendingIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
     {
-        TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
+        TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
 
         try
         {
@@ -100,13 +100,13 @@ public class TemporalIndexProvider extends IndexProvider
         {
             throw new RuntimeException( e );
         }
-        throw new IllegalStateException( "Index " + indexId + " isn't failed" );
+        throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, PendingIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor )
     {
-        TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
+        TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
 
         final Iterable<TemporalIndexFiles.FileLayout> existing = temporalIndexFiles.existing();
         InternalIndexState state = InternalIndexState.ONLINE;
@@ -125,7 +125,7 @@ public class TemporalIndexProvider extends IndexProvider
             }
             catch ( MetadataMismatchException | IOException e )
             {
-                monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
+                monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
                 return InternalIndexState.POPULATING;
             }
         }

@@ -455,7 +455,7 @@ public class FullCheckIntegrationTest
             IndexDescriptor rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = storeAccess.indexes().apply( rule.providerDescriptor() )
-                .getPopulator( rule.getId(), rule, samplingConfig );
+                .getPopulator( rule, samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 
@@ -556,25 +556,23 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<IndexDescriptor> indexRuleIterator =
+        Iterator<IndexDescriptor> indexDescriptorIterator =
                 new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
         NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
                 fixture.directStoreAccess().nativeStores().getRawNeoStores() );
-        while ( indexRuleIterator.hasNext() )
+        while ( indexDescriptorIterator.hasNext() )
         {
-            IndexDescriptor indexRule = indexRuleIterator.next();
-            PendingIndexDescriptor descriptor = indexRule;
+            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
-                    apply( indexRule.providerDescriptor() ).getOnlineAccessor(
-                            indexRule.getId(), descriptor, samplingConfig );
+                    apply( indexDescriptor.providerDescriptor() ).getOnlineAccessor( indexDescriptor, samplingConfig );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
             {
                 for ( long nodeId : indexedNodes )
                 {
                     NodeUpdates updates = storeView.nodeAsUpdates( nodeId );
-                    for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( descriptor ) ) )
+                    for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( indexDescriptor ) ) )
                     {
-                        updater.process( IndexEntryUpdate.remove( nodeId, descriptor, update.values() ) );
+                        updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, update.values() ) );
                     }
                 }
             }
@@ -601,7 +599,7 @@ public class FullCheckIntegrationTest
         {
             IndexDescriptor indexRule = indexRuleIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().apply( indexRule.providerDescriptor() )
-                    .getOnlineAccessor( indexRule.getId(), indexRule, samplingConfig );
+                    .getOnlineAccessor( indexRule, samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );
             updater.close();

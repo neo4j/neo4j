@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
@@ -57,9 +57,9 @@ public class InMemoryIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, PendingIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor )
     {
-        InMemoryIndex index = indexes.get( indexId );
+        InMemoryIndex index = indexes.get( descriptor.getId() );
         return index != null ? index.getState() : InternalIndexState.POPULATING;
     }
 
@@ -76,36 +76,35 @@ public class InMemoryIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, PendingIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = descriptor.type() == UNIQUE
                 ? new UniqueInMemoryIndex( descriptor ) : new InMemoryIndex( descriptor );
-        indexes.put( indexId, index );
+        indexes.put( descriptor.getId(), index );
         return index.getPopulator();
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, PendingIndexDescriptor descriptor,
-                                            IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        InMemoryIndex index = indexes.get( indexId );
+        InMemoryIndex index = indexes.get( descriptor.getId() );
         if ( index == null || index.getState() != InternalIndexState.ONLINE )
         {
-            throw new IllegalStateException( "Index " + indexId + " not online yet" );
+            throw new IllegalStateException( "Index " + descriptor.getId() + " not online yet" );
         }
         if ( descriptor.type() == UNIQUE && !(index instanceof UniqueInMemoryIndex) )
         {
             throw new IllegalStateException(
-                    String.format( "The index [%s] was not created as a unique index.", indexId )
+                    String.format( "The index [%s] was not created as a unique index.", descriptor.getId() )
             );
         }
         return index.getOnlineAccessor();
     }
 
     @Override
-    public String getPopulationFailure( long indexId, PendingIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
     {
-        String failure = indexes.get( indexId ).failure;
+        String failure = indexes.get( descriptor.getId() ).failure;
         if ( failure == null )
         {
             throw new IllegalStateException();

@@ -34,7 +34,7 @@ public class DateTimeUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAcce
     {
         TemporalIndexFiles.FileLayout<ZonedDateTimeSchemaKey> fileLayout =
                 new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_DATE_TIME );
-        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override

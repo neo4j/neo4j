@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -42,7 +43,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
  * your {@link IndexProvider} for a
- * {@link #getPopulator(long, PendingIndexDescriptor, IndexSamplingConfig) batch index writer}.
+ * {@link #getPopulator(IndexDescriptor, IndexSamplingConfig) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -87,7 +88,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(long, PendingIndexDescriptor, IndexSamplingConfig) online accessor} to
+ * {@link #getOnlineAccessor(IndexDescriptor, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
 public abstract class IndexProvider extends LifecycleAdapter implements Comparable<IndexProvider>
@@ -99,7 +100,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
         class Adaptor implements Monitor
         {
             @Override
-            public void failedToOpenIndex( long indexId, PendingIndexDescriptor schemaIndexDescriptor, String action, Exception cause )
+            public void failedToOpenIndex( IndexDescriptor schemaIndexDescriptor, String action, Exception cause )
             {   // no-op
             }
 
@@ -109,7 +110,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
             }
         }
 
-        void failedToOpenIndex( long indexId, PendingIndexDescriptor schemaIndexDescriptor, String action, Exception cause );
+        void failedToOpenIndex( IndexDescriptor schemaIndexDescriptor, String action, Exception cause );
 
         void recoveryCompleted( PendingIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data );
     }
@@ -121,21 +122,19 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
                 private final IndexPopulator singlePopulator = IndexPopulator.EMPTY;
 
                 @Override
-                public IndexAccessor getOnlineAccessor( long indexId, PendingIndexDescriptor descriptor,
-                                                        IndexSamplingConfig samplingConfig )
+                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
                 {
                     return singleWriter;
                 }
 
                 @Override
-                public IndexPopulator getPopulator( long indexId, PendingIndexDescriptor descriptor,
-                                                    IndexSamplingConfig samplingConfig )
+                public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
                 {
                     return singlePopulator;
                 }
 
                 @Override
-                public InternalIndexState getInitialState( long indexId, PendingIndexDescriptor descriptor )
+                public InternalIndexState getInitialState( IndexDescriptor descriptor )
                 {
                     return InternalIndexState.ONLINE;
                 }
@@ -154,7 +153,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
                 }
 
                 @Override
-                public String getPopulationFailure( long indexId, PendingIndexDescriptor descriptor ) throws IllegalStateException
+                public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
                 {
                     throw new IllegalStateException();
                 }
@@ -189,33 +188,30 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( long indexId, PendingIndexDescriptor descriptor,
-                                                 IndexSamplingConfig samplingConfig );
+    public abstract IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig );
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( long indexId, PendingIndexDescriptor descriptor,
-                                                     IndexSamplingConfig samplingConfig ) throws IOException;
+    public abstract IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException;
 
     /**
      * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}
      *
      * Implementations are expected to persist this failure
-     * @param indexId the id of the index.
-     * @param descriptor {@link PendingIndexDescriptor} of the index.
+     * @param descriptor {@link IndexDescriptor} of the index.
      * @return failure, in the form of a stack trace, that happened during population.
      * @throws IllegalStateException If there was no failure during population.
      */
-    public abstract String getPopulationFailure( long indexId, PendingIndexDescriptor descriptor ) throws IllegalStateException;
+    public abstract String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException;
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
-     * is returned then a further call to {@link #getPopulationFailure(long, PendingIndexDescriptor)} is expected and should return
+     * is returned then a further call to {@link #getPopulationFailure(IndexDescriptor)} is expected and should return
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      */
-    public abstract InternalIndexState getInitialState( long indexId, PendingIndexDescriptor descriptor );
+    public abstract InternalIndexState getInitialState( IndexDescriptor descriptor );
 
     /**
      * Return {@link IndexCapability} for this index provider.

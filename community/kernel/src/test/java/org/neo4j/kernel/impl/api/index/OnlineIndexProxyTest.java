@@ -25,8 +25,9 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -45,8 +46,8 @@ public class OnlineIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        IndexMeta indexMeta = new IndexMeta( indexId, descriptor, providerDescriptor, NO_CAPABILITY );
-        OnlineIndexProxy index = new OnlineIndexProxy( indexId, indexMeta, accessor, storeView, false );
+        IndexMeta indexMeta = new IndexMeta( IndexDescriptor.indexRule( indexId, descriptor, providerDescriptor ), NO_CAPABILITY );
+        OnlineIndexProxy index = new OnlineIndexProxy( indexMeta, accessor, storeView, false );
 
         // when
         index.drop();

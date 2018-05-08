@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,20 +35,21 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.*;
 
 public class IndexUpdaterMapTest
 {
     private IndexMap indexMap;
 
     private IndexProxy indexProxy1;
-    private PendingIndexDescriptor schemaIndexDescriptor1;
+    private IndexDescriptor schemaIndexDescriptor1;
     private IndexUpdater indexUpdater1;
 
     private IndexProxy indexProxy2;
-    private PendingIndexDescriptor schemaIndexDescriptor2;
+    private IndexDescriptor schemaIndexDescriptor2;
 
     private IndexProxy indexProxy3;
-    private PendingIndexDescriptor schemaIndexDescriptor3;
+    private IndexDescriptor schemaIndexDescriptor3;
 
     private IndexUpdaterMap updaterMap;
 
@@ -58,19 +59,19 @@ public class IndexUpdaterMapTest
         indexMap = new IndexMap();
 
         indexProxy1 = mock( IndexProxy.class );
-        schemaIndexDescriptor1 = IndexDescriptorFactory.forLabel( 2, 3 );
+        schemaIndexDescriptor1 = IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 2, 3 ), PROVIDER_DESCRIPTOR );
         indexUpdater1 = mock( IndexUpdater.class );
         when( indexProxy1.getDescriptor() ).thenReturn( schemaIndexDescriptor1 );
         when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
-        schemaIndexDescriptor2 = IndexDescriptorFactory.forLabel( 5, 6 );
+        schemaIndexDescriptor2 = IndexDescriptor.indexRule( 1, IndexDescriptorFactory.forLabel( 5, 6 ), PROVIDER_DESCRIPTOR );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
         when( indexProxy2.getDescriptor() ).thenReturn( schemaIndexDescriptor2 );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
 
         indexProxy3 = mock( IndexProxy.class );
-        schemaIndexDescriptor3 = IndexDescriptorFactory.forLabel( 5, 7, 8 );
+        schemaIndexDescriptor3 = IndexDescriptor.indexRule( 2, IndexDescriptorFactory.forLabel( 5, 7, 8 ), PROVIDER_DESCRIPTOR );
         IndexUpdater indexUpdater3 = mock( IndexUpdater.class );
         when( indexProxy3.getDescriptor() ).thenReturn( schemaIndexDescriptor3 );
         when( indexProxy3.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater3 );
@@ -82,7 +83,7 @@ public class IndexUpdaterMapTest
     public void shouldRetrieveUpdaterFromIndexMapForExistingIndex()
     {
         // given
-        indexMap.putIndexProxy( 0, indexProxy1 );
+        indexMap.putIndexProxy( indexProxy1 );
 
         // when
         IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
@@ -96,7 +97,7 @@ public class IndexUpdaterMapTest
     public void shouldRetrieveUpdateUsingLabelAndProperty()
     {
         // given
-        indexMap.putIndexProxy( 0, indexProxy1 );
+        indexMap.putIndexProxy( indexProxy1 );
 
         // when
         IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
@@ -109,7 +110,7 @@ public class IndexUpdaterMapTest
     public void shouldRetrieveSameUpdaterFromIndexMapForExistingIndexWhenCalledTwice()
     {
         // given
-        indexMap.putIndexProxy( 0, indexProxy1 );
+        indexMap.putIndexProxy( indexProxy1 );
 
         // when
         IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
@@ -135,8 +136,8 @@ public class IndexUpdaterMapTest
     public void shouldCloseAllUpdaters() throws Exception
     {
         // given
-        indexMap.putIndexProxy( 0, indexProxy1 );
-        indexMap.putIndexProxy( 1, indexProxy2 );
+        indexMap.putIndexProxy( indexProxy1 );
+        indexMap.putIndexProxy( indexProxy2 );
 
         IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
         IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor2.schema() );

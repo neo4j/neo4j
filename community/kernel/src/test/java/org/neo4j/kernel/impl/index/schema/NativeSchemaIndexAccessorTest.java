@@ -162,7 +162,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         {
             IndexEntryUpdate<PendingIndexDescriptor> update = updates[i];
             Value newValue = generator.next().values()[0];
-            updates[i] = change( update.getEntityId(), schemaIndexDescriptor, update.values()[0], newValue );
+            updates[i] = change( update.getEntityId(), indexDescriptor, update.values()[0], newValue );
         }
 
         // when
@@ -184,8 +184,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         {
             // when
             IndexEntryUpdate<PendingIndexDescriptor> update = updates[i];
-            IndexEntryUpdate<PendingIndexDescriptor> remove = remove( update.getEntityId(),
-                                                                      schemaIndexDescriptor, update.values() );
+            IndexEntryUpdate<PendingIndexDescriptor> remove = remove( update.getEntityId(), indexDescriptor, update.values() );
             processAll( remove );
             forceAndCloseAccessor();
 
@@ -856,7 +855,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
             {
                 // remove something
                 IndexEntryUpdate<PendingIndexDescriptor> toRemove = selectRandomItem( expectedData );
-                updates[i] = remove( toRemove.getEntityId(), schemaIndexDescriptor, toRemove.values() );
+                updates[i] = remove( toRemove.getEntityId(), indexDescriptor, toRemove.values() );
             }
             else if ( !expectedData.isEmpty() && factor < (1 - removeFactor) * addChangeRatio )
             {
@@ -864,7 +863,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
                 IndexEntryUpdate<PendingIndexDescriptor> toChange = selectRandomItem( expectedData );
                 // use the data generator to generate values, even if the whole update as such won't be used
                 IndexEntryUpdate<PendingIndexDescriptor> updateContainingValue = newDataGenerator.next();
-                updates[i] = change( toChange.getEntityId(), schemaIndexDescriptor, toChange.values(),
+                updates[i] = change( toChange.getEntityId(), indexDescriptor, toChange.values(),
                         updateContainingValue.values() );
             }
             else
@@ -912,7 +911,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
 
     private IndexEntryUpdate<PendingIndexDescriptor> simpleUpdate()
     {
-        return IndexEntryUpdate.add( 0, schemaIndexDescriptor, of( 0 ) );
+        return IndexEntryUpdate.add( 0, indexDescriptor, of( 0 ) );
     }
 
     // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate

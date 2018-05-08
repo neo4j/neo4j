@@ -23,7 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -75,7 +76,7 @@ public class OnlineIndexSamplingJobTest
     private final long indexId = 1;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
-    private final PendingIndexDescriptor schemaIndexDescriptor = IndexDescriptorFactory.forLabel( 1, 2 );
+    private final IndexDescriptor indexDescriptor = IndexDescriptor.indexRule( indexId, IndexDescriptorFactory.forLabel( 1, 2 ), IndexProvider.UNDECIDED );
     private final IndexReader indexReader = mock( IndexReader.class );
     private final IndexSampler indexSampler = mock( IndexSampler.class );
 
@@ -85,7 +86,7 @@ public class OnlineIndexSamplingJobTest
     @Before
     public void setup() throws IndexNotFoundKernelException
     {
-        when( indexProxy.getDescriptor() ).thenReturn( schemaIndexDescriptor );
+        when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
         when( indexProxy.newReader() ).thenReturn( indexReader );
         when( indexReader.createSampler() ).thenReturn( indexSampler );
         when( indexSampler.sampleIndex() ).thenReturn( new IndexSample( indexSize, indexUniqueValues, indexSize ) );

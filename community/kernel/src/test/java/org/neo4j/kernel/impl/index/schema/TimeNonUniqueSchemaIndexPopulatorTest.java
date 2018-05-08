@@ -30,7 +30,7 @@ public class TimeNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSchema
     {
         TemporalIndexFiles.FileLayout<ZonedTimeSchemaKey> fileLayout =
                 new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_TIME );
-        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override

@@ -65,8 +65,9 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -74,7 +75,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -364,7 +364,7 @@ public class IndexingServiceTest
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
-        when( provider.getOnlineAccessor( anyLong(), any( PendingIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexAccessor );
         IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
@@ -377,11 +377,11 @@ public class IndexingServiceTest
                 mock( IndexStoreView.class ), mockLookup, asList( onlineIndex, populatingIndex, failedIndex ),
                 logProvider, IndexingService.NO_MONITOR, schemaState ) );
 
-        when( provider.getInitialState( onlineIndex.getId(), onlineIndex ) )
+        when( provider.getInitialState( onlineIndex ) )
                 .thenReturn( ONLINE );
-        when( provider.getInitialState( populatingIndex.getId(), populatingIndex ) )
+        when( provider.getInitialState( populatingIndex ) )
                 .thenReturn( InternalIndexState.POPULATING );
-        when( provider.getInitialState( failedIndex.getId(), failedIndex ) )
+        when( provider.getInitialState( failedIndex ) )
                 .thenReturn( InternalIndexState.FAILED );
 
         when(mockLookup.labelGetName( 1 )).thenReturn( "LabelOne" );
@@ -418,13 +418,13 @@ public class IndexingServiceTest
                 asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR,
                 schemaState );
 
-        when( provider.getInitialState( onlineIndex.getId(), onlineIndex ) )
+        when( provider.getInitialState( onlineIndex ) )
                 .thenReturn( ONLINE );
-        when( provider.getInitialState( populatingIndex.getId(), populatingIndex ) )
+        when( provider.getInitialState( populatingIndex ) )
                 .thenReturn( InternalIndexState.POPULATING );
-        when( provider.getInitialState( failedIndex.getId(), failedIndex ) )
+        when( provider.getInitialState( failedIndex ) )
                 .thenReturn( InternalIndexState.FAILED );
-        when( provider.getOnlineAccessor( anyLong(), any( PendingIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenAnswer(
+        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenAnswer(
                 invocation -> mock( IndexAccessor.class ) );
 
         indexingService.init();
@@ -441,7 +441,7 @@ public class IndexingServiceTest
         indexingService.start();
 
         // then
-        verify( provider ).getPopulationFailure( 3, failedIndex );
+        verify( provider ).getPopulationFailure( failedIndex );
         logProvider.assertAtLeastOnce(
                 logMatch.debug( "IndexingService.start: index 1 on :LabelOne(propertyOne) is ONLINE" ),
                 logMatch.debug( "IndexingService.start: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
@@ -490,8 +490,8 @@ public class IndexingServiceTest
         File theFile = new File( "Blah" );
 
         when( indexAccessor.snapshotFiles()).thenAnswer( newResourceIterator( theFile ) );
-        when( indexProvider.getInitialState( indexId, rule1 ) ).thenReturn( ONLINE );
-        when( indexProvider.getInitialState( indexId2, rule2 ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( rule1 ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( rule2 ) ).thenReturn( ONLINE );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( newDoubleLongRegister( 32L, 32L ) );
 
@@ -522,8 +522,8 @@ public class IndexingServiceTest
 
         doAnswer( waitForLatch( populatorLatch ) ).when( populator ).create();
         when( indexAccessor.snapshotFiles() ).thenAnswer( newResourceIterator( theFile ) );
-        when( indexProvider.getInitialState( indexId, rule1 ) ).thenReturn( POPULATING );
-        when( indexProvider.getInitialState( indexId2, rule2 ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( rule1 ) ).thenReturn( POPULATING );
+        when( indexProvider.getInitialState( rule2 ) ).thenReturn( ONLINE );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
         life.start();
 
@@ -657,9 +657,9 @@ public class IndexingServiceTest
         IndexUpdater updater2 = mock( IndexUpdater.class );
         when( accessor2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater2 );
 
-        when( indexProvider.getOnlineAccessor( eq( 1L ), any( PendingIndexDescriptor.class ),
+        when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ),
                 any( IndexSamplingConfig.class ) ) ).thenReturn( accessor1 );
-        when( indexProvider.getOnlineAccessor( eq( 2L ), any( PendingIndexDescriptor.class ),
+        when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ),
                 any( IndexSamplingConfig.class ) ) ).thenReturn( accessor2 );
 
         life.start();
@@ -762,11 +762,11 @@ public class IndexingServiceTest
         // For some reason the usual accessor returned null from newUpdater, even when told to return the updater
         // so spying on a real object instead.
         IndexAccessor accessor = spy( new TrackingIndexAccessor() );
-        IndexDescriptor index = IndexDescriptor.indexRule( 1, this.index, PROVIDER_DESCRIPTOR );
+        IndexDescriptor index = IndexDescriptor.indexRule( indexId, this.index, PROVIDER_DESCRIPTOR );
         IndexingService indexing = newIndexingServiceWithMockedDependencies(
                 populator, accessor, withData( update ), index
         );
-        when( indexProvider.getInitialState( indexId, index ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( index ) ).thenReturn( ONLINE );
         life.init();
 
         // WHEN dropping another index, which happens to have the same label/property... while recovering
@@ -838,11 +838,11 @@ public class IndexingServiceTest
         indexing.createIndexes( indexRule1, indexRule2, indexRule3 );
 
         // THEN
-        verify( indexProvider ).getPopulator( eq( 0L ), eq( IndexDescriptorFactory.forLabel( 0, 0 ) ),
+        verify( indexProvider ).getPopulator( eq( IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ) ),
                 any( IndexSamplingConfig.class ) );
-        verify( indexProvider ).getPopulator( eq( 1L ), eq( IndexDescriptorFactory.forLabel( 0, 1 ) ),
+        verify( indexProvider ).getPopulator( eq( IndexDescriptor.indexRule( 1, IndexDescriptorFactory.forLabel( 0, 1 ), PROVIDER_DESCRIPTOR ) ),
                 any( IndexSamplingConfig.class ) );
-        verify( indexProvider ).getPopulator( eq( 2L ), eq( IndexDescriptorFactory.forLabel( 1, 0 ) ),
+        verify( indexProvider ).getPopulator( eq( IndexDescriptor.indexRule( 2, IndexDescriptorFactory.forLabel( 1, 0 ), PROVIDER_DESCRIPTOR ) ),
                 any( IndexSamplingConfig.class ) );
 
         waitForIndexesToComeOnline( indexing, 0, 1, 2 );
@@ -859,8 +859,7 @@ public class IndexingServiceTest
         when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
         when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
 
-        when( indexProvider.getOnlineAccessor(
-                eq( indexId ), any( PendingIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenThrow( exception );
 
         life.start();
@@ -895,9 +894,8 @@ public class IndexingServiceTest
         when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
         when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
 
-        when( indexProvider.getInitialState( indexId, indexRule ) ).thenReturn( POPULATING );
-        when( indexProvider.getOnlineAccessor(
-                eq( indexId ), any( PendingIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getInitialState( indexRule ) ).thenReturn( POPULATING );
+        when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenThrow( exception );
 
         life.start();
@@ -926,7 +924,7 @@ public class IndexingServiceTest
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
-        when( provider.getOnlineAccessor( anyLong(), any( PendingIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexAccessor );
         IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
@@ -934,15 +932,15 @@ public class IndexingServiceTest
         List<IndexDescriptor> indexes = new ArrayList<>();
         int nextIndexId = 1;
         IndexDescriptor populatingIndex = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-        when( provider.getInitialState( populatingIndex.getId(), populatingIndex ) ).thenReturn( POPULATING );
+        when( provider.getInitialState( populatingIndex ) ).thenReturn( POPULATING );
         indexes.add( populatingIndex );
         IndexDescriptor failedIndex = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-        when( provider.getInitialState( failedIndex.getId(), failedIndex ) ).thenReturn( FAILED );
+        when( provider.getInitialState( failedIndex ) ).thenReturn( FAILED );
         indexes.add( failedIndex );
         for ( int i = 0; i < 10; i++ )
         {
             IndexDescriptor indexRule = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-            when( provider.getInitialState( indexRule.getId(), indexRule ) ).thenReturn( ONLINE );
+            when( provider.getInitialState( indexRule ) ).thenReturn( ONLINE );
             indexes.add( indexRule );
         }
         for ( int i = 0; i < nextIndexId; i++ )
@@ -975,7 +973,7 @@ public class IndexingServiceTest
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
-        when( provider.getOnlineAccessor( anyLong(), any( PendingIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexAccessor );
         IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
@@ -983,15 +981,15 @@ public class IndexingServiceTest
         List<IndexDescriptor> indexes = new ArrayList<>();
         int nextIndexId = 1;
         IndexDescriptor populatingIndex = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-        when( provider.getInitialState( populatingIndex.getId(), populatingIndex ) ).thenReturn( POPULATING );
+        when( provider.getInitialState( populatingIndex ) ).thenReturn( POPULATING );
         indexes.add( populatingIndex );
         IndexDescriptor failedIndex = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-        when( provider.getInitialState( failedIndex.getId(), failedIndex ) ).thenReturn( FAILED );
+        when( provider.getInitialState( failedIndex ) ).thenReturn( FAILED );
         indexes.add( failedIndex );
         for ( int i = 0; i < 10; i++ )
         {
             IndexDescriptor indexRule = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-            when( provider.getInitialState( indexRule.getId(), indexRule ) ).thenReturn( ONLINE );
+            when( provider.getInitialState( indexRule ) ).thenReturn( ONLINE );
             indexes.add( indexRule );
         }
         for ( int i = 0; i < nextIndexId; i++ )
@@ -1028,11 +1026,11 @@ public class IndexingServiceTest
         IndexProxy deletedIndexProxy = createIndexProxyMock();
         indexMapReference.modify( indexMap ->
         {
-            indexMap.putIndexProxy( 1, validIndex );
-            indexMap.putIndexProxy( 2, validIndex );
-            indexMap.putIndexProxy( 3, deletedIndexProxy );
-            indexMap.putIndexProxy( 4, validIndex );
-            indexMap.putIndexProxy( 5, validIndex );
+            indexMap.putIndexProxy( validIndex );
+            indexMap.putIndexProxy( validIndex );
+            indexMap.putIndexProxy( deletedIndexProxy );
+            indexMap.putIndexProxy( validIndex );
+            indexMap.putIndexProxy( validIndex );
             return indexMap;
         } );
 
@@ -1059,12 +1057,12 @@ public class IndexingServiceTest
         indexMapReference.modify( indexMap ->
         {
             IndexProxy validIndex = createIndexProxyMock();
-            indexMap.putIndexProxy( 1, validIndex );
-            indexMap.putIndexProxy( 2, validIndex );
+            indexMap.putIndexProxy( validIndex );
+            indexMap.putIndexProxy( validIndex );
             IndexProxy strangeIndexProxy = createIndexProxyMock();
-            indexMap.putIndexProxy( 3, strangeIndexProxy );
-            indexMap.putIndexProxy( 4, validIndex );
-            indexMap.putIndexProxy( 5, validIndex );
+            indexMap.putIndexProxy( strangeIndexProxy );
+            indexMap.putIndexProxy( validIndex );
+            indexMap.putIndexProxy( validIndex );
             doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force( any( IOLimiter.class ) );
             return indexMap;
         } );
@@ -1086,7 +1084,7 @@ public class IndexingServiceTest
         IndexAccessor accessor = mock( IndexAccessor.class );
         IndexUpdater updater = mock( IndexUpdater.class );
         when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
-        when( indexProvider.getOnlineAccessor( eq( rule.getId() ), any( PendingIndexDescriptor.class ),
+        when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ),
                 any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         life.init();
@@ -1121,7 +1119,7 @@ public class IndexingServiceTest
     private IndexProxy createIndexProxyMock()
     {
         IndexProxy proxy = mock( IndexProxy.class );
-        PendingIndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 2 );
+        IndexDescriptor descriptor = IndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 1, 2 ), PROVIDER_DESCRIPTOR );
         when( proxy.getDescriptor() ).thenReturn( descriptor );
         return proxy;
     }
@@ -1231,12 +1229,12 @@ public class IndexingServiceTest
                                                                       IndexingService.Monitor monitor,
                                                                       IndexDescriptor... rules ) throws IOException
     {
-        when( indexProvider.getInitialState( anyLong(), any( PendingIndexDescriptor.class ) ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        when( indexProvider.getPopulator( anyLong(), any( PendingIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
         data.getsProcessedByStoreScanFrom( storeView );
-        when( indexProvider.getOnlineAccessor( anyLong(), any( PendingIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( accessor );
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );

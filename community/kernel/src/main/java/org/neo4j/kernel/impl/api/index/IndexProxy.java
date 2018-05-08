@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -78,7 +79,7 @@ public interface IndexProxy extends SchemaDescriptorSupplier
      */
     void close() throws IOException;
 
-    PendingIndexDescriptor getDescriptor();
+    IndexDescriptor getDescriptor();
 
     @Override
     SchemaDescriptor schema();

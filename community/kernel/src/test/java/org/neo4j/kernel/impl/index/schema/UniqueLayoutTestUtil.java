@@ -36,7 +36,7 @@ class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Nativ
 
     UniqueLayoutTestUtil( LayoutTestUtil<KEY, VALUE> delegate )
     {
-        super( delegate.schemaIndexDescriptor );
+        super( delegate.indexDescriptor );
         this.delegate = delegate;
     }
 

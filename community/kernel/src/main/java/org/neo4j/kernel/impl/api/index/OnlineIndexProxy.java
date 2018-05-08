@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -73,14 +73,10 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    OnlineIndexProxy( long indexId,
-            IndexMeta indexMeta,
-            IndexAccessor accessor,
-            IndexStoreView storeView,
-            boolean forcedIdempotentMode )
+    OnlineIndexProxy( IndexMeta indexMeta, IndexAccessor accessor, IndexStoreView storeView, boolean forcedIdempotentMode )
     {
         assert accessor != null;
-        this.indexId = indexId;
+        this.indexId = indexMeta.indexDescriptor().getId();
         this.indexMeta = indexMeta;
         this.accessor = accessor;
         this.storeView = storeView;
@@ -136,7 +132,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public PendingIndexDescriptor getDescriptor()
+    public IndexDescriptor getDescriptor()
     {
         return indexMeta.indexDescriptor();
     }
@@ -150,7 +146,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexProvider.Descriptor getProviderDescriptor()
     {
-        return indexMeta.providerDescriptor();
+        return indexMeta.indexDescriptor().providerDescriptor();
     }
 
     @Override
