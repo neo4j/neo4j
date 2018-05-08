@@ -23,12 +23,24 @@ import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 
 public class CapableIndexDescriptor extends IndexDescriptor implements CapableIndexReference
 {
     private final IndexCapability indexCapability;
+
+    public CapableIndexDescriptor( long id,
+                                   IndexProvider.Descriptor providerDescriptor,
+                                   PendingIndexDescriptor descriptor,
+                                   Long owningConstraintId,
+                                   IndexCapability indexCapability )
+    {
+        super( id, providerDescriptor, descriptor, owningConstraintId );
+        this.indexCapability = indexCapability;
+    }
 
     public CapableIndexDescriptor( IndexDescriptor indexDescriptor, IndexCapability indexCapability )
     {

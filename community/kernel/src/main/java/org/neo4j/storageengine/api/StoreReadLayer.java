@@ -157,15 +157,6 @@ public interface StoreReadLayer
     InternalIndexState indexGetState( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Return index provider descriptor of a stored index.
-     *
-     * @param descriptor {@link PendingIndexDescriptor} to get provider descriptor for.
-     * @return {@link IndexProvider.Descriptor} for index.
-     * @throws IndexNotFoundKernelException if index not found.
-     */
-    IndexProvider.Descriptor indexGetProviderDescriptor( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
      * Return index reference of a stored index.
      *
      * @param descriptor {@link PendingIndexDescriptor} to get provider reference for.

@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.logging.LogProvider;
@@ -40,6 +41,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.indexRule;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
 
 public class OnlineIndexSamplingJobTest
 {
@@ -76,7 +79,8 @@ public class OnlineIndexSamplingJobTest
     private final long indexId = 1;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
-    private final IndexDescriptor indexDescriptor = IndexDescriptor.indexRule( indexId, IndexDescriptorFactory.forLabel( 1, 2 ), IndexProvider.UNDECIDED );
+    private final CapableIndexDescriptor indexDescriptor =
+            indexRule( indexId, forLabel( 1, 2 ), IndexProvider.UNDECIDED ).withoutCapabilities();
     private final IndexReader indexReader = mock( IndexReader.class );
     private final IndexSampler indexSampler = mock( IndexSampler.class );
 

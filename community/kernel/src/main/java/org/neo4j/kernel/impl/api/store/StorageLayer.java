@@ -46,7 +46,6 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.index.PendingIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
@@ -239,21 +238,10 @@ public class StorageLayer implements StoreReadLayer
         return indexService.getIndexProxy( descriptor.schema() ).getState();
     }
 
-    @Override
-    public IndexProvider.Descriptor indexGetProviderDescriptor( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return indexService.getIndexProxy( descriptor.schema() ).getProviderDescriptor();
-    }
-
     public CapableIndexReference indexReference( PendingIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        boolean unique = descriptor.type() == PendingIndexDescriptor.Type.UNIQUE;
-        SchemaDescriptor schema = descriptor.schema();
-        IndexProxy indexProxy = indexService.getIndexProxy( schema );
-
-        return new DefaultCapableIndexReference( unique, indexProxy.getIndexCapability(),
-                indexProxy.getProviderDescriptor(), schema.keyId(),
-                schema.getPropertyIds() );
+        IndexProxy indexProxy = indexService.getIndexProxy( descriptor.schema() );
+        return indexProxy.getDescriptor();
     }
 
     @Override

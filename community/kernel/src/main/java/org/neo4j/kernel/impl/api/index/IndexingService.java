@@ -618,7 +618,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         MutableLongSet indexIds = new LongHashSet();
         for ( IndexProxy indexProxy : indexProxies )
         {
-            indexIds.add( indexProxy.getIndexId() );
+            indexIds.add( indexProxy.getDescriptor().getId() );
         }
         return indexIds;
     }
