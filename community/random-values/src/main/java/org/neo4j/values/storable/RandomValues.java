@@ -297,7 +297,7 @@ public class RandomValues
      * value (exclusive)
      *
      * @param bound the upper bound (exclusive).  Must be positive.
-     * @return the next pseudorandom, uniformly distributed {@link IntValue}
+     * @return the next pseudorandom, uniformly distributed {@code int}
      * value between zero (inclusive) and {@code bound} (exclusive)
      */
     public int nextInt( int bound )
@@ -1020,7 +1020,7 @@ public class RandomValues
      *
      * @return the next pseudorandom {@link LongArray}
      */
-    public LongArray nextLongArray( )
+    public LongArray nextLongArray()
     {
         return nextLongArray( configuration.arrayMinLength(), configuration.arrayMaxLength() );
     }
@@ -1205,6 +1205,11 @@ public class RandomValues
         return duration( Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS ) );
     }
 
+    /**
+     * Returns a randomly selected temporal value spread uniformly over the supported types.
+     *
+     * @return a randomly selected temporal value
+     */
     public Value nextTemporalValue()
     {
         int nextInt = generator.nextInt( 6 );
@@ -1279,6 +1284,11 @@ public class RandomValues
                 generator.nextDouble() * 10000 );
     }
 
+    /**
+     * Returns a randomly selected point value spread uniformly over the supported types of points.
+     *
+     * @return a randomly selected point value
+     */
     public PointValue nextPointValue()
     {
         int nextInt = generator.nextInt( 4 );
@@ -1301,16 +1311,34 @@ public class RandomValues
         }
     }
 
+    /**
+     * Returns a random element of the provided array
+     *
+     * @param among the array to choose a random element from
+     * @return a random element of the provided list
+     */
     public <T> T among( T[] among )
     {
         return among[generator.nextInt( among.length )];
     }
 
+    /**
+     * Returns a random element of the provided list
+     *
+     * @param among the list to choose a random element from
+     * @return a random element of the provided list
+     */
     public <T> T among( List<T> among )
     {
         return among.get( generator.nextInt( among.size() ) );
     }
 
+    /**
+     * Picks a random element of the provided list and feeds it to the provided {@link Consumer}
+     *
+     * @param among the list to pick from
+     * @param action the consumer to feed values to
+     */
     public <T> void among( List<T> among, Consumer<T> action )
     {
         if ( !among.isEmpty() )
@@ -1320,21 +1348,50 @@ public class RandomValues
         }
     }
 
+    /**
+     * Returns a pseudorandom {@code int} between the given lower bound (inclusive) and the upper bound (inclusiv)
+     *
+     * @param min minimum value that can be chosen (inclusive)
+     * @param max maximum value that can be chosen (inclusive)
+     * @return a pseudorandom {@code int} in the given inclusive range.
+     */
     public int intBetween( int min, int max )
     {
         return min + generator.nextInt( max - min + 1 );
     }
 
+    /**
+     * Returns the next pseudorandom uniformly distributed {@code long} between 0 (inclusive) and the specified
+     * value (exclusive)
+     *
+     * @param bound the upper bound (exclusive).  Must be positive.
+     * @return the next pseudorandom, uniformly distributed {@code long}
+     * value between zero (inclusive) and {@code bound} (exclusive)
+     */
     public long nextLong( long bound )
     {
         return abs( generator.nextLong() ) % bound;
     }
 
-    public long nextLong( )
+    /**
+     * Returns the next pseudorandom uniformly distributed {@code long}.
+     *
+     * @return the next pseudorandom, uniformly distributed {@code long}
+     */
+    public long nextLong()
     {
         return generator.nextLong();
     }
 
+    /**
+     * Returns a random selection of the provided array.
+     *
+     * @param among the array to pick elements from
+     * @param min the minimum number of elements to choose
+     * @param max the maximum number of elements to choose
+     * @param allowDuplicates if {@code true} the same element can be choosen multiple times
+     * @return a random selection of the provided array.
+     */
     @SuppressWarnings( "unchecked" )
     public <T> T[] selection( T[] among, int min, int max, boolean allowDuplicates )
     {

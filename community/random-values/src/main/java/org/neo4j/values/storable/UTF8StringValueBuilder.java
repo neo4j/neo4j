@@ -21,6 +21,12 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 
+/**
+ * Helper class for dynamically building {@link UTF8StringValue}.
+ * <p>
+ * Either add individual bytes via {@link #add(byte)} or add a unicode code point via {@link #addCodePoint(int)}. The
+ * builder maintains an internal {@code byte[]} and grows it as necessary.
+ */
 class UTF8StringValueBuilder
 {
     private static final int DEFAULT_SIZE = 8;
@@ -37,6 +43,11 @@ class UTF8StringValueBuilder
         this.bytes = new byte[initialCapacity];
     }
 
+    /**
+     * Add a single byte to the builder.
+     *
+     * @param b the byte to add.
+     */
     void add( byte b )
     {
         if ( bytes.length == length )
@@ -61,6 +72,20 @@ class UTF8StringValueBuilder
         return Values.utf8Value( bytes, 0, length );
     }
 
+    /**
+     * Add a single code point to the builder.
+     * <p>
+     * In UTF8 a code point use one to four bytes depending on the code point at hand. So we will have one of the
+     * following cases (x marks the bits of the codepoint):
+     * <ul>
+     * <li>One byte (asciii): {@code 0xxx xxxx}</li>
+     * <li>Two bytes: {@code 110xxxxx 10xxxxxx}</li>
+     * <li>Three bytes: {@code 1110xxxx 10xxxxxx 10xxxxxx}</li>
+     * <li>Four bytes: {@code 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx}</li>
+     * </ul>
+     *
+     * @param codePoint the code point to add
+     */
     void addCodePoint( int codePoint )
     {
         assert codePoint >= 0;
