@@ -79,6 +79,7 @@ public class GBPTreePlayground
         consoleInput.add( "remove", new RemoveCommand() );
         consoleInput.add( "cp", new Checkpoint() );
         consoleInput.add( "autoprint", new ToggleAutoPrintCommand() );
+        consoleInput.add( "restart", new RestartCommand() );
 
         life.start();
         try
@@ -208,6 +209,25 @@ public class GBPTreePlayground
         public String toString()
         {
             return "Toggle auto print after modifications (ON by default)";
+        }
+    }
+
+    private class RestartCommand implements Command
+    {
+        @Override
+        public void run( String[] args, PrintStream out ) throws Exception
+        {
+            System.out.println( "Closing tree..." );
+            tree.close();
+            System.out.println( "Starting tree..." );
+            setupIndex();
+            System.out.println( "Tree started!" );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Close and open gbptree. No checkpoint is performed.";
         }
     }
 
