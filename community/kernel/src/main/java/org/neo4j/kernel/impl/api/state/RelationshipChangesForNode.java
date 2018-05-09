@@ -30,14 +30,6 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.storageengine.api.Direction;
@@ -64,12 +56,6 @@ public class RelationshipChangesForNode
                     {
                         return degree - diff;
                     }
-
-                    @Override
-                    LongIterator getPrimitiveIterator( Iterator<Set<Long>> diff )
-                    {
-                        throw new UnsupportedOperationException();
-                    }
                 },
         ADD
                 {
@@ -78,42 +64,10 @@ public class RelationshipChangesForNode
                     {
                         return degree + diff;
                     }
-
-                    @Override
-                    LongIterator getPrimitiveIterator( final Iterator<Set<Long>> diff )
-                    {
-                        if ( !diff.hasNext() )
-                        {
-                            return ImmutableEmptyLongIterator.INSTANCE;
-                        }
-
-                        return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
-                        {
-                            private Iterator<Long> currentSetOfAddedRels;
-
-                            @Override
-                            protected boolean fetchNext()
-                            {
-                                Iterator<Long> iterator = currentSetOfAddedRels();
-                                return iterator.hasNext() && next( iterator.next() );
-                            }
-
-                            private Iterator<Long> currentSetOfAddedRels()
-                            {
-                                while ( diff.hasNext() && (currentSetOfAddedRels == null || !currentSetOfAddedRels
-                                        .hasNext()) )
-                                {
-                                    currentSetOfAddedRels = diff.next().iterator();
-                                }
-                                return currentSetOfAddedRels;
-                            }
-                        };
-                    }
                 };
 
         abstract int augmentDegree( int degree, int diff );
 
-        abstract LongIterator getPrimitiveIterator( Iterator<Set<Long>> diff );
     }
 
     private final DiffStrategy diffStrategy;
@@ -345,24 +299,6 @@ public class RelationshipChangesForNode
                 throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
         return relTypeToRelsMap;
-    }
-
-    private Iterator<Set<Long>> diffs( Function<Map<Integer,Set<Long>>,Iterator<Set<Long>>> filter,
-            Map<Integer,Set<Long>>... maps )
-    {
-        Collection<Set<Long>> result = new ArrayList<>();
-        for ( Map<Integer,Set<Long>> map : maps )
-        {
-            if ( map != null )
-            {
-                Iterator<Set<Long>> diffSet = filter.apply( map );
-                while ( diffSet.hasNext() )
-                {
-                    result.add( new HashSet<>( diffSet.next() ) );
-                }
-            }
-        }
-        return result.iterator();
     }
 
     public LongIterator getRelationships()
