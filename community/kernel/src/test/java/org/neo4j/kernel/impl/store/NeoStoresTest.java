@@ -46,6 +46,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -325,11 +326,12 @@ public class NeoStoresTest
     {
         StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
         Value oldValue = Values.NO_VALUE;
-        try ( Cursor<RelationshipItem> cursor = storageReader.acquireSingleRelationshipCursor( relationshipId ) )
+        try ( RelationshipScanCursor relationshipCursor = storageReader.allocateRelationshipScanCursor() )
         {
-            if ( cursor.next() )
+            storageReader.singleRelationship( relationshipId, relationshipCursor );
+            if ( relationshipCursor.next() )
             {
-                StorageProperty fetched = getProperty( key, cursor.get().nextPropertyId() );
+                StorageProperty fetched = getProperty( key, relationshipCursor.propertiesReference() );
                 if ( fetched != null )
                 {
                     oldValue = fetched.value();
@@ -1514,11 +1516,12 @@ public class NeoStoresTest
 
     private void testGetRels( long[] relIds )
     {
-        for ( long relId : relIds )
+        try ( RelationshipScanCursor relationshipCursor = storageReader.allocateRelationshipScanCursor() )
         {
-            try ( Cursor<RelationshipItem> relationship = storageReader.acquireSingleRelationshipCursor( relId ) )
+            for ( long relId : relIds )
             {
-                assertFalse( relationship.next() );
+                storageReader.singleRelationship( relId, relationshipCursor );
+                assertFalse( relationshipCursor.next() );
             }
         }
     }

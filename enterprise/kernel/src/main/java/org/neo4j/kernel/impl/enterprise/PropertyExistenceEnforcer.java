@@ -37,21 +37,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
-import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -162,6 +158,7 @@ class PropertyExistenceEnforcer
         private final StorageReader storageReader;
         private final NodeCursor nodeCursor;
         private final PropertyCursor propertyCursor;
+        private final RelationshipScanCursor relationshipScanCursor;
 
         Decorator( TxStateVisitor next, ReadableTransactionState txState, StorageReader storageReader )
         {
@@ -170,6 +167,7 @@ class PropertyExistenceEnforcer
             this.storageReader = storageReader;
             this.nodeCursor = storageReader.allocateNodeCursor();
             this.propertyCursor = storageReader.allocatePropertyCursor();
+            this.relationshipScanCursor = storageReader.allocateRelationshipScanCursor();
         }
 
         @Override
@@ -246,29 +244,27 @@ class PropertyExistenceEnforcer
 
             int relationshipType;
             int[] required;
-            try ( Cursor<RelationshipItem> relationship = relationship( id ) )
+            storageReader.singleRelationship( id, relationshipScanCursor );
+            if ( relationshipScanCursor.next() )
             {
-                if ( relationship.next() )
+                relationshipType = relationshipScanCursor.type();
+                required = mandatoryRelationshipPropertiesByType.get( relationshipType );
+                if ( required == null )
                 {
-                    relationshipType = relationship.get().type();
-                    required = mandatoryRelationshipPropertiesByType.get( relationshipType );
-                    if ( required == null )
+                    return;
+                }
+                propertyKeyIds.clear();
+                relationshipScanCursor.properties( propertyCursor );
+                {
+                    while ( propertyCursor.next() )
                     {
-                        return;
-                    }
-                    propertyKeyIds.clear();
-                    try ( Cursor<PropertyItem> properties = properties( relationship.get() ) )
-                    {
-                        while ( properties.next() )
-                        {
-                            propertyKeyIds.add( properties.get().propertyKeyId() );
-                        }
+                        propertyKeyIds.add( propertyCursor.propertyKey() );
                     }
                 }
-                else
-                {
-                    throw new IllegalStateException( format( "Relationship %d with changes should exist.", id ) );
-                }
+            }
+            else
+            {
+                throw new IllegalStateException( format( "Relationship %d with changes should exist.", id ) );
             }
 
             for ( int mandatory : required )
@@ -278,20 +274,6 @@ class PropertyExistenceEnforcer
                     failRelationship( id, relationshipType, mandatory );
                 }
             }
-        }
-
-        private Cursor<RelationshipItem> relationship( long id )
-        {
-            Cursor<RelationshipItem> cursor = storageReader.acquireSingleRelationshipCursor( id );
-            return txState.augmentSingleRelationshipCursor( cursor, id );
-        }
-
-        private Cursor<PropertyItem> properties( RelationshipItem relationship )
-        {
-            Lock lock = relationship.lock();
-            Cursor<PropertyItem> cursor = storageReader.acquirePropertyCursor( relationship.nextPropertyId(), lock,
-                    AssertOpen.ALWAYS_OPEN );
-            return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
         }
     }
 

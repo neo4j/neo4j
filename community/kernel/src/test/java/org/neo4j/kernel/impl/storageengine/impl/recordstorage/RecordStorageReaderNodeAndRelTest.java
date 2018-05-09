@@ -21,10 +21,9 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.junit.Test;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -97,9 +96,10 @@ public class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBa
 
     private boolean relationshipExists( long id )
     {
-        try ( Cursor<RelationshipItem> relationship = storageReader.acquireSingleRelationshipCursor( id ) )
+        try ( RelationshipScanCursor relationshipCursor = storageReader.allocateRelationshipScanCursor() )
         {
-            return relationship.next();
+            storageReader.singleRelationship( id, relationshipCursor );
+            return relationshipCursor.next();
         }
     }
 }

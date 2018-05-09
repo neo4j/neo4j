@@ -79,6 +79,24 @@ public class StubRelationshipCursor implements RelationshipTraversalCursor, Rela
         rewind();
     }
 
+    public void single( long relationshipId )
+    {
+        for ( int c = 0; c < store.size(); c++ )
+        {
+            TestRelationshipChain chain = store.get( c );
+            for ( int o = 0; o < chain.size(); o++ )
+            {
+                if ( chain.get( o ).id == relationshipId )
+                {
+                    chainId = c;
+                    offset = o - 1; // next() does offset++
+                    return;
+                }
+            }
+        }
+        throw new IllegalArgumentException( "Relationship id " + relationshipId + " not found in store" );
+    }
+
     @Override
     public long relationshipReference()
     {

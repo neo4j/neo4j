@@ -30,15 +30,16 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
+import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor;
+import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -55,15 +56,14 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asRelationshipCursor;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class TxStateTransactionDataViewTest
@@ -76,6 +76,7 @@ public class TxStateTransactionDataViewTest
 
     private StubNodeCursor nodeCursor;
     private StubPropertyCursor propertyCursor;
+    private StubRelationshipCursor relationshipCursor;
 
     @Before
     public void setup()
@@ -86,6 +87,14 @@ public class TxStateTransactionDataViewTest
         when( ops.allocateNodeCursorCommitted() ).thenReturn( nodeCursor );
         propertyCursor = new StubPropertyCursor();
         when( ops.allocatePropertyCursorCommitted() ).thenReturn( propertyCursor );
+        relationshipCursor = new StubRelationshipCursor();
+        when( ops.allocateRelationshipScanCursorCommitted() ).thenReturn( relationshipCursor );
+        when( ops.allocateRelationshipTraversalCursor() ).thenReturn( relationshipCursor );
+        doAnswer( invocationOnMock ->
+        {
+            relationshipCursor.single( invocationOnMock.getArgument( 0 ) );
+            return null;
+        } ).when( ops ).singleRelationship( anyLong(), any( RelationshipScanCursor.class ) );
     }
 
     @Test
@@ -133,20 +142,12 @@ public class TxStateTransactionDataViewTest
     public void showsRemovedRelationships() throws Exception
     {
         // Given
-        state.relationshipDoDelete( 1L, 1, 1L, 2L );
-        state.relationshipDoDelete( 2L, 1, 1L, 1L );
+        int type = 1;
+        state.relationshipDoDelete( 1L, type, 1L, 2L );
+        state.relationshipDoDelete( 2L, type, 1L, 1L );
 
-        long noPropertyId = -1L;
-        when( ops.acquireSingleRelationshipCursor( 1L ) ).
-                thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
-        when( ops.acquirePropertyCursor( noPropertyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor() );
-        long propertyId = 40L;
-        when( ops.acquireSingleRelationshipCursor( 2L ) ).
-                thenReturn( asRelationshipCursor( 2L, 1, 1L, 1L, propertyId ) );
-        when( ops.acquirePropertyCursor( propertyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor( new PropertyKeyValue( 1, Values.of( "p" ) ) ) );
-
+        relationshipCursor.withRelationshipChain( new TestRelationshipChain( 1 ).outgoing( 1, 2, type ) );
+        relationshipCursor.withRelationshipChain( new TestRelationshipChain( 2 ).loop( 2, type, genericMap( 1, Values.of( "p" ) ) ) );
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
 
         // When & Then
@@ -176,11 +177,7 @@ public class TxStateTransactionDataViewTest
 
         Relationship rel = mock( Relationship.class );
         when( rel.getId() ).thenReturn( 1L );
-        long noPropertyId = -1L;
-        when( ops.acquireSingleRelationshipCursor( 1L ) )
-                .thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
-        when( ops.acquirePropertyCursor( noPropertyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor() );
+        relationshipCursor.withRelationshipChain( new TestRelationshipChain( 1 ).outgoing( 1, 2, 1 ) );
 
         // When & Then
         assertThat( snapshot().isDeleted( rel ), equalTo( true ) );
@@ -194,7 +191,6 @@ public class TxStateTransactionDataViewTest
         Value prevValue = Values.of( "prevValue" );
         state.nodeDoChangeProperty( 1L, propertyKeyId, Values.of( "newValue" ) );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
-        long propertyId = 20L;
         nodeCursor.withNode( 1, new long[0], genericMap( propertyKeyId, prevValue ) );
 
         // When
@@ -216,7 +212,6 @@ public class TxStateTransactionDataViewTest
         Value prevValue = Values.of( "prevValue" );
         state.nodeDoRemoveProperty( 1L, propertyKeyId );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
-        long propertyId = 20L;
         nodeCursor.withNode( 1, new long[0], genericMap( propertyKeyId, prevValue ) );
 
         // When
@@ -237,12 +232,7 @@ public class TxStateTransactionDataViewTest
         Value prevValue = Values.of( "prevValue" );
         state.relationshipDoRemoveProperty( 1L, propertyKeyId );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
-        long propertyId = 40L;
-        when( ops.acquireSingleRelationshipCursor( 1 ) )
-                .thenReturn( asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
-        when( ops
-                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, prevValue ) ) );
+        relationshipCursor.withRelationshipChain( new TestRelationshipChain( 0 ).loop( 1, 0, genericMap( propertyKeyId, prevValue ) ) );
 
         // When
         Iterable<PropertyEntry<Relationship>> propertyEntries = snapshot().removedRelationshipProperties();
@@ -263,12 +253,7 @@ public class TxStateTransactionDataViewTest
         state.relationshipDoReplaceProperty( 1L, propertyKeyId, prevValue, Values.of( "newValue" ) );
 
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
-        long propertyId = 40L;
-        when( ops.acquireSingleRelationshipCursor( 1 ) ).thenReturn(
-                asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
-        when( ops
-                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, prevValue ) ) );
+        relationshipCursor.withRelationshipChain( new TestRelationshipChain( 0 ).loop( 1, 0, genericMap( propertyKeyId, prevValue ) ) );
 
         // When
         Iterable<PropertyEntry<Relationship>> propertyEntries = snapshot().assignedRelationshipProperties();

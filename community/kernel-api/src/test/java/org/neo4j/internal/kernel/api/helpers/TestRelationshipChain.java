@@ -75,6 +75,11 @@ public class TestRelationshipChain
         return this;
     }
 
+    public int size()
+    {
+        return data.size();
+    }
+
     public Data get( int offset )
     {
         return data.get( offset );

@@ -105,17 +105,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      * will have to be made to place the cursor over the first item and then more calls to move the cursor
      * through the selection.
      *
-     * @param relationshipId id of relationship to get cursor for.
-     * @return a {@link Cursor} over {@link RelationshipItem} for the given {@code relationshipId}.
-     */
-    Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relationshipId );
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     * through the selection.
-     *
      * @param isDense if the node is dense
      * @param nodeId the id of the node where to start traversing the relationships
      * @param relationshipId the id of the first relationship in the chain
