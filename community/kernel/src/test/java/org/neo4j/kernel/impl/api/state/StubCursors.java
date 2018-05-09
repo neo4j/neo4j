@@ -22,19 +22,12 @@ package org.neo4j.kernel.impl.api.state;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import java.util.Arrays;
 import java.util.Iterator;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.values.storable.Value;
-
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
 /**
  * Stub cursors to be used for testing.
@@ -101,81 +94,9 @@ public class StubCursors
         };
     }
 
-    public static Cursor<RelationshipItem> asRelationshipCursor( final long relId, final int type,
-            final long startNode, final long endNode, long propertyId )
-    {
-        return cursor( new RelationshipItem()
-        {
-            @Override
-            public long id()
-            {
-                return relId;
-            }
-
-            @Override
-            public int type()
-            {
-                return type;
-            }
-
-            @Override
-            public long startNode()
-            {
-                return startNode;
-            }
-
-            @Override
-            public long endNode()
-            {
-                return endNode;
-            }
-
-            @Override
-            public long otherNode( long nodeId )
-            {
-                return startNode == nodeId ? endNode : startNode;
-            }
-
-            @Override
-            public long nextPropertyId()
-            {
-                return propertyId;
-            }
-
-            @Override
-            public Lock lock()
-            {
-                return NO_LOCK;
-            }
-        } );
-    }
-
     public static MutableLongSet labels( final long... labels )
     {
         return LongHashSet.newSetWith( labels );
-    }
-
-    public static Cursor<PropertyItem> asPropertyCursor( final PropertyKeyValue... properties )
-    {
-        return cursor( map( StubCursors::asPropertyItem, Arrays.asList( properties ) ) );
-    }
-
-    private static PropertyItem asPropertyItem( final PropertyKeyValue property )
-    {
-        return new PropertyItem()
-        {
-            @Override
-            public int propertyKeyId()
-            {
-                return property.propertyKeyId();
-            }
-
-            @Override
-            public Value value()
-            {
-                return property.value();
-            }
-        };
     }
 
     @SafeVarargs
