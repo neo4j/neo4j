@@ -45,8 +45,21 @@ public class IndexDescriptorFactory
         return new IndexDescriptor( schema, GENERAL, name, providerDescriptor );
     }
 
+    public static IndexDescriptor forSchema( SchemaDescriptor schema,
+                                             IndexProvider.Descriptor providerDescriptor )
+    {
+        return new IndexDescriptor( schema, GENERAL, Optional.empty(), providerDescriptor );
+    }
+
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
         return new IndexDescriptor( schema, UNIQUE, Optional.empty(), IndexProvider.UNDECIDED );
+    }
+
+    public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema,
+                                                   Optional<String> name,
+                                                   IndexProvider.Descriptor providerDescriptor )
+    {
+        return new IndexDescriptor( schema, UNIQUE, name, providerDescriptor );
     }
 }

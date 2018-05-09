@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.schema.index;
 
-import java.util.Optional;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -36,69 +34,27 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
 {
     private final long id;
     private final Long owningConstraintId;
+    private final String name;
 
     StoreIndexDescriptor( StoreIndexDescriptor indexDescriptor )
     {
-        super(indexDescriptor);
-        id = indexDescriptor.id;
-        owningConstraintId = indexDescriptor.owningConstraintId;
+        super( indexDescriptor );
+        this.id = indexDescriptor.id;
+        this.owningConstraintId = indexDescriptor.owningConstraintId;
+        this.name = indexDescriptor.name;
     }
 
     StoreIndexDescriptor( IndexDescriptor descriptor, long id )
     {
-        super( descriptor );
-        this.id = id;
-        this.owningConstraintId = null;
+        this( descriptor, id, null );
     }
 
-    public StoreIndexDescriptor( IndexDescriptor descriptor, long id, long owningConstraintId )
+    StoreIndexDescriptor( IndexDescriptor descriptor, long id, Long owningConstraintId )
     {
         super( descriptor );
-        this.id = id;
-        this.owningConstraintId = owningConstraintId;
-    }
-
-    public static StoreIndexDescriptor indexRule( long id, IndexDescriptor descriptor,
-                                                  IndexProvider.Descriptor providerDescriptor )
-    {
-        return new StoreIndexDescriptor( id, providerDescriptor, descriptor, null );
-    }
-
-    public static StoreIndexDescriptor constraintIndexRule( long id, IndexDescriptor descriptor,
-                                                            IndexProvider.Descriptor providerDescriptor,
-                                                            Long owningConstraint )
-    {
-        return new StoreIndexDescriptor( id, providerDescriptor, descriptor, owningConstraint );
-    }
-
-    public static StoreIndexDescriptor indexRule( long id, IndexDescriptor descriptor,
-                                                  IndexProvider.Descriptor providerDescriptor, String name )
-    {
-        return new StoreIndexDescriptor( id, providerDescriptor, descriptor, null, name );
-    }
-
-    public static StoreIndexDescriptor constraintIndexRule( long id, IndexDescriptor descriptor,
-                                                            IndexProvider.Descriptor providerDescriptor,
-                                                            Long owningConstraint, String name )
-    {
-        return new StoreIndexDescriptor( id, providerDescriptor, descriptor, owningConstraint, name );
-    }
-
-    protected StoreIndexDescriptor( long id, IndexProvider.Descriptor providerDescriptor,
-                                    IndexDescriptor descriptor, Long owningConstraintId )
-    {
-        this( id, providerDescriptor, descriptor, owningConstraintId, null );
-    }
-
-    protected StoreIndexDescriptor( long id, IndexProvider.Descriptor providerDescriptor,
-                                    IndexDescriptor descriptor, Long owningConstraintId, String name )
-    {
-        super( descriptor.schema(),
-               descriptor.type(),
-               Optional.of( descriptor.name().orElse( "index_" + id ) ),
-               descriptor.providerDescriptor() );
 
         this.id = id;
+        this.name = descriptor.userSuppliedName.map( SchemaRule::checkName ).orElse( "index_" + id );
 
         if ( descriptor.providerDescriptor() == null )
         {
@@ -106,6 +62,19 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
         }
 
         this.owningConstraintId = owningConstraintId;
+    }
+
+    public static StoreIndexDescriptor indexRule( long id, IndexDescriptor descriptor,
+                                                  IndexProvider.Descriptor providerDescriptor )
+    {
+        return new StoreIndexDescriptor( descriptor, id, null );
+    }
+
+    public static StoreIndexDescriptor constraintIndexRule( long id, IndexDescriptor descriptor,
+                                                            IndexProvider.Descriptor providerDescriptor,
+                                                            Long owningConstraint )
+    {
+        return new StoreIndexDescriptor( descriptor, id, owningConstraint );
     }
 
     public boolean canSupportUniqueConstraint()
@@ -171,7 +140,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
     @Override
     public String getName()
     {
-        return name().orElse( "index_" + id );
+        return name;
     }
 
     public CapableIndexDescriptor withoutCapabilities()

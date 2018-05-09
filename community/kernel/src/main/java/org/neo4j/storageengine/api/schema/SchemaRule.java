@@ -57,6 +57,27 @@ public interface SchemaRule extends SchemaDescriptorSupplier
         return name;
     }
 
+    static String checkName( String name )
+    {
+        if ( name == null || name.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Schema rule name cannot be the empty string" );
+        }
+        else
+        {
+            int length = name.length();
+            for ( int i = 0; i < length; i++ )
+            {
+                char ch = name.charAt( i );
+                if ( ch == '\0' )
+                {
+                    throw new IllegalArgumentException( "Illegal schema rule name: '" + name + "'" );
+                }
+            }
+        }
+        return name;
+    }
+
     /**
      * The persistence id for this rule.
      */

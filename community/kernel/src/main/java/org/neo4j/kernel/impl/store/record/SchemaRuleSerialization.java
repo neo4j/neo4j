@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
+import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
@@ -33,9 +34,9 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
 
@@ -251,21 +252,21 @@ public class SchemaRuleSerialization
         IndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
         LabelSchemaDescriptor schema;
         byte indexRuleType = source.get();
-        String name;
+        Optional<String> name;
         switch ( indexRuleType )
         {
         case GENERAL_INDEX:
             schema = readLabelSchema( source );
             name = readRuleName( source );
-            return StoreIndexDescriptor.indexRule( id, IndexDescriptorFactory.forSchema( schema ), indexProvider, name );
+            return IndexDescriptorFactory.forSchema( schema, name, indexProvider ).withId( id );
 
         case UNIQUE_INDEX:
             long owningConstraint = source.getLong();
             schema = readLabelSchema( source );
-            IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForSchema( schema );
             name = readRuleName( source );
-            return StoreIndexDescriptor.constraintIndexRule( id, descriptor, indexProvider,
-                    owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );
+            IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForSchema( schema, name, indexProvider );
+            return owningConstraint == NO_OWNING_CONSTRAINT_YET ?
+                   descriptor.withId( id ) : descriptor.withIds( id, owningConstraint );
 
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown index rule type '%d'.", indexRuleType ) );
@@ -301,21 +302,21 @@ public class SchemaRuleSerialization
         {
         case EXISTS_CONSTRAINT:
             schema = readSchema( source );
-            name = readRuleName( source );
+            name = readRuleName( source ).orElse( null );
             return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForSchema( schema ), name );
 
         case UNIQUE_CONSTRAINT:
             long ownedUniqueIndex = source.getLong();
             schema = readSchema( source );
             UniquenessConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForSchema( schema );
-            name = readRuleName( source );
+            name = readRuleName( source ).orElse( null );
             return ConstraintRule.constraintRule( id, descriptor, ownedUniqueIndex, name );
 
         case UNIQUE_EXISTS_CONSTRAINT:
             long ownedNodeKeyIndex = source.getLong();
             schema = readSchema( source );
             NodeKeyConstraintDescriptor nodeKeyConstraintDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
-            name = readRuleName( source );
+            name = readRuleName( source ).orElse( null );
             return ConstraintRule.constraintRule( id, nodeKeyConstraintDescriptor, ownedNodeKeyIndex, name );
 
         default:
@@ -323,18 +324,14 @@ public class SchemaRuleSerialization
         }
     }
 
-    private static String readRuleName( ByteBuffer source )
+    private static Optional<String> readRuleName( ByteBuffer source )
     {
-        String ruleName = null;
         if ( source.remaining() >= UTF8.MINIMUM_SERIALISED_LENGTH_BYTES )
         {
-            ruleName = UTF8.getDecodedStringFrom( source );
-            if ( ruleName.isEmpty() )
-            {
-                ruleName = null;
-            }
+            String ruleName = UTF8.getDecodedStringFrom( source );
+            return ruleName.isEmpty() ? Optional.empty() : Optional.of( ruleName );
         }
-        return ruleName;
+        return Optional.empty();
     }
 
     // READ HELP
