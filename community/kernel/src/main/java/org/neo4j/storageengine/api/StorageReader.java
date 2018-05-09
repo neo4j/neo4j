@@ -21,11 +21,9 @@ package org.neo4j.storageengine.api;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
 
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
@@ -52,7 +50,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -98,22 +95,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      */
     @Override
     void close();
-
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     * through the selection.
-     *
-     * @param isDense if the node is dense
-     * @param nodeId the id of the node where to start traversing the relationships
-     * @param relationshipId the id of the first relationship in the chain
-     * @param direction the direction of the relationship wrt the node
-     * @param relTypeFilter the allowed types (it allows all types if unspecified)
-     * @return a {@link Cursor} over {@link RelationshipItem} for traversing the relationships associated to the node.
-     */
-    Cursor<RelationshipItem> acquireNodeRelationshipCursor(  boolean isDense, long nodeId, long relationshipId,
-            Direction direction, IntPredicate relTypeFilter );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
@@ -414,11 +395,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      */
     RelationshipIterator relationshipsGetAll();
 
-    Cursor<RelationshipItem> nodeGetRelationships( NodeItem nodeItem, Direction direction );
-
-    Cursor<RelationshipItem> nodeGetRelationships( NodeItem nodeItem, Direction direction,
-            IntPredicate typeIds );
-
     Cursor<PropertyItem> nodeGetProperties( NodeItem node, AssertOpen assertOpen );
 
     Cursor<PropertyItem> nodeGetProperty( NodeItem node, int propertyKeyId,
@@ -504,10 +480,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
     boolean nodeExists( long id );
 
     boolean relationshipExists( long id );
-
-    IntSet relationshipTypes( NodeItem node );
-
-    void degrees( NodeItem nodeItem, DegreeVisitor visitor );
 
     int degreeRelationshipsInGroup( long id, long groupId, Direction direction, Integer relType );
 
