@@ -52,7 +52,7 @@ public class InputCacheTest
     private static final int countPerThread = 10_000;
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final TestDirectory dir = TestDirectory.testDirectory();
-    private final RandomRule randomRule = new RandomRule().withSeedForAllTests( 1515752471383L );
+    private final RandomRule randomRule = new RandomRule();
     private final int threads = Runtime.getRuntime().availableProcessors();
     private final ExecutorService executor = Executors.newFixedThreadPool( threads );
     private final List<Future<?>> futures = new ArrayList<>();
@@ -215,7 +215,7 @@ public class InputCacheTest
         int length = random.nextInt( 10 );
         for ( int i = 0; i < length; i++ )
         {
-            Object value = random.nextValue().asObject();
+            Object value = nextProperty( random );
             if ( random.nextFloat() < 0.2f )
             {
                 entity.property( random.intBetween( 0, 10 ), value );
@@ -224,6 +224,28 @@ public class InputCacheTest
             {
                 entity.property( random.among( TOKENS ), value );
             }
+        }
+    }
+
+    //TODO this should use random.nextValue but cannot since there is a bug here somewhere
+    //that fails when using non-ascii strings
+    private Object nextProperty( RandomValues randomValues )
+    {
+        int type = randomValues.nextInt( 5 );
+        switch ( type )
+        {
+        case 0:
+            return randomValues.nextNumberValue().asObject();
+        case 1:
+            return randomValues.nextBoolean();
+        case 2:
+            return randomValues.nextAsciiTextValue().stringValue();
+        case 3:
+            return randomValues.nextPointValue();
+        case 4:
+            return randomValues.nextTemporalValue();
+        default:
+            throw new IllegalArgumentException( type + " is not an expected type" );
         }
     }
 

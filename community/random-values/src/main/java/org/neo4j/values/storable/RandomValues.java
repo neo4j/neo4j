@@ -668,8 +668,7 @@ public class RandomValues
         case SHORT:
             return nextShortValue();
         case STRING:
-            //TODO I think this should be nextTextValue() but then tests fail InputCacheTest::shouldCacheAndRetrieveNodes)
-            return nextAlphaNumericTextValue();
+            return nextTextValue();
         case INT:
             return nextIntValue();
         case LONG:
