@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import org.eclipse.collections.api.IntIterable;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
@@ -37,9 +41,9 @@ class PropertyContainerStateImpl implements PropertyContainerState
 {
     private final long id;
 
-    private Map<Integer, Value> addedProperties;
-    private Map<Integer, Value> changedProperties;
-    private Set<Integer> removedProperties;
+    private MutableIntObjectMap<Value> addedProperties;
+    private MutableIntObjectMap<Value> changedProperties;
+    private MutableIntSet removedProperties;
 
     PropertyContainerStateImpl( long id )
     {
@@ -77,7 +81,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
 
         if ( changedProperties == null )
         {
-            changedProperties = new HashMap<>();
+            changedProperties = new IntObjectHashMap<>();
         }
         changedProperties.put( propertyKeyId, value );
 
@@ -98,7 +102,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( addedProperties == null )
         {
-            addedProperties = new HashMap<>();
+            addedProperties = new IntObjectHashMap<>();
         }
         addedProperties.put( propertyKeyId, value );
     }
@@ -111,7 +115,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         }
         if ( removedProperties == null )
         {
-            removedProperties = new HashSet<>();
+            removedProperties = new IntHashSet();
         }
         removedProperties.add( propertyKeyId );
         if ( changedProperties != null )
@@ -133,9 +137,9 @@ class PropertyContainerStateImpl implements PropertyContainerState
     }
 
     @Override
-    public Iterator<Integer> removedProperties()
+    public IntIterable removedProperties()
     {
-        return removedProperties != null ? removedProperties.iterator() : emptyIterator();
+        return removedProperties == null ? IntSets.immutable.empty() : removedProperties;
     }
 
     @Override
@@ -183,16 +187,13 @@ class PropertyContainerStateImpl implements PropertyContainerState
         return removedProperties != null && removedProperties.contains( propertyKeyId );
     }
 
-    private Iterator<StorageProperty> toPropertyIterator( Map<Integer, Value> propertyMap )
+    private Iterator<StorageProperty> toPropertyIterator( IntObjectMap<Value> propertyMap )
     {
-        return propertyMap == null ? emptyIterator() :
-               Iterators.map(
-                    entry -> new PropertyKeyValue( entry.getKey(), entry.getValue() ),
-                    propertyMap.entrySet().iterator()
-                );
+        return propertyMap == null ? emptyIterator()
+                                   : propertyMap.keyValuesView().collect( e -> (StorageProperty) new PropertyKeyValue( e.getOne(), e.getTwo() ) ).iterator();
     }
 
-    private PropertyKeyValue getPropertyOrNull( Map<Integer, Value> propertyMap, int propertyKeyId )
+    private PropertyKeyValue getPropertyOrNull( IntObjectMap<Value> propertyMap, int propertyKeyId )
     {
         Value value = propertyMap.get( propertyKeyId );
         return value == null ? null : new PropertyKeyValue( propertyKeyId, value );

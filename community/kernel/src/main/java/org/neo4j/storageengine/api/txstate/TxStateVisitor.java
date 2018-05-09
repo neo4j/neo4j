@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Iterator;
@@ -44,13 +45,13 @@ public interface TxStateVisitor extends AutoCloseable
     void visitDeletedRelationship( long id );
 
     void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                                   Iterator<Integer> removed ) throws ConstraintValidationException;
+            IntIterable removed ) throws ConstraintValidationException;
 
     void visitRelPropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                                  Iterator<Integer> removed ) throws ConstraintValidationException;
+            IntIterable removed ) throws ConstraintValidationException;
 
     void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                                    Iterator<Integer> removed );
+            IntIterable removed );
 
     void visitNodeLabelChanges( long id, LongSet added, LongSet removed ) throws ConstraintValidationException;
 
@@ -95,19 +96,19 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed )
+                Iterator<StorageProperty> changed, IntIterable removed )
         {
         }
 
         @Override
         public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed )
+                Iterator<StorageProperty> changed, IntIterable removed )
         {
         }
 
         @Override
         public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                Iterator<Integer> removed )
+                IntIterable removed )
         {
         }
 
@@ -196,14 +197,14 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed ) throws ConstraintValidationException
+                Iterator<StorageProperty> changed, IntIterable removed ) throws ConstraintValidationException
         {
             actual.visitNodePropertyChanges( id, added, changed, removed );
         }
 
         @Override
         public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed )
+                Iterator<StorageProperty> changed, IntIterable removed )
                         throws ConstraintValidationException
         {
             actual.visitRelPropertyChanges( id, added, changed, removed );
@@ -211,7 +212,7 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                Iterator<Integer> removed )
+                IntIterable removed )
         {
             actual.visitGraphPropertyChanges( added, changed, removed );
         }

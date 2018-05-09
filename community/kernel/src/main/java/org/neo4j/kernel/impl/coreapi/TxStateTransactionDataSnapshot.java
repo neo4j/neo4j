@@ -60,6 +60,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
 import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 
 /**
@@ -276,16 +277,21 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
                             committedValue( nodeState, property.propertyKeyId() ) ) );
                 }
-                Iterator<Integer> removed = nodeState.removedProperties();
-                while ( removed.hasNext() )
+                nodeState.removedProperties().each( id ->
                 {
-                    Integer property = removed.next();
-                    removedNodeProperties.add( new NodePropertyEntryView( nodeId,
-                            store.propertyKeyGetName( property ), null,
-                            committedValue( nodeState, property ) ) );
-                }
-                final LongDiffSets labels = nodeState.labelDiffSets();
+                    try
+                    {
+                        final NodePropertyEntryView entryView = new NodePropertyEntryView( nodeId, store.propertyKeyGetName( id ), null,
+                                committedValue( nodeState, id ) );
+                        removedNodeProperties.add( entryView );
+                    }
+                    catch ( PropertyKeyIdNotFoundKernelException e )
+                    {
+                        throw new IllegalStateException( format( "Node property that does not exist was modified, nodeId=%d, propId=%d", nodeId, id ), e );
+                    }
+                } );
 
+                final LongDiffSets labels = nodeState.labelDiffSets();
                 addLabelEntriesTo( nodeId, labels.getAdded(), assignedLabels );
                 addLabelEntriesTo( nodeId, labels.getRemoved(), removedLabels );
             }
@@ -300,14 +306,20 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
                             committedValue( relState, property.propertyKeyId() ) ) );
                 }
-                Iterator<Integer> removed = relState.removedProperties();
-                while ( removed.hasNext() )
+                relState.removedProperties().each( id ->
                 {
-                    Integer property = removed.next();
-                    removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
-                            store.propertyKeyGetName( property ), null,
-                            committedValue( relState, property ) ) );
-                }
+                    try
+                    {
+                        final RelationshipPropertyEntryView entryView = new RelationshipPropertyEntryView( relationship, store.propertyKeyGetName( id ),
+                                null, committedValue( relState, id ) );
+                        removedRelationshipProperties.add( entryView );
+                    }
+                    catch ( PropertyKeyIdNotFoundKernelException e )
+                    {
+                        throw new IllegalStateException(
+                                format( "Relationship property that does not exist was modified, relId=%d, propId=%d", relState.getId(), id ), e );
+                    }
+                } );
             }
         }
         catch ( PropertyKeyIdNotFoundKernelException e )

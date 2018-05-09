@@ -19,6 +19,9 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.eclipse.collections.api.IntIterable;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+
 import java.util.Iterator;
 
 import org.neo4j.storageengine.api.StorageProperty;
@@ -39,7 +42,7 @@ public interface PropertyContainerState
 
     Iterator<StorageProperty> changedProperties();
 
-    Iterator<Integer> removedProperties();
+    IntIterable removedProperties();
 
     Iterator<StorageProperty> addedAndChangedProperties();
 
@@ -70,9 +73,9 @@ public interface PropertyContainerState
         }
 
         @Override
-        public Iterator<Integer> removedProperties()
+        public IntIterable removedProperties()
         {
-            return emptyIterator();
+            return IntSets.immutable.empty();
         }
 
         @Override

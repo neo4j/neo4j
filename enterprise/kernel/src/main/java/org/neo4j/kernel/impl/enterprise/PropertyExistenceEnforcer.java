@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
+import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
@@ -167,7 +168,7 @@ class PropertyExistenceEnforcer
         @Override
         public void visitNodePropertyChanges(
                 long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationException
+                IntIterable removed ) throws ConstraintValidationException
         {
             validateNode( id );
             super.visitNodePropertyChanges( id, added, changed, removed );
@@ -192,7 +193,7 @@ class PropertyExistenceEnforcer
         @Override
         public void visitRelPropertyChanges(
                 long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationException
+                IntIterable removed ) throws ConstraintValidationException
         {
             validateRelationship( id );
             super.visitRelPropertyChanges( id, added, changed, removed );
