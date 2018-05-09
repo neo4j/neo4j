@@ -120,21 +120,20 @@ public class SchemaRuleSerialization
     /**
      * Serialize the provided IndexRule onto the target buffer
      *
-     * @param indexRule the IndexRule to serialize
-     * @throws IllegalStateException if the IndexRule is of type unique, but the owning constrain has not been set
+     * @param indexDescriptor the StoreIndexDescriptor to serialize
+     * @throws IllegalStateException if the StoreIndexDescriptor is of type unique, but the owning constrain has not been set
      */
-    public static byte[] serialize( StoreIndexDescriptor indexRule )
+    public static byte[] serialize( StoreIndexDescriptor indexDescriptor )
     {
-        ByteBuffer target = ByteBuffer.allocate( lengthOf( indexRule ) );
+        ByteBuffer target = ByteBuffer.allocate( lengthOf( indexDescriptor ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( INDEX_RULE );
 
-        IndexProvider.Descriptor providerDescriptor = indexRule.providerDescriptor();
+        IndexProvider.Descriptor providerDescriptor = indexDescriptor.providerDescriptor();
         UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
         UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
 
-        IndexDescriptor schemaIndexDescriptor = indexRule;
-        switch ( schemaIndexDescriptor.type() )
+        switch ( indexDescriptor.type() )
         {
         case GENERAL:
             target.put( GENERAL_INDEX );
@@ -144,17 +143,17 @@ public class SchemaRuleSerialization
             target.put( UNIQUE_INDEX );
 
             // The owning constraint can be null. See IndexRule.getOwningConstraint()
-            Long owningConstraint = indexRule.getOwningConstraint();
+            Long owningConstraint = indexDescriptor.getOwningConstraint();
             target.putLong( owningConstraint == null ? NO_OWNING_CONSTRAINT_YET : owningConstraint );
             break;
 
         default:
             throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
-                    schemaIndexDescriptor.type() ) );
+                    indexDescriptor.type() ) );
         }
 
-        schemaIndexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedStringInto( indexRule.getName(), target );
+        indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
+        UTF8.putEncodedStringInto( indexDescriptor.getName(), target );
         return target.array();
     }
 
@@ -198,27 +197,26 @@ public class SchemaRuleSerialization
 
     /**
      * Compute the byte size needed to serialize the provided IndexRule using serialize.
-     * @param indexRule the IndexRule
-     * @return the byte size of indexRule
+     * @param indexDescriptor the StoreIndexDescriptor
+     * @return the byte size of StoreIndexDescriptor
      */
-    public static int lengthOf( StoreIndexDescriptor indexRule )
+    public static int lengthOf( StoreIndexDescriptor indexDescriptor )
     {
         int length = 4; // legacy label or relType id
         length += 1;    // schema rule type
 
-        IndexProvider.Descriptor providerDescriptor = indexRule.providerDescriptor();
+        IndexProvider.Descriptor providerDescriptor = indexDescriptor.providerDescriptor();
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() );
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
 
         length += 1; // index type
-        IndexDescriptor schemaIndexDescriptor = indexRule;
-        if ( schemaIndexDescriptor.type() == IndexDescriptor.Type.UNIQUE )
+        if ( indexDescriptor.type() == IndexDescriptor.Type.UNIQUE )
         {
             length += 8; // owning constraint id
         }
 
-        length += schemaIndexDescriptor.schema().computeWith( schemaSizeComputer );
-        length += UTF8.computeRequiredByteBufferSize( indexRule.getName() );
+        length += indexDescriptor.schema().computeWith( schemaSizeComputer );
+        length += UTF8.computeRequiredByteBufferSize( indexDescriptor.getName() );
         return length;
     }
 

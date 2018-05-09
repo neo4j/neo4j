@@ -246,11 +246,8 @@ public class AllStoreHolder extends Read
     @Override
     IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
     {
-        IndexDescriptor schemaIndexDescriptor = index.isUnique() ?
-                                                IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
-                                                IndexDescriptorFactory.forLabel( index.label(), index.properties() );
-        return fresh ? statement.getFreshIndexReader( schemaIndexDescriptor ) :
-               statement.getIndexReader( schemaIndexDescriptor );
+        return fresh ? statement.getFreshIndexReader( (IndexDescriptor) index ) :
+               statement.getIndexReader( (IndexDescriptor) index );
     }
 
     @Override
@@ -563,14 +560,14 @@ public class AllStoreHolder extends Read
     IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
         IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
-        Iterator<IndexDescriptor> rules = iterator( indexDescriptor );
+        Iterator<IndexDescriptor> indexes = iterator( indexDescriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
-            rules = filter(
+            indexes = filter(
                     SchemaDescriptor.equalTo( descriptor ),
-                    ktx.txState().indexDiffSetsByLabel( descriptor.keyId() ).apply( rules ) );
+                    ktx.txState().indexDiffSetsByLabel( descriptor.keyId() ).apply( indexes ) );
         }
-        return singleOrNull( rules );
+        return singleOrNull( indexes );
     }
 
     private boolean checkIndexState( IndexDescriptor index, ReadableDiffSets<IndexDescriptor> diffSet )

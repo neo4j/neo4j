@@ -599,18 +599,18 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return new BaseNodeConstraintCreator( new BatchSchemaActions(), label );
     }
 
-    private void createUniqueIndexAndOwningConstraint( IndexDescriptor schemaIndexDescriptor,
+    private void createUniqueIndexAndOwningConstraint( IndexDescriptor indexDescriptor,
             IndexBackedConstraintDescriptor constraintDescriptor )
     {
         // TODO: Do not create duplicate index
 
-        long indexRuleId = schemaStore.nextId();
+        long indexId = schemaStore.nextId();
         long constraintRuleId = schemaStore.nextId();
 
-        StoreIndexDescriptor indexRule =
+        StoreIndexDescriptor storeIndexDescriptor =
                 StoreIndexDescriptor.constraintIndexRule(
-                        indexRuleId,
-                        schemaIndexDescriptor,
+                        indexId,
+                        indexDescriptor,
                         this.indexProviderMap.getDefaultProvider().getProviderDescriptor(),
                         constraintRuleId
                 );
@@ -618,7 +618,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 ConstraintRule.constraintRule(
                         constraintRuleId,
                         constraintDescriptor,
-                        indexRuleId
+                        indexId
                 );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( constraintRule ) )
@@ -626,11 +626,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             schemaStore.updateRecord( record );
         }
         schemaCache.addSchemaRule( constraintRule );
-        for ( DynamicRecord record : schemaStore.allocateFrom( indexRule ) )
+        for ( DynamicRecord record : schemaStore.allocateFrom( storeIndexDescriptor ) )
         {
             schemaStore.updateRecord( record );
         }
-        schemaCache.addSchemaRule( indexRule );
+        schemaCache.addSchemaRule( storeIndexDescriptor );
         labelsTouched = true;
         flushStrategy.forceFlush();
     }

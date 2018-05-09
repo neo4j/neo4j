@@ -796,11 +796,11 @@ public class IndexingServiceTest
         IndexingService.Monitor monitor = new IndexingService.MonitorAdapter()
         {
             @Override
-            public void awaitingPopulationOfRecoveredIndex( long index, IndexDescriptor descriptor )
+            public void awaitingPopulationOfRecoveredIndex( StoreIndexDescriptor descriptor )
             {
                 // When we see that we start to await the index to populate, notify the slow-as-heck
                 // populator that it can actually go and complete its job.
-                indexId.set( index );
+                indexId.set( descriptor.getId() );
                 latch.startAndWaitForAllToStart();
             }
         };
