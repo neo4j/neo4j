@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -34,7 +32,6 @@ import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.new
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
@@ -90,24 +87,6 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
 
         // WHEN THEN
         assertThat( getPropertyKeys( db, node ), containsOnly( "name" ) );
-    }
-
-    @Test
-    public void should_return_all_nodes_with_label()
-    {
-        // GIVEN
-        Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label1 );
-        Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label1, label2 );
-        int labelId1 = storageReader.labelGetForName( label1.name() );
-        int labelId2 = storageReader.labelGetForName( label2.name() );
-
-        // WHEN
-        LongIterator nodesForLabel1 = storageReader.nodesGetForLabel( labelId1 );
-        LongIterator nodesForLabel2 = storageReader.nodesGetForLabel( labelId2 );
-
-        // THEN
-        assertEquals( asSet( node1.getId(), node2.getId() ), PrimitiveLongCollections.toSet( nodesForLabel1 ) );
-        assertEquals( asSet( node2.getId() ), PrimitiveLongCollections.toSet( nodesForLabel2 ) );
     }
 
     private LongHashSet asLongSet( LabelSet labels )
