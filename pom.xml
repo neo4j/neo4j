@@ -284,8 +284,8 @@
                       <item>org\.neo4j\.procedure(\\..+)?</item>
                     </include>
                     <exclude>
-                      <item>.*\.impl\..*</item>
-                      <item>.*\.internal\..*</item>
+                      <item>.*\.impl(\..+)?</item>
+                      <item>.*\.internal(\..+)?</item>
                       <item>org\.neo4j\.helpers\.progress</item>
                       <item>org\.neo4j\.logging\.async</item>
                       <item>org\.neo4j\.server\.rest\.repr\.formats</item>
