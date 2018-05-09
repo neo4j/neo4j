@@ -40,12 +40,25 @@ import static java.lang.String.format;
  */
 public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
 {
+    protected final SchemaDescriptor schema;
+    protected final IndexDescriptor.Type type;
+    protected final Optional<String> name;
+    protected final IndexProvider.Descriptor providerDescriptor;
+
+    IndexDescriptor( IndexDescriptor indexDescriptor )
+    {
+        schema = indexDescriptor.schema;
+        type = indexDescriptor.type;
+        name =  indexDescriptor.name;
+        providerDescriptor = indexDescriptor.providerDescriptor;
+
+    }
     public enum Type
     {
         GENERAL,
         UNIQUE
-    }
 
+    }
     public enum Filter implements Predicate<IndexDescriptor>
     {
         GENERAL
@@ -72,17 +85,13 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
                         return true;
                     }
                 }
-    }
 
+    }
     public interface Supplier
     {
         IndexDescriptor getIndexDescriptor();
-    }
 
-    protected final SchemaDescriptor schema;
-    protected final IndexDescriptor.Type type;
-    protected final Optional<String> name;
-    protected final IndexProvider.Descriptor providerDescriptor;
+    }
 
     public IndexDescriptor( SchemaDescriptor schema,
                             Type type,

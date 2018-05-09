@@ -37,6 +37,13 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
     private final long id;
     private final Long owningConstraintId;
 
+    StoreIndexDescriptor( StoreIndexDescriptor indexDescriptor )
+    {
+        super(indexDescriptor);
+        id = indexDescriptor.id;
+        owningConstraintId = indexDescriptor.owningConstraintId;
+    }
+
     public static StoreIndexDescriptor indexRule( long id, IndexDescriptor descriptor,
                                                   IndexProvider.Descriptor providerDescriptor )
     {
@@ -137,7 +144,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
             ownerString = ", owner=" + owningConstraintId;
         }
 
-        return "IndexRule[id=" + id + ", descriptor=" + this.userDescription( idTokenNameLookup ) +
+        return "IndexDescriptor[id=" + id + ", descriptor=" + this.userDescription( idTokenNameLookup ) +
                ", provider=" + this.providerDescriptor() + ownerString + "]";
     }
 
@@ -155,12 +162,12 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
 
     public CapableIndexDescriptor withoutCapabilities()
     {
-        return new CapableIndexDescriptor( id, providerDescriptor, this, owningConstraintId, IndexCapability.NO_CAPABILITY );
+        return new CapableIndexDescriptor( this, IndexCapability.NO_CAPABILITY );
     }
 
     public CapableIndexDescriptor withCapabilities( IndexProviderMap indexProviderMap )
     {
         IndexCapability capability = indexProviderMap.apply( providerDescriptor ).getCapability();
-        return new CapableIndexDescriptor( id, providerDescriptor, this, owningConstraintId, capability );
+        return new CapableIndexDescriptor( this, capability );
     }
 }

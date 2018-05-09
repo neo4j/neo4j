@@ -59,12 +59,6 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     }
 
     @Override
-    public String keyName( TokenNameLookup tokenNameLookup )
-    {
-        return tokenNameLookup.labelGetName( labelId );
-    }
-
-    @Override
     public int getLabelId()
     {
         return labelId;
