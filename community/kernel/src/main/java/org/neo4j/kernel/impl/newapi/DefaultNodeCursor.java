@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.util.Collections.emptySet;
 
@@ -127,6 +128,36 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             //Nothing in tx state, just read the data.
             return Labels.from( NodeLabelsField.get( this, labelCursor()) );
         }
+    }
+
+    @Override
+    public boolean hasLabel( int label )
+    {
+        if ( hasChanges() )
+        {
+            TransactionState txState = read.txState();
+            ReadableDiffSets<Integer> diffSets = txState.nodeStateLabelDiffSets( getId() );
+            if ( diffSets.getAdded().contains( label ) )
+            {
+                return true;
+            }
+            if ( diffSets.getRemoved().contains( label ) )
+            {
+                return false;
+            }
+        }
+
+        //Get labels from store and put in intSet, unfortunately we get longs back
+        long[] longs = NodeLabelsField.get( this, labelCursor() );
+        for ( long labelToken : longs )
+        {
+            if ( labelToken == label )
+            {
+                assert (int) labelToken == labelToken : "value too big to be represented as and int";
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

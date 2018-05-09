@@ -180,7 +180,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
     val cursor = nodeCursor
     reads().singleNode(node, cursor)
     if (!cursor.next()) false
-    else cursor.labels().contains(label)
+    else cursor.hasLabel(label)
   }
 
   def getOrCreateLabelId(labelName: String) =
