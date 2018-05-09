@@ -1386,7 +1386,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     public void shouldOverwriteInheritedSuccessorOnSuccessor() throws Exception
     {
         // GIVEN
-        assumeTrue( isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
         initialize();
         long originalNodeId = rootId;
         generationManager.checkpoint();
@@ -1417,7 +1417,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     {
         // GIVEN
         // root with two children
-        assumeTrue( isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
         initialize();
         long someHighMultiplier = 1000;
         for ( int i = 1; numberOfRootSplits < 1; i++ )
