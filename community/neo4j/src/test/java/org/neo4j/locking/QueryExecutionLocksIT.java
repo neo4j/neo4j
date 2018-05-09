@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -63,6 +64,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -670,6 +672,12 @@ public class QueryExecutionLocksIT
         public Statement acquireStatement()
         {
             return internal.acquireStatement();
+        }
+
+        @Override
+        public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema )
+        {
+            return internal.indexUniqueCreate( schema );
         }
 
         @Override

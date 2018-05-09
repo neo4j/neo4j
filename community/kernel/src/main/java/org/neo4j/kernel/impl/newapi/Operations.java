@@ -882,6 +882,18 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         return index;
     }
 
+    // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema )
+    {
+        IndexProvider.Descriptor providerDescriptor = ktx.indexProviderForOrDefault( Optional.empty() );
+        IndexDescriptor index =
+                IndexDescriptorFactory.uniqueForSchema( schema,
+                                                  Optional.empty(),
+                                                  providerDescriptor );
+        ktx.txState().indexRuleDoAdd( index );
+        return index;
+    }
+
     @Override
     public void indexDrop( IndexReference indexReference ) throws SchemaKernelException
     {
