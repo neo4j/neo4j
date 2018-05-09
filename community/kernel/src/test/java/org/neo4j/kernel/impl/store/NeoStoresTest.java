@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -46,6 +45,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -83,7 +83,6 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
@@ -110,8 +109,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -296,12 +293,14 @@ public class NeoStoresTest
     {
         StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
         StorageProperty oldProperty = null;
-        try ( NodeCursor nodeCursor = storageReader.allocateNodeCursor() )
+        try ( NodeCursor nodeCursor = storageReader.allocateNodeCursor();
+              PropertyCursor propertyCursor = storageReader.allocatePropertyCursor() )
         {
             storageReader.singleNode( nodeId, nodeCursor );
             if ( nodeCursor.next() )
             {
-                StorageProperty fetched = getProperty( key, nodeCursor.propertiesReference() );
+                nodeCursor.properties( propertyCursor );
+                StorageProperty fetched = getProperty( key, propertyCursor );
                 if ( fetched != null )
                 {
                     oldProperty = fetched;
@@ -324,12 +323,14 @@ public class NeoStoresTest
     {
         StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
         Value oldValue = Values.NO_VALUE;
-        try ( RelationshipScanCursor relationshipCursor = storageReader.allocateRelationshipScanCursor() )
+        try ( RelationshipScanCursor relationshipCursor = storageReader.allocateRelationshipScanCursor();
+              PropertyCursor propertyCursor = storageReader.allocatePropertyCursor() )
         {
             storageReader.singleRelationship( relationshipId, relationshipCursor );
             if ( relationshipCursor.next() )
             {
-                StorageProperty fetched = getProperty( key, relationshipCursor.propertiesReference() );
+                relationshipCursor.properties( propertyCursor );
+                StorageProperty fetched = getProperty( key, propertyCursor );
                 if ( fetched != null )
                 {
                     oldValue = fetched.value();
@@ -341,18 +342,13 @@ public class NeoStoresTest
         return property;
     }
 
-    private StorageProperty getProperty( int key, long propertyId )
+    private StorageProperty getProperty( int key, PropertyCursor propertyCursor )
     {
-        try ( Cursor<PropertyItem> propertyCursor = storageReader
-                .acquireSinglePropertyCursor( propertyId, key, NO_LOCK, ALWAYS_OPEN ) )
+        while ( propertyCursor.next() )
         {
-            if ( propertyCursor.next() )
+            if ( propertyCursor.propertyKey() == key )
             {
-                Value oldValue = propertyCursor.get().value();
-                if ( oldValue != null )
-                {
-                    return new PropertyKeyValue( key, oldValue );
-                }
+                return new PropertyKeyValue( key, propertyCursor.propertyValue() );
             }
         }
         return null;

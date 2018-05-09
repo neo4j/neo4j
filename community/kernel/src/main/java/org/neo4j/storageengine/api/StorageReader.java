@@ -20,13 +20,11 @@
 package org.neo4j.storageengine.api;
 
 import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.util.Iterator;
 import java.util.function.Function;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
@@ -44,15 +42,12 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -95,11 +90,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      */
     @Override
     void close();
-
-    Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock, AssertOpen assertOpen );
-
-    Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock,
-            AssertOpen assertOpen );
 
     /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.
@@ -373,28 +363,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      */
     <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION;
-
-    /**
-     * @return ids of all stored nodes.
-     */
-    LongIterator nodesGetAll();
-
-    /**
-     * @return ids of all stored relationships. The returned iterator can optionally visit data about
-     * each relationship returned.
-     */
-    RelationshipIterator relationshipsGetAll();
-
-    Cursor<PropertyItem> nodeGetProperties( NodeItem node, AssertOpen assertOpen );
-
-    Cursor<PropertyItem> nodeGetProperty( NodeItem node, int propertyKeyId,
-            AssertOpen assertOpen );
-
-    Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship,
-            AssertOpen assertOpen );
-
-    Cursor<PropertyItem> relationshipGetProperty( RelationshipItem relationshipItem,
-            int propertyKeyId, AssertOpen assertOpen );
 
     /**
      * Releases a previously {@link #reserveNode() reserved} node id if it turns out to not actually being used,

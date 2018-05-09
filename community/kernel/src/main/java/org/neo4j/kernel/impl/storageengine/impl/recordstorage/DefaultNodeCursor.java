@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
-class DefaultNodeCursor extends NodeRecord implements NodeCursor
+public class DefaultNodeCursor extends NodeRecord implements NodeCursor
 {
     private RecordStorageReader read;
     private RecordCursor<DynamicRecord> labelCursor;

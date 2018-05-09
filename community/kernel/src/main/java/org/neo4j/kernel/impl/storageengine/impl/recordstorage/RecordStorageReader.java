@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -78,7 +77,6 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -86,7 +84,6 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -107,14 +104,11 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.Token;
@@ -168,12 +162,10 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     private final SchemaCache schemaCache;
 
     // State from the old StoreStatement
-    private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
-    private final InstanceCache<StorePropertyCursor> propertyCursorCache;
+    private final RecordCursors recordCursors;
 
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
     private final Supplier<LabelScanReader> labelScanReaderSupplier;
-    private final RecordCursors recordCursors;
     private final RecordStorageCommandCreationContext commandCreationContext;
 
     private IndexReaderFactory indexReaderFactory;
@@ -207,24 +199,19 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanReaderSupplier = labelScanReaderSupplier;
         this.commandCreationContext = commandCreationContext;
-
         this.recordCursors = new RecordCursors( neoStores );
-        this.singlePropertyCursorCache = new InstanceCache<StoreSinglePropertyCursor>()
-        {
-            @Override
-            protected StoreSinglePropertyCursor create()
-            {
-                return new StoreSinglePropertyCursor( recordCursors, this );
-            }
-        };
-        this.propertyCursorCache = new InstanceCache<StorePropertyCursor>()
-        {
-            @Override
-            protected StorePropertyCursor create()
-            {
-                return new StorePropertyCursor( recordCursors, this );
-            }
-        };
+    }
+
+    /**
+     * This method shows that this reader has too many responsibilities. This factory is here to create a reader of
+     * basic record stores through the cursors. Mostly convenience in some special scenarios.
+     *
+     * @param neoStores {@link NeoStores} to provide reading for.
+     * @return a {@link RecordStorageReader} only capable of reading basic records through the cursors.
+     */
+    public static RecordStorageReader neoStoreReader( NeoStores neoStores )
+    {
+        return new RecordStorageReader( null, null, null, null, neoStores, null, null, null, null, LockService.NO_LOCK_SERVICE, null );
     }
 
     @Override
@@ -493,49 +480,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
         }
         relationshipVisitor.visit( relationshipId, record.getType(), record.getFirstNode(), record.getSecondNode() );
-    }
-
-    @Override
-    public LongIterator nodesGetAll()
-    {
-        return new AllNodeIterator( nodeStore );
-    }
-
-    @Override
-    public RelationshipIterator relationshipsGetAll()
-    {
-        return new AllRelationshipIterator( relationshipStore );
-    }
-
-    @Override
-    public Cursor<PropertyItem> nodeGetProperties( NodeItem node, AssertOpen assertOpen )
-    {
-        Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
-        return acquirePropertyCursor( node.nextPropertyId(), lock, assertOpen );
-    }
-
-    @Override
-    public Cursor<PropertyItem> nodeGetProperty( NodeItem node, int propertyKeyId,
-            AssertOpen assertOpen )
-    {
-        Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
-        return acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock, assertOpen );
-    }
-
-    @Override
-    public Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship,
-            AssertOpen assertOpen )
-    {
-        Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
-        return acquirePropertyCursor( relationship.nextPropertyId(), lock, assertOpen );
-    }
-
-    @Override
-    public Cursor<PropertyItem> relationshipGetProperty( RelationshipItem relationship,
-            int propertyKeyId, AssertOpen assertOpen )
-    {
-        Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
-        return acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock, assertOpen );
     }
 
     @Override
