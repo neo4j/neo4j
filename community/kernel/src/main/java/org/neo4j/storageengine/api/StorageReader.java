@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-
 import java.util.Iterator;
 import java.util.function.Function;
 
@@ -106,8 +104,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      */
     long reserveRelationship();
 
-    long getGraphPropertyReference();
-
     /**
      * Returns all indexes (including unique) related to a property.
      */
@@ -127,22 +123,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      */
     long indexGetCommittedId( SchemaIndexDescriptor index )
             throws SchemaRuleNotFoundException;
-
-    /**
-     * @return iterator with property keys of all stored graph properties.
-     */
-    IntIterator graphGetPropertyKeys();
-
-    /**
-     * @param propertyKeyId property key id to get graph property for.
-     * @return property value of graph property with key {@code propertyKeyId}, or {@code null} if not found.
-     */
-    Object graphGetProperty( int propertyKeyId );
-
-    /**
-     * @return all stored graph properties.
-     */
-    Iterator<StorageProperty> graphGetAllProperties();
 
     /**
      * @param descriptor describing the label and property key (or keys) defining the requested constraint.
@@ -194,15 +174,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
     InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Return index provider descriptor of a stored index.
-     *
-     * @param descriptor {@link SchemaIndexDescriptor} to get provider descriptor for.
-     * @return {@link IndexProvider.Descriptor} for index.
-     * @throws IndexNotFoundKernelException if index not found.
-     */
-    IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
      * Return index reference of a stored index.
      *
      * @param descriptor {@link SchemaIndexDescriptor} to get provider reference for.
@@ -217,16 +188,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      * @throws IndexNotFoundKernelException if index not found.
      */
     PopulationProgress indexGetPopulationProgress( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
-     * Returns any failure that happened during population or operation of an index. Such failures
-     * are persisted and can be accessed even after restart.
-     *
-     * @param descriptor {@link SchemaDescriptor} to get failure for.
-     * @return failure of an index, or {@code null} if index is working as it should.
-     * @throws IndexNotFoundKernelException if index not found.
-     */
-    String indexGetFailure( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param labelName name of label.
@@ -364,17 +325,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      * @throws IndexNotFoundKernelException if no such index exists.
      */
     long indexSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
-     * Returns percentage of values in the given {@code index} are unique. A value of {@code 1.0} means that
-     * all values in the index are unique, e.g. that there are no duplicate values. A value of, say {@code 0.9}
-     * means that 10% of the values are duplicates.
-     *
-     * @param descriptor {@link SchemaDescriptor} to get uniqueness percentage for.
-     * @return percentage of values being unique in this index, max {@code 1.0} for all unique.
-     * @throws IndexNotFoundKernelException if no such index exists.
-     */
-    double indexUniqueValuesPercentage( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     long nodesGetCount();
 
