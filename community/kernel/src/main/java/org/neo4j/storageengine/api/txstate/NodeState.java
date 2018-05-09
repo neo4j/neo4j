@@ -19,11 +19,10 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
-
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.storageengine.api.Direction;
@@ -59,19 +58,19 @@ public interface NodeState extends PropertyContainerState
 
     void accept( NodeState.Visitor visitor ) throws ConstraintValidationException;
 
-    IntSet relationshipTypes();
+    PrimitiveIntSet relationshipTypes();
 
     long getId();
 
     @Deprecated
-    LongIterator getAddedRelationships( Direction direction );
+    PrimitiveLongIterator getAddedRelationships( Direction direction );
 
     @Deprecated
-    LongIterator getAddedRelationships( Direction direction, int[] relTypes );
+    PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes );
 
-    LongIterator getAddedRelationships();
+    PrimitiveLongIterator getAddedRelationships();
 
-    LongIterator getAddedRelationships( RelationshipDirection direction, int relType );
+    PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType );
 
     boolean hasRelationshipChanges();
 }

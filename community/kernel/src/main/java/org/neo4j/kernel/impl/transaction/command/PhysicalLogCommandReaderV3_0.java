@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -704,8 +702,8 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
     private Command visitIndexDefineCommand( ReadableChannel channel ) throws IOException
     {
         readIndexCommandHeader( channel );
-        MutableObjectIntMap<String> indexNames = readMap( channel );
-        MutableObjectIntMap<String> keys = readMap( channel );
+        Map<String,Integer> indexNames = readMap( channel );
+        Map<String,Integer> keys = readMap( channel );
         IndexDefineCommand command = new IndexDefineCommand();
         command.init( indexNames, keys );
         return command;
@@ -727,10 +725,10 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         return new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, delta );
     }
 
-    private MutableObjectIntMap<String> readMap( ReadableChannel channel ) throws IOException
+    private Map<String,Integer> readMap( ReadableChannel channel ) throws IOException
     {
         byte size = channel.get();
-        MutableObjectIntMap<String> result = new ObjectIntHashMap<>( size );
+        Map<String,Integer> result = new HashMap<>();
         for ( int i = 0; i < size; i++ )
         {
             String key = read2bLengthAndString( channel );

@@ -19,14 +19,14 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Map;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -67,15 +67,15 @@ public class LuceneCommandApplierTest
         {
             // WHEN issuing a command where the index name is mapped to a certain id
             IndexDefineCommand definitions = definitions(
-                    ObjectIntHashMap.newWithKeysValues( indexName, 0 ),
-                    ObjectIntHashMap.newWithKeysValues( key, 0 ) );
+                    MapUtil.genericMap( indexName, 0 ),
+                    MapUtil.genericMap( key, 0 ) );
             applier.visitIndexDefineCommand( definitions );
             applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, indexName, 0L ) );
             // and then later issuing a command for that same index, but in another transaction where
             // the local index name id is a different one
             definitions = definitions(
-                    ObjectIntHashMap.newWithKeysValues( indexName, 1 ),
-                    ObjectIntHashMap.newWithKeysValues( key, 0 ) );
+                    MapUtil.genericMap( indexName, 1 ),
+                    MapUtil.genericMap( key, 0 ) );
             applier.visitIndexDefineCommand( definitions );
             applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, indexName, 1L ) );
         }
@@ -91,7 +91,7 @@ public class LuceneCommandApplierTest
         return command;
     }
 
-    private static IndexDefineCommand definitions( MutableObjectIntMap<String> names, MutableObjectIntMap<String> keys )
+    private static IndexDefineCommand definitions( Map<String,Integer> names, Map<String,Integer> keys )
     {
         IndexDefineCommand definitions = new IndexDefineCommand();
         definitions.init( names, keys );

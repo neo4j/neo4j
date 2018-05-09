@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -31,7 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -41,8 +39,9 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.neo4j.collection.PrimitiveLongCollections.resourceIterator;
-import static org.neo4j.collection.PrimitiveLongCollections.toPrimitiveIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
 import static org.neo4j.values.storable.ValueGroup.NO_VALUE;
 
@@ -86,7 +85,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     synchronized PrimitiveLongResourceIterator doIndexSeek( Object... propertyValues )
     {
         Set<Long> nodes = data().get( Arrays.asList( propertyValues ) );
-        return asResource( nodes == null ? ImmutableEmptyLongIterator.INSTANCE : toPrimitiveIterator( nodes.iterator() ) );
+        return asResource( nodes == null ? emptyIterator() : toPrimitiveIterator( nodes.iterator() ) );
     }
 
     private synchronized PrimitiveLongResourceIterator rangeSeek( Value lower, boolean includeLower, Value upper, boolean includeUpper,
@@ -292,7 +291,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return asResource( toPrimitiveIterator( nodeIds.iterator() ) );
     }
 
-    private PrimitiveLongResourceIterator asResource( LongIterator iterator )
+    private PrimitiveLongResourceIterator asResource( PrimitiveLongIterator iterator )
     {
         return resourceIterator( iterator, null );
     }

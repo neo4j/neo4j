@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.Iterator;
+
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 class NodeUpdatesIterator implements Iterator<NodeUpdates>
 {
 
     private final IndexStoreView storeView;
-    private final LongIterator nodeIdIterator;
+    private final PrimitiveLongIterator nodeIdIterator;
     private NodeUpdates nextUpdate;
 
-    NodeUpdatesIterator( IndexStoreView storeView, LongIterator nodeIdIterator )
+    NodeUpdatesIterator( IndexStoreView storeView, PrimitiveLongIterator nodeIdIterator )
     {
         this.storeView = storeView;
         this.nodeIdIterator = nodeIdIterator;

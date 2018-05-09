@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,7 +29,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;
@@ -148,7 +148,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
         try ( IndexReader reader = index.getIndexReader() )
         {
             int propertyKeyId = labelSchemaDescriptor.getPropertyId();
-            LongIterator allEntities = reader.query( IndexQuery.exists( propertyKeyId ) );
+            PrimitiveLongIterator allEntities = reader.query( IndexQuery.exists( propertyKeyId ) );
             assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }

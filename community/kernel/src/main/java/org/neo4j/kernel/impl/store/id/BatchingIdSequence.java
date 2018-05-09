@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.id;
 
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 /**
  * {@link IdSequence} w/o any synchronization, purely a long incrementing.

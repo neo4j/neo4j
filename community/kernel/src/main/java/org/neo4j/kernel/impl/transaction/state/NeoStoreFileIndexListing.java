@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
@@ -56,7 +55,7 @@ public class NeoStoreFileIndexListing
         this.explicitIndexProviders = explicitIndexProviders;
     }
 
-    public LongSet getIndexIds()
+    public PrimitiveLongSet getIndexIds()
     {
         return indexingService.getIndexIds();
     }

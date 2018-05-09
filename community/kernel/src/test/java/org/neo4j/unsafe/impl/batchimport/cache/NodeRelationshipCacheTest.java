@@ -19,10 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,6 +32,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.rule.RandomRule;
@@ -209,7 +208,7 @@ public class NodeRelationshipCacheTest
         // GIVEN
         int typeId = 10;
         int nodes = 10_000;
-        MutableLongObjectMap<long[]> key = new LongObjectHashMap<>( nodes );
+        PrimitiveLongObjectMap<long[]> key = Primitive.longObjectMap( nodes );
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 1000, base );
 
         // mark random nodes as dense (dense node threshold is 1 so enough with one increment
@@ -300,8 +299,8 @@ public class NodeRelationshipCacheTest
                 cache.incrementCount( nodeId );
             }
         }
-        MutableLongSet keySparseChanged = new LongHashSet();
-        MutableLongSet keyDenseChanged = new LongHashSet();
+        PrimitiveLongSet keySparseChanged = Primitive.longSet( nodes );
+        PrimitiveLongSet keyDenseChanged = Primitive.longSet( nodes );
         for ( int i = 0; i < nodes / 2; i++ )
         {
             long nodeId = random.nextLong( nodes );

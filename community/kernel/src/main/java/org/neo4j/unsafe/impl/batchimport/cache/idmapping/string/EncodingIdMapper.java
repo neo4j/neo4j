@@ -19,14 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.function.LongFunction;
 
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.HighestId;
@@ -883,11 +881,11 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public LongIterator leftOverDuplicateNodesIds()
+    public PrimitiveLongIterator leftOverDuplicateNodesIds()
     {
         if ( numberOfCollisions == 0 )
         {
-            return ImmutableEmptyLongIterator.INSTANCE;
+            return PrimitiveLongCollections.emptyIterator();
         }
 
         // Scans duplicate marks in tracker cache. There is no bit left in dataCache to store this bit so we use

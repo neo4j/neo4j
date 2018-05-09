@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
-
+import org.neo4j.helpers.collection.MultiSet;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
 {
     private final int sampleSizeLimit;
-    private final MutableObjectLongMap<String> values;
+    private final MultiSet<String> values;
 
     private int sampledSteps;
 
@@ -39,7 +37,7 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
 
     public DefaultNonUniqueIndexSampler( int sampleSizeLimit )
     {
-        this.values = new ObjectLongHashMap<>( calculateInitialSetSize( sampleSizeLimit ) );
+        this.values = new MultiSet<>( calculateInitialSetSize( sampleSizeLimit ) );
         this.sampleSizeLimit = sampleSizeLimit;
     }
 
@@ -58,7 +56,7 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
             nextStep();
         }
 
-        if ( values.addToValue( value, increment ) == increment )
+        if ( values.increment( value, increment ) == increment )
         {
             sampleSize += value.length();
         }
@@ -74,9 +72,8 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
     public void exclude( String value, long decrement )
     {
         assert decrement > 0;
-        if ( values.addToValue( value, -decrement ) <= 0 )
+        if ( values.increment( value, -decrement ) == 0 )
         {
-            values.remove( value );
             sampleSize -= value.length();
         }
     }
@@ -103,8 +100,8 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
 
     private void nextStep()
     {
-        accumulatedUniqueValues += values.size();
-        accumulatedSampledSize += values.sum();
+        accumulatedUniqueValues += values.uniqueSize();
+        accumulatedSampledSize += values.size();
         sampleSize = 0;
 
         sampledSteps++;

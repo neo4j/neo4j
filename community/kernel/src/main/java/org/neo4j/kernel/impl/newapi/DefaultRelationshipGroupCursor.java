@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -52,8 +50,8 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     private PageCursor page;
     private PageCursor edgePage;
     private boolean hasCheckedTxState;
-    private final MutableIntSet txTypes = new IntHashSet();
-    private IntIterator txTypeIterator;
+    private final PrimitiveIntSet txTypes = Primitive.intSet();
+    private PrimitiveIntIterator txTypeIterator;
 
     DefaultRelationshipGroupCursor( DefaultCursors pool )
     {
@@ -67,9 +65,9 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         setId( NO_ID );
         setNext( NO_ID );
         // TODO: read first record to get the required capacity (from the count value in the prev field)
-        try ( PageCursor edgePage = read.relationshipPage( relationshipReference ) )
+        try ( PrimitiveIntObjectMap<BufferedGroup> buffer = Primitive.intObjectMap();
+              PageCursor edgePage = read.relationshipPage( relationshipReference ) )
         {
-            final MutableIntObjectMap<BufferedGroup> buffer = new IntObjectHashMap<>();
             BufferedGroup current = null;
             while ( relationshipReference != NO_ID )
             {
@@ -188,7 +186,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     {
         if ( txTypeIterator == null && !txTypes.isEmpty() )
         {
-            txTypeIterator = txTypes.intIterator();
+            txTypeIterator = txTypes.iterator();
             //here it may be tempting to do txTypes.clear()
             //however that will also clear the iterator
         }
@@ -223,7 +221,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         if ( read.hasTxStateWithChanges() )
         {
             NodeState nodeState = read.txState().getNodeState( getOwningNode() );
-            LongIterator addedRelationships = nodeState.getAddedRelationships();
+            PrimitiveLongIterator addedRelationships = nodeState.getAddedRelationships();
             while ( addedRelationships.hasNext() )
             {
                 RelationshipState relationshipState = read.txState().getRelationshipState( addedRelationships.next() );

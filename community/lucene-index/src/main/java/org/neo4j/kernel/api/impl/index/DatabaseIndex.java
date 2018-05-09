@@ -83,8 +83,10 @@ public interface DatabaseIndex extends Closeable
 
     /**
      * Close index and deletes all it's partitions.
+     *
+     * @throws IOException
      */
-    void drop();
+    void drop() throws IOException;
 
     /**
      * Commits all index partitions.

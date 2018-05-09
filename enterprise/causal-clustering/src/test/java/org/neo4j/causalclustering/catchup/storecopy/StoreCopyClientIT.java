@@ -23,7 +23,6 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.apache.commons.compress.utils.Charsets;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,9 +48,10 @@ import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
-import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.net.Server;
+import org.neo4j.collection.primitive.base.Empty;
+import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.collection.Iterators;
@@ -239,7 +239,7 @@ public class StoreCopyClientIT
                     protected void channelRead0( ChannelHandlerContext ctx, PrepareStoreCopyRequest msg )
                     {
                         ctx.write( ResponseMessageType.PREPARE_STORE_COPY_RESPONSE );
-                        ctx.writeAndFlush( PrepareStoreCopyResponse.success( new File[]{new File( fileName )}, LongSets.immutable.empty(), 1 ) );
+                        ctx.writeAndFlush( PrepareStoreCopyResponse.success( new File[]{new File( fileName )}, new Empty.EmptyPrimitiveLongSet(), 1 ) );
                         catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
                     }
                 };

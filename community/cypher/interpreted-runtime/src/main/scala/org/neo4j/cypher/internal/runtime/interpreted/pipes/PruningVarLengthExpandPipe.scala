@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
+import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_5.InternalException
 import org.neo4j.cypher.internal.util.v3_5.attribution.Id
@@ -83,7 +83,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                    val pathLength: Int,
                    val queryState: QueryState,
                    val row: ExecutionContext,
-                   val expandMap: LongObjectHashMap[NodeState],
+                   val expandMap: PrimitiveLongObjectMap[NodeState],
                    val prevLocalRelIndex: Int,
                    val prevNodeState: NodeState ) {
 
@@ -270,7 +270,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
             case node: VirtualNodeValue =>
               push( node = node,
                 pathLength = 0,
-                expandMap = new LongObjectHashMap[NodeState](),
+                expandMap = Primitive.longObjectMap[NodeState](),
                 prevLocalRelIndex = -1,
                 prevNodeState = NodeState.NOOP )
 
@@ -295,11 +295,11 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       else executionContextFactory.copyWith(inputRow, self.toName, endNode)
     }
 
-    def push(node: VirtualNodeValue,
-             pathLength: Int,
-             expandMap: LongObjectHashMap[NodeState],
-             prevLocalRelIndex: Int,
-             prevNodeState: NodeState): VirtualNodeValue = {
+    def push( node: VirtualNodeValue,
+              pathLength: Int,
+              expandMap: PrimitiveLongObjectMap[NodeState],
+              prevLocalRelIndex: Int,
+              prevNodeState: NodeState ): VirtualNodeValue = {
       depth += 1
       nodeState(depth) =
         new PruningDFS(this, node, path, pathLength, queryState, inputRow, expandMap, prevLocalRelIndex, prevNodeState)

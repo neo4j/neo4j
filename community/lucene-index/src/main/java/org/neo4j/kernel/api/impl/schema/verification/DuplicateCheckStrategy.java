@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.schema.verification;
 
-import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
-
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -79,33 +78,34 @@ abstract class DuplicateCheckStrategy
      */
     static class MapDuplicateCheckStrategy extends DuplicateCheckStrategy
     {
-        private final MutableObjectLongMap<Object> valueNodeIdMap;
+        private Map<Object,Long> valueNodeIdMap;
 
         MapDuplicateCheckStrategy( int expectedNumberOfEntries )
         {
-            this.valueNodeIdMap = new ObjectLongHashMap<>( expectedNumberOfEntries );
+            this.valueNodeIdMap = new HashMap<>( expectedNumberOfEntries );
         }
 
         @Override
-        public void checkForDuplicate( Value[] values, long nodeId ) throws IndexEntryConflictException
+        public void checkForDuplicate( Value[] values, long nodeId )
+                throws IndexEntryConflictException
         {
-            final ValueTuple key = ValueTuple.of( values );
-            if ( valueNodeIdMap.containsKey( key ) )
+            Long previousNodeId = valueNodeIdMap.put( ValueTuple.of( values ), nodeId );
+            if ( previousNodeId != null )
             {
-                throw new IndexEntryConflictException( valueNodeIdMap.get( key ), nodeId, key );
+                throw new IndexEntryConflictException( previousNodeId, nodeId, ValueTuple.of( values ) );
             }
-            valueNodeIdMap.put( key, nodeId );
         }
 
         @Override
         void checkForDuplicate( Value value, long nodeId ) throws IndexEntryConflictException
         {
-            if ( valueNodeIdMap.containsKey( value ) )
+            Long previousNodeId = valueNodeIdMap.put( value, nodeId );
+            if ( previousNodeId != null )
             {
-                throw new IndexEntryConflictException( valueNodeIdMap.get( value ), nodeId, value );
+                throw new IndexEntryConflictException( previousNodeId, nodeId, value );
             }
-            valueNodeIdMap.put( value, nodeId );
         }
+
     }
 
     /**

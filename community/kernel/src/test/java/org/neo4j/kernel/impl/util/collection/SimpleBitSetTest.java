@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import org.neo4j.collection.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;

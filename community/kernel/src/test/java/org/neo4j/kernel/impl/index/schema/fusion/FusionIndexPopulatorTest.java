@@ -25,7 +25,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -196,7 +195,7 @@ public class FusionIndexPopulatorTest
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
             // given
-            UncheckedIOException failure = new UncheckedIOException( new IOException( "fail" ) );
+            IOException failure = new IOException( "fail" );
             doThrow( failure ).when( alivePopulator ).drop();
 
             verifyCallFail( failure, () ->

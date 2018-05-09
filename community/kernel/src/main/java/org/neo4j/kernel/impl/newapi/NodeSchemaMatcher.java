@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -64,10 +63,10 @@ public class NodeSchemaMatcher
             NodeCursor node,
             PropertyCursor property,
             int specialPropertyId,
-            ThrowingBiConsumer<SUPPLIER,MutableIntSet,EXCEPTION> callback
+            ThrowingBiConsumer<SUPPLIER,PrimitiveIntSet,EXCEPTION> callback
     ) throws EXCEPTION
     {
-        MutableIntSet nodePropertyIds = null;
+        PrimitiveIntSet nodePropertyIds = null;
         while ( schemaSuppliers.hasNext() )
         {
             SUPPLIER schemaSupplier = schemaSuppliers.next();
@@ -76,7 +75,7 @@ public class NodeSchemaMatcher
             {
                 if ( nodePropertyIds == null )
                 {
-                    nodePropertyIds = new IntHashSet();
+                    nodePropertyIds = Primitive.intSet();
                     node.properties( property );
                     while ( property.next() )
                     {
@@ -93,7 +92,7 @@ public class NodeSchemaMatcher
     }
 
     private static boolean nodeHasSchemaProperties(
-            IntSet nodeProperties, int[] indexPropertyIds, int changedPropertyId )
+            PrimitiveIntSet nodeProperties, int[] indexPropertyIds, int changedPropertyId )
     {
         for ( int indexPropertyId : indexPropertyIds )
         {

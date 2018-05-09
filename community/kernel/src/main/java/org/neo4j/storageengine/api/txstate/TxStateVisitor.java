@@ -62,11 +62,11 @@ public interface TxStateVisitor extends AutoCloseable
 
     void visitRemovedConstraint( ConstraintDescriptor element );
 
-    void visitCreatedLabelToken( int id, String name );
+    void visitCreatedLabelToken( String name, int id );
 
-    void visitCreatedPropertyKeyToken( int id, String name );
+    void visitCreatedPropertyKeyToken( String name, int id );
 
-    void visitCreatedRelationshipTypeToken( int id, String name );
+    void visitCreatedRelationshipTypeToken( String name, int id );
 
     @Override
     void close();
@@ -137,17 +137,17 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitCreatedLabelToken( int id, String name )
+        public void visitCreatedLabelToken( String name, int id )
         {
         }
 
         @Override
-        public void visitCreatedPropertyKeyToken( int id, String name )
+        public void visitCreatedPropertyKeyToken( String name, int id )
         {
         }
 
         @Override
-        public void visitCreatedRelationshipTypeToken( int id, String name )
+        public void visitCreatedRelationshipTypeToken( String name, int id )
         {
         }
 
@@ -248,21 +248,21 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitCreatedLabelToken( int id, String name )
+        public void visitCreatedLabelToken( String name, int id )
         {
-            actual.visitCreatedLabelToken( id, name );
+            actual.visitCreatedLabelToken( name, id );
         }
 
         @Override
-        public void visitCreatedPropertyKeyToken( int id, String name )
+        public void visitCreatedPropertyKeyToken( String name, int id )
         {
-            actual.visitCreatedPropertyKeyToken( id, name );
+            actual.visitCreatedPropertyKeyToken( name, id );
         }
 
         @Override
-        public void visitCreatedRelationshipTypeToken( int id, String name )
+        public void visitCreatedRelationshipTypeToken( String name, int id )
         {
-            actual.visitCreatedRelationshipTypeToken( id, name );
+            actual.visitCreatedRelationshipTypeToken( name, id );
         }
 
         @Override

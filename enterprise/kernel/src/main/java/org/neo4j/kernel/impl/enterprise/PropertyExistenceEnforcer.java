@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -33,6 +26,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -54,7 +51,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static org.neo4j.collection.PrimitiveArrays.union;
+import static org.neo4j.collection.primitive.PrimitiveArrays.union;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 
 class PropertyExistenceEnforcer
@@ -66,8 +63,8 @@ class PropertyExistenceEnforcer
 
     private final List<LabelSchemaDescriptor> nodeConstraints;
     private final List<RelationTypeSchemaDescriptor> relationshipConstraints;
-    private final MutableIntObjectMap<int[]> mandatoryNodePropertiesByLabel = new IntObjectHashMap<>();
-    private final MutableIntObjectMap<int[]> mandatoryRelationshipPropertiesByType = new IntObjectHashMap<>();
+    private final PrimitiveIntObjectMap<int[]> mandatoryNodePropertiesByLabel = Primitive.intObjectMap();
+    private final PrimitiveIntObjectMap<int[]> mandatoryRelationshipPropertiesByType = Primitive.intObjectMap();
 
     private PropertyExistenceEnforcer( List<LabelSchemaDescriptor> nodes, List<RelationTypeSchemaDescriptor> rels )
     {
@@ -85,7 +82,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private static void update( MutableIntObjectMap<int[]> map, int key, int[] sortedValues )
+    private static void update( PrimitiveIntObjectMap<int[]> map, int key, int[] sortedValues )
     {
         int[] current = map.get( key );
         if ( current != null )
@@ -153,7 +150,7 @@ class PropertyExistenceEnforcer
     {
         private final ReadableTransactionState txState;
         private final StoreReadLayer storeLayer;
-        private final MutableIntSet propertyKeyIds = new IntHashSet();
+        private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
         private StorageStatement storageStatement;
 
         Decorator( TxStateVisitor next, ReadableTransactionState txState, StoreReadLayer storeLayer )
@@ -214,7 +211,7 @@ class PropertyExistenceEnforcer
                 return;
             }
 
-            IntSet labelIds;
+            PrimitiveIntSet labelIds;
             try ( Cursor<NodeItem> node = node( nodeId ) )
             {
                 if ( node.next() )
@@ -319,12 +316,12 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private void validateNodeProperties( long id, IntSet labelIds, IntSet propertyKeyIds )
+    private void validateNodeProperties( long id, PrimitiveIntSet labelIds, PrimitiveIntSet propertyKeyIds )
             throws NodePropertyExistenceException
     {
         if ( labelIds.size() > mandatoryNodePropertiesByLabel.size() )
         {
-            for ( IntIterator labels = mandatoryNodePropertiesByLabel.keySet().intIterator(); labels.hasNext(); )
+            for ( PrimitiveIntIterator labels = mandatoryNodePropertiesByLabel.iterator(); labels.hasNext(); )
             {
                 int label = labels.next();
                 if ( labelIds.contains( label ) )
@@ -335,7 +332,7 @@ class PropertyExistenceEnforcer
         }
         else
         {
-            for ( IntIterator labels = labelIds.intIterator(); labels.hasNext(); )
+            for ( PrimitiveIntIterator labels = labelIds.iterator(); labels.hasNext(); )
             {
                 int label = labels.next();
                 int[] keys = mandatoryNodePropertiesByLabel.get( label );
@@ -347,7 +344,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private void validateNodeProperties( long id, int label, int[] requiredKeys, IntSet propertyKeyIds )
+    private void validateNodeProperties( long id, int label, int[] requiredKeys, PrimitiveIntSet propertyKeyIds )
             throws NodePropertyExistenceException
     {
         for ( int key : requiredKeys )

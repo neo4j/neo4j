@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.locking.community;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -327,7 +327,7 @@ public class RWLockTest
         executor.execute( readerLockNode1 );
 
         // Deadlock should occur
-        assertTrue( "Deadlock was detected as expected.",
+        Assert.assertTrue( "Deadlock was detected as expected.",
                 deadLockDetector.await( TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS ) );
 
         lockNode3.releaseWriteLock( client3Transaction );
@@ -395,7 +395,7 @@ public class RWLockTest
         return () ->
         {
             lock.mark();
-            assertFalse( lock.acquireReadLock( LockTracer.NONE, transaction ) );
+            Assert.assertFalse( lock.acquireReadLock( LockTracer.NONE, transaction ) );
             latch.countDown();
         };
     }
@@ -417,7 +417,7 @@ public class RWLockTest
         return () ->
         {
             lock.mark();
-            assertFalse( lock.acquireWriteLock( LockTracer.NONE, transaction ) );
+            Assert.assertFalse( lock.acquireWriteLock( LockTracer.NONE, transaction ) );
             latch.countDown();
         };
     }

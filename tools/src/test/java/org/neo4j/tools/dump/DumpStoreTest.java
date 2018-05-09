@@ -19,6 +19,7 @@
  */
 package org.neo4j.tools.dump;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -27,8 +28,6 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-
-import static org.junit.Assert.assertEquals;
 
 public class DumpStoreTest
 {
@@ -53,7 +52,7 @@ public class DumpStoreTest
         dumpStore.dumpHex( record, buffer, 2, 4 );
 
         // Then
-        assertEquals( String.format( "@ 0x00000008: 00 01 02 03  04 05 06 07  08 09%n" ), outStream.toString() );
+        Assert.assertEquals( String.format( "@ 0x00000008: 00 01 02 03  04 05 06 07  08 09%n" ), outStream.toString() );
     }
 
     @Test
@@ -71,6 +70,6 @@ public class DumpStoreTest
         dumpStore.dumpHex( record, buffer, 2, 4 );
 
         // Then
-        assertEquals( String.format( ": all zeros @ 0x8 - 0xc%n" ), outStream.toString() );
+        Assert.assertEquals( String.format( ": all zeros @ 0x8 - 0xc%n" ), outStream.toString() );
     }
 }

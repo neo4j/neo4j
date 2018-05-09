@@ -122,17 +122,10 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void drop()
+    public void drop() throws IOException
     {
         indexCountsRemover.remove();
-        try
-        {
-            accessor.drop();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Failed to drop index ", e );
-        }
+        accessor.drop();
     }
 
     @Override

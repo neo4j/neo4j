@@ -19,9 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
-
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -37,6 +34,7 @@ import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyRep
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
+import org.neo4j.helpers.collection.MultiSet;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.api.CountsAccessor;
@@ -61,8 +59,8 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 class CountsBuilderDecorator extends CheckDecorator.Adapter
 {
     private static final int WILDCARD = -1;
-    private final MutableObjectLongMap<CountsKey> nodeCounts = new ObjectLongHashMap<>();
-    private final MutableObjectLongMap<CountsKey> relationshipCounts = new ObjectLongHashMap<>();
+    private final MultiSet<CountsKey> nodeCounts = new MultiSet<>();
+    private final MultiSet<CountsKey> relationshipCounts = new MultiSet<>();
     private final MultiPassAvoidanceCondition<NodeRecord> nodeCountBuildCondition;
     private final MultiPassAvoidanceCondition<RelationshipRecord> relationshipCountBuildCondition;
     private final NodeStore nodeStore;
@@ -74,7 +72,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                            CheckerEngine<CountsEntry,ConsistencyReport.CountsConsistencyReport> engine,
                            RecordAccess records )
         {
-            final long expectedCount = nodeCounts.get( record.getCountsKey() );
+            final long expectedCount = nodeCounts.count( record.getCountsKey() );
             if ( expectedCount != record.getCount() )
             {
                 engine.report().inconsistentNodeCount( expectedCount );
@@ -88,7 +86,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                            CheckerEngine<CountsEntry,ConsistencyReport.CountsConsistencyReport> engine,
                            RecordAccess records )
         {
-            final long expectedCount = relationshipCounts.get( record.getCountsKey() );
+            final long expectedCount = relationshipCounts.count( record.getCountsKey() );
             if ( expectedCount != record.getCount() )
             {
                 engine.report().inconsistentRelationshipCount( expectedCount );
@@ -102,7 +100,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                            CheckerEngine<CountsEntry,ConsistencyReport.CountsConsistencyReport> engine,
                            RecordAccess records )
         {
-            final int expectedCount = nodeCounts.size();
+            final int expectedCount = nodeCounts.uniqueSize();
             if ( record.getCount() != expectedCount )
             {
                 engine.report().inconsistentNumberOfNodeKeys( expectedCount );
@@ -116,7 +114,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                            CheckerEngine<CountsEntry,ConsistencyReport.CountsConsistencyReport> engine,
                            RecordAccess records )
         {
-            final int expectedCount = relationshipCounts.size();
+            final int expectedCount = relationshipCounts.uniqueSize();
             if ( record.getCount() != expectedCount )
             {
                 engine.report().inconsistentNumberOfRelationshipKeys( expectedCount );
@@ -156,8 +154,8 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
     public void checkCounts( CountsAccessor counts, final ConsistencyReporter reporter,
             ProgressMonitorFactory progressFactory )
     {
-        final int nodes = nodeCounts.size();
-        final int relationships = relationshipCounts.size();
+        final int nodes = nodeCounts.uniqueSize();
+        final int relationships = relationshipCounts.uniqueSize();
         final int total = nodes + relationships;
         final AtomicInteger nodeEntries = new AtomicInteger( 0 );
         final AtomicInteger relationshipEntries = new AtomicInteger( 0 );
@@ -194,11 +192,11 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
     private static class NodeCounts implements OwningRecordCheck<NodeRecord,NodeConsistencyReport>
     {
         private final RecordStore<NodeRecord> nodeStore;
-        private final MutableObjectLongMap<CountsKey> counts;
+        private final MultiSet<CountsKey> counts;
         private final Predicate<NodeRecord> countUpdateCondition;
         private final OwningRecordCheck<NodeRecord,NodeConsistencyReport> inner;
 
-        NodeCounts( RecordStore<NodeRecord> nodeStore, MutableObjectLongMap<CountsKey> counts,
+        NodeCounts( RecordStore<NodeRecord> nodeStore, MultiSet<CountsKey> counts,
                 Predicate<NodeRecord> countUpdateCondition, OwningRecordCheck<NodeRecord,NodeConsistencyReport> inner )
         {
             this.nodeStore = nodeStore;
@@ -228,10 +226,10 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                     final Set<Long> labels = labelsFor( nodeStore, engine, records, record.getId() );
                     synchronized ( counts )
                     {
-                        counts.addToValue( nodeKey( WILDCARD ), 1 );
+                        counts.add( nodeKey( WILDCARD ) );
                         for ( long label : labels )
                         {
-                            counts.addToValue( nodeKey( (int) label ), 1 );
+                            counts.add( nodeKey( (int) label ) );
                         }
                     }
                 }
@@ -245,11 +243,11 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         /** Don't support these counts at the moment so don't compute them */
         private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
         private final NodeStore nodeStore;
-        private final MutableObjectLongMap<CountsKey> counts;
+        private final MultiSet<CountsKey> counts;
         private final Predicate<RelationshipRecord> countUpdateCondition;
         private final OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> inner;
 
-        RelationshipCounts( StoreAccess storeAccess, MutableObjectLongMap<CountsKey> counts,
+        RelationshipCounts( StoreAccess storeAccess, MultiSet<CountsKey> counts,
                 Predicate<RelationshipRecord> countUpdateCondition,
                 OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> inner )
         {
@@ -298,22 +296,22 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                     final int type = record.getType();
                     synchronized ( counts )
                     {
-                        counts.addToValue( relationshipKey( WILDCARD, WILDCARD, WILDCARD ), 1 );
-                        counts.addToValue( relationshipKey( WILDCARD, type, WILDCARD ), 1 );
+                        counts.add( relationshipKey( WILDCARD, WILDCARD, WILDCARD ) );
+                        counts.add( relationshipKey( WILDCARD, type, WILDCARD ) );
                         if ( firstNodeLabels != null )
                         {
                             for ( long firstLabel : firstNodeLabels )
                             {
-                                counts.addToValue( relationshipKey( (int) firstLabel, WILDCARD, WILDCARD ), 1 );
-                                counts.addToValue( relationshipKey( (int) firstLabel, type, WILDCARD ), 1 );
+                                counts.add( relationshipKey( (int) firstLabel, WILDCARD, WILDCARD ) );
+                                counts.add( relationshipKey( (int) firstLabel, type, WILDCARD ) );
                             }
                         }
                         if ( secondNodeLabels != null )
                         {
                             for ( long secondLabel : secondNodeLabels )
                             {
-                                counts.addToValue( relationshipKey( WILDCARD, WILDCARD, (int) secondLabel ), 1 );
-                                counts.addToValue( relationshipKey( WILDCARD, type, (int) secondLabel ), 1 );
+                                counts.add( relationshipKey( WILDCARD, WILDCARD, (int) secondLabel ) );
+                                counts.add( relationshipKey( WILDCARD, type, (int) secondLabel ) );
                             }
                         }
                         if ( COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
@@ -322,8 +320,8 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                             {
                                 for ( long secondLabel : secondNodeLabels )
                                 {
-                                    counts.addToValue( relationshipKey( (int) firstLabel, WILDCARD, (int) secondLabel ), 1 );
-                                    counts.addToValue( relationshipKey( (int) firstLabel, type, (int) secondLabel ), 1 );
+                                    counts.add( relationshipKey( (int) firstLabel, WILDCARD, (int) secondLabel ) );
+                                    counts.add( relationshipKey( (int) firstLabel, type, (int) secondLabel ) );
                                 }
                             }
                         }

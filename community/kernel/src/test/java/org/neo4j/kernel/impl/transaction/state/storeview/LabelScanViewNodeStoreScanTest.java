@@ -26,9 +26,9 @@ import org.junit.Test;
 import java.util.List;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.collection.PrimitiveLongResourceCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;

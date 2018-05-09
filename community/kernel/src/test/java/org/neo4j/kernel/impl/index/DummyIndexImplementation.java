@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index;
 import java.io.File;
 import java.util.Map;
 
-import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ExplicitIndex;

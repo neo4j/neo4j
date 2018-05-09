@@ -20,15 +20,14 @@
 
 package org.neo4j.kernel.impl.util.collection;
 
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.memory.MemoryTracker;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 
 public class OnHeapCollectionsFactory implements CollectionsFactory
 {
@@ -40,27 +39,27 @@ public class OnHeapCollectionsFactory implements CollectionsFactory
     }
 
     @Override
-    public MutableLongSet newLongSet()
+    public PrimitiveLongSet newLongSet()
     {
-        return new LongHashSet();
+        return Primitive.longSet();
     }
 
     @Override
-    public <V> MutableLongObjectMap<V> newLongObjectMap()
+    public <V> PrimitiveLongObjectMap<V> newLongObjectMap()
     {
-        return new LongObjectHashMap<>();
+        return Primitive.longObjectMap();
     }
 
     @Override
-    public <V> MutableIntObjectMap<V> newIntObjectMap()
+    public <V> PrimitiveIntObjectMap<V> newIntObjectMap()
     {
-        return new IntObjectHashMap<>();
+        return Primitive.intObjectMap();
     }
 
     @Override
     public PrimitiveLongDiffSets newLongDiffSets()
     {
-        return new PrimitiveLongDiffSets( this );
+        return new PrimitiveLongDiffSets( emptySet(), emptySet(), this );
     }
 
     @Override

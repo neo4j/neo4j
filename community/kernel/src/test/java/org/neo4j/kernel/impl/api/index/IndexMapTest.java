@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.impl.factory.primitive.IntSets;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -34,6 +33,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
 
 public class IndexMapTest
 {
@@ -48,7 +48,7 @@ public class IndexMapTest
     @Before
     public void setup()
     {
-        MutableLongObjectMap<IndexProxy> map = new LongObjectHashMap<>();
+        PrimitiveLongObjectMap<IndexProxy> map = Primitive.longObjectMap();
         map.put( 1L, new TestIndexProxy( schema3_4 ) );
         map.put( 2L, new TestIndexProxy( schema5_6_7 ) );
         map.put( 3L, new TestIndexProxy( schema5_8 ) );
@@ -59,7 +59,7 @@ public class IndexMapTest
     public void shouldGetRelatedIndexForLabel()
     {
         assertThat(
-                indexMap.getRelatedIndexes( label( 3 ), noLabel, IntSets.immutable.empty() ),
+                indexMap.getRelatedIndexes( label( 3 ), noLabel, emptySet() ),
                 containsInAnyOrder( schema3_4 ) );
     }
 
@@ -75,7 +75,7 @@ public class IndexMapTest
     public void shouldGetRelatedIndexesForLabel()
     {
         assertThat(
-                indexMap.getRelatedIndexes( label( 5 ), label( 3, 4 ), IntSets.immutable.empty() ),
+                indexMap.getRelatedIndexes( label( 5 ), label( 3, 4 ), emptySet() ),
                 containsInAnyOrder( schema5_6_7, schema5_8 ) );
     }
 
@@ -103,11 +103,11 @@ public class IndexMapTest
     public void shouldHandleUnrelated()
     {
         assertThat(
-                indexMap.getRelatedIndexes( noLabel, noLabel, IntSets.immutable.empty() ),
+                indexMap.getRelatedIndexes( noLabel, noLabel, emptySet() ),
                 emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
-                indexMap.getRelatedIndexes( label( 2 ), noLabel, IntSets.immutable.empty() ),
+                indexMap.getRelatedIndexes( label( 2 ), noLabel, emptySet() ),
                 emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
@@ -126,9 +126,9 @@ public class IndexMapTest
         return labels;
     }
 
-    private IntSet properties( int... propertyIds )
+    private PrimitiveIntSet properties( int... propertyIds )
     {
-        return new IntHashSet( propertyIds );
+        return PrimitiveIntCollections.asSet( propertyIds );
     }
 
     private class TestIndexProxy extends IndexProxyAdapter

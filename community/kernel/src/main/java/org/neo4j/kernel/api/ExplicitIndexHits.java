@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 
 public interface ExplicitIndexHits extends PrimitiveLongResourceIterator
 {

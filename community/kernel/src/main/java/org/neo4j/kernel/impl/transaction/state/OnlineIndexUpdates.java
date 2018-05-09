@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -50,7 +49,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * in that case the properties for that node needs to be read from store since the commands in that transaction
  * cannot itself provide enough information.
  *
- * One instance can be {@link #feed(LongObjectMap, LongObjectMap) fed} data about
+ * One instance can be {@link #feed(PrimitiveLongObjectMap, PrimitiveLongObjectMap) fed} data about
  * multiple transactions, to be {@link #iterator() accessed} later.
  */
 public class OnlineIndexUpdates implements IndexUpdates
@@ -77,21 +76,25 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void feed( LongObjectMap<List<PropertyCommand>> propertyCommands, LongObjectMap<NodeCommand> nodeCommands )
+    public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands,
+            PrimitiveLongObjectMap<NodeCommand> nodeCommands )
     {
-        allKeys( nodeCommands, propertyCommands ).forEach( nodeId ->
-                gatherUpdatesFor( nodeId, nodeCommands.get( nodeId ), propertyCommands.get( nodeId ) )
-        );
+        PrimitiveLongIterator nodeIds = allKeys( nodeCommands, propertyCommands ).iterator();
+        while ( nodeIds.hasNext() )
+        {
+            long nodeId = nodeIds.next();
+            gatherUpdatesFor( nodeId, nodeCommands.get( nodeId ), propertyCommands.get( nodeId ) );
+        }
     }
 
-    private LongSet allKeys( LongObjectMap... maps )
+    private PrimitiveLongSet allKeys( PrimitiveLongObjectMap... maps )
     {
-        final MutableLongSet keys = new LongHashSet();
-        for ( LongObjectMap map : maps )
+        PrimitiveLongSet union = Primitive.longSet();
+        for ( PrimitiveLongObjectMap map : maps )
         {
-            keys.addAll( map.keySet() );
+            union.addAll( map.iterator() );
         }
-        return keys;
+        return union;
     }
 
     @Override

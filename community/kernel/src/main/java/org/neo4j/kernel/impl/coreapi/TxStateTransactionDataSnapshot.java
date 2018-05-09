@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -78,7 +77,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final Collection<PropertyEntry<Node>> removedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> removedRelationshipProperties = new ArrayList<>();
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
-    private final MutableLongObjectMap<RelationshipProxy> relationshipsReadFromStore = new LongObjectHashMap<>( 16 );
+    private final PrimitiveLongObjectMap<RelationshipProxy> relationshipsReadFromStore = Primitive.longObjectMap( 16 );
 
     public TxStateTransactionDataSnapshot(
             ReadableTransactionState state, EmbeddedProxySPI proxySpi,
@@ -220,16 +219,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             }
                         }
 
-                        node.get().labels().forEach( labelId ->
+                        node.get().labels().visitKeys( labelId ->
                         {
-                            try
-                            {
-                                removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
-                            }
-                            catch ( LabelNotFoundKernelException e )
-                            {
-                                throw new IllegalStateException( "An entity that does not exist was modified; labelId = " + labelId, e );
-                            }
+                            removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
+                            return false;
                         } );
                     }
                 }

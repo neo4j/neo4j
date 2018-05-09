@@ -19,8 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -35,7 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends ProcessorStep<LongIterator>
+public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends ProcessorStep<PrimitiveLongIterator>
 {
     private final RecordStore<RECORD> store;
     private final int batchSize;
@@ -68,7 +67,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
     }
 
     @Override
-    protected void process( LongIterator idRange, BatchSender sender )
+    protected void process( PrimitiveLongIterator idRange, BatchSender sender )
     {
         if ( !idRange.hasNext() )
         {

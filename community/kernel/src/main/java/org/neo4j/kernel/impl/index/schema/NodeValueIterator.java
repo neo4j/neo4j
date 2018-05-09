@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
-import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
 /**
- * A {@link IndexProgressor} + {@link IndexProgressor.NodeValueClient} combo presented as a {@link LongIterator}.
+ * A {@link IndexProgressor} + {@link IndexProgressor.NodeValueClient} combo presented as a {@link PrimitiveLongIterator}.
  */
 public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
         implements IndexProgressor.NodeValueClient, PrimitiveLongResourceIterator

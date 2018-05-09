@@ -19,8 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,6 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.index.internal.gbptree.FreeListIdProvider.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -112,7 +112,7 @@ public class FreeListIdProviderTest
         long prevId;
         long acquiredId = BASE_ID + 1;
         long freelistPageId = BASE_ID + 1;
-        MutableLongSet released = new LongHashSet();
+        PrimitiveLongSet released = Primitive.longSet();
         do
         {
             prevId = acquiredId;
@@ -137,7 +137,7 @@ public class FreeListIdProviderTest
     public void shouldStayBoundUnderStress() throws Exception
     {
         // GIVEN
-        MutableLongSet acquired = new LongHashSet();
+        PrimitiveLongSet acquired = Primitive.longSet();
         List<Long> acquiredList = new ArrayList<>(); // for quickly finding random to remove
         long stableGeneration = GenerationSafePointer.MIN_GENERATION;
         long unstableGeneration = stableGeneration + 1;
@@ -192,21 +192,15 @@ public class FreeListIdProviderTest
     public void shouldVisitUnacquiredIds() throws Exception
     {
         // GIVEN a couple of released ids
-        MutableLongSet expected = new LongHashSet();
+        PrimitiveLongSet expected = Primitive.longSet();
         for ( int i = 0; i < 100; i++ )
         {
             expected.add( freelist.acquireNewId( GENERATION_ONE, GENERATION_TWO ) );
         }
-        expected.forEach( id ->
+        expected.visitKeys( id ->
         {
-            try
-            {
-                freelist.releaseId( GENERATION_ONE, GENERATION_TWO, id );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            freelist.releaseId( GENERATION_ONE, GENERATION_TWO, id );
+            return false;
         } );
         // and only a few acquired
         for ( int i = 0; i < 10; i++ )
@@ -224,7 +218,7 @@ public class FreeListIdProviderTest
     public void shouldVisitFreelistPageIds() throws Exception
     {
         // GIVEN a couple of released ids
-        MutableLongSet expected = new LongHashSet();
+        PrimitiveLongSet expected = Primitive.longSet();
         // Add the already allocated free-list page id
         expected.add( BASE_ID + 1 );
         monitor.set( new Monitor()

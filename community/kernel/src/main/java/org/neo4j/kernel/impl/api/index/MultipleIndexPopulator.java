@@ -52,7 +52,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
-import static org.neo4j.collection.PrimitiveIntCollections.contains;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**

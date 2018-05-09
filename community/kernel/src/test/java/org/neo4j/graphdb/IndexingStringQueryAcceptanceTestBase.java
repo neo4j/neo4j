@@ -19,10 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -32,6 +28,9 @@ import org.junit.rules.TestName;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -91,10 +90,10 @@ public abstract class IndexingStringQueryAcceptanceTestBase
     {
         // GIVEN
         createNodes( db, LABEL, nonMatching );
-        LongSet expected = createNodes( db, LABEL, matching );
+        PrimitiveLongSet expected = createNodes( db, LABEL, matching );
 
         // WHEN
-        MutableLongSet found = new LongHashSet();
+        PrimitiveLongSet found = Primitive.longSet();
         try ( Transaction tx = db.beginTx() )
         {
             collectNodes( found, db.findNodes( LABEL, KEY, template, searchMode ) );
@@ -109,9 +108,9 @@ public abstract class IndexingStringQueryAcceptanceTestBase
     {
         // GIVEN
         createNodes( db, LABEL, nonMatching[0], nonMatching[1] );
-        MutableLongSet expected = createNodes( db, LABEL, matching[0], matching[1] );
+        PrimitiveLongSet expected = createNodes( db, LABEL, matching[0], matching[1] );
         // WHEN
-        MutableLongSet found = new LongHashSet();
+        PrimitiveLongSet found = Primitive.longSet();
         try ( Transaction tx = db.beginTx() )
         {
             expected.add( createNode( db, map( KEY, matching[2] ), LABEL ).getId() );
@@ -128,13 +127,13 @@ public abstract class IndexingStringQueryAcceptanceTestBase
     {
         // GIVEN
         createNodes( db, LABEL, nonMatching[0] );
-        LongSet toDelete = createNodes( db, LABEL, matching[0], nonMatching[1], matching[1], nonMatching[2] );
-        MutableLongSet expected = createNodes( db, LABEL, matching[2] );
+        PrimitiveLongSet toDelete = createNodes( db, LABEL, matching[0], nonMatching[1], matching[1], nonMatching[2] );
+        PrimitiveLongSet expected = createNodes( db, LABEL, matching[2] );
         // WHEN
-        MutableLongSet found = new LongHashSet();
+        PrimitiveLongSet found = Primitive.longSet();
         try ( Transaction tx = db.beginTx() )
         {
-            LongIterator deleting = toDelete.longIterator();
+            PrimitiveLongIterator deleting = toDelete.iterator();
             while ( deleting.hasNext() )
             {
                 long id = deleting.next();
@@ -153,21 +152,21 @@ public abstract class IndexingStringQueryAcceptanceTestBase
     {
         // GIVEN
         createNodes( db, LABEL, nonMatching[0] );
-        LongSet toChangeToMatch = createNodes( db, LABEL, nonMatching[1] );
-        MutableLongSet toChangeToNotMatch = createNodes( db, LABEL, matching[0] );
-        MutableLongSet expected = createNodes( db, LABEL, matching[1] );
+        PrimitiveLongSet toChangeToMatch = createNodes( db, LABEL, nonMatching[1] );
+        PrimitiveLongSet toChangeToNotMatch = createNodes( db, LABEL, matching[0] );
+        PrimitiveLongSet expected = createNodes( db, LABEL, matching[1] );
         // WHEN
-        MutableLongSet found = new LongHashSet();
+        PrimitiveLongSet found = Primitive.longSet();
         try ( Transaction tx = db.beginTx() )
         {
-            LongIterator toMatching = toChangeToMatch.longIterator();
+            PrimitiveLongIterator toMatching = toChangeToMatch.iterator();
             while ( toMatching.hasNext() )
             {
                 long id = toMatching.next();
                 db.getNodeById( id ).setProperty( KEY, matching[2] );
                 expected.add( id );
             }
-            LongIterator toNotMatching = toChangeToNotMatch.longIterator();
+            PrimitiveLongIterator toNotMatching = toChangeToNotMatch.iterator();
             while ( toNotMatching.hasNext() )
             {
                 long id = toNotMatching.next();
@@ -289,9 +288,9 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         }
     }
 
-    private MutableLongSet createNodes( GraphDatabaseService db, Label label, String... propertyValues )
+    private PrimitiveLongSet createNodes( GraphDatabaseService db, Label label, String... propertyValues )
     {
-        MutableLongSet expected = new LongHashSet();
+        PrimitiveLongSet expected = Primitive.longSet();
         try ( Transaction tx = db.beginTx() )
         {
             for ( String value : propertyValues )
@@ -303,7 +302,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         return expected;
     }
 
-    private void collectNodes( MutableLongSet bucket, ResourceIterator<Node> toCollect )
+    private void collectNodes( PrimitiveLongSet bucket, ResourceIterator<Node> toCollect )
     {
         while ( toCollect.hasNext() )
         {

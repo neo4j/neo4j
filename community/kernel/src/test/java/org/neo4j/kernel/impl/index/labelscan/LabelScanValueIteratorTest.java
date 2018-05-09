@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 
@@ -60,7 +60,7 @@ public class LabelScanValueIteratorTest
         assertTrue( toRemoveFrom.isEmpty() );
     }
 
-    private void exhaust( LongIterator iterator )
+    private void exhaust( PrimitiveLongIterator iterator )
     {
         while ( iterator.hasNext() )
         {

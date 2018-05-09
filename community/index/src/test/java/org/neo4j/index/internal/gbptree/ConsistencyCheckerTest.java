@@ -20,9 +20,9 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -122,7 +122,7 @@ public class ConsistencyCheckerTest
                 new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
         try
         {
-            cc.checkSpace( cursor, idProvider.lastId(), ImmutableEmptyLongIterator.INSTANCE );
+            cc.checkSpace( cursor, idProvider.lastId(), PrimitiveLongCollections.emptyIterator() );
             fail( "Should have failed" );
         }
         catch ( RuntimeException e )

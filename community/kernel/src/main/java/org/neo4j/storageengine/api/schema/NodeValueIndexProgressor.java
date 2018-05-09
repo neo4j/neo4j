@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.values.storable.Value;
 
 class NodeValueIndexProgressor implements IndexProgressor

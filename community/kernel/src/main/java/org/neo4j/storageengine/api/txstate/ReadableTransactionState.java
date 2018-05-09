@@ -19,12 +19,10 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -105,13 +103,13 @@ public interface ReadableTransactionState
 
     boolean nodeModifiedInThisTx( long nodeId );
 
-    IntSet nodeRelationshipTypes( long nodeId );
+    PrimitiveIntSet nodeRelationshipTypes( long nodeId );
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction );
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );
 
-    LongIterator augmentNodesGetAll( LongIterator committed );
+    PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
 
     RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed );
 
@@ -167,7 +165,7 @@ public interface ReadableTransactionState
             PropertyContainerState propertyContainerState,
             int propertyKeyId );
 
-    MutableIntSet augmentLabels( MutableIntSet cursor, NodeState nodeState );
+    PrimitiveIntSet augmentLabels( PrimitiveIntSet cursor, NodeState nodeState );
 
     Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
 

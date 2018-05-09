@@ -20,12 +20,11 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -76,7 +75,7 @@ public class IndexTxStateUpdater
         assert noSchemaChangedInTx();
 
         // Find properties of the changed node
-        final MutableIntSet nodePropertyIds = new IntHashSet();
+        PrimitiveIntSet nodePropertyIds = Primitive.intSet();
         node.properties( propertyCursor );
         while ( propertyCursor.next() )
         {
@@ -215,7 +214,7 @@ public class IndexTxStateUpdater
         return values;
     }
 
-    private static boolean nodeHasIndexProperties( IntSet nodeProperties, int[] indexPropertyIds )
+    private static boolean nodeHasIndexProperties( PrimitiveIntSet nodeProperties, int[] indexPropertyIds )
     {
         for ( int indexPropertyId : indexPropertyIds )
         {

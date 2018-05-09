@@ -19,14 +19,13 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
 import java.util.Arrays;
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.io.pagecache.PageSwapper;
 
 import static org.neo4j.helpers.Numbers.safeCastIntToShort;
@@ -48,7 +47,7 @@ final class SwapperSet
     private static final SwapperMapping TOMBSTONE = new SwapperMapping( 0, null );
     private static final int MAX_SWAPPER_ID = Short.MAX_VALUE;
     private volatile SwapperMapping[] swapperMappings = new SwapperMapping[] { SENTINEL };
-    private final MutableIntSet free = new IntHashSet();
+    private final PrimitiveIntSet free = Primitive.intSet();
     private final Object vacuumLock = new Object();
     private int freeCounter; // Used in `free`; Guarded by `this`
 
@@ -101,7 +100,7 @@ final class SwapperSet
         {
             if ( !free.isEmpty() )
             {
-                short id = safeCastIntToShort( free.intIterator().next() );
+                short id = safeCastIntToShort( free.iterator().next() );
                 free.remove( id );
                 swapperMappings[id] = new SwapperMapping( id, swapper );
                 this.swapperMappings = swapperMappings; // Volatile store synchronizes-with loads in getters.
@@ -152,7 +151,7 @@ final class SwapperSet
      * This is done with careful synchronisation such that allocating and freeing of ids is allowed to mostly proceed
      * concurrently.
      */
-    void vacuum( Consumer<IntSet> evictAllLoadedPagesCallback )
+    void vacuum( Consumer<IntPredicate> evictAllLoadedPagesCallback )
     {
         // We do this complicated locking to avoid blocking allocate() and free() as much as possible, while still only
         // allow a single thread to do vacuum at a time, and at the same time have consistent locking around the
@@ -160,7 +159,7 @@ final class SwapperSet
         synchronized ( vacuumLock )
         {
             // Collect currently free ids.
-            final MutableIntSet freeIds = new IntHashSet();
+            PrimitiveIntSet freeIds = Primitive.intSet();
             SwapperMapping[] swapperMappings = this.swapperMappings;
             for ( int id = 0; id < swapperMappings.length; id++ )
             {
@@ -183,7 +182,7 @@ final class SwapperSet
             // ids whose pages we evicted.
             synchronized ( this )
             {
-                final IntIterator itr = freeIds.intIterator();
+                PrimitiveIntIterator itr = freeIds.iterator();
                 while ( itr.hasNext() )
                 {
                     int freeId = itr.next();
@@ -193,7 +192,7 @@ final class SwapperSet
             }
             synchronized ( free )
             {
-                free.addAll( freeIds );
+                free.addAll( freeIds.iterator() );
             }
         }
     }

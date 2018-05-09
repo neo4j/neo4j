@@ -63,7 +63,7 @@ import org.neo4j.values.storable.Value;
  */
 public interface IndexProxy extends SchemaDescriptorSupplier
 {
-    void start();
+    void start() throws IOException;
 
     IndexUpdater newUpdater( IndexUpdateMode mode );
 
@@ -71,7 +71,7 @@ public interface IndexProxy extends SchemaDescriptorSupplier
      * Drop index.
      * Must close the context as well.
      */
-    void drop();
+    void drop() throws IOException;
 
     /**
      * Close this index context.

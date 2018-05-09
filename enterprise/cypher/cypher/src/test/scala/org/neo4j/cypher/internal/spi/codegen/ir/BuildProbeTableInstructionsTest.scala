@@ -23,11 +23,11 @@ import java.util
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BiConsumer
 
-import org.eclipse.collections.api.iterator.LongIterator
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
 import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenContext, JoinTableMethod, Variable}
@@ -207,7 +207,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
     node.getId shouldEqual id
   }
 
-  private def allNodeIdsIterator() = new LongIterator {
+  private def allNodeIdsIterator() = new PrimitiveLongIterator {
     val inner = allNodeIds.iterator
 
     override def hasNext = inner.hasNext

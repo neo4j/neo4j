@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.function.Consumer;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -33,8 +32,8 @@ import org.neo4j.storageengine.api.RelationshipItem;
  */
 public class TxIteratorRelationshipCursor extends TxAbstractRelationshipCursor
 {
-    private LongIterator added;
-    private LongIterator addedRelationshipIterator;
+    private PrimitiveLongIterator added;
+    private PrimitiveLongIterator addedRelationshipIterator;
 
     public TxIteratorRelationshipCursor( TransactionState state, Consumer<TxIteratorRelationshipCursor> instanceCache )
     {
@@ -42,7 +41,7 @@ public class TxIteratorRelationshipCursor extends TxAbstractRelationshipCursor
     }
 
     public TxIteratorRelationshipCursor init( Cursor<RelationshipItem> cursor,
-            LongIterator addedRelationshipIterator )
+            PrimitiveLongIterator addedRelationshipIterator )
     {
         super.init( cursor );
 

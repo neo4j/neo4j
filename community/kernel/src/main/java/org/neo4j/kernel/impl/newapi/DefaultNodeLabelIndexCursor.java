@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -41,7 +40,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     private Read read;
     private long node;
     private LabelSet labels;
-    private LongIterator added;
+    private PrimitiveLongIterator added;
     private Set<Long> removed;
 
     private final DefaultCursors pool;
@@ -60,7 +59,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
         {
             ReadableDiffSets<Long> changes =
                     read.txState().nodesWithLabelChanged( label );
-            added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
+            added = changes.augment( PrimitiveLongCollections.emptyIterator() );
             removed = new HashSet<>( read.txState().addedAndRemovedNodes().getRemoved() );
             removed.addAll( changes.getRemoved() );
         }

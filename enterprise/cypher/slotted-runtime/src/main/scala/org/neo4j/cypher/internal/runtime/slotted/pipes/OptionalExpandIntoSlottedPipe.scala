@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.eclipse.collections.api.iterator.LongIterator
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
@@ -65,7 +65,7 @@ case class OptionalExpandIntoSlottedPipe(source: Pipe,
         if (entityIsNull(fromNode) || entityIsNull(toNode)) {
           Iterator(withNulls(inputRow))
         } else {
-          val relationships: LongIterator = relCache.get(fromNode, toNode, dir)
+          val relationships: PrimitiveLongIterator = relCache.get(fromNode, toNode, dir)
             .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
 
           val matchIterator = PrimitiveLongHelper.map(relationships, relId => {

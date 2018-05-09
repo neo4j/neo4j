@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
@@ -39,8 +38,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.collection.PrimitiveLongCollections.iterator;
-import static org.neo4j.collection.PrimitiveLongCollections.toSet;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class PrimitiveLongDiffSetsTest
@@ -156,7 +156,7 @@ public class PrimitiveLongDiffSetsTest
         diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L, 11L ) );
         diffSet.removeAll( PrimitiveLongCollections.iterator( 1L, 2L ) );
 
-        LongIterator augmentedIterator = diffSet.augment( iterator( 5L, 6L ) );
+        PrimitiveLongIterator augmentedIterator = diffSet.augment( iterator( 5L, 6L ) );
         assertEquals( asSet( 5L, 6L, 9L, 10L, 11L ), toSet( augmentedIterator ) );
     }
 
@@ -177,12 +177,12 @@ public class PrimitiveLongDiffSetsTest
     @Test
     public void useCollectionsFactory()
     {
-        final MutableLongSet set1 = new LongHashSet();
-        final MutableLongSet set2 = new LongHashSet();
+        final PrimitiveLongSet set1 = Primitive.longSet();
+        final PrimitiveLongSet set2 = Primitive.longSet();
         final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
         doReturn( set1, set2 ).when( collectionsFactory ).newLongSet();
 
-        final PrimitiveLongDiffSets diffSets = new PrimitiveLongDiffSets( collectionsFactory );
+        final PrimitiveLongDiffSets diffSets = new PrimitiveLongDiffSets( emptySet(), emptySet(), collectionsFactory );
         diffSets.add( 1L );
         diffSets.remove( 2L );
 
@@ -194,13 +194,13 @@ public class PrimitiveLongDiffSetsTest
 
     private static PrimitiveLongDiffSets createDiffSet()
     {
-        return new PrimitiveLongDiffSets( OnHeapCollectionsFactory.INSTANCE );
+        return new PrimitiveLongDiffSets( emptySet(), emptySet(), OnHeapCollectionsFactory.INSTANCE );
     }
 
     private static class AggregatedPrimitiveLongDiffSetsVisitor implements PrimitiveLongDiffSetsVisitor
     {
-        private final MutableLongSet addedElements = new LongHashSet();
-        private final MutableLongSet removedElements = new LongHashSet();
+        private final PrimitiveLongSet addedElements = Primitive.longSet();
+        private final PrimitiveLongSet removedElements = Primitive.longSet();
 
         @Override
         public void visitAdded( long element )
@@ -214,12 +214,12 @@ public class PrimitiveLongDiffSetsTest
             removedElements.add( element );
         }
 
-        LongSet getAddedElements()
+        PrimitiveLongSet getAddedElements()
         {
             return addedElements;
         }
 
-        LongSet getRemovedElements()
+        PrimitiveLongSet getRemovedElements()
         {
             return removedElements;
         }

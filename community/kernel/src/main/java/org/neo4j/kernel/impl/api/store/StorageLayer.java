@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
@@ -87,6 +84,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
@@ -339,7 +337,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public IntIterator graphGetPropertyKeys()
+    public PrimitiveIntIterator graphGetPropertyKeys()
     {
         return new PropertyKeyIdIterator( propertyLoader.graphLoadProperties( new IteratingPropertyReceiver<>() ) );
     }
@@ -414,7 +412,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public LongIterator nodesGetAll()
+    public PrimitiveLongIterator nodesGetAll()
     {
         return new AllNodeIterator( nodeStore );
     }
@@ -561,9 +559,9 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public IntSet relationshipTypes( StorageStatement statement, NodeItem node )
+    public PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node )
     {
-        final MutableIntSet set = new IntHashSet();
+        PrimitiveIntSet set = intSet();
         if ( node.isDense() )
         {
             RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();

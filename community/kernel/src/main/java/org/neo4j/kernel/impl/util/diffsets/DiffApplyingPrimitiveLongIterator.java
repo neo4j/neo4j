@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
-
 import javax.annotation.Nullable;
 
-import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongBaseIterator;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 
 /**
- * Applies a diffset to the provided {@link LongIterator}.
+ * Applies a diffset to the provided {@link PrimitiveLongIterator}.
  */
 class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
 {
@@ -65,32 +64,31 @@ class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implem
         abstract boolean fetchNext( DiffApplyingPrimitiveLongIterator self );
     }
 
-    private final LongIterator source;
-    private final LongIterator addedElementsIterator;
-    private final LongSet addedElements;
-    private final LongSet removedElements;
+    private final PrimitiveLongIterator source;
+    private final PrimitiveLongIterator addedElementsIterator;
+    private final PrimitiveLongSet addedElements;
+    private final PrimitiveLongSet removedElements;
     @Nullable
     private final Resource resource;
     private Phase phase;
 
-    private DiffApplyingPrimitiveLongIterator( LongIterator source, LongSet addedElements,
-            LongSet removedElements,
+    private DiffApplyingPrimitiveLongIterator( PrimitiveLongIterator source, PrimitiveLongSet addedElements, PrimitiveLongSet removedElements,
             @Nullable Resource resource )
     {
         this.source = source;
         this.addedElements = addedElements;
-        this.addedElementsIterator = addedElements.longIterator();
+        this.addedElementsIterator = addedElements.iterator();
         this.removedElements = removedElements;
         this.resource = resource;
         this.phase = Phase.FILTERED_SOURCE;
     }
 
-    static LongIterator augment( LongIterator source, LongSet addedElements, LongSet removedElements )
+    static PrimitiveLongIterator augment( PrimitiveLongIterator source, PrimitiveLongSet addedElements, PrimitiveLongSet removedElements )
     {
         return new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements, null );
     }
 
-    static PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source, LongSet addedElements, LongSet removedElements )
+    static PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source, PrimitiveLongSet addedElements, PrimitiveLongSet removedElements )
     {
         return new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements, source );
     }

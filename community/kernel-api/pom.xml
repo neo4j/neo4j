@@ -51,6 +51,11 @@ the relevant Commercial Agreement.
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-primitive-collections</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -72,10 +77,6 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.eclipse.collections</groupId>
-        <artifactId>eclipse-collections</artifactId>
     </dependency>
 
       <!-- Test dependencies -->

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -34,6 +32,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
@@ -229,11 +229,11 @@ public class TransactionRecordStateTest
         // THEN
         // -- later recovering that tx, there should be only one update
         assertTrue( extractor.containsAnyNodeOrPropertyUpdate() );
-        MutableLongSet recoveredNodeIds = new LongHashSet();
-        recoveredNodeIds.addAll( extractor.nodeCommandsById().keySet() );
-        recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().keySet() );
+        PrimitiveLongSet recoveredNodeIds = Primitive.longSet();
+        recoveredNodeIds.addAll( extractor.nodeCommandsById().iterator() );
+        recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().iterator() );
         assertEquals( 1, recoveredNodeIds.size() );
-        assertEquals( nodeId, recoveredNodeIds.longIterator().next() );
+        assertEquals( nodeId, recoveredNodeIds.iterator().next() );
     }
 
     @Test

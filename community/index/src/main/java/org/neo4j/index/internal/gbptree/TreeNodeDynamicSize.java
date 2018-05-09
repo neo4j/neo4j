@@ -19,13 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.eclipse.collections.api.stack.primitive.IntStack;
-import org.eclipse.collections.api.stack.primitive.MutableIntStack;
-import org.eclipse.collections.impl.stack.mutable.primitive.IntArrayStack;
-
 import java.util.Arrays;
 import java.util.StringJoiner;
 
+import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
@@ -93,8 +90,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private static final int LEAST_NUMBER_OF_ENTRIES_PER_PAGE = 2;
     private static final int MINIMUM_ENTRY_SIZE_CAP = Long.SIZE;
     private final int keyValueSizeCap;
-    private final MutableIntStack deadKeysOffset = new IntArrayStack();
-    private final MutableIntStack aliveKeysOffset = new IntArrayStack();
+    private final PrimitiveIntStack deadKeysOffset = new PrimitiveIntStack();
+    private final PrimitiveIntStack aliveKeysOffset = new PrimitiveIntStack();
     private final int maxKeyCount = pageSize / (bytesKeyOffset() + SIZE_KEY_SIZE + SIZE_VALUE_SIZE);
     private final int[] oldOffset = new int[maxKeyCount];
     private final int[] newOffset = new int[maxKeyCount];
@@ -474,25 +471,25 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int deadRangeOffset; // Everything between this point and aliveRangeOffset is dead space
 
         // Rightmost alive keys does not need to move
-        while ( peek( deadKeysOffset ) < peek( aliveKeysOffset ) )
+        while ( deadKeysOffset.peek() < aliveKeysOffset.peek() )
         {
-            aliveRangeOffset = poll( aliveKeysOffset );
+            aliveRangeOffset = aliveKeysOffset.poll();
         }
 
         do
         {
             // Locate next range of dead keys
             deadRangeOffset = aliveRangeOffset;
-            while ( peek( aliveKeysOffset ) < peek( deadKeysOffset ) )
+            while ( aliveKeysOffset.peek() < deadKeysOffset.peek() )
             {
-                deadRangeOffset = poll( deadKeysOffset );
+                deadRangeOffset = deadKeysOffset.poll();
             }
 
             // Locate next range of alive keys
             int moveOffset = deadRangeOffset;
-            while ( peek( deadKeysOffset ) < peek( aliveKeysOffset ) )
+            while ( deadKeysOffset.peek() < aliveKeysOffset.peek() )
             {
-                int moveKey = poll( aliveKeysOffset );
+                int moveKey = aliveKeysOffset.poll();
                 oldOffset[oldOffsetCursor++] = moveKey;
                 moveOffset = moveKey;
             }
@@ -552,16 +549,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // Update dead space
         setDeadSpace( cursor, 0 );
-    }
-
-    private static int peek( IntStack stack )
-    {
-        return stack.isEmpty() ? -1 : stack.peek();
-    }
-
-    private static int poll( MutableIntStack stack )
-    {
-        return stack.isEmpty() ? -1 : stack.pop();
     }
 
     @Override
@@ -868,7 +855,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return allocOffset - endOfOffsetArray;
     }
 
-    private void recordDeadAndAliveLeaf( PageCursor cursor, MutableIntStack deadKeysOffset, MutableIntStack aliveKeysOffset )
+    private void recordDeadAndAliveLeaf( PageCursor cursor, PrimitiveIntStack deadKeysOffset, PrimitiveIntStack aliveKeysOffset )
     {
         int currentOffset = getAllocOffset( cursor );
         while ( currentOffset < pageSize )
@@ -891,7 +878,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
     }
 
-    private void recordDeadAndAliveInternal( PageCursor cursor, MutableIntStack deadKeysOffset, MutableIntStack aliveKeysOffset )
+    private void recordDeadAndAliveInternal( PageCursor cursor, PrimitiveIntStack deadKeysOffset, PrimitiveIntStack aliveKeysOffset )
     {
         int currentOffset = getAllocOffset( cursor );
         while ( currentOffset < pageSize )

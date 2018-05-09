@@ -24,7 +24,7 @@ import java.util.Arrays;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 
 import static java.lang.Integer.min;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 public class IdRangeIterator implements IdSequence
 {

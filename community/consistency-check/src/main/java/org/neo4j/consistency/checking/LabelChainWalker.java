@@ -19,10 +19,8 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -41,7 +39,7 @@ public class LabelChainWalker<RECORD extends AbstractBaseRecord, REPORT extends 
 {
     private final Validator<RECORD, REPORT> validator;
 
-    private final MutableLongObjectMap<DynamicRecord> recordIds = new LongObjectHashMap<>();
+    private final HashMap<Long, DynamicRecord> recordIds = new HashMap<>();
     private final List<DynamicRecord> recordList = new ArrayList<>();
     private boolean allInUse = true;
 
@@ -78,10 +76,9 @@ public class LabelChainWalker<RECORD extends AbstractBaseRecord, REPORT extends 
         }
         else
         {
-            final DynamicRecord nextRecord = recordIds.get( nextBlock );
-            if ( nextRecord != null )
+            if ( recordIds.containsKey( nextBlock ) )
             {
-                validator.onRecordChainCycle( nextRecord, engine );
+                validator.onRecordChainCycle( recordIds.get( nextBlock ), engine );
             }
             else
             {

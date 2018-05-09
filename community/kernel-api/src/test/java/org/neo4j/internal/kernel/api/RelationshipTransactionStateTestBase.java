@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -28,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -1091,7 +1091,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             throw new AssertionError( "Where is your god now!" );
         }
 
-        MutableLongSet set = LongHashSet.newSetWith( relationships );
+        PrimitiveLongSet set = PrimitiveLongCollections.asSet( relationships );
         for ( long relationship : relationships )
         {
             assertTrue( traversal.next() );

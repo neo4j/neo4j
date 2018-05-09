@@ -19,9 +19,6 @@
  */
 package org.neo4j.io.pagecache.randomharness;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +28,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
@@ -185,7 +184,7 @@ class CommandPrimer
 
     private Action writeRecord()
     {
-        return buildWriteAction( null, LongSets.immutable.empty() );
+        return buildWriteAction( null, Primitive.longSet() );
     }
 
     private Action readMulti()
@@ -202,10 +201,11 @@ class CommandPrimer
     private Action writeMulti()
     {
         int count = rng.nextInt( 5 ) + 1;
+        PrimitiveLongSet recordIds = Primitive.longSet();
         Action action = null;
         for ( int i = 0; i < count; i++ )
         {
-            action = buildWriteAction( action, LongSets.immutable.empty() );
+            action = buildWriteAction( action, recordIds );
         }
         return action;
     }
@@ -227,7 +227,7 @@ class CommandPrimer
         return new ReadAction( file, recordId, pageId, pageOffset, expectedRecord, innerAction );
     }
 
-    private Action buildWriteAction( Action innerAction, LongSet forbiddenRecordIds )
+    private Action buildWriteAction( Action innerAction, PrimitiveLongSet forbiddenRecordIds )
     {
         int mappedFilesCount = mappedFiles.size();
         if ( mappedFilesCount == 0 )

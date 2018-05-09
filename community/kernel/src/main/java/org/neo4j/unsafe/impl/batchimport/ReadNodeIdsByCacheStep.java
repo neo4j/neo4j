@@ -30,7 +30,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.System.nanoTime;
 
-import static org.neo4j.collection.PrimitiveLongCollections.iterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 
 /**
  * Using the {@link NodeRelationshipCache} efficiently looks for changed nodes and reads those

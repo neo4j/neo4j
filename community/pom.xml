@@ -26,7 +26,7 @@
     <module>configuration</module>
     <module>resource</module>
     <module>collections</module>
-      <module>concurrent</module>
+    <module>primitive-collections</module>
     <module>graphdb-api</module>
     <module>procedure-api</module>
     <module>unsafe</module>

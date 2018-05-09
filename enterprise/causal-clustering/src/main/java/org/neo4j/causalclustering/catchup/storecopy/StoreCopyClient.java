@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
@@ -34,6 +32,7 @@ import org.neo4j.causalclustering.catchup.CatchupAddressResolutionException;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -103,7 +102,7 @@ public class StoreCopyClient
         StoreCopyClientMonitor
                 storeCopyClientMonitor = monitors.newMonitor( StoreCopyClientMonitor.class );
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
-        LongIterator indexIds = prepareStoreCopyResponse.getIndexIds().longIterator();
+        PrimitiveLongIterator indexIds = prepareStoreCopyResponse.getIndexIds().iterator();
         storeCopyClientMonitor.startReceivingIndexSnapshots();
         while ( indexIds.hasNext() )
         {

@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.NoSuchElementException;
+
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 import static java.lang.String.format;
 
-public class StoreIdIterator implements LongIterator
+public class StoreIdIterator implements PrimitiveLongIterator
 {
     private final RecordStore<?> store;
     private long targetId;

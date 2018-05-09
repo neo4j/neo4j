@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,6 +26,9 @@ import org.junit.rules.RuleChain;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -43,10 +43,10 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -267,12 +267,12 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    IntIterator nodeGetPropertyKeys( Transaction transaction, long node )
+    PrimitiveIntIterator nodeGetPropertyKeys( Transaction transaction, long node )
     {
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
               PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
         {
-            MutableIntSet props = new IntHashSet();
+            PrimitiveIntSet props = Primitive.intSet();
             transaction.dataRead().singleNode( node, cursor );
             if ( cursor.next() )
             {
@@ -282,7 +282,7 @@ public abstract class KernelIntegrationTest
                     props.add( properties.propertyKey() );
                 }
             }
-            return props.intIterator();
+            return props.iterator();
         }
     }
 

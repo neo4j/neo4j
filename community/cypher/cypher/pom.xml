@@ -258,17 +258,11 @@
       </exclusions>
     </dependency>
 
-      <dependency>
+    <dependency>
       <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-primitive-collections</artifactId>
-        <version>3.4.0-rc01</version>
+      <artifactId>neo4j-cypher-util-3.5</artifactId>
+      <version>${project.version}</version>
     </dependency>
-
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-cypher-util-3.5</artifactId>
-          <version>${project.version}</version>
-      </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>

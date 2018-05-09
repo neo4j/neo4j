@@ -19,11 +19,11 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 
 /**
  * Read only variant of specialised primitive longs collection that with given a sequence of add
@@ -48,21 +48,21 @@ public interface PrimitiveLongReadableDiffSets
         }
 
         @Override
-        public LongSet getAdded()
+        public PrimitiveLongSet getAdded()
         {
-            return LongSets.immutable.empty();
+            return emptySet();
         }
 
         @Override
-        public LongSet getAddedSnapshot()
+        public PrimitiveLongSet getAddedSnapshot()
         {
-            return LongSets.immutable.empty();
+            return emptySet();
         }
 
         @Override
-        public LongSet getRemoved()
+        public PrimitiveLongSet getRemoved()
         {
-            return LongSets.immutable.empty();
+            return emptySet();
         }
 
         @Override
@@ -78,7 +78,7 @@ public interface PrimitiveLongReadableDiffSets
         }
 
         @Override
-        public LongIterator augment( LongIterator elements )
+        public PrimitiveLongIterator augment( PrimitiveLongIterator elements )
         {
             return elements;
         }
@@ -108,19 +108,19 @@ public interface PrimitiveLongReadableDiffSets
      * All elements that added into this collection
      * @return all added elements
      */
-    LongSet getAdded();
+    PrimitiveLongSet getAdded();
 
     /**
      * Snapshot of added elements infot this collection on the moment of invocation
      * @return snapshot of added elements
      */
-    LongSet getAddedSnapshot();
+    PrimitiveLongSet getAddedSnapshot();
 
     /**
      * All elements that are removed according to underlying collection
      * @return all removed elements
      */
-    LongSet getRemoved();
+    PrimitiveLongSet getRemoved();
 
     /**
      * Check if underlying diff set is empty
@@ -140,7 +140,7 @@ public interface PrimitiveLongReadableDiffSets
      * @param elements elements to augment with
      * @return iterator that will iterate over augmented elements as well as over diff set
      */
-    LongIterator augment( LongIterator elements );
+    PrimitiveLongIterator augment( PrimitiveLongIterator elements );
 
     /**
      * Augment current diff sets with elements. Provided element will be augmented if diffset

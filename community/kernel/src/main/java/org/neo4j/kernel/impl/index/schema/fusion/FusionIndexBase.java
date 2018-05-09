@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
-import org.neo4j.collection.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.Exceptions;

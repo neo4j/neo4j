@@ -21,7 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.LabelChainWalker;

@@ -72,7 +72,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public void start()
+    public void start() throws IOException
     {
         lock.readLock().lock();
         try
@@ -103,7 +103,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public void drop()
+    public void drop() throws IOException
     {
         lock.readLock().lock();
         try
