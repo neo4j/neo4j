@@ -982,9 +982,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 
         // then
         goTo( readCursor, rootId );
-        ConsistencyChecker<KEY> consistencyChecker =
-                new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
-        consistencyChecker.check( readCursor, rootGeneration );
+        consistencyCheck();
     }
 
     @Test
@@ -1005,10 +1003,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         }
 
         // then
-        goTo( readCursor, rootId );
-        ConsistencyChecker<KEY> consistencyChecker =
-                new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
-        consistencyChecker.check( readCursor, rootGeneration );
+        consistencyCheck();
     }
 
     /* TEST VALUE MERGER */
@@ -1444,6 +1439,16 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
             // THEN
             assertThat( e.getMessage(), containsString( PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE ) );
         }
+    }
+
+    private void consistencyCheck() throws IOException
+    {
+        long currentPageId = readCursor.getCurrentPageId();
+        goTo( readCursor, rootId );
+        ConsistencyChecker<KEY> consistencyChecker =
+                new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
+        consistencyChecker.check( readCursor, rootGeneration );
+        goTo( readCursor, currentPageId );
     }
 
     private void remove( KEY toRemove, List<KEY> list, Comparator<KEY> comparator )
