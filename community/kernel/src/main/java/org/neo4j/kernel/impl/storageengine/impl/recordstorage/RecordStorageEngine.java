@@ -285,8 +285,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             txStateVisitor = constraintSemantics.decorateTxStateVisitor( storageReader,
                     txState,
                     txStateVisitor );
-            txStateVisitor = new TransactionCountingStateVisitor(
-                    txStateVisitor, storageReader, txState, countsRecordState );
+            txStateVisitor = new TransactionCountingStateVisitor( txStateVisitor, storageReader, countsRecordState );
             try ( TxStateVisitor visitor = txStateVisitor )
             {
                 txState.accept( visitor );

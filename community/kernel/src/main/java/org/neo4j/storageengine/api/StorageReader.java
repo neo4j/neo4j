@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
@@ -39,7 +38,6 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 /**
@@ -184,16 +182,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      * @return relationship type token id for the given name, created if need be.
      */
     int relationshipTypeGetOrCreateForName( String relationshipTypeName );
-
-    /**
-     * Visits data about a relationship. The given {@code relationshipVisitor} will be notified.
-     *
-     * @param relationshipId the id of the relationship to access.
-     * @param relationshipVisitor {@link RelationshipVisitor} which will see the relationship data.
-     * @throws EntityNotFoundException if no relationship exists by the given {@code relationshipId}.
-     */
-    <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
-            RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION;
 
     /**
      * Releases a previously {@link #reserveNode() reserved} node id if it turns out to not actually being used,
