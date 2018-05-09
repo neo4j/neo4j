@@ -119,7 +119,6 @@ import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
@@ -239,7 +238,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final LabelTokenStore labelTokenStore;
     private final Locks.Client noopLockClient = new NoOpClient();
     private final long maxNodeId;
-    private final RecordCursors cursors;
 
     public BatchInserterImpl( final File storeDir, final FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
@@ -332,7 +330,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
                 .batch_inserter_batch_size ) );
-        cursors = new RecordCursors( neoStores );
         storageReader = RecordStorageReader.neoStoreReader( neoStores );
     }
 
@@ -990,7 +987,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
         finally
         {
-            cursors.close();
             neoStores.close();
 
             try

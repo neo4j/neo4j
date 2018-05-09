@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.LongConsumer;
 
@@ -407,21 +408,21 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
             }
         }
 
-        Set<TestDegreeItem> expectedDegrees = new HashSet<>();
+        Set<Degrees> expectedDegrees = new HashSet<>();
         if ( outRelCount != 0 )
         {
-            expectedDegrees.add( new TestDegreeItem( relTypeId( OUT ), outRelCount, 0 ) );
+            expectedDegrees.add( new Degrees( relTypeId( OUT ), outRelCount, 0 ) );
         }
         if ( inRelCount != 0 )
         {
-            expectedDegrees.add( new TestDegreeItem( relTypeId( IN ), 0, inRelCount ) );
+            expectedDegrees.add( new Degrees( relTypeId( IN ), 0, inRelCount ) );
         }
         if ( loopRelCount != 0 )
         {
-            expectedDegrees.add( new TestDegreeItem( relTypeId( LOOP ), loopRelCount, loopRelCount ) );
+            expectedDegrees.add( new Degrees( relTypeId( LOOP ), loopRelCount, loopRelCount ) );
         }
 
-        Set<TestDegreeItem> actualDegrees = degrees( nodeCursor );
+        Set<Degrees> actualDegrees = degrees( nodeCursor );
 
         assertEquals( expectedDegrees, actualDegrees );
     }
@@ -449,24 +450,24 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
             markRandomRelsInGroupNotInUse( nodeId, LOOP );
         }
 
-        Set<TestDegreeItem> expectedDegrees = new HashSet<>(
-                asList( new TestDegreeItem( relTypeId( OUT ), outRelCount, 0 ),
-                        new TestDegreeItem( relTypeId( IN ), 0, inRelCount ),
-                        new TestDegreeItem( relTypeId( LOOP ), loopRelCount, loopRelCount ) ) );
+        Set<Degrees> expectedDegrees = new HashSet<>(
+                asList( new Degrees( relTypeId( OUT ), outRelCount, 0 ),
+                        new Degrees( relTypeId( IN ), 0, inRelCount ),
+                        new Degrees( relTypeId( LOOP ), loopRelCount, loopRelCount ) ) );
 
-        Set<TestDegreeItem> actualDegrees = degrees( nodeCursor );
+        Set<Degrees> actualDegrees = degrees( nodeCursor );
 
         assertEquals( expectedDegrees, actualDegrees );
     }
 
-    private Set<TestDegreeItem> degrees( NodeCursor nodeCursor )
+    private Set<Degrees> degrees( NodeCursor nodeCursor )
     {
-        Set<TestDegreeItem> degrees = new HashSet<>();
+        Set<Degrees> degrees = new HashSet<>();
         RelationshipGroupCursor groupCursor = storageReader.allocateRelationshipGroupCursor();
         nodeCursor.relationships( groupCursor );
         while ( groupCursor.next() )
         {
-            degrees.add( new TestDegreeItem( groupCursor.type(),
+            degrees.add( new Degrees( groupCursor.type(),
                     groupCursor.outgoingCount() + groupCursor.loopCount(),
                     groupCursor.incomingCount() + groupCursor.loopCount() ) );
         }
@@ -653,4 +654,39 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         return RELATIONSHIPS_COUNT + random.nextInt( 20 );
     }
 
+    private static class Degrees
+    {
+        private final int type;
+        private final int outgoing;
+        private final int incoming;
+
+        Degrees( int type, int outgoing, int incoming )
+        {
+            this.type = type;
+            this.outgoing = outgoing;
+            this.incoming = incoming;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            Degrees degrees = (Degrees) o;
+            return type == degrees.type && outgoing == degrees.outgoing && incoming == degrees.incoming;
+        }
+
+        @Override
+        public int hashCode()
+        {
+
+            return Objects.hash( type, outgoing, incoming );
+        }
+    }
 }
