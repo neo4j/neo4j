@@ -22,15 +22,14 @@ package org.neo4j.kernel.impl.store.record;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForLabel;
-import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.nodeKeyForLabel;
-import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class ConstraintRuleTest extends SchemaRuleTestBase
@@ -39,7 +38,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     public void shouldCreateUniquenessConstraint()
     {
         // GIVEN
-        ConstraintDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
+        ConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
         ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor );
 
         // THEN
@@ -53,7 +52,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     public void shouldCreateUniquenessConstraintWithOwnedIndex()
     {
         // GIVEN
-        UniquenessConstraintDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
+        UniquenessConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
         ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor, RULE_ID_2 );
 
         // THEN
@@ -104,13 +103,13 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     @Test
     public void indexRulesAreEqualBasedOnConstraintDescriptor()
     {
-        assertEqualityByDescriptor( existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
-        assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ) );
-        assertEqualityByDescriptor( nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ) );
-        assertEqualityByDescriptor( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ) );
-        assertEqualityByDescriptor( existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
-        assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
-        assertEqualityByDescriptor( nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
+        assertEqualityByDescriptor( ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
+        assertEqualityByDescriptor( ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ) );
+        assertEqualityByDescriptor( ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ) );
+        assertEqualityByDescriptor( ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ) );
+        assertEqualityByDescriptor( ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
+        assertEqualityByDescriptor( ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
+        assertEqualityByDescriptor( ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
     }
 
     private void assertEqualityByDescriptor( UniquenessConstraintDescriptor descriptor )

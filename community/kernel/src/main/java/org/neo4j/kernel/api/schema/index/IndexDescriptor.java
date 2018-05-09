@@ -42,17 +42,17 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
 {
     protected final SchemaDescriptor schema;
     protected final IndexDescriptor.Type type;
-    protected final Optional<String> name;
+    protected final Optional<String> userSuppliedName;
     protected final IndexProvider.Descriptor providerDescriptor;
 
     IndexDescriptor( IndexDescriptor indexDescriptor )
     {
         schema = indexDescriptor.schema;
         type = indexDescriptor.type;
-        name =  indexDescriptor.name;
+        userSuppliedName =  indexDescriptor.userSuppliedName;
         providerDescriptor = indexDescriptor.providerDescriptor;
-
     }
+
     public enum Type
     {
         GENERAL,
@@ -95,12 +95,12 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
 
     public IndexDescriptor( SchemaDescriptor schema,
                             Type type,
-                            Optional<String> name,
+                            Optional<String> userSuppliedName,
                             IndexProvider.Descriptor providerDescriptor )
     {
         this.schema = schema;
         this.type = type;
-        this.name = name;
+        this.userSuppliedName = userSuppliedName;
         this.providerDescriptor = providerDescriptor;
     }
 
@@ -149,11 +149,6 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     public String providerVersion()
     {
         return providerDescriptor.getVersion();
-    }
-
-    Optional<String> name()
-    {
-        return name;
     }
 
     public IndexProvider.Descriptor providerDescriptor()

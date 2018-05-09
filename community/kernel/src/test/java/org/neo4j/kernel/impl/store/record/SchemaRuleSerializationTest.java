@@ -41,28 +41,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 {
-    StoreIndexDescriptor indexRegular = StoreIndexDescriptor.indexRule( RULE_ID,
-                                                                        forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR );
+    StoreIndexDescriptor indexRegular = forLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID );
 
-    StoreIndexDescriptor indexUnique = StoreIndexDescriptor.constraintIndexRule( RULE_ID_2,
-                                                                                 TestIndexDescriptorFactory
-                                                                               .uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID );
+    StoreIndexDescriptor indexUnique = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ).withIds( RULE_ID_2, RULE_ID );
 
-    StoreIndexDescriptor indexCompositeRegular = StoreIndexDescriptor.indexRule( RULE_ID,
-                                                                                 forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR );
+    StoreIndexDescriptor indexCompositeRegular = forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID );
 
-    StoreIndexDescriptor indexCompositeUnique = StoreIndexDescriptor.constraintIndexRule( RULE_ID_2,
-                                                                                          TestIndexDescriptorFactory
-                                                                                        .uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
-                                                                                          PROVIDER_DESCRIPTOR, RULE_ID );
+    StoreIndexDescriptor indexCompositeUnique =
+            uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID );
 
-    StoreIndexDescriptor indexBigComposite = StoreIndexDescriptor.indexRule( RULE_ID,
-                                                                             forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR );
+    StoreIndexDescriptor indexBigComposite = forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ).withId( RULE_ID );
 
     ConstraintRule constraintExistsLabel = ConstraintRule.constraintRule( RULE_ID,
             ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
@@ -121,20 +113,11 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         String name = "custom_rule";
 
-        assertThat( serialiseAndDeserialise( StoreIndexDescriptor.indexRule( RULE_ID,
-                                                                             forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( StoreIndexDescriptor.constraintIndexRule( RULE_ID_2,
-                                                                                       TestIndexDescriptorFactory
-                                                                                          .uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ),
-                                                                                       PROVIDER_DESCRIPTOR, RULE_ID, name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( StoreIndexDescriptor.indexRule( RULE_ID,
-                                                                             forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( StoreIndexDescriptor.constraintIndexRule( RULE_ID_2,
-                                                                                       TestIndexDescriptorFactory
-                                                                                          .uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
-                                                                                       PROVIDER_DESCRIPTOR, RULE_ID, name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( StoreIndexDescriptor.indexRule( RULE_ID,
-                                                                             forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( namedForLabel( name, LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1 ).withIds( RULE_ID_2, RULE_ID ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( namedForLabel( name, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( namedForLabel( name, LABEL_ID, IntStream.range(1, 200).toArray() ).withId( RULE_ID ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
                 ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
@@ -153,23 +136,13 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     @Test
     public void rulesCreatedWithNullNameMustRetainComputedNameAfterDeserialisation() throws Exception
     {
-        String name = null;
+        assertThat( serialiseAndDeserialise( forLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ) ).getName(), is( "index_1" ) );
+        assertThat( serialiseAndDeserialise( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ).withIds( RULE_ID_2, RULE_ID ) ).getName(), is( "index_2" ) );
+        assertThat( serialiseAndDeserialise( forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID ) ).getName(), is( "index_1" ) );
+        assertThat( serialiseAndDeserialise( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID ) ).getName(), is( "index_2" ) );
+        assertThat( serialiseAndDeserialise( forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ).withId( RULE_ID ) ).getName(), is( "index_1" ) );
 
-        assertThat( serialiseAndDeserialise( StoreIndexDescriptor.indexRule( RULE_ID,
-                                                                             forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( "index_1" ) );
-        assertThat( serialiseAndDeserialise( StoreIndexDescriptor.constraintIndexRule( RULE_ID_2,
-                                                                                       TestIndexDescriptorFactory
-                                                                                          .uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ),
-                                                                                       PROVIDER_DESCRIPTOR, RULE_ID, name ) ).getName(), is( "index_2" ) );
-        assertThat( serialiseAndDeserialise( StoreIndexDescriptor.indexRule( RULE_ID,
-                                                                             forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( "index_1" ) );
-        assertThat( serialiseAndDeserialise( StoreIndexDescriptor.constraintIndexRule( RULE_ID_2,
-                                                                                       TestIndexDescriptorFactory
-                                                                                          .uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
-                                                                                       PROVIDER_DESCRIPTOR, RULE_ID, name ) ).getName(), is( "index_2" ) );
-        assertThat( serialiseAndDeserialise( StoreIndexDescriptor.indexRule( RULE_ID,
-                                                                             forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR, name ) ).getName(),
-                is( "index_1" ) );
+        String name = null;
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
                 ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(),
                 is( "constraint_1" ) );
@@ -194,8 +167,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     public void indexRuleNameMustNotContainNullCharacter()
     {
         String name = "a\0b";
-        StoreIndexDescriptor.indexRule( RULE_ID,
-                                        forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name );
+        namedForLabel( name, LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -203,16 +175,14 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         //noinspection RedundantStringConstructorCall
         String name = new String( "" );
-        StoreIndexDescriptor.indexRule( RULE_ID,
-                                        forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name );
+        namedForLabel( name, LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID );
     }
 
     @Test( expected = IllegalArgumentException.class )
     public void constraintIndexRuleNameMustNotContainNullCharacter()
     {
         String name = "a\0b";
-        StoreIndexDescriptor.constraintIndexRule( RULE_ID,
-                                                  forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID_2, name );
+        namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1 ).withIds( RULE_ID, RULE_ID_2 );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -220,8 +190,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         //noinspection RedundantStringConstructorCall
         String name = new String( "" );
-        StoreIndexDescriptor.constraintIndexRule( RULE_ID,
-                                                  forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID_2, name );
+        namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1 ).withIds( RULE_ID, RULE_ID_2 );
     }
 
     @Test( expected = IllegalArgumentException.class )

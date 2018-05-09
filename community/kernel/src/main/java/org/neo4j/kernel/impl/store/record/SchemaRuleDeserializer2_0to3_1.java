@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
+import java.util.Optional;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -99,9 +100,10 @@ public class SchemaRuleDeserializer2_0to3_1
         IndexProvider.Descriptor providerDescriptor = readIndexProviderDescriptor( serialized );
         int[] propertyKeyIds = readIndexPropertyKeys( serialized );
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( label, propertyKeyIds );
+        Optional<String> name = Optional.empty();
         IndexDescriptor descriptor = constraintIndex ?
-                                     IndexDescriptorFactory.uniqueForSchema( schema ) :
-                                     IndexDescriptorFactory.forSchema( schema );
+                                     IndexDescriptorFactory.uniqueForSchema( schema, name, providerDescriptor ) :
+                                     IndexDescriptorFactory.forSchema( schema, name, providerDescriptor );
         long owningConstraint = constraintIndex ? readOwningConstraint( serialized ) : NO_OWNING_CONSTRAINT;
         return StoreIndexDescriptor.constraintIndexRule( id, descriptor, providerDescriptor, owningConstraint );
     }
