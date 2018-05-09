@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.logging.LogProvider;
@@ -39,8 +39,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.kernel.api.schema.index.StoreIndexDescriptor.indexRule;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.StoreIndexDescriptor.indexRule;
 
 public class OnlineIndexSamplingJobTest
 {

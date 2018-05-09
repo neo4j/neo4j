@@ -25,6 +25,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+
 import static org.mockito.Mockito.verify;
 
 @RunWith( MockitoJUnitRunner.class )

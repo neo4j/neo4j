@@ -24,7 +24,6 @@ import java.util.Optional;
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
