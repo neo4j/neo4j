@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -63,8 +61,6 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -76,7 +72,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
@@ -104,7 +99,6 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TransactionalDependencies;
@@ -294,12 +288,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
         return getIndexProxy( descriptor ).getState();
     }
 
-    @Override
-    public IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return getIndexProxy( descriptor ).getProviderDescriptor();
-    }
-
     public CapableIndexReference indexReference( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         boolean unique = descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
@@ -323,18 +311,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     {
         Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( descriptor );
         return result.readSecond();
-    }
-
-    @Override
-    public double indexUniqueValuesPercentage( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return indexService.indexUniqueValuesPercentage( descriptor );
-    }
-
-    @Override
-    public String indexGetFailure( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return indexService.getIndexProxy( descriptor ).getPopulationFailure().asString();
     }
 
     @Override
@@ -396,24 +372,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
         {
             throw new PropertyKeyIdNotFoundKernelException( propertyKeyId, e );
         }
-    }
-
-    @Override
-    public IntIterator graphGetPropertyKeys()
-    {
-        return new PropertyKeyIdIterator( propertyLoader.graphLoadProperties( new IteratingPropertyReceiver<>() ) );
-    }
-
-    @Override
-    public Object graphGetProperty( int propertyKeyId )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Iterator<StorageProperty> graphGetAllProperties()
-    {
-        return propertyLoader.graphLoadProperties( new IteratingPropertyReceiver<>() );
     }
 
     @Override
@@ -687,12 +645,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     public long reserveRelationship()
     {
         return commandCreationContext.nextId( StoreType.RELATIONSHIP );
-    }
-
-    @Override
-    public long getGraphPropertyReference()
-    {
-        return neoStores.getMetaDataStore().getGraphNextProp();
     }
 
     @Override
