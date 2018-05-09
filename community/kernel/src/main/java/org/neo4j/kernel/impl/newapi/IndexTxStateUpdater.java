@@ -28,7 +28,7 @@ import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.kernel.impl.api.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.values.storable.Value;
