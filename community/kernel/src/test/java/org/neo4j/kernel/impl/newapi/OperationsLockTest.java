@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
@@ -456,9 +456,7 @@ public class OperationsLockTest
         DefaultCapableIndexReference index =
                 new DefaultCapableIndexReference( false, IndexCapability.NO_CAPABILITY, new IndexProvider.Descriptor( "a", "b" ), 0, 0 );
         when( schemaRead.index( 0, 0 ) ).thenReturn( index );
-        SchemaIndexDescriptor indexDescriptor = toDescriptor( index );
-        when( storageReader.indexGetForSchema( indexDescriptor.schema() ) ).thenReturn( indexDescriptor );
-        when( storageReader.indexReference( indexDescriptor ) ).thenReturn( index );
+        when( storageReader.index( 0, 0 ) ).thenReturn( index );
 
         // when
         writeOperations.indexDrop( index );
@@ -474,6 +472,7 @@ public class OperationsLockTest
         // given
         when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor ) ).thenReturn( 42L );
         when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.index( descriptor.getLabelId(), descriptor.getPropertyIds() ) ).thenReturn( CapableIndexReference.NO_INDEX );
 
         // when
         writeOperations.uniquePropertyConstraintCreate( descriptor );
