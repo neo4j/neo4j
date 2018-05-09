@@ -39,8 +39,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.schema.index.StoreIndexDescriptor.indexRule;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
 public class OnlineIndexSamplingJobTest
 {
@@ -78,7 +78,7 @@ public class OnlineIndexSamplingJobTest
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
     private final CapableIndexDescriptor indexDescriptor =
-            indexRule( indexId, forLabel( 1, 2 ), IndexProvider.UNDECIDED ).withoutCapabilities();
+            forSchema( forLabel( 1, 2 ), IndexProvider.UNDECIDED ).withId( indexId ).withoutCapabilities();
     private final IndexReader indexReader = mock( IndexReader.class );
     private final IndexSampler indexSampler = mock( IndexSampler.class );
 

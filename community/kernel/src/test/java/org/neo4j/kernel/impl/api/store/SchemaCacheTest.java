@@ -340,8 +340,7 @@ public class SchemaCacheTest
 
     private StoreIndexDescriptor newIndexRule( long id, int label, int propertyKey )
     {
-        return StoreIndexDescriptor
-                .indexRule( id, TestIndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
+        return TestIndexDescriptorFactory.forLabel( label, propertyKey ).withId( id );
     }
 
     private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )

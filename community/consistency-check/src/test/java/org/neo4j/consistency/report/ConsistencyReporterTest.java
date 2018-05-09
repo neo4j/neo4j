@@ -55,7 +55,7 @@ import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
@@ -84,6 +84,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
 @RunWith( Suite.class )
@@ -389,8 +390,7 @@ public class ConsistencyReporterTest
             }
             if ( type == StoreIndexDescriptor.class )
             {
-                return StoreIndexDescriptor.indexRule( 1, TestIndexDescriptorFactory.forLabel( 2, 3 ),
-                                                       new IndexProvider.Descriptor( "provider", "version" ) );
+                return IndexDescriptorFactory.forSchema( forLabel( 2, 3 ), IndexProvider.UNDECIDED ).withId( 1 );
             }
             if ( type == SchemaRule.class )
             {

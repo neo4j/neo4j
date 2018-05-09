@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
@@ -43,8 +42,9 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.schema.index.StoreIndexDescriptor.indexRule;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
 
@@ -369,9 +369,9 @@ public class IndexSamplingControllerTest
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
     private final CapableIndexDescriptor descriptor =
-            indexRule( indexId, forLabel( 3, 4 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR ).withoutCapabilities();
+            forSchema( forLabel( 3, 4 ), PROVIDER_DESCRIPTOR ).withId( indexId ).withoutCapabilities();
     private final CapableIndexDescriptor anotherDescriptor =
-            indexRule( anotherIndexId, forLabel( 5, 6 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR ).withoutCapabilities();
+            forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withId( anotherIndexId ).withoutCapabilities();
     private final IndexSamplingJob job = mock( IndexSamplingJob.class );
     private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
 

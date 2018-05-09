@@ -39,7 +39,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
@@ -51,6 +50,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
 public abstract class IndexPopulationStressTest
 {
@@ -59,8 +60,7 @@ public abstract class IndexPopulationStressTest
     public PageCacheAndDependenciesRule rules =
             new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, this.getClass() );
 
-    protected final StoreIndexDescriptor
-            descriptor = StoreIndexDescriptor.indexRule( 0, TestIndexDescriptorFactory.forLabel( 0, 0 ), PROVIDER );
+    protected final StoreIndexDescriptor descriptor = forSchema( forLabel( 0, 0 ), PROVIDER ).withId( 0 );
 
     private IndexPopulator populator;
 

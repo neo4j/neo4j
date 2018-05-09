@@ -28,8 +28,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.uniqueForLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class IndexRuleTest extends SchemaRuleTestBase
@@ -39,7 +38,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         IndexDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_ID_1 );
-        StoreIndexDescriptor indexRule = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
+        StoreIndexDescriptor indexRule = descriptor.withId( RULE_ID );
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
@@ -56,7 +55,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        StoreIndexDescriptor indexRule = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
+        StoreIndexDescriptor indexRule = descriptor.withId( RULE_ID );
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
@@ -84,16 +83,18 @@ public class IndexRuleTest extends SchemaRuleTestBase
     public void detectUniqueIndexWithoutOwningConstraint()
     {
         IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        StoreIndexDescriptor indexRule = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
+        StoreIndexDescriptor indexRule = descriptor.withId( RULE_ID );
 
         assertTrue( indexRule.isIndexWithoutOwningConstraint() );
     }
 
     private void assertEqualityByDescriptor( IndexDescriptor descriptor )
     {
-        StoreIndexDescriptor rule1 = StoreIndexDescriptor.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
-        StoreIndexDescriptor rule2 = StoreIndexDescriptor.indexRule( RULE_ID_2, descriptor, PROVIDER_DESCRIPTOR_2 );
+        StoreIndexDescriptor rule1 = descriptor.withId( RULE_ID );
+        StoreIndexDescriptor rule2 = descriptor.withId( RULE_ID_2 );
+        StoreIndexDescriptor rule3 = forSchema( descriptor.schema(), PROVIDER_DESCRIPTOR_2 ).withId( RULE_ID );
 
         assertEquality( rule1, rule2 );
+        assertEquality( rule1, rule3 );
     }
 }

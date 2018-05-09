@@ -134,7 +134,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
@@ -227,7 +228,7 @@ public class FullCheckIntegrationTest
                     key1 = tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
                     key2 = tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
                     label3 = ktx.tokenRead().nodeLabel( "label3" );
-                    ktx.schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( label3, key1, key2 ) );
+                    ktx.schemaWrite().indexCreate( forLabel( label3, key1, key2 ) );
                 }
 
                 db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
@@ -2250,11 +2251,10 @@ public class FullCheckIntegrationTest
                 DynamicRecord recordBefore = new DynamicRecord( id );
                 DynamicRecord recordAfter = recordBefore.clone();
 
-                StoreIndexDescriptor
-                        rule = StoreIndexDescriptor.indexRule( id, forLabel( labelId, propertyKeyIds ), DESCRIPTOR );
-                Collection<DynamicRecord> records = serializeRule( rule, recordAfter );
+                StoreIndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withId( id );
+                Collection<DynamicRecord> records = serializeRule( index, recordAfter );
 
-                tx.createSchema( singleton( recordBefore ), records, rule );
+                tx.createSchema( singleton( recordBefore ), records, index );
             }
         } );
     }

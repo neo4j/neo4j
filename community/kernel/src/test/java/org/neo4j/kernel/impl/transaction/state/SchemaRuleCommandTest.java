@@ -92,9 +92,7 @@ public class SchemaRuleCommandTest
             labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
             new PropertyPhysicalToLogicalConverter( propertyStore ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
-    private final StoreIndexDescriptor
-            rule = StoreIndexDescriptor.indexRule( id, TestIndexDescriptorFactory.forLabel( labelId, propertyKey ),
-                                                   PROVIDER_DESCRIPTOR );
+    private final StoreIndexDescriptor rule = TestIndexDescriptorFactory.forLabel( labelId, propertyKey ).withId( id );
 
     @Test
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception

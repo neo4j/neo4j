@@ -40,8 +40,6 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-
 abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
 {
     private static final Comparator<IndexEntryUpdate<IndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
@@ -51,7 +49,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
 
     LayoutTestUtil( IndexDescriptor indexDescriptor )
     {
-        this.indexDescriptor = StoreIndexDescriptor.indexRule( 0, indexDescriptor, PROVIDER_DESCRIPTOR );
+        this.indexDescriptor = indexDescriptor.withId( 0 );
     }
 
     abstract Layout<KEY,VALUE> createLayout();

@@ -117,8 +117,7 @@ public class MultipleIndexPopulatorUpdatesTest
     private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
             IndexPopulator indexPopulator, long indexId, IndexDescriptor descriptor )
     {
-        return addPopulator( multipleIndexPopulator, StoreIndexDescriptor
-                                     .indexRule( indexId, descriptor, PROVIDER_DESCRIPTOR ), indexPopulator,
+        return addPopulator( multipleIndexPopulator, descriptor.withId( indexId ), indexPopulator,
                              mock( FlippableIndexProxy.class ), mock( FailedIndexProxyFactory.class ) );
     }
 
