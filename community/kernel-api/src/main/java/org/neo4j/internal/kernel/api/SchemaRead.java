@@ -149,6 +149,7 @@ public interface SchemaRead
      */
     Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
             throws IndexNotFoundKernelException;
+
     /**
      * Finds all constraints for the given schema
      *

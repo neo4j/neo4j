@@ -62,6 +62,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -246,19 +247,13 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     }
 
     @Override
-    public SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
-    {
-        return schemaCache.indexDescriptor( descriptor );
-    }
-
-    @Override
     public Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
     {
         return schemaCache.indexesByProperty( propertyId );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( SchemaIndexDescriptor index )
+    public Long indexGetOwningUniquenessConstraintId( IndexReference index )
     {
         IndexRule rule = indexRule( index );
         if ( rule != null )
@@ -271,32 +266,9 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     }
 
     @Override
-    public long indexGetCommittedId( SchemaIndexDescriptor index )
-            throws SchemaRuleNotFoundException
-    {
-        IndexRule rule = indexRule( index );
-        if ( rule == null )
-        {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
-        }
-        return rule.getId();
-    }
-
-    @Override
     public InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return getIndexProxy( descriptor ).getState();
-    }
-
-    public CapableIndexReference indexReference( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        boolean unique = descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
-        SchemaDescriptor schema = descriptor.schema();
-        IndexProxy indexProxy = indexService.getIndexProxy( schema );
-
-        return new DefaultCapableIndexReference( unique, indexProxy.getIndexCapability(),
-                indexProxy.getProviderDescriptor(), schema.keyId(),
-                schema.getPropertyIds() );
     }
 
     @Override
@@ -335,12 +307,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
         return schemaCache.constraintsForRelationshipType( typeId );
-    }
-
-    @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexReference index )
-    {
-        return indexGetOwningUniquenessConstraintId( toDescriptor( index ) );
     }
 
     @Override
@@ -543,17 +509,18 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
         return relationshipStore.isInUse( id );
     }
 
-    private IndexRule indexRule( SchemaIndexDescriptor index )
+    private IndexRule indexRule( IndexReference index )
     {
+        SchemaIndexDescriptor descriptor = toDescriptor( index );
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            if ( rule.getIndexDescriptor().equals( index ) )
+            if ( rule.getIndexDescriptor().equals( descriptor ) )
             {
                 return rule;
             }
         }
 
-        return schemaStorage.indexGetForSchema( index );
+        return schemaStorage.indexGetForSchema( descriptor );
     }
 
     @Override
@@ -1100,7 +1067,22 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     @Override
     public CapableIndexReference index( int label, int... properties )
     {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( label, properties );
+        boolean unique = descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
+        SchemaDescriptor schema = descriptor.schema();
+        IndexProxy indexProxy = null;
+        try
+        {
+            indexProxy = indexService.getIndexProxy( schema );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            return CapableIndexReference.NO_INDEX;
+        }
+
+        return new DefaultCapableIndexReference( unique, indexProxy.getIndexCapability(),
+                indexProxy.getProviderDescriptor(), schema.keyId(),
+                schema.getPropertyIds() );
     }
 
     @Override
@@ -1141,10 +1123,10 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     @Override
     public long indexGetCommittedId( IndexReference index ) throws SchemaRuleNotFoundException
     {
-        SchemaIndexDescriptor descriptor = toDescriptor( index );
-        IndexRule rule = indexRule( descriptor );
+        IndexRule rule = indexRule( index );
         if ( rule == null )
         {
+            SchemaIndexDescriptor descriptor = toDescriptor( index );
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, descriptor.schema() );
         }
         return rule.getId();

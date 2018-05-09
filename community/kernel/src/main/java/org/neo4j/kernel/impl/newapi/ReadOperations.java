@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -62,7 +63,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -562,20 +562,16 @@ public class ReadOperations implements TxStateHolder,
             // This means we have invalid label or property ids.
             return CapableIndexReference.NO_INDEX;
         }
-        SchemaIndexDescriptor indexDescriptor = storageReader.indexGetForSchema( descriptor );
+        CapableIndexReference index = storageReader.index( label, properties );
         if ( ktx.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<SchemaIndexDescriptor> diffSets =
-                    ktx.txState().indexDiffSetsByLabel( label );
-            if ( indexDescriptor != null )
+            SchemaIndexDescriptor indexDescriptor = DefaultIndexReference.toDescriptor( index );
+            ReadableDiffSets<SchemaIndexDescriptor> diffSets = ktx.txState().indexDiffSetsByLabel( label );
+            if ( index != CapableIndexReference.NO_INDEX )
             {
                 if ( diffSets.isRemoved( indexDescriptor ) )
                 {
                     return CapableIndexReference.NO_INDEX;
-                }
-                else
-                {
-                    return indexGetCapability( indexDescriptor );
                 }
             }
             else
@@ -587,26 +583,10 @@ public class ReadOperations implements TxStateHolder,
                 {
                     return DefaultCapableIndexReference.fromDescriptor( fromTxState.next() );
                 }
-                else
-                {
-                    return CapableIndexReference.NO_INDEX;
-                }
             }
         }
 
-        return indexDescriptor != null ? indexGetCapability( indexDescriptor ) : CapableIndexReference.NO_INDEX;
-    }
-
-    private CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )
-    {
-        try
-        {
-            return storageReader.indexReference( schemaIndexDescriptor );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new IllegalStateException( "Could not find capability for index " + schemaIndexDescriptor, e );
-        }
+        return index;
     }
 
     private boolean checkIndexState( SchemaIndexDescriptor index, ReadableDiffSets<SchemaIndexDescriptor> diffSet )
@@ -721,15 +701,15 @@ public class ReadOperations implements TxStateHolder,
     {
         acquireSharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
-        return storageReader.indexGetOwningUniquenessConstraintId( toDescriptor( index ) );
+        return storageReader.indexGetOwningUniquenessConstraintId( index );
     }
 
     @Override
-    public long indexGetCommittedId( IndexReference index ) throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( IndexReference index ) throws SchemaKernelException
     {
         acquireSharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
-        return storageReader.indexGetCommittedId( toDescriptor( index ) );
+        return storageReader.indexGetCommittedId( index );
     }
 
     @Override

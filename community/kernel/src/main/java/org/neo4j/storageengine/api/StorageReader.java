@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.function.Function;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -39,11 +38,8 @@ import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -110,59 +106,11 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
     Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId );
 
     /**
-     * @param index {@link SchemaIndexDescriptor} to get related uniqueness constraint for.
-     * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
-     * if the given index isn't related to a uniqueness constraint.
-     */
-    Long indexGetOwningUniquenessConstraintId( SchemaIndexDescriptor index );
-
-    /**
-     * @param index {@link SchemaIndexDescriptor} to get schema rule id for.
-     * @return schema rule id for matching index.
-     * @throws SchemaRuleNotFoundException if no such index exists in storage.
-     */
-    long indexGetCommittedId( SchemaIndexDescriptor index )
-            throws SchemaRuleNotFoundException;
-
-    /**
-     * @param descriptor describing the label and property key (or keys) defining the requested constraint.
-     * @return node property constraints associated with the label and one or more property keys token ids.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor );
-
-    boolean constraintExists( ConstraintDescriptor descriptor );
-
-    /**
-     * @param labelId label token id.
-     * @return node property constraints associated with the label token id.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
-
-    /**
-     * @param typeId relationship type token id .
-     * @return relationship property constraints associated with the relationship type token id.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
-
-    /**
-     * @return all stored property constraints.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetAll();
-
-    /**
      *
      * @param labelId The label id of interest.
      * @return {@link PrimitiveLongResourceIterator} over node ids associated with given label id.
      */
     PrimitiveLongResourceIterator nodesGetForLabel( int labelId );
-
-    /**
-     * Looks for a stored index by given {@code descriptor}
-     *
-     * @param descriptor a description of the index.
-     * @return {@link SchemaIndexDescriptor} for matching index, or {@code null} if not found.
-     */
-    SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
 
     /**
      * Returns state of a stored index.
@@ -172,15 +120,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      * @throws IndexNotFoundKernelException if index not found.
      */
     InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
-     * Return index reference of a stored index.
-     *
-     * @param descriptor {@link SchemaIndexDescriptor} to get provider reference for.
-     * @return {@link IndexProvider.Descriptor} for index.
-     * @throws IndexNotFoundKernelException if index not found.
-     */
-    CapableIndexReference indexReference( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param descriptor {@link SchemaDescriptor} to get population progress for.
