@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 class StringUniqueLayoutTestUtil extends StringLayoutTestUtil
 {
     StringUniqueLayoutTestUtil()
     {
-        super( IndexDescriptorFactory.uniqueForLabel( 42, 666 ) );
+        super( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) );
     }
 
     @Override

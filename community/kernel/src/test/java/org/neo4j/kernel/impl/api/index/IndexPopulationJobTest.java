@@ -54,8 +54,8 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -632,8 +632,8 @@ public class IndexPopulationJobTest
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
             IndexDescriptor descriptor = constraint ?
-                                         IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
-                                         IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+                                         TestIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
+                                         TestIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
             tx.success();
             return descriptor;
         }

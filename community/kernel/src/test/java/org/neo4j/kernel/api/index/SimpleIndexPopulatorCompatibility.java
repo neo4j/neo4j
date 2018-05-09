@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -242,7 +242,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100 ) );
+            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100 ) );
         }
 
         @Test
@@ -278,7 +278,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
+            super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
         }
 
         /**

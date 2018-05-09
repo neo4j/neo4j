@@ -33,7 +33,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -56,7 +57,6 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -933,7 +933,7 @@ public class NeoStoreTransactionApplierTest
                                                   IndexProvider.Descriptor providerDescriptor )
     {
         //TODO: Consider testing composite indexes
-        return StoreIndexDescriptor.indexRule( id, IndexDescriptorFactory.forLabel( label, propertyKeyId ),
+        return StoreIndexDescriptor.indexRule( id, TestIndexDescriptorFactory.forLabel( label, propertyKeyId ),
                                                providerDescriptor );
     }
 
@@ -942,7 +942,7 @@ public class NeoStoreTransactionApplierTest
     {
         //TODO: Consider testing composite indexes
         return StoreIndexDescriptor
-                .constraintIndexRule( id, IndexDescriptorFactory.uniqueForLabel( label, propertyKeyId ),
+                .constraintIndexRule( id, TestIndexDescriptorFactory.uniqueForLabel( label, propertyKeyId ),
                                       providerDescriptor, owningConstraint );
     }
 

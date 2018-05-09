@@ -151,7 +151,7 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         return providerDescriptor.getVersion();
     }
 
-    public Optional<String> name()
+    Optional<String> name()
     {
         return name;
     }
@@ -203,5 +203,16 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     public String toString()
     {
         return userDescription( SchemaUtil.idTokenNameLookup );
+    }
+
+    public StoreIndexDescriptor withId( long id )
+    {
+        return new StoreIndexDescriptor( this, id );
+    }
+
+    public StoreIndexDescriptor withIds( long id, long owningConstraintId )
+    {
+        assert owningConstraintId >= 0;
+        return new StoreIndexDescriptor( this, id, owningConstraintId );
     }
 }

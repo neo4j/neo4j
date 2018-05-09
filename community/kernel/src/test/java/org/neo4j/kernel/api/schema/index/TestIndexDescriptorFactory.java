@@ -17,15 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
+package org.neo4j.kernel.api.schema.index;
 
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
-public class SpatialUniqueSchemaIndexAccessorTest extends SpatialSchemaIndexAccessorTest
+public class TestIndexDescriptorFactory
 {
-    @Override
-    protected LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    private TestIndexDescriptorFactory()
     {
-        return new UniqueLayoutTestUtil<>( new SpatialLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ), settings, crs ) );
+    }
+
+    public static IndexDescriptor forLabel( int labelId, int... propertyIds )
+    {
+        return IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
+    }
+
+    public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
+    {
+        return IndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 }

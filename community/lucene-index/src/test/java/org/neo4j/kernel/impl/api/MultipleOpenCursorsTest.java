@@ -49,7 +49,7 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -434,7 +434,7 @@ public class MultipleOpenCursorsTest
         @Override
         protected IndexDescriptor extractIndexDescriptor()
         {
-            return IndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
+            return TestIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
         }
 
         @Override
@@ -499,7 +499,7 @@ public class MultipleOpenCursorsTest
         @Override
         protected IndexDescriptor extractIndexDescriptor()
         {
-            return IndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
+            return TestIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
         }
 
         @Override
@@ -563,7 +563,7 @@ public class MultipleOpenCursorsTest
         @Override
         protected IndexDescriptor extractIndexDescriptor()
         {
-            return IndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
+            return TestIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
         }
 
         @Override
@@ -634,7 +634,7 @@ public class MultipleOpenCursorsTest
         @Override
         protected IndexDescriptor extractIndexDescriptor()
         {
-            return IndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
+            return TestIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
         }
 
         @Override

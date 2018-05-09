@@ -36,8 +36,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -70,8 +70,8 @@ public class BatchingMultipleIndexPopulatorTest
 {
     public static final int propertyId = 1;
     public static final int labelId = 1;
-    private final IndexDescriptor index1 = IndexDescriptorFactory.forLabel( 1, 1);
-    private final IndexDescriptor index42 = IndexDescriptorFactory.forLabel( 42, 42);
+    private final IndexDescriptor index1 = TestIndexDescriptorFactory.forLabel( 1, 1);
+    private final IndexDescriptor index42 = TestIndexDescriptorFactory.forLabel( 42, 42);
 
     @After
     public void tearDown()

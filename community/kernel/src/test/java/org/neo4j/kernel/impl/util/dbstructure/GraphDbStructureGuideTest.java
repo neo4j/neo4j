@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -153,7 +153,7 @@ public class GraphDbStructureGuideTest
         commitAndReOpen();
 
         ConstraintDescriptor constraint = createUniqueConstraint( labelId, pkId );
-        IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForLabel( labelId, pkId );
+        IndexDescriptor descriptor = TestIndexDescriptorFactory.uniqueForLabel( labelId, pkId );
 
         // WHEN
         accept( visitor );

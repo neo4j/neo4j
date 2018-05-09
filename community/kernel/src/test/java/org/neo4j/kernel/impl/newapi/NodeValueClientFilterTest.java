@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
@@ -137,7 +137,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
                 this, cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), store, filters );
-        filter.initialize( IndexDescriptorFactory.forLabel( 11), this, null );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( 11), this, null );
         return filter;
     }
 

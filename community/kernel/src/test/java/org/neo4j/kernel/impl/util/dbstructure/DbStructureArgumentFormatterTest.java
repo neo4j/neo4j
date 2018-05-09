@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -65,7 +65,7 @@ public class DbStructureArgumentFormatterTest
     public void shouldFormatIndexDescriptors()
     {
         assertEquals( "SchemaIndexDescriptorFactory.forLabel( 23, 42 )",
-                formatArgument( IndexDescriptorFactory.forLabel( 23, 42 ) ) );
+                formatArgument( TestIndexDescriptorFactory.forLabel( 23, 42 ) ) );
     }
 
     @Test

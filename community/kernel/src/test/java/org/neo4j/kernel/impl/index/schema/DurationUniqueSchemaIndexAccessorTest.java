@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -40,7 +40,7 @@ public class DurationUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAcce
     protected LayoutTestUtil<DurationSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
         return new UniqueLayoutTestUtil<>(
-                new DurationLayoutTestUtil( IndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+                new DurationLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
     }
 
 }

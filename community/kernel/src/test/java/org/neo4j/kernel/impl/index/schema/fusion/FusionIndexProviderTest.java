@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
@@ -235,7 +235,7 @@ public class FusionIndexProviderTest
         // given
         IndexProvider provider = fusionIndexProvider;
         StoreIndexDescriptor indexDescriptor = StoreIndexDescriptor
-                .indexRule( 0, IndexDescriptorFactory.forLabel( 1, 1 ), PROVIDER_DESCRIPTOR );
+                .indexRule( 0, TestIndexDescriptorFactory.forLabel( 1, 1 ), PROVIDER_DESCRIPTOR );
 
         for ( InternalIndexState state : InternalIndexState.values() )
         {
@@ -259,7 +259,7 @@ public class FusionIndexProviderTest
     {
         // given
         StoreIndexDescriptor indexDescriptor = StoreIndexDescriptor
-                .indexRule( 0, IndexDescriptorFactory.forLabel( 1, 1 ), PROVIDER_DESCRIPTOR );
+                .indexRule( 0, TestIndexDescriptorFactory.forLabel( 1, 1 ), PROVIDER_DESCRIPTOR );
 
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
         {

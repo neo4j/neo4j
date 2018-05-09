@@ -44,8 +44,8 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -81,8 +81,8 @@ public class ConstraintIndexCreatorTest
     private static final long INDEX_ID = 2468L;
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
-    private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
-    private final IndexReference indexReference = StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID ),
+    private final IndexDescriptor index = TestIndexDescriptorFactory.uniqueForLabel( 123, 456 );
+    private final IndexReference indexReference = StoreIndexDescriptor.indexRule( 0, TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID ),
             new IndexProvider.Descriptor( "foo", "1.872" ) );
     private final SchemaRead schemaRead = schemaRead();
     private final TokenRead tokenRead = mock( TokenRead.class );
@@ -152,7 +152,7 @@ public class ConstraintIndexCreatorTest
         }
         assertEquals( 2, kernel.transactions.size() );
         TransactionState tx1 = kernel.transactions.get( 0 ).txState();
-        IndexDescriptor newIndex = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
+        IndexDescriptor newIndex = TestIndexDescriptorFactory.uniqueForLabel( 123, 456 );
         verify( tx1 ).indexRuleDoAdd( newIndex );
         verifyNoMoreInteractions( tx1 );
         verify( schemaRead ).indexGetCommittedId( indexReference );

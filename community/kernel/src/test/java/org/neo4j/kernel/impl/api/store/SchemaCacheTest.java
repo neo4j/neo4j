@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -341,7 +341,7 @@ public class SchemaCacheTest
     private StoreIndexDescriptor newIndexRule( long id, int label, int propertyKey )
     {
         return StoreIndexDescriptor
-                .indexRule( id, IndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
+                .indexRule( id, TestIndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
     }
 
     private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )

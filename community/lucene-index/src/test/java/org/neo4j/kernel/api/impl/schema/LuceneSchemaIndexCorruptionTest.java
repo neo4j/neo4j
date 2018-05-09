@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.AssertableLogProvider;
@@ -77,7 +77,7 @@ public class LuceneSchemaIndexCorruptionTest
 
         // When
         StoreIndexDescriptor descriptor = StoreIndexDescriptor
-                .indexRule( faultyIndexId, IndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
+                .indexRule( faultyIndexId, TestIndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
@@ -96,7 +96,7 @@ public class LuceneSchemaIndexCorruptionTest
 
         // When
         StoreIndexDescriptor descriptor = StoreIndexDescriptor
-                .indexRule( faultyIndexId, IndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
+                .indexRule( faultyIndexId, TestIndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
@@ -115,7 +115,7 @@ public class LuceneSchemaIndexCorruptionTest
 
         // When
         StoreIndexDescriptor descriptor = StoreIndexDescriptor
-                .indexRule( faultyIndexId, IndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
+                .indexRule( faultyIndexId, TestIndexDescriptorFactory.forLabel( 1, 1 ), provider.getProviderDescriptor() );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then

@@ -40,8 +40,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -503,7 +503,7 @@ public class MultipleIndexPopulatorTest
             int id, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return addPopulator( multipleIndexPopulator, StoreIndexDescriptor
-                                     .indexRule( id, IndexDescriptorFactory.forLabel( id, id ), PROVIDER_DESCRIPTOR ),
+                                     .indexRule( id, TestIndexDescriptorFactory.forLabel( id, id ), PROVIDER_DESCRIPTOR ),
                              indexPopulator, flippableIndexProxy, failedIndexProxyFactory );
     }
 

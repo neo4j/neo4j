@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.api.schema.index;
 
-
 import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
@@ -35,19 +33,9 @@ public class IndexDescriptorFactory
     {
     }
 
-    public static IndexDescriptor forLabel( int labelId, int... propertyIds )
-    {
-        return forSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
-    }
-
-    public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
-    {
-        return uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
-    }
-
     public static IndexDescriptor forSchema( SchemaDescriptor schema )
     {
-        return new IndexDescriptor( schema, GENERAL, null, null );
+        return new IndexDescriptor( schema, GENERAL, Optional.empty(), IndexProvider.UNDECIDED );
     }
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema,
@@ -59,6 +47,6 @@ public class IndexDescriptorFactory
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        return new IndexDescriptor( schema, UNIQUE, null, null );
+        return new IndexDescriptor( schema, UNIQUE, Optional.empty(), IndexProvider.UNDECIDED );
     }
 }

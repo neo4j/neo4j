@@ -55,8 +55,8 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -415,7 +415,7 @@ public class BuiltInProceduresTest
         int propId = token( propKey, propKeys );
 
         IndexReference index =
-                StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+                StoreIndexDescriptor.indexRule( 0, TestIndexDescriptorFactory.forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         indexes.add( index );
     }
 
@@ -425,7 +425,7 @@ public class BuiltInProceduresTest
         int propId = token( propKey, propKeys );
 
         IndexReference index =
-                StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.uniqueForLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+                StoreIndexDescriptor.indexRule( 0, TestIndexDescriptorFactory.uniqueForLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }

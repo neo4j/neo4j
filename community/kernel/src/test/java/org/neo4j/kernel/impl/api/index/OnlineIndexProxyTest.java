@@ -27,8 +27,8 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class OnlineIndexProxyTest
 {
     private final long indexId = 1;
-    private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 2 );
+    private final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( 1, 2 );
     private final IndexProvider.Descriptor providerDescriptor = mock( IndexProvider.Descriptor.class );
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );

@@ -48,8 +48,8 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
@@ -448,7 +448,7 @@ public class OperationsLockTest
     public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        CapableIndexDescriptor index = StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 0, 0 ),
+        CapableIndexDescriptor index = StoreIndexDescriptor.indexRule( 0, TestIndexDescriptorFactory.forLabel( 0, 0 ),
                                                                        IndexProvider.UNDECIDED ).withoutCapabilities();
         when( storeReadLayer.indexGetForSchema( any() )).thenReturn( index );
 
