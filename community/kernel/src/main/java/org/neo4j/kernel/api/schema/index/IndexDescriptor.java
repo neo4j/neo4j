@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.api.schema.index;
 
-import java.util.Iterator;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
@@ -36,8 +33,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.ValueCategory;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.UNIQUE;
 
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
@@ -199,20 +194,5 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, CapableIndexRe
     public String toString()
     {
         return userDescription( SchemaUtil.idTokenNameLookup );
-    }
-
-    /**
-     * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
-     * hot path.
-     *
-     * @param indexes Indexes to sort
-     * @return sorted indexes
-     */
-    public static Iterator<IndexDescriptor> sortByType( Iterator<IndexDescriptor> indexes )
-    {
-        List<IndexDescriptor> materialized = Iterators.asList( indexes );
-        return Iterators.concat(
-                Iterators.filter( GENERAL, materialized.iterator() ),
-                Iterators.filter( UNIQUE, materialized.iterator() ) );
     }
 }
