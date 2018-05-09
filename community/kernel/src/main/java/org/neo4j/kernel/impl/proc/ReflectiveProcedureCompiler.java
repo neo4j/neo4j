@@ -705,29 +705,23 @@ class ReflectiveProcedureCompiler
 
         private ProcedureException newProcedureException( Throwable throwable )
         {
-            Throwable cause = rootCause( throwable );
-            if ( cause instanceof Status.HasStatus )
+            if ( throwable instanceof Status.HasStatus )
             {
-                return new ProcedureException( ((Status.HasStatus) cause).status(), cause,
-                        cause.getMessage() );
+                return new ProcedureException( ((Status.HasStatus) throwable).status(), throwable, throwable.getMessage() );
             }
             else
             {
-                return new ProcedureException( Status.Procedure.ProcedureCallFailed, cause,
+                Throwable cause = ExceptionUtils.getRootCause( throwable );
+                return new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                         "Failed to invoke procedure `%s`: %s", signature.name(),
-                        "Caused by: " + cause );
+                        "Caused by: " + (cause != null ? cause : throwable) );
             }
         }
     }
 
-    private static Throwable rootCause( Throwable throwable )
-    {
-        Throwable rootCause = ExceptionUtils.getRootCause( throwable );
-        return rootCause != null ? rootCause : throwable;
-    }
-
     private static class ReflectiveUserFunction extends ReflectiveBase implements CallableUserFunction
     {
+
         private final TypeMappers.NeoValueConverter valueConverter;
         private final UserFunctionSignature signature;
         private final MethodHandle constructor;
@@ -785,17 +779,17 @@ class ReflectiveProcedureCompiler
             }
             catch ( Throwable throwable )
             {
-                Throwable cause = rootCause( throwable );
-                if ( cause instanceof Status.HasStatus )
+                if ( throwable instanceof Status.HasStatus )
                 {
-                    throw new ProcedureException( ((Status.HasStatus) cause).status(), cause,
-                            cause.getMessage(), cause );
+                    throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                            throwable.getMessage(), throwable );
                 }
                 else
                 {
+                    Throwable cause = ExceptionUtils.getRootCause( throwable );
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                             "Failed to invoke function `%s`: %s", signature.name(),
-                            "Caused by: " + cause );
+                            "Caused by: " + (cause != null ? cause : throwable) );
                 }
             }
         }
@@ -875,17 +869,17 @@ class ReflectiveProcedureCompiler
                         }
                         catch ( Throwable throwable )
                         {
-                            Throwable cause = rootCause( throwable );
-                            if ( cause instanceof Status.HasStatus )
+                            if ( throwable instanceof Status.HasStatus )
                             {
-                                throw new ProcedureException( ((Status.HasStatus) cause).status(), cause,
-                                        cause.getMessage() );
+                                throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                                        throwable.getMessage() );
                             }
                             else
                             {
+                                Throwable cause = ExceptionUtils.getRootCause( throwable );
                                 throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                                         "Failed to invoke function `%s`: %s", signature.name(),
-                                        "Caused by: " + cause );
+                                        "Caused by: " + (cause != null ? cause : throwable) );
                             }
                         }
                     }
@@ -899,17 +893,17 @@ class ReflectiveProcedureCompiler
                         }
                         catch ( Throwable throwable )
                         {
-                            Throwable cause = rootCause( throwable );
-                            if ( cause instanceof Status.HasStatus )
+                            if ( throwable instanceof Status.HasStatus )
                             {
-                                throw new ProcedureException( ((Status.HasStatus) cause).status(), cause,
-                                        cause.getMessage() );
+                                throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                                        throwable.getMessage() );
                             }
                             else
                             {
+                                Throwable cause = ExceptionUtils.getRootCause( throwable );
                                 throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                                         "Failed to invoke function `%s`: %s", signature.name(),
-                                        "Caused by: " + cause );
+                                        "Caused by: " + (cause != null ? cause : throwable) );
                             }
                         }
 
@@ -920,17 +914,17 @@ class ReflectiveProcedureCompiler
             }
             catch ( Throwable throwable )
             {
-                Throwable cause = rootCause( throwable );
-                if ( cause instanceof Status.HasStatus )
+                if ( throwable instanceof Status.HasStatus )
                 {
-                    throw new ProcedureException( ((Status.HasStatus) cause).status(), cause,
-                            cause.getMessage() );
+                    throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                            throwable.getMessage() );
                 }
                 else
                 {
+                    Throwable cause = ExceptionUtils.getRootCause( throwable );
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                             "Failed to invoke function `%s`: %s", signature.name(),
-                            "Caused by: " + cause );
+                            "Caused by: " + (cause != null ? cause : throwable ) );
                 }
             }
         }
