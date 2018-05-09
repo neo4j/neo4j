@@ -46,7 +46,6 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -262,8 +261,7 @@ public class ConstraintIndexCreator
               Transaction transaction = session.beginTransaction( Transaction.Type.implicit );
               Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
         {
-            IndexDescriptor index = IndexDescriptorFactory.uniqueForSchema( schema );
-            ((KernelTransactionImplementation) transaction).txState().indexRuleDoAdd( index );
+            IndexDescriptor index = ((KernelTransaction)transaction).indexUniqueCreate( schema );
             transaction.success();
             return index;
         }

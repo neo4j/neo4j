@@ -1104,7 +1104,7 @@ public class IndexingServiceTest
     public void shouldForgetDeferredIndexDropDuringRecoveryIfCreatedIndexWithSameRuleId() throws Exception
     {
         // given
-        StoreIndexDescriptor rule = StoreIndexDescriptor.indexRule( 0, index, PROVIDER_DESCRIPTOR );
+        StoreIndexDescriptor rule = index.withId( 0 );
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), rule );
         life.init();
 

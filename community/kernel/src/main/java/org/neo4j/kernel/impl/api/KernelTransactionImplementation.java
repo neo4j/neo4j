@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -392,6 +393,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertTransactionOpen();
         currentStatement.acquire();
         return currentStatement;
+    }
+
+    @Override
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema )
+    {
+        return operations.indexUniqueCreate( schema );
     }
 
     @Override
