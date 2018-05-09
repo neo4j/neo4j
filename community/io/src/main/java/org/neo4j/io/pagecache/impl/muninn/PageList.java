@@ -167,12 +167,12 @@ class PageList
     /**
      * @return The capacity of the page list.
      */
-    public int getPageCount()
+    int getPageCount()
     {
         return pageCount;
     }
 
-    public SwapperSet getSwappers()
+    SwapperSet getSwappers()
     {
         return swappers;
     }
@@ -185,14 +185,14 @@ class PageList
      * @return A {@code pageRef} which is an opaque, internal and direct pointer to the meta-data of the given memory
      * page.
      */
-    public long deref( int pageId )
+    long deref( int pageId )
     {
         //noinspection UnnecessaryLocalVariable
         long id = pageId; // convert to long to avoid int multiplication
         return baseAddress + (id * META_DATA_BYTES_PER_PAGE);
     }
 
-    public int toId( long pageRef )
+    int toId( long pageRef )
     {
         // >> 5 is equivalent to dividing by 32, META_DATA_BYTES_PER_PAGE.
         return (int) ((pageRef - baseAddress) >> 5);
@@ -218,82 +218,82 @@ class PageList
         return pageRef + OFFSET_PAGE_BINDING;
     }
 
-    public long tryOptimisticReadLock( long pageRef )
+    long tryOptimisticReadLock( long pageRef )
     {
         return OffHeapPageLock.tryOptimisticReadLock( offLock( pageRef ) );
     }
 
-    public boolean validateReadLock( long pageRef, long stamp )
+    boolean validateReadLock( long pageRef, long stamp )
     {
         return OffHeapPageLock.validateReadLock( offLock( pageRef ), stamp );
     }
 
-    public boolean isModified( long pageRef )
+    boolean isModified( long pageRef )
     {
         return OffHeapPageLock.isModified( offLock( pageRef ) );
     }
 
-    public boolean isExclusivelyLocked( long pageRef )
+    boolean isExclusivelyLocked( long pageRef )
     {
         return OffHeapPageLock.isExclusivelyLocked( offLock( pageRef ) );
     }
 
-    public boolean tryWriteLock( long pageRef )
+    boolean tryWriteLock( long pageRef )
     {
         return OffHeapPageLock.tryWriteLock( offLock( pageRef ) );
     }
 
-    public void unlockWrite( long pageRef )
+    void unlockWrite( long pageRef )
     {
         OffHeapPageLock.unlockWrite( offLock( pageRef ) );
     }
 
-    public long unlockWriteAndTryTakeFlushLock( long pageRef )
+    long unlockWriteAndTryTakeFlushLock( long pageRef )
     {
         return OffHeapPageLock.unlockWriteAndTryTakeFlushLock( offLock( pageRef ) );
     }
 
-    public boolean tryExclusiveLock( long pageRef )
+    boolean tryExclusiveLock( long pageRef )
     {
         return OffHeapPageLock.tryExclusiveLock( offLock( pageRef ) );
     }
 
-    public long unlockExclusive( long pageRef )
+    long unlockExclusive( long pageRef )
     {
         return OffHeapPageLock.unlockExclusive( offLock( pageRef ) );
     }
 
-    public void unlockExclusiveAndTakeWriteLock( long pageRef )
+    void unlockExclusiveAndTakeWriteLock( long pageRef )
     {
         OffHeapPageLock.unlockExclusiveAndTakeWriteLock( offLock( pageRef ) );
     }
 
-    public long tryFlushLock( long pageRef )
+    long tryFlushLock( long pageRef )
     {
         return OffHeapPageLock.tryFlushLock( offLock( pageRef ) );
     }
 
-    public void unlockFlush( long pageRef, long stamp, boolean success )
+    void unlockFlush( long pageRef, long stamp, boolean success )
     {
         OffHeapPageLock.unlockFlush( offLock( pageRef ), stamp, success );
     }
 
-    public void explicitlyMarkPageUnmodifiedUnderExclusiveLock( long pageRef )
+    void explicitlyMarkPageUnmodifiedUnderExclusiveLock( long pageRef )
     {
         OffHeapPageLock.explicitlyMarkPageUnmodifiedUnderExclusiveLock( offLock( pageRef ) );
     }
 
-    public int getCachePageSize()
+    int getCachePageSize()
     {
         return cachePageSize;
     }
 
-    public long getAddress( long pageRef )
+    long getAddress( long pageRef )
     {
         return UnsafeUtil.getLong( offAddress( pageRef ) );
     }
 
-    public void initBuffer( long pageRef )
+    void initBuffer( long pageRef )
     {
         if ( getAddress( pageRef ) == 0L )
         {
@@ -310,7 +310,7 @@ class PageList
     /**
      * Increment the usage stamp to at most 4.
      **/
-    public void incrementUsage( long pageRef )
+    void incrementUsage( long pageRef )
     {
         // This is intentionally left benignly racy for performance.
         long address = offPageBinding( pageRef );
@@ -331,7 +331,7 @@ class PageList
     /**
      * Decrement the usage stamp. Returns true if it reaches 0.
      **/
-    public boolean decrementUsage( long pageRef )
+    boolean decrementUsage( long pageRef )
     {
         // This is intentionally left benignly racy for performance.
         long address = offPageBinding( pageRef );
@@ -346,7 +346,7 @@ class PageList
         return usage == 0;
     }
 
-    public long getFilePageId( long pageRef )
+    long getFilePageId( long pageRef )
     {
         long filePageId = UnsafeUtil.getLong( offPageBinding( pageRef ) ) >>> SHIFT_FILE_PAGE_ID;
         return filePageId == MAX_FILE_PAGE_ID ? PageCursor.UNBOUND_PAGE_ID : filePageId;
@@ -383,7 +383,7 @@ class PageList
         UnsafeUtil.compareAndSetMaxLong( null, offLastModifiedTransactionId( pageRef ), modifierTxId );
     }
 
-    public int getSwapperId( long pageRef )
+    int getSwapperId( long pageRef )
     {
         long v = UnsafeUtil.getLong( offPageBinding( pageRef ) ) >>> SHIFT_SWAPPER_ID;
         return (int) (v & MASK_SHIFTED_SWAPPER_ID); // 21 bits.
@@ -397,12 +397,12 @@ class PageList
         UnsafeUtil.putLong( address, v + swapperId );
     }
 
-    public boolean isLoaded( long pageRef )
+    boolean isLoaded( long pageRef )
     {
         return getFilePageId( pageRef ) != PageCursor.UNBOUND_PAGE_ID;
     }
 
-    public boolean isBoundTo( long pageRef, int swapperId, long filePageId )
+    boolean isBoundTo( long pageRef, int swapperId, long filePageId )
     {
         long address = offPageBinding( pageRef );
         long expectedBinding = (filePageId << SHIFT_PARTIAL_FILE_PAGE_ID) + swapperId;
@@ -410,7 +410,7 @@ class PageList
         return expectedBinding == actualBinding;
     }
 
-    public void fault( long pageRef, PageSwapper swapper, int swapperId, long filePageId, PageFaultEvent event )
+    void fault( long pageRef, PageSwapper swapper, int swapperId, long filePageId, PageFaultEvent event )
             throws IOException
     {
         if ( swapper == null )
@@ -455,7 +455,7 @@ class PageList
         return new IllegalStateException( msg );
     }
 
-    public boolean tryEvict( long pageRef, EvictionEventOpportunity evictionOpportunity ) throws IOException
+    boolean tryEvict( long pageRef, EvictionEventOpportunity evictionOpportunity ) throws IOException
     {
         if ( tryExclusiveLock( pageRef ) )
         {
@@ -526,14 +526,7 @@ class PageList
         UnsafeUtil.putLong( offPageBinding( pageRef ), UNBOUND_PAGE_BINDING );
     }
 
-    public String toString( long pageRef )
-    {
-        StringBuilder sb = new StringBuilder();
-        toString( pageRef, sb );
-        return sb.toString();
-    }
-
-    public void toString( long pageRef, StringBuilder sb )
+    void toString( long pageRef, StringBuilder sb )
     {
         sb.append( "Page[ id = " ).append( toId( pageRef ) );
         sb.append( ", address = " ).append( getAddress( pageRef ) );
