@@ -64,21 +64,29 @@
       <scope>provided</scope>
       <optional>true</optional>
     </dependency>
-
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-migrationsupport</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.surefire</groupId>
+      <artifactId>surefire-logger-api</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-core</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-library</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
