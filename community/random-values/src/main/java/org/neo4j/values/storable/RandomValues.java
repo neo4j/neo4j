@@ -59,6 +59,9 @@ import static org.neo4j.values.storable.Values.shortValue;
  */
 public class RandomValues
 {
+
+    private static final int BYTES_PER_INT = Integer.SIZE / Byte.SIZE;
+
     enum Types
     {
         BOOLEAN,
@@ -1092,14 +1095,17 @@ public class RandomValues
         int length = intBetween( minLength, maxLength );
         byte[] bytes = new byte[length];
         int index = 0;
-        while (index < length)
+        while ( index < length )
         {
             //For each random int we get up to four random bytes
-            int rand = nextInt(  );
-            int numBytesToShift =  Math.min( length - index, Integer.SIZE / Byte.SIZE );
-            while (numBytesToShift > 0)
+            int rand = nextInt();
+            int numBytesToShift = Math.min( length - index, BYTES_PER_INT );
+
+            //byte 4   byte 3   byte 2   byte 1
+            //aaaaaaaa bbbbbbbb cccccccc dddddddd
+            while ( numBytesToShift > 0 )
             {
-                bytes[index++] = (byte)rand;
+                bytes[index++] = (byte) rand;
                 numBytesToShift--;
                 rand >>= Byte.SIZE;
             }
