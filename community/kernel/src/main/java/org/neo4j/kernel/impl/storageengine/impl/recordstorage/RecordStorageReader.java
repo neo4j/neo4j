@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
@@ -61,8 +60,8 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -96,7 +95,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
@@ -147,7 +145,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     private final PropertyStore propertyStore;
     private final SchemaStorage schemaStorage;
     private final CountsTracker counts;
-    private final PropertyLoader propertyLoader;
     private final SchemaCache schemaCache;
 
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
@@ -180,7 +177,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.propertyStore = neoStores.getPropertyStore();
         this.counts = neoStores.getCounts();
-        this.propertyLoader = new PropertyLoader( neoStores );
         this.schemaCache = schemaCache;
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanReaderSupplier = labelScanReaderSupplier;
@@ -241,12 +237,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetForLabel( int labelId )
-    {
-        return getLabelScanReader().nodesWithLabel( labelId );
-    }
-
-    @Override
     public Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
     {
         return schemaCache.indexesByProperty( propertyId );
@@ -263,19 +253,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
             return schemaCache.hasConstraintRule( owningConstraint ) ? owningConstraint : null;
         }
         return null;
-    }
-
-    @Override
-    public InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return getIndexProxy( descriptor ).getState();
-    }
-
-    @Override
-    public PopulationProgress indexGetPopulationProgress( SchemaDescriptor descriptor )
-            throws IndexNotFoundKernelException
-    {
-        return indexService.getIndexProxy( descriptor ).getIndexPopulationProgress();
     }
 
     @Override
@@ -1067,7 +1044,12 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     @Override
     public CapableIndexReference index( int label, int... properties )
     {
-        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( label, properties );
+        SchemaIndexDescriptor descriptor = schemaCache.indexDescriptor( SchemaDescriptorFactory.forLabel( label, properties ) );
+        if ( descriptor == null )
+        {
+            return CapableIndexReference.NO_INDEX;
+        }
+
         boolean unique = descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
         SchemaDescriptor schema = descriptor.schema();
         IndexProxy indexProxy = null;
@@ -1105,7 +1087,7 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     @Override
     public InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException
     {
-        return indexGetState( toDescriptor( index ) );
+        return getIndexProxy( DefaultIndexReference.toDescriptor( index ) ).getState();
     }
 
     @Override

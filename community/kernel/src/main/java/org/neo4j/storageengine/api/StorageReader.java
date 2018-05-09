@@ -22,10 +22,8 @@ package org.neo4j.storageengine.api;
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -43,7 +41,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 /**
  * Abstraction for accessing data from a {@link StorageEngine}.
@@ -104,29 +101,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      * Returns all indexes (including unique) related to a property.
      */
     Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId );
-
-    /**
-     *
-     * @param labelId The label id of interest.
-     * @return {@link PrimitiveLongResourceIterator} over node ids associated with given label id.
-     */
-    PrimitiveLongResourceIterator nodesGetForLabel( int labelId );
-
-    /**
-     * Returns state of a stored index.
-     *
-     * @param descriptor {@link SchemaIndexDescriptor} to get state for.
-     * @return {@link InternalIndexState} for index.
-     * @throws IndexNotFoundKernelException if index not found.
-     */
-    InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
-     * @param descriptor {@link SchemaDescriptor} to get population progress for.
-     * @return progress of index population, which is the initial state of an index when it's created.
-     * @throws IndexNotFoundKernelException if index not found.
-     */
-    PopulationProgress indexGetPopulationProgress( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param labelName name of label.

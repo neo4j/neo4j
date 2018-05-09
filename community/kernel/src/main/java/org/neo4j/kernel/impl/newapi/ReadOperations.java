@@ -565,11 +565,10 @@ public class ReadOperations implements TxStateHolder,
         CapableIndexReference index = storageReader.index( label, properties );
         if ( ktx.hasTxStateWithChanges() )
         {
-            SchemaIndexDescriptor indexDescriptor = DefaultIndexReference.toDescriptor( index );
             ReadableDiffSets<SchemaIndexDescriptor> diffSets = ktx.txState().indexDiffSetsByLabel( label );
             if ( index != CapableIndexReference.NO_INDEX )
             {
-                if ( diffSets.isRemoved( indexDescriptor ) )
+                if ( diffSets.isRemoved( DefaultIndexReference.toDescriptor( index ) ) )
                 {
                     return CapableIndexReference.NO_INDEX;
                 }
@@ -650,22 +649,15 @@ public class ReadOperations implements TxStateHolder,
         assertValidIndex( index );
         acquireSharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
-        return indexGetState( toDescriptor( index ) );
-    }
-
-    private InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        // If index is in our state, then return populating
         if ( ktx.hasTxStateWithChanges() )
         {
-            if ( checkIndexState( descriptor,
-                    ktx.txState().indexDiffSetsByLabel( descriptor.schema().keyId() ) ) )
+            SchemaIndexDescriptor descriptor = toDescriptor( index );
+            if ( checkIndexState( descriptor, ktx.txState().indexDiffSetsByLabel( descriptor.schema().keyId() ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
         }
-
-        return storageReader.indexGetState( descriptor );
+        return storageReader.indexGetState( index );
     }
 
     private void assertValidIndex( IndexReference index ) throws IndexNotFoundKernelException
@@ -682,10 +674,10 @@ public class ReadOperations implements TxStateHolder,
     {
         acquireSharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
-        SchemaIndexDescriptor descriptor = toDescriptor( index );
 
         if ( ktx.hasTxStateWithChanges() )
         {
+            SchemaIndexDescriptor descriptor = toDescriptor( index );
             if ( checkIndexState( descriptor,
                     ktx.txState().indexDiffSetsByLabel( index.label() ) ) )
             {
@@ -693,7 +685,7 @@ public class ReadOperations implements TxStateHolder,
             }
         }
 
-        return storageReader.indexGetPopulationProgress( descriptor.schema() );
+        return storageReader.indexGetPopulationProgress( index );
     }
 
     @Override
