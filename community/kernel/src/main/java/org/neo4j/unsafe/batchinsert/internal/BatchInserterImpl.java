@@ -601,7 +601,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return new BaseNodeConstraintCreator( new BatchSchemaActions(), label );
     }
 
-    private void createUniqueIndexAndOwningConstraint( IndexDescriptor indexDescriptor,
+    private void createUniqueIndexAndOwningConstraint( LabelSchemaDescriptor schema,
             IndexBackedConstraintDescriptor constraintDescriptor )
     {
         // TODO: Do not create duplicate index
@@ -610,12 +610,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         long constraintRuleId = schemaStore.nextId();
 
         StoreIndexDescriptor storeIndexDescriptor =
-                StoreIndexDescriptor.constraintIndexRule(
-                        indexId,
-                        indexDescriptor,
-                        this.indexProviderMap.getDefaultProvider().getProviderDescriptor(),
-                        constraintRuleId
-                );
+                IndexDescriptorFactory.forSchema(
+                        schema,
+                        this.indexProviderMap.getDefaultProvider().getProviderDescriptor()
+                ).withIds( indexId, constraintRuleId );
+
         ConstraintRule constraintRule =
                 ConstraintRule.constraintRule(
                         constraintRuleId,
@@ -639,16 +638,12 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private void createUniquenessConstraintRule( LabelSchemaDescriptor descriptor )
     {
-        createUniqueIndexAndOwningConstraint(
-                IndexDescriptorFactory.uniqueForSchema( descriptor ),
-                ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
+        createUniqueIndexAndOwningConstraint( descriptor, ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
     }
 
     private void createNodeKeyConstraintRule( LabelSchemaDescriptor descriptor )
     {
-        createUniqueIndexAndOwningConstraint(
-                IndexDescriptorFactory.uniqueForSchema( descriptor ),
-                ConstraintDescriptorFactory.nodeKeyForSchema( descriptor ) );
+        createUniqueIndexAndOwningConstraint( descriptor, ConstraintDescriptorFactory.nodeKeyForSchema( descriptor ) );
     }
 
     private void createNodePropertyExistenceConstraintRule( int labelId, int... propertyKeyIds )

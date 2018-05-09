@@ -75,6 +75,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -136,6 +137,7 @@ import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
@@ -2266,8 +2268,8 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        StoreIndexDescriptor indexRule = StoreIndexDescriptor.constraintIndexRule( ruleId1,
-                                                                                   uniqueForLabel( labelId, propertyKeyIds ), DESCRIPTOR, ruleId2 );
+        StoreIndexDescriptor indexRule =
+                uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withIds( ruleId1, ruleId2 );
         ConstraintRule uniqueRule = ConstraintRule.constraintRule( ruleId2,
                 ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ), ruleId1 );
 
@@ -2282,8 +2284,8 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        StoreIndexDescriptor indexRule = StoreIndexDescriptor.constraintIndexRule( ruleId1,
-                                                                                   uniqueForLabel( labelId, propertyKeyIds ), DESCRIPTOR, ruleId2 );
+        StoreIndexDescriptor indexRule =
+                uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withIds( ruleId1, ruleId2 );
         ConstraintRule nodeKeyRule = ConstraintRule.constraintRule( ruleId2,
                 ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ), ruleId1 );
 

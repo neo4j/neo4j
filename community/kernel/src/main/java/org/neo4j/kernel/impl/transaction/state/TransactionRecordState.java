@@ -619,10 +619,10 @@ public class TransactionRecordState implements RecordState
         parseLabelsField( nodeRecord ).remove( labelId, nodeStore );
     }
 
-    public void setConstraintIndexOwner( StoreIndexDescriptor indexRule, long constraintId )
+    public void setConstraintIndexOwner( StoreIndexDescriptor storeIndex, long constraintId )
     {
-        StoreIndexDescriptor updatedIndexRule = indexRule.withOwningConstraint( constraintId );
-        changeSchemaRule( indexRule, updatedIndexRule );
+        StoreIndexDescriptor updatedStoreIndex = storeIndex.withOwningConstraint( constraintId );
+        changeSchemaRule( storeIndex, updatedStoreIndex );
     }
 
     public interface PropertyReceiver<P extends StorageProperty>

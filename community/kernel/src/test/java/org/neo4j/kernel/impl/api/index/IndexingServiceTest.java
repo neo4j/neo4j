@@ -1410,8 +1410,7 @@ public class IndexingServiceTest
     private StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProvider.Descriptor
             providerDescriptor, long constraintId )
     {
-        return StoreIndexDescriptor.constraintIndexRule(
-                ruleId, TestIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), providerDescriptor, constraintId );
+        return uniqueForSchema( forLabel( labelId, propertyKeyId ), providerDescriptor ).withIds( ruleId, constraintId );
     }
 
     private IndexingService createIndexServiceWithCustomIndexMap( IndexMapReference indexMapReference )
