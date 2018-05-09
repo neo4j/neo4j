@@ -33,7 +33,6 @@ import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 
 public class OnlineIndexProxyTest
 {
@@ -47,8 +46,7 @@ public class OnlineIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        CapableIndexDescriptor
-                capableIndexDescriptor = new CapableIndexDescriptor( StoreIndexDescriptor.indexRule( indexId, descriptor, providerDescriptor ), NO_CAPABILITY );
+        CapableIndexDescriptor capableIndexDescriptor = StoreIndexDescriptor.indexRule( indexId, descriptor, providerDescriptor ).withoutCapabilities();
         OnlineIndexProxy index = new OnlineIndexProxy( capableIndexDescriptor, accessor, storeView, false );
 
         // when

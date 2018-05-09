@@ -19,10 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.schema;
 
-import java.util.Arrays;
 import java.util.function.Predicate;
 
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
@@ -63,13 +61,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return a user friendly description of what this index indexes.
      */
     String userDescription( TokenNameLookup tokenNameLookup );
-
-    /**
-     * Translate the schema key to a key name using the given {@link TokenNameLookup}.
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return The string name of the key token.
-     */
-    String keyName( TokenNameLookup tokenNameLookup );
 
     /**
      * This method return the property ids that are relevant to this Schema Descriptor.

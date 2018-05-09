@@ -84,6 +84,6 @@ public class FailedIndexProxyTest
 
     private CapableIndexDescriptor indexMeta( StoreIndexDescriptor descriptor )
     {
-        return new CapableIndexDescriptor( descriptor, indexCapability );
+        return descriptor.withoutCapabilities();
     }
 }

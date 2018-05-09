@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -158,7 +157,6 @@ class IndexProxyCreator
 
     private CapableIndexDescriptor indexMetaFromProvider( StoreIndexDescriptor indexDescriptor )
     {
-        IndexCapability indexCapability = providerMap.apply( indexDescriptor.providerDescriptor() ).getCapability();
-        return new CapableIndexDescriptor( indexDescriptor, indexCapability );
+        return indexDescriptor.withCapabilities( providerMap );
     }
 }

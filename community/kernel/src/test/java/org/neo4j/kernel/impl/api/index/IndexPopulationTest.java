@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -145,8 +144,7 @@ public class IndexPopulationTest
 
     private CapableIndexDescriptor dummyMeta()
     {
-        return new CapableIndexDescriptor( StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 0, 0 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR ),
-                                           IndexCapability.NO_CAPABILITY );
+        return StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 0, 0 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR ).withoutCapabilities();
     }
 
     private IndexEntryUpdate<LabelSchemaDescriptor> someUpdate()
