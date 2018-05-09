@@ -57,8 +57,8 @@ import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -85,8 +85,8 @@ import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 public class BuiltInProceduresTest
 {
-    private final List<IndexReference> indexes = new LinkedList<>();
-    private final List<IndexReference> uniqueIndexes = new LinkedList<>();
+    private final List<CapableIndexReference> indexes = new LinkedList<>();
+    private final List<CapableIndexReference> uniqueIndexes = new LinkedList<>();
     private final List<ConstraintDescriptor> constraints = new LinkedList<>();
     private final Map<Integer,String> labels = new HashMap<>();
     private final Map<Integer,String> propKeys = new HashMap<>();
@@ -415,7 +415,8 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexReference index = IndexDescriptorFactory.forLabel( labelId, propId );
+        CapableIndexReference index =
+                StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         indexes.add( index );
     }
 
@@ -424,7 +425,8 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexReference index = IndexDescriptorFactory.uniqueForLabel( labelId, propId );
+        CapableIndexReference index =
+                StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.uniqueForLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }
@@ -506,20 +508,18 @@ public class BuiltInProceduresTest
                 (Answer<CapableIndexReference>) invocationOnMock -> {
                     int label = invocationOnMock.getArgument( 0 );
                     int prop = invocationOnMock.getArgument( 1 );
-                    for ( IndexReference index : indexes )
+                    for ( CapableIndexReference index : indexes )
                     {
                         if ( index.label() == label && prop == index.properties()[0] )
                         {
-                            return new DefaultCapableIndexReference( index.isUnique(), null,
-                                    InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, label, prop );
+                            return index;
                         }
                     }
-                    for ( IndexReference index : uniqueIndexes )
+                    for ( CapableIndexReference index : uniqueIndexes )
                     {
                         if ( index.label() == label && prop == index.properties()[0] )
                         {
-                            return new DefaultCapableIndexReference( index.isUnique(), null,
-                                    InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, label, prop );
+                            return index;
                         }
                     }
                     throw new AssertionError(  );
