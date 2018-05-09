@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
@@ -110,7 +110,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
+            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
         }
 
         @Test
@@ -152,7 +152,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
+            super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
         }
 
         @Test

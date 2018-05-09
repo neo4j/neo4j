@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
@@ -52,7 +52,7 @@ public class DeferredConflictCheckingIndexUpdaterTest
 {
     private final int labelId = 1;
     private final int[] propertyKeyIds = {2, 3};
-    private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( labelId, propertyKeyIds );
+    private final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds );
 
     @Test
     public void shouldQueryAboutAddedAndChangedValueTuples() throws Exception

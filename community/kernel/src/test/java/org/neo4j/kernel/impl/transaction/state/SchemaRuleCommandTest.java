@@ -27,7 +27,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -93,7 +93,7 @@ public class SchemaRuleCommandTest
             new PropertyPhysicalToLogicalConverter( propertyStore ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
     private final StoreIndexDescriptor
-            rule = StoreIndexDescriptor.indexRule( id, IndexDescriptorFactory.forLabel( labelId, propertyKey ),
+            rule = StoreIndexDescriptor.indexRule( id, TestIndexDescriptorFactory.forLabel( labelId, propertyKey ),
                                                    PROVIDER_DESCRIPTOR );
 
     @Test

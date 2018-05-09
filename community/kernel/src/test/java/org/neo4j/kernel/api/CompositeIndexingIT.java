@@ -44,7 +44,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -135,13 +135,13 @@ public class CompositeIndexingIT
     @Parameterized.Parameters( name = "Index: {0}" )
     public static Iterable<Object[]> parameterValues()
     {
-        return Arrays.asList( Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
-                Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
-                Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
-                Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
-                Iterators.array( IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
-                Iterators.array( IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
-                Iterators.array( IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
+        return Arrays.asList( Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
+                Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
+                Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
+                Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
+                Iterators.array( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
+                Iterators.array( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
+                Iterators.array( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
         );
     }
 

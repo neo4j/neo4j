@@ -44,6 +44,20 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
         owningConstraintId = indexDescriptor.owningConstraintId;
     }
 
+    StoreIndexDescriptor( IndexDescriptor descriptor, long id )
+    {
+        super( descriptor );
+        this.id = id;
+        this.owningConstraintId = null;
+    }
+
+    public StoreIndexDescriptor( IndexDescriptor descriptor, long id, long owningConstraintId )
+    {
+        super( descriptor );
+        this.id = id;
+        this.owningConstraintId = owningConstraintId;
+    }
+
     public static StoreIndexDescriptor indexRule( long id, IndexDescriptor descriptor,
                                                   IndexProvider.Descriptor providerDescriptor )
     {
@@ -157,7 +171,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
     @Override
     public String getName()
     {
-        return name().get();
+        return name().orElse( "index_" + id );
     }
 
     public CapableIndexDescriptor withoutCapabilities()

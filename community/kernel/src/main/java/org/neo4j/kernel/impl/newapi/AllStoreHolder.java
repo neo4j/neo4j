@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -50,6 +51,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -360,7 +362,9 @@ public class AllStoreHolder extends Read
     @Override
     public IndexReference indexReferenceUnchecked( int label, int... properties )
     {
-        return IndexDescriptorFactory.forLabel( label, properties );
+        return IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( label, properties ),
+                                                 Optional.empty(),
+                                                 IndexProvider.UNDECIDED );
     }
 
     @Override

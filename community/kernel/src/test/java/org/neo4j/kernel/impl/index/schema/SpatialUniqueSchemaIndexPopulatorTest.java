@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
@@ -53,6 +53,6 @@ public class SpatialUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaInd
     @Override
     protected LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil<>( new SpatialLayoutTestUtil( IndexDescriptorFactory.uniqueForLabel( 42, 666 ), settings, crs ) );
+        return new UniqueLayoutTestUtil<>( new SpatialLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ), settings, crs ) );
     }
 }

@@ -251,6 +251,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public IndexProvider.Descriptor indexProviderForOrDefault( Optional<String> providerName )
     {
+        if ( providerName.isPresent() )
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
         return indexProviderMap.getDefaultProvider().getProviderDescriptor();
     }
 

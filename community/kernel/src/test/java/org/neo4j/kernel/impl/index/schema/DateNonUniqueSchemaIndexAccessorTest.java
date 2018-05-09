@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -39,7 +39,7 @@ public class DateNonUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAcces
     @Override
     protected LayoutTestUtil<DateSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new DateLayoutTestUtil( IndexDescriptorFactory.forLabel( 42, 666 ) );
+        return new DateLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 
 }

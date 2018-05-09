@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
@@ -104,7 +104,7 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException
     {
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
+        IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 0, 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 456 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( index );
@@ -118,7 +118,7 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException
     {
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0, 1 );
+        IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 0, 0, 1 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
         when( tokenRead.propertyKey( "name" ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( "lastName" ) ).thenReturn( 1 );
@@ -153,7 +153,7 @@ public class ResampleIndexProcedureTest
     public void shouldTriggerResampling()
             throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( 123, 456 );
+        IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 123, 456 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );

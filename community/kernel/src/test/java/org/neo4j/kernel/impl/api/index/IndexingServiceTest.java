@@ -67,8 +67,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -151,7 +151,7 @@ public class IndexingServiceTest
     private final SchemaState schemaState = mock( SchemaState.class );
     private final int labelId = 7;
     private final int propertyKeyId = 15;
-    private final IndexDescriptor index = IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+    private final IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
     private final IndexPopulator populator = mock( IndexPopulator.class );
     private final IndexUpdater updater = mock( IndexUpdater.class );
     private final IndexProvider indexProvider = mock( IndexProvider.class );
@@ -572,7 +572,7 @@ public class IndexingServiceTest
         // given
         long indexId = 0;
         IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
-        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 1 );
+        IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( 0, 1 );
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
                                                                                     StoreIndexDescriptor
                                                                                             .indexRule( indexId, descriptor, PROVIDER_DESCRIPTOR ) );
@@ -841,13 +841,13 @@ public class IndexingServiceTest
 
         // THEN
         verify( indexProvider ).getPopulator( eq( StoreIndexDescriptor
-                                                          .indexRule( 0, IndexDescriptorFactory.forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ) ),
+                                                          .indexRule( 0, TestIndexDescriptorFactory.forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ) ),
                 any( IndexSamplingConfig.class ) );
         verify( indexProvider ).getPopulator( eq( StoreIndexDescriptor
-                                                          .indexRule( 1, IndexDescriptorFactory.forLabel( 0, 1 ), PROVIDER_DESCRIPTOR ) ),
+                                                          .indexRule( 1, TestIndexDescriptorFactory.forLabel( 0, 1 ), PROVIDER_DESCRIPTOR ) ),
                 any( IndexSamplingConfig.class ) );
         verify( indexProvider ).getPopulator( eq( StoreIndexDescriptor
-                                                          .indexRule( 2, IndexDescriptorFactory.forLabel( 1, 0 ), PROVIDER_DESCRIPTOR ) ),
+                                                          .indexRule( 2, TestIndexDescriptorFactory.forLabel( 1, 0 ), PROVIDER_DESCRIPTOR ) ),
                 any( IndexSamplingConfig.class ) );
 
         waitForIndexesToComeOnline( indexing, 0, 1, 2 );
@@ -1125,7 +1125,7 @@ public class IndexingServiceTest
     {
         IndexProxy proxy = mock( IndexProxy.class );
         CapableIndexDescriptor descriptor =
-                StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( 1, 2 ), PROVIDER_DESCRIPTOR )
+                StoreIndexDescriptor.indexRule( 0, TestIndexDescriptorFactory.forLabel( 1, 2 ), PROVIDER_DESCRIPTOR )
                         .withoutCapabilities();
         when( proxy.getDescriptor() ).thenReturn( descriptor );
         return proxy;
@@ -1402,14 +1402,14 @@ public class IndexingServiceTest
     private StoreIndexDescriptor indexRule( long ruleId, int labelId, int propertyKeyId, IndexProvider.Descriptor
             providerDescriptor )
     {
-        return StoreIndexDescriptor.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyKeyId ),
+        return StoreIndexDescriptor.indexRule( ruleId, TestIndexDescriptorFactory.forLabel( labelId, propertyKeyId ),
                                                providerDescriptor );
     }
 
     private StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProvider.Descriptor
             providerDescriptor )
     {
-        return StoreIndexDescriptor.indexRule( ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ),
+        return StoreIndexDescriptor.indexRule( ruleId, TestIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ),
                                                providerDescriptor );
     }
 
@@ -1417,7 +1417,7 @@ public class IndexingServiceTest
             providerDescriptor, long constraintId )
     {
         return StoreIndexDescriptor.constraintIndexRule(
-                ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), providerDescriptor, constraintId );
+                ruleId, TestIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), providerDescriptor, constraintId );
     }
 
     private IndexingService createIndexServiceWithCustomIndexMap( IndexMapReference indexMapReference )

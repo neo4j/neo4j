@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -356,13 +356,13 @@ public abstract class NativeIndexProviderTest
     private StoreIndexDescriptor descriptor()
     {
         return StoreIndexDescriptor
-                .indexRule( indexId, IndexDescriptorFactory.forLabel( labelId, propId ), PROVIDER_DESCRIPTOR );
+                .indexRule( indexId, TestIndexDescriptorFactory.forLabel( labelId, propId ), PROVIDER_DESCRIPTOR );
     }
 
     private StoreIndexDescriptor descriptorUnique()
     {
         return StoreIndexDescriptor
-                .indexRule( indexId, IndexDescriptorFactory.uniqueForLabel( labelId, propId ), PROVIDER_DESCRIPTOR );
+                .indexRule( indexId, TestIndexDescriptorFactory.uniqueForLabel( labelId, propId ), PROVIDER_DESCRIPTOR );
     }
 
     private PageCache pageCache()

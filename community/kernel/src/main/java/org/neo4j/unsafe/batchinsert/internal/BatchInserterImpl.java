@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.LongFunction;
 
 import org.neo4j.collection.PrimitiveLongCollections;
@@ -467,10 +468,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private void createIndexRule( int labelId, int[] propertyKeyIds )
     {
-        StoreIndexDescriptor schemaRule = StoreIndexDescriptor.indexRule(
-                schemaStore.nextId(),
-                IndexDescriptorFactory.forLabel( labelId, propertyKeyIds ),
-                indexProviderMap.getDefaultProvider().getProviderDescriptor() );
+        LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+        StoreIndexDescriptor schemaRule =
+                IndexDescriptorFactory
+                .forSchema( schema, Optional.empty(), indexProviderMap.getDefaultProvider().getProviderDescriptor() )
+                .withId( schemaStore.nextId() );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
         {

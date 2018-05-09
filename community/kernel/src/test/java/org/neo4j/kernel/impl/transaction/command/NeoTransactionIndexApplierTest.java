@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -128,7 +128,7 @@ public class NeoTransactionIndexApplierTest
     private StoreIndexDescriptor indexRule( long ruleId, int labelId, int propertyId, Descriptor descriptor )
     {
         return StoreIndexDescriptor
-                .indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
+                .indexRule( ruleId, TestIndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
     }
 
     @Test

@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -70,7 +70,7 @@ public class FilteringNativeHitIndexProgressorTest
         when( predicates[0].acceptsValue( any( Value.class ) ) ).then( invocation -> filter.test( ((TextValue)invocation.getArgument( 0 )).stringValue() ) );
         FilteringNativeHitIndexProgressor<StringSchemaKey,NativeSchemaValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
                 new ArrayList<>(), predicates );
-        valueClient.initialize( IndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates );
+        valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates );
         List<Long> result = new ArrayList<>();
 
         // when

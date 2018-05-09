@@ -28,7 +28,7 @@ import java.util.Collection;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.values.storable.ValueTuple;
@@ -43,10 +43,10 @@ public class TxStateCompositeIndexTest
 {
     private TransactionState state;
 
-    private final IndexDescriptor indexOn_1_1_2 = IndexDescriptorFactory.forLabel( 1, 1, 2 );
-    private final IndexDescriptor indexOn_1_2_3 = IndexDescriptorFactory.forLabel( 1, 2, 3 );
-    private final IndexDescriptor indexOn_2_2_3 = IndexDescriptorFactory.uniqueForLabel( 2, 2, 3 );
-    private final IndexDescriptor indexOn_2_2_3_4 = IndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
+    private final IndexDescriptor indexOn_1_1_2 = TestIndexDescriptorFactory.forLabel( 1, 1, 2 );
+    private final IndexDescriptor indexOn_1_2_3 = TestIndexDescriptorFactory.forLabel( 1, 2, 3 );
+    private final IndexDescriptor indexOn_2_2_3 = TestIndexDescriptorFactory.uniqueForLabel( 2, 2, 3 );
+    private final IndexDescriptor indexOn_2_2_3_4 = TestIndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
 
     @Before
     public void before()

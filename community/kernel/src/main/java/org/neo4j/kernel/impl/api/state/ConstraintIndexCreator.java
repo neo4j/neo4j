@@ -167,7 +167,7 @@ public class ConstraintIndexCreator
 
                 if ( indexStillExists( schemaRead, descriptor, index ) )
                 {
-                    dropUniquenessConstraintIndex( asDescriptor( index ) );
+                    dropUniquenessConstraintIndex( (IndexDescriptor) index );
                 }
             }
         }
@@ -202,18 +202,6 @@ public class ConstraintIndexCreator
         {
             ((KernelTransactionImplementation) transaction).txState().indexDoDrop( descriptor );
             transaction.success();
-        }
-    }
-
-    private IndexDescriptor asDescriptor( IndexReference indexReference )
-    {
-        if ( indexReference.isUnique() )
-        {
-            return IndexDescriptorFactory.uniqueForLabel( indexReference.label(), indexReference.properties() );
-        }
-        else
-        {
-            return IndexDescriptorFactory.forLabel( indexReference.label(), indexReference.properties() );
         }
     }
 
