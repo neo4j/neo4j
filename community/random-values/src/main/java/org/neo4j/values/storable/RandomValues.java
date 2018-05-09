@@ -665,8 +665,7 @@ public class RandomValues
         case SHORT:
             return nextShortValue();
         case STRING:
-            //TODO I think this should be nextTextValue() but then tests fail
-            // (ParallelBatchImporterTest::shouldImportCsvData, InputCacheTest::shouldCacheAndRetrieveNodes)
+            //TODO I think this should be nextTextValue() but then tests fail InputCacheTest::shouldCacheAndRetrieveNodes)
             return nextAlphaNumericTextValue();
         case INT:
             return nextIntValue();
@@ -1092,9 +1091,18 @@ public class RandomValues
     {
         int length = intBetween( minLength, maxLength );
         byte[] bytes = new byte[length];
-        for ( int i = 0; i < length; i++ )
+        int index = 0;
+        while (index < length)
         {
-            bytes[i] = (byte) generator.nextInt();
+            //For each random int we get up to four random bytes
+            int rand = nextInt(  );
+            int numBytesToShift =  Math.min( length - index, Integer.SIZE / Byte.SIZE );
+            while (numBytesToShift > 0)
+            {
+                bytes[index++] = (byte)rand;
+                numBytesToShift--;
+                rand >>= Byte.SIZE;
+            }
         }
         return Values.byteArray( bytes );
     }
