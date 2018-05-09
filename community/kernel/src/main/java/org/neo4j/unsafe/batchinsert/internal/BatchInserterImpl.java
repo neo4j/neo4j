@@ -333,8 +333,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
                 .batch_inserter_batch_size ) );
         cursors = new RecordCursors( neoStores );
-        storageReader = new RecordStorageReader( propertyKeyTokens, labelTokens, relationshipTypeTokens, null, neoStores,
-                null, schemaCache, null, null, LockService.NO_LOCK_SERVICE, null );
+        storageReader = RecordStorageReader.neoStoreReader( neoStores );
     }
 
     private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )

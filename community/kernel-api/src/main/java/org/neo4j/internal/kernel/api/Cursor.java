@@ -23,7 +23,7 @@ package org.neo4j.internal.kernel.api;
  * This interface is package-private because it is not generically useful. All use cases should use the explicit cursor
  * types.
  */
-interface Cursor extends AutoCloseablePlus
+public interface Cursor extends AutoCloseablePlus
 {
     boolean next();
 }

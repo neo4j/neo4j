@@ -21,14 +21,10 @@ package org.neo4j.kernel.impl.storemigration.participant;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StorePropertyCursor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -49,11 +45,11 @@ public class StoreScanChunkIT
         {
             RecordStorageEngine recordStorageEngine = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
             NeoStores neoStores = recordStorageEngine.testAccessNeoStores();
-            RecordCursor dummyCursor = Mockito.mock( RecordCursor.class );
-            TestStoreScanChunk scanChunk1 = new TestStoreScanChunk( dummyCursor, neoStores, false );
-            TestStoreScanChunk scanChunk2 = new TestStoreScanChunk( dummyCursor, neoStores, false );
-            assertNotSame( scanChunk1.getRecordCursors(), scanChunk2.getRecordCursors() );
-            assertNotSame( scanChunk1.getStorePropertyCursor(), scanChunk2.getStorePropertyCursor() );
+            RecordStorageReader storageReader = RecordStorageReader.neoStoreReader( neoStores );
+            TestStoreScanChunk scanChunk1 = new TestStoreScanChunk( storageReader, false );
+            TestStoreScanChunk scanChunk2 = new TestStoreScanChunk( storageReader, false );
+            assertNotSame( scanChunk1.cursor, scanChunk2.cursor );
+            assertNotSame( scanChunk1.propertyCursor, scanChunk2.propertyCursor );
         }
         finally
         {
@@ -61,27 +57,17 @@ public class StoreScanChunkIT
         }
     }
 
-    private class TestStoreScanChunk extends StoreScanChunk<NodeRecord>
+    private class TestStoreScanChunk extends StoreScanChunk.NodeStoreScanChunk
     {
-        TestStoreScanChunk( RecordCursor<NodeRecord> cursor, NeoStores neoStores, boolean requiresPropertyMigration )
+        TestStoreScanChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
         {
-            super( cursor, neoStores, requiresPropertyMigration );
+            super( storageReader, requiresPropertyMigration );
         }
 
         @Override
-        void visitRecord( NodeRecord record, InputEntityVisitor visitor )
+        void visitRecord( InputEntityVisitor visitor )
         {
             // empty
-        }
-
-        RecordCursors getRecordCursors()
-        {
-            return recordCursors;
-        }
-
-        StorePropertyCursor getStorePropertyCursor()
-        {
-            return storePropertyCursor;
         }
     }
 }
