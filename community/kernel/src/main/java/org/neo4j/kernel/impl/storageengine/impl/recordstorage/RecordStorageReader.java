@@ -297,11 +297,11 @@ class RecordStorageReader implements StorageReader
     @Override
     public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
-        StoreIndexDescriptor rule = indexRule( index );
-        if ( rule != null )
+        StoreIndexDescriptor storeIndexDescriptor = getStoreIndexDescriptor( index );
+        if ( storeIndexDescriptor != null )
         {
             // Think of the index as being orphaned if the owning constraint is missing or broken.
-            Long owningConstraint = rule.getOwningConstraint();
+            Long owningConstraint = storeIndexDescriptor.getOwningConstraint();
             return schemaCache.hasConstraintRule( owningConstraint ) ? owningConstraint : null;
         }
         return null;
@@ -311,12 +311,12 @@ class RecordStorageReader implements StorageReader
     public long indexGetCommittedId( IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        StoreIndexDescriptor rule = indexRule( index );
-        if ( rule == null )
+        StoreIndexDescriptor storeIndexDescriptor = getStoreIndexDescriptor( index );
+        if ( storeIndexDescriptor == null )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
         }
-        return rule.getId();
+        return storeIndexDescriptor.getId();
     }
 
     @Override
@@ -671,13 +671,13 @@ class RecordStorageReader implements StorageReader
         }
     }
 
-    private StoreIndexDescriptor indexRule( IndexDescriptor index )
+    private StoreIndexDescriptor getStoreIndexDescriptor( IndexDescriptor index )
     {
-        for ( StoreIndexDescriptor rule : schemaCache.indexRules() )
+        for ( StoreIndexDescriptor descriptor : schemaCache.indexRules() )
         {
-            if ( rule.equals( index ) )
+            if ( descriptor.equals( index ) )
             {
-                return rule;
+                return descriptor;
             }
         }
 

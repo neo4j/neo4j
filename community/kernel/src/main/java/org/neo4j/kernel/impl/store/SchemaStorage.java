@@ -56,17 +56,17 @@ public class SchemaStorage implements SchemaRuleAccess
      */
     public StoreIndexDescriptor indexGetForSchema( final IndexDescriptor descriptor )
     {
-        Iterator<StoreIndexDescriptor> rules = loadAllSchemaRules( descriptor::equals, StoreIndexDescriptor.class, false );
+        Iterator<StoreIndexDescriptor> indexes = loadAllSchemaRules( descriptor::equals, StoreIndexDescriptor.class, false );
 
         StoreIndexDescriptor foundRule = null;
 
-        while ( rules.hasNext() )
+        while ( indexes.hasNext() )
         {
-            StoreIndexDescriptor candidate = rules.next();
+            StoreIndexDescriptor candidate = indexes.next();
             if ( foundRule != null )
             {
                 throw new IllegalStateException( String.format(
-                        "Found more than one matching index rule, %s and %s", foundRule, candidate ) );
+                        "Found more than one matching index, %s and %s", foundRule, candidate ) );
             }
             foundRule = candidate;
         }

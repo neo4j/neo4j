@@ -125,7 +125,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
         void indexPopulationScanComplete();
 
-        void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor );
+        void awaitingPopulationOfRecoveredIndex( StoreIndexDescriptor descriptor );
     }
 
     public static class MonitorAdapter implements Monitor
@@ -151,7 +151,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
 
         @Override
-        public void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor )
+        public void awaitingPopulationOfRecoveredIndex( StoreIndexDescriptor descriptor )
         {   // Do nothing
         }
     }
@@ -326,7 +326,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                                 "What? This index was seen during recovery just now, why isn't it available now?", e );
                     }
 
-                    monitor.awaitingPopulationOfRecoveredIndex( indexId, descriptor.getIndexDescriptor() );
+                    monitor.awaitingPopulationOfRecoveredIndex( descriptor.getIndexDescriptor() );
                     awaitOnline( proxy );
                 } );
 
