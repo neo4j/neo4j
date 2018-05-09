@@ -57,6 +57,12 @@ public class IndexDescriptorFactory
     }
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema,
+                                                   IndexProvider.Descriptor providerDescriptor )
+    {
+        return new IndexDescriptor( schema, UNIQUE, Optional.empty(), providerDescriptor );
+    }
+
+    public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema,
                                                    Optional<String> name,
                                                    IndexProvider.Descriptor providerDescriptor )
     {

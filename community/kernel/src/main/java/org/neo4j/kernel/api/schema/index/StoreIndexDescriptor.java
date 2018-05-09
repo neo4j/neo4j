@@ -64,12 +64,6 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
         this.owningConstraintId = owningConstraintId;
     }
 
-    public static StoreIndexDescriptor indexRule( long id, IndexDescriptor descriptor,
-                                                  IndexProvider.Descriptor providerDescriptor )
-    {
-        return new StoreIndexDescriptor( descriptor, id, null );
-    }
-
     public static StoreIndexDescriptor constraintIndexRule( long id, IndexDescriptor descriptor,
                                                             IndexProvider.Descriptor providerDescriptor,
                                                             Long owningConstraint )

@@ -32,8 +32,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -83,6 +83,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.transaction.command.CommandHandlerContract.apply;
 
 public class NeoStoreTransactionApplierTest
@@ -932,24 +933,20 @@ public class NeoStoreTransactionApplierTest
     public static StoreIndexDescriptor indexRule( long id, int label, int propertyKeyId,
                                                   IndexProvider.Descriptor providerDescriptor )
     {
-        //TODO: Consider testing composite indexes
-        return StoreIndexDescriptor.indexRule( id, TestIndexDescriptorFactory.forLabel( label, propertyKeyId ),
-                                               providerDescriptor );
+        return IndexDescriptorFactory.forSchema( forLabel( label, propertyKeyId ), providerDescriptor )
+                .withId( id );
     }
 
     private static StoreIndexDescriptor constraintIndexRule( long id, int label, int propertyKeyId,
                                                              IndexProvider.Descriptor providerDescriptor, Long owningConstraint )
     {
-        //TODO: Consider testing composite indexes
-        return StoreIndexDescriptor
-                .constraintIndexRule( id, TestIndexDescriptorFactory.uniqueForLabel( label, propertyKeyId ),
-                                      providerDescriptor, owningConstraint );
+        return IndexDescriptorFactory.uniqueForSchema( forLabel( label, propertyKeyId ), providerDescriptor )
+                .withIds( id, owningConstraint );
     }
 
     private static ConstraintRule uniquenessConstraintRule( long id, int labelId, int propertyKeyId,
             long ownedIndexRule )
     {
-        //TODO: Consider testing composite indexes
         return ConstraintRule.constraintRule( id,
                 ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ),
                 ownedIndexRule );

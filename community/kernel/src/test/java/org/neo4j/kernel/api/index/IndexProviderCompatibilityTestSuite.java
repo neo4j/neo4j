@@ -93,7 +93,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         public Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
         {
             this.testSuite = testSuite;
-            this.descriptor = StoreIndexDescriptor.indexRule( 17, descriptor, indexProvider.getProviderDescriptor() );
+            this.descriptor = descriptor.withId( 17 );
             this.valueSet1 = allValues(
                     testSuite.supportsSpatial(),
                     testSuite.supportsTemporal(),

@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -144,7 +143,7 @@ public class IndexPopulationTest
 
     private CapableIndexDescriptor dummyMeta()
     {
-        return StoreIndexDescriptor.indexRule( 0, TestIndexDescriptorFactory.forLabel( 0, 0 ), TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR ).withoutCapabilities();
+        return TestIndexDescriptorFactory.forLabel( 0, 0 ).withId( 0 ).withoutCapabilities();
     }
 
     private IndexEntryUpdate<LabelSchemaDescriptor> someUpdate()

@@ -503,8 +503,7 @@ public class MultipleIndexPopulatorTest
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexPopulator indexPopulator,
             int id, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return addPopulator( multipleIndexPopulator, StoreIndexDescriptor
-                                     .indexRule( id, TestIndexDescriptorFactory.forLabel( id, id ), PROVIDER_DESCRIPTOR ),
+        return addPopulator( multipleIndexPopulator, TestIndexDescriptorFactory.forLabel( id, id ).withId( id ),
                              indexPopulator, flippableIndexProxy, failedIndexProxyFactory );
     }
 

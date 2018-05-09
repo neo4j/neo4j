@@ -39,8 +39,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -54,6 +54,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public abstract class NativeIndexProviderTest
@@ -355,14 +356,12 @@ public abstract class NativeIndexProviderTest
 
     private StoreIndexDescriptor descriptor()
     {
-        return StoreIndexDescriptor
-                .indexRule( indexId, TestIndexDescriptorFactory.forLabel( labelId, propId ), PROVIDER_DESCRIPTOR );
+        return IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
     }
 
     private StoreIndexDescriptor descriptorUnique()
     {
-        return StoreIndexDescriptor
-                .indexRule( indexId, TestIndexDescriptorFactory.uniqueForLabel( labelId, propId ), PROVIDER_DESCRIPTOR );
+        return IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
     }
 
     private PageCache pageCache()

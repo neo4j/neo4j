@@ -156,8 +156,7 @@ public class DumpCountsStoreTest
     private SchemaStorage createSchemaStorage()
     {
         SchemaStorage schemaStorage = mock(SchemaStorage.class);
-        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "in-memory", "1.0" );
-        StoreIndexDescriptor rule = StoreIndexDescriptor.indexRule( indexId, descriptor, providerDescriptor );
+        StoreIndexDescriptor rule = descriptor.withId( indexId );
         ArrayList<StoreIndexDescriptor> rules = new ArrayList<>();
         rules.add( rule );
 

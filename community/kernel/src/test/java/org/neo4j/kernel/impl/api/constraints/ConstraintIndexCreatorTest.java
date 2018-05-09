@@ -81,8 +81,7 @@ public class ConstraintIndexCreatorTest
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final IndexDescriptor index = TestIndexDescriptorFactory.uniqueForLabel( 123, 456 );
-    private final IndexReference indexReference = StoreIndexDescriptor.indexRule( 0, TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID ),
-            new IndexProvider.Descriptor( "foo", "1.872" ) );
+    private final IndexReference indexReference = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final SchemaRead schemaRead = schemaRead();
     private final TokenRead tokenRead = mock( TokenRead.class );
 

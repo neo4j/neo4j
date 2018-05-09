@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -63,6 +62,8 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
 @RunWith( Parameterized.class )
 public class IndexingServiceIntegrationTest
@@ -129,8 +130,7 @@ public class IndexingServiceIntegrationTest
         int foodId = labelTokenHolder.getIdByName( FOOD_LABEL );
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
-        StoreIndexDescriptor rule = StoreIndexDescriptor.indexRule(
-                schemaStore.nextId(), TestIndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
+        StoreIndexDescriptor rule = forSchema( forLabel( foodId, propertyId ), indexDescriptor ).withId( schemaStore.nextId() );
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
 
@@ -163,10 +163,8 @@ public class IndexingServiceIntegrationTest
         int weatherLabelId = labelTokenHolder.getIdByName( WEATHER_LABEL );
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
-        IndexProxy clothesIndex =
-                indexingService.getIndexProxy( SchemaDescriptorFactory.forLabel( clothedLabelId, propertyId ) );
-        IndexProxy weatherIndex =
-                indexingService.getIndexProxy( SchemaDescriptorFactory.forLabel( weatherLabelId, propertyId ) );
+        IndexProxy clothesIndex = indexingService.getIndexProxy( forLabel( clothedLabelId, propertyId ) );
+        IndexProxy weatherIndex = indexingService.getIndexProxy( forLabel( weatherLabelId, propertyId ) );
         assertEquals( InternalIndexState.ONLINE, clothesIndex.getState());
         assertEquals( InternalIndexState.ONLINE, weatherIndex.getState());
     }

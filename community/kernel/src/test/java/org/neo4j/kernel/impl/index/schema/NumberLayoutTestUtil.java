@@ -60,7 +60,7 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
 
     NumberLayoutTestUtil( IndexDescriptor indexDescriptor )
     {
-        super( StoreIndexDescriptor.indexRule( 0, indexDescriptor, PROVIDER_DESCRIPTOR ) );
+        super( indexDescriptor.withId( 0 ) );
     }
 
     @Override

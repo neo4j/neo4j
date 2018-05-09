@@ -148,10 +148,7 @@ public class Commands
     public static SchemaRuleCommand createIndexRule( IndexProvider.Descriptor provider,
             long id, LabelSchemaDescriptor descriptor )
     {
-        SchemaRule rule = StoreIndexDescriptor.indexRule(
-                id,
-                IndexDescriptorFactory.forSchema( descriptor ),
-                provider );
+        SchemaRule rule = IndexDescriptorFactory.forSchema( descriptor, provider ).withId( id );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );
         record.setCreated();

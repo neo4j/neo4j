@@ -349,7 +349,8 @@ public class BatchingMultipleIndexPopulatorTest
         flipper.setFlipTarget( indexProxyFactory );
 
         batchingPopulator.addPopulator( populator,
-                                        StoreIndexDescriptor.indexRule( 1, descriptor, new IndexProvider.Descriptor( "foo", "1" ) ).withoutCapabilities(), flipper,
+                                        descriptor.withId( 1 ).withoutCapabilities(),
+                                        flipper,
                                         failedIndexProxyFactory, "testIndex" );
 
         return populator;

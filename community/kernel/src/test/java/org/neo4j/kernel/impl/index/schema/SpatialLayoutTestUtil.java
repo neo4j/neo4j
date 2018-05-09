@@ -57,7 +57,7 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
 
     SpatialLayoutTestUtil( IndexDescriptor descriptor, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
     {
-        super( StoreIndexDescriptor.indexRule( 0, descriptor, PROVIDER_DESCRIPTOR ) );
+        super( descriptor.withId( 0 ) );
         this.curve = settings.curve();
         this.crs = crs;
         // The layout is the same, but we might consider supporting other CRS here, too.

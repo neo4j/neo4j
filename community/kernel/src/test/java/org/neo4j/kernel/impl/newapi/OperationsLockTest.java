@@ -448,8 +448,7 @@ public class OperationsLockTest
     public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        CapableIndexDescriptor index = StoreIndexDescriptor.indexRule( 0, TestIndexDescriptorFactory.forLabel( 0, 0 ),
-                                                                  IndexProvider.UNDECIDED ).withoutCapabilities();
+        CapableIndexDescriptor index =  TestIndexDescriptorFactory.forLabel( 0, 0 ).withId( 0 ).withoutCapabilities();
         when( storageReader.indexGetForSchema( any() )).thenReturn( index );
 
         // when

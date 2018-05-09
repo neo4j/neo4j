@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -54,8 +55,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -585,8 +585,7 @@ public class IndexPopulationJobTest
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
-        return new InMemoryIndexProvider().getPopulator( StoreIndexDescriptor
-                                                                 .indexRule( 21, descriptor, PROVIDER_DESCRIPTOR ), samplingConfig );
+        return new InMemoryIndexProvider().getPopulator( descriptor.withId( 21 ), samplingConfig );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator,
@@ -619,7 +618,7 @@ public class IndexPopulationJobTest
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider );
         IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, stateHolder );
-        job.addPopulator( populator, StoreIndexDescriptor.indexRule( indexId, descriptor, PROVIDER_DESCRIPTOR ).withoutCapabilities(),
+        job.addPopulator( populator, descriptor.withId( indexId ).withoutCapabilities(),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
     }
@@ -631,9 +630,10 @@ public class IndexPopulationJobTest
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
+            SchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
             IndexDescriptor descriptor = constraint ?
-                                         TestIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
-                                         TestIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+                                         IndexDescriptorFactory.uniqueForSchema( schema, PROVIDER_DESCRIPTOR ) :
+                                         IndexDescriptorFactory.forSchema( schema, PROVIDER_DESCRIPTOR );
             tx.success();
             return descriptor;
         }

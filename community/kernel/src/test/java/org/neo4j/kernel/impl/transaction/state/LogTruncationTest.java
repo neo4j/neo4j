@@ -98,8 +98,7 @@ public class LogTruncationTest
         permutations.put( Command.SchemaRuleCommand.class, new Command[] { new Command.SchemaRuleCommand(
                 singletonList( dynamicRecord( 1L, false, true, -1L, 1, "hello".getBytes() ) ),
                 singletonList( dynamicRecord( 1L, true, true, -1L, 1, "hello".getBytes() ) ),
-                StoreIndexDescriptor.indexRule( 1, TestIndexDescriptorFactory.forLabel( 3, 4 ),
-                                                new IndexProvider.Descriptor( "1", "2" ) ) ) } );
+                TestIndexDescriptorFactory.forLabel( 3, 4 ).withId( 1 ) ) } );
         permutations
                 .put( Command.RelationshipTypeTokenCommand.class,
                         new Command[] { new Command.RelationshipTypeTokenCommand(
