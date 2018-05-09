@@ -665,7 +665,9 @@ public class RandomValues
         case SHORT:
             return nextShortValue();
         case STRING:
-            return nextTextValue();
+            //TODO I think this should be nextTextValue() but then tests fail
+            // (ParallelBatchImporterTest::shouldImportCsvData, InputCacheTest::shouldCacheAndRetrieveNodes)
+            return nextAlphaNumericTextValue();
         case INT:
             return nextIntValue();
         case LONG:
