@@ -153,12 +153,12 @@ public abstract class NativeIndexProviderTest
         provider = newProvider();
 
         int nonFailedIndexId = NativeIndexProviderTest.indexId;
-        IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor(), samplingConfig() );
+        IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor( nonFailedIndexId ), samplingConfig() );
         nonFailedPopulator.create();
         nonFailedPopulator.close( true );
 
         int failedIndexId = 2;
-        IndexPopulator failedPopulator = provider.getPopulator( descriptor(), samplingConfig() );
+        IndexPopulator failedPopulator = provider.getPopulator( descriptor( failedIndexId ), samplingConfig() );
         failedPopulator.create();
 
         // when
@@ -168,7 +168,7 @@ public abstract class NativeIndexProviderTest
         // then
         try
         {
-            provider.getPopulationFailure( descriptor() );
+            provider.getPopulationFailure( descriptor( failedIndexId ) );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -204,11 +204,11 @@ public abstract class NativeIndexProviderTest
         int first = 1;
         int second = 2;
         int third = 3;
-        IndexPopulator firstPopulator = provider.getPopulator( descriptor(), samplingConfig() );
+        IndexPopulator firstPopulator = provider.getPopulator( descriptor( first ), samplingConfig() );
         firstPopulator.create();
-        IndexPopulator secondPopulator = provider.getPopulator( descriptor(), samplingConfig() );
+        IndexPopulator secondPopulator = provider.getPopulator( descriptor( second ), samplingConfig() );
         secondPopulator.create();
-        IndexPopulator thirdPopulator = provider.getPopulator( descriptor(), samplingConfig() );
+        IndexPopulator thirdPopulator = provider.getPopulator( descriptor( third ), samplingConfig() );
         thirdPopulator.create();
 
         // when
@@ -221,11 +221,11 @@ public abstract class NativeIndexProviderTest
         thirdPopulator.close( false );
 
         // then
-        assertThat( provider.getPopulationFailure( descriptor() ), is( firstFailure ) );
-        assertThat( provider.getPopulationFailure( descriptor() ), is( thirdFailure ) );
+        assertThat( provider.getPopulationFailure( descriptor( first ) ), is( firstFailure ) );
+        assertThat( provider.getPopulationFailure( descriptor( third ) ), is( thirdFailure ) );
         try
         {
-            provider.getPopulationFailure( descriptor() );
+            provider.getPopulationFailure( descriptor( second ) );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -355,6 +355,11 @@ public abstract class NativeIndexProviderTest
     }
 
     private StoreIndexDescriptor descriptor()
+    {
+        return IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
+    }
+
+    private StoreIndexDescriptor descriptor( long indexId )
     {
         return IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
     }
