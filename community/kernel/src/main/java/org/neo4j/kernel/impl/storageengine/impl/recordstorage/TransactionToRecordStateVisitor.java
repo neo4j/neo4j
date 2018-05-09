@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Iterator;
@@ -105,12 +106,9 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-            Iterator<StorageProperty> changed, Iterator<Integer> removed )
+            Iterator<StorageProperty> changed, IntIterable removed )
     {
-        while ( removed.hasNext() )
-        {
-            recordState.nodeRemoveProperty( id, removed.next() );
-        }
+        removed.each( propId -> recordState.nodeRemoveProperty( id, propId ) );
         while ( changed.hasNext() )
         {
             StorageProperty prop = changed.next();
@@ -125,12 +123,9 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
-            Iterator<StorageProperty> changed, Iterator<Integer> removed )
+            Iterator<StorageProperty> changed, IntIterable removed )
     {
-        while ( removed.hasNext() )
-        {
-            recordState.relRemoveProperty( id, removed.next() );
-        }
+        removed.each( relId -> recordState.relRemoveProperty( id, relId ) );
         while ( changed.hasNext() )
         {
             StorageProperty prop = changed.next();
@@ -145,12 +140,9 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-            Iterator<Integer> removed )
+            IntIterable removed )
     {
-        while ( removed.hasNext() )
-        {
-            recordState.graphRemoveProperty( removed.next() );
-        }
+        removed.each( recordState::graphRemoveProperty );
         while ( changed.hasNext() )
         {
             StorageProperty prop = changed.next();
