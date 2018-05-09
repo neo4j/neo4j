@@ -48,10 +48,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 /**
@@ -90,46 +87,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      */
     @Override
     void close();
-
-    /**
-     * @return {@link LabelScanReader} capable of reading nodes for specific label ids.
-     */
-    LabelScanReader getLabelScanReader();
-
-    /**
-     * Returns an {@link IndexReader} for searching entity ids given property values. One reader is allocated
-     * and kept per index throughout the life of a statement, making the returned reader repeatable-read isolation.
-     * <p>
-     * <b>NOTE:</b>
-     * Reader returned from this method should not be closed. All such readers will be closed during {@link #close()}
-     * of the current statement.
-     *
-     * @param index {@link SchemaIndexDescriptor} to get reader for.
-     * @return {@link IndexReader} capable of searching entity ids given property values.
-     * @throws IndexNotFoundKernelException if no such index exists.
-     */
-    IndexReader getIndexReader( SchemaIndexDescriptor index ) throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an {@link IndexReader} for searching entity ids given property values. A new reader is allocated
-     * every call to this method, which means that newly committed data since the last call to this method
-     * will be visible in the returned reader.
-     * <p>
-     * <b>NOTE:</b>
-     * It is caller's responsibility to close the returned reader.
-     *
-     * @param index {@link SchemaIndexDescriptor} to get reader for.
-     * @return {@link IndexReader} capable of searching entity ids given property values.
-     * @throws IndexNotFoundKernelException if no such index exists.
-     */
-    IndexReader getFreshIndexReader( SchemaIndexDescriptor index ) throws IndexNotFoundKernelException;
-
-    /**
-     * Access to low level record cursors
-     *
-     * @return record cursors
-     */
-    RecordCursors recordCursors();
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
@@ -438,8 +395,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
     boolean nodeExists( long id );
 
     boolean relationshipExists( long id );
-
-    int degreeRelationshipsInGroup( long id, long groupId, Direction direction, Integer relType );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
 
