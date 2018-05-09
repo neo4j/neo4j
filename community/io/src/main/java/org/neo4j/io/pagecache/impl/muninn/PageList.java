@@ -43,9 +43,9 @@ import static org.neo4j.util.FeatureToggles.flag;
  * <tr><td>8</td><td>Sequence lock word.</td></tr>
  * <tr><td>8</td><td>Pointer to the memory page.</td></tr>
  * <tr><td>8</td><td>Last modified transaction id.</td></tr>
- * <tr><td>5</td><td>File page id.</td></tr>
- * <tr><td>1</td><td>Usage stamp. Optimistically incremented; truncated to a max of 4.</td></tr>
- * <tr><td>2</td><td>Page swapper id.</td></tr>
+ * <tr><td>8</td><td>Page binding. The first 40 bits (5 bytes) are the file page id.
+ * The following (low order) 21 bits (2 bytes and 5 bits) are the swapper id.
+ * The last (lowest order) 3 bits are the page usage counter.</td></tr>
  * </table>
  */
 class PageList
@@ -56,29 +56,27 @@ class PageList
     static final long MAX_PAGES = Integer.MAX_VALUE;
 
     private static final int UNBOUND_LAST_MODIFIED_TX_ID = -1;
-    private static final long MASK_USAGE_COUNT = 0x07;
-    private static final long MASK_NOT_USAGE_COUNT = ~MASK_USAGE_COUNT;
     private static final long MAX_USAGE_COUNT = 4;
-    private static final long MASK_NOT_FILE_PAGE_ID = 0xFFFFFF;
     private static final int SHIFT_FILE_PAGE_ID = 24;
     private static final int SHIFT_SWAPPER_ID = 3;
     private static final int SHIFT_PARTIAL_FILE_PAGE_ID = SHIFT_FILE_PAGE_ID - SHIFT_SWAPPER_ID;
-    private static final long MASK_SHIFTED_SWAPPER_ID = 0b1_11111_11111_11111_11111;
+    private static final long MASK_USAGE_COUNT = (1L << SHIFT_SWAPPER_ID) - 1L;
+    private static final long MASK_NOT_USAGE_COUNT = ~MASK_USAGE_COUNT;
+    private static final long MASK_NOT_FILE_PAGE_ID = (1L << SHIFT_FILE_PAGE_ID) - 1L;
+    private static final long MASK_SHIFTED_SWAPPER_ID = MASK_NOT_FILE_PAGE_ID >>> SHIFT_SWAPPER_ID;
     private static final long MASK_NOT_SWAPPER_ID = ~(MASK_SHIFTED_SWAPPER_ID << SHIFT_SWAPPER_ID);
     private static final long UNBOUND_PAGE_BINDING = PageCursor.UNBOUND_PAGE_ID << SHIFT_FILE_PAGE_ID;
 
     // 40 bits for file page id
-    private static final long MAX_FILE_PAGE_ID = 0b11111111_11111111_11111111_11111111_11111111L;
+    private static final long MAX_FILE_PAGE_ID = (1L << Long.SIZE - SHIFT_FILE_PAGE_ID) - 1L;
 
-    private static final int OFFSET_LOCK_WORD = 0; // 8 bytes
-    private static final int OFFSET_ADDRESS = 8; // 8 bytes
-    private static final int OFFSET_LAST_TX_ID = 16; // 8 bytes
-    private static final int OFFSET_FILE_PAGE_ID = 24; // 5 bytes
-    @SuppressWarnings( "unused" )
-    private static final int OFFSET_SWAPPER_ID = 29; // 2 bytes, plus the 5 high-bits from usage counter
-    @SuppressWarnings( "unused" )
-    private static final int OFFSET_USAGE_COUNTER = 31; // 1 byte, but only the 3 low bits.
-    // The last word-line, with the file page id, swapper id, and usage counter, is called the page binding word.
+    private static final int OFFSET_LOCK_WORD = 0; // 8 bytes.
+    private static final int OFFSET_ADDRESS = 8; // 8 bytes.
+    private static final int OFFSET_LAST_TX_ID = 16; // 8 bytes.
+    // The high 5 bytes of the page binding are the file page id.
+    // The 21 following lower bits are the swapper id.
+    // And the last 3 low bits are the usage counter.
+    private static final int OFFSET_PAGE_BINDING = 24; // 8 bytes.
 
     // todo we can alternatively also make use of the lower 12 bits of the address field, because
     // todo the addresses are page aligned, and we can assume them to be at least 4096 bytes in size.
@@ -262,7 +260,7 @@ class PageList
 
     private long offPageBinding( long pageRef )
     {
-        return pageRef + OFFSET_FILE_PAGE_ID;
+        return pageRef + OFFSET_PAGE_BINDING;
     }
 
     public long tryOptimisticReadLock( long pageRef )
