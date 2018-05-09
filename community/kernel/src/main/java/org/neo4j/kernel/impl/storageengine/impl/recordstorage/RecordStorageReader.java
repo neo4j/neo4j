@@ -168,7 +168,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     private final SchemaCache schemaCache;
 
     // State from the old StoreStatement
-    private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
     private final InstanceCache<StorePropertyCursor> propertyCursorCache;
 
@@ -210,16 +209,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
         this.commandCreationContext = commandCreationContext;
 
         this.recordCursors = new RecordCursors( neoStores );
-        this.iteratorRelationshipCursor = new InstanceCache<StoreIteratorRelationshipCursor>()
-        {
-            @Override
-            protected StoreIteratorRelationshipCursor create()
-            {
-                return new StoreIteratorRelationshipCursor( relationshipStore.newRecord(), this, recordCursors,
-                        lockService );
-            }
-        };
-
         this.singlePropertyCursorCache = new InstanceCache<StoreSinglePropertyCursor>()
         {
             @Override
@@ -703,13 +692,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
         assert !closed;
         assert !acquired;
         this.acquired = true;
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipsGetAllCursor()
-    {
-        neoStores.assertOpen();
-        return iteratorRelationshipCursor.get().init( new AllIdIterator( relationshipStore ) );
     }
 
     @Override

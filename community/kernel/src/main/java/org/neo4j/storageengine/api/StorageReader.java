@@ -96,16 +96,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
     @Override
     void close();
 
-    /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     * through the selection.
-     *
-     * @return a {@link Cursor} over all stored relationships.
-     */
-    Cursor<RelationshipItem> relationshipsGetAllCursor();
-
     Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock, AssertOpen assertOpen );
 
     Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock,
