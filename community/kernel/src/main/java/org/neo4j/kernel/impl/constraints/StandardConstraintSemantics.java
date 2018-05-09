@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
-import java.util.Iterator;
-import java.util.function.BiPredicate;
-
-import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -36,8 +32,6 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -46,14 +40,6 @@ public class StandardConstraintSemantics implements ConstraintSemantics
 {
     public static final String ERROR_MESSAGE_EXISTS = "Property existence constraint requires Neo4j Enterprise Edition";
     public static final String ERROR_MESSAGE_NODE_KEY = "Node Key constraint requires Neo4j Enterprise Edition";
-
-    @Override
-    public void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes,
-            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasProperty )
-            throws CreateConstraintFailureException
-    {
-        throw propertyExistenceConstraintsNotAllowed( descriptor );
-    }
 
     @Override
     public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
@@ -70,26 +56,10 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     }
 
     @Override
-    public void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRelationships,
-            RelationTypeSchemaDescriptor descriptor, BiPredicate<RelationshipItem,Integer> hasPropertyCheck )
-            throws CreateConstraintFailureException
-    {
-        throw propertyExistenceConstraintsNotAllowed( descriptor );
-    }
-
-    @Override
     public void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor,
             PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor )  throws CreateConstraintFailureException
     {
         throw propertyExistenceConstraintsNotAllowed( descriptor );
-    }
-
-    @Override
-    public void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes,
-            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasProperty )
-            throws CreateConstraintFailureException
-    {
-        throw nodeKeyConstraintsNotAllowed( descriptor );
     }
 
     @Override
