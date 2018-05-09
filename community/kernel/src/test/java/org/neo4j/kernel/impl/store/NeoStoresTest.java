@@ -48,7 +48,6 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -63,7 +62,6 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -387,18 +385,12 @@ public class NeoStoresTest
 
     private void relDelete( long id )
     {
-        RelationshipVisitor<RuntimeException> visitor = ( relId, type, startNode, endNode ) ->
-                transaction.relationshipDoDelete( relId, type, startNode, endNode );
-        if ( !transaction.relationshipVisit( id, visitor ) )
+        try ( RelationshipScanCursor relationshipCursor = storageReader.allocateRelationshipScanCursor() )
         {
-            try
-            {
-                storageReader.relationshipVisit( id, visitor );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                throw new RuntimeException( e );
-            }
+            storageReader.singleRelationship( id, relationshipCursor );
+            assertTrue( relationshipCursor.next() );
+            transaction.relationshipDoDelete( id, relationshipCursor.type(), relationshipCursor.sourceNodeReference(),
+                    relationshipCursor.targetNodeReference() );
         }
     }
 
@@ -1189,18 +1181,13 @@ public class NeoStoresTest
     private void assertRelationshipData( long rel, final long firstNode, final long secondNode,
             final int relType )
     {
-        try
+        try ( RelationshipScanCursor relationshipCursor = storageReader.allocateRelationshipScanCursor() )
         {
-            storageReader.relationshipVisit( rel, ( relId, type, startNode, endNode ) ->
-            {
-                assertEquals( firstNode, startNode );
-                assertEquals( secondNode, endNode );
-                assertEquals( relType, type );
-            } );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new RuntimeException( e );
+            storageReader.singleRelationship( rel, relationshipCursor );
+            assertTrue( relationshipCursor.next() );
+            assertEquals( firstNode, relationshipCursor.sourceNodeReference() );
+            assertEquals( secondNode, relationshipCursor.targetNodeReference() );
+            assertEquals( relType, relationshipCursor.type() );
         }
     }
 
