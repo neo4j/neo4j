@@ -64,13 +64,6 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
         this.owningConstraintId = owningConstraintId;
     }
 
-    public static StoreIndexDescriptor constraintIndexRule( long id, IndexDescriptor descriptor,
-                                                            IndexProvider.Descriptor providerDescriptor,
-                                                            Long owningConstraint )
-    {
-        return new StoreIndexDescriptor( descriptor, id, owningConstraint );
-    }
-
     public boolean canSupportUniqueConstraint()
     {
         return type() == IndexDescriptor.Type.UNIQUE;
@@ -103,13 +96,13 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
         return canSupportUniqueConstraint() && getOwningConstraint() == null;
     }
 
-    public StoreIndexDescriptor withOwningConstraint( long constraintId )
+    public StoreIndexDescriptor withOwningConstraint( Long constraintId )
     {
         if ( !canSupportUniqueConstraint() )
         {
             throw new IllegalStateException( this + " is not a constraint index" );
         }
-        return constraintIndexRule( id, this, this.providerDescriptor(), constraintId );
+        return new StoreIndexDescriptor( this, id, constraintId );
     }
 
     @Override

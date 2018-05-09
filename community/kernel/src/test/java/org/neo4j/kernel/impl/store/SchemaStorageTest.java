@@ -67,6 +67,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
 
 public class SchemaStorageTest
@@ -365,10 +366,7 @@ public class SchemaStorageTest
     private StoreIndexDescriptor makeIndexRuleForConstraint( long ruleId, String label, String propertyKey,
                                                              long constraintId )
     {
-        return StoreIndexDescriptor.constraintIndexRule(
-                ruleId,
-                TestIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( propertyKey ) ),
-                PROVIDER_DESCRIPTOR, constraintId );
+        return uniqueForSchema( forLabel( labelId( label ), propId( propertyKey ) ), PROVIDER_DESCRIPTOR ).withIds( ruleId, constraintId );
     }
 
     private ConstraintRule getUniquePropertyConstraintRule( long id, String label, String property )

@@ -38,7 +38,6 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.single;
-import static org.neo4j.kernel.api.schema.index.StoreIndexDescriptor.constraintIndexRule;
 
 public class DropBrokenUniquenessConstraintIT
 {
@@ -180,7 +179,7 @@ public class DropBrokenUniquenessConstraintIT
 
     private void setOwnerNull( SchemaStore schemaStore, StoreIndexDescriptor rule )
     {
-        rule = constraintIndexRule( rule.getId(), rule, rule.providerDescriptor(), null );
+        rule = rule.withOwningConstraint( null );
         List<DynamicRecord> dynamicRecords = schemaStore.allocateFrom( rule );
         for ( DynamicRecord record : dynamicRecords )
         {

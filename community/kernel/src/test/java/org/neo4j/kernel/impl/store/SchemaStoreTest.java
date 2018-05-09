@@ -185,8 +185,8 @@ public class SchemaStoreTest
     private StoreIndexDescriptor uniqueIndexRule( long ruleId, long owningConstraint,
                                                   IndexProvider.Descriptor descriptor, int labelId, int... propertyIds )
     {
-        return StoreIndexDescriptor.constraintIndexRule( ruleId,
-                                                         TestIndexDescriptorFactory.uniqueForLabel( labelId, propertyIds ), descriptor, owningConstraint );
+        return IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propertyIds ), descriptor )
+                .withIds( ruleId, owningConstraint );
     }
 
     private ConstraintRule constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )
