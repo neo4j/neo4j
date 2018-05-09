@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import java.io.IOException;
 
-public class DateUniqueSchemaIndexPopulatorTest extends TemporalUniqueSchemaIndexPopulatorTest
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+
+public abstract class TemporalSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<TemporalSchemaKey,NativeSchemaValue>
 {
     @Override
-    protected LayoutTestUtil<TemporalSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    NativeSchemaIndexAccessor<TemporalSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new UniqueLayoutTestUtil<>(
-                new DateLayoutTestUtil( SchemaIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+        return new TemporalIndexAccessor( pageCache, fs, getIndexFile(), layout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig );
     }
 }

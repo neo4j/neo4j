@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Arrays;
-
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
@@ -37,17 +36,23 @@ import static java.lang.String.format;
 class SpatialSchemaKey extends NativeSchemaKey<SpatialSchemaKey>
 {
     static final int SIZE =
+            Integer.BYTES + /* table id */
+            Integer.BYTES + /* code */
             Long.BYTES + /* raw value bits */
             Long.BYTES;  /* entityId */
 
-    long rawValueBits;
+    final SpaceFillingCurveSettingsFactory curveFactory;
+
+    transient boolean highest;
+    transient boolean lowest;
+
     CoordinateReferenceSystem crs;
+    long rawValueBits;
     SpaceFillingCurve curve;
 
-    SpatialSchemaKey( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
+    SpatialSchemaKey( SpaceFillingCurveSettingsFactory curveFactory )
     {
-        this.crs = crs;
-        this.curve = curve;
+        this.curveFactory = curveFactory;
     }
 
     @Override
@@ -61,27 +66,30 @@ class SpatialSchemaKey extends NativeSchemaKey<SpatialSchemaKey>
     }
 
     @Override
+    void initialize( long entityId )
+    {
+        super.initialize( entityId );
+        highest = false;
+        lowest = false;
+    }
+
+    @Override
     void initValueAsLowest()
     {
-        double[] limit = new double[crs.getDimension()];
-        Arrays.fill(limit, Double.NEGATIVE_INFINITY);
-        writePoint( crs, limit );
+        lowest = true;
     }
 
     @Override
     void initValueAsHighest()
     {
-        // These coordinates will generate the largest value on the spacial curve
-        double[] limit = new double[crs.getDimension()];
-        Arrays.fill(limit, Double.NEGATIVE_INFINITY);
-        limit[0] = Double.POSITIVE_INFINITY;
-        writePoint( crs, limit );
+        highest = true;
     }
 
-    public void fromDerivedValue( long entityId, long derivedValue )
+    void fromDerivedValue( long entityId, long derivedValue, CoordinateReferenceSystem crs )
     {
-        rawValueBits = derivedValue;
         initialize( entityId );
+        this.crs = crs;
+        rawValueBits = derivedValue;
     }
 
     /**
@@ -91,6 +99,26 @@ class SpatialSchemaKey extends NativeSchemaKey<SpatialSchemaKey>
      */
     int compareValueTo( SpatialSchemaKey other )
     {
+        if ( lowest || other.lowest )
+        {
+            return Boolean.compare( other.lowest, lowest );
+        }
+        if ( highest || other.highest )
+        {
+            return Boolean.compare( highest, other.highest );
+        }
+
+        int tableComparison = Integer.compare( crs.getTable().getTableId(), other.crs.getTable().getTableId() );
+        if ( tableComparison != 0 )
+        {
+            return tableComparison;
+        }
+        int codeComparison = Integer.compare( crs.getCode(), other.crs.getCode() );
+        if ( codeComparison != 0 )
+        {
+            return codeComparison;
+        }
+
         return Long.compare( rawValueBits, other.rawValueBits );
     }
 
@@ -111,7 +139,17 @@ class SpatialSchemaKey extends NativeSchemaKey<SpatialSchemaKey>
     @Override
     public void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
+        updateCurve( crs );
+        this.crs = crs;
         rawValueBits = curve.derivedValueFor( coordinate );
+    }
+
+    private void updateCurve( CoordinateReferenceSystem crs )
+    {
+        if ( this.crs == null || this.crs != crs )
+        {
+            this.curve = curveFactory.settingsFor( crs ).curve();
+        }
     }
 
     @Override

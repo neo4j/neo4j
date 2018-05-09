@@ -31,7 +31,6 @@ import org.neo4j.values.storable.Value;
 
 class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> extends LayoutTestUtil<KEY, VALUE>
 {
-
     private final LayoutTestUtil<KEY, VALUE> delegate;
 
     UniqueLayoutTestUtil( LayoutTestUtil<KEY, VALUE> delegate )
