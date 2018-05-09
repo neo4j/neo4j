@@ -38,9 +38,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -52,8 +52,8 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -267,7 +267,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
             int key1Id = tokenRead.propertyKey( KEY1 );
             int key2Id = tokenRead.propertyKey( KEY2 );
 
-            CapableIndexReference index = schemaRead.index( labelId, key1Id );
+            IndexReference index = schemaRead.index( labelId, key1Id );
             assertIndexHasExpectedProvider( expectedDescriptor, index );
             index = schemaRead.index( labelId, key1Id, key2Id );
             assertIndexHasExpectedProvider( expectedDescriptor, index );
@@ -275,7 +275,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
-    private void assertIndexHasExpectedProvider( IndexProvider.Descriptor expectedDescriptor, CapableIndexReference index )
+    private void assertIndexHasExpectedProvider( IndexProvider.Descriptor expectedDescriptor, IndexReference index )
     {
         assertEquals( "same key", expectedDescriptor.getKey(), index.providerKey() );
         assertEquals( "same version", expectedDescriptor.getVersion(), index.providerVersion() );
@@ -400,7 +400,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
             {
                 predicates[i] = IndexQuery.exists( propertyKeyIds[i] );
             }
-            CapableIndexReference index = ktx.schemaRead().index( labelId, propertyKeyIds );
+            IndexReference index = ktx.schemaRead().index( labelId, propertyKeyIds );
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
             ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, predicates );
             int count = 0;

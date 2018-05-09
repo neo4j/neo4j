@@ -41,9 +41,9 @@ public interface SchemaRead
      *
      * @param label the index label
      * @param properties the index properties
-     * @return the IndexReference, or {@link CapableIndexReference#NO_INDEX} if such an index does not exist.
+     * @return the IndexReference, or {@link IndexReference#NO_INDEX} if such an index does not exist.
      */
-    CapableIndexReference index( int label, int... properties );
+    IndexReference index( int label, int... properties );
 
     /**
      * Acquire an index reference of the given {@code label} and {@code properties}. This method does not assert
@@ -53,7 +53,7 @@ public interface SchemaRead
      * @param properties the index properties
      * @return a IndexReference for the given label and properties
      */
-    CapableIndexReference indexReferenceUnchecked( int label, int... properties );
+    IndexReference indexReferenceUnchecked( int label, int... properties );
 
     /**
      * Returns all indexes associated with the given label

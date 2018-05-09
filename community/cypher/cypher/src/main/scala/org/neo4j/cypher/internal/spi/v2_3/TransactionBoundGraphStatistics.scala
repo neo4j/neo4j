@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, StatisticsC
 import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, NameId, PropertyKeyId, RelTypeId}
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 object TransactionBoundGraphStatistics {

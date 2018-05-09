@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -629,13 +628,13 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public CapableIndexReference index( int label, int... properties )
+    public IndexReference index( int label, int... properties )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public CapableIndexReference indexReferenceUnchecked( int label, int... properties )
+    public IndexReference indexReferenceUnchecked( int label, int... properties )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

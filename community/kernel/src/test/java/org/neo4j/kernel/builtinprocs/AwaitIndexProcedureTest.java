@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -66,7 +65,7 @@ public class AwaitIndexProcedureTest
     private IndexProcedures procedure;
     private LabelSchemaDescriptor descriptor;
     private LabelSchemaDescriptor anyDescriptor;
-    private CapableIndexReference anyIndex ;
+    private IndexReference anyIndex ;
 
     @Before
     public void setup()
@@ -156,7 +155,7 @@ public class AwaitIndexProcedureTest
     {
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( anyInt(), any() ) ).thenReturn( CapableIndexReference.NO_INDEX );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( IndexReference.NO_INDEX );
 
         try
         {

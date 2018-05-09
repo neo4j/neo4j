@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.schema.index;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -38,7 +38,7 @@ import static java.lang.String.format;
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
  */
-public class IndexDescriptor implements SchemaDescriptorSupplier, CapableIndexReference
+public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
 {
     public enum Type
     {

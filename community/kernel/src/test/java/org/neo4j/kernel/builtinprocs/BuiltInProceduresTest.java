@@ -37,7 +37,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NamedToken;
@@ -85,8 +84,8 @@ import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 public class BuiltInProceduresTest
 {
-    private final List<CapableIndexReference> indexes = new LinkedList<>();
-    private final List<CapableIndexReference> uniqueIndexes = new LinkedList<>();
+    private final List<IndexReference> indexes = new LinkedList<>();
+    private final List<IndexReference> uniqueIndexes = new LinkedList<>();
     private final List<ConstraintDescriptor> constraints = new LinkedList<>();
     private final Map<Integer,String> labels = new HashMap<>();
     private final Map<Integer,String> propKeys = new HashMap<>();
@@ -415,7 +414,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        CapableIndexReference index =
+        IndexReference index =
                 StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         indexes.add( index );
     }
@@ -425,7 +424,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        CapableIndexReference index =
+        IndexReference index =
                 StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.uniqueForLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
@@ -505,17 +504,17 @@ public class BuiltInProceduresTest
         when( schemaRead.indexesGetAll() ).thenAnswer(
                 i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
         when( schemaRead.index( anyInt(), anyInt() )).thenAnswer(
-                (Answer<CapableIndexReference>) invocationOnMock -> {
+                (Answer<IndexReference>) invocationOnMock -> {
                     int label = invocationOnMock.getArgument( 0 );
                     int prop = invocationOnMock.getArgument( 1 );
-                    for ( CapableIndexReference index : indexes )
+                    for ( IndexReference index : indexes )
                     {
                         if ( index.label() == label && prop == index.properties()[0] )
                         {
                             return index;
                         }
                     }
-                    for ( CapableIndexReference index : uniqueIndexes )
+                    for ( IndexReference index : uniqueIndexes )
                     {
                         if ( index.label() == label && prop == index.properties()[0] )
                         {

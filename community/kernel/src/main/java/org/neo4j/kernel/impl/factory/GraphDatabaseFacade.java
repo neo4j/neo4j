@@ -55,7 +55,6 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -705,8 +704,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             statement.close();
             return emptyResourceIterator();
         }
-        CapableIndexReference index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
-        if ( index != CapableIndexReference.NO_INDEX )
+        IndexReference index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
+        if ( index != IndexReference.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching nodes
             try
@@ -740,7 +739,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         int[] propertyIds = getPropertyIds( queries );
         IndexReference index = findMatchingIndex( transaction, labelId, propertyIds );
 
-        if ( index != CapableIndexReference.NO_INDEX )
+        if ( index != IndexReference.NO_INDEX )
         {
             try
             {
@@ -759,7 +758,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private IndexReference findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
     {
         IndexReference index = transaction.schemaRead().index( labelId, propertyIds );
-        if ( index != CapableIndexReference.NO_INDEX )
+        if ( index != IndexReference.NO_INDEX )
         {
             // index found with property order matching the query
             return index;
@@ -783,7 +782,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     return index;
                 }
             }
-            return CapableIndexReference.NO_INDEX;
+            return IndexReference.NO_INDEX;
         }
     }
 

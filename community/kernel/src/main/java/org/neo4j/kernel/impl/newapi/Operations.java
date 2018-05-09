@@ -29,7 +29,6 @@ import java.util.Optional;
 
 import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
@@ -1247,7 +1246,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
     private void assertValidIndex( IndexDescriptor index ) throws NoSuchIndexException
     {
-        if ( index == CapableIndexReference.NO_INDEX )
+        if ( index == IndexReference.NO_INDEX )
         {
             throw new NoSuchIndexException( index.schema() );
         }

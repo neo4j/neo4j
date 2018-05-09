@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Session;
@@ -53,8 +53,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
-import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext
-        .CONSTRAINT_CREATION;
+import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
 
@@ -97,7 +96,7 @@ public class ConstraintIndexCreator
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
 
-        CapableIndexReference index;
+        IndexReference index;
         SchemaRead schemaRead = transaction.schemaRead();
         try
         {
@@ -175,10 +174,10 @@ public class ConstraintIndexCreator
     }
 
     private boolean indexStillExists( SchemaRead schemaRead, SchemaDescriptor descriptor,
-            CapableIndexReference index )
+            IndexReference index )
     {
-        CapableIndexReference existingIndex = schemaRead.index( descriptor.keyId(), descriptor.getPropertyIds() );
-        return existingIndex != CapableIndexReference.NO_INDEX && existingIndex.equals( index );
+        IndexReference existingIndex = schemaRead.index( descriptor.keyId(), descriptor.getPropertyIds() );
+        return existingIndex != IndexReference.NO_INDEX && existingIndex.equals( index );
     }
 
     private void acquireLabelLock( KernelTransactionImplementation state, Client locks, int labelId )
@@ -206,7 +205,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    private IndexDescriptor asDescriptor( CapableIndexReference indexReference )
+    private IndexDescriptor asDescriptor( IndexReference indexReference )
     {
         if ( indexReference.isUnique() )
         {
@@ -240,12 +239,12 @@ public class ConstraintIndexCreator
         }
     }
 
-    private CapableIndexReference getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead,
+    private IndexReference getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead,
             TokenRead tokenRead, SchemaDescriptor schema )
             throws SchemaKernelException, IndexNotFoundKernelException
     {
-        CapableIndexReference descriptor = schemaRead.index( schema.keyId(), schema.getPropertyIds() );
-        if ( descriptor != CapableIndexReference.NO_INDEX )
+        IndexReference descriptor = schemaRead.index( schema.keyId(), schema.getPropertyIds() );
+        if ( descriptor != IndexReference.NO_INDEX )
         {
             if ( descriptor.isUnique() )
             {

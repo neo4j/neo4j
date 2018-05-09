@@ -30,7 +30,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -310,7 +310,7 @@ public interface StorageReader extends AutoCloseable
      * @return {@link IndexProvider.Descriptor} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    CapableIndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param descriptor {@link SchemaDescriptor} to get population progress for.

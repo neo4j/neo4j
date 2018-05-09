@@ -27,7 +27,6 @@ import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -55,8 +54,8 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -311,7 +310,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public CapableIndexReference index( int label, int... properties )
+    public IndexReference index( int label, int... properties )
     {
         ktx.assertOpen();
 
@@ -323,7 +322,7 @@ public class AllStoreHolder extends Read
         catch ( IllegalArgumentException ignore )
         {
             // This means we have invalid label or property ids.
-            return CapableIndexReference.NO_INDEX;
+            return IndexReference.NO_INDEX;
         }
         CapableIndexDescriptor indexDescriptor = storageReader.indexGetForSchema( descriptor );
         if ( ktx.hasTxStateWithChanges() )
@@ -333,7 +332,7 @@ public class AllStoreHolder extends Read
             {
                 if ( diffSets.isRemoved( indexDescriptor ) )
                 {
-                    return CapableIndexReference.NO_INDEX;
+                    return IndexReference.NO_INDEX;
                 }
                 else
                 {
@@ -350,16 +349,16 @@ public class AllStoreHolder extends Read
                 }
                 else
                 {
-                    return CapableIndexReference.NO_INDEX;
+                    return IndexReference.NO_INDEX;
                 }
             }
         }
 
-        return indexDescriptor != null ? indexDescriptor : CapableIndexReference.NO_INDEX;
+        return indexDescriptor != null ? indexDescriptor : IndexReference.NO_INDEX;
     }
 
     @Override
-    public CapableIndexReference indexReferenceUnchecked( int label, int... properties )
+    public IndexReference indexReferenceUnchecked( int label, int... properties )
     {
         return IndexDescriptorFactory.forLabel( label, properties );
     }
@@ -521,7 +520,7 @@ public class AllStoreHolder extends Read
                 SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
     }
 
-    CapableIndexReference indexGetCapability( IndexDescriptor schemaIndexDescriptor )
+    IndexReference indexGetCapability( IndexDescriptor schemaIndexDescriptor )
     {
         try
         {
@@ -1187,7 +1186,7 @@ public class AllStoreHolder extends Read
 
     private void assertValidIndex( IndexReference index ) throws IndexNotFoundKernelException
     {
-        if ( index == CapableIndexReference.NO_INDEX )
+        if ( index == IndexReference.NO_INDEX )
         {
             throw new IndexNotFoundKernelException( "No index was found" );
         }
