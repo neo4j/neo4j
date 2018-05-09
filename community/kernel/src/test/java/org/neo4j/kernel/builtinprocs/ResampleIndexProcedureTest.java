@@ -44,7 +44,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
 
 public class ResampleIndexProcedureTest
 {
@@ -108,7 +107,7 @@ public class ResampleIndexProcedureTest
         IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 456 );
-        when( schemaRead.index( anyInt(), any() ) ).thenReturn( fromDescriptor( index ) );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );
 
@@ -123,7 +122,7 @@ public class ResampleIndexProcedureTest
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
         when( tokenRead.propertyKey( "name" ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( "lastName" ) ).thenReturn( 1 );
-        when( schemaRead.index( 123, 0, 1  ) ).thenReturn( fromDescriptor( index ) );
+        when( schemaRead.index( 123, 0, 1  ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name, lastName)" );
 
@@ -155,7 +154,7 @@ public class ResampleIndexProcedureTest
             throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
         IndexDescriptor index = IndexDescriptorFactory.forLabel( 123, 456 );
-        when( schemaRead.index( anyInt(), any() ) ).thenReturn( fromDescriptor( index ) );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );
 

@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.CapableIndexReference;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -83,9 +82,8 @@ public class ConstraintIndexCreatorTest
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
-    private final CapableIndexReference indexReference =
-            new DefaultCapableIndexReference( true, IndexCapability.NO_CAPABILITY,
-                    new IndexProvider.Descriptor( "foo", "1.872" ), LABEL_ID, PROPERTY_KEY_ID );
+    private final CapableIndexReference indexReference = StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID ),
+            new IndexProvider.Descriptor( "foo", "1.872" ) );
     private final SchemaRead schemaRead = schemaRead();
     private final TokenRead tokenRead = mock( TokenRead.class );
 

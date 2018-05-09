@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -78,7 +77,7 @@ public class AwaitIndexProcedureTest
         procedure = new IndexProcedures( transaction, null );
         descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
         anyDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
-        anyIndex = DefaultCapableIndexReference.fromDescriptor( forSchema( anyDescriptor ) );
+        anyIndex = forSchema( anyDescriptor );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( transaction.schemaRead() ).thenReturn( schemaRead );
     }

@@ -57,7 +57,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
-import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
 
 @RunWith( Parameterized.class )
 public class CompositeIndexingIT
@@ -97,7 +96,7 @@ public class CompositeIndexingIT
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
-            while ( ktx.schemaRead().indexGetState( fromDescriptor( index ) ) !=
+            while ( ktx.schemaRead().indexGetState( index ) !=
                     InternalIndexState.ONLINE )
             {
                 Thread.sleep( 10 );
@@ -118,7 +117,7 @@ public class CompositeIndexingIT
             }
             else
             {
-                ktx.schemaWrite().indexDrop( fromDescriptor( index ) );
+                ktx.schemaWrite().indexDrop( index );
             }
             tx.success();
         }
@@ -338,7 +337,7 @@ public class CompositeIndexingIT
     private NodeValueIndexCursor seek( KernelTransaction transaction ) throws KernelException
     {
         NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
-        transaction.dataRead().nodeIndexSeek( fromDescriptor( index ), cursor, IndexOrder.NONE, exactQuery() );
+        transaction.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, exactQuery() );
         return cursor;
     }
 
