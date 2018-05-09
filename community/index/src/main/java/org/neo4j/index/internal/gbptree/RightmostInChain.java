@@ -109,6 +109,6 @@ class RightmostInChain
     void assertLast()
     {
         assert currentRightmostRightSiblingPointer == NO_NODE_FLAG : "Expected rightmost right sibling to be " + NO_NODE_FLAG
-                + " but was " + currentRightmostRightSiblingPointer;
+                + " but was " + currentRightmostRightSiblingPointer + ". Current rightmost node is " + currentRightmostNode;
     }
 }
