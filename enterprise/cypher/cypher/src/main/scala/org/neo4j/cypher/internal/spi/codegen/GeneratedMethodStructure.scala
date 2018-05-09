@@ -1555,9 +1555,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def newIndexReference(referenceVar: String, labelVar: String, propKeyVar: String) = {
     val propertyIdsExpr = Expression.newArray(typeRef[Int], generator.load(propKeyVar))
 
-    generator.assign(typeRef[CapableIndexReference], referenceVar,
+    generator.assign(typeRef[IndexReference], referenceVar,
                      invoke(schemaRead,
-                           method[SchemaRead, CapableIndexReference]("index", typeRef[Int], typeRef[Array[Int]]),
+                           method[SchemaRead, IndexReference]("index", typeRef[Int], typeRef[Array[Int]]),
                             generator.load(labelVar), propertyIdsExpr)
     )
   }
@@ -1577,7 +1577,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       body.assign(local,
                   invoke(
                     methodReference(typeRef[CompiledIndexUtils], typeRef[NodeValueIndexCursor], "indexSeek",
-                                    typeRef[Read], typeRef[CursorFactory], typeRef[CapableIndexReference], typeRef[AnyRef]),
+                                    typeRef[Read], typeRef[CursorFactory], typeRef[IndexReference], typeRef[AnyRef]),
                     dataRead, cursors, index, boxedValue)
       )
     }

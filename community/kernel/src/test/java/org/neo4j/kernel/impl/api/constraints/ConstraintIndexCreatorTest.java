@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -82,7 +82,7 @@ public class ConstraintIndexCreatorTest
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
-    private final CapableIndexReference indexReference = StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID ),
+    private final IndexReference indexReference = StoreIndexDescriptor.indexRule( 0, IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID ),
             new IndexProvider.Descriptor( "foo", "1.872" ) );
     private final SchemaRead schemaRead = schemaRead();
     private final TokenRead tokenRead = mock( TokenRead.class );
@@ -130,7 +130,7 @@ public class ConstraintIndexCreatorTest
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         when( schemaRead.index( anyInt(), anyInt() ) )
                 .thenReturn(
-                        CapableIndexReference.NO_INDEX )   // first claim it doesn't exist, because it doesn't... so
+                        IndexReference.NO_INDEX )   // first claim it doesn't exist, because it doesn't... so
                 // that it gets created
                 .thenReturn( indexReference ); // then after it failed claim it does exist
         ConstraintIndexCreator creator =
@@ -197,7 +197,7 @@ public class ConstraintIndexCreatorTest
         when( indexingService.getIndexProxy( anyLong() ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
 
-        when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( CapableIndexReference.NO_INDEX );
+        when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( IndexReference.NO_INDEX );
 
         ConstraintIndexCreator creator =
                 new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
@@ -333,7 +333,7 @@ public class ConstraintIndexCreatorTest
     private SchemaRead schemaRead()
     {
         SchemaRead schemaRead = mock( SchemaRead.class );
-        when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( CapableIndexReference.NO_INDEX );
+        when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( IndexReference.NO_INDEX );
         try
         {
             when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( INDEX_ID );

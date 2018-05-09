@@ -39,7 +39,6 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -225,7 +224,7 @@ public class SchemaImpl implements Schema
         {
 
             SchemaRead schemaRead = transaction.schemaRead();
-            CapableIndexReference reference = getIndexReference( schemaRead, transaction.tokenRead(), index );
+            IndexReference reference = getIndexReference( schemaRead, transaction.tokenRead(), index );
             InternalIndexState indexState = schemaRead.indexGetState( reference );
             switch ( indexState )
             {
@@ -253,7 +252,7 @@ public class SchemaImpl implements Schema
         try ( Statement ignore = transaction.acquireStatement() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            CapableIndexReference descriptor = getIndexReference( schemaRead, transaction.tokenRead(), index );
+            IndexReference descriptor = getIndexReference( schemaRead, transaction.tokenRead(), index );
             PopulationProgress progress = schemaRead.indexGetPopulationProgress( descriptor );
             return new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
         }
@@ -271,7 +270,7 @@ public class SchemaImpl implements Schema
         try ( Statement ignore = transaction.acquireStatement() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            CapableIndexReference descriptor = getIndexReference( schemaRead, transaction.tokenRead(), index );
+            IndexReference descriptor = getIndexReference( schemaRead, transaction.tokenRead(), index );
             return schemaRead.indexGetFailure( descriptor );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
@@ -332,7 +331,7 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private static CapableIndexReference getIndexReference( SchemaRead schemaRead, TokenRead tokenRead,
+    private static IndexReference getIndexReference( SchemaRead schemaRead, TokenRead tokenRead,
             IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
@@ -340,8 +339,8 @@ public class SchemaImpl implements Schema
         int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( tokenRead, index.getPropertyKeys() );
         assertValidLabel( index.getLabel(), labelId );
         assertValidProperties( index.getPropertyKeys(), propertyKeyIds );
-        CapableIndexReference reference = schemaRead.index( labelId, propertyKeyIds );
-        if ( reference == CapableIndexReference.NO_INDEX )
+        IndexReference reference = schemaRead.index( labelId, propertyKeyIds );
+        if ( reference == IndexReference.NO_INDEX )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, forLabel( labelId, propertyKeyIds ) );
         }

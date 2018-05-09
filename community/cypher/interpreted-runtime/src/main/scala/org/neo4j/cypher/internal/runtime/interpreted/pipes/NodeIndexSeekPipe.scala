@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 import org.neo4j.cypher.internal.v3_5.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference}
+import org.neo4j.internal.kernel.api.IndexReference
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
@@ -36,10 +36,10 @@ case class NodeIndexSeekPipe(ident: String,
 
   override val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
 
-  private var reference: IndexReference = CapableIndexReference.NO_INDEX
+  private var reference: IndexReference = IndexReference.NO_INDEX
 
   private def reference(context: QueryContext): IndexReference = {
-    if (reference == CapableIndexReference.NO_INDEX) {
+    if (reference == IndexReference.NO_INDEX) {
       reference = context.indexReference(label.nameId.id, propertyIds:_*)
     }
     reference

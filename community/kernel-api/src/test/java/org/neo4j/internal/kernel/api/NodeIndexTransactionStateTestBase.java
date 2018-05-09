@@ -61,7 +61,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             int prop = tx.tokenRead().propertyKey( "prop" );
             expected.add( nodeWithProp( tx, "2suff" ) );
             nodeWithProp( tx, "skruff" );
-            CapableIndexReference index = tx.schemaRead().index( label, prop );
+            IndexReference index = tx.schemaRead().index( label, prop );
             try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
             {
                 tx.dataRead().nodeIndexSeek( index, nodes, IndexOrder.NONE, IndexQuery.stringSuffix( prop, "suff" ) );
@@ -97,7 +97,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             int prop = tx.tokenRead().propertyKey( "prop" );
             expected.add( nodeWithProp( tx, "homeopatic" ) );
             nodeWithProp( tx, "telephonecompany" );
-            CapableIndexReference index = tx.schemaRead().index( label, prop );
+            IndexReference index = tx.schemaRead().index( label, prop );
             try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
             {
                 tx.dataRead().nodeIndexSeek( index, nodes, IndexOrder.NONE, IndexQuery.stringContains( prop, "me" ) );

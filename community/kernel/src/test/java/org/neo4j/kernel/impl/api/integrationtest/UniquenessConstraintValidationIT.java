@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -302,7 +302,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         TokenRead tokenRead = transaction.tokenRead();
         int person = tokenRead.nodeLabel( "Person" );
         int propId = tokenRead.propertyKey( "id" );
-        CapableIndexReference idx = transaction.schemaRead().index(  person, propId );
+        IndexReference idx = transaction.schemaRead().index(  person, propId );
 
         // when
         createLabeledNode( transaction, "Item", "id", 2 );
@@ -330,7 +330,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         TokenRead tokenRead = transaction.tokenRead();
         int person = tokenRead.nodeLabel( "Person" );
         int propId = tokenRead.propertyKey( "id" );
-        CapableIndexReference idx = transaction.schemaRead().index( person, propId  );
+        IndexReference idx = transaction.schemaRead().index( person, propId  );
 
         // when
         createLabeledNode( transaction, "Person", "id", 2 );

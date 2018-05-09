@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
@@ -76,7 +76,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     public void shouldFindMatchingNode() throws Exception
     {
         // given
-        CapableIndexReference index = createUniquenessConstraint( labelId, propertyId1 );
+        IndexReference index = createUniquenessConstraint( labelId, propertyId1 );
         Value value = Values.of( "value" );
         long nodeId = createNodeWithValue( value );
 
@@ -94,7 +94,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     public void shouldNotFindNonMatchingNode() throws Exception
     {
         // given
-        CapableIndexReference index = createUniquenessConstraint( labelId, propertyId1 );
+        IndexReference index = createUniquenessConstraint( labelId, propertyId1 );
         Value value = Values.of( "value" );
         createNodeWithValue( Values.of( "other_" + value ) );
 
@@ -111,7 +111,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     public void shouldCompositeFindMatchingNode() throws Exception
     {
         // given
-        CapableIndexReference index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
+        IndexReference index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
         Value value1 = Values.of( "value1" );
         Value value2 = Values.of( "value2" );
         long nodeId = createNodeWithValues( value1, value2 );
@@ -131,7 +131,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     public void shouldNotCompositeFindNonMatchingNode() throws Exception
     {
         // given
-        CapableIndexReference index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
+        IndexReference index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
         Value value1 = Values.of( "value1" );
         Value value2 = Values.of( "value2" );
         createNodeWithValues( Values.of( "other_" + value1 ), Values.of( "other_" + value2 ) );
@@ -167,7 +167,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // assert that we complete before timeout
         final DoubleLatch latch = new DoubleLatch();
 
-        final CapableIndexReference index = createUniquenessConstraint( labelId, propertyId1 );
+        final IndexReference index = createUniquenessConstraint( labelId, propertyId1 );
         final Value value = Values.of( "value" );
 
         Write write = dataWriteInNewTransaction();
@@ -239,12 +239,12 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         return nodeId;
     }
 
-    private CapableIndexReference createUniquenessConstraint( int labelId, int... propertyIds ) throws Exception
+    private IndexReference createUniquenessConstraint( int labelId, int... propertyIds ) throws Exception
     {
         Transaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyIds );
         transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor );
-        CapableIndexReference result = transaction.schemaRead().index( descriptor.getLabelId(), descriptor.getPropertyIds() );
+        IndexReference result = transaction.schemaRead().index( descriptor.getLabelId(), descriptor.getPropertyIds() );
         commit();
         return result;
     }
