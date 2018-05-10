@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.{LogicalPlanningTestSupport2, ProcedureCallProjection}
-import org.neo4j.cypher.internal.frontend.v3_5.ast.ProcedureResultItem
+import org.opencypher.v9_0.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ir.v3_5.{RegularPlannerQuery, RegularQueryProjection}
-import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions.{Namespace, ProcedureName, SignedDecimalIntegerLiteral}
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions.{Namespace, ProcedureName, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

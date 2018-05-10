@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_5.{DummyPosition, Rewriter}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.opencypher.v9_0.util.{DummyPosition, Rewriter}
+import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.opencypher.v9_0.expressions._
 
 trait PredicateTestSupport extends CypherTestSupport {
   self: CypherFunSuite =>

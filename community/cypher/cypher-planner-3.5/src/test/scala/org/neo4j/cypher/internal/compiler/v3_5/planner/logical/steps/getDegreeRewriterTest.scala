@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_5.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.functions.Exists
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.ast.AstConstructionTestSupport
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.expressions.functions.Exists
 
 class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
 

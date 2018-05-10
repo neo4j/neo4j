@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.codegen;
 
 import org.neo4j.cypher.internal.runtime.compiled.codegen.QueryExecutionEvent;
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id;
+import org.opencypher.v9_0.util.attribution.Id;
 
 public interface QueryExecutionTracer
 {

@@ -23,13 +23,13 @@ import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.{FineToReuse, ReusabilityState}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
+import org.opencypher.v9_0.frontend.PlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, ProcedurePlannerName}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
+import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.values.virtual.MapValue
 
 /**

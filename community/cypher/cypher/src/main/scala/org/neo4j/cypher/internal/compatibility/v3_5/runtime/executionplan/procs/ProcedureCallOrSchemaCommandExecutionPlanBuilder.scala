@@ -24,14 +24,14 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Execut
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_5.phases.{Condition, Phase}
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
+import org.opencypher.v9_0.frontend.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{QueryContext, SCHEMA_WRITE}
-import org.neo4j.cypher.internal.util.v3_5.{LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, PropertyKeyName, RelTypeName}
+import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
+import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 import scala.util.{Failure, Success, Try}

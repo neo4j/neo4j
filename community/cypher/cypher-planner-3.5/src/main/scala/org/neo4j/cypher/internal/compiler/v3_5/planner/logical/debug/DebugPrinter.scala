@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.debug
 
 import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilerContext, LogicalPlanState}
-import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.v3_5.phases.{CompilationPhaseTracer, Condition, Phase}
-import org.neo4j.cypher.internal.util.v3_5.InputPosition
-import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.v3_5.expressions.{ListLiteral, StringLiteral, Variable}
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.frontend.phases.{Condition, Phase}
+import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.util.attribution.SequentialIdGen
+import org.opencypher.v9_0.expressions.{ListLiteral, StringLiteral, Variable}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, LogicalPlan, ProduceResult, UnwindCollection}
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 
 object DebugPrinter extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING

@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.v3_5.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, Strictness}
-import org.neo4j.cypher.internal.util.v3_5.Foldable._
-import org.neo4j.cypher.internal.util.v3_5.Rewritable._
-import org.neo4j.cypher.internal.util.v3_5.attribution.{Id, IdGen, SameId}
-import org.neo4j.cypher.internal.util.v3_5.{Foldable, InternalException, Rewritable, Unchangeable}
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.opencypher.v9_0.util.Foldable._
+import org.opencypher.v9_0.util.Rewritable._
+import org.opencypher.v9_0.util.attribution.{Id, IdGen, SameId}
+import org.opencypher.v9_0.util.{Foldable, InternalException, Rewritable, Unchangeable}
+import org.opencypher.v9_0.expressions.Expression
 
 import scala.util.hashing.MurmurHash3
 import scala.collection.mutable
@@ -185,7 +185,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
   def indexUsage: Seq[IndexUsage] = {
-    import org.neo4j.cypher.internal.util.v3_5.Foldable._
+    import org.opencypher.v9_0.util.Foldable._
     this.fold(Seq.empty[IndexUsage]) {
       case NodeIndexSeek(idName, label, propertyKeys, _, _) =>
         (acc) => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, propertyKeys.map(_.name))

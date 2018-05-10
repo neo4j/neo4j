@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.util.v3_5.{One, ZeroOneOrMany}
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.opencypher.v9_0.util.{One, ZeroOneOrMany}
+import org.opencypher.v9_0.expressions._
 
 sealed trait SeekableArgs {
   def expr: Expression

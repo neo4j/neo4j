@@ -19,23 +19,25 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.codegen
 
+import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.aggregation.AggregationConverter.aggregateExpressionConverter
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.aggregation.Distinct
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions.ExpressionConverter.createExpression
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.SortItem
-import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.util.v3_5.Eagerly.immutableMapValues
-import org.neo4j.cypher.internal.util.v3_5.Foldable._
-import org.neo4j.cypher.internal.util.v3_5.{InternalException, One, ZeroOneOrMany, symbols}
-import org.neo4j.cypher.internal.v3_5.expressions.{Expression, FunctionInvocation}
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans.ColumnOrder
-import org.neo4j.cypher.internal.v3_5.{expressions => ast, functions => ast_functions}
+import org.opencypher.v9_0.expressions.{Expression, FunctionInvocation, functions => ast_functions}
+import org.opencypher.v9_0.util.Eagerly.immutableMapValues
+import org.opencypher.v9_0.util.Foldable._
+import org.opencypher.v9_0.util.{InternalException, One, ZeroOneOrMany, symbols}
+import org.opencypher.v9_0.{expressions => ast}
 
 object LogicalPlanConverter {
+
+  private type IndexSeekFun = (String, String, CodeGenExpression, Variable, Instruction) => Instruction
 
   def asCodeGenPlan(logicalPlan: plans.LogicalPlan): CodeGenPlan = logicalPlan match {
     case p: plans.Argument => argumentAsCodeGenPlan(p)
@@ -87,7 +89,7 @@ object LogicalPlanConverter {
     case _: plans.Top => true
   }
 
-  private def hasStandaloneLimit(p: plans.LogicalPlan)= p.treeExists {
+  private def hasStandaloneLimit(p: plans.LogicalPlan) = p.treeExists {
     case _: plans.Limit => true
   }
 
@@ -108,7 +110,7 @@ object LogicalPlanConverter {
     override def consume(context: CodeGenContext, child: CodeGenPlan, cardinalities: Cardinalities) = {
       val projectionOpName = context.registerOperator(projection)
       val columns = immutableMapValues(projection.expressions,
-                                       (e: ast.Expression) => ExpressionConverter.createExpression(e)(context))
+        (e: ast.Expression) => ExpressionConverter.createExpression(e)(context))
       context.retainProjectedVariables(projection.expressions.keySet)
       val vars = columns.collect {
         case (name, expr) if !context.hasVariable(name) =>
@@ -143,8 +145,8 @@ object LogicalPlanConverter {
     override def consume(context: CodeGenContext, child: CodeGenPlan, cardinalities: Cardinalities) = {
       val produceResultOpName = context.registerOperator(produceResults)
       val projections = produceResults.columns.map(c =>
-                                                     c -> ExpressionConverter
-                                                       .createMaterializeExpressionForVariable(c)(context)).toMap
+        c -> ExpressionConverter
+          .createMaterializeExpressionForVariable(c)(context)).toMap
 
       (None, List(AcceptVisitor(produceResultOpName, projections)))
     }
@@ -175,8 +177,6 @@ object LogicalPlanConverter {
     }
   }
 
-  private type IndexSeekFun = (String, String, CodeGenExpression, Variable, Instruction) => Instruction
-
   // Used by both nodeIndexSeekAsCodeGenPlan and nodeUniqueIndexSeekAsCodeGenPlan
   private def sharedIndexSeekAsCodeGenPlan(indexSeekFun: IndexSeekFun)
                                           (idName: String, valueExpr: plans.QueryExpression[Expression],
@@ -202,8 +202,8 @@ object LogicalPlanConverter {
             val expression = ToSet(createExpression(e)(context))
             val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
             ForEachExpression(expressionVar, expression,
-                              indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
-                                           actions))
+              indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
+                actions))
 
           //collection used in composite index search, pass entire collection to index seek
           case plans.CompositeQueryExpression(e: ast.ListLiteral) =>
@@ -229,24 +229,24 @@ object LogicalPlanConverter {
       val opName = context.registerOperator(logicalPlan)
       val seekOperation = seek.nodeIds match {
         case plans.SingleSeekableArg(e) => SeekNodeById(opName, nodeVar,
-                                                        createExpression(e)(context), actions)
+          createExpression(e)(context), actions)
         case plans.ManySeekableArgs(e) => e match {
           case coll: ast.ListLiteral =>
             ZeroOneOrMany(coll.expressions) match {
               case One(value) => SeekNodeById(opName, nodeVar,
-                                              createExpression(value)(context), actions)
+                createExpression(value)(context), actions)
               case _ =>
                 val expression = createExpression(e)(context)
                 val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
                 ForEachExpression(expressionVar, expression,
-                                  SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
+                  SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
             }
 
           case exp =>
             val expression = ToSet(createExpression(exp)(context))
             val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
             ForEachExpression(expressionVar, expression,
-                              SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
+              SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
         }
       }
       (methodHandle, seekOperation :: tl)
@@ -257,7 +257,7 @@ object LogicalPlanConverter {
     def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
                      nodeVar: Variable, actions: Instruction) =
       WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name),
-                                   descriptorVar, expression), actions)
+        descriptorVar, expression), actions)
 
     sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName, indexSeek.valueExpr, indexSeek)
   }
@@ -266,7 +266,7 @@ object LogicalPlanConverter {
     def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
                      nodeVar: Variable, actions: Instruction) =
       WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name),
-                                   descriptorVar, expression), actions)
+        descriptorVar, expression), actions)
 
     sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName, indexSeek.valueExpr, indexSeek)
   }
@@ -347,7 +347,7 @@ object LogicalPlanConverter {
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(expand)
       val expandGenerator = ExpandAllLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar,
-                                                       relVar)
+        relVar)
 
       (methodHandle, WhileLoop(relVar, expandGenerator, action) :: tl)
     }
@@ -364,7 +364,7 @@ object LogicalPlanConverter {
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(expand)
       val expandGenerator = ExpandIntoLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar,
-                                                        relVar)
+        relVar)
 
       (methodHandle, WhileLoop(relVar, expandGenerator, action) :: tl)
     }
@@ -554,7 +554,7 @@ object LogicalPlanConverter {
       val endLabel = relCount.endLabel.map(l => context.semanticTable.id(l).map(_.id) -> l.name)
       val types = relCount.typeNames.map(t => context.semanticTable.id(t).map(_.id) -> t.name)
       (methodHandle, RelationshipCountFromCountStoreInstruction(opName, variable, startLabel, types, endLabel,
-                                                                actions) :: tl)
+        actions) :: tl)
     }
   }
 

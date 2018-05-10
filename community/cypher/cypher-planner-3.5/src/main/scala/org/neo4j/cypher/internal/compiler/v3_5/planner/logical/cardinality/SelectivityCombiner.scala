@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality
 
 import java.math
 
-import org.neo4j.cypher.internal.util.v3_5.Selectivity
+import org.opencypher.v9_0.util.Selectivity
 
 trait SelectivityCombiner {
 

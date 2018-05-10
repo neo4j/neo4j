@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
-import org.neo4j.cypher.internal.compiler.v3_5.parser.ParserFixture
-import org.neo4j.cypher.internal.frontend.v3_5.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.util.v3_5.Cardinality
-import org.neo4j.cypher.internal.util.v3_5.attribution.{Id, SequentialIdGen}
+import org.opencypher.v9_0.ast.AstConstructionTestSupport
+import org.opencypher.v9_0.parser.ParserFixture
+import org.opencypher.v9_0.util.Cardinality
+import org.opencypher.v9_0.util.attribution.{Id, SequentialIdGen}
+import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
+
 import scala.language.implicitConversions
 
 trait LogicalPlanConstructionTestSupport extends CypherTestSupport {

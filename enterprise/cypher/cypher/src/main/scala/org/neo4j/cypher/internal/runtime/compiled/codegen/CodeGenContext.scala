@@ -23,8 +23,8 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.JoinData
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.util.attribution.Id
 
 import scala.collection.mutable
 

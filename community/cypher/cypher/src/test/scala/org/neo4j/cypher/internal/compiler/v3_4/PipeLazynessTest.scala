@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Short
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
-import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.graphdb._
 
 import scala.collection.JavaConverters._

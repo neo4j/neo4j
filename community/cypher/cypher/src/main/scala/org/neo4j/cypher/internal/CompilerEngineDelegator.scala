@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherCompilerConfiguration, StatsDivergenceCalculator}
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.util.v3_5.InputPosition
+import org.opencypher.v9_0.util.helpers.fixedPoint
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
+import org.opencypher.v9_0.util.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, exceptionHandler, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.impl.notification.NotificationCode._
@@ -33,6 +33,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
+import org.opencypher.v9_0.util
 
 object CompilerEngineDelegator {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
@@ -85,7 +86,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
       preParsedQuery = preParsedQuery.copy(version = CypherVersion.v3_1)
     }
 
-    def checkSupportedRuntime(ex: util.v3_5.SyntaxException): Unit = {
+    def checkSupportedRuntime(ex: util.SyntaxException): Unit = {
       if (!supportedRuntimes3_1.contains(preParsedQuery.runtime)) {
         if (config.useErrorsOverWarnings) {
           throw new InvalidArgumentException("The given query is not currently supported in the selected runtime")
@@ -106,12 +107,12 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
         parserQuery.onError {
           // if there is a create unique in the cypher 3.5 query try to fallback to 3.1
-          case ex: util.v3_5.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
+          case ex: util.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             preParsingNotifications = preParsingNotifications +
               createUniqueNotification(ex, preParsedQuery)
             checkSupportedRuntime(ex)
             Left(CypherVersion.v3_1)
-          case ex: util.v3_5.SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
+          case ex: util.SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
             preParsingNotifications = preParsingNotifications +
               createStartUnavailableNotification(ex, preParsedQuery) +
               createStartDeprecatedNotification(ex, preParsedQuery)
@@ -143,23 +144,23 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     result.right.get
   }
 
-  private def createStartUnavailableNotification(ex: util.v3_5.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createStartUnavailableNotification(ex: util.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
 
     START_UNAVAILABLE_FALLBACK.notification(pos)
   }
 
-  private def createStartDeprecatedNotification(ex: util.v3_5.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createStartDeprecatedNotification(ex: util.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
     START_DEPRECATED.notification(pos, message("START", ex.getMessage))
   }
 
-  private def runtimeUnsupportedNotification(ex: util.v3_5.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def runtimeUnsupportedNotification(ex: util.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
     RUNTIME_UNSUPPORTED.notification(pos)
   }
 
-  private def createUniqueNotification(ex: util.v3_5.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createUniqueNotification(ex: util.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
     CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
   }

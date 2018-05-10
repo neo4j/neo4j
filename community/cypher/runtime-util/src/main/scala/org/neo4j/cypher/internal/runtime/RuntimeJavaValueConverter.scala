@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import java.util.{List => JavaList, Map => JavaMap}
 
-import org.neo4j.cypher.internal.util.v3_5.Eagerly.immutableMapValues
+import org.opencypher.v9_0.util.Eagerly.immutableMapValues
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.values.AnyValue
 

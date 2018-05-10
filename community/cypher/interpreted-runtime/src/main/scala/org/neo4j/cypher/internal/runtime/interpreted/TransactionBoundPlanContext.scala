@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.util.Optional
 
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.cypher.internal.frontend.v3_5.phases.InternalNotificationLogger
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.planner.v3_5.spi._
-import org.neo4j.cypher.internal.util.v3_5.CypherExecutionException
-import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.opencypher.v9_0.util.CypherExecutionException
+import org.opencypher.v9_0.util.symbols._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType

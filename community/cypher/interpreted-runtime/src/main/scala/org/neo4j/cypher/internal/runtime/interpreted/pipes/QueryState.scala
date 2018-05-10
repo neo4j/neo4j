@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathVa
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MapExecutionContext, MutableMaps}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
-import org.neo4j.cypher.internal.util.v3_5.ParameterNotFoundException
+import org.opencypher.v9_0.util.ParameterNotFoundException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 

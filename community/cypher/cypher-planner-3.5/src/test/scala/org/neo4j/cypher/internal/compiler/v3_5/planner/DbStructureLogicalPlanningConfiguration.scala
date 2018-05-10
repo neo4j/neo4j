@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
-import org.neo4j.cypher.internal.util.v3_5.{LabelId, PropertyKeyId, RelTypeId}
+import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.helpers.collection.{Pair, Visitable}
 import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
 

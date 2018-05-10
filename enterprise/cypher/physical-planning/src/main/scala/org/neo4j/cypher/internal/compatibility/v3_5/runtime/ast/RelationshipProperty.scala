@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast
 
-import org.neo4j.cypher.internal.v3_5.expressions.LogicalProperty
+import org.opencypher.v9_0.expressions.LogicalProperty
 
 case class RelationshipProperty(offset: Int, propToken: Int, name: String)(prop: LogicalProperty) extends RuntimeProperty(prop) {
   override def asCanonicalStringVal: String = name

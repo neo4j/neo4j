@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
-import org.neo4j.cypher.internal.v3_5.expressions.{Expression, LabelToken, PropertyKeyToken}
+import org.opencypher.v9_0.util.attribution.IdGen
+import org.opencypher.v9_0.expressions.{Expression, LabelToken, PropertyKeyToken}
 
 /**
   * For every node with the given label and property values, produces one row with that node.

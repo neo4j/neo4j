@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics}
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 

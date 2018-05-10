@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Standa
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.util.v3_5.symbols.{CypherType, _}
-import org.neo4j.cypher.internal.util.v3_5.{ProfilerStatisticsNotReadyException, TaskCloser}
+import org.opencypher.v9_0.util.symbols.{CypherType, _}
+import org.opencypher.v9_0.util.{ProfilerStatisticsNotReadyException, TaskCloser}
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Notification

@@ -23,14 +23,14 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.IndependenceCombiner
-import org.neo4j.cypher.internal.frontend.v3_5.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.ast.AstConstructionTestSupport
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.{VarPatternLength, _}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.neo4j.cypher.internal.util.v3_5.{Cardinality, LabelId, Selectivity}
-import org.neo4j.cypher.internal.v3_5.expressions.{HasLabels, LabelName, SemanticDirection}
+import org.opencypher.v9_0.util.{Cardinality, LabelId, Selectivity}
+import org.opencypher.v9_0.expressions.{HasLabels, LabelName, SemanticDirection}
 
 import scala.collection.mutable
 

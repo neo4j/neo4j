@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.v3_5.expressions.{LabelToken, PropertyKeyToken}
+import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.internal.kernel.api._
 
 class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,

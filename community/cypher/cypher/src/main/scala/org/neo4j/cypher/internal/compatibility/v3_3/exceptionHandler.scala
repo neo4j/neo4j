@@ -24,7 +24,7 @@ import org.neo4j.cypher.exceptionHandler.{RunSafely, mapToCypher}
 import org.neo4j.cypher.internal.compatibility.{ExceptionHandler, _}
 import org.neo4j.cypher.internal.frontend.v3_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException => InternalCypherExceptionV3_3}
-import org.neo4j.cypher.internal.util.v3_5.{CypherException => InternalCypherExceptionv3_5}
+import org.opencypher.v9_0.util.{CypherException => InternalCypherExceptionv3_5}
 import org.neo4j.cypher.{exceptionHandler => exceptionHandlerv3_5}
 import org.neo4j.values.utils.ValuesException
 

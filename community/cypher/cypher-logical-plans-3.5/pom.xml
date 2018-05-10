@@ -69,12 +69,6 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>openCypher-frontend-1</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-ir-3.5</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -82,17 +76,9 @@
     <!-- neo4j testing -->
 
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>openCypher-frontend-1</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-util-3.5</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.opencypher</groupId>
+      <artifactId>util-9.0</artifactId>
+      <version>1.0.0</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.queryReduction
 
-import org.neo4j.cypher.internal.frontend.v3_5.ast._
+import org.opencypher.v9_0.ast._
 import org.neo4j.cypher.internal.queryReduction.ast.ASTNodeHelper._
 
 class StatementGTRInput(initialStatement: Statement) extends GTRInput[Statement](initialStatement) {

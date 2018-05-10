@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.planner.v3_5.spi
 
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.util.v3_5.Cardinality
-import org.neo4j.cypher.internal.util.v3_5.attribution.Attribute
+import org.opencypher.v9_0.util.Cardinality
+import org.opencypher.v9_0.util.attribution.Attribute
 
 object PlanningAttributes {
   class Solveds extends Attribute[PlannerQuery]

@@ -30,16 +30,15 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.simpleExpres
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeContext, CommunityRuntimeContextCreator}
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_5.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v3_5.phases.{CompilationPhaseTracer, InternalNotificationLogger, devNullLogger}
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, devNullLogger}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.util.v3_5.InputPosition
-import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.{CartesianProductNotification, InputPosition}
+import org.opencypher.v9_0.util.attribution.SequentialIdGen
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.{KernelTransaction, Statement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   var logger: InternalNotificationLogger = _

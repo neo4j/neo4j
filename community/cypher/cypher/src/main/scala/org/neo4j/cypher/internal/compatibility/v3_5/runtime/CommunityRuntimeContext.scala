@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.util.v3_5.{CypherException, InputPosition}
+import org.opencypher.v9_0.util.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_5.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
-import org.neo4j.cypher.internal.frontend.v3_5.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
+import org.opencypher.v9_0.util.attribution.IdGen
 
 class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
                               override val tracer: CompilationPhaseTracer,

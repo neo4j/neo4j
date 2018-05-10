@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.runtime.slotted.helpers
 import SlottedPipeBuilderUtils._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.neo4j.cypher.internal.util.v3_5.AssertionUtils._
-import org.neo4j.cypher.internal.util.v3_5.ParameterWrongTypeException
-import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.AssertionUtils._
+import org.opencypher.v9_0.util.ParameterWrongTypeException
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues

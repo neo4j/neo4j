@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.SeqCombiner.combine
+import org.opencypher.v9_0.frontend.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsList, makeValueNeoSafe}
-import org.neo4j.cypher.internal.util.v3_5.{CypherTypeException, InternalException}
+import org.opencypher.v9_0.util.{CypherTypeException, InternalException}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
 import org.neo4j.values.AnyValue

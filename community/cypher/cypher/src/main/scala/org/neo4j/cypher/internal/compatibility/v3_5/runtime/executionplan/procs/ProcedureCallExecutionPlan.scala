@@ -31,10 +31,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Liter
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.util.v3_5.TaskCloser
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
-import org.neo4j.cypher.internal.util.v3_5.symbols.CypherType
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.opencypher.v9_0.util.TaskCloser
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.symbols.CypherType
+import org.opencypher.v9_0.expressions.Expression
 import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue

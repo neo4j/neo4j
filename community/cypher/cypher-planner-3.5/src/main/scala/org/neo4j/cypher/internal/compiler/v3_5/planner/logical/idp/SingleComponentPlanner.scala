@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.leafPlanOptions
-import org.neo4j.cypher.internal.frontend.v3_5.ast.RelationshipStartItem
+import org.opencypher.v9_0.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.util.v3_5.InternalException
+import org.opencypher.v9_0.util.InternalException
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 /**

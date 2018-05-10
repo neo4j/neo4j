@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5
 
-import org.neo4j.cypher.internal.frontend.v3_5.phases.InternalNotificationLogger
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor, PlanContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
