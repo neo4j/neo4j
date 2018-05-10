@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -68,7 +67,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.logging.NullLogProvider;
@@ -140,10 +138,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     public void migrate( File storeDir, File migrationDir, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
-        if ( versionToMigrateFrom.equals( StandardV2_3.STORE_VERSION ) )
-        {
-            CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
-        }
         // Extract information about the last transaction from legacy neostore
         File neoStore = new File( storeDir, DEFAULT_NAME );
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
