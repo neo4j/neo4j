@@ -23,8 +23,8 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.cypher.internal.util.v3_5.ArithmeticException;
-import org.neo4j.cypher.internal.util.v3_5.CypherTypeException;
+import org.opencypher.v9_0.util.ArithmeticException;
+import org.opencypher.v9_0.util.CypherTypeException;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;

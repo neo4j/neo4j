@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
+import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
   * Produces source rows, unless source is empty. In that case, a single row is produced containing argument and any

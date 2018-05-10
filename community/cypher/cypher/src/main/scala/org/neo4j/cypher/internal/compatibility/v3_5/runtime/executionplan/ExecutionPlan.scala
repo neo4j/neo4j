@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
 import org.neo4j.cypher.internal.ReusabilityState
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
-import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
+import org.opencypher.v9_0.frontend.PlannerName
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.IndexUsage
 import org.neo4j.values.virtual.MapValue

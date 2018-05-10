@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 import org.mockito.Mockito.{spy, verify, verifyNoMoreInteractions}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ProjectingSelector
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
 

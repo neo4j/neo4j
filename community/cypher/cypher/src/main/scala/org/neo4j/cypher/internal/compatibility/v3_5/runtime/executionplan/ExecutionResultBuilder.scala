@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
-import org.neo4j.cypher.internal.util.v3_5.CypherException
+import org.opencypher.v9_0.util.CypherException
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
-import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_5.phases.InternalNotificationLogger
+import org.opencypher.v9_0.frontend.PlannerName
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}

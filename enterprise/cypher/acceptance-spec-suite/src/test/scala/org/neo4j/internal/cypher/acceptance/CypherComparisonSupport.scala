@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPoint
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, PlannerVersion => IPDPlannerVersion, Runtime => IPDRuntime, RuntimeVersion => IPDRuntimeVersion}
-import org.neo4j.cypher.internal.util.v3_5.Eagerly
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherTestSupport
+import org.opencypher.v9_0.util.Eagerly
+import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

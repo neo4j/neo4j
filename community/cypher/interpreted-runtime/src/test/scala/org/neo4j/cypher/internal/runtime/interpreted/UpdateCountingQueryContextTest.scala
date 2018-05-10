@@ -25,7 +25,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.Values

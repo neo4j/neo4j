@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.functions
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.expressions.functions
 
 object WithSeekableArgs {
   def unapply(v: Any) = v match {

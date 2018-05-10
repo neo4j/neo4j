@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
-import org.neo4j.cypher.internal.util.v3_5.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLookup
 
 class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatistics {
 
-  import org.neo4j.cypher.internal.util.v3_5.NameId._
+  import org.opencypher.v9_0.util.NameId._
 
   override def nodesWithLabelCardinality( label: Option[LabelId] ): Cardinality =
     Cardinality(lookup.nodesWithLabelCardinality(label))

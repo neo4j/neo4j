@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.normalizeGraphReturnItems
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions.{SignedDecimalIntegerLiteral, StringLiteral}
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.rewriting.rewriters.normalizeGraphReturnItems
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions.{SignedDecimalIntegerLiteral, StringLiteral}
 
 class normalizeGraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  import parser.ParserFixture._
+  import org.opencypher.v9_0.parser.ParserFixture._
 
   test("do not rename source graph") {
     val original = parser.parse("FROM GRAPH foo AT 'url' WITH * SOURCE GRAPH RETURN 1")

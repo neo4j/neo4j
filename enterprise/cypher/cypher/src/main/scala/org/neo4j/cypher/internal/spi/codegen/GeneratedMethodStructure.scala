@@ -31,7 +31,7 @@ import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.frontend.v3_5.helpers._
+import org.opencypher.v9_0.frontend.helpers._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions.{AnyValueType, BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
@@ -39,10 +39,10 @@ import org.neo4j.cypher.internal.spi.codegen.GeneratedMethodStructure.Completabl
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure._
 import org.neo4j.cypher.internal.spi.codegen.Methods._
 import org.neo4j.cypher.internal.spi.codegen.Templates._
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
-import org.neo4j.cypher.internal.util.v3_5.symbols.{CTInteger, CTNode, CTRelationship, ListType}
-import org.neo4j.cypher.internal.util.v3_5.{ParameterNotFoundException, symbols}
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.symbols.{CTInteger, CTNode, CTRelationship, ListType}
+import org.opencypher.v9_0.util.{ParameterNotFoundException, symbols}
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor

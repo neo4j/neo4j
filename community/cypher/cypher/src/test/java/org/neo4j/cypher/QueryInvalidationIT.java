@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.cypher.internal.compatibility.CypherCacheHitMonitor;
-import org.neo4j.cypher.internal.frontend.v3_5.ast.Query;
+import org.opencypher.v9_0.ast.Query;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;

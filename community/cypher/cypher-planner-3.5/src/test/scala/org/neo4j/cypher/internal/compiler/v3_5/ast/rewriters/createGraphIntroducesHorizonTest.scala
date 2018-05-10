@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_5.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.createGraphIntroducesHorizon
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.ast.AstConstructionTestSupport
+import org.opencypher.v9_0.rewriting.rewriters.createGraphIntroducesHorizon
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class createGraphIntroducesHorizonTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
 

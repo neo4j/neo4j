@@ -23,8 +23,8 @@ import org.bitbucket.inkytonik.kiama.output.PrettyPrinter._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
-import org.neo4j.cypher.internal.util.v3_5.{CypherException, InternalException}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{CypherException, InternalException}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 trait DebugPrettyPrinter {

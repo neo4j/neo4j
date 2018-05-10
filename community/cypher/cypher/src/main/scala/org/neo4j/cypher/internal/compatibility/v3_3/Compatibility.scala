@@ -41,11 +41,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Parameter, State
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors => MonitorsV3_3, RecordingNotificationLogger => RecordingNotificationLoggerV3_3}
-import org.neo4j.cypher.internal.frontend.v3_5.phases.{CompilationPhaseTracer, Transformer, RecordingNotificationLogger => RecordingNotificationLoggerv3_5}
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, Transformer, RecordingNotificationLogger => RecordingNotificationLoggerv3_5}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, PlanContext, InstrumentedGraphStatistics => InstrumentedGraphStatisticsv3_5, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotv3_5}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
-import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
+import org.opencypher.v9_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}

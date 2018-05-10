@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import java.util.Properties
 
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 
 class SystemPropertyTestSupportTest extends CypherFunSuite
 {

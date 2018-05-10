@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.common;
 
-import scala.AnyVal;
-
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -30,8 +28,8 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import org.neo4j.cypher.internal.util.v3_5.IncomparableValuesException;
-import org.neo4j.cypher.internal.util.v3_5.UnorderableValueException;
+import org.opencypher.v9_0.util.IncomparableValuesException;
+import org.opencypher.v9_0.util.UnorderableValueException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.MathUtil;

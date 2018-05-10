@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
+import org.opencypher.v9_0.util.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{ArrayValue, Value, Values}
 import org.neo4j.values.virtual.ListValue

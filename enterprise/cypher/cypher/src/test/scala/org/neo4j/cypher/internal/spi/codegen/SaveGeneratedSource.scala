@@ -23,7 +23,7 @@ import java.nio.file.FileVisitResult.CONTINUE
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
 import org.neo4j.cypher.internal.spi.codegen.SaveGeneratedSource.GENERATED_SOURCE_LOCATION
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherTestSupport
+import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
 
 /**
   * This trait allows debugging generated queries, by generating queries through java source, then making sure that

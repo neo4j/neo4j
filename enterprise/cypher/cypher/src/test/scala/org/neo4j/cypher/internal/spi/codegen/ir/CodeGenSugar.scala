@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.executionplan.{GeneratedQuery, GeneratedQueryExecution}
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.compiled.{CompiledExecutionResult, CompiledPlan}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
@@ -37,8 +37,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryConte
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, NormalMode, QueryContext}
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.util.v3_5.TaskCloser
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
+import org.opencypher.v9_0.util.TaskCloser
+import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}

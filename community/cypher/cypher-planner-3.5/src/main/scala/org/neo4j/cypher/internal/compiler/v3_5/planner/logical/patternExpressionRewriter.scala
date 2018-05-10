@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v3_5.IdentityMap
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.util.v3_5.Foldable._
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, topDown}
-import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans.NestedPlanExpression
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.rewriting.rewriters.projectNamedPaths
+import org.opencypher.v9_0.util.Foldable._
+import org.opencypher.v9_0.util.{IdentityMap, Rewriter, topDown}
 
 /*
 Rewrite pattern expressions and pattern comprehensions to nested plan expressions by planning them using the given context.

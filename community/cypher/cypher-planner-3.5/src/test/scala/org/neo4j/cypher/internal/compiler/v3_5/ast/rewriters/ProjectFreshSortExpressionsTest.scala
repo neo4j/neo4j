@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, inSequence}
+import org.opencypher.v9_0.util.{Rewriter, inSequence}
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.frontend.v3_5.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses, projectFreshSortExpressions}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticState
+import org.opencypher.v9_0.ast.AstConstructionTestSupport
+import org.opencypher.v9_0.rewriting.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses, projectFreshSortExpressions}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.ast.semantics.SemanticState
 
 class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
   val rewriterUnderTest: Rewriter = projectFreshSortExpressions

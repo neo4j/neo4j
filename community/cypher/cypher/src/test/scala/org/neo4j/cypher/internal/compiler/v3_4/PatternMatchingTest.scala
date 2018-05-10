@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedL
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.PatternMatchingBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, PatternGraphBuilder, QueryStateTestSupport}
-import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.expressions.SemanticDirection
 
 class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
   val symbols = SymbolTable(Map("a" -> CTNode))

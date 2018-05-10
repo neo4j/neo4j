@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.functions.functionC
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.compiled.helpers.LiteralTypeSupport
-import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.v3_5.{expressions => ast}
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.{expressions => ast}
 
 object ExpressionConverter {
 

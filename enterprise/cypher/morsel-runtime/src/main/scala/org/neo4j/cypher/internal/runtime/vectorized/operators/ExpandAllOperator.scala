@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.util.v3_5.InternalException
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 
 class ExpandAllOperator(toSlots: SlotConfiguration,

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.flattenBooleanOperators
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.rewriting.rewriters.flattenBooleanOperators
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class FlattenBooleanOperatorsTest extends CypherFunSuite with PredicateTestSupport {
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration.Size
-import org.neo4j.cypher.internal.util.v3_5.attribution.Attribute
+import org.opencypher.v9_0.util.attribution.Attribute
 
 object PhysicalPlanningAttributes {
   class SlotConfigurations extends Attribute[SlotConfiguration]

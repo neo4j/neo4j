@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.RowMapping
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
+import org.opencypher.v9_0.util.attribution.Id
 
 case class UnionSlottedPipe(lhs: Pipe, rhs: Pipe,
                             lhsMapping: RowMapping,

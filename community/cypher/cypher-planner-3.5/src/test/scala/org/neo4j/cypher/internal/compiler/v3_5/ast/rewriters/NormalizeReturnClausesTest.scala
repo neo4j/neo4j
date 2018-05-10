@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, SyntaxException}
+import org.opencypher.v9_0.util.{Rewriter, SyntaxException}
 import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.frontend.v3_5.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.normalizeReturnClauses
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.ast.AstConstructionTestSupport
+import org.opencypher.v9_0.rewriting.rewriters.normalizeReturnClauses
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
   val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))

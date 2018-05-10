@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.fixedPoint
+import org.opencypher.v9_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.util.v3_5.attribution.Attributes
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.opencypher.v9_0.util.attribution.Attributes
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {

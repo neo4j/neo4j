@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_5.common.CypherOrderability
-import org.neo4j.cypher.internal.frontend.v3_5.helpers._
-import org.neo4j.cypher.internal.util.v3_5.symbols
+import org.opencypher.v9_0.frontend.helpers._
+import org.opencypher.v9_0.util.symbols
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 

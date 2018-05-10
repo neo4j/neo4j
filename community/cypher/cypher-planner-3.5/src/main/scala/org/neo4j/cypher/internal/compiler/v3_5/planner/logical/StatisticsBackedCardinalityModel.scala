@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.neo4j.cypher.internal.util.v3_5.{Cardinality, Multiplier, Selectivity}
-import org.neo4j.cypher.internal.v3_5.expressions.IntegerLiteral
+import org.opencypher.v9_0.util.{Cardinality, Multiplier, Selectivity}
+import org.opencypher.v9_0.expressions.IntegerLiteral
 import org.neo4j.values.storable.NumberValue
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {

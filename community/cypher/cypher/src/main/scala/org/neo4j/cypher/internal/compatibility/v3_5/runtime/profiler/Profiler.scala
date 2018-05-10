@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, Dele
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
+import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.helpers.MathUtil
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.api.RelationshipVisitor

@@ -23,10 +23,10 @@ import org.mockito.Mockito.{verify, verifyNoMoreInteractions, when}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.PatternExpressionPatternElementNamer
+import org.opencypher.v9_0.rewriting.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, LogicalPlan, NestedPlanExpression, Selection}
 
 class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {

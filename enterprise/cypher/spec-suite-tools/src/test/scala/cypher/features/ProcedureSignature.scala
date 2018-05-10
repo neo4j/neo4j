@@ -19,7 +19,7 @@
  */
 package cypher.features
 
-import org.neo4j.cypher.internal.util.v3_5.symbols.CypherType
+import org.opencypher.v9_0.util.symbols.CypherType
 
 case class ProcedureSignature(namespace: Seq[String],
                               name: String,

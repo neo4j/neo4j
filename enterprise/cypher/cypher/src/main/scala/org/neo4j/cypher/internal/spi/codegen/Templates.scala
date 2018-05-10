@@ -31,12 +31,12 @@ import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream, QueryExecutionTracer}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{Completable, Provider}
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.using
+import org.opencypher.v9_0.frontend.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.spi.codegen.Methods.{newNodeProxyById, newRelationshipProxyById}
-import org.neo4j.cypher.internal.util.v3_5.CypherExecutionException
+import org.opencypher.v9_0.util.CypherExecutionException
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.exceptions.{EntityNotFoundException, KernelException}

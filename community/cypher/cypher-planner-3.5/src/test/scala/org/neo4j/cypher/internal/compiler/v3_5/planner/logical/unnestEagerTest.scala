@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Eagerness.unnestEager
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.fixedPoint
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_5.attribution.Attributes
-import org.neo4j.cypher.internal.v3_5.expressions.{PropertyKeyName, RelTypeName}
+import org.opencypher.v9_0.util.helpers.fixedPoint
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.attribution.Attributes
+import org.opencypher.v9_0.expressions.{PropertyKeyName, RelTypeName}
 
 class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

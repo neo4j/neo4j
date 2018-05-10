@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
 
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
-import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v3_5.expressions.Parameter
+import org.opencypher.v9_0.rewriting.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.{Rewriter, bottomUp}
+import org.opencypher.v9_0.expressions.Parameter
 
 class LiteralReplacementTest extends CypherFunSuite  {
 
-  import org.neo4j.cypher.internal.compiler.v3_5.parser.ParserFixture.parser
+  import org.opencypher.v9_0.parser.ParserFixture.parser
 
   test("should extract starts with patterns") {
     assertRewrite("RETURN x STARTS WITH 'Pattern' as X", "RETURN x STARTS WITH {`  AUTOSTRING0`} as X", Map("  AUTOSTRING0" -> "Pattern"))

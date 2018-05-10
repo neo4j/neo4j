@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_5.{InternalException, inSequence}
+import org.opencypher.v9_0.util.{InternalException, inSequence}
 import org.neo4j.cypher.internal.compiler.v3_5.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.AstRewritingTestSupport
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses}
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.StringHelper._
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticState
+import org.opencypher.v9_0.rewriting.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses}
+import org.opencypher.v9_0.util.helpers.StringHelper._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.ast.semantics.SemanticState
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 

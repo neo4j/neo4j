@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5
 
-import org.neo4j.cypher.internal.frontend.v3_5.notification.{EagerLoadCsvNotification, InternalNotification}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Eager, LoadCSV, LogicalPlan}
+import org.opencypher.v9_0.util.{EagerLoadCsvNotification, InternalNotification}
 
 object checkForEagerLoadCsv extends (LogicalPlan => Option[InternalNotification]) {
 
   def apply(plan: LogicalPlan) = {
-    import org.neo4j.cypher.internal.util.v3_5.Foldable._
+    import org.opencypher.v9_0.util.Foldable._
     sealed trait SearchState
     case object NoEagerFound extends SearchState
     case object EagerFound extends SearchState

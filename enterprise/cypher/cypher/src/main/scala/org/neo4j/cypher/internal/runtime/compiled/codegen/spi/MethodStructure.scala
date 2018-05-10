@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.compiled.codegen.spi
 
 import org.neo4j.cypher.internal.runtime.compiled.codegen.Variable
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions.CodeGenType
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.values.AnyValue
 
 /**

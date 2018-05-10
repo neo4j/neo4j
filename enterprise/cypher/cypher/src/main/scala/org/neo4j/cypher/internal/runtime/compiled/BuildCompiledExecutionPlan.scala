@@ -27,15 +27,15 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrap
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Phase
+import org.opencypher.v9_0.frontend.PlannerName
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
+import org.opencypher.v9_0.frontend.phases.Phase
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenConfiguration, CodeGenerator}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.util.v3_5.TaskCloser
+import org.opencypher.v9_0.util.TaskCloser
 import org.neo4j.cypher.internal.v3_5.logical.plans.IndexUsage
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue

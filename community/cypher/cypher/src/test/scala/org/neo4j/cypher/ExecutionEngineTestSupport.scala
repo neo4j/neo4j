@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.{GraphDatabaseCypherService, MonitoringCacheTracer}
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Config
@@ -38,6 +37,7 @@ import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{MapValue, VirtualValues}
+import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map

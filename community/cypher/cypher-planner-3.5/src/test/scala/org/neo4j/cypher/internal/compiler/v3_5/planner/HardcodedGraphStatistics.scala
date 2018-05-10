@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
-import org.neo4j.cypher.internal.util.v3_5.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 
 case object HardcodedGraphStatistics extends GraphStatistics {
   val NODES_CARDINALITY = Cardinality(10000)

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-import org.neo4j.cypher.internal.util.v3_5.InternalException
-import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class SlotConfigurationTest extends CypherFunSuite {
   test("allocating same variable name with compatible type but different nullability should increase nullability 1") {

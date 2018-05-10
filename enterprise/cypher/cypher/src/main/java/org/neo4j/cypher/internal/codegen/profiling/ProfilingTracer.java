@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.cypher.internal.runtime.compiled.codegen.QueryExecutionEvent;
 import org.neo4j.cypher.internal.planner.v3_5.spi.KernelStatisticProvider;
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id;
+import org.opencypher.v9_0.util.attribution.Id;
 import org.neo4j.cypher.internal.codegen.QueryExecutionTracer;
 import org.neo4j.helpers.MathUtil;
 

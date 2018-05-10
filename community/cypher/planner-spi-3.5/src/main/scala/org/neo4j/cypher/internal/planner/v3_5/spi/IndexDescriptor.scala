@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.planner.v3_5.spi
 
-import org.neo4j.cypher.internal.util.v3_5.{LabelId, PropertyKeyId}
+import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
 
 object IndexDescriptor {
   def apply(label: Int, property: Int): IndexDescriptor = IndexDescriptor(LabelId(label), Seq(PropertyKeyId(property)))

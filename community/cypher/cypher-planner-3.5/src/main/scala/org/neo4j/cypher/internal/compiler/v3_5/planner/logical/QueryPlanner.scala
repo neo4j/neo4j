@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPlanProducer, SystemOutCostLogger, devNullListener}
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Phase
 import org.neo4j.cypher.internal.ir.v3_5.{PeriodicCommit, PlannerQuery, UnionQuery}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.util.v3_5.Cost
-import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.opencypher.v9_0.frontend.phases.Phase
+import org.opencypher.v9_0.util.Cost
+import org.opencypher.v9_0.util.attribution.IdGen
 
 case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext, Solveds, Cardinalities, IdGen) => LogicalPlan) = PlanSingleQuery()) extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
 

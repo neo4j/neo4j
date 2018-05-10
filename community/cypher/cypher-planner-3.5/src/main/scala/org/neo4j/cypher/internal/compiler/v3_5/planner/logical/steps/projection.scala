@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.v3_5.expressions.{Expression, Variable}
+import org.opencypher.v9_0.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 

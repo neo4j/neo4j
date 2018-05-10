@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, NoChildren, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.runtime.{ProfileMode, QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions.SignedDecimalIntegerLiteral
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.internal.kernel.api.CursorFactory

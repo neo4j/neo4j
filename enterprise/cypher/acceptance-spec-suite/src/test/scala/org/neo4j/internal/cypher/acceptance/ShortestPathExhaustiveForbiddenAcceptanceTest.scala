@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.util.v3_5.{ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException}
+import org.opencypher.v9_0.util.{ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException}
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting

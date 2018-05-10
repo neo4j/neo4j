@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.util.v3_5.NonEmptyList
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.opencypher.v9_0.util.NonEmptyList
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Argument, LogicalPlan, Selection}
 
 class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {

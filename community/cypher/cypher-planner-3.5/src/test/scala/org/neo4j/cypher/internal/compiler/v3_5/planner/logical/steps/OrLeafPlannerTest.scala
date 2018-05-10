@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LeafPlanFromExpressions, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, Selections}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Distinct, Union}
-import org.neo4j.cypher.internal.v3_5.expressions.{Ors, Variable}
+import org.opencypher.v9_0.expressions.{Ors, Variable}
 
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

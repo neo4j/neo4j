@@ -36,9 +36,9 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, Children, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren, InternalPlanDescription => InternalPlanDescription3_4}
 import org.neo4j.cypher.internal.runtime.{ExplainMode, NormalMode, ProfileMode, QueryStatistics}
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
-import org.neo4j.cypher.internal.util.v3_5.{symbols => symbolsv3_5}
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{symbols => symbolsv3_5}
+import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record

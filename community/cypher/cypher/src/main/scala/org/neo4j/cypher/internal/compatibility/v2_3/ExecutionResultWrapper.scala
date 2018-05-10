@@ -34,8 +34,8 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Children, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren, Argument => Argument3_4, InternalPlanDescription => InternalPlanDescription3_4}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, SCHEMA_WRITE, ExecutionMode => ExecutionModev3_5, _}
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
 import org.neo4j.graphdb.Result.ResultVisitor

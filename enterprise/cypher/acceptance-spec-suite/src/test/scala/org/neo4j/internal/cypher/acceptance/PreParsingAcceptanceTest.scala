@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
+import org.opencypher.v9_0.frontend.PlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.{DPPlannerName, IDPPlannerName}
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments

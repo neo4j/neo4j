@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics => GraphStat
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId => LabelIdV3_3, PropertyKeyId => PropertyKeyIdV3_3, RelTypeId => RelTypeIdV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3, Selectivity => SelectivityV3_3}
 import org.neo4j.cypher.internal.planner.v3_5.spi._
-import org.neo4j.cypher.internal.util.v3_5.{LabelId, PropertyKeyId, RelTypeId}
+import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, RelTypeId}
 
 /**
   * This class will act as a v3.3 InstrumentedGraphStatistics, but will update instead a map of values

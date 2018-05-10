@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.StringHelper.RichString
+import org.opencypher.v9_0.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.scalatest.BeforeAndAfterAll

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.ir.v3_5
 
-import org.neo4j.cypher.internal.util.v3_5.{Cardinality, InternalException}
-import org.neo4j.cypher.internal.frontend.v3_5.ast.Hint
-import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, Variable}
+import org.opencypher.v9_0.util.{Cardinality, InternalException}
+import org.opencypher.v9_0.ast.Hint
+import org.opencypher.v9_0.expressions.{LabelName, Variable}
 
 import scala.annotation.tailrec
 import scala.collection.GenSeq

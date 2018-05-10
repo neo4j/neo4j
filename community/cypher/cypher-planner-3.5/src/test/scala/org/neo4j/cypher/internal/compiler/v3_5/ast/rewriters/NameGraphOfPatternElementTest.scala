@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.nameGraphOfPatternElements
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.rewriting.rewriters.nameGraphOfPatternElements
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class NameGraphOfPatternElementTest extends CypherFunSuite {
 
-  import parser.ParserFixture._
+  import org.opencypher.v9_0.parser.ParserFixture._
 
   test("name all node patterns in GRAPH OF") {
     val original = parser.parse("RETURN GRAPH OF (n)-[r:Foo]->() RETURN n")

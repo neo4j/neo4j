@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternCon
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Literal, ShortestPathExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.util.v3_5.{Eagerly, InternalException}
-import org.neo4j.cypher.internal.v3_5.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
+import org.opencypher.v9_0.util.{Eagerly, InternalException}
+import org.opencypher.v9_0.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.values.AnyValue

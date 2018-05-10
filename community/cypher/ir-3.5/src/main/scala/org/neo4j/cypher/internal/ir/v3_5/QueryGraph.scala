@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.ir.v3_5
 
-import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.frontend.v3_5.prettifier.ExpressionStringifier
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.frontend.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.opencypher.v9_0.expressions._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{GenSeq, GenTraversableOnce, mutable}

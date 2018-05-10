@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.compiled.codegen.ir
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions.{CodeGenExpression, CodeGenType, CypherCodeGenType, ListReferenceType}
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenContext, Variable}
-import org.neo4j.cypher.internal.util.v3_5.symbols
+import org.opencypher.v9_0.util.symbols
 
 case class UnwindPrimitiveCollection(opName: String, collection: CodeGenExpression) extends LoopDataGenerator {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit =

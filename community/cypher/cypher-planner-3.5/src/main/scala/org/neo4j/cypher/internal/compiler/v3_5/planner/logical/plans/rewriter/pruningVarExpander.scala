@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, topDown}
+import org.opencypher.v9_0.util.{Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans._
-import org.neo4j.cypher.internal.util.v3_5.attribution.SameId
-import org.neo4j.cypher.internal.v3_5.expressions.{Expression, FunctionInvocation}
+import org.opencypher.v9_0.util.attribution.SameId
+import org.opencypher.v9_0.expressions.{Expression, FunctionInvocation}
 
 import scala.collection.mutable
 

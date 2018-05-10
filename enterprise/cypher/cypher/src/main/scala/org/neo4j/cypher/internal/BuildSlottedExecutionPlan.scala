@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => RuntimeExecutionPlan, _}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilationContains, LogicalPlanState}
-import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_5.phases.{CompilationPhaseTracer, Phase}
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.frontend.PlannerName
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, Phase}
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeExecutionB
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.runtime.slotted.{SlottedExecutionResultBuilderFactory, SlottedPipeBuilder}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
-import org.neo4j.cypher.internal.util.v3_5.CypherException
+import org.opencypher.v9_0.util.CypherException
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.values.virtual.MapValue
 
