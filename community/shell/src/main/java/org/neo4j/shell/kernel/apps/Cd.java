@@ -163,64 +163,64 @@ public class Cd extends TransactionProvidingApp
             TypedId newId = null;
             switch ( arg )
             {
-                case "..":
-                    if ( paths.size() > 0 )
-                    {
-                        newId = paths.remove(paths.size() - 1);
-                    }
-                    break;
-                case ".":    // Do nothing
-                    break;
-                case START_ALIAS:
-                case END_ALIAS:
-                    if ( current == null )
-                    {
-                        throw new ShellException( "Can't do " + START_ALIAS + " or " +
-                                END_ALIAS + " on a non-existent relationship" );
-                    }
+            case "..":
+                if ( paths.size() > 0 )
+                {
+                    newId = paths.remove(paths.size() - 1);
+                }
+                break;
+            case ".":    // Do nothing
+                break;
+            case START_ALIAS:
+            case END_ALIAS:
+                if ( current == null )
+                {
+                    throw new ShellException( "Can't do " + START_ALIAS + " or " +
+                            END_ALIAS + " on a non-existent relationship" );
+                }
 
-                    newId = getStartOrEnd(current, arg);
-                    paths.add(current.getTypedId());
-                    break;
-                default:
-                    long suppliedId = -1;
-                    try
-                    {
-                        suppliedId = Long.parseLong(arg);
-                    }
-                    catch ( NumberFormatException e )
-                    {
-                        if ( current != null )
-                        {
-                            suppliedId = findNodeWithTitle(current.asNode(), arg, session);
-                        }
-                        if ( suppliedId == -1 )
-                        {
-                            throw new ShellException( "No connected node with title '" + arg + "'" );
-                        }
-                    }
-
-                    newId = parser.options().containsKey("r") ?
-                            new TypedId( NodeOrRelationship.TYPE_RELATIONSHIP, suppliedId ) :
-                            new TypedId( NodeOrRelationship.TYPE_NODE, suppliedId );
-                    if ( current != null && newId.equals(current.getTypedId()) )
-                    {
-                        throw new ShellException( "Can't cd to where you stand" );
-                    }
-                    boolean absolute = parser.options().containsKey("a");
-                    if ( !absolute && current != null && !isConnected(current, newId) )
-                    {
-                        throw new ShellException(
-                                getDisplayName(getServer(), session, newId, false) +
-                                        " isn't connected to the current primitive," +
-                                        " use -a to force it to go there anyway" );
-                    }
-
+                newId = getStartOrEnd(current, arg);
+                paths.add(current.getTypedId());
+                break;
+            default:
+                long suppliedId = -1;
+                try
+                {
+                    suppliedId = Long.parseLong(arg);
+                }
+                catch ( NumberFormatException e )
+                {
                     if ( current != null )
                     {
-                        paths.add( current.getTypedId() );
+                        suppliedId = findNodeWithTitle(current.asNode(), arg, session);
                     }
-                    break;
+                    if ( suppliedId == -1 )
+                    {
+                        throw new ShellException( "No connected node with title '" + arg + "'" );
+                    }
+                }
+
+                newId = parser.options().containsKey("r") ?
+                        new TypedId( NodeOrRelationship.TYPE_RELATIONSHIP, suppliedId ) :
+                        new TypedId( NodeOrRelationship.TYPE_NODE, suppliedId );
+                if ( current != null && newId.equals(current.getTypedId()) )
+                {
+                    throw new ShellException( "Can't cd to where you stand" );
+                }
+                boolean absolute = parser.options().containsKey("a");
+                if ( !absolute && current != null && !isConnected(current, newId) )
+                {
+                    throw new ShellException(
+                            getDisplayName(getServer(), session, newId, false) +
+                                    " isn't connected to the current primitive," +
+                                    " use -a to force it to go there anyway" );
+                }
+
+                if ( current != null )
+                {
+                    paths.add( current.getTypedId() );
+                }
+                break;
             }
             newThing = newId != null ? getThingById( newId ) : current;
         }
@@ -289,14 +289,14 @@ public class Cd extends TransactionProvidingApp
         Node newNode = null;
         switch ( arg )
         {
-            case START_ALIAS:
-                newNode = current.asRelationship().getStartNode();
-                break;
-            case END_ALIAS:
-                newNode = current.asRelationship().getEndNode();
-                break;
-            default:
-                throw new ShellException( "Unknown alias '" + arg + "'" );
+        case START_ALIAS:
+            newNode = current.asRelationship().getStartNode();
+            break;
+        case END_ALIAS:
+            newNode = current.asRelationship().getEndNode();
+            break;
+        default:
+            throw new ShellException( "Unknown alias '" + arg + "'" );
         }
         return NodeOrRelationship.wrap( newNode ).getTypedId();
     }

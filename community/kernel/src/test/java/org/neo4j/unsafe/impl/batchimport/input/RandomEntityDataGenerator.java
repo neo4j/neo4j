@@ -124,14 +124,14 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<Randoms>
         String type = entry.extractor().name();
         switch ( type )
         {
-            case "String":
-                return random.string(5, 20, Randoms.CSA_LETTERS_AND_DIGITS);
-            case "long":
-                return random.nextInt( Integer.MAX_VALUE );
-            case "int":
-                return random.nextInt(20);
-            default:
-                throw new IllegalArgumentException( "" + entry );
+        case "String":
+            return random.string( 5, 20, Randoms.CSA_LETTERS_AND_DIGITS );
+        case "long":
+            return random.nextInt( Integer.MAX_VALUE );
+        case "int":
+            return random.nextInt( 20 );
+        default:
+            throw new IllegalArgumentException( "" + entry );
         }
     }
 

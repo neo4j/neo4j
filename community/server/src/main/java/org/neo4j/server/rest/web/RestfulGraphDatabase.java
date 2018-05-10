@@ -874,13 +874,13 @@ public class RestfulGraphDatabase
         {
             switch ( type )
             {
-                case NODE_AUTO_INDEX_TYPE:
-                    return output.ok(actions.getAutoIndexedNodesByQuery(query));
-                case RELATIONSHIP_AUTO_INDEX_TYPE:
-                    return output.ok(actions.getAutoIndexedRelationshipsByQuery(query));
-                default:
-                    return output.badRequest(new RuntimeException( "Unrecognized auto-index type, " +
-                            "expected '" + NODE_AUTO_INDEX_TYPE + "' or '" + RELATIONSHIP_AUTO_INDEX_TYPE + "'" ));
+            case NODE_AUTO_INDEX_TYPE:
+                return output.ok( actions.getAutoIndexedNodesByQuery( query ) );
+            case RELATIONSHIP_AUTO_INDEX_TYPE:
+                return output.ok( actions.getAutoIndexedRelationshipsByQuery( query ) );
+            default:
+                return output.badRequest( new RuntimeException( "Unrecognized auto-index type, " +
+                        "expected '" + NODE_AUTO_INDEX_TYPE + "' or '" + RELATIONSHIP_AUTO_INDEX_TYPE + "'" ) );
             }
         }
         catch ( NotFoundException nfe )
@@ -1231,13 +1231,13 @@ public class RestfulGraphDatabase
         {
             switch ( type )
             {
-                case NODE_AUTO_INDEX_TYPE:
-                    return output.ok(actions.getAutoIndexedNodes(key, value));
-                case RELATIONSHIP_AUTO_INDEX_TYPE:
-                    return output.ok(actions.getAutoIndexedRelationships(key, value));
-                default:
-                    return output.badRequest(new RuntimeException( "Unrecognized auto-index type, " +
-                            "expected '" + NODE_AUTO_INDEX_TYPE + "' or '" + RELATIONSHIP_AUTO_INDEX_TYPE + "'" ));
+            case NODE_AUTO_INDEX_TYPE:
+                return output.ok( actions.getAutoIndexedNodes( key, value ) );
+            case RELATIONSHIP_AUTO_INDEX_TYPE:
+                return output.ok( actions.getAutoIndexedRelationships( key, value ) );
+            default:
+                return output.badRequest( new RuntimeException( "Unrecognized auto-index type, " +
+                        "expected '" + NODE_AUTO_INDEX_TYPE + "' or '" + RELATIONSHIP_AUTO_INDEX_TYPE + "'" ) );
             }
         }
         catch ( NotFoundException nfe )
