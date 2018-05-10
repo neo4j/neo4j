@@ -22,6 +22,7 @@ can be directed to: licensing@neo4j.com
 More information is also available at:https://neo4j.com/licensing/
 
 
+
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 
