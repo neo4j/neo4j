@@ -148,5 +148,5 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         public void incrementIndexUpdates( long indexId, long updatesDelta )
         {
         }
-    };
+    }
 }
