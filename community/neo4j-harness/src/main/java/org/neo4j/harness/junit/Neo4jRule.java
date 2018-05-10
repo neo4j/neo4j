@@ -205,7 +205,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
         {
             throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
         }
-        return controls.httpURI();
+        return controls.httpsURI().orElseThrow( () -> new IllegalStateException( "HTTPS connector is not configured" ) );
     }
 
     public GraphDatabaseService getGraphDatabaseService()
