@@ -45,30 +45,31 @@ public class Unzip
 
         try
         {
-            ZipInputStream zipStream = new ZipInputStream( source );
-            ZipEntry entry = null;
-            byte[] scratch = new byte[8096];
-            while ( (entry = zipStream.getNextEntry()) != null )
+            try ( ZipInputStream zipStream = new ZipInputStream( source ) )
             {
-                if ( entry.isDirectory() )
+                ZipEntry entry;
+                byte[] scratch = new byte[8096];
+                while ( (entry = zipStream.getNextEntry()) != null )
                 {
-                    new File( targetDirectory, entry.getName() ).mkdirs();
-                }
-                else
-                {
-                    try ( OutputStream file = new BufferedOutputStream(
-                            new FileOutputStream( new File( targetDirectory, entry.getName() ) ) ) )
+                    if ( entry.isDirectory() )
                     {
-                        long toCopy = entry.getSize();
-                        while ( toCopy > 0 )
+                        new File( targetDirectory, entry.getName() ).mkdirs();
+                    }
+                    else
+                    {
+                        try ( OutputStream file = new BufferedOutputStream( new FileOutputStream( new File( targetDirectory, entry.getName() ) ) ) )
                         {
-                            int read = zipStream.read( scratch );
-                            file.write( scratch, 0, read );
-                            toCopy -= read;
+                            long toCopy = entry.getSize();
+                            while ( toCopy > 0 )
+                            {
+                                int read = zipStream.read( scratch );
+                                file.write( scratch, 0, read );
+                                toCopy -= read;
+                            }
                         }
                     }
+                    zipStream.closeEntry();
                 }
-                zipStream.closeEntry();
             }
         }
         finally
