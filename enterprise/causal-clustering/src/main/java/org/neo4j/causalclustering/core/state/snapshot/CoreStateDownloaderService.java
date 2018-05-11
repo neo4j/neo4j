@@ -45,6 +45,7 @@ public class CoreStateDownloaderService extends LifecycleAdapter
     private JobHandle jobHandle;
     private boolean stopped;
     private Supplier<DatabaseHealth> dbHealth;
+    private final boolean debug;
 
     public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader, CommandApplicationProcess applicationProcess,
             LogProvider logProvider, TimeoutStrategy.Timeout downloaderPauseStrategy, Supplier<DatabaseHealth> dbHealth )
@@ -55,6 +56,19 @@ public class CoreStateDownloaderService extends LifecycleAdapter
         this.log = logProvider.getLog( getClass() );
         this.downloaderPauseStrategy = downloaderPauseStrategy;
         this.dbHealth = dbHealth;
+        this.debug = false;
+    }
+
+    public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader, CommandApplicationProcess applicationProcess,
+            LogProvider logProvider, TimeoutStrategy.Timeout downloaderPauseStrategy, Supplier<DatabaseHealth> dbHealth, boolean debug )
+    {
+        this.jobScheduler = jobScheduler;
+        this.downloader = downloader;
+        this.applicationProcess = applicationProcess;
+        this.log = logProvider.getLog( getClass() );
+        this.downloaderPauseStrategy = downloaderPauseStrategy;
+        this.dbHealth = dbHealth;
+        this.debug = debug;
     }
 
     public synchronized Optional<JobHandle> scheduleDownload( CatchupAddressProvider addressProvider )
@@ -66,10 +80,26 @@ public class CoreStateDownloaderService extends LifecycleAdapter
 
         if ( currentJob == null || currentJob.hasCompleted() )
         {
+            boolean firstJob = currentJob == null;
+
             currentJob = new PersistentSnapshotDownloader( addressProvider, applicationProcess, downloader, log,
                     downloaderPauseStrategy, dbHealth );
+            if ( debug && firstJob )
+            {
+                log.debug( "[HF] First download job started by scheduler: " + this );
+                log.debug( "[HF] The new job is: " + currentJob );
+            }
+            else if ( debug )
+            {
+                log.debug( "[HF] New download job started by scheduler: " + this );
+                log.debug( "[HF] The new job is: " + currentJob );
+            }
             jobHandle = jobScheduler.schedule( downloadSnapshot, currentJob );
             return Optional.of( jobHandle );
+        }
+        if ( debug )
+        {
+            log.debug( "[HF] Returning the current job: " + currentJob );
         }
         return Optional.of( jobHandle );
     }
