@@ -116,8 +116,6 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
 public class StoreMigrator extends AbstractStoreMigrationParticipant
 {
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
-    public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
-            "Migrating this version is not supported for custom IO configurations.";
 
     private final Config config;
     private final LogService logService;
