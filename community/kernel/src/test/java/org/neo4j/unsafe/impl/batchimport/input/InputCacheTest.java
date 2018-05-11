@@ -241,9 +241,9 @@ public class InputCacheTest
         case 2:
             return randomValues.nextAsciiTextValue().stringValue();
         case 3:
-            return randomValues.nextPointValue();
+            return randomValues.nextPointValue().asObject();
         case 4:
-            return randomValues.nextTemporalValue();
+            return randomValues.nextTemporalValue().asObject();
         default:
             throw new IllegalArgumentException( type + " is not an expected type" );
         }
