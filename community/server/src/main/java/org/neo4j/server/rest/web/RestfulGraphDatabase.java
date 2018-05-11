@@ -872,16 +872,13 @@ public class RestfulGraphDatabase
     {
         try
         {
-            if ( type.equals( NODE_AUTO_INDEX_TYPE ) )
+            switch ( type )
             {
+            case NODE_AUTO_INDEX_TYPE:
                 return output.ok( actions.getAutoIndexedNodesByQuery( query ) );
-            }
-            else if ( type.equals( RELATIONSHIP_AUTO_INDEX_TYPE ) )
-            {
+            case RELATIONSHIP_AUTO_INDEX_TYPE:
                 return output.ok( actions.getAutoIndexedRelationshipsByQuery( query ) );
-            }
-            else
-            {
+            default:
                 return output.badRequest( new RuntimeException( "Unrecognized auto-index type, " +
                         "expected '" + NODE_AUTO_INDEX_TYPE + "' or '" + RELATIONSHIP_AUTO_INDEX_TYPE + "'" ) );
             }
@@ -1232,16 +1229,13 @@ public class RestfulGraphDatabase
     {
         try
         {
-            if ( type.equals( NODE_AUTO_INDEX_TYPE ) )
+            switch ( type )
             {
+            case NODE_AUTO_INDEX_TYPE:
                 return output.ok( actions.getAutoIndexedNodes( key, value ) );
-            }
-            else if ( type.equals( RELATIONSHIP_AUTO_INDEX_TYPE ) )
-            {
+            case RELATIONSHIP_AUTO_INDEX_TYPE:
                 return output.ok( actions.getAutoIndexedRelationships( key, value ) );
-            }
-            else
-            {
+            default:
                 return output.badRequest( new RuntimeException( "Unrecognized auto-index type, " +
                         "expected '" + NODE_AUTO_INDEX_TYPE + "' or '" + RELATIONSHIP_AUTO_INDEX_TYPE + "'" ) );
             }
