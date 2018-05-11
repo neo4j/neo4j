@@ -65,4 +65,10 @@ public final class RelationshipDenseSelectionCursor extends RelationshipDenseSel
     {
         return relationshipCursor.targetNodeReference();
     }
+
+    @Override
+    public long propertiesReference()
+    {
+        return relationshipCursor.propertiesReference();
+    }
 }

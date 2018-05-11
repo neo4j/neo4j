@@ -279,6 +279,12 @@ public abstract class CompiledExpandUtils
             }
 
             @Override
+            public long propertiesReference()
+            {
+                return allRelationships.propertiesReference();
+            }
+
+            @Override
             public boolean next()
             {
                 while ( allRelationships.next() )
