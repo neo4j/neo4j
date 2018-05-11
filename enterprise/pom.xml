@@ -23,6 +23,10 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
+  <properties>
+    <license-text.header>../build/AGPL-3-header.txt</license-text.header>
+  </properties>
+
   <modules>
     <module>query-logging</module>
     <module>com</module>

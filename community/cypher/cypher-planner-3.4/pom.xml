@@ -17,6 +17,7 @@
 
   <properties>
     <moduleName>org.neo4j.cypher.internal.compiler.v3_4</moduleName>
+    <license-text.header>../../../build/GPL-3-header.txt</license-text.header>
   </properties>
 
   <scm>

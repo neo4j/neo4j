@@ -33,6 +33,7 @@
   </modules>
 
   <properties>
+    <license-text.header>../../build/AGPL-3-header.txt</license-text.header>
     <!-- other filter properties -->
     <neo4j.version>${project.version}</neo4j.version>
 

@@ -17,7 +17,7 @@
   <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>
 
   <properties>
-    <license-text.header>GPL-3-header.txt</license-text.header>
+    <license-text.header>../../build/GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <moduleName>org.neo4j.community</moduleName>
   </properties>
