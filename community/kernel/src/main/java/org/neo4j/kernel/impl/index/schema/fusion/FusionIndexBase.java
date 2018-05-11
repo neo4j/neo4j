@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
-import org.neo4j.collection.PrimitiveIntCollections;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.index.IndexProvider;
+
+import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
 
 /**
  * Acting as a simplifier for the multiplexing that is going in inside a fusion index. A fusion index consists of multiple parts,
@@ -157,7 +158,7 @@ public abstract class FusionIndexBase<T>
     {
         for ( int i = 0; i < instances.length; i++ )
         {
-            boolean expected = PrimitiveIntCollections.contains( aliveIndex, i );
+            boolean expected = contains( aliveIndex, i );
             boolean actual = instances[i] != IndexProvider.EMPTY;
             if ( expected != actual )
             {

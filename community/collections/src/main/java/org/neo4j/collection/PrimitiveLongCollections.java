@@ -39,12 +39,9 @@ import java.util.function.LongPredicate;
 import org.neo4j.graphdb.Resource;
 
 import static java.util.Arrays.copyOf;
-import static org.neo4j.collection.PrimitiveCommons.closeSafely;
 
 /**
  * Basic and common primitive int collection utils and manipulations.
- *
- * @see PrimitiveIntCollections
  */
 public class PrimitiveLongCollections
 {
@@ -52,7 +49,7 @@ public class PrimitiveLongCollections
 
     private PrimitiveLongCollections()
     {
-        throw new AssertionError( "no instance" );
+        // nop
     }
 
     public static LongIterator iterator( final long... items )
@@ -92,47 +89,10 @@ public class PrimitiveLongCollections
         };
     }
 
-    public static PrimitiveLongResourceIterator filter( PrimitiveLongResourceIterator source, final LongPredicate filter )
-    {
-        return new PrimitiveLongResourceFilteringIterator( source )
-        {
-            @Override
-            public boolean test( long item )
-            {
-                return filter.test( item );
-            }
-        };
-    }
-
     // Range
     public static LongIterator range( long start, long end )
     {
         return new PrimitiveLongRangeIterator( start, end );
-    }
-
-    public static long single( LongIterator iterator, long defaultItem )
-    {
-        try
-        {
-            if ( !iterator.hasNext() )
-            {
-                closeSafely( iterator );
-                return defaultItem;
-            }
-            long item = iterator.next();
-            if ( iterator.hasNext() )
-            {
-                throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
-                        ", second:" + iterator.next() );
-            }
-            closeSafely( iterator );
-            return item;
-        }
-        catch ( NoSuchElementException exception )
-        {
-            closeSafely( iterator, exception );
-            throw exception;
-        }
     }
 
     /**
@@ -526,24 +486,6 @@ public class PrimitiveLongCollections
 
         @Override
         public abstract boolean test( long testItem );
-    }
-
-    public abstract static class PrimitiveLongResourceFilteringIterator extends PrimitiveLongFilteringIterator
-            implements PrimitiveLongResourceIterator
-    {
-        PrimitiveLongResourceFilteringIterator( LongIterator source )
-        {
-            super( source );
-        }
-
-        @Override
-        public void close()
-        {
-            if ( source instanceof Resource )
-            {
-                ((Resource) source).close();
-            }
-        }
     }
 
     public static class PrimitiveLongRangeIterator extends PrimitiveLongBaseIterator

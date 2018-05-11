@@ -49,12 +49,11 @@ import org.neo4j.values.storable.Values;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.collection.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -202,7 +201,8 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 {
                     NodeValueIterator nodes = new NodeValueIterator();
                     reader.query( nodes, IndexOrder.NONE, IndexQuery.exact( propertyKeyId, entry.value ) );
-                    assertEquals( entry.nodeId, single( nodes, NO_SUCH_NODE ) );
+                    assertEquals( entry.nodeId, nodes.next() );
+                    assertFalse( nodes.hasNext() );
                 }
             }
         }
@@ -231,7 +231,8 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 {
                     NodeValueIterator nodes = new NodeValueIterator();
                     reader.query( nodes, IndexOrder.NONE, IndexQuery.exact( propertyKeyId, entry.value ) );
-                    assertEquals( entry.nodeId, single( nodes, NO_SUCH_NODE ) );
+                    assertEquals( entry.nodeId, nodes.next() );
+                    assertFalse( nodes.hasNext() );
                 }
             }
         }
