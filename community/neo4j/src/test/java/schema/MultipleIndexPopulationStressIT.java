@@ -25,7 +25,6 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -47,18 +46,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
-import org.neo4j.kernel.impl.index.schema.DateLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.DateTimeLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.DurationLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.LocalDateTimeLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.LocalTimeLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.SpatialLayoutTestUtil;
-import org.neo4j.kernel.impl.index.schema.TimeLayoutTestUtil;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.Randoms;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.RandomRule;
@@ -78,6 +69,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.System.currentTimeMillis;
@@ -193,10 +185,10 @@ public class MultipleIndexPopulationStressIT
             {
                 executor.submit( () ->
                 {
-                    Randoms random = new Randoms();
+                    RandomValues randomValues = RandomValues.create();
                     while ( !end.get() )
                     {
-                        changeRandomNode( db, nodeCount, random );
+                        changeRandomNode( db, nodeCount, randomValues );
                     }
                 } );
             }
@@ -277,21 +269,21 @@ public class MultipleIndexPopulationStressIT
         }
     }
 
-    private void changeRandomNode( GraphDatabaseService db, int nodeCount, Randoms random )
+    private void changeRandomNode( GraphDatabaseService db, int nodeCount, RandomValues random )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            long nodeId = random.random().nextInt( nodeCount );
+            long nodeId = random.nextInt( nodeCount );
             Node node = db.getNodeById( nodeId );
             Object[] keys = Iterables.asCollection( node.getPropertyKeys() ).toArray();
             String key = (String) random.among( keys );
-            if ( random.random().nextFloat() < 0.1 )
+            if ( random.nextFloat() < 0.1 )
             {   // REMOVE
                 node.removeProperty( key );
             }
             else
             {   // CHANGE
-                node.setProperty( key, randomPropertyValue( random ) );
+                node.setProperty( key, random.nextValue().asObject() );
             }
             tx.success();
         }
@@ -311,34 +303,9 @@ public class MultipleIndexPopulationStressIT
         importer.doImport( new RandomDataInput( count ) );
     }
 
-    static Object randomPropertyValue( Randoms random )
+    private class RandomNodeGenerator extends GeneratingInputIterator<RandomValues>
     {
-        switch ( random.nextInt( 9 ) )
-        {
-        case 0:
-            return random.nextInt( 100 );
-        case 1:
-            return random.string();
-        case 2:
-            return DateTimeLayoutTestUtil.randomDateTime( random );
-        case 3:
-            return TimeLayoutTestUtil.randomTime( random );
-        case 4:
-            return DateLayoutTestUtil.randomDate( random );
-        case 5:
-            return LocalDateTimeLayoutTestUtil.randomLocalDateTime( random );
-        case 6:
-            return LocalTimeLayoutTestUtil.randomLocalTime( random );
-        case 7:
-            return DurationLayoutTestUtil.randomDuration( random );
-        default:
-            return SpatialLayoutTestUtil.randomPoint( random );
-        }
-    }
-
-    private class RandomNodeGenerator extends GeneratingInputIterator<Randoms>
-    {
-        RandomNodeGenerator( int count, Generator<Randoms> randomsGenerator )
+        RandomNodeGenerator( int count, Generator<RandomValues> randomsGenerator )
         {
             super( count, 1_000, new RandomsStates( random.seed() ), randomsGenerator, 0 );
         }
@@ -363,12 +330,12 @@ public class MultipleIndexPopulationStressIT
         public InputIterable nodes()
         {
             return InputIterable.replayable( () -> new RandomNodeGenerator( count, ( state, visitor, id ) -> {
-                String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
+                String[] keys = random.randomValues().selection( TOKENS, 1, TOKENS.length, false );
                 for ( String key : keys )
                 {
-                    visitor.property( key, randomPropertyValue( state ) );
+                    visitor.property( key, random.nextValueAsObject() );
                 }
-                visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
+                visitor.labels( random.selection( TOKENS, 1, TOKENS.length, false ) );
             } ) );
         }
 
@@ -398,4 +365,5 @@ public class MultipleIndexPopulationStressIT
             return knownEstimates( count, 0, count * TOKENS.length / 2, 0, count * TOKENS.length / 2 * Long.BYTES, 0, 0 );
         }
     }
+
 }

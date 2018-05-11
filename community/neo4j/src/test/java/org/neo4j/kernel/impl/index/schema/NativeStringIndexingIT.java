@@ -48,7 +48,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.Randoms.CSA_LETTERS_AND_DIGITS;
 
 public class NativeStringIndexingIT
 {
@@ -76,7 +75,7 @@ public class NativeStringIndexingIT
                 String string;
                 do
                 {
-                    string = random.string( 3_000, 4_000, CSA_LETTERS_AND_DIGITS );
+                    string = random.nextAlphaNumericString( 3_000, 4_000 );
                 }
                 while ( strings.containsKey( string ) );
 
@@ -111,7 +110,7 @@ public class NativeStringIndexingIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode( LABEL ).setProperty( KEY, random.string( length, length, CSA_LETTERS_AND_DIGITS ) );
+                db.createNode( LABEL ).setProperty( KEY, random.nextAlphaNumericString( length, length ) );
                 tx.success();
             }
             fail( "Should have failed" );
@@ -131,8 +130,8 @@ public class NativeStringIndexingIT
 
         // when a string longer than native string limit, but within lucene limit
         int length = 20_000;
-        String string1 = random.string( length, length, CSA_LETTERS_AND_DIGITS );
-        String string2 = random.string( length, length, CSA_LETTERS_AND_DIGITS );
+        String string1 = random.nextAlphaNumericString( length, length );
+        String string2 = random.nextAlphaNumericString( length, length );
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
@@ -177,8 +176,8 @@ public class NativeStringIndexingIT
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                node.setProperty( KEY, random.string( length, length, CSA_LETTERS_AND_DIGITS ) );
-                node.setProperty( KEY2, random.string( length, length, CSA_LETTERS_AND_DIGITS ) );
+                node.setProperty( KEY, random.nextAlphaNumericString( length, length ) );
+                node.setProperty( KEY2, random.nextAlphaNumericString( length, length ) );
                 tx.success();
             }
             fail( "Should have failed" );

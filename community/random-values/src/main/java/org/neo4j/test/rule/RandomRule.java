@@ -1,4 +1,4 @@
-/*
+package org.neo4j.test.rule;/*
  * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -33,8 +32,9 @@ import java.util.Random;
 import java.util.function.Consumer;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.test.Randoms;
-import org.neo4j.test.Randoms.Configuration;
+import org.neo4j.values.storable.RandomValues;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -42,17 +42,18 @@ import static java.lang.System.currentTimeMillis;
  * Like a {@link Random} but guarantees to include the seed with the test failure, which helps
  * greatly in debugging.
  *
- * Available methods directly on this class include those found in {@link Randoms} and the basic ones in {@link Random}.
+ * Available methods directly on this class include those found in {@link RandomValues} and the basic ones in {@link Random}.
  */
 public class RandomRule implements TestRule
 {
     private long seed;
     private boolean hasGlobalSeed;
     private Random random;
-    private Randoms randoms;
-    private Configuration config = Randoms.DEFAULT;
+    private RandomValues randoms;
 
-    public RandomRule withConfiguration( Randoms.Configuration config )
+    private RandomValues.Configuration config = RandomValues.DEFAULT_CONFIGURATION;
+
+    public RandomRule withConfiguration( RandomValues.Configuration config )
     {
         this.config = config;
         return this;
@@ -175,7 +176,7 @@ public class RandomRule implements TestRule
     }
 
     // ============================
-    // Methods from Randoms
+    // Methods from RandomValues
     // ============================
 
     public int intBetween( int min, int max )
@@ -183,19 +184,34 @@ public class RandomRule implements TestRule
         return randoms.intBetween( min, max );
     }
 
-    public String string()
+    public String nextString()
     {
-        return randoms.string();
+        return nextTextValue().stringValue();
     }
 
-    public String string( int minLength, int maxLength, int characterSets )
+    public TextValue nextTextValue()
     {
-        return randoms.string( minLength, maxLength, characterSets );
+        return randoms.nextTextValue();
     }
 
-    public char character( int characterSets )
+    public String nextAlphaNumericString( )
     {
-        return randoms.character( characterSets );
+        return nextAlphaNumericTextValue().stringValue();
+    }
+
+    public TextValue nextAlphaNumericTextValue( )
+    {
+        return randoms.nextAlphaNumericTextValue();
+    }
+
+    public String nextAlphaNumericString( int minLength, int maxLength )
+    {
+        return nextAlphaNumericTextValue( minLength, maxLength ).stringValue();
+    }
+
+    public TextValue nextAlphaNumericTextValue( int minLength, int maxLength )
+    {
+        return randoms.nextAlphaNumericTextValue( minLength, maxLength );
     }
 
     public <T> T[] selection( T[] among, int min, int max, boolean allowDuplicates )
@@ -218,14 +234,14 @@ public class RandomRule implements TestRule
         randoms.among( among, action );
     }
 
-    public Number numberPropertyValue()
+    public Object nextValueAsObject()
     {
-        return randoms.numberPropertyValue();
+        return randoms.nextValue().asObject();
     }
 
-    public Object propertyValue()
+    public Value nextValue()
     {
-        return randoms.propertyValue();
+        return randoms.nextValue();
     }
 
     // ============================
@@ -235,12 +251,7 @@ public class RandomRule implements TestRule
     public void reset()
     {
         random = new Random( seed );
-        randoms = new Randoms( random, config );
-    }
-
-    public Randoms fork( Configuration configuration )
-    {
-        return randoms.fork( configuration );
+        randoms = RandomValues.create( random, config );
     }
 
     public long seed()
@@ -253,7 +264,7 @@ public class RandomRule implements TestRule
         return random;
     }
 
-    public Randoms randoms()
+    public RandomValues randomValues()
     {
         return randoms;
     }

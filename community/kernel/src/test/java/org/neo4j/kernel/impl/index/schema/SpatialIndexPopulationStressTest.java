@@ -19,19 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Random;
-
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
-
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
-import static org.neo4j.values.storable.Values.pointValue;
 
 public class SpatialIndexPopulationStressTest extends IndexPopulationStressTest
 {
@@ -48,25 +41,8 @@ public class SpatialIndexPopulationStressTest extends IndexPopulationStressTest
     }
 
     @Override
-    Value randomValue( Random random )
+    Value randomValue( RandomValues random )
     {
-        switch ( random.nextInt( 4 ) )
-        {
-        case 0:
-            return pointValue( Cartesian, random.nextDouble(), random.nextDouble() );
-
-            case 1:
-            return pointValue( Cartesian_3D, random.nextDouble(), random.nextDouble(), random.nextDouble() );
-
-        case 2:
-            return pointValue( WGS84, random.nextDouble(), random.nextDouble() );
-
-        case 3:
-            return pointValue( WGS84_3D, random.nextDouble(), random.nextDouble(), random.nextDouble() );
-
-            default:
-                throw new IllegalStateException( "Broke java.util.Random." );
-        }
-
+        return random.nextPointValue();
     }
 }

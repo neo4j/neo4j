@@ -98,7 +98,7 @@ public abstract class AbstractRecordFormatTest
     @Before
     public void before()
     {
-        generators = new LimitedRecordGenerators( random.randoms(), entityBits, propertyBits, 40, 16, -1 );
+        generators = new LimitedRecordGenerators( random.randomValues(), entityBits, propertyBits, 40, 16, -1 );
     }
 
     @Test

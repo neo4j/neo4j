@@ -27,10 +27,9 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
@@ -79,16 +78,15 @@ abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,Nativ
     }
 
     @Override
-    protected Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    protected Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
-        String candidate;
+        TextValue candidate;
         do
         {
-            candidate = random.string();
+            candidate = random.nextTextValue();
         }
-        while ( !uniqueCompareValues.add( candidate ) );
-        TextValue result = Values.stringValue( candidate );
-        uniqueValues.add( result );
-        return result;
+        while ( !uniqueCompareValues.add( candidate.stringValue() ) );
+        uniqueValues.add( candidate );
+        return candidate;
     }
 }

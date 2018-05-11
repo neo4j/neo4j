@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -86,13 +87,13 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
             {
                 Value value;
                 if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
-                        random.nextFloat() < fractionDuplicates )
+                     random.nextFloat() < fractionDuplicates )
                 {
                     value = existingNonUniqueValue( random );
                 }
                 else
                 {
-                    value = newUniqueValue( random, uniqueCompareValues, uniqueValues );
+                    value = newUniqueValue( random.randomValues(), uniqueCompareValues, uniqueValues );
                 }
 
                 return add( currentEntityId++, value );
@@ -105,7 +106,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
         };
     }
 
-    abstract Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues );
+    abstract Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues );
 
     Value[] extractValuesFromUpdates( IndexEntryUpdate<SchemaIndexDescriptor>[] updates )
     {
@@ -123,7 +124,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
 
     abstract IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues();
 
-    abstract  IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues();
+    abstract IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues();
 
     IndexEntryUpdate<SchemaIndexDescriptor>[] generateAddUpdatesFor( Object[] values )
     {

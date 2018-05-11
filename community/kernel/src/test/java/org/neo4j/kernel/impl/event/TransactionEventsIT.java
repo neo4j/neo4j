@@ -579,7 +579,7 @@ public class TransactionEventsIT
 
         Object randomPropertyValue()
         {
-            return random.propertyValue();
+            return random.nextValueAsObject();
         }
 
         int nodeCount()
