@@ -19,14 +19,14 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
 
@@ -85,14 +85,14 @@ public class SwapperSetTest
     public void freedIdsMustNotBeReusedBeforeVacuum()
     {
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
-        MutableIntSet ids = new IntHashSet( 10_000 );
+        PrimitiveIntSet ids = Primitive.intSet( 10_000 );
         for ( int i = 0; i < 10_000; i++ )
         {
             allocateFreeAndAssertNotReused( swapper, ids, i );
         }
     }
 
-    private void allocateFreeAndAssertNotReused( PageSwapper swapper, MutableIntSet ids, int i )
+    private void allocateFreeAndAssertNotReused( PageSwapper swapper, PrimitiveIntSet ids, int i )
     {
         int id = set.allocate( swapper );
         set.free( id );
@@ -106,20 +106,21 @@ public class SwapperSetTest
     @Test
     public void freedAllocationsMustBecomeAvailableAfterVacuum()
     {
-        MutableIntSet allocated = new IntHashSet();
-        MutableIntSet freed = new IntHashSet();
-        MutableIntSet vacuumed = new IntHashSet();
-        MutableIntSet reused = new IntHashSet();
+        PrimitiveIntSet allocated = Primitive.intSet();
+        PrimitiveIntSet freed = Primitive.intSet();
+        PrimitiveIntSet vacuumed = Primitive.intSet();
+        PrimitiveIntSet reused = Primitive.intSet();
         PageSwapper swapper = new DummyPageSwapper( "a", 42 );
 
         allocateAndAddTenThousand( allocated, swapper );
 
-        allocated.forEach( id ->
+        allocated.visitKeys( id ->
         {
             set.free( id );
             freed.add( id );
+            return false;
         } );
-        set.vacuum( vacuumed::addAll );
+        set.vacuum( swapperIds -> vacuumed.addAll( ((PrimitiveIntSet) swapperIds).iterator() ) );
 
         allocateAndAddTenThousand( reused, swapper );
 
@@ -128,7 +129,7 @@ public class SwapperSetTest
         assertThat( allocated, is( equalTo( reused ) ) );
     }
 
-    private void allocateAndAddTenThousand( MutableIntSet allocated, PageSwapper swapper )
+    private void allocateAndAddTenThousand( PrimitiveIntSet allocated, PageSwapper swapper )
     {
         for ( int i = 0; i < 10_000; i++ )
         {
@@ -136,7 +137,7 @@ public class SwapperSetTest
         }
     }
 
-    private void allocateAndAdd( MutableIntSet allocated, PageSwapper swapper )
+    private void allocateAndAdd( PrimitiveIntSet allocated, PageSwapper swapper )
     {
         int id = set.allocate( swapper );
         allocated.add( id );
@@ -150,8 +151,8 @@ public class SwapperSetTest
         {
             set.allocate( swapper );
         }
-        MutableIntSet vacuumedIds = new IntHashSet();
-        set.vacuum( vacuumedIds::addAll );
+        PrimitiveIntSet vacuumedIds = Primitive.intSet();
+        set.vacuum( swapperIds -> vacuumedIds.addAll( ((PrimitiveIntSet) swapperIds).iterator() ) );
         if ( !vacuumedIds.isEmpty() )
         {
             throw new AssertionError( "Vacuum found id " + vacuumedIds + " when it should have found nothing" );

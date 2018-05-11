@@ -23,8 +23,6 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import java.io.File;
 import java.util.HashMap;
@@ -39,6 +37,8 @@ import org.neo4j.causalclustering.catchup.CatchupServerHandler;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.Log;
@@ -180,7 +180,8 @@ class TestCatchupServerHandler implements CatchupServerHandler
                 File[] files = new File[list.size()];
                 files = list.toArray( files );
                 long transactionId = 123L;
-                LongSet indexIds = LongSets.immutable.of( 13 );
+                PrimitiveLongSet indexIds = Primitive.longSet();
+                indexIds.add( 13 );
                 channelHandlerContext.writeAndFlush( PrepareStoreCopyResponse.success( files, indexIds, transactionId ) );
                 catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
             }

@@ -264,19 +264,19 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitCreatedLabelToken( int id, String name )
+    public void visitCreatedLabelToken( String name, int id )
     {
         recordState.createLabelToken( name, id );
     }
 
     @Override
-    public void visitCreatedPropertyKeyToken( int id, String name )
+    public void visitCreatedPropertyKeyToken( String name, int id )
     {
         recordState.createPropertyKeyToken( name, id );
     }
 
     @Override
-    public void visitCreatedRelationshipTypeToken( int id, String name )
+    public void visitCreatedRelationshipTypeToken( String name, int id )
     {
         recordState.createRelationshipTypeToken( name, id );
     }

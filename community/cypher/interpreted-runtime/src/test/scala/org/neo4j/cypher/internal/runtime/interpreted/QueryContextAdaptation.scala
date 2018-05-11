@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.net.URL
 
-import org.eclipse.collections.api.iterator.LongIterator
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
@@ -122,7 +122,7 @@ trait QueryContextAdaptation {
 
   override def indexScan(index: IndexReference): scala.Iterator[NodeValue] = ???
 
-  override def indexScanPrimitive(index: IndexReference): LongIterator = ???
+  override def indexScanPrimitive(index: IndexReference): PrimitiveLongIterator = ???
 
   override def getImportURL(url: URL): Either[String, URL] = ???
 
@@ -142,7 +142,7 @@ trait QueryContextAdaptation {
 
   override def getNodesByLabel(id: Int): scala.Iterator[NodeValue] = ???
 
-  override def getNodesByLabelPrimitive(id: Int): LongIterator = ???
+  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator = ???
 
   override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] = ???
 

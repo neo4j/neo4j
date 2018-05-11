@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
@@ -50,19 +49,19 @@ public class DiffSets<T> extends SuperDiffSets<T> implements ReadableDiffSets<T>
     }
 
     @Override
-    public LongIterator augment( final LongIterator source )
+    public PrimitiveLongIterator augment( final PrimitiveLongIterator source )
     {
         return DiffApplyingLongIterator.augment( source, added( false ), removed( false ) );
     }
 
     @Override
-    public PrimitiveLongResourceIterator augment( final PrimitiveLongResourceIterator source )
+    public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
     {
         return DiffApplyingLongIterator.augment( source, added( false ), removed( false ) );
     }
 
     @Override
-    public PrimitiveLongResourceIterator augmentWithRemovals( final PrimitiveLongResourceIterator source )
+    public PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongResourceIterator source )
     {
         return DiffApplyingLongIterator.augment( source, Collections.emptySet(), removed( false ) );
     }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -80,8 +79,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.collection.PrimitiveIntCollections.toList;
-import static org.neo4j.collection.PrimitiveLongCollections.toSet;
+import static org.neo4j.collection.primitive.Primitive.intObjectMap;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
@@ -1181,7 +1181,7 @@ public class TxStateTest
         state.relationshipDoDelete( relC, relType + 1, startNode, endNode );
 
         // Then
-        assertThat( toList( state.nodeRelationshipTypes( startNode ).intIterator() ), equalTo( asList( relType ) ) );
+        assertThat( toList( state.nodeRelationshipTypes( startNode ).iterator() ), equalTo( asList( relType ) ) );
     }
 
     @Test
@@ -1565,7 +1565,7 @@ public class TxStateTest
     public void useCollectionFactory()
     {
         final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
-        doAnswer( invocation -> new IntObjectHashMap<>() ).when( collectionsFactory ).newIntObjectMap();
+        doAnswer( invocation -> intObjectMap() ).when( collectionsFactory ).newIntObjectMap();
 
         state = new TxState( collectionsFactory );
 

@@ -19,15 +19,14 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
-
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -93,7 +92,7 @@ public interface StoreReadLayer
     /**
      * @return iterator with property keys of all stored graph properties.
      */
-    IntIterator graphGetPropertyKeys();
+    PrimitiveIntIterator graphGetPropertyKeys();
 
     /**
      * @param propertyKeyId property key id to get graph property for.
@@ -287,7 +286,7 @@ public interface StoreReadLayer
     /**
      * @return ids of all stored nodes.
      */
-    LongIterator nodesGetAll();
+    PrimitiveLongIterator nodesGetAll();
 
     /**
      * @return ids of all stored relationships. The returned iterator can optionally visit data about
@@ -386,7 +385,7 @@ public interface StoreReadLayer
 
     boolean relationshipExists( long id );
 
-    IntSet relationshipTypes( StorageStatement statement, NodeItem node );
+    PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node );
 
     void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor );
 

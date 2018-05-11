@@ -19,9 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,6 +39,9 @@ import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -83,12 +83,13 @@ public class StoreCopyClientTest
     // helpers
     private File[] serverFiles = new File[]{new File( "fileA.txt" ), new File( "fileB.bmp" )};
     private File targetLocation = new File( "targetLocation" );
-    private LongSet indexIds = LongSets.immutable.of( 13 );
+    private PrimitiveLongSet indexIds = Primitive.longSet();
     private ConstantTimeTimeoutStrategy backOffStrategy;
 
     @Before
     public void setup()
     {
+        indexIds.add( 13 );
         backOffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );
         subject = new StoreCopyClient( catchUpClient, monitors, logProvider, backOffStrategy );
     }
@@ -259,7 +260,7 @@ public class StoreCopyClientTest
 
         // then
         verify( storeCopyClientMonitor ).startReceivingIndexSnapshots();
-        LongIterator iterator = indexIds.longIterator();
+        PrimitiveLongIterator iterator = indexIds.iterator();
         while ( iterator.hasNext() )
         {
             long indexSnapshotIdRequested = iterator.next();

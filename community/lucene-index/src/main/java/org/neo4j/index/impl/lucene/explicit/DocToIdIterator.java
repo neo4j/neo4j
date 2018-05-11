@@ -20,10 +20,10 @@
 package org.neo4j.index.impl.lucene.explicit;
 
 import org.apache.lucene.document.Document;
-import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Collection;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.index.IndexHits;
 
 public class DocToIdIterator extends AbstractExplicitIndexHits
@@ -32,9 +32,10 @@ public class DocToIdIterator extends AbstractExplicitIndexHits
     private final EntityId.LongCostume idCostume = new EntityId.LongCostume();
     private IndexReference searcherOrNull;
     private final IndexHits<Document> source;
-    private final LongSet idsModifiedInTransactionState;
+    private final PrimitiveLongSet idsModifiedInTransactionState;
 
-    public DocToIdIterator( IndexHits<Document> source, Collection<EntityId> exclude, IndexReference searcherOrNull, LongSet idsModifiedInTransactionState )
+    public DocToIdIterator( IndexHits<Document> source, Collection<EntityId> exclude, IndexReference searcherOrNull,
+            PrimitiveLongSet idsModifiedInTransactionState )
     {
         this.source = source;
         this.removedInTransactionState = exclude;

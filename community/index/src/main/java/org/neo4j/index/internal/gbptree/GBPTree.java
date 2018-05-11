@@ -20,8 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.Closeable;
 import java.io.File;
@@ -34,6 +32,8 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -1091,10 +1091,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
             boolean check = consistencyChecker.check( cursor, rootGeneration );
             root.goTo( cursor );
 
-            final MutableLongSet freelistIds = new LongHashSet();
+            PrimitiveLongSet freelistIds = Primitive.longSet();
             freeList.visitFreelistPageIds( freelistIds::add );
             freeList.visitUnacquiredIds( freelistIds::add, unstableGeneration );
-            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.longIterator() );
+            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.iterator() );
 
             return check && checkSpace;
         }

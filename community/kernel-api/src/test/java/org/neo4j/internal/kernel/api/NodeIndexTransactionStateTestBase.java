@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.values.storable.Values;
@@ -44,7 +44,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     public void shouldPerformStringSuffixSearch() throws Exception
     {
         // given
-        MutableLongSet expected = new LongHashSet();
+        PrimitiveLongSet expected = Primitive.longSet();
         try ( Transaction tx = session.beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "1suff" ) );
@@ -65,7 +65,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
             {
                 tx.dataRead().nodeIndexSeek( index, nodes, IndexOrder.NONE, IndexQuery.stringSuffix( prop, "suff" ) );
-                MutableLongSet found = new LongHashSet();
+                PrimitiveLongSet found = Primitive.longSet();
                 while ( nodes.next() )
                 {
                     found.add( nodes.nodeReference() );
@@ -80,7 +80,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     public void shouldPerformStringContainsSearch() throws Exception
     {
         // given
-        MutableLongSet expected = new LongHashSet();
+        PrimitiveLongSet expected = Primitive.longSet();
         try ( Transaction tx = session.beginTransaction() )
         {
             expected.add( nodeWithProp( tx, "gnomebat" ) );
@@ -101,7 +101,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
             {
                 tx.dataRead().nodeIndexSeek( index, nodes, IndexOrder.NONE, IndexQuery.stringContains( prop, "me" ) );
-                MutableLongSet found = new LongHashSet();
+                PrimitiveLongSet found = Primitive.longSet();
                 while ( nodes.next() )
                 {
                     found.add( nodes.nodeReference() );

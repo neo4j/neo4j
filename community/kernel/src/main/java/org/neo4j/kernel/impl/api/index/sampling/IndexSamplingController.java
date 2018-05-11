@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
@@ -88,7 +87,7 @@ public class IndexSamplingController
         try
         {
             IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
-            final LongIterator indexIds = indexMap.indexIds();
+            PrimitiveLongIterator indexIds = indexMap.indexIds();
             while ( indexIds.hasNext() )
             {
                 long indexId = indexIds.next();

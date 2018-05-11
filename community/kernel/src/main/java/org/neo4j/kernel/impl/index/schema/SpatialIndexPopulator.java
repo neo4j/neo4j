@@ -77,7 +77,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     }
 
     @Override
-    public synchronized void drop()
+    public synchronized void drop() throws IOException
     {
         forAll( NativeSchemaIndexPopulator::drop, this );
     }

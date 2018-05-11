@@ -19,9 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +26,11 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -71,7 +72,7 @@ public class PrepareStoreCopyFilesTest
         storeDir = testDirectory.graphDbDir();
         when( dataSource.getStoreDir() ).thenReturn( storeDir );
         indexListingMock = mock( NeoStoreFileIndexListing.class );
-        when( indexListingMock.getIndexIds() ).thenReturn( new LongHashSet() );
+        when( indexListingMock.getIndexIds() ).thenReturn( Primitive.longSet() );
         NeoStoreFileListing storeFileListing = mock( NeoStoreFileListing.class );
         when( storeFileListing.getNeoStoreFileIndexListing() ).thenReturn( indexListingMock );
         when( storeFileListing.builder() ).thenReturn( fileListingBuilder );
@@ -124,7 +125,7 @@ public class PrepareStoreCopyFilesTest
     @Test
     public void shouldHandleEmptyDescriptors()
     {
-        LongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
+        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
         assertEquals( 0, indexIds.size() );
     }
@@ -132,10 +133,11 @@ public class PrepareStoreCopyFilesTest
     @Test
     public void shouldReturnEmptySetOfIdsAndIgnoreIndexListing()
     {
-        LongSet expectedIndexIds = LongSets.immutable.of( 42 );
-        when( indexListingMock.getIndexIds() ).thenReturn( expectedIndexIds );
+        PrimitiveLongSet existingIds = Primitive.longSet();
+        existingIds.add( 42 );
+        when( indexListingMock.getIndexIds() ).thenReturn( existingIds );
 
-        LongSet actualIndexIndexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
+        PrimitiveLongSet actualIndexIndexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
         assertTrue( actualIndexIndexIds.isEmpty() );
     }

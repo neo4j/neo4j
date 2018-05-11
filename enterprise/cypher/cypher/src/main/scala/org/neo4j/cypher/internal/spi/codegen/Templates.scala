@@ -24,11 +24,11 @@ import java.util.Comparator
 import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
-import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap
 import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodDeclaration.Builder
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
+import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream, QueryExecutionTracer}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.frontend.v3_5.helpers.using
@@ -62,7 +62,8 @@ object Templates {
                       MethodReference.constructorReference(valueType, argTypes: _*), argExpression:_*)
   }
 
-  val newCountingMap = createNewInstance(typeRef[LongIntHashMap])
+  val newLongObjectMap = Expression.invoke(method[Primitive, PrimitiveLongObjectMap[_]]("longObjectMap"))
+  val newCountingMap = Expression.invoke(method[Primitive, PrimitiveLongIntMap]("longIntMap"))
 
   def createNewNodeReference(expression: Expression): Expression =
     Expression.invoke(method[VirtualValues, NodeReference]("node", typeRef[Long]), expression)

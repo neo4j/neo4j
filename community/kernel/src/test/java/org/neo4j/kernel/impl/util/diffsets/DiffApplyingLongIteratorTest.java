@@ -20,16 +20,15 @@
 
 package org.neo4j.kernel.impl.util.diffsets;
 
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 
 import static java.util.Collections.emptySet;
-import static org.neo4j.collection.PrimitiveLongCollections.resourceIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 
 public class DiffApplyingLongIteratorTest
 {
@@ -37,7 +36,7 @@ public class DiffApplyingLongIteratorTest
     public void closeResource()
     {
         Resource resource = Mockito.mock( Resource.class );
-        PrimitiveLongResourceIterator source = resourceIterator( ImmutableEmptyLongIterator.INSTANCE, resource );
+        PrimitiveLongResourceIterator source = resourceIterator( emptyIterator(), resource );
 
         PrimitiveLongResourceIterator iterator = DiffApplyingLongIterator.augment( source, emptySet(), emptySet() );
 

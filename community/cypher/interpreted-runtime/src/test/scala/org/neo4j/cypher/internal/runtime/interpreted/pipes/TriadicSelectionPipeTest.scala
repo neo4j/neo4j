@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.eclipse.collections.api.LongIterable
+import org.neo4j.collection.primitive.PrimitiveLongIterable
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_5.symbols._
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
@@ -154,9 +154,9 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
 
-  private def asScalaSet(in: LongIterable): Set[Long] = {
+  private def asScalaSet(in: PrimitiveLongIterable): Set[Long] = {
     val builder = Set.newBuilder[Long]
-    val iter = in.longIterator()
+    val iter = in.iterator()
     while (iter.hasNext) {
       builder += iter.next()
     }

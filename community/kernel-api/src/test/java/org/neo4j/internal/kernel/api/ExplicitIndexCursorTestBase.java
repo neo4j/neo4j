@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -51,10 +51,9 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindNodeByLookup() throws Exception
     {
         // given
-        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor() )
+        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor();
+              PrimitiveLongSet nodes = Primitive.longSet() )
         {
-            MutableLongSet nodes = new LongHashSet();
-
             // when
             indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", "this is it" );
 
@@ -73,10 +72,9 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindNodeByQuery() throws Exception
     {
         // given
-        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor() )
+        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor();
+              PrimitiveLongSet nodes = Primitive.longSet() )
         {
-            MutableLongSet nodes = new LongHashSet();
-
             // when
             indexRead.nodeExplicitIndexQuery( cursor, "foo", "bar:this*" );
 
@@ -108,10 +106,9 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindRelationshipByLookup() throws Exception
     {
         // given
-        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor(); )
+        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor();
+              PrimitiveLongSet edges = Primitive.longSet() )
         {
-            MutableLongSet edges = new LongHashSet();
-
             // when
             indexRead.relationshipExplicitIndexLookup(
                     cursor,
@@ -136,10 +133,9 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindRelationshipByQuery() throws Exception
     {
         // given
-        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor(); )
+        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor();
+              PrimitiveLongSet relationships = Primitive.longSet() )
         {
-            MutableLongSet relationships = new LongHashSet();
-
             // when
             indexRead.relationshipExplicitIndexQuery( cursor, "rels", "alpha:betting*", -1, -1 );
 

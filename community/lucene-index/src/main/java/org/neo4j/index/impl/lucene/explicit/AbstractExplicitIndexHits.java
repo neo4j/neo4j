@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 
 public abstract class AbstractExplicitIndexHits extends PrimitiveLongBaseIterator implements ExplicitIndexHits

@@ -19,15 +19,14 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.LabelChainWalker;
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -102,7 +101,7 @@ public class NodeLabelReader
         if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( field ) )
         {
             List<DynamicRecord> recordList = new ArrayList<>();
-            final MutableLongSet alreadySeen = new LongHashSet();
+            PrimitiveLongSet alreadySeen = Primitive.longSet( 16 );
             long id = NodeLabelsField.firstDynamicLabelRecordId( field );
             while ( !Record.NULL_REFERENCE.is( id ) )
             {

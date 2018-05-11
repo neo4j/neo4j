@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,9 +26,11 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.collection.PrimitiveLongResourceCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
@@ -354,11 +354,10 @@ public class FusionIndexReaderTest
         }
 
         // when
-        LongIterator result = fusionIndexReader.query( exists );
+        PrimitiveLongIterator result = fusionIndexReader.query( exists );
 
         // then
-
-        LongSet resultSet = PrimitiveLongCollections.asSet( result );
+        PrimitiveLongSet resultSet = PrimitiveLongCollections.asSet( result );
         for ( long i = 0L; i < lastId; i++ )
         {
             assertTrue( "Expected to contain " + i + ", but was " + resultSet, resultSet.contains( i ) );

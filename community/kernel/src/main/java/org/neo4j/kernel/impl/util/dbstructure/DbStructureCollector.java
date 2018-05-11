@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import org.eclipse.collections.api.map.primitive.MutableIntLongMap;
-import org.eclipse.collections.impl.map.mutable.primitive.IntLongHashMap;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntLongMap;
+import org.neo4j.collection.primitive.hopscotch.IntKeyLongValueTable;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
@@ -53,7 +53,7 @@ public class DbStructureCollector implements DbStructureVisitor
     private final Set<NodeExistenceConstraintDescriptor> nodePropertyExistenceConstraints = new HashSet<>();
     private final Set<RelExistenceConstraintDescriptor> relPropertyExistenceConstraints = new HashSet<>();
     private final Set<NodeKeyConstraintDescriptor> nodeKeyConstraints = new HashSet<>();
-    private final MutableIntLongMap nodeCounts = new IntLongHashMap();
+    private final PrimitiveIntLongMap nodeCounts = Primitive.intLongMap();
     private final Map<RelSpecifier, Long> relCounts = new HashMap<>();
     private long allNodesCount = -1L;
 
@@ -130,7 +130,8 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public long nodesWithLabelCardinality( int labelId )
             {
-                return nodeCounts.getIfAbsent( labelId, 0L );
+                Long result = nodeCounts.get( labelId );
+                return result == null ? 0L : result;
             }
 
             @Override
@@ -261,13 +262,12 @@ public class DbStructureCollector implements DbStructureVisitor
     @Override
     public void visitNodeCount( int labelId, String labelName, long nodeCount )
     {
-        if ( nodeCounts.containsKey( labelId ) )
+        if ( nodeCounts.put( labelId, nodeCount ) != IntKeyLongValueTable.NULL )
         {
             throw new IllegalArgumentException(
                     format( "Duplicate node count %s for label with id %s", nodeCount, labelName )
             );
         }
-        nodeCounts.put( labelId, nodeCount );
     }
 
     @Override

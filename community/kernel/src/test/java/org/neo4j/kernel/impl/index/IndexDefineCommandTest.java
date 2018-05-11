@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
@@ -33,6 +33,9 @@ import org.neo4j.storageengine.api.CommandReader;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class IndexDefineCommandTest
 {
@@ -96,9 +99,12 @@ public class IndexDefineCommandTest
     {
         // GIVEN
         InMemoryClosableChannel channel =  new InMemoryClosableChannel( 1000 );
-        IndexDefineCommand command = new IndexDefineCommand();
-        MutableObjectIntMap<String> largeMap = initMap( 0xFFFF + 1 );
-        command.init( largeMap, largeMap );
+        IndexDefineCommand command = mock( IndexDefineCommand.class );
+        Map<String,Integer> largeMap = initMap( 0xFFFF + 1 );
+
+        doCallRealMethod().when( command ).serialize( channel );
+        when( command.getIndexNameIdRange() ).thenReturn( largeMap );
+        when( command.getKeyIdRange() ).thenReturn( largeMap );
 
         // WHEN
         assertTrue( serialize( channel, command ) );
@@ -120,15 +126,15 @@ public class IndexDefineCommandTest
     private IndexDefineCommand initIndexDefineCommand( int nbrOfEntries )
     {
         IndexDefineCommand command = new IndexDefineCommand();
-        MutableObjectIntMap<String> indexNames = initMap( nbrOfEntries );
-        MutableObjectIntMap<String> keys = initMap( nbrOfEntries );
+        Map<String,Integer> indexNames = initMap( nbrOfEntries );
+        Map<String,Integer> keys = initMap( nbrOfEntries );
         command.init( indexNames, keys );
         return command;
     }
 
-    private MutableObjectIntMap<String> initMap( int nbrOfEntries )
+    private Map<String,Integer> initMap( int nbrOfEntries )
     {
-        MutableObjectIntMap<String> toReturn = new ObjectIntHashMap<>();
+        Map<String, Integer> toReturn = new HashMap<>();
         while ( nbrOfEntries-- > 0 )
         {
             toReturn.put( "key" + nbrOfEntries, nbrOfEntries );

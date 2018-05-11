@@ -19,14 +19,13 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 /**
@@ -40,7 +39,7 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
     RelationshipIterator augment( RelationshipIterator source );
 
     @Override
-    default LongIterator augment( LongIterator source )
+    default PrimitiveLongIterator augment( PrimitiveLongIterator source )
     {
         throw new UnsupportedOperationException();
     }

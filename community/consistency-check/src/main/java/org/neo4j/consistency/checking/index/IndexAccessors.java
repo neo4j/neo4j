@@ -19,15 +19,14 @@
  */
 package org.neo4j.consistency.checking.index;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -41,7 +40,7 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 
 public class IndexAccessors implements Closeable
 {
-    private final MutableLongObjectMap<IndexAccessor> accessors = new LongObjectHashMap<>();
+    private final Map<Long,IndexAccessor> accessors = new HashMap<>();
     private final List<IndexRule> onlineIndexRules = new ArrayList<>();
     private final List<IndexRule> notOnlineIndexRules = new ArrayList<>();
 
@@ -119,7 +118,7 @@ public class IndexAccessors implements Closeable
     @Override
     public void close() throws IOException
     {
-        for ( IndexAccessor accessor : accessors )
+        for ( IndexAccessor accessor : accessors.values() )
         {
             accessor.close();
         }

@@ -19,12 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.eclipse.collections.api.stack.primitive.MutableLongStack;
-import org.eclipse.collections.impl.stack.mutable.primitive.LongArrayStack;
-
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.collection.primitive.PrimitiveLongStack;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
@@ -313,13 +311,13 @@ public class ParallelSort
 
         private void qsort( long initialStart, long initialEnd )
         {
-            final MutableLongStack stack = new LongArrayStack();
+            PrimitiveLongStack stack = new PrimitiveLongStack( 100 );
             stack.push( initialStart );
             stack.push( initialEnd );
             while ( !stack.isEmpty() )
             {
-                long end = stack.isEmpty() ? -1 : stack.pop();
-                long start = stack.isEmpty() ? -1 : stack.pop();
+                long end = stack.poll();
+                long start = stack.poll();
                 long diff = end - start;
                 if ( diff < 2 )
                 {

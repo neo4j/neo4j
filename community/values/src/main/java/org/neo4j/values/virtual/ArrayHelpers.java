@@ -29,7 +29,7 @@ import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.Value;
 
 /**
- * This class is way too similar to org.neo4j.collection.PrimitiveArrays.
+ * This class is way too similar to org.neo4j.collection.primitive.PrimitiveArrays.
  * <p>
  * Should we introduce dependency on primitive collections?
  */

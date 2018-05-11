@@ -30,7 +30,6 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,7 +40,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.LruCache;
@@ -342,11 +341,13 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             ExplicitIndexHits primitiveHits = null;
             if ( key == null || this.cache == null || !this.cache.containsKey( key ) )
             {
-                primitiveHits = new DocToIdIterator( result, Collections.emptyList(), null, LongSets.immutable.empty() );
+                primitiveHits = new DocToIdIterator( result, Collections.emptyList(), null,
+                        PrimitiveLongCollections.emptySet() );
             }
             else
             {
-                primitiveHits = new DocToIdIterator( result, Collections.emptyList(), null, LongSets.immutable.empty() )
+                primitiveHits = new DocToIdIterator( result, Collections.emptyList(), null,
+                        PrimitiveLongCollections.emptySet() )
                 {
                     private final Collection<EntityId> ids = new ArrayList<>();
 

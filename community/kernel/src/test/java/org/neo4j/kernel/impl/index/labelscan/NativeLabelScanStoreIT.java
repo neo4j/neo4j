@@ -43,7 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
 public class NativeLabelScanStoreIT

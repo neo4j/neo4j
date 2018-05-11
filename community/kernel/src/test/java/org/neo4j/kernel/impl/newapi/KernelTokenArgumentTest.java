@@ -26,9 +26,9 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.test.assertion.Assert;
 
 import static org.mockito.Mockito.mock;
-import static org.neo4j.test.assertion.Assert.assertException;
 
 public class KernelTokenArgumentTest
 {
@@ -57,6 +57,6 @@ public class KernelTokenArgumentTest
 
     private void assertIllegalToken( ThrowingAction<KernelException> f )
     {
-        assertException( f, IllegalTokenNameException.class );
+        Assert.assertException( f, IllegalTokenNameException.class );
     }
 }

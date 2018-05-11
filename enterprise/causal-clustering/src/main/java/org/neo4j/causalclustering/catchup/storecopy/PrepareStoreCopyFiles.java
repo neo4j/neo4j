@@ -19,15 +19,14 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -51,9 +50,9 @@ public class PrepareStoreCopyFiles implements AutoCloseable
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
 
-    LongSet getNonAtomicIndexIds()
+    PrimitiveLongSet getNonAtomicIndexIds()
     {
-        return LongSets.immutable.empty();
+        return Primitive.longSet();
     }
 
     StoreResource[] getAtomicFilesSnapshot() throws IOException

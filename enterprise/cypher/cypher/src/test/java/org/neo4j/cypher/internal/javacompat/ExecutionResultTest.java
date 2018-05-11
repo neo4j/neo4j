@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.junit.Assert;
 import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
@@ -146,10 +147,10 @@ public class ExecutionResultTest
         Result create = db.execute( "CREATE CONSTRAINT ON (n:L) ASSERT n.prop IS UNIQUE" );
         Result drop = db.execute( "DROP CONSTRAINT ON (n:L) ASSERT n.prop IS UNIQUE" );
 
-        assertThat( create.getQueryStatistics().getConstraintsAdded(), equalTo( 1 ) );
-        assertThat( create.getQueryStatistics().getConstraintsRemoved(), equalTo( 0 ) );
-        assertThat( drop.getQueryStatistics().getConstraintsAdded(), equalTo( 0 ) );
-        assertThat( drop.getQueryStatistics().getConstraintsRemoved(), equalTo( 1 ) );
+        Assert.assertThat( create.getQueryStatistics().getConstraintsAdded(), equalTo( 1 ) );
+        Assert.assertThat( create.getQueryStatistics().getConstraintsRemoved(), equalTo( 0 ) );
+        Assert.assertThat( drop.getQueryStatistics().getConstraintsAdded(), equalTo( 0 ) );
+        Assert.assertThat( drop.getQueryStatistics().getConstraintsRemoved(), equalTo( 1 ) );
     }
 
     @Test
@@ -158,10 +159,10 @@ public class ExecutionResultTest
         Result create = db.execute( "CREATE CONSTRAINT ON (n:L) ASSERT exists(n.prop)" );
         Result drop = db.execute( "DROP CONSTRAINT ON (n:L) ASSERT exists(n.prop)" );
 
-        assertThat( create.getQueryStatistics().getConstraintsAdded(), equalTo( 1 ) );
-        assertThat( create.getQueryStatistics().getConstraintsRemoved(), equalTo( 0 ) );
-        assertThat( drop.getQueryStatistics().getConstraintsAdded(), equalTo( 0 ) );
-        assertThat( drop.getQueryStatistics().getConstraintsRemoved(), equalTo( 1 ) );
+        Assert.assertThat( create.getQueryStatistics().getConstraintsAdded(), equalTo( 1 ) );
+        Assert.assertThat( create.getQueryStatistics().getConstraintsRemoved(), equalTo( 0 ) );
+        Assert.assertThat( drop.getQueryStatistics().getConstraintsAdded(), equalTo( 0 ) );
+        Assert.assertThat( drop.getQueryStatistics().getConstraintsRemoved(), equalTo( 1 ) );
     }
 
     @Test

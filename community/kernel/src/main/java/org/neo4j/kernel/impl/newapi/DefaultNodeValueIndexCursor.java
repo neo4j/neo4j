@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-
 import java.util.Arrays;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -41,8 +38,9 @@ import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Arrays.stream;
-import static org.neo4j.collection.PrimitiveLongCollections.asSet;
-import static org.neo4j.collection.PrimitiveLongResourceCollections.emptyIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.asSet;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
@@ -53,8 +51,8 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private long node;
     private IndexQuery[] query;
     private Value[] values;
-    private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
-    private LongSet removed = LongSets.immutable.empty();
+    private PrimitiveLongIterator added = emptyIterator();
+    private PrimitiveLongSet removed = emptySet();
     private boolean needsValues;
     private final DefaultCursors pool;
 
@@ -197,8 +195,8 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             this.query = null;
             this.values = null;
             this.read = null;
-            this.added = ImmutableEmptyLongIterator.INSTANCE;
-            this.removed = LongSets.immutable.empty();
+            this.added = emptyIterator();
+            this.removed = PrimitiveLongCollections.emptySet();
 
             try
             {
@@ -245,7 +243,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             TransactionState txState = read.txState();
             PrimitiveLongReadableDiffSets changes = txState
                     .indexUpdatesForRangeSeekByPrefix( descriptor, predicate.prefix() );
-            added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
+            added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }
     }
@@ -262,7 +260,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
                     descriptor, valueGroup,
                     predicate.fromValue(), predicate.fromInclusive(),
                     predicate.toValue(), predicate.toInclusive() );
-            added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
+            added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }
     }
@@ -274,7 +272,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             TransactionState txState = read.txState();
             PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForScan( descriptor );
-            added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
+            added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }
     }
@@ -286,7 +284,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             TransactionState txState = read.txState();
             PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForSuffixOrContains( descriptor, query );
-            added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
+            added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }
     }
@@ -300,15 +298,15 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             TransactionState txState = read.txState();
             PrimitiveLongReadableDiffSets changes = read.txState()
                     .indexUpdatesForSeek( descriptor, IndexQuery.asValueTuple( exactPreds ) );
-            added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
+            added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }
     }
 
-    private LongSet removed( TransactionState txState, PrimitiveLongReadableDiffSets changes )
+    private PrimitiveLongSet removed( TransactionState txState, PrimitiveLongReadableDiffSets changes )
     {
-        final MutableLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
-        longSet.addAll( changes.getRemoved() );
+        PrimitiveLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
+        longSet.addAll( changes.getRemoved().iterator() );
         return longSet;
     }
 

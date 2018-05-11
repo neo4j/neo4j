@@ -19,10 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.function.LongFunction;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -36,7 +35,7 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
  */
 public class DeleteDuplicateNodesStage extends Stage
 {
-    public DeleteDuplicateNodesStage( Configuration config, LongIterator duplicateNodeIds,
+    public DeleteDuplicateNodesStage( Configuration config, PrimitiveLongIterator duplicateNodeIds,
             BatchingNeoStores neoStore, DataImporter.Monitor storeMonitor )
     {
         super( "DEDUP", null, config, 0 );

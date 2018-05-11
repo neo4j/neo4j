@@ -19,11 +19,10 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
 import java.util.Arrays;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -35,7 +34,7 @@ public class ChainCheck<RECORD extends PrimitiveRecord, REPORT extends Consisten
         implements ComparativeRecordChecker<RECORD, PropertyRecord, REPORT>
 {
     private static final int MAX_BLOCK_PER_RECORD_COUNT = 4;
-    private final MutableIntSet keys = new IntHashSet();
+    private final PrimitiveIntSet keys = Primitive.intSet();
 
     @Override
     public void checkReference( RECORD record, PropertyRecord property, CheckerEngine<RECORD, REPORT> engine,

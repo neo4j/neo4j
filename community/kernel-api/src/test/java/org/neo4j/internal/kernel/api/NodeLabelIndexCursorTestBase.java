@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodeCount;
@@ -63,10 +63,9 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
         {
             Read read = tx.dataRead();
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor();
+                  PrimitiveLongSet uniqueIds = Primitive.longSet() )
             {
-                MutableLongSet uniqueIds = new LongHashSet();
-
                 // WHEN
                 read.nodeLabelScan( labelOne, cursor );
 
@@ -119,10 +118,9 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
 
             Read read = tx.dataRead();
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor();
+                  PrimitiveLongSet uniqueIds = Primitive.longSet() )
             {
-                MutableLongSet uniqueIds = new LongHashSet();
-
                 // when
                 read.nodeLabelScan( labelOne, cursor );
 

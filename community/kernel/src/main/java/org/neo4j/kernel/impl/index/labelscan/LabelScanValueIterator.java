@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 
 /**
- * {@link LongIterator} which iterate over multiple {@link LabelScanValue} and for each
+ * {@link PrimitiveLongIterator} which iterate over multiple {@link LabelScanValue} and for each
  * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
  *
  * The provided {@link RawCursor} is managed externally, e.g. {@link NativeLabelScanReader},

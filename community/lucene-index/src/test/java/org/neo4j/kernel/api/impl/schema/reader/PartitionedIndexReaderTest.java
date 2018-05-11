@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -29,8 +28,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.collection.PrimitiveLongResourceCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -91,7 +91,7 @@ public class PartitionedIndexReaderTest
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
 
-        LongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -105,7 +105,8 @@ public class PartitionedIndexReaderTest
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
 
-        LongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
+        PrimitiveLongSet results =
+                PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -119,7 +120,8 @@ public class PartitionedIndexReaderTest
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
 
-        LongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
+        PrimitiveLongSet results =
+                PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -132,7 +134,7 @@ public class PartitionedIndexReaderTest
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
 
-        LongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -145,7 +147,7 @@ public class PartitionedIndexReaderTest
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
 
-        LongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -172,7 +174,7 @@ public class PartitionedIndexReaderTest
         assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex() );
     }
 
-    private void verifyResult( LongSet results )
+    private void verifyResult( PrimitiveLongSet results )
     {
         assertEquals(3, results.size());
         assertTrue( results.contains( 1 ) );

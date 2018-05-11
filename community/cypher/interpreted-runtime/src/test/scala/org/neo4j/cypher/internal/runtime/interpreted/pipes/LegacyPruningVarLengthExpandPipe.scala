@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
+import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_5.InternalException
 import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{NodeReference, NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeReference, NodeValue}
 
 /**
   * This implementation of pruning-var-expand is no longer used in production, but is used to testing purposes.
@@ -88,7 +88,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
                       val pathLength: Int,
                       val state: QueryState,
                       row: ExecutionContext,
-                      expandMap: LongObjectHashMap[FullExpandDepths]
+                      expandMap: PrimitiveLongObjectMap[FullExpandDepths]
                      ) extends State with Expandable with CheckPath {
 
     private var rels: Iterator[RelationshipValue] = _
@@ -183,7 +183,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
                    val pathLength: Int,
                    val state: QueryState,
                    row: ExecutionContext,
-                   expandMap: LongObjectHashMap[FullExpandDepths],
+                   expandMap: PrimitiveLongObjectMap[FullExpandDepths],
                    updateMinFullExpandDepth: Int => Unit) extends State with Expandable with CheckPath {
 
     import FullExpandDepths.UNINITIALIZED
@@ -267,7 +267,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
           pathLength = 0,
           state = state,
           row = row,
-          expandMap = new LongObjectHashMap[FullExpandDepths]())
+          expandMap = Primitive.longObjectMap[FullExpandDepths]())
         nextState.next()
       }
 

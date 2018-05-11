@@ -34,8 +34,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.LongFunction;
 
-import org.neo4j.collection.PrimitiveIntCollections;
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
@@ -166,7 +166,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyIterator;
-import static org.neo4j.collection.PrimitiveLongCollections.map;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;

@@ -19,16 +19,15 @@
  */
 package org.neo4j.consistency.repair;
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 class RecordSet<R extends AbstractBaseRecord> implements Iterable<R>
 {
-    private final MutableLongObjectMap<R> map = new LongObjectHashMap<>();
+    private final Map<Long, R> map = new HashMap<>();
 
     void add( R record )
     {
@@ -51,17 +50,27 @@ class RecordSet<R extends AbstractBaseRecord> implements Iterable<R>
     @Override
     public Iterator<R> iterator()
     {
-        return map.iterator();
+        return map.values().iterator();
     }
 
     public void addAll( RecordSet<R> other )
     {
-        map.putAll( other.map );
+        for ( R record : other.map.values() )
+        {
+            add( record );
+        }
     }
 
     public boolean containsAll( RecordSet<R> other )
     {
-        return map.keySet().containsAll( other.map.keySet() );
+        for ( Long id : other.map.keySet() )
+        {
+            if ( !map.containsKey( id ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -73,5 +82,15 @@ class RecordSet<R extends AbstractBaseRecord> implements Iterable<R>
             builder.append( r.toString() ).append( ",\n" );
         }
         return builder.append( "]\n" ).toString();
+    }
+
+    public static <R extends AbstractBaseRecord> RecordSet<R> asSet( R... records )
+    {
+        RecordSet<R> set = new RecordSet<>();
+        for ( R record : records )
+        {
+            set.add( record );
+        }
+        return set;
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -35,7 +34,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -150,7 +150,7 @@ public class DatabaseCompositeIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // WHEN
-        LongIterator results = reader.query( IndexQuery.exists( PROP_ID1 ), IndexQuery.exists( PROP_ID2 ) );
+        PrimitiveLongIterator results = reader.query( IndexQuery.exists( PROP_ID1 ), IndexQuery.exists( PROP_ID2 ) );
 
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );

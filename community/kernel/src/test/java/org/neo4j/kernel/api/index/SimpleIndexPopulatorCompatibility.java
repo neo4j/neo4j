@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -27,7 +26,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -51,7 +51,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.collection.PrimitiveLongCollections.single;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -141,7 +141,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             try ( IndexReader reader = accessor.newReader() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
-                LongIterator nodes = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
+                PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
                 assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
             }
         }

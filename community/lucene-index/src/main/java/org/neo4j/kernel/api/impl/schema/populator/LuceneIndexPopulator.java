@@ -53,7 +53,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void drop()
+    public void drop() throws IOException
     {
         luceneIndex.drop();
     }

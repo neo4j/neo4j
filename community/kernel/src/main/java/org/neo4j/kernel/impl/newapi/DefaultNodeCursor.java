@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -113,7 +112,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             {
                 //Get labels from store and put in intSet, unfortunately we get longs back
                 long[] longs = NodeLabelsField.get( this, labelCursor() );
-                final MutableIntSet labels = new IntHashSet();
+                PrimitiveIntSet labels = Primitive.intSet();
                 for ( long labelToken : longs )
                 {
                     labels.add( (int) labelToken );
