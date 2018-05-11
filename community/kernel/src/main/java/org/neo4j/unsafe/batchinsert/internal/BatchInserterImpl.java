@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.LongFunction;
 
-import org.neo4j.collection.PrimitiveIntCollections;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -166,6 +165,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyIterator;
+import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
 import static org.neo4j.collection.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
@@ -535,7 +535,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         try ( InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor() )
         {
             StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
-                    propertyKeyId -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
+                    propertyKeyId -> contains( propertyKeyIds, propertyKeyId ),
                     propertyUpdateVisitor, labelUpdateVisitor, true );
             storeScan.run();
 

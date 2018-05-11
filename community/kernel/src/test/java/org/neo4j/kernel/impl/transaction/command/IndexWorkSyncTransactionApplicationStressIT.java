@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -63,6 +62,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createIndexRule;
 import static org.neo4j.kernel.impl.transaction.command.Commands.transactionRepresentation;
@@ -221,8 +221,8 @@ public class IndexWorkSyncTransactionApplicationStressIT
                     Value propertyValue = propertyValue( id, base + i );
                     IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.getPropertyId(), propertyValue );
                     LongIterator hits = reader.query( query );
-                    assertEquals( "Index doesn't contain " + visitor.nodeId + " " + propertyValue,
-                            visitor.nodeId, PrimitiveLongCollections.single( hits, -1 ) );
+                    assertEquals( "Index doesn't contain " + visitor.nodeId + " " + propertyValue, visitor.nodeId, hits.next() );
+                    assertFalse( hits.hasNext() );
                     tx = tx.next();
                 }
             }

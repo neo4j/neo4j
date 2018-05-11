@@ -40,8 +40,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.LruCache;
@@ -52,6 +52,8 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
+
+import static java.lang.String.format;
 
 class LuceneBatchInserterIndex implements BatchInserterIndex
 {
@@ -426,8 +428,13 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             {
                 try
                 {
-                    long singleId = PrimitiveLongCollections.single( ids, -1L );
-                    return singleId == -1 ? null : singleId;
+                    final Long result = ids.hasNext() ? ids.next() : null;
+
+                    if ( ids.hasNext() )
+                    {
+                        throw new NoSuchElementException( format( "More than one item in %s, first:%d, second:%d", ids, result, ids.next() ) );
+                    }
+                    return result;
                 }
                 finally
                 {
