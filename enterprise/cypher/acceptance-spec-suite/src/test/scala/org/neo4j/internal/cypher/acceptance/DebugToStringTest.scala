@@ -89,6 +89,8 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
                                 || 1 | 2      | ""                                                                   | ""                                                                | 13.0   | 1.0             | "LOST" |
                                 || 1 | <null> | "Selection(ListBuffer(HasLabels(Variable(a),List(LabelName(A))))) {" | "Selection costs Cost(13.0) cardinality Cardinality(1.0)"         | <null> | <null>          | <null> |
                                 || 1 | <null> | "  LHS -> AllNodesScan(a, Set()) {}"                                 | "  AllNodesScan costs Cost(12.0) cardinality Cardinality(1.0)"    | <null> | <null>          | <null> |
+                                || 1 | 0      | ""                                                                   | ""                                                                | 0.0    | 1.0             | "LOST" |
+                                || 1 | <null> | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                       | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                    | <null> | <null>          | <null> |
                                 || 0 | 2      | ""                                                                   | ""                                                                | 13.0   | 1.0             | "WON"  |
                                 || 0 | <null> | "Selection(ListBuffer(HasLabels(Variable(a),List(LabelName(A))))) {" | "Selection costs Cost(13.0) cardinality Cardinality(1.0)"         | <null> | <null>          | <null> |
                                 || 0 | <null> | "  LHS -> AllNodesScan(a, Set()) {}"                                 | "  AllNodesScan costs Cost(12.0) cardinality Cardinality(1.0)"    | <null> | <null>          | <null> |
@@ -96,8 +98,10 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
                                 || 0 | <null> | "NodeHashJoin(Set(a)) {"                                             | "NodeHashJoin costs Cost(27.5) cardinality Cardinality(1.0)"      | <null> | <null>          | <null> |
                                 || 0 | <null> | "  LHS -> AllNodesScan(a, Set()) {}"                                 | "  AllNodesScan costs Cost(12.0) cardinality Cardinality(1.0)"    | <null> | <null>          | <null> |
                                 || 0 | <null> | "  RHS -> NodeByLabelScan(a, LabelName(A), Set()) {}"                | "  NodeByLabelScan costs Cost(10.0) cardinality Cardinality(1.0)" | <null> | <null>          | <null> |
+                                || 0 | 0      | ""                                                                   | ""                                                                | 0.0    | 1.0             | "LOST" |
+                                || 0 | <null> | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                       | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                    | <null> | <null>          | <null> |
                                 |+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-                                |12 rows
+                                |16 rows
                                 |""".stripMargin)
     graph.execute("CYPHER debug=dumpCosts MATCH (a:A:B:C)-[:T]->(b:A:B:C) RETURN *").stream().count()
   }
