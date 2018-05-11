@@ -32,7 +32,7 @@ public class DefaultIndexReference implements IndexReference
     private final int label;
     private final int[] properties;
 
-    private DefaultIndexReference( boolean unique, int label, int[] properties )
+    protected DefaultIndexReference( boolean unique, int label, int[] properties )
     {
         this.unique = unique;
         this.label = label;
@@ -57,12 +57,12 @@ public class DefaultIndexReference implements IndexReference
         return properties;
     }
 
-    public static IndexReference unique( int label, int...properties )
+    public static IndexReference unique( int label, int... properties )
     {
         return new DefaultIndexReference( true, label, properties );
     }
 
-    public static IndexReference general( int label, int...properties )
+    public static IndexReference general( int label, int... properties )
     {
         return new DefaultIndexReference( false, label, properties );
     }
@@ -93,7 +93,7 @@ public class DefaultIndexReference implements IndexReference
         {
             return true;
         }
-        if ( o == null || !( o instanceof IndexReference ) )
+        if ( o == null || !(o instanceof IndexReference) )
         {
             return false;
         }
