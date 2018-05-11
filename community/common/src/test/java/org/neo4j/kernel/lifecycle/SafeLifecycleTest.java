@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.lifecycle;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.lifecycle.SafeLifecycle.State;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.HALT;
 import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.IDLE;
 import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.PRE;
 import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.RUN;
 
-public class SafeLifecycleTest
+class SafeLifecycleTest
 {
     private ThrowingConsumer<Lifecycle,Throwable> init = Lifecycle::init;
     private ThrowingConsumer<Lifecycle,Throwable> start = Lifecycle::start;
@@ -66,7 +66,7 @@ public class SafeLifecycleTest
     };
 
     @Test
-    public void shouldPerformSuccessfulTransitionsCorrectly() throws Throwable
+    void shouldPerformSuccessfulTransitionsCorrectly() throws Throwable
     {
         for ( int state = 0; state < State.values().length; state++ )
         {
@@ -100,7 +100,7 @@ public class SafeLifecycleTest
     }
 
     @Test
-    public void shouldPerformFailedTransitionsCorrectly() throws Throwable
+    void shouldPerformFailedTransitionsCorrectly() throws Throwable
     {
         for ( int state = 0; state < State.values().length; state++ )
         {

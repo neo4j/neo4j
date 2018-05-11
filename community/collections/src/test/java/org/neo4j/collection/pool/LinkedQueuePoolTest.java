@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.pool;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -27,14 +27,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class LinkedQueuePoolTest
+class LinkedQueuePoolTest
 {
     @Test
-    public void shouldTimeoutGracefully()
+    void shouldTimeoutGracefully()
     {
         FakeClock clock = new FakeClock();
 
@@ -53,7 +53,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldBuildUpGracefullyUntilReachedMinPoolSize()
+    void shouldBuildUpGracefullyUntilReachedMinPoolSize()
     {
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
@@ -76,7 +76,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldBuildUpGracefullyWhilePassingMinPoolSizeBeforeTimerRings()
+    void shouldBuildUpGracefullyWhilePassingMinPoolSizeBeforeTimerRings()
     {
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
@@ -101,7 +101,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldUpdateTargetSizeWhenSpikesOccur()
+    void shouldUpdateTargetSizeWhenSpikesOccur()
     {
         // given
         final int MIN_SIZE = 5;
@@ -122,7 +122,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldKeepSmallPeakAndNeverDisposeIfAcquireAndReleaseContinuously()
+    void shouldKeepSmallPeakAndNeverDisposeIfAcquireAndReleaseContinuously()
     {
         // given
         final int MIN_SIZE = 1;
@@ -147,7 +147,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldSlowlyReduceTheNumberOfFlyweightsInThePoolWhenFlyweightsAreReleased()
+    void shouldSlowlyReduceTheNumberOfFlyweightsInThePoolWhenFlyweightsAreReleased()
     {
         // given
         final int MIN_SIZE = 50;
@@ -179,7 +179,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldMaintainPoolAtHighWatermarkWhenConcurrentUsagePassesMinSize()
+    void shouldMaintainPoolAtHighWatermarkWhenConcurrentUsagePassesMinSize()
     {
         // given
         final int MIN_SIZE = 50;
@@ -230,7 +230,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldReclaimAndRecreateWhenLullBetweenSpikesOccurs()
+    void shouldReclaimAndRecreateWhenLullBetweenSpikesOccurs()
     {
         // given
         final int MIN_SIZE = 50;
@@ -260,8 +260,7 @@ public class LinkedQueuePoolTest
 
         // then
         // currentPeakSize should be at MIN_SIZE / 5
-        assertTrue( "Expected " + stateMonitor.currentPeakSize.get() + " <= " + BELOW_MIN_SIZE,
-                stateMonitor.currentPeakSize.get() <= BELOW_MIN_SIZE );
+        assertTrue( stateMonitor.currentPeakSize.get() <= BELOW_MIN_SIZE, "Expected " + stateMonitor.currentPeakSize.get() + " <= " + BELOW_MIN_SIZE );
         // target size should remain at MIN_SIZE
         assertEquals( MIN_SIZE, stateMonitor.targetSize.get() );
         // only the excess from the MAX_SIZE down to min size must have been disposed
@@ -281,8 +280,8 @@ public class LinkedQueuePoolTest
     }
 
     private void buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( int MAX_SIZE, FakeClock clock,
-                                                                              LinkedQueuePool<Object> pool,
-                                                                              List<FlyweightHolder<Object>> holders )
+            LinkedQueuePool<Object> pool,
+            List<FlyweightHolder<Object>> holders )
     {
         holders.addAll( acquireFromPool( pool, MAX_SIZE ) );
 
@@ -300,7 +299,7 @@ public class LinkedQueuePoolTest
     private LinkedQueuePool<Object> getLinkedQueuePool( StatefulMonitor stateMonitor, FakeClock clock, int minSize )
     {
         return new LinkedQueuePool<>( minSize, Object::new,
-            new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor );
+                new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor );
     }
 
     private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times )
@@ -339,11 +338,11 @@ public class LinkedQueuePoolTest
 
     private static class StatefulMonitor implements LinkedQueuePool.Monitor<Object>
     {
-        public AtomicInteger currentPeakSize = new AtomicInteger( -1 );
-        public AtomicInteger targetSize = new AtomicInteger( -1 );
+        AtomicInteger currentPeakSize = new AtomicInteger( -1 );
+        AtomicInteger targetSize = new AtomicInteger( -1 );
         public AtomicInteger created = new AtomicInteger( 0 );
         public AtomicInteger acquired = new AtomicInteger( 0 );
-        public AtomicInteger disposed = new AtomicInteger( 0 );
+        AtomicInteger disposed = new AtomicInteger( 0 );
 
         @Override
         public void updatedCurrentPeakSize( int currentPeakSize )

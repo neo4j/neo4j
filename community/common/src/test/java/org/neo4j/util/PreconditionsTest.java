@@ -20,51 +20,54 @@
 
 package org.neo4j.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class PreconditionsTest
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.util.Preconditions.requirePositive;
+
+class PreconditionsTest
 {
 
     @Test
-    public void requirePositiveOk()
+    void requirePositiveOk()
     {
-        Preconditions.requirePositive( 1 );
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void requirePositiveFailsOnZero()
-    {
-        Preconditions.requirePositive( 0 );
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void requirePositiveFailsOnNegative()
-    {
-        Preconditions.requirePositive( -1 );
+        requirePositive( 1 );
     }
 
     @Test
-    public void requireNonNegativeOk()
+    void requirePositiveFailsOnZero()
+    {
+        assertThrows( IllegalArgumentException.class, () -> Preconditions.requirePositive( 0 ) );
+    }
+
+    @Test
+    void requirePositiveFailsOnNegative()
+    {
+        assertThrows( IllegalArgumentException.class, () -> requirePositive( -1 ) );
+    }
+
+    @Test
+    void requireNonNegativeOk()
     {
         Preconditions.requireNonNegative( 0 );
         Preconditions.requireNonNegative( 1 );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void requireNonNegativeFailsOnNegative()
+    @Test
+    void requireNonNegativeFailsOnNegative()
     {
-        Preconditions.requireNonNegative( -1 );
+        assertThrows( IllegalArgumentException.class, () -> Preconditions.requireNonNegative( -1 ) );
     }
 
     @Test
-    public void checkStateOk()
+    void checkStateOk()
     {
         Preconditions.checkState( true, "must not fail" );
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void checkStateFails()
+    @Test
+    void checkStateFails()
     {
-        Preconditions.checkState( false, "must fail" );
+        assertThrows( IllegalStateException.class, () -> Preconditions.checkState( false, "must fail" ) );
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.licensecheck;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -30,17 +30,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class LicenseYearTest
+class LicenseYearTest
 {
 
     private static final String NOTICE_GPL_FILE = "notice-gpl-prefix.txt";
     private static final String NOTICE_AGPL_FILE = "notice-agpl-prefix.txt";
 
     @Test
-    public void testNoticePrefixYearGPL() throws FileNotFoundException
+    void testNoticePrefixYearGPL() throws FileNotFoundException
     {
         if ( System.getProperty( "ignoreNoticeYear" ).isEmpty() )
         {
@@ -52,7 +52,7 @@ public class LicenseYearTest
     }
 
     @Test
-    public void testNoticePrefixYearAGPL() throws FileNotFoundException
+    void testNoticePrefixYearAGPL() throws FileNotFoundException
     {
         if ( System.getProperty( "ignoreNoticeYear" ).isEmpty() )
         {
