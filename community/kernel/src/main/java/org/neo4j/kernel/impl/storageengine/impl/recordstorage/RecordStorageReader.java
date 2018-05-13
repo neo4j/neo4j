@@ -75,7 +75,6 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -159,7 +158,7 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
             IndexingService indexService, SchemaCache schemaCache,
             Supplier<IndexReaderFactory> indexReaderFactory,
-            Supplier<LabelScanReader> labelScanReaderSupplier, LockService lockService,
+            Supplier<LabelScanReader> labelScanReaderSupplier,
             RecordStorageCommandCreationContext commandCreationContext )
     {
         this.neoStores = neoStores;
@@ -188,7 +187,7 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
      */
     public static RecordStorageReader neoStoreReader( NeoStores neoStores )
     {
-        return new RecordStorageReader( null, null, null, null, neoStores, null, null, null, null, LockService.NO_LOCK_SERVICE, null );
+        return new RecordStorageReader( null, null, null, null, neoStores, null, null, null, null, null );
     }
 
     @Override
@@ -558,6 +557,7 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     {
         return indexReaderFactory().newUnCachedReader( descriptor );
     }
+
     RecordStorageCommandCreationContext getCommandCreationContext()
     {
         return commandCreationContext;
@@ -1036,7 +1036,7 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
 
         boolean unique = descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
         SchemaDescriptor schema = descriptor.schema();
-        IndexProxy indexProxy = null;
+        IndexProxy indexProxy;
         try
         {
             indexProxy = indexService.getIndexProxy( schema );

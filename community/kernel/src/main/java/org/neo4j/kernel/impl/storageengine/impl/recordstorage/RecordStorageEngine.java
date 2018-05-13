@@ -112,7 +112,6 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -122,9 +121,6 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
-    private static final boolean takePropertyReadLocks = FeatureToggles.flag(
-            RecordStorageEngine.class, "propertyReadLocks", false );
-
     private final IndexingService indexingService;
     private final NeoStores neoStores;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
@@ -240,10 +236,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StorageReader newReader()
     {
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
-        LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
 
         return new RecordStorageReader( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder, schemaStorage, neoStores, indexingService,
-                schemaCache, indexReaderFactory, labelScanStore::newReader, lockService, allocateCommandCreationContext() );
+                schemaCache, indexReaderFactory, labelScanStore::newReader, allocateCommandCreationContext() );
     }
 
     @Override
