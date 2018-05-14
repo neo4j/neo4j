@@ -121,7 +121,7 @@ public class ConstraintIndexCreatorTest
 
         IndexingService indexingService = mock( IndexingService.class );
         IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
 
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, Values.of( "a" ) );
