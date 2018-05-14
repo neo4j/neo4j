@@ -21,6 +21,8 @@ package org.neo4j.values.virtual;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+
 import org.neo4j.values.AnyValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -122,5 +124,36 @@ class MapValueTest
         assertThat( updated.get( "k2" ), equalTo( stringValue( "v2" ) ) );
         assertThat( updated.get( "k3" ), equalTo( stringValue( "v3" ) ) );
         assertThat( updated.get( "k4" ), equalTo( stringValue( "v4" ) ) );
+    }
+
+    @Test
+    void shouldUpdateWitOtherMapValue()
+    {
+        // Given
+        MapValue a = VirtualValues.map( new String[]{"k1", "k2", "k3"},
+                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
+        MapValue b = VirtualValues.map( new String[]{"k1", "k2", "k4"},
+                new AnyValue[]{stringValue( "version1" ), stringValue( "version2" ), stringValue( "version4" )} );
+
+
+        // When
+        MapValue updated = a.updatedWith( b );
+
+        // Then
+        assertThat( updated.size(), equalTo( 4 ) );
+        assertThat( updated.get( "k1" ), equalTo( stringValue( "version1" ) ) );
+        assertThat( updated.get( "k2" ), equalTo( stringValue( "version2" ) ) );
+        assertThat( updated.get( "k3" ), equalTo( stringValue( "v3" ) ) );
+        assertThat( updated.get( "k4" ), equalTo( stringValue( "version4" ) ) );
+
+        HashMap<String,AnyValue> foreachMap = new HashMap<>( 4 );
+        updated.foreach( foreachMap::put );
+
+        assertThat( foreachMap.size(), equalTo( 4 ) );
+        assertThat( foreachMap.get( "k1" ), equalTo( stringValue( "version1" ) ) );
+        assertThat( foreachMap.get( "k2" ), equalTo( stringValue( "version2" ) ) );
+        assertThat( foreachMap.get( "k3" ), equalTo( stringValue( "v3" ) ) );
+        assertThat( foreachMap.get( "k4" ), equalTo( stringValue( "version4" ) ) );
+
     }
 }

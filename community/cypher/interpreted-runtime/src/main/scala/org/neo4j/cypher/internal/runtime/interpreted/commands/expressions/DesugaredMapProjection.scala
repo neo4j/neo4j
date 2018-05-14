@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.IsMap
-import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions, IsMap}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -45,7 +43,7 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
     }.toMap.asJava
 
 
-    VirtualValues.combine(mapOfProperties, VirtualValues.map(mapOfLiteralValues))
+    mapOfProperties.updatedWith(VirtualValues.map(mapOfLiteralValues))
   }
 
   override def rewrite(f: (Expression) => Expression) =

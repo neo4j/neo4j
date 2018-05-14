@@ -19,7 +19,6 @@
  */
 package org.neo4j.values.virtual;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -45,12 +44,6 @@ public abstract class MapValue extends VirtualValue
         MapWrappingMapValue( Map<String,AnyValue> map )
         {
             this.map = map;
-        }
-
-        public ListValue keys()
-        {
-            String[] strings = keySet().toArray( new String[map.size()] );
-            return VirtualValues.fromArray( Values.stringArray( strings ) );
         }
 
         public Set<String> keySet()
@@ -99,19 +92,6 @@ public abstract class MapValue extends VirtualValue
         {
             this.map = map;
             this.filter = filter;
-        }
-
-        public ListValue keys()
-        {
-            ArrayList<AnyValue> keys = new ArrayList<>();
-            foreach( ( key, value ) -> {
-                if ( filter.apply( key, value ) )
-                {
-                    keys.add( Values.stringValue( key ) );
-                }
-            } );
-
-            return VirtualValues.fromList( keys );
         }
 
         public Set<String> keySet()
@@ -256,6 +236,7 @@ public abstract class MapValue extends VirtualValue
             return false;
         }
 
+        @Override
         public ListValue keys()
         {
             return VirtualValues.concat( map.keys(), VirtualValues.fromArray( Values.stringArray( updatedKeys ) ) );
@@ -310,6 +291,86 @@ public abstract class MapValue extends VirtualValue
         }
     }
 
+    private static final class CombinedMapValue extends MapValue
+    {
+        private final MapValue[] maps;
+
+        CombinedMapValue( MapValue...mapValues)
+        {
+          this.maps = mapValues;
+        }
+
+        public Set<String> keySet()
+        {
+            HashSet<String> keys = new HashSet<>();
+            for ( MapValue map : maps )
+            {
+                keys.addAll( map.keySet() );
+            }
+            return keys;
+        }
+
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
+        {
+            HashSet<String> seen = new HashSet<>();
+            ThrowingBiConsumer<String,AnyValue,E> consume = ( key, value ) ->
+            {
+                if ( seen.add( key ) )
+                {
+                    f.accept( key, value );
+                }
+            };
+            for ( int i = maps.length - 1; i >= 0; i-- )
+            {
+                maps[i].foreach( consume );
+            }
+        }
+
+        public boolean containsKey( String key )
+        {
+            for ( MapValue map : maps )
+            {
+                if ( map.containsKey( key ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public AnyValue get( String key )
+        {
+            for ( int i = maps.length - 1; i >= 0; i-- )
+            {
+                AnyValue value = maps[i].get( key );
+                if ( value != NO_VALUE )
+                {
+                    return value;
+                }
+            }
+            return NO_VALUE;
+        }
+
+        public int size()
+        {
+            int[] size = {0};
+            HashSet<String> seen = new HashSet<>();
+            ThrowingBiConsumer<String,AnyValue,RuntimeException> consume = ( key, value ) ->
+            {
+                if ( seen.add( key ) )
+                {
+                    size[0]++;
+                }
+            };
+            for ( int i = maps.length - 1; i >= 0; i-- )
+            {
+                maps[i].foreach( consume );
+            }
+            return size[0];
+        }
+    }
+
     @Override
     public int computeHash()
     {
@@ -355,9 +416,13 @@ public abstract class MapValue extends VirtualValue
         return false;
     }
 
-    public abstract ListValue keys();
-
     public abstract Set<String> keySet();
+
+    public ListValue keys()
+    {
+        String[] strings = keySet().toArray( new String[size()] );
+        return VirtualValues.fromArray( Values.stringArray( strings ) );
+    }
 
     @Override
     public VirtualValueGroup valueGroup()
@@ -490,6 +555,11 @@ public abstract class MapValue extends VirtualValue
                 }
             } );
         }
+    }
+
+    public MapValue updatedWith(  MapValue other )
+    {
+        return new CombinedMapValue( this, other );
     }
 
     @Override

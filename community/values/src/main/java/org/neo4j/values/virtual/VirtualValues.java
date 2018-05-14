@@ -151,14 +151,6 @@ public final class VirtualValues
         return new MapValue.MapWrappingMapValue( map );
     }
 
-    public static MapValue combine( MapValue a, MapValue b )
-    {
-        HashMap<String,AnyValue> map = new HashMap<>( a.size() + b.size() );
-        a.foreach( map::put );
-        b.foreach( map::put );
-        return VirtualValues.map( map );
-    }
-
     public static MapValue map( Map<String,AnyValue> map )
     {
         return new MapValue.MapWrappingMapValue( map );

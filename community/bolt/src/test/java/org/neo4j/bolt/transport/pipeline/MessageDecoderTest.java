@@ -34,7 +34,6 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
@@ -339,7 +338,7 @@ public class MessageDecoderTest
             throws IOException
     {
         String statement = "RETURN $x";
-        MapValue parameters = VirtualValues.map( Collections.singletonMap( "x", parameterValue ) );
+        MapValue parameters = VirtualValues.map(  new String[]{"x"}, new AnyValue[]{parameterValue } );
 
         BoltRequestMessageHandler handler = mock( BoltRequestMessageHandler.class );
         channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest, handler ) );
