@@ -29,6 +29,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntPredicate;
+import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
@@ -54,6 +55,8 @@ public class Predicates
     {
         return x -> true;
     }
+
+    public static LongPredicate alwaysFalseLong = x -> false;
 
     public static <T> Predicate<T> alwaysFalse()
     {

@@ -21,109 +21,48 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.newapi.DefaultRelationshipTraversalCursor.Record;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForFiltering;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForTxStateFiltering;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoIncomingRels;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoopRels;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoingRels;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements RelationshipGroupCursor
+class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
 {
     private Read read;
-    private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
     private final DefaultCursors pool;
 
-    private BufferedGroup bufferedGroup;
-    private PageCursor page;
-    private PageCursor edgePage;
+    private StoreRelationshipGroupCursor storeCursor;
     private boolean hasCheckedTxState;
     private final MutableIntSet txTypes = new IntHashSet();
     private IntIterator txTypeIterator;
 
     DefaultRelationshipGroupCursor( DefaultCursors pool )
     {
-        super( NO_ID );
         this.pool = pool;
+        this.storeCursor = new StoreRelationshipGroupCursor();
     }
 
     void buffer( long nodeReference, long relationshipReference, Read read )
     {
-        setOwningNode( nodeReference );
-        setId( NO_ID );
-        setNext( NO_ID );
-        // TODO: read first record to get the required capacity (from the count value in the prev field)
-        try ( PageCursor edgePage = read.relationshipPage( relationshipReference ) )
-        {
-            final MutableIntObjectMap<BufferedGroup> buffer = new IntObjectHashMap<>();
-            BufferedGroup current = null;
-            while ( relationshipReference != NO_ID )
-            {
-                read.relationshipFull( edge, relationshipReference, edgePage );
-                // find the group
-                BufferedGroup group = buffer.get( edge.getType() );
-                if ( group == null )
-                {
-                    buffer.put( edge.getType(), current = group = new BufferedGroup( edge, current ) );
-                }
-                // buffer the relationship into the group
-                if ( edge.getFirstNode() == nodeReference ) // outgoing or loop
-                {
-                    if ( edge.getSecondNode() == nodeReference ) // loop
-                    {
-                        group.loop( edge );
-                    }
-                    else // outgoing
-                    {
-                        group.outgoing( edge );
-                    }
-                    relationshipReference = edge.getFirstNextRel();
-                }
-                else if ( edge.getSecondNode() == nodeReference ) // incoming
-                {
-                    group.incoming( edge );
-                    relationshipReference = edge.getSecondNextRel();
-                }
-                else
-                {
-                    throw new IllegalStateException( "not a part of the chain! TODO: better exception" );
-                }
-            }
-            this.txTypes.clear();
-            this.txTypeIterator = null;
-            this.hasCheckedTxState = false;
-            this.bufferedGroup = new BufferedGroup( edge, current ); // we need a dummy before the first to denote the initial pos
-            this.read = read;
-        }
+        storeCursor.buffer( nodeReference, relationshipReference, read );
+        this.txTypes.clear();
+        this.txTypeIterator = null;
+        this.hasCheckedTxState = false;
+        this.read = read;
     }
 
     void direct( long nodeReference, long reference, Read read )
     {
-        bufferedGroup = null;
-        clear();
-        txTypes.clear();
-        txTypeIterator = null;
-        hasCheckedTxState = false;
-        setOwningNode( nodeReference );
-        setNext( reference );
-        if ( page == null )
-        {
-            page = read.groupPage( reference );
-        }
+        storeCursor.direct( nodeReference, reference, read );
+        this.txTypes.clear();
+        this.txTypeIterator = null;
+        this.hasCheckedTxState = false;
         this.read = read;
     }
 
@@ -150,38 +89,15 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
             hasCheckedTxState = true;
         }
 
-        if ( isBuffered() )
+        if ( !storeCursor.next() )
         {
-            bufferedGroup = bufferedGroup.next;
-            if ( bufferedGroup != null )
-            {
-                loadFromBuffer();
-                return true;
-            }
+            //We have now run out of groups from the store, however there may still
+            //be new types that was added in the transaction that we haven't visited yet.
+            return nextFromTxState();
         }
-
-        do
-        {
-            if ( getNext() == NO_ID )
-            {
-                //We have now run out of groups from the store, however there may still
-                //be new types that was added in the transaction that we haven't visited yet.
-                return nextFromTxState();
-            }
-            read.group( this, getNext(), page );
-        } while ( !inUse() );
 
         markTypeAsSeen( type() );
         return true;
-    }
-
-    private void loadFromBuffer()
-    {
-        markTypeAsSeen( bufferedGroup.label );
-        setType( bufferedGroup.label );
-        setFirstOut( bufferedGroup.outgoing() );
-        setFirstIn( bufferedGroup.incoming() );
-        setFirstLoop( bufferedGroup.loops() );
     }
 
     private boolean nextFromTxState()
@@ -194,10 +110,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         }
         if ( txTypeIterator != null && txTypeIterator.hasNext() )
         {
-            setType( txTypeIterator.next() );
-            setFirstOut( NO_ID );
-            setFirstIn( NO_ID );
-            setFirstLoop( NO_ID );
+            storeCursor.setCurrent( txTypeIterator.next(), NO_ID, NO_ID, NO_ID );
             return true;
         }
         return false;
@@ -209,10 +122,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
      */
     private void markTypeAsSeen( int type )
     {
-        if ( txTypes != null )
-        {
-            txTypes.remove( type );
-        }
+        txTypes.remove( type );
     }
 
     /**
@@ -222,7 +132,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     {
         if ( read.hasTxStateWithChanges() )
         {
-            NodeState nodeState = read.txState().getNodeState( getOwningNode() );
+            NodeState nodeState = read.txState().getNodeState( storeCursor.getOwningNode() );
             LongIterator addedRelationships = nodeState.getAddedRelationships();
             while ( addedRelationships.hasNext() )
             {
@@ -239,10 +149,8 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     {
         if ( !isClosed() )
         {
-            bufferedGroup = null;
             read = null;
-            setId( NO_ID );
-            clear();
+            storeCursor.close();
 
             if ( pool != null )
             {
@@ -254,151 +162,77 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public int type()
     {
-        return getType();
+        return storeCursor.type();
     }
 
     @Override
     public int outgoingCount()
     {
-        int count;
-        if ( isBuffered() )
-        {
-            count = bufferedGroup.outgoingCount;
-        }
-        else
-        {
-            count = count( outgoingRawId() );
-        }
+        int count = storeCursor.outgoingCount();
         return read.hasTxStateWithChanges()
-               ? read.txState().getNodeState( getOwningNode() )
-                       .augmentDegree( RelationshipDirection.OUTGOING, count, getType() ) : count;
+               ? read.txState().getNodeState( storeCursor.getOwningNode() )
+                       .augmentDegree( RelationshipDirection.OUTGOING, count, storeCursor.type() ) : count;
     }
 
     @Override
     public int incomingCount()
     {
-        int count;
-
-        if ( isBuffered() )
-        {
-            count = bufferedGroup.incomingCount;
-        }
-        else
-        {
-            count = count( incomingRawId() );
-        }
+        int count = storeCursor.incomingCount();
         return read.hasTxStateWithChanges()
-               ? read.txState().getNodeState( getOwningNode() )
-                       .augmentDegree( RelationshipDirection.INCOMING, count, getType() ) : count;
+               ? read.txState().getNodeState( storeCursor.getOwningNode() )
+                       .augmentDegree( RelationshipDirection.INCOMING, count, storeCursor.type() ) : count;
     }
 
     @Override
     public int loopCount()
     {
-        int count;
-        if ( isBuffered() )
-        {
-            count = bufferedGroup.loopsCount;
-        }
-        else
-        {
-            count = count( loopsRawId() );
-        }
-
+        int count = storeCursor.loopCount();
         return read.hasTxStateWithChanges()
-               ? read.txState().getNodeState( getOwningNode() )
-                       .augmentDegree( RelationshipDirection.LOOP, count, getType() ) : count;
+               ? read.txState().getNodeState( storeCursor.getOwningNode() )
+                       .augmentDegree( RelationshipDirection.LOOP, count, storeCursor.type() ) : count;
 
-    }
-
-    private int count( long reference )
-    {
-        if ( reference == NO_ID )
-        {
-            return 0;
-        }
-        if ( edgePage == null )
-        {
-            edgePage = read.relationshipPage( reference );
-        }
-        read.relationship( edge, reference, edgePage );
-        if ( edge.getFirstNode() == getOwningNode() )
-        {
-            return (int) edge.getFirstPrevRel();
-        }
-        else
-        {
-            return (int) edge.getSecondPrevRel();
-        }
     }
 
     @Override
     public void outgoing( RelationshipTraversalCursor cursor )
     {
-        if ( isBuffered() )
-        {
-            ((DefaultRelationshipTraversalCursor) cursor).buffered(
-                    getOwningNode(), bufferedGroup.outgoing, RelationshipDirection.OUTGOING, bufferedGroup.label, read );
-        }
-        else
-        {
-            read.relationships( getOwningNode(), outgoingReference(), cursor );
-        }
+        storeCursor.outgoing( cursor );
     }
 
     @Override
     public void incoming( RelationshipTraversalCursor cursor )
     {
-        if ( isBuffered() )
-        {
-            ((DefaultRelationshipTraversalCursor) cursor).buffered(
-                    getOwningNode(), bufferedGroup.incoming, RelationshipDirection.INCOMING, bufferedGroup.label, read );
-        }
-        else
-        {
-            read.relationships( getOwningNode(), incomingReference(), cursor );
-        }
+        storeCursor.incoming( cursor );
     }
 
     @Override
     public void loops( RelationshipTraversalCursor cursor )
     {
-        if ( isBuffered() )
-        {
-            ((DefaultRelationshipTraversalCursor) cursor).buffered(
-                    getOwningNode(), bufferedGroup.loops, RelationshipDirection.LOOP, bufferedGroup.label, read );
-        }
-        else
-        {
-            read.relationships( getOwningNode(), loopsReference(), cursor );
-        }
+        storeCursor.loops( cursor );
     }
 
     @Override
     public long outgoingReference()
     {
-        long outgoing = getFirstOut();
-        return outgoing == NO_ID ? encodeNoOutgoingRels( getType() ) : encodeRelationshipReference( outgoing );
+        return storeCursor.outgoingReference();
     }
 
     @Override
     public long incomingReference()
     {
-        long incoming = getFirstIn();
-        return incoming == NO_ID ? encodeNoIncomingRels( getType() ) : encodeRelationshipReference( incoming );
+        return storeCursor.incomingReference();
     }
 
     @Override
     public long loopsReference()
     {
-        long loops = getFirstLoop();
-        return loops == NO_ID ? encodeNoLoopRels( getType() ) : encodeRelationshipReference( loops );
+        return storeCursor.loopsReference();
     }
 
     @Override
     public boolean isClosed()
     {
-        return read == null && bufferedGroup == null;
+        return storeCursor.isClosed();
     }
 
     @Override
@@ -410,16 +244,8 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         }
         else
         {
-            String mode = "mode=";
-            if ( isBuffered() )
-            {
-                mode = mode + "group";
-            }
-            else
-            {
-                mode = mode + "direct";
-            }
-            return "RelationshipGroupCursor[id=" + getId() + ", open state with: " + mode + ", underlying record=" + super.toString() + " ]";
+            String mode = "mode=?";
+            return "RelationshipGroupCursor[id=" + storeCursor.getId() + ", open state with: " + mode + ", underlying record=" + super.toString() + " ]";
         }
     }
 
@@ -428,7 +254,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
      */
     long outgoingRawId()
     {
-        return getFirstOut();
+        return storeCursor.outgoingRawId();
     }
 
     /**
@@ -436,7 +262,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
      */
     long incomingRawId()
     {
-        return getFirstIn();
+        return storeCursor.incomingRawId();
     }
 
     /**
@@ -444,98 +270,11 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
      */
     long loopsRawId()
     {
-        return getFirstLoop();
-    }
-
-    private boolean isBuffered()
-    {
-        return bufferedGroup != null;
-    }
-
-    private long encodeRelationshipReference( long relationshipId )
-    {
-        assert relationshipId != NO_ID;
-        return isBuffered() ? encodeForFiltering( relationshipId ) : encodeForTxStateFiltering( relationshipId );
+        return storeCursor.loopsRawId();
     }
 
     public void release()
     {
-        if ( edgePage != null )
-        {
-            edgePage.close();
-            edgePage = null;
-        }
-
-        if ( page != null )
-        {
-            page.close();
-            page = null;
-        }
-    }
-
-    static class BufferedGroup
-    {
-        final int label;
-        final BufferedGroup next;
-        Record outgoing;
-        Record incoming;
-        Record loops;
-        private long firstOut = NO_ID;
-        private long firstIn = NO_ID;
-        private long firstLoop = NO_ID;
-        int outgoingCount;
-        int incomingCount;
-        int loopsCount;
-
-        BufferedGroup( RelationshipRecord edge, BufferedGroup next )
-        {
-            this.label = edge.getType();
-            this.next = next;
-        }
-
-        void outgoing( RelationshipRecord edge )
-        {
-            if ( outgoing == null )
-            {
-                firstOut = edge.getId();
-            }
-            outgoing = new DefaultRelationshipTraversalCursor.Record( edge, outgoing );
-            outgoingCount++;
-        }
-
-        void incoming( RelationshipRecord edge )
-        {
-            if ( incoming == null )
-            {
-                firstIn = edge.getId();
-            }
-            incoming = new DefaultRelationshipTraversalCursor.Record( edge, incoming );
-            incomingCount++;
-        }
-
-        void loop( RelationshipRecord edge )
-        {
-            if ( loops == null )
-            {
-                firstLoop = edge.getId();
-            }
-            loops = new DefaultRelationshipTraversalCursor.Record( edge, loops );
-            loopsCount++;
-        }
-
-        long outgoing()
-        {
-            return firstOut;
-        }
-
-        long incoming()
-        {
-            return firstIn;
-        }
-
-        long loops()
-        {
-            return firstLoop;
-        }
+        storeCursor.release();
     }
 }

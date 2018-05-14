@@ -112,7 +112,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
             }
             else
             {
-                property.clear();
+                property.close();
                 return false;
             }
             return filterByCursors( reference, values );

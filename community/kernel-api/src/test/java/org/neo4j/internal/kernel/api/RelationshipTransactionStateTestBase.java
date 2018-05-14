@@ -1289,15 +1289,16 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         // Then
         try ( Transaction tx = beginTransaction() )
         {
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor();
+                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
-                assertFalse( cursor.hasProperties() );
+                assertFalse( hasProperties( cursor, props ) );
                 tx.dataWrite().relationshipSetProperty( relationship,
                         tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
                         stringValue( "foo" ) );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, props ) );
             }
         }
     }
@@ -1310,15 +1311,16 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             int token = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             long relationship = write.relationshipCreate( write.nodeCreate(), token, write.nodeCreate() );
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor();
+                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
-                assertFalse( cursor.hasProperties() );
+                assertFalse( hasProperties( cursor, props ) );
                 tx.dataWrite().relationshipSetProperty( relationship,
                         tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
                         stringValue( "foo" ) );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, props ) );
             }
         }
     }
@@ -1346,18 +1348,19 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         // Then
         try ( Transaction tx = beginTransaction() )
         {
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor();
+                  PropertyCursor props = tx.cursors().allocatePropertyCursor())
             {
                 tx.dataRead().singleRelationship( relationship, cursor );
                 assertTrue( cursor.next() );
 
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, props ) );
                 tx.dataWrite().relationshipRemoveProperty( relationship, prop1 );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, props ) );
                 tx.dataWrite().relationshipRemoveProperty( relationship, prop2 );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, props ) );
                 tx.dataWrite().relationshipRemoveProperty( relationship, prop3 );
-                assertFalse( cursor.hasProperties() );
+                assertFalse( hasProperties( cursor, props ) );
             }
         }
     }
@@ -1383,7 +1386,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 tx.dataRead().singleRelationship( relationship, relationships );
                 assertTrue( relationships.next() );
-                assertFalse( relationships.hasProperties() );
+                assertFalse( hasProperties( relationships, properties ) );
                 int prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
                 tx.dataWrite().relationshipSetProperty( relationship, prop, stringValue( "foo" ) );
                 relationships.properties( properties );
@@ -1401,6 +1404,12 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             tx.dataWrite().relationshipCreate( n1, type, n2 );
         }
+    }
+
+    private boolean hasProperties( RelationshipScanCursor cursor, PropertyCursor props )
+    {
+        cursor.properties( props );
+        return props.next();
     }
 
     private void assertCountRelationships(

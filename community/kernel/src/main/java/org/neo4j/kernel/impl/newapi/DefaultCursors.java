@@ -105,7 +105,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipTraversalCursor == null )
         {
-            return trace( new DefaultRelationshipTraversalCursor( new DefaultRelationshipGroupCursor( null ), this ) );
+            return trace( new DefaultRelationshipTraversalCursor( this ) );
         }
 
         try

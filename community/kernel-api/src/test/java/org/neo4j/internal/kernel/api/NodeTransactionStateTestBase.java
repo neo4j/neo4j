@@ -872,16 +872,23 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         // Then
         try ( Transaction tx = beginTransaction() )
         {
-            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor();
+                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( node, cursor );
                 assertTrue( cursor.next() );
-                assertFalse( cursor.hasProperties() );
+                assertFalse( hasProperties( cursor, props ) );
                 tx.dataWrite().nodeSetProperty( node, tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
                         stringValue( "foo" ) );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, props ) );
             }
         }
+    }
+
+    private boolean hasProperties( NodeCursor cursor, PropertyCursor props )
+    {
+        cursor.properties( props );
+        return props.next();
     }
 
     @Test
@@ -890,14 +897,15 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = beginTransaction() )
         {
             long node = tx.dataWrite().nodeCreate();
-            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor();
+                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( node, cursor );
                 assertTrue( cursor.next() );
-                assertFalse( cursor.hasProperties() );
+                assertFalse( hasProperties( cursor, props ) );
                 tx.dataWrite().nodeSetProperty( node, tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
                         stringValue( "foo" ) );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, props ) );
             }
         }
     }
@@ -923,18 +931,19 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         // Then
         try ( Transaction tx = beginTransaction() )
         {
-            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor();
+                  PropertyCursor props = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( node, cursor );
                 assertTrue( cursor.next() );
 
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, props ) );
                 tx.dataWrite().nodeRemoveProperty( node, prop1 );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, props ) );
                 tx.dataWrite().nodeRemoveProperty( node, prop2 );
-                assertTrue( cursor.hasProperties() );
+                assertTrue( hasProperties( cursor, props ) );
                 tx.dataWrite().nodeRemoveProperty( node, prop3 );
-                assertFalse( cursor.hasProperties() );
+                assertFalse( hasProperties( cursor, props ) );
             }
         }
     }
@@ -958,7 +967,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             {
                 tx.dataRead().singleNode( node, nodes );
                 assertTrue( nodes.next() );
-                assertFalse( nodes.hasProperties() );
+                assertFalse( hasProperties( nodes, properties ) );
                 int prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
                 tx.dataWrite().nodeSetProperty( node, prop, stringValue( "foo" ) );
                 nodes.properties( properties );

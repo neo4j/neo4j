@@ -29,8 +29,6 @@ public interface RelationshipDataAccessor
 
     int type();
 
-    boolean hasProperties();
-
     void source( NodeCursor cursor );
 
     void target( NodeCursor cursor );

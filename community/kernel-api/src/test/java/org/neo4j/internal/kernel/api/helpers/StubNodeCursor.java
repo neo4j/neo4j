@@ -101,12 +101,6 @@ public class StubNodeCursor implements NodeCursor
     }
 
     @Override
-    public boolean hasProperties()
-    {
-        return (offset >= 0 && offset < nodes.size()) && !nodes.get( offset ).properties.isEmpty();
-    }
-
-    @Override
     public void relationships( RelationshipGroupCursor cursor )
     {
         ((StubGroupCursor) cursor).rewind();
