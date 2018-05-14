@@ -250,6 +250,7 @@ public class StoreUpgradeIT
                 checkInstance( store, master );
                 slave = cluster.getAnySlave();
                 checkInstance( store, slave );
+                cluster.shutdown();
             }
             finally
             {

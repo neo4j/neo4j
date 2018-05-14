@@ -300,7 +300,10 @@ public class MultipleIndexPopulationStressIT
                 RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),
                 null, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR );
-        importer.doImport( new RandomDataInput( count ) );
+        try ( RandomDataInput input = new RandomDataInput( count ) )
+        {
+            importer.doImport( input );
+        }
     }
 
     private class RandomNodeGenerator extends GeneratingInputIterator<RandomValues>
@@ -311,13 +314,15 @@ public class MultipleIndexPopulationStressIT
         }
     }
 
-    private class RandomDataInput implements Input
+    private class RandomDataInput implements Input, AutoCloseable
     {
         private final int count;
+        private final BadCollector badCollector;
 
         RandomDataInput( int count )
         {
             this.count = count;
+            this.badCollector = createBadCollector();
         }
 
         @Override
@@ -348,10 +353,14 @@ public class MultipleIndexPopulationStressIT
         @Override
         public Collector badCollector()
         {
+            return badCollector;
+        }
+
+        private BadCollector createBadCollector()
+        {
             try
             {
-                return new BadCollector( fileSystemRule.get().openAsOutputStream(
-                        new File( directory.graphDbDir(), "bad" ), false ), 0, 0 );
+                return new BadCollector( fileSystemRule.get().openAsOutputStream( new File( directory.graphDbDir(), "bad" ), false ), 0, 0 );
             }
             catch ( IOException e )
             {
@@ -363,6 +372,11 @@ public class MultipleIndexPopulationStressIT
         public Estimates calculateEstimates( ToIntFunction<Value[]> valueSizeCalculator )
         {
             return knownEstimates( count, 0, count * TOKENS.length / 2, 0, count * TOKENS.length / 2 * Long.BYTES, 0, 0 );
+        }
+
+        public void close()
+        {
+            badCollector.close();
         }
     }
 
