@@ -93,7 +93,7 @@ public interface SchemaRule extends SchemaDescriptorSupplier
      * @see org.neo4j.kernel.impl.store.record.SchemaRuleSerialization for the new (de)serialisation code instead.
      */
     @Deprecated
-    public enum Kind
+    enum Kind
     {
         INDEX_RULE( "Index" ),
         CONSTRAINT_INDEX_RULE( "Constraint index" ),

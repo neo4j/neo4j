@@ -31,8 +31,8 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 
 public class StringSchemaIndexPopulator extends NativeSchemaIndexPopulator<StringSchemaKey,NativeSchemaValue>
 {
-    StringSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig )
+    StringSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout,
+            IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }

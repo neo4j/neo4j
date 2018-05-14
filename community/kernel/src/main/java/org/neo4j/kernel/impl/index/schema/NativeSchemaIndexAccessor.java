@@ -42,14 +42,15 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
-public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
-        extends NativeSchemaIndex<KEY,VALUE> implements IndexAccessor
+public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> extends NativeSchemaIndex<KEY,VALUE>
+        implements IndexAccessor
 {
     private final NativeSchemaIndexUpdater<KEY,VALUE> singleUpdater;
     final IndexSamplingConfig samplingConfig;
 
     NativeSchemaIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-                               RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig ) throws IOException
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor );
         singleUpdater = new NativeSchemaIndexUpdater<>( layout.newKey(), layout.newValue() );

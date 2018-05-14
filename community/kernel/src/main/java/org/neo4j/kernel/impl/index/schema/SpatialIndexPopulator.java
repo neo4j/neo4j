@@ -184,8 +184,8 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration configuration;
 
-        PartFactory( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles spatialIndexFiles, StoreIndexDescriptor descriptor, IndexProvider.Monitor monitor, IndexSamplingConfig samplingConfig,
-                     SpaceFillingCurveConfiguration configuration )
+        PartFactory( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles spatialIndexFiles, StoreIndexDescriptor descriptor,
+                IndexProvider.Monitor monitor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration configuration )
         {
             this.pageCache = pageCache;
             this.fs = fs;

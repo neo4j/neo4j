@@ -76,7 +76,8 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extend
         return newIndexPopulator( storeFile, layout( descriptor ), descriptor, samplingConfig );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY,VALUE> layout, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig );
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig );
 
     @Override
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
@@ -85,7 +86,8 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extend
         return newIndexAccessor( storeFile, layout( descriptor ), descriptor, samplingConfig );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException;
+    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig ) throws IOException;
 
     @Override
     public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException

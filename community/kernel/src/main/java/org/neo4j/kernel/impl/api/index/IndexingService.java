@@ -289,7 +289,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexPopulationJob populationJob = newIndexPopulationJob();
                 rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
                         {
-                            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor.getIndexDescriptor(), false, // never pass through a tentative online state during recovery
+                            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor.getIndexDescriptor(),
+                                    false, // never pass through a tentative online state during recovery
                                     monitor,
                                     populationJob );
                             proxy.start();

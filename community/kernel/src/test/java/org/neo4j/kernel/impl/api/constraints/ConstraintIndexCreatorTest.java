@@ -352,22 +352,24 @@ public class ConstraintIndexCreatorTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         try
-        {TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
-        TransactionHeaderInformationFactory headerInformationFactory =
-                mock( TransactionHeaderInformationFactory.class );
-        when( headerInformationFactory.create() ).thenReturn( headerInformation );
-        StorageEngine storageEngine = mock( StorageEngine.class );
-        StorageReader storageReader = mock( StorageReader.class );
-        when(  storageEngine.newReader() ).thenReturn( storageReader );
+        {
+            TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
+            TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
+            when( headerInformationFactory.create() ).thenReturn( headerInformation );
+            StorageEngine storageEngine = mock( StorageEngine.class );
+            StorageReader storageReader = mock( StorageReader.class );
+            when( storageEngine.newReader() ).thenReturn( storageReader );
 
-        SimpleStatementLocks locks =
-                new SimpleStatementLocks( mock( org.neo4j.kernel.impl.locking.Locks.Client.class ) );
-        when( transaction.statementLocks() ).thenReturn( locks );
-        when( transaction.tokenRead() ).thenReturn( tokenRead );
-        when( transaction.schemaRead() ).thenReturn( schemaRead );when( transaction.schemaWrite() ).thenReturn( schemaWrite );
-        TransactionState transactionState = mock( TransactionState.class );
-        when( transaction.txState() ).thenReturn( transactionState );
-        when( transaction.indexUniqueCreate( any(SchemaDescriptor.class ) ) ).thenAnswer( i-> IndexDescriptorFactory.uniqueForSchema( i.getArgument( 0 ) ) );}
+            SimpleStatementLocks locks = new SimpleStatementLocks( mock( org.neo4j.kernel.impl.locking.Locks.Client.class ) );
+            when( transaction.statementLocks() ).thenReturn( locks );
+            when( transaction.tokenRead() ).thenReturn( tokenRead );
+            when( transaction.schemaRead() ).thenReturn( schemaRead );
+            when( transaction.schemaWrite() ).thenReturn( schemaWrite );
+            TransactionState transactionState = mock( TransactionState.class );
+            when( transaction.txState() ).thenReturn( transactionState );
+            when( transaction.indexUniqueCreate( any( SchemaDescriptor.class ) ) ).thenAnswer(
+                    i -> IndexDescriptorFactory.uniqueForSchema( i.getArgument( 0 ) ) );
+        }
         catch ( InvalidTransactionTypeKernelException e )
         {
             e.printStackTrace();

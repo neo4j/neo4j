@@ -116,7 +116,8 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( serialiseAndDeserialise( namedForLabel( name, LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1 ).withIds( RULE_ID_2, RULE_ID ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( namedForLabel( name, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID ) ).getName(),
+                is( name ) );
         assertThat( serialiseAndDeserialise( namedForLabel( name, LABEL_ID, IntStream.range(1, 200).toArray() ).withId( RULE_ID ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
                 ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(), is( name ) );
@@ -139,7 +140,8 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( serialiseAndDeserialise( forLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ) ).getName(), is( "index_1" ) );
         assertThat( serialiseAndDeserialise( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ).withIds( RULE_ID_2, RULE_ID ) ).getName(), is( "index_2" ) );
         assertThat( serialiseAndDeserialise( forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID ) ).getName(), is( "index_1" ) );
-        assertThat( serialiseAndDeserialise( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID ) ).getName(), is( "index_2" ) );
+        assertThat( serialiseAndDeserialise( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID ) ).getName(),
+                is( "index_2" ) );
         assertThat( serialiseAndDeserialise( forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ).withId( RULE_ID ) ).getName(), is( "index_1" ) );
 
         String name = null;
