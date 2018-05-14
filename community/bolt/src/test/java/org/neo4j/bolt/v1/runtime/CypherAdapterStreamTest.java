@@ -273,11 +273,9 @@ public class CypherAdapterStreamTest
     private static void assertMapEqualsWithDelta( MapValue a, MapValue b, double delta )
     {
         assertThat( "Map should have same size", a.size(), equalTo( b.size() ) );
-        for ( Map.Entry<String,AnyValue> entry : a.entrySet() )
-        {
-            String key = entry.getKey();
+        a.foreach( ( key, value ) -> {
             //assertThat( "Missing key", b.get( key ) != Values.NO_VALUE );
-            AnyValue aValue = entry.getValue();
+            AnyValue aValue = value;
             AnyValue bValue = b.get( key );
             if ( aValue instanceof MapValue )
             {
@@ -293,7 +291,7 @@ public class CypherAdapterStreamTest
             {
                 assertThat( "Value mismatch", aValue, equalTo( bValue ) );
             }
-        }
+        } );
     }
 
     private static ExecutionPlanDescription plan( final String name, final Map<String,Object> args, final long dbHits,

@@ -168,10 +168,8 @@ public final class VirtualValues
     public static MapValue copy( MapValue map, Pair<String,AnyValue>... moreEntries )
     {
         HashMap<String,AnyValue> hashMap = new HashMap<>( map.size() );
-        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
-        {
-            hashMap.put( entry.getKey(), entry.getValue() );
-        }
+        map.foreach( hashMap::put );
+
         for ( Pair<String,AnyValue> entry : moreEntries )
         {
             hashMap.put( entry.first(), entry.other() );

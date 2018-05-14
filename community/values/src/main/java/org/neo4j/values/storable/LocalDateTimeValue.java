@@ -137,13 +137,14 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         {
             return updateFieldMapWithConflictingSubseconds( fields, unit, truncatedLDT,
                     ( mapValue, localDateTime ) -> {
-                        if (mapValue.size() == 0)
+                        if ( mapValue.size() == 0 )
                         {
                             return localDateTime( localDateTime );
                         }
                         else
                         {
-                            return build( mapValue.updatedWith(  "datetime", localDateTime( localDateTime ) ), defaultZone );
+                            return build( mapValue.updatedWith( "datetime", localDateTime( localDateTime ) ),
+                                    defaultZone );
                         }
                     } );
         }
