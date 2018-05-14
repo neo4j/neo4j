@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -50,7 +52,6 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -75,7 +76,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 
 public class ConstraintIndexCreatorTest
 {
@@ -105,7 +105,7 @@ public class ConstraintIndexCreatorTest
                 new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
-        long indexId = creator.createUniquenessConstraintIndex( createTransaction(), descriptor );
+        long indexId = creator.createUniquenessConstraintIndex( createTransaction(), descriptor, Optional.empty() );
 
         // then
         assertEquals( INDEX_ID, indexId );
@@ -144,7 +144,7 @@ public class ConstraintIndexCreatorTest
         KernelTransactionImplementation transaction = createTransaction();
         try
         {
-            creator.createUniquenessConstraintIndex( transaction, descriptor );
+            creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() );
 
             fail( "expected exception" );
         }
@@ -157,7 +157,7 @@ public class ConstraintIndexCreatorTest
         assertEquals( 2, kernel.transactions.size() );
         KernelTransactionImplementation tx1 = kernel.transactions.get( 0 );
         SchemaDescriptor newIndex = index.schema();
-        verify( tx1 ).indexUniqueCreate( eq( newIndex ) );
+        verify( tx1 ).indexUniqueCreate( eq( newIndex ), eq( Optional.empty() ) );
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead, times( 2 ) ).index( LABEL_ID, PROPERTY_KEY_ID );
         verifyNoMoreInteractions( schemaRead );
@@ -207,7 +207,7 @@ public class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, descriptor );
+        creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() );
 
         // then
         verify( transaction.statementLocks().pessimistic() )
@@ -237,7 +237,7 @@ public class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        long indexId = creator.createUniquenessConstraintIndex( transaction, descriptor );
+        long indexId = creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() );
 
         // then
         assertEquals( orphanedConstraintIndexId, indexId );
@@ -254,8 +254,6 @@ public class ConstraintIndexCreatorTest
     public void shouldFailOnExistingOwnedConstraintIndex() throws Exception
     {
         // given
-        StatementOperationParts indexCreationContext = mockedParts();
-
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
@@ -277,7 +275,7 @@ public class ConstraintIndexCreatorTest
         try
         {
             KernelTransactionImplementation transaction = createTransaction();
-            creator.createUniquenessConstraintIndex( transaction, descriptor );
+            creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() );
             fail( "Should've failed" );
         }
         catch ( AlreadyConstrainedException e )
@@ -292,6 +290,35 @@ public class ConstraintIndexCreatorTest
         verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
         verifyNoMoreInteractions( schemaRead );
     }
+
+    @Test
+    public void shouldCreateConstraintIndexForSpecifiedProvider() throws Exception
+    {
+        // given
+        IndexingService indexingService = mock( IndexingService.class );
+        StubKernel kernel = new StubKernel();
+
+        when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( INDEX_ID );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        IndexProvider.Descriptor providerDescriptor = new IndexProvider.Descriptor( "Groovy", "1.2" );
+
+        // when
+        KernelTransactionImplementation transaction = createTransaction();
+        creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.of( providerDescriptor.name() ) );
+
+        // then
+        assertEquals( 1, kernel.transactions.size() );
+        KernelTransactionImplementation transactionInstance = kernel.transactions.get( 0 );
+        verify( transactionInstance ).indexUniqueCreate( eq( descriptor ), eq( Optional.of( providerDescriptor.name() ) ) );
+        verify( schemaRead ).index( LABEL_ID, PROPERTY_KEY_ID );
+        verify( schemaRead ).indexGetCommittedId( any() );
+        verifyNoMoreInteractions( schemaRead );
+    }
+
 
     private class StubKernel implements Kernel, Session
     {
@@ -367,7 +394,7 @@ public class ConstraintIndexCreatorTest
             when( transaction.schemaWrite() ).thenReturn( schemaWrite );
             TransactionState transactionState = mock( TransactionState.class );
             when( transaction.txState() ).thenReturn( transactionState );
-            when( transaction.indexUniqueCreate( any( SchemaDescriptor.class ) ) ).thenAnswer(
+            when( transaction.indexUniqueCreate( any( SchemaDescriptor.class ), any( Optional.class ) ) ).thenAnswer(
                     i -> IndexDescriptorFactory.uniqueForSchema( i.getArgument( 0 ) ) );
         }
         catch ( InvalidTransactionTypeKernelException e )

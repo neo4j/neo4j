@@ -396,9 +396,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema )
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
     {
-        return operations.indexUniqueCreate( schema );
+        return operations.indexUniqueCreate( schema, provider );
     }
 
     @Override

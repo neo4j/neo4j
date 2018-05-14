@@ -26,8 +26,8 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -301,6 +301,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
         public String getVersion()
         {
             return version;
+        }
+
+        /**
+         * @return a combination of {@link #getKey()} and {@link #getVersion()} with a '-' in between.
+         */
+        public String name()
+        {
+            return key + "-" + version;
         }
 
         @Override

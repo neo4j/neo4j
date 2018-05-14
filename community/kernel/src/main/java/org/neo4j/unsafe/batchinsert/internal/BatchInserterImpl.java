@@ -74,6 +74,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -128,7 +129,6 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -499,7 +499,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             StoreIndexDescriptor index = indexDescriptors[i];
             descriptors[i] = index.schema();
-            IndexPopulator populator = indexProviderMap.apply( index.providerDescriptor() )
+            IndexPopulator populator = indexProviderMap.lookup( index.providerDescriptor() )
                                                 .getPopulator( index, new IndexSamplingConfig( config ) );
             populator.create();
             populators.add( new IndexPopulatorWithSchema( populator, index ) );
@@ -586,7 +586,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         List<StoreIndexDescriptor> indexesNeedingPopulation = new ArrayList<>();
         for ( StoreIndexDescriptor rule : schemaCache.indexRules() )
         {
-            IndexProvider provider = indexProviderMap.apply( rule.providerDescriptor() );
+            IndexProvider provider = indexProviderMap.lookup( rule.providerDescriptor() );
             if ( provider.getInitialState( rule ) != InternalIndexState.FAILED )
             {
                 indexesNeedingPopulation.add( rule );

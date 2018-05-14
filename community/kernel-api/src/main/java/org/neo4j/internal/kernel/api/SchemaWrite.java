@@ -40,6 +40,14 @@ public interface SchemaWrite
      */
     IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
 
+    /**
+     * Create index from schema descriptor
+     *
+     * @param descriptor description of the index
+     * @param provider name of the desired index provider implementation
+     * @param name name of the index
+     * @return the newly created index
+     */
     IndexReference indexCreate( SchemaDescriptor descriptor,
                                 Optional<String> provider,
                                 Optional<String> name ) throws SchemaKernelException;
@@ -59,11 +67,29 @@ public interface SchemaWrite
     ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
 
     /**
+     * Create unique property constraint
+     *
+     * @param descriptor description of the constraint
+     * @param provider name of the desired index provider implementation
+     */
+    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor,
+            Optional<String> provider ) throws SchemaKernelException;
+
+    /**
      * Create node key constraint
      *
      * @param descriptor description of the constraint
      */
     ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+
+    /**
+     * Create node key constraint
+     *
+     * @param descriptor description of the constraint
+     * @param provider name of the desired index provider implementation
+     */
+    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor,
+            Optional<String> provider ) throws SchemaKernelException;
 
     /**
      * Create node property existence constraint
