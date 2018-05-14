@@ -144,8 +144,8 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey<KEY>
     {
         Arrays.sort( expectedHits, comparator );
         Arrays.sort( actualHits, comparator );
-        assertEquals( format( "Array length differ%nExpected:%s%nActual:%s",
-                Arrays.toString( expectedHits ), Arrays.toString( actualHits ) ),
+        assertEquals( format( "Array length differ%nExpected:%d, Actual:%d",
+                expectedHits.length, actualHits.length ),
                 expectedHits.length, actualHits.length );
 
         for ( int i = 0; i < expectedHits.length; i++ )

@@ -189,8 +189,13 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
 
     void copyFrom( StringSchemaKey key )
     {
-        setBytesLength( key.bytesLength );
-        System.arraycopy( key.bytes, 0, bytes, 0, key.bytesLength );
+        copyFrom( key, key.bytesLength );
+    }
+
+    void copyFrom( StringSchemaKey key, int targetLength )
+    {
+        setBytesLength( targetLength );
+        System.arraycopy( key.bytes, 0, bytes, 0, targetLength );
         setEntityId( key.getEntityId() );
         setCompareId( key.getCompareId() );
     }

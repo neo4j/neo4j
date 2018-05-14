@@ -19,6 +19,13 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.junit.Test;
+
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
+
 public class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<RawBytes,RawBytes>
 {
     private SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
@@ -44,5 +51,24 @@ public class InternalTreeLogicDynamicSizeTest extends InternalTreeLogicTestBase<
     protected TestLayout<RawBytes,RawBytes> getLayout()
     {
         return layout;
+    }
+
+    @Test
+    public void storeOnlyMinimalKeyDividerInInternal() throws IOException
+    {
+        // given
+        initialize();
+        long key = 0;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key( key ), value( key ) );
+            key++;
+        }
+
+        // when
+        RawBytes rawBytes = keyAt( rootId, 0, INTERNAL );
+
+        // then
+        assertEquals( "expected no tail on internal key but was " + rawBytes.toString(), Long.BYTES, rawBytes.bytes.length );
     }
 }
