@@ -236,7 +236,7 @@ public final class IndexMap implements Cloneable
 
     private static Map<SchemaDescriptor, IndexProxy> indexesByDescriptor( LongObjectMap<IndexProxy> indexesById )
     {
-        return indexesById.toMap( IndexProxy::schema, Functions.identity() );
+        return indexesById.toMap( indexProxy -> indexProxy.getDescriptor().schema(), Functions.identity() );
     }
 
     private static MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor( LongObjectMap<IndexProxy> indexesById )

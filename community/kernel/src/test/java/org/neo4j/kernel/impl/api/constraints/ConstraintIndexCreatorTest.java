@@ -28,9 +28,11 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -65,6 +67,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -84,6 +87,7 @@ public class ConstraintIndexCreatorTest
     private final IndexDescriptor index = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final IndexReference indexReference = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final SchemaRead schemaRead = schemaRead();
+    private final SchemaWrite schemaWrite = mock( SchemaWrite.class );
     private final TokenRead tokenRead = mock( TokenRead.class );
 
     @Test
@@ -122,6 +126,7 @@ public class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
+        when( indexProxy.getDescriptor() ).thenReturn( index.withId( INDEX_ID ).withoutCapabilities() );
 
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, Values.of( "a" ) );
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause ) )
@@ -150,15 +155,14 @@ public class ConstraintIndexCreatorTest
                           "ASSERT label[123].property[456] IS UNIQUE.", e.getMessage() );
         }
         assertEquals( 2, kernel.transactions.size() );
-        TransactionState tx1 = kernel.transactions.get( 0 ).txState();
-        IndexDescriptor newIndex = TestIndexDescriptorFactory.uniqueForLabel( 123, 456 );
-        verify( tx1 ).indexRuleDoAdd( newIndex );
-        verifyNoMoreInteractions( tx1 );
+        KernelTransactionImplementation tx1 = kernel.transactions.get( 0 );
+        SchemaDescriptor newIndex = index.schema();
+        verify( tx1 ).indexUniqueCreate( eq( newIndex ) );
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead, times( 2 ) ).index( LABEL_ID, PROPERTY_KEY_ID );
         verifyNoMoreInteractions( schemaRead );
         TransactionState tx2 = kernel.transactions.get( 1 ).txState();
-        verify( tx2 ).indexDoDrop( newIndex );
+        verify( tx2 ).indexDoDrop( index );
         verifyNoMoreInteractions( tx2 );
     }
 
@@ -346,22 +350,28 @@ public class ConstraintIndexCreatorTest
 
     private KernelTransactionImplementation createTransaction()
     {
-        TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
+        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+        try
+        {TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
         TransactionHeaderInformationFactory headerInformationFactory =
                 mock( TransactionHeaderInformationFactory.class );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
         StorageEngine storageEngine = mock( StorageEngine.class );
         StorageReader storageReader = mock( StorageReader.class );
-        when( storageEngine.newReader() ).thenReturn( storageReader );
-        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+        when(  storageEngine.newReader() ).thenReturn( storageReader );
+
         SimpleStatementLocks locks =
                 new SimpleStatementLocks( mock( org.neo4j.kernel.impl.locking.Locks.Client.class ) );
         when( transaction.statementLocks() ).thenReturn( locks );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
-        when( transaction.schemaRead() ).thenReturn( schemaRead );
+        when( transaction.schemaRead() ).thenReturn( schemaRead );when( transaction.schemaWrite() ).thenReturn( schemaWrite );
         TransactionState transactionState = mock( TransactionState.class );
         when( transaction.txState() ).thenReturn( transactionState );
-        when( transaction.indexUniqueCreate( any(SchemaDescriptor.class ) ) ).thenAnswer( i-> IndexDescriptorFactory.uniqueForSchema( i.getArgument( 0 ) ) );
+        when( transaction.indexUniqueCreate( any(SchemaDescriptor.class ) ) ).thenAnswer( i-> IndexDescriptorFactory.uniqueForSchema( i.getArgument( 0 ) ) );}
+        catch ( InvalidTransactionTypeKernelException e )
+        {
+            e.printStackTrace();
+        }
         return transaction;
     }
 }
