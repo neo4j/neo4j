@@ -136,6 +136,12 @@ class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
+    public void minimalSplitter( LabelScanKey left, LabelScanKey right, LabelScanKey into )
+    {
+        copyKey( right, into );
+    }
+
+    @Override
     public long identifier()
     {
         return Layout.namedIdentifier( IDENTIFIER_NAME, LabelScanValue.RANGE_SIZE );

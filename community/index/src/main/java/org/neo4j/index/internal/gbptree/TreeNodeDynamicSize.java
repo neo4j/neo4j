@@ -97,6 +97,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private final int[] newOffset = new int[maxKeyCount];
     private final int totalSpace;
     private final int halfSpace;
+    private final KEY tmpKeyLeft;
+    private final KEY tmpKeyRight;
 
     TreeNodeDynamicSize( int pageSize, Layout<KEY,VALUE> layout )
     {
@@ -112,6 +114,9 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
                             "with current page size of %dB. We require this cap to be at least %dB.",
                     LEAST_NUMBER_OF_ENTRIES_PER_PAGE, keyValueSizeCap, pageSize, Long.SIZE );
         }
+
+        tmpKeyLeft = layout.newKey();
+        tmpKeyRight = layout.newKey();
     }
 
     @Override
@@ -622,11 +627,16 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         if ( middlePos == insertPos )
         {
-            layout.copyKey( newKey, newSplitter );
+            keyAt( leftCursor, tmpKeyLeft, middlePos - 1, LEAF );
+            layout.minimalSplitter( tmpKeyLeft, newKey, newSplitter );
         }
         else
         {
-            keyAt( leftCursor, newSplitter, insertPos < middlePos ? middlePos - 1 : middlePos, LEAF );
+            int rightPos = insertPos < middlePos ? middlePos - 1 : middlePos;
+            int leftPos = rightPos - 1;
+            keyAt( leftCursor, tmpKeyRight, rightPos, LEAF );
+            keyAt( leftCursor, tmpKeyLeft, leftPos, LEAF );
+            layout.minimalSplitter( tmpKeyLeft, tmpKeyRight, newSplitter );
         }
         int rightKeyCount = keyCountAfterInsert - middlePos;
 
