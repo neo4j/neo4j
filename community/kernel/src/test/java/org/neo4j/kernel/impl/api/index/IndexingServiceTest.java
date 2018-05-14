@@ -649,6 +649,9 @@ public class IndexingServiceTest
         int labelId1 = 24;
         int labelId2 = 42;
 
+        StoreIndexDescriptor index1 = storeIndex( indexId1, labelId1, propertyKeyId, PROVIDER_DESCRIPTOR );
+        StoreIndexDescriptor index2 = storeIndex( indexId2, labelId2, propertyKeyId, PROVIDER_DESCRIPTOR );
+
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
         IndexAccessor accessor1 = mock( IndexAccessor.class );
@@ -659,15 +662,13 @@ public class IndexingServiceTest
         IndexUpdater updater2 = mock( IndexUpdater.class );
         when( accessor2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater2 );
 
-        when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ),
-                any( IndexSamplingConfig.class ) ) ).thenReturn( accessor1 );
-        when( indexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ),
-                any( IndexSamplingConfig.class ) ) ).thenReturn( accessor2 );
+        when( indexProvider.getOnlineAccessor( eq( index1 ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor1 );
+        when( indexProvider.getOnlineAccessor( eq( index2 ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor2 );
 
         life.start();
 
-        indexing.createIndexes( storeIndex( indexId1, labelId1, propertyKeyId, PROVIDER_DESCRIPTOR ) );
-        indexing.createIndexes( storeIndex( indexId2, labelId2, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+        indexing.createIndexes( index1 );
+        indexing.createIndexes( index2 );
 
         waitForIndexesToComeOnline( indexing, indexId1, indexId2 );
 
