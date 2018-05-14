@@ -83,6 +83,24 @@ class StringLayout extends SchemaLayout<StringSchemaKey>
     }
 
     @Override
+    public void minimalSplitter( StringSchemaKey left, StringSchemaKey right, StringSchemaKey into )
+    {
+        int maxLength = Math.min( left.bytesLength, right.bytesLength );
+        int targetLength = 0;
+        boolean foundDiffer = false;
+        for ( int i = 0; i < maxLength; i++ )
+        {
+            targetLength++;
+            if ( left.bytes[i] != right.bytes[i] )
+            {
+                foundDiffer = true;
+                break;
+            }
+        }
+        into.copyFrom( right, targetLength );
+    }
+
+    @Override
     public String toString()
     {
         return format( "%s[version:%d.%d, identifier:%d]", getClass().getSimpleName(), majorVersion(), minorVersion(), identifier() );

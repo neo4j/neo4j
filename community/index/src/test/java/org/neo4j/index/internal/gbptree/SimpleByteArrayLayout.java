@@ -34,9 +34,14 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     @Override
     public RawBytes copyKey( RawBytes rawBytes, RawBytes into )
     {
+        return copyKey( rawBytes, into, rawBytes.bytes.length );
+    }
+
+    private RawBytes copyKey( RawBytes rawBytes, RawBytes into, int length )
+    {
         byte[] src = rawBytes.bytes;
-        byte[] target = new byte[src.length];
-        System.arraycopy( src, 0, target, 0, src.length );
+        byte[] target = new byte[length];
+        System.arraycopy( src, 0, target, 0, length );
         into.bytes = target;
         return into;
     }
@@ -97,6 +102,13 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
     public boolean fixedSize()
     {
         return false;
+    }
+
+    @Override
+    public void minimalSplitter( RawBytes left, RawBytes right, RawBytes into )
+    {
+        // Minimal splitter will always be the first 8B
+        copyKey( right, into, Long.BYTES );
     }
 
     @Override

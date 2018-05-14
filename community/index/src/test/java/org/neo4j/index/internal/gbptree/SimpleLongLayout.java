@@ -175,6 +175,12 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     }
 
     @Override
+    public void minimalSplitter( MutableLong left, MutableLong right, MutableLong into )
+    {
+        copyKey( right, into );
+    }
+
+    @Override
     public long identifier()
     {
         return identifier;

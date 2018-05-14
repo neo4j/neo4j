@@ -72,6 +72,12 @@ abstract class SchemaLayout<KEY extends NativeSchemaKey<KEY>> extends Layout.Ada
     }
 
     @Override
+    public void minimalSplitter( KEY left, KEY right, KEY into )
+    {
+        copyKey( right, into );
+    }
+
+    @Override
     public long identifier()
     {
         return identifier;
