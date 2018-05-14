@@ -22,6 +22,7 @@ can be directed to: licensing@neo4j.com
 More information is also available at:https://neo4j.com/licensing/
 
 
+
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 
@@ -684,3 +685,17 @@ specific requirements.
 if any, to sign a "copyright disclaimer" for the program, if necessary.
 For more information on this, and how to apply and follow the GNU AGPL, see
 <http://www.gnu.org/licenses/>.
+
+“Commons Clause” License Condition
+
+The Software is provided to you by the Licensor under the License, as
+defined below, subject to the following condition. Without limiting
+other conditions in the License, the grant of rights under the License
+will not include, and the License does not grant to you, the right to
+Sell the Software.  For purposes of the foregoing, “Sell” means
+practicing any or all of the rights granted to you under the License to
+provide to third parties, for a fee or other consideration, a product or
+service that consists, entirely or substantially, of the Software or the
+functionality of the Software.  Any license notice or attribution
+required by the License must also include this Commons Cause License
+Condition notice.
