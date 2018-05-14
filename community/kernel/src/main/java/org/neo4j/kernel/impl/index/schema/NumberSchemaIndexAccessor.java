@@ -34,7 +34,8 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 public class NumberSchemaIndexAccessor extends NativeSchemaIndexAccessor<NumberSchemaKey,NativeSchemaValue>
 {
     NumberSchemaIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout,
-                               RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig ) throws IOException
     {
         super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
     }

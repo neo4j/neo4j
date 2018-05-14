@@ -110,16 +110,16 @@ public class MultipleIndexPopulator implements IndexPopulator
         this.log = logProvider.getLog( IndexPopulationJob.class );
     }
 
-    IndexPopulation addPopulator( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
-            String indexUserDescription )
+    IndexPopulation addPopulator( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper,
+            FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
     {
-        IndexPopulation population =
-                createPopulation( populator, capableIndexDescriptor, flipper, failedIndexProxyFactory, indexUserDescription );
+        IndexPopulation population = createPopulation( populator, capableIndexDescriptor, flipper, failedIndexProxyFactory, indexUserDescription );
         populations.add( population );
         return population;
     }
 
-    private IndexPopulation createPopulation( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
+    private IndexPopulation createPopulation( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper,
+            FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
     {
         return new IndexPopulation( populator, capableIndexDescriptor, flipper, failedIndexProxyFactory, indexUserDescription );
     }
@@ -486,7 +486,8 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         List<IndexEntryUpdate<?>> batchedUpdates;
 
-        IndexPopulation( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
+        IndexPopulation( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper,
+                FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
         {
             this.populator = populator;
             this.capableIndexDescriptor = capableIndexDescriptor;

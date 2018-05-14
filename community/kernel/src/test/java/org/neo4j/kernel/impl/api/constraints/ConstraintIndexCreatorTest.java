@@ -369,7 +369,8 @@ public class ConstraintIndexCreatorTest
             when( transaction.schemaWrite() ).thenReturn( schemaWrite );
             TransactionState transactionState = mock( TransactionState.class );
             when( transaction.txState() ).thenReturn( transactionState );
-            when( transaction.indexUniqueCreate( any(SchemaDescriptor.class ) ) ).thenAnswer( i-> IndexDescriptorFactory.uniqueForSchema( i.getArgument( 0 ) ) );
+            when( transaction.indexUniqueCreate( any( SchemaDescriptor.class ) ) ).thenAnswer(
+                    i -> IndexDescriptorFactory.uniqueForSchema( i.getArgument( 0 ) ) );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {

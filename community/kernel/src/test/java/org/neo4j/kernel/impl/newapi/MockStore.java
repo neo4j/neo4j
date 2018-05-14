@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;

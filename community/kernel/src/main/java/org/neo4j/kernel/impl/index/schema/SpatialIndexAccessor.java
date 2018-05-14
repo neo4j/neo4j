@@ -185,8 +185,9 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration searchConfiguration;
 
-        PartAccessor( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                      IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
+        PartAccessor( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
+                IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
         {
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
             this.layout = fileLayout.layout;

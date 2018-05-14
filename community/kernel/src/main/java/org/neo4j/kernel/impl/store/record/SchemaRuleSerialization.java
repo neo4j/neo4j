@@ -87,7 +87,7 @@ public class SchemaRuleSerialization
         {
             return serialize( (ConstraintRule)schemaRule );
         }
-        throw new IllegalStateException( "Unknown schema rule type: "+schemaRule.getClass() );
+        throw new IllegalStateException( "Unknown schema rule type: " + schemaRule.getClass() );
     }
 
     /**
