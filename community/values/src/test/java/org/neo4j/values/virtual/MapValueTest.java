@@ -74,4 +74,53 @@ class MapValueTest
         // Then
         assertThat( filtered.size(), equalTo( 0 ) );
     }
+
+    @Test
+    void shouldUpdateWithIdenticalValues()
+    {
+        // Given
+        MapValue base = VirtualValues.map( new String[]{"k1", "k2", "k3"},
+                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
+
+        // When
+        MapValue updated = base.updatedWith( "k3", stringValue( "v3" ) );
+
+        // Then
+        assertThat( updated, equalTo( base ) );
+    }
+
+    @Test
+    void shouldUpdateWithExistingKey()
+    {
+        // Given
+        MapValue base = VirtualValues.map( new String[]{"k1", "k2", "k3"},
+                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
+
+        // When
+        MapValue updated = base.updatedWith( "k3", stringValue( "version3" ) );
+
+        // Then
+        assertThat( updated.size(), equalTo( 3 ) );
+        assertThat( updated.get( "k1" ), equalTo( stringValue( "v1" ) ) );
+        assertThat( updated.get( "k2" ), equalTo( stringValue( "v2" ) ) );
+        assertThat( updated.get( "k3" ), equalTo( stringValue( "version3" ) ) );
+    }
+
+    @Test
+    void shouldUpdateWithNewKey()
+    {
+        // Given
+        MapValue base = VirtualValues.map( new String[]{"k1", "k2", "k3"},
+                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
+
+        // When
+        MapValue updated = base.updatedWith( "k4", stringValue( "v4" ) );
+
+        // Then
+        assertThat( updated.size(), equalTo( 4 ) );
+        assertThat( updated.get( "k1" ), equalTo( stringValue( "v1" ) ) );
+        assertThat( updated.get( "k2" ), equalTo( stringValue( "v2" ) ) );
+        assertThat( updated.get( "k3" ), equalTo( stringValue( "v3" ) ) );
+        assertThat( updated.get( "k4" ), equalTo( stringValue( "v4" ) ) );
+    }
 }

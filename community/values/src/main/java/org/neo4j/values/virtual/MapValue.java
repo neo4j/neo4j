@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -27,6 +28,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.function.ThrowingBiConsumer;
@@ -195,15 +197,159 @@ public abstract class MapValue extends VirtualValue
         }
     }
 
+    final static class MappedMapValue extends MapValue
+    {
+        private final MapValue map;
+        private final BiFunction<String,AnyValue,AnyValue> mapFunction;
+
+        MappedMapValue( MapValue map,
+                BiFunction<String,AnyValue,AnyValue> mapFunction )
+        {
+            this.map = map;
+            this.mapFunction = mapFunction;
+        }
+
+        public ListValue keys()
+        {
+           return map.keys();
+        }
+
+
+        public Set<String> keySet()
+        {
+           return map.keySet();
+        }
+
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
+        {
+            map.foreach( ( s, anyValue ) -> f.accept( s, mapFunction.apply( s, anyValue )) );
+        }
+
+        public Set<Map.Entry<String,AnyValue>> entrySet()
+        {
+            return map.entrySet().stream()
+                    .map( (Function<Map.Entry<String,AnyValue>,Map.Entry<String,AnyValue>>) entry ->
+                            new AbstractMap.SimpleEntry<>( entry.getKey(), mapFunction.apply( entry.getKey(), entry.getValue() )) )
+                    .collect( Collectors.toSet() );
+        }
+
+        public boolean containsKey( String key )
+        {
+            return map.containsKey( key );
+        }
+
+        public AnyValue get( String key )
+        {
+            return mapFunction.apply( key, map.get( key ) );
+        }
+
+        public int size()
+        {
+           return map.size();
+        }
+    }
+
+    final static class UpdatedMapValue extends MapValue
+    {
+        private final MapValue map;
+        private final String[] updatedKeys;
+        private final AnyValue[] updatedValues;
+
+
+        UpdatedMapValue( MapValue map, String[] updatedKeys, AnyValue[] updatedValues )
+        {
+            assert updatedKeys.length == updatedValues.length;
+            assert !overlaps( map, updatedKeys );
+            this.map = map;
+            this.updatedKeys = updatedKeys;
+            this.updatedValues = updatedValues;
+        }
+
+        private static boolean overlaps(MapValue map, String[] updatedKeys)
+        {
+            for ( String key : updatedKeys )
+            {
+                if (map.containsKey( key ))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public ListValue keys()
+        {
+            return VirtualValues.concat( map.keys(), VirtualValues.fromArray( Values.stringArray( updatedKeys ) ));
+        }
+
+
+        public Set<String> keySet()
+        {
+            HashSet<String> newKeys = new HashSet<>(map.keySet());
+            newKeys.addAll( Arrays.asList( updatedKeys ) );
+
+            return newKeys;
+        }
+
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
+        {
+           map.foreach( f );
+            for ( int i = 0; i < updatedKeys.length; i++ )
+            {
+                f.accept( updatedKeys[i], updatedValues[i] );
+            }
+        }
+
+        public Set<Map.Entry<String,AnyValue>> entrySet()
+        {
+            HashSet<Map.Entry<String,AnyValue>> entries = new HashSet<>( map.entrySet() );
+            for ( int i = 0; i < updatedKeys.length; i++ )
+            {
+                entries.add( new AbstractMap.SimpleEntry<>( updatedKeys[i], updatedValues[i] ) );
+            }
+            return entries;
+        }
+
+        public boolean containsKey( String key )
+        {
+            for ( String updatedKey : updatedKeys )
+            {
+                if (updatedKey.equals( key ))
+                {
+                    return true;
+                }
+            }
+
+            return map.containsKey( key );
+        }
+
+        public AnyValue get( String key )
+        {
+            for ( int i = 0; i < updatedKeys.length; i++ )
+            {
+                if (updatedKeys[i].equals( key ))
+                {
+                    return updatedValues[i];
+                }
+            }
+            return map.get( key );
+        }
+
+        public int size()
+        {
+           return map.size() + updatedKeys.length;
+        }
+    }
+
     @Override
     public int computeHash()
     {
-        int h = 0;
-        for ( Map.Entry<String,AnyValue> entry : entrySet() )
-        {
-            h += entry.getKey().hashCode() ^ entry.getValue().hashCode();
-        }
-        return h;
+        int[] h = new int[1];
+        foreach( (key, value) -> h[0] += key.hashCode() ^ value.hashCode() );
+        return h[0];
     }
 
     @Override
@@ -368,6 +514,32 @@ public abstract class MapValue extends VirtualValue
     public MapValue filter(BiFunction<String, AnyValue, Boolean> filterFunction)
     {
         return new FilteringMapValue( this, filterFunction );
+    }
+
+    public MapValue updatedWith( String key, AnyValue value )
+    {
+        AnyValue current = get( key );
+        if ( current.equals( value ))
+        {
+            return this;
+        }
+        else if (current == NO_VALUE)
+        {
+            return new UpdatedMapValue( this, new String[]{key}, new AnyValue[]{value} );
+        }
+        else
+        {
+            return new MappedMapValue( this, (k, v) -> {
+                if ( k.equals(key))
+                {
+                    return value;
+                }
+                else
+                {
+                    return v;
+                }
+            } );
+        }
     }
 
     @Override
