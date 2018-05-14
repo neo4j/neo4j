@@ -64,7 +64,7 @@ public class DbStructureArgumentFormatterTest
     @Test
     public void shouldFormatIndexDescriptors()
     {
-        assertEquals( "SchemaIndexDescriptorFactory.forLabel( 23, 42 )",
+        assertEquals( "IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 23, 42 ) )",
                 formatArgument( TestIndexDescriptorFactory.forLabel( 23, 42 ) ) );
     }
 

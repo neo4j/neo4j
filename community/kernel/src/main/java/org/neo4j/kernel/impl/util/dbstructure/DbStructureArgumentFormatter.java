@@ -106,10 +106,11 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         {
             IndexDescriptor descriptor = (IndexDescriptor) arg;
             String className = IndexDescriptorFactory.class.getSimpleName();
-            int labelId = descriptor.schema().keyId();
-            String methodName = descriptor.type() == GENERAL ? "forLabel" : "uniqueForLabel";
-            builder.append( format( "%s.%s( %d, %s )",
-                    className, methodName, labelId, asString( descriptor.schema().getPropertyIds() ) ) );
+            SchemaDescriptor schema = descriptor.schema();
+            String methodName = descriptor.type() == GENERAL ? "forSchema" : "uniqueForSchema";
+            builder.append( String.format( "%s.%s( ", className, methodName));
+            formatArgument( builder, schema );
+            builder.append( " )" );
         }
         else if ( arg instanceof LabelSchemaDescriptor )
         {
