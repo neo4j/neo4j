@@ -170,7 +170,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             // when
             read.singleNode( bare, node );
             assertTrue( "node by reference", node.next() );
-            assertFalse( "no properties", node.hasProperties() );
+            assertFalse( "no properties", hasProperties( node, props ) );
 
             node.properties( props );
             assertFalse( "no properties by direct method", props.next() );
@@ -219,7 +219,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             // when
             read.singleNode( allProps, node );
             assertTrue( "node by reference", node.next() );
-            assertTrue( "has properties", node.hasProperties() );
+            assertTrue( "has properties", hasProperties( node, props ) );
 
             node.properties( props );
             Set<Object> values = new HashSet<>();
@@ -261,7 +261,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             // when
             read.singleNode( nodeId, node );
             assertTrue( "node by reference", node.next() );
-            assertTrue( "has properties", node.hasProperties() );
+            assertTrue( "has properties", hasProperties( node, props ) );
 
             node.properties( props );
             assertTrue( "has properties by direct method", props.next() );
@@ -273,6 +273,12 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertEquals( "correct value", expectedValue, props.propertyValue() );
             assertFalse( "single property", props.next() );
         }
+    }
+
+    private boolean hasProperties( NodeCursor node, PropertyCursor props )
+    {
+        node.properties( props );
+        return props.next();
     }
 
     private static TypeSafeMatcher<int[]> intArray( int... content )

@@ -782,7 +782,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    TextValue string( DefaultPropertyCursor cursor, long reference, PageCursor page )
+    TextValue string( StorePropertyCursor cursor, long reference, PageCursor page )
     {
         ByteBuffer buffer = cursor.buffer = properties.loadString( reference, cursor.buffer, page );
         buffer.flip();
@@ -790,7 +790,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    ArrayValue array( DefaultPropertyCursor cursor, long reference, PageCursor page )
+    ArrayValue array( StorePropertyCursor cursor, long reference, PageCursor page )
     {
         ByteBuffer buffer = cursor.buffer = properties.loadArray( reference, cursor.buffer, page );
         buffer.flip();
