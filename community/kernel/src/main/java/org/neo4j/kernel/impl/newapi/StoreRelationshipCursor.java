@@ -21,99 +21,73 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-abstract class RelationshipCursor<STORECURSOR extends StoreRelationshipCursor> implements RelationshipDataAccessor
+abstract class StoreRelationshipCursor extends RelationshipRecord implements RelationshipVisitor<RuntimeException>
 {
     Read read;
-    private boolean hasChanges;
-    private boolean checkHasChanges;
 
-    final STORECURSOR storeCursor;
-
-    RelationshipCursor( STORECURSOR storeCursor )
+    StoreRelationshipCursor()
     {
-        this.storeCursor = storeCursor;
+        super( NO_ID );
     }
 
     protected void init( Read read )
     {
         this.read = read;
-        this.checkHasChanges = true;
     }
 
-    @Override
     public long relationshipReference()
     {
-        return storeCursor.relationshipReference();
+        return getId();
     }
 
-    @Override
     public int type()
     {
-        return storeCursor.type();
+        return getType();
     }
 
-    @Override
     public boolean hasProperties()
     {
-        return storeCursor.hasProperties();
+        return nextProp != DefaultPropertyCursor.NO_ID;
     }
 
-    @Override
     public void source( NodeCursor cursor )
     {
         read.singleNode( sourceNodeReference(), cursor );
     }
 
-    @Override
     public void target( NodeCursor cursor )
     {
         read.singleNode( targetNodeReference(), cursor );
     }
 
-    @Override
     public void properties( PropertyCursor cursor )
     {
         read.relationshipProperties( relationshipReference(), propertiesReference(), cursor );
     }
 
-    @Override
     public long sourceNodeReference()
     {
-        return storeCursor.sourceNodeReference();
+        return getFirstNode();
     }
 
-    @Override
     public long targetNodeReference()
     {
-        return storeCursor.targetNodeReference();
+        return getSecondNode();
     }
 
-    @Override
     public long propertiesReference()
     {
-        return storeCursor.propertiesReference();
+        return getNextProp();
     }
 
-    protected abstract void collectAddedTxStateSnapshot();
-
-    /**
-     * RelationshipCursor should only see changes that are there from the beginning
-     * otherwise it will not be stable.
-     */
-    protected boolean hasChanges()
+    // used to visit transaction state
+    @Override
+    public void visit( long relationshipId, int typeId, long startNodeId, long endNodeId )
     {
-        if ( checkHasChanges )
-        {
-            hasChanges = read.hasTxStateWithChanges();
-            if ( hasChanges )
-            {
-                collectAddedTxStateSnapshot();
-            }
-            checkHasChanges = false;
-        }
-
-        return hasChanges;
+        setId( relationshipId );
+        initialize( true, NO_ID, startNodeId, endNodeId, typeId, NO_ID, NO_ID, NO_ID, NO_ID, false, false );
     }
 }

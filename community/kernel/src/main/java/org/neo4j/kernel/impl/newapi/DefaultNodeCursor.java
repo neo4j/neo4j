@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import com.sun.xml.internal.xsom.impl.scd.Iterators;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
@@ -28,6 +27,7 @@ import java.util.Iterator;
 import java.util.function.LongPredicate;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -230,7 +230,7 @@ class DefaultNodeCursor implements NodeCursor
                 if ( single != NO_ID )
                 {
                     addedNodes = read.txState().nodeIsAddedInThisTx( single ) ?
-                                 Iterators.singleton( single ) : Collections.emptyIterator();
+                                 Iterators.iterator( single ) : Collections.emptyIterator();
                 }
                 else
                 {

@@ -24,7 +24,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.newapi.DefaultRelationshipTraversalCursor.Record;
+import org.neo4j.kernel.impl.newapi.StoreRelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
