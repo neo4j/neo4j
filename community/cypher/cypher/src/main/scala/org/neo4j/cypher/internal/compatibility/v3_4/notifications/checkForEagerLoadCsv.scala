@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_4.notifications
 
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{EagerLoadCsvNotification, InternalNotification}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Eager, LoadCSV, LogicalPlan}
 
-object checkForEagerLoadCsv extends (LogicalPlan => Option[InternalNotification]) {
+object checkForEagerLoadCsv extends NotificationChecker {
 
-  def apply(plan: LogicalPlan) = {
+  def apply(plan: LogicalPlan): Seq[InternalNotification] = {
     import org.neo4j.cypher.internal.util.v3_4.Foldable._
     sealed trait SearchState
     case object NoEagerFound extends SearchState
@@ -43,8 +43,8 @@ object checkForEagerLoadCsv extends (LogicalPlan => Option[InternalNotification]
     }
 
     resultState match {
-      case EagerWithLoadCsvFound => Some(EagerLoadCsvNotification)
-      case _ => None
+      case EagerWithLoadCsvFound => Seq(EagerLoadCsvNotification)
+      case _ => Seq.empty
     }
   }
 }

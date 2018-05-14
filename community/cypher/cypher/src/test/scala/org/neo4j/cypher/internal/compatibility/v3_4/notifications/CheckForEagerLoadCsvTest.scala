@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_4.notifications
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.notification.EagerLoadCsvNotification
@@ -43,7 +43,7 @@ class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSu
         )
       )
 
-    checkForEagerLoadCsv(plan) should equal(Some(EagerLoadCsvNotification))
+    checkForEagerLoadCsv(plan) should equal(Seq(EagerLoadCsvNotification))
   }
 
   test("should not notify for LoadCsv on top of eager pipe") {
@@ -59,6 +59,6 @@ class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSu
         legacyCsvQuoteEscaping = false
       )
 
-    checkForEagerLoadCsv(plan) should equal(None)
+    checkForEagerLoadCsv(plan) should equal(Seq.empty)
   }
 }

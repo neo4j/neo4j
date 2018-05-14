@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_4.notifications
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
@@ -53,7 +53,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
   when(statistics.nodesWithLabelCardinality(Some(LabelId(1)))).thenReturn(Cardinality(101))
   when(statistics.nodesWithLabelCardinality(Some(LabelId(2)))).thenReturn(Cardinality(99))
   when(planContext.statistics).thenReturn(statistics)
-  private val checker = CheckForLoadCsvAndMatchOnLargeLabel(planContext, THRESHOLD)
+  private val checker = checkForLoadCsvAndMatchOnLargeLabel(planContext, THRESHOLD)
 
   test("should notify when doing LoadCsv on top of large label scan") {
     val loadCsv =
@@ -71,7 +71,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
       NodeByLabelScan("bar", LabelName(labelOverThreshold)(pos), Set.empty)
     )
 
-    checker(plan) should equal(Some(LargeLabelWithLoadCsvNotification))
+    checker(plan) should equal(Seq(LargeLabelWithLoadCsvNotification))
   }
 
   test("should not notify when doing LoadCsv on top of a small label scan") {
@@ -91,7 +91,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
         NodeByLabelScan("bar", LabelName(labelUnderThreshold)(pos), Set.empty)
       )
 
-    checker(plan) should equal(None)
+    checker(plan) should equal(Seq.empty)
   }
 
   test("should not notify when doing large label scan on top of LoadCSV") {
@@ -99,6 +99,6 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
     val plan =
       LoadCSV(start, url, "foo", HasHeaders, None, legacyCsvQuoteEscaping = false)
 
-    checker(plan) should equal(None)
+    checker(plan) should equal(Seq.empty)
   }
 }
