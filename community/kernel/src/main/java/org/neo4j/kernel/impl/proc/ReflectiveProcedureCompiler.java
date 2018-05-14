@@ -23,6 +23,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -705,6 +706,12 @@ class ReflectiveProcedureCompiler
 
         private ProcedureException newProcedureException( Throwable throwable )
         {
+            // Unwrap the wrapped exception we get from invocation by reflection
+            if ( throwable instanceof InvocationTargetException )
+            {
+                throwable = throwable.getCause();
+            }
+
             if ( throwable instanceof Status.HasStatus )
             {
                 return new ProcedureException( ((Status.HasStatus) throwable).status(), throwable, throwable.getMessage() );
