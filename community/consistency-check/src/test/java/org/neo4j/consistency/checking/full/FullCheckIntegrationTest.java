@@ -73,9 +73,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -138,7 +136,6 @@ import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForSchema;
-import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -456,7 +453,7 @@ public class FullCheckIntegrationTest
         {
             StoreIndexDescriptor rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = storeAccess.indexes().apply( rule.providerDescriptor() )
+            IndexPopulator populator = storeAccess.indexes().lookup( rule.providerDescriptor() )
                 .getPopulator( rule, samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
@@ -566,7 +563,7 @@ public class FullCheckIntegrationTest
         {
             StoreIndexDescriptor indexDescriptor = indexDescriptorIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
-                    apply( indexDescriptor.providerDescriptor() ).getOnlineAccessor( indexDescriptor, samplingConfig );
+                    lookup( indexDescriptor.providerDescriptor() ).getOnlineAccessor( indexDescriptor, samplingConfig );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
             {
                 for ( long nodeId : indexedNodes )
@@ -600,7 +597,7 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             StoreIndexDescriptor indexRule = indexRuleIterator.next();
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().apply( indexRule.providerDescriptor() )
+            IndexAccessor accessor = fixture.directStoreAccess().indexes().lookup( indexRule.providerDescriptor() )
                     .getOnlineAccessor( indexRule, samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );

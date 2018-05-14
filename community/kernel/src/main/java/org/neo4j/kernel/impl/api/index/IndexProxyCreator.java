@@ -145,13 +145,13 @@ class IndexProxyCreator
 
     private IndexPopulator populatorFromProvider( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        IndexProvider indexProvider = providerMap.apply( descriptor.providerDescriptor() );
+        IndexProvider indexProvider = providerMap.lookup( descriptor.providerDescriptor() );
         return indexProvider.getPopulator( descriptor, samplingConfig );
     }
 
     private IndexAccessor onlineAccessorFromProvider( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        IndexProvider indexProvider = providerMap.apply( descriptor.providerDescriptor() );
+        IndexProvider indexProvider = providerMap.lookup( descriptor.providerDescriptor() );
         return indexProvider.getOnlineAccessor( descriptor, samplingConfig );
     }
 

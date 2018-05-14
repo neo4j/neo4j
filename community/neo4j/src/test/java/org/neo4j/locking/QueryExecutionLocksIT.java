@@ -675,9 +675,9 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema )
+        public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
         {
-            return internal.indexUniqueCreate( schema );
+            return internal.indexUniqueCreate( schema, Optional.empty() );
         }
 
         @Override

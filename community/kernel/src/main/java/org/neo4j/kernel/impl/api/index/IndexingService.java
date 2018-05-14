@@ -53,11 +53,11 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -200,7 +200,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexProxy indexProxy;
 
                 IndexProvider.Descriptor providerDescriptor = indexDescriptor.providerDescriptor();
-                IndexProvider provider = providerMap.apply( providerDescriptor );
+                IndexProvider provider = providerMap.lookup( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexDescriptor );
                 indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() )
                 .add( new IndexLogRecord( indexDescriptor ) );

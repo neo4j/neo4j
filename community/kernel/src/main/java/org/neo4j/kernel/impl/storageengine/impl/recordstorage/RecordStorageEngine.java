@@ -268,7 +268,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         if ( providerName.isPresent() )
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            return indexProviderMap.lookup( providerName.get() ).getProviderDescriptor();
         }
         return indexProviderMap.getDefaultProvider().getProviderDescriptor();
     }

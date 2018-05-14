@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.schema.index;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -137,7 +136,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
 
     public CapableIndexDescriptor withCapabilities( IndexProviderMap indexProviderMap )
     {
-        IndexCapability capability = indexProviderMap.apply( providerDescriptor ).getCapability();
+        IndexCapability capability = indexProviderMap.lookup( providerDescriptor ).getCapability();
         return new CapableIndexDescriptor( this, capability );
     }
 }

@@ -72,7 +72,6 @@ import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
@@ -883,9 +882,9 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
-    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema )
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
     {
-        IndexProvider.Descriptor providerDescriptor = ktx.indexProviderForOrDefault( Optional.empty() );
+        IndexProvider.Descriptor providerDescriptor = ktx.indexProviderForOrDefault( provider );
         IndexDescriptor index =
                 IndexDescriptorFactory.uniqueForSchema( schema,
                                                   Optional.empty(),
@@ -930,6 +929,13 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor )
             throws SchemaKernelException
     {
+        return uniquePropertyConstraintCreate( descriptor, Optional.empty() );
+    }
+
+    @Override
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, Optional<String> provider )
+            throws SchemaKernelException
+    {
         //Lock
         acquireExclusiveLabelLock( descriptor.keyId() );
         ktx.assertOpen();
@@ -942,12 +948,18 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor );
 
         // Create constraints
-        indexBackedConstraintCreate( constraint );
+        indexBackedConstraintCreate( constraint, provider );
         return constraint;
     }
 
     @Override
     public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException
+    {
+        return nodeKeyConstraintCreate( descriptor, Optional.empty() );
+    }
+
+    @Override
+    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, Optional<String> provider ) throws SchemaKernelException
     {
         //Lock
         acquireExclusiveLabelLock( descriptor.getLabelId() );
@@ -968,7 +980,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
 
         //create constraint
-        indexBackedConstraintCreate( constraint );
+        indexBackedConstraintCreate( constraint, provider );
         return constraint;
     }
 
@@ -1192,12 +1204,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private org.neo4j.kernel.api.schema.LabelSchemaDescriptor labelDescriptor( IndexReference index )
-    {
-        return SchemaDescriptorFactory.forLabel( index.label(), index.properties() );
-    }
-
-    private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint )
+    private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint, Optional<String> provider )
             throws CreateConstraintFailureException
     {
         SchemaDescriptor descriptor = constraint.schema();
@@ -1222,7 +1229,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                         return;
                     }
                 }
-                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor );
+                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor, provider );
                 if ( !allStoreHolder.constraintExists( constraint ) )
                 {
                     // This looks weird, but since we release the label lock while awaiting population of the index
