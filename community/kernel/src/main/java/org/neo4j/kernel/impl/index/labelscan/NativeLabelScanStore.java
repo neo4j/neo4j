@@ -44,8 +44,6 @@ import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
-import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
-import org.neo4j.kernel.impl.index.schema.GBPTreeFileSystemFileUtil;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -135,7 +133,7 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Used for all file operations on the gbpTree file.
      */
-    private final GBPTreeFileUtil gbpTreeUtil;
+    private final FileSystemAbstraction fileSystem;
 
     /**
      * The index which backs this label scan store. Instantiated in {@link #init()} and considered
@@ -193,7 +191,7 @@ public class NativeLabelScanStore implements LabelScanStore
         this.monitors = monitors;
         this.monitor = monitors.newMonitor( Monitor.class );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
-        this.gbpTreeUtil = new GBPTreeFileSystemFileUtil( fs );
+        this.fileSystem = fs;
     }
 
     /**
@@ -352,7 +350,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public boolean hasStore()
     {
-        return gbpTreeUtil.storeFileExists( storeFile );
+        return fileSystem.fileExists( storeFile );
     }
 
     @Override
@@ -412,7 +410,7 @@ public class NativeLabelScanStore implements LabelScanStore
             index.close();
             index = null;
         }
-        gbpTreeUtil.deleteFile( storeFile );
+        fileSystem.deleteFileOrThrow( storeFile );
     }
 
     /**

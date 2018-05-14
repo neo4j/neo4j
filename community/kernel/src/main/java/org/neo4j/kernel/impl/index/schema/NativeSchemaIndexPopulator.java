@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
@@ -106,7 +107,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
 
     public void clear() throws IOException
     {
-        gbpTreeFileUtil.deleteFileIfPresent( storeFile );
+        deleteFileIfPresent( fileSystem, storeFile );
     }
 
     @Override
@@ -120,7 +121,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
         assertNotDropped();
         assertNotClosed();
 
-        gbpTreeFileUtil.deleteFileIfPresent( storeFile );
+        deleteFileIfPresent( fileSystem, storeFile );
         instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, headerWriter );
 
         // true:  tree uniqueness is (value,entityId)
@@ -139,7 +140,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
         try
         {
             closeTree();
-            gbpTreeFileUtil.deleteFileIfPresent( storeFile );
+            deleteFileIfPresent( fileSystem, storeFile );
         }
         catch ( IOException e )
         {
@@ -388,6 +389,18 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
             return uniqueSampler.result();
         default:
             throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
+        }
+    }
+
+    private static void deleteFileIfPresent( FileSystemAbstraction fs, File storeFile ) throws IOException
+    {
+        try
+        {
+            fs.deleteFileOrThrow( storeFile );
+        }
+        catch ( NoSuchFileException e )
+        {
+            // File does not exist, we don't need to delete
         }
     }
 }

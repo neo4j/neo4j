@@ -32,7 +32,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
 
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -43,7 +42,7 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
     final PageCache pageCache;
     final File storeFile;
     final Layout<KEY,VALUE> layout;
-    final GBPTreeFileUtil gbpTreeFileUtil;
+    final FileSystemAbstraction fileSystem;
     final SchemaIndexDescriptor descriptor;
     private final long indexId;
     private final IndexProvider.Monitor monitor;
@@ -56,7 +55,7 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
         this.pageCache = pageCache;
         this.storeFile = storeFile;
         this.layout = layout;
-        this.gbpTreeFileUtil = new GBPTreeFileSystemFileUtil( fs );
+        this.fileSystem = fs;
         this.descriptor = descriptor;
         this.indexId = indexId;
         this.monitor = monitor;
@@ -87,7 +86,7 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
 
     private void ensureDirectoryExist() throws IOException
     {
-        gbpTreeFileUtil.mkdirs( storeFile.getParentFile() );
+        fileSystem.mkdirs( storeFile.getParentFile() );
     }
 
     void closeTree() throws IOException
@@ -95,7 +94,7 @@ abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends
         tree = closeIfPresent( tree );
     }
 
-    <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
+    private <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
     {
         if ( closeable != null )
         {
