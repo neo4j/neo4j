@@ -19,23 +19,23 @@
  */
 package org.neo4j.values.virtual;
 
-import org.eclipse.collections.api.map.MutableMap;
-import org.eclipse.collections.impl.factory.Maps;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.values.AnyValue;
 
 public class MapValueBuilder
 {
-    private final MutableMap<String, AnyValue> map;
+    private final Map<String, AnyValue> map;
 
     public MapValueBuilder()
     {
-        this.map = Maps.mutable.empty();
+        this.map = new HashMap<>(  );
     }
 
     public MapValueBuilder( int size )
     {
-        this.map = Maps.mutable.withInitialCapacity( size );
+        this.map = new HashMap<>( size );
     }
 
     public AnyValue add( String key, AnyValue value )
@@ -50,7 +50,7 @@ public class MapValueBuilder
 
     public MapValue build()
     {
-        return new MapValue.MapWrappingMapValue( map.toImmutable() );
+        return new MapValue.MapWrappingMapValue( map );
     }
 
 }

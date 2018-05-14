@@ -19,13 +19,12 @@
  */
 package org.neo4j.values.virtual;
 
-import org.eclipse.collections.api.map.ImmutableMap;
-import org.eclipse.collections.api.tuple.Pair;
-
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
 import java.util.stream.StreamSupport;
@@ -41,26 +40,59 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class MapValue extends VirtualValue
 {
+    public static MapValue EMPTY = new MapValue()
+    {
+        @Override
+        public Iterable<String> keySet()
+        {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f )
+        {
+            //do nothing
+        }
+
+        @Override
+        public boolean containsKey( String key )
+        {
+            return false;
+        }
+
+        @Override
+        public AnyValue get( String key )
+        {
+            return NO_VALUE;
+        }
+
+        @Override
+        public int size()
+        {
+            return 0;
+        }
+    };
+
     static final class MapWrappingMapValue extends MapValue
     {
-        private final ImmutableMap<String,AnyValue> map;
+        private final Map<String,AnyValue> map;
 
-        MapWrappingMapValue( ImmutableMap<String,AnyValue> map )
+        MapWrappingMapValue( Map<String,AnyValue> map )
         {
             this.map = map;
         }
 
         public Iterable<String> keySet()
         {
-            return map.keysView();
+            return map.keySet();
         }
 
         @Override
         public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
         {
-            for ( Pair<String,AnyValue> valuePair : map.keyValuesView() )
+            for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
             {
-                f.accept( valuePair.getOne(), valuePair.getTwo() );
+                f.accept( entry.getKey(), entry.getValue() );
             }
         }
 
@@ -71,7 +103,7 @@ public abstract class MapValue extends VirtualValue
 
         public AnyValue get( String key )
         {
-            return map.getIfAbsentValue( key, NO_VALUE );
+            return map.getOrDefault( key, NO_VALUE );
         }
 
         public int size()
