@@ -45,12 +45,6 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     }
 
     @Override
-    public FileSystemAbstraction getFileSystemAbstraction()
-    {
-        return fs;
-    }
-
-    @Override
     public PageSwapper createPageSwapper(
             File file,
             int filePageSize,

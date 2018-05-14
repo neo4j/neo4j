@@ -93,7 +93,7 @@ public class StoreFiles
     {
         try
         {
-            Stream<FileHandle> stream = pageCache.getCachedFileSystem().streamFilesRecursive( storeDir );
+            Stream<FileHandle> stream = fs.streamFilesRecursive( storeDir );
             Predicate<FileHandle> acceptableFiles = fh -> fileFilter.accept( storeDir, fh.getRelativeFile().getPath() );
             return stream.filter( acceptableFiles );
         }

@@ -69,7 +69,7 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey<KEY>
     public void drop() throws IOException
     {
         closeTree();
-        gbpTreeFileUtil.deleteFile( storeFile );
+        fileSystem.deleteFileOrThrow( storeFile );
     }
 
     @Override

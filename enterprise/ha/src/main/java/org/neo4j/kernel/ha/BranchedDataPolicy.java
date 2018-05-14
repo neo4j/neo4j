@@ -43,7 +43,7 @@ public enum BranchedDataPolicy
                     Log msgLog = logService.getInternalLog( getClass() );
                     File branchedDataDir = newBranchedDataDir( storeDir );
                     msgLog.debug( "Moving store from " + storeDir + " to " + branchedDataDir );
-                    moveAwayDb( storeDir, branchedDataDir, pageCache );
+                    moveAwayDb( storeDir, branchedDataDir );
                 }
             },
     keep_last
@@ -55,12 +55,12 @@ public enum BranchedDataPolicy
 
                     File branchedDataDir = newBranchedDataDir( storeDir );
                     msgLog.debug( "Moving store from " + storeDir + " to " + branchedDataDir );
-                    moveAwayDb( storeDir, branchedDataDir, pageCache );
+                    moveAwayDb( storeDir, branchedDataDir );
                     for ( File file : getBranchedDataRootDirectory( storeDir ).listFiles() )
                     {
                         if ( isBranchedDataDirectory( file ) && !file.equals( branchedDataDir ) )
                         {
-                            deleteRecursive( file, pageCache );
+                            deleteRecursive( file );
                         }
                     }
                 }
@@ -72,7 +72,7 @@ public enum BranchedDataPolicy
                 {
                     Log msgLog = logService.getInternalLog( getClass() );
                     msgLog.debug( "Removing store  " + storeDir );
-                    cleanStoreDir( storeDir, pageCache );
+                    cleanStoreDir( storeDir );
                 }
             };
 

@@ -415,7 +415,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         LogVersionUpgradeChecker.check( tailScanner, config );
 
         // Upgrade the store before we begin
-        RecordFormats formats = selectStoreFormats( config, storeDir, pageCache, logService );
+        RecordFormats formats = selectStoreFormats( config, storeDir, fs, pageCache, logService );
         upgradeStore( formats, tailScanner );
 
         // Build all modules and their services
@@ -540,11 +540,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         databaseHealth.healed();
     }
 
-    private static RecordFormats selectStoreFormats( Config config, File storeDir, PageCache pageCache,
+    private static RecordFormats selectStoreFormats( Config config, File storeDir, FileSystemAbstraction fs, PageCache pageCache,
             LogService logService )
     {
         LogProvider logging = logService.getInternalLogProvider();
-        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, storeDir, pageCache, logging );
+        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, storeDir, fs, pageCache, logging );
         new RecordFormatPropertyConfigurator( formats, config ).configure();
         return formats;
     }

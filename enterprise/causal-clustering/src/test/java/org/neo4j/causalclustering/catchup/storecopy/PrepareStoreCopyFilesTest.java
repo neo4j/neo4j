@@ -33,8 +33,6 @@ import java.util.Arrays;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileIndexListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
@@ -57,7 +55,6 @@ public class PrepareStoreCopyFilesTest
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemAbstraction );
     private PrepareStoreCopyFiles prepareStoreCopyFiles;
-    private PageCache pageCache;
     private NeoStoreFileIndexListing indexListingMock;
     private File storeDir;
     private NeoStoreFileListing.StoreFileListingBuilder fileListingBuilder;
@@ -65,7 +62,6 @@ public class PrepareStoreCopyFilesTest
     @Before
     public void setUp()
     {
-        pageCache = StandalonePageCacheFactory.createPageCache( fileSystemAbstraction );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         fileListingBuilder = mock( NeoStoreFileListing.StoreFileListingBuilder.class, CALLS_REAL_METHODS );
         storeDir = testDirectory.graphDbDir();
@@ -76,7 +72,7 @@ public class PrepareStoreCopyFilesTest
         when( storeFileListing.getNeoStoreFileIndexListing() ).thenReturn( indexListingMock );
         when( storeFileListing.builder() ).thenReturn( fileListingBuilder );
         when( dataSource.getNeoStoreFileListing() ).thenReturn( storeFileListing );
-        prepareStoreCopyFiles = new PrepareStoreCopyFiles( dataSource, pageCache, fileSystemAbstraction );
+        prepareStoreCopyFiles = new PrepareStoreCopyFiles( dataSource, fileSystemAbstraction );
     }
 
     @Test
@@ -109,7 +105,7 @@ public class PrepareStoreCopyFilesTest
         //then
         File[] expectedFilesConverted = Arrays.stream( expectedFiles ).map( StoreFileMetadata::file ).toArray( File[]::new );
         StoreResource[] exeptedAtomicFilesConverted = Arrays.stream( expectedFiles ).map(
-                f -> new StoreResource( f.file(), getRelativePath( f ), f.recordSize(), pageCache, fileSystemAbstraction ) ).toArray( StoreResource[]::new );
+                f -> new StoreResource( f.file(), getRelativePath( f ), f.recordSize(), fileSystemAbstraction ) ).toArray( StoreResource[]::new );
         assertArrayEquals( expectedFilesConverted, files );
         assertEquals( exeptedAtomicFilesConverted.length, atomicFilesSnapshot.length );
         for ( int i = 0; i < exeptedAtomicFilesConverted.length; i++ )

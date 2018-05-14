@@ -19,25 +19,20 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.util.function.Supplier;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 
 public class PrepareStoreCopyFilesProvider
 {
-    private final PageCache pageCache;
     private final FileSystemAbstraction fileSystemAbstraction;
 
-    public PrepareStoreCopyFilesProvider( PageCache pageCache, FileSystemAbstraction fileSystemAbstraction )
+    public PrepareStoreCopyFilesProvider( FileSystemAbstraction fileSystemAbstraction )
     {
-        this.pageCache = pageCache;
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
 
     PrepareStoreCopyFiles prepareStoreCopyFiles( NeoStoreDataSource neoStoreDataSource )
     {
-        return new PrepareStoreCopyFiles( neoStoreDataSource, pageCache, fileSystemAbstraction );
+        return new PrepareStoreCopyFiles( neoStoreDataSource, fileSystemAbstraction );
     }
 }

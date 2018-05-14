@@ -60,10 +60,11 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -1414,7 +1415,8 @@ public class BatchInsertTest
 
     private LabelScanStore getLabelScanStore()
     {
-        return new NativeLabelScanStore( pageCacheRule.getPageCache( fileSystemRule.get() ), storeDir.absolutePath(),
+        DefaultFileSystemAbstraction fs = fileSystemRule.get();
+        return new NativeLabelScanStore( pageCacheRule.getPageCache( fs ), storeDir.absolutePath(), fs,
                 FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 

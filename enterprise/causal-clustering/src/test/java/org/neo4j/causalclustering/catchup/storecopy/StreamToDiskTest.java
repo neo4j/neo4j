@@ -23,7 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import org.neo4j.io.pagecache.PageCache;
+import java.io.File;
+
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -31,11 +32,8 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 public class StreamToDiskTest
@@ -53,9 +51,8 @@ public class StreamToDiskTest
     public void shouldLetPageCacheHandleRecordStoresAndNativeLabelScanStoreFiles() throws Exception
     {
         // GIVEN
-        PageCache pageCache = spy( pageCacheRule.getPageCache( fs ) );
         Monitors monitors = new Monitors();
-        StreamToDiskProvider writerProvider = new StreamToDiskProvider( directory.absolutePath(), fs, pageCache, monitors );
+        StreamToDiskProvider writerProvider = new StreamToDiskProvider( directory.absolutePath(), fs, monitors );
 
         // WHEN
         for ( StoreType type : StoreType.values() )
@@ -63,18 +60,20 @@ public class StreamToDiskTest
             if ( type.isRecordStore() )
             {
                 String fileName = type.getStoreFile().fileName( STORE );
-                writeAndVerifyWrittenThroughPageCache( pageCache, writerProvider, fileName );
+                writeAndVerify( writerProvider, fileName );
             }
         }
-        writeAndVerifyWrittenThroughPageCache( pageCache, writerProvider, NativeLabelScanStore.FILE_NAME );
+        writeAndVerify( writerProvider, NativeLabelScanStore.FILE_NAME );
     }
 
-    private void writeAndVerifyWrittenThroughPageCache( PageCache pageCache, StreamToDiskProvider writerProvider, String fileName ) throws Exception
+    private void writeAndVerify( StreamToDiskProvider writerProvider, String fileName ) throws Exception
     {
         try ( StoreFileStream acquire = writerProvider.acquire( fileName, 16 ) )
         {
             acquire.write( DATA );
         }
-        verify( pageCache ).map( eq( directory.file( fileName ) ), anyInt(), any() );
+        File expectedFile = new File( directory.absolutePath(), fileName );
+        assertTrue( "Streamed file created.", fs.fileExists( expectedFile ) );
+        assertEquals( DATA.length, fs.getFileSize( expectedFile ) );
     }
 }

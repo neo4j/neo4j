@@ -22,9 +22,9 @@ package org.neo4j.kernel.ha;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class BranchedDataMigrator extends LifecycleAdapter
@@ -70,7 +70,6 @@ public class BranchedDataMigrator extends LifecycleAdapter
             try
             {
                 FileUtils.moveFile( oldBranchedDir, targetDir );
-                StoreUtil.moveAwayDbWithPageCache( oldBranchedDir, targetDir, pageCache, f -> true );
             }
             catch ( IOException e )
             {

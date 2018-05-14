@@ -24,7 +24,6 @@ import org.junit.rules.RuleChain;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 public class StoreFilesWithRealFileSystemTest extends StoreFilesTest
 {
@@ -34,11 +33,9 @@ public class StoreFilesWithRealFileSystemTest extends StoreFilesTest
         testDirectory = TestDirectory.testDirectory( StoreFilesWithRealFileSystemTest.class );
         DefaultFileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
         fileSystemRule = defaultFileSystemRule;
-        hiddenFileSystemRule = new EphemeralFileSystemRule();
         pageCacheRule = new PageCacheRule( );
         rules = RuleChain.outerRule( defaultFileSystemRule )
                          .around( testDirectory )
-                         .around( hiddenFileSystemRule )
                          .around( pageCacheRule );
     }
 }

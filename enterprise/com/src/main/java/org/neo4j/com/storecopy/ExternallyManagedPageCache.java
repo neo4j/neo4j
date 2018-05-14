@@ -106,21 +106,9 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public FileSystemAbstraction getCachedFileSystem()
-    {
-        return delegate.getCachedFileSystem();
-    }
-
-    @Override
     public void reportEvents()
     {
         delegate.reportEvents();
-    }
-
-    @Override
-    public boolean fileSystemSupportsFileOperations()
-    {
-        return delegate.fileSystemSupportsFileOperations();
     }
 
     /**

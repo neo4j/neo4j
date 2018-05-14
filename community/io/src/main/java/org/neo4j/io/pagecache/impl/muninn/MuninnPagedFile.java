@@ -23,8 +23,6 @@ import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.Arrays;
 
 import org.neo4j.io.pagecache.IOLimiter;
@@ -34,8 +32,6 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
-import org.neo4j.io.pagecache.impl.PagedReadableByteChannel;
-import org.neo4j.io.pagecache.impl.PagedWritableByteChannel;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
@@ -226,18 +222,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     public void close()
     {
         pageCache.unmap( this );
-    }
-
-    @Override
-    public ReadableByteChannel openReadableByteChannel() throws IOException
-    {
-        return new PagedReadableByteChannel( this );
-    }
-
-    @Override
-    public WritableByteChannel openWritableByteChannel() throws IOException
-    {
-        return new PagedWritableByteChannel( this );
     }
 
     void closeSwapper() throws IOException

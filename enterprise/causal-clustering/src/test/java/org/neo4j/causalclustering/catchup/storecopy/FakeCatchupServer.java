@@ -40,12 +40,9 @@ import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.rule.TestDirectory;
-
-import static org.mockito.Mockito.mock;
 
 class TestCatchupServerHandler implements CatchupServerHandler
 {
@@ -151,7 +148,7 @@ class TestCatchupServerHandler implements CatchupServerHandler
     private StoreResource storeResourceFromEntry( File file )
     {
         file = testDirectory.file( file.getName() );
-        return new StoreResource( file, file.getAbsolutePath(), 16, mock( PageCache.class ), fileSystemAbstraction );
+        return new StoreResource( file, file.getAbsolutePath(), 16, fileSystemAbstraction );
     }
 
     @Override

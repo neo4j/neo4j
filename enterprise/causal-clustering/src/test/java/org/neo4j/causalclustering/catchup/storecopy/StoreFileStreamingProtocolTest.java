@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -34,7 +33,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -51,14 +49,6 @@ public class StoreFileStreamingProtocolTest
 
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
-
-    private PageCache pageCache;
-
-    @Before
-    public void setup()
-    {
-        pageCache = pageCacheRule.getPageCache( fs.get() );
-    }
 
     @Test
     public void shouldStreamResources() throws Exception
@@ -134,6 +124,6 @@ public class StoreFileStreamingProtocolTest
     private StoreResource createResource( File file, int recordSize ) throws IOException
     {
         fs.create( file );
-        return new StoreResource( file, file.getPath(), recordSize, pageCache, fs );
+        return new StoreResource( file, file.getPath(), recordSize, fs );
     }
 }

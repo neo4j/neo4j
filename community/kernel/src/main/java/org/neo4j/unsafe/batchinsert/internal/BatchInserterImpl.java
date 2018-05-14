@@ -253,7 +253,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
         LogProvider internalLogProvider = logService.getInternalLogProvider();
-        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, storeDir,
+        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, storeDir, fileSystem,
                 pageCache, internalLogProvider );
         StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, internalLogProvider, EmptyVersionContextSupplier.EMPTY );
@@ -301,7 +301,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         IndexProvider provider = extensions.resolveDependency( IndexProvider.class,
                 HighestSelectionStrategy.INSTANCE );
         schemaIndexProviders = new DefaultIndexProviderMap( provider );
-        labelScanStore = new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, false, new Monitors(),
+        labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
         life.add( labelScanStore );
         actions = new BatchSchemaActions();
