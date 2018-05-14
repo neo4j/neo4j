@@ -29,6 +29,12 @@ public interface QueryExecutionEngine
     Result executeQuery( String query, MapValue parameters, TransactionalContext context )
             throws QueryExecutionKernelException;
 
+    QueryExecution executeQuery( String query,
+                                 MapValue parameters,
+                                 TransactionalContext context,
+                                 ResultBuffer resultBuffer )
+            throws QueryExecutionKernelException;
+
     Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
             throws QueryExecutionKernelException;
 

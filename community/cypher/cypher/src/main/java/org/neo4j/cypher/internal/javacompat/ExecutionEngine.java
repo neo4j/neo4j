@@ -25,8 +25,10 @@ import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.internal.CompatibilityFactory;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.ResultBuffer;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.virtual.MapValue;
@@ -59,6 +61,23 @@ public class ExecutionEngine implements QueryExecutionEngine
         try
         {
             return inner.execute( query, parameters, context );
+        }
+        catch ( CypherException e )
+        {
+            throw new QueryExecutionKernelException( e );
+        }
+    }
+
+    @Override
+    public QueryExecution executeQuery( String query,
+                                        MapValue parameters,
+                                        TransactionalContext context,
+                                        ResultBuffer resultBuffer )
+            throws QueryExecutionKernelException
+    {
+        try
+        {
+            return inner.execute( query, parameters, context, resultBuffer );
         }
         catch ( CypherException e )
         {
