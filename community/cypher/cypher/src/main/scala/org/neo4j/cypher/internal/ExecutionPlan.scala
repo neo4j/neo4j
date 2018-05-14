@@ -29,7 +29,7 @@ trait ExecutionPlan {
 
   def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result
 
-  def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityInfo
+  def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState
 
   // This is to force eager calculation
   val plannerInfo: PlannerInfo

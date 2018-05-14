@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
                                             divergence: StatsDivergenceCalculator,
                                             lastCommittedTxIdProvider: () => Long,
-                                            reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityInfo) {
+                                            reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityState) {
 
   def staleness(transactionalContext: TransactionalContext,
                 cachedExecutableQuery: EXECUTABLE_QUERY): Staleness = {
@@ -80,10 +80,10 @@ class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
   private def check(test: => Boolean, ifFalse: () => Unit ) = if (test) { true } else { ifFalse() ; false }
 }
 
-sealed trait ReusabilityInfo
-case class NeedsReplan(secondsSincePlan: Int) extends ReusabilityInfo
-case class MaybeReusable(fingerprint: PlanFingerprintReference) extends ReusabilityInfo
-case object FineToReuse extends ReusabilityInfo
+sealed trait ReusabilityState
+case class NeedsReplan(secondsSincePlan: Int) extends ReusabilityState
+case class MaybeReusable(fingerprint: PlanFingerprintReference) extends ReusabilityState
+case object FineToReuse extends ReusabilityState
 
 sealed trait Staleness
 case object NotStale extends Staleness

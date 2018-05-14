@@ -127,7 +127,7 @@ trait Compatibility {
 
     def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 
-    def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityInfo = {
+    def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = {
       val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx))
       if (stale)
         NeedsReplan(0)

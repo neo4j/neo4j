@@ -144,7 +144,7 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
 
     def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 
-    def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityInfo = inner.reusability
+    def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = inner.reusability
 
     override val plannerInfo: PlannerInfo = {
       new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {

@@ -179,7 +179,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
             .checkForNotifications(logicalPlanStatev3_5.maybeLogicalPlan.get, planContextv3_5, configv3_5)
             .foreach(notificationLoggerv3_5.log)
 
-          // Here we switch from 3.3 to 3.4
+          // Here we switch from 3.3 to 3.5
           val result = createExecPlan.transform(logicalPlanStatev3_5, contextv3_5)
           result.maybeExecutionPlan.get
         }

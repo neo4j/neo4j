@@ -173,7 +173,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximumSiz
 
 object QueryCache {
   val BEING_RECOMPILED_PLAN: ExecutionPlan = new ExecutionPlan {
-    override def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityInfo = ???
+    override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = ???
     override def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result = ???
     override val plannerInfo: PlannerInfo = null
   }

@@ -122,7 +122,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
     override def isPeriodicCommit: Boolean = false
 
-    override def reusability: ReusabilityInfo = FineToReuse // TODO: This is a lie.
+    override def reusability: ReusabilityState = FineToReuse // TODO: This is a lie.
 
     override def runtimeUsed: RuntimeName = MorselRuntimeName
   }

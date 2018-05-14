@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Execut
 import org.neo4j.cypher.internal.compiler.v3_5.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
-import org.neo4j.cypher.internal.{CacheTracer, QueryCache, PlanStalenessCaller, ReusabilityInfo}
+import org.neo4j.cypher.internal.{CacheTracer, QueryCache, PlanStalenessCaller, ReusabilityState}
 import org.neo4j.values.virtual.MapValue
 
 class AstQueryCache[STATEMENT <: AnyRef](override val maximumSize: Int,
@@ -46,7 +46,7 @@ object AstQueryCache {
       override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = ???
       override def runtimeUsed: RuntimeName = ???
       override def isPeriodicCommit: Boolean = ???
-      override def reusability: ReusabilityInfo = ???
+      override def reusability: ReusabilityState = ???
     }
 
   def stalenessCaller(clock: Clock,

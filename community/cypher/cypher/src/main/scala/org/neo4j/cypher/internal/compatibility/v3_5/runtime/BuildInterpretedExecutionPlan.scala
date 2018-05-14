@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-import org.neo4j.cypher.internal.{MaybeReusable, PlanFingerprint, PlanFingerprintReference, ReusabilityInfo}
+import org.neo4j.cypher.internal.{MaybeReusable, PlanFingerprint, PlanFingerprintReference, ReusabilityState}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.Profiler
@@ -116,7 +116,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult =
       executionPlanFunc(queryContext, planType, params)
 
-    override def reusability: ReusabilityInfo = MaybeReusable(fingerprint)
+    override def reusability: ReusabilityState = MaybeReusable(fingerprint)
 
     override def runtimeUsed: RuntimeName = InterpretedRuntimeName
 

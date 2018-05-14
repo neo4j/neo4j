@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.compiled
 
 import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.{MaybeReusable, PlanFingerprintReference, ReusabilityInfo}
+import org.neo4j.cypher.internal.{MaybeReusable, PlanFingerprintReference, ReusabilityState}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
@@ -121,7 +121,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
       }
     }
 
-    override def reusability: ReusabilityInfo = MaybeReusable(fingerprint)
+    override def reusability: ReusabilityState = MaybeReusable(fingerprint)
 
     override def runtimeUsed: RuntimeName = CompiledRuntimeName
 
