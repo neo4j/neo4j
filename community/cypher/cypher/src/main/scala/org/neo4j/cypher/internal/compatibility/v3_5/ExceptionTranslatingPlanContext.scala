@@ -28,6 +28,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
     translateException(inner.indexesGetForLabel(labelId))
 
+  override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(inner.indexGetForLabelAndProperties(labelName, propertyKeys))
+
   override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
     translateException(inner.indexExistsForLabelAndProperties(labelName, propertyKey))
 

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
-import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
+import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.procedure.Mode
 
@@ -57,16 +57,20 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def indexExistsForLabel(labelId: Int): Boolean = {
-      tc.schemaRead.indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex).nonEmpty
+    tc.schemaRead.indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex).nonEmpty
+  }
+
+  override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
+    try {
+      val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
+      getOnlineIndex(tc.schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
+    } catch {
+      case _: KernelException => None
+    }
   }
 
   override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {
-    try {
-      val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKey)
-      getOnlineIndex(tc.schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*)).isDefined
-    } catch {
-      case _: KernelException => false
-    }
+    indexGetForLabelAndProperties(labelName, propertyKey).isDefined
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
@@ -78,7 +82,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   private def getOnlineIndex(reference: IndexReference): Option[IndexDescriptor] =
     tc.schemaRead.indexGetState(reference) match {
-      case InternalIndexState.ONLINE => Some(IndexDescriptor(reference.label(), reference.properties()))
+      case InternalIndexState.ONLINE =>
+        reference match {
+          case cir: CapableIndexReference => Some(IndexDescriptor(cir.label(), cir.properties(), cir.limitations().map(kernelToCypher).toSet))
+          case _ => Some(IndexDescriptor(reference.label(), reference.properties()))
+        }
       case _ => None
     }
 

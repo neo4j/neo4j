@@ -17,19 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5
+package org.neo4j.cypher.internal.compatibility.v3_5.notifications
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.compatibility.v3_5.notification.checkForLoadCsvAndMatchOnLargeLabel
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v3_5.HasHeaders
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.expressions.{LabelName, StringLiteral}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.{Cardinality, LabelId, LargeLabelWithLoadCsvNotification}
-import org.opencypher.v9_0.expressions.{LabelName, StringLiteral}
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class CheckForLoadCsvAndMatchOnLargeLabelTest
     extends CypherFunSuite
@@ -52,7 +53,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
   when(statistics.nodesWithLabelCardinality(Some(LabelId(1)))).thenReturn(Cardinality(101))
   when(statistics.nodesWithLabelCardinality(Some(LabelId(2)))).thenReturn(Cardinality(99))
   when(planContext.statistics).thenReturn(statistics)
-  private val checker = CheckForLoadCsvAndMatchOnLargeLabel(planContext, THRESHOLD)
+  private val checker = checkForLoadCsvAndMatchOnLargeLabel(planContext, THRESHOLD)
 
   test("should notify when doing LoadCsv on top of large label scan") {
     val loadCsv =
