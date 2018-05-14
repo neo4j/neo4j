@@ -259,9 +259,7 @@ public class ConstraintIndexCreator
     public IndexDescriptor createConstraintIndex( final SchemaDescriptor schema, Optional<String> provider )
     {
         try ( Session session = kernelSupplier.get().beginSession( AUTH_DISABLED );
-              Transaction transaction = session.beginTransaction( Transaction.Type.implicit );
-              //TODO remove statement?
-              Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
+              Transaction transaction = session.beginTransaction( Transaction.Type.implicit ) )
         {
             IndexDescriptor index = ((KernelTransaction) transaction).indexUniqueCreate( schema, provider );
             transaction.success();

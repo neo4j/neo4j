@@ -63,7 +63,7 @@ class IndexProxyCreator
 
         final String indexUserDescription = indexUserDescription( descriptor );
         IndexPopulator populator = populatorFromProvider( descriptor, samplingConfig );
-        CapableIndexDescriptor capableIndexDescriptor = indexMetaFromProvider( descriptor );
+        CapableIndexDescriptor capableIndexDescriptor = descriptor.withCapabilities( providerMap );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory( capableIndexDescriptor,
                 populator,
@@ -96,7 +96,7 @@ class IndexProxyCreator
 
     IndexProxy createRecoveringIndexProxy( StoreIndexDescriptor descriptor )
     {
-        CapableIndexDescriptor capableIndexDescriptor = indexMetaFromProvider( descriptor );
+        CapableIndexDescriptor capableIndexDescriptor = descriptor.withCapabilities( providerMap );
         IndexProxy proxy = new RecoveringIndexProxy( capableIndexDescriptor );
         return new ContractCheckingIndexProxy( proxy, true );
     }
@@ -106,7 +106,7 @@ class IndexProxyCreator
         try
         {
             IndexAccessor onlineAccessor = onlineAccessorFromProvider( descriptor, samplingConfig );
-            CapableIndexDescriptor capableIndexDescriptor = indexMetaFromProvider( descriptor );
+            CapableIndexDescriptor capableIndexDescriptor = descriptor.withCapabilities( providerMap );
             IndexProxy proxy;
             proxy = new OnlineIndexProxy( capableIndexDescriptor, onlineAccessor, storeView, false );
             proxy = new ContractCheckingIndexProxy( proxy, true );
@@ -124,7 +124,7 @@ class IndexProxyCreator
     IndexProxy createFailedIndexProxy( StoreIndexDescriptor descriptor, IndexPopulationFailure populationFailure )
     {
         IndexPopulator indexPopulator = populatorFromProvider( descriptor, samplingConfig );
-        CapableIndexDescriptor capableIndexDescriptor = indexMetaFromProvider( descriptor );
+        CapableIndexDescriptor capableIndexDescriptor = descriptor.withCapabilities( providerMap );
         String indexUserDescription = indexUserDescription( descriptor );
         IndexProxy proxy;
         proxy = new FailedIndexProxy( capableIndexDescriptor,
@@ -153,10 +153,5 @@ class IndexProxyCreator
     {
         IndexProvider indexProvider = providerMap.lookup( descriptor.providerDescriptor() );
         return indexProvider.getOnlineAccessor( descriptor, samplingConfig );
-    }
-
-    private CapableIndexDescriptor indexMetaFromProvider( StoreIndexDescriptor indexDescriptor )
-    {
-        return indexDescriptor.withCapabilities( providerMap );
     }
 }
