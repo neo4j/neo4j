@@ -227,20 +227,6 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public SchemaDescriptor schema()
-    {
-        lock.readLock().lock();
-        try
-        {
-            return delegate.schema();
-        }
-        finally
-        {
-            lock.readLock().unlock();
-        }
-    }
-
-    @Override
     public InternalIndexState getState()
     {
         lock.readLock().lock();

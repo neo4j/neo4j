@@ -244,7 +244,7 @@ public final class IndexMap implements Cloneable
         final MutableObjectLongMap<SchemaDescriptor> map = new ObjectLongHashMap<>( indexesById.size() );
         indexesById.forEachKeyValue( ( id, indexProxy ) ->
         {
-            map.put( indexProxy.schema(), id );
+            map.put( indexProxy.getDescriptor().schema(), id );
 
         } );
         return map;
