@@ -67,7 +67,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -1025,15 +1024,18 @@ public class IndexingServiceTest
     public void flushAllIndexesWhileSomeOfThemDropped() throws IOException
     {
         IndexMapReference indexMapReference = new IndexMapReference();
-        IndexProxy validIndex = createIndexProxyMock();
-        IndexProxy deletedIndexProxy = createIndexProxyMock();
+        IndexProxy validIndex1 = createIndexProxyMock(1);
+        IndexProxy validIndex2 = createIndexProxyMock(2);
+        IndexProxy deletedIndexProxy = createIndexProxyMock(3);
+        IndexProxy validIndex3 = createIndexProxyMock(4);
+        IndexProxy validIndex4 = createIndexProxyMock(5);
         indexMapReference.modify( indexMap ->
         {
-            indexMap.putIndexProxy( validIndex );
-            indexMap.putIndexProxy( validIndex );
+            indexMap.putIndexProxy( validIndex1 );
+            indexMap.putIndexProxy( validIndex2 );
             indexMap.putIndexProxy( deletedIndexProxy );
-            indexMap.putIndexProxy( validIndex );
-            indexMap.putIndexProxy( validIndex );
+            indexMap.putIndexProxy( validIndex3 );
+            indexMap.putIndexProxy( validIndex4 );
             return indexMap;
         } );
 
@@ -1050,7 +1052,10 @@ public class IndexingServiceTest
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
         indexingService.forceAll( IOLimiter.unlimited() );
-        verify( validIndex, times( 4 ) ).force( IOLimiter.unlimited() );
+        verify( validIndex1, times( 1 ) ).force( IOLimiter.unlimited() );
+        verify( validIndex2, times( 1 ) ).force( IOLimiter.unlimited() );
+        verify( validIndex3, times( 1 ) ).force( IOLimiter.unlimited() );
+        verify( validIndex4, times( 1 ) ).force( IOLimiter.unlimited() );
     }
 
     @Test
@@ -1059,10 +1064,10 @@ public class IndexingServiceTest
         IndexMapReference indexMapReference = new IndexMapReference();
         indexMapReference.modify( indexMap ->
         {
-            IndexProxy validIndex = createIndexProxyMock();
+            IndexProxy validIndex = createIndexProxyMock( 0 );
             indexMap.putIndexProxy( validIndex );
             indexMap.putIndexProxy( validIndex );
-            IndexProxy strangeIndexProxy = createIndexProxyMock();
+            IndexProxy strangeIndexProxy = createIndexProxyMock( 1 );
             indexMap.putIndexProxy( strangeIndexProxy );
             indexMap.putIndexProxy( validIndex );
             indexMap.putIndexProxy( validIndex );
@@ -1119,10 +1124,10 @@ public class IndexingServiceTest
         verify( accessor, never() ).drop();
     }
 
-    private IndexProxy createIndexProxyMock()
+    private IndexProxy createIndexProxyMock( long indexId )
     {
         IndexProxy proxy = mock( IndexProxy.class );
-        CapableIndexDescriptor descriptor = storeIndex( 0, 1, 2, PROVIDER_DESCRIPTOR ).withoutCapabilities();
+        CapableIndexDescriptor descriptor = storeIndex( indexId, 1, 2, PROVIDER_DESCRIPTOR ).withoutCapabilities();
         when( proxy.getDescriptor() ).thenReturn( descriptor );
         return proxy;
     }
