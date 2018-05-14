@@ -23,7 +23,6 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -498,18 +497,6 @@ public abstract class MapValue extends VirtualValue
     public abstract boolean containsKey( String key );
 
     public abstract AnyValue get( String key );
-
-    //TODO remove
-    public Map<String,AnyValue> getMapCopy()
-    {
-
-        HashMap<String,AnyValue> copy = new HashMap<>( size() );
-        for ( Map.Entry<String,AnyValue> entry : entrySet() )
-        {
-            copy.put( entry.getKey(), entry.getValue() );
-        }
-        return copy;
-    }
 
     public MapValue filter(BiFunction<String, AnyValue, Boolean> filterFunction)
     {
