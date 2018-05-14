@@ -43,33 +43,30 @@ public class Unzip
             throw new FileNotFoundException( "Could not find resource '" + resource + "' to unzip" );
         }
 
-        try
+        try ( ZipInputStream zipStream = new ZipInputStream( source ) )
         {
-            try ( ZipInputStream zipStream = new ZipInputStream( source ) )
+            ZipEntry entry;
+            byte[] scratch = new byte[8096];
+            while ( (entry = zipStream.getNextEntry()) != null )
             {
-                ZipEntry entry;
-                byte[] scratch = new byte[8096];
-                while ( (entry = zipStream.getNextEntry()) != null )
+                if ( entry.isDirectory() )
                 {
-                    if ( entry.isDirectory() )
+                    new File( targetDirectory, entry.getName() ).mkdirs();
+                }
+                else
+                {
+                    try ( OutputStream file = new BufferedOutputStream( new FileOutputStream( new File( targetDirectory, entry.getName() ) ) ) )
                     {
-                        new File( targetDirectory, entry.getName() ).mkdirs();
-                    }
-                    else
-                    {
-                        try ( OutputStream file = new BufferedOutputStream( new FileOutputStream( new File( targetDirectory, entry.getName() ) ) ) )
+                        long toCopy = entry.getSize();
+                        while ( toCopy > 0 )
                         {
-                            long toCopy = entry.getSize();
-                            while ( toCopy > 0 )
-                            {
-                                int read = zipStream.read( scratch );
-                                file.write( scratch, 0, read );
-                                toCopy -= read;
-                            }
+                            int read = zipStream.read( scratch );
+                            file.write( scratch, 0, read );
+                            toCopy -= read;
                         }
                     }
-                    zipStream.closeEntry();
                 }
+                zipStream.closeEntry();
             }
         }
         finally
