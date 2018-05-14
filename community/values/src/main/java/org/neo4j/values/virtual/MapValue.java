@@ -19,13 +19,17 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
+import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.ValueMapper;
@@ -45,18 +49,6 @@ public abstract class MapValue extends VirtualValue
             this.map = map;
         }
 
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            writer.beginMap( map.size() );
-            for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
-            {
-                writer.writeString( entry.getKey() );
-                entry.getValue().writeTo( writer );
-            }
-            writer.endMap();
-        }
-
         public ListValue keys()
         {
             String[] strings = keySet().toArray( new String[map.size()] );
@@ -68,11 +60,14 @@ public abstract class MapValue extends VirtualValue
             return map.keySet();
         }
 
-        public void foreach( BiConsumer<String,AnyValue> f )
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
         {
-            map.forEach( f );
+            for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
+            {
+                f.accept( entry.getKey(), entry.getValue() );
+            }
         }
-
 
         public Set<Map.Entry<String,AnyValue>> entrySet()
         {
@@ -95,6 +90,111 @@ public abstract class MapValue extends VirtualValue
         }
     }
 
+    final static class FilteringMapValue extends MapValue
+    {
+        private final MapValue map;
+        private final BiFunction<String,AnyValue,Boolean> filter;
+        private int size = -1;
+
+        FilteringMapValue( MapValue map,
+                BiFunction<String,AnyValue,Boolean> filter )
+        {
+            this.map = map;
+            this.filter = filter;
+        }
+
+        public ListValue keys()
+        {
+            ArrayList<AnyValue> keys = new ArrayList<>();
+            foreach( ( key, value ) -> {
+                if ( filter.apply( key, value ) )
+                {
+                    keys.add( Values.stringValue( key ) );
+                }
+            } );
+
+            return VirtualValues.fromList( keys );
+        }
+
+
+        public Set<String> keySet()
+        {
+            HashSet<String> keys = new HashSet<>();
+            foreach( ( key, value ) -> {
+                if ( filter.apply( key, value ) )
+                {
+                    keys.add( key );
+                }
+            } );
+
+            return keys;
+        }
+
+        @Override
+        public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
+        {
+            map.foreach( ( s, anyValue ) -> {
+                if (filter.apply( s, anyValue ))
+                {
+                    f.accept( s, anyValue );
+                }
+            } );
+        }
+
+        public Set<Map.Entry<String,AnyValue>> entrySet()
+        {
+            return map.entrySet().stream()
+                    .filter(
+                            ( e ) -> filter.apply( e.getKey(), e.getValue() ) )
+                    .collect( Collectors.toSet() );
+        }
+
+        public boolean containsKey( String key )
+        {
+            AnyValue value = map.get( key );
+            if ( value == NO_VALUE )
+            {
+                return false;
+            }
+            else
+            {
+                return filter.apply( key, value );
+            }
+        }
+
+        public AnyValue get( String key )
+        {
+            AnyValue value = map.get( key );
+            if ( value == NO_VALUE )
+            {
+                return NO_VALUE;
+            }
+            else if ( filter.apply( key, value ) )
+            {
+                return value;
+            }
+            else
+            {
+                return NO_VALUE;
+            }
+        }
+
+        public int size()
+        {
+            if ( size < 0 )
+            {
+                size = 0;
+                foreach( ( k, v ) -> {
+                    if ( filter.apply( k, v ) )
+                    {
+                        size++;
+                    }
+                } );
+            }
+            return size;
+        }
+    }
+
     @Override
     public int computeHash()
     {
@@ -104,6 +204,17 @@ public abstract class MapValue extends VirtualValue
             h += entry.getKey().hashCode() ^ entry.getValue().hashCode();
         }
         return h;
+    }
+
+    @Override
+    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+    {
+        writer.beginMap( size() );
+        foreach( ( s, anyValue ) -> {
+            writer.writeString( s );
+            anyValue.writeTo( writer );
+        } );
+        writer.endMap();
     }
 
     @Override
@@ -233,8 +344,7 @@ public abstract class MapValue extends VirtualValue
         return mapper.mapMap( this );
     }
 
-    public abstract void foreach( BiConsumer<String,AnyValue> f );
-
+    public abstract <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E;
 
     //TODO remove??
     public abstract Set<Map.Entry<String,AnyValue>> entrySet();
@@ -253,6 +363,11 @@ public abstract class MapValue extends VirtualValue
             copy.put( entry.getKey(), entry.getValue() );
         }
         return copy;
+    }
+
+    public MapValue filter(BiFunction<String, AnyValue, Boolean> filterFunction)
+    {
+        return new FilteringMapValue( this, filterFunction );
     }
 
     @Override

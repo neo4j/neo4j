@@ -27,9 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{PointValue, Values}
-import org.neo4j.values.virtual.{MapValue, VirtualNodeValue, VirtualRelationshipValue, VirtualValues}
-
-import scala.collection.JavaConverters._
+import org.neo4j.values.virtual.{MapValue, VirtualNodeValue, VirtualRelationshipValue}
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
   override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): AnyValue = value match {
@@ -40,10 +38,9 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
       } else {
         //TODO: We might consider removing this code if the PointBuilder.allowOpenMaps=true remains default
         if (value.isInstanceOf[VirtualNodeValue] || value.isInstanceOf[VirtualRelationshipValue]) {
-          // We need to filter out any non-spatial properties from the map, otherwise PointValue.fromMap will throw
-          val allowedKeys = PointValue.ALLOWED_KEYS
-          val filteredMap = VirtualValues.map(map.getMapCopy.asScala.filterKeys( k => allowedKeys.exists( _.equalsIgnoreCase(k) )).asJava)
-          PointValue.fromMap(filteredMap)
+          map.filter((t: String, u: AnyValue) => {
+            PointValue.ALLOWED_KEYS.exists(_.equalsIgnoreCase(t))
+          })
         }
         else {
           PointValue.fromMap(map)
@@ -54,9 +51,7 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
 
   private def containsNull(map: MapValue) = {
     var hasNull = false
-    map.foreach(new BiConsumer[String, AnyValue] {
-      override def accept(t: String, u: AnyValue): Unit = if (u == Values.NO_VALUE) hasNull = true
-    })
+    map.foreach((_: String, u: AnyValue) => if (u == Values.NO_VALUE) hasNull = true)
     hasNull
   }
   override def rewrite(f: (Expression) => Expression) = f(PointFunction(data.rewrite(f)))
