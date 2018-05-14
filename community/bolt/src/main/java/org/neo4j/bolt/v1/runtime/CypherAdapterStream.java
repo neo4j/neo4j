@@ -21,11 +21,8 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -36,6 +33,7 @@ import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.intValue;
@@ -101,26 +99,26 @@ class CypherAdapterStream extends BoltResult
 
     private MapValue queryStats( QueryStatistics queryStatistics )
     {
-        Map<String,AnyValue> result = new HashMap<>();
-        addIfNonZero( result, "nodes-created", queryStatistics.getNodesCreated() );
-        addIfNonZero( result, "nodes-deleted", queryStatistics.getNodesDeleted() );
-        addIfNonZero( result, "relationships-created", queryStatistics.getRelationshipsCreated() );
-        addIfNonZero( result, "relationships-deleted", queryStatistics.getRelationshipsDeleted() );
-        addIfNonZero( result, "properties-set", queryStatistics.getPropertiesSet() );
-        addIfNonZero( result, "labels-added", queryStatistics.getLabelsAdded() );
-        addIfNonZero( result, "labels-removed", queryStatistics.getLabelsRemoved() );
-        addIfNonZero( result, "indexes-added", queryStatistics.getIndexesAdded() );
-        addIfNonZero( result, "indexes-removed", queryStatistics.getIndexesRemoved() );
-        addIfNonZero( result, "constraints-added", queryStatistics.getConstraintsAdded() );
-        addIfNonZero( result, "constraints-removed", queryStatistics.getConstraintsRemoved() );
-        return VirtualValues.map( result );
+        MapValueBuilder builder = new MapValueBuilder();
+        addIfNonZero( builder, "nodes-created", queryStatistics.getNodesCreated() );
+        addIfNonZero( builder, "nodes-deleted", queryStatistics.getNodesDeleted() );
+        addIfNonZero( builder, "relationships-created", queryStatistics.getRelationshipsCreated() );
+        addIfNonZero( builder, "relationships-deleted", queryStatistics.getRelationshipsDeleted() );
+        addIfNonZero( builder, "properties-set", queryStatistics.getPropertiesSet() );
+        addIfNonZero( builder, "labels-added", queryStatistics.getLabelsAdded() );
+        addIfNonZero( builder, "labels-removed", queryStatistics.getLabelsRemoved() );
+        addIfNonZero( builder, "indexes-added", queryStatistics.getIndexesAdded() );
+        addIfNonZero( builder, "indexes-removed", queryStatistics.getIndexesRemoved() );
+        addIfNonZero( builder, "constraints-added", queryStatistics.getConstraintsAdded() );
+        addIfNonZero( builder, "constraints-removed", queryStatistics.getConstraintsRemoved() );
+        return builder.build();
     }
 
-    private void addIfNonZero( Map<String,AnyValue> map, String name, int count )
+    private void addIfNonZero( MapValueBuilder builder, String name, int count )
     {
         if ( count > 0 )
         {
-            map.put( name, intValue( count ) );
+            builder.add( name, intValue( count ) );
         }
     }
 
@@ -150,26 +148,28 @@ class CypherAdapterStream extends BoltResult
         public static AnyValue convert( Iterable<Notification> notifications )
         {
             List<AnyValue> out = new ArrayList<>();
+            MapValueBuilder builder = new MapValueBuilder();
             for ( Notification notification : notifications )
             {
-                Map<String,AnyValue> notificationMap = new HashMap<>( 4 );
-                notificationMap.put( "code", stringValue( notification.getCode() ) );
-                notificationMap.put( "title", stringValue( notification.getTitle() ) );
-                notificationMap.put( "description", stringValue( notification.getDescription() ) );
-                notificationMap.put( "severity", stringValue( notification.getSeverity().toString() ) );
+
+                builder.add( "code", stringValue( notification.getCode() ) );
+                builder.add( "title", stringValue( notification.getTitle() ) );
+                builder.add( "description", stringValue( notification.getDescription() ) );
+                builder.add( "severity", stringValue( notification.getSeverity().toString() ) );
 
                 InputPosition pos = notification.getPosition(); // position is optional
-                if ( !pos.equals( InputPosition.empty ) )
+                boolean includePosition = !pos.equals( InputPosition.empty );
+                if ( includePosition )
                 {
                     // only add the position if it is not empty
-                    Map<String,AnyValue> posMap = new HashMap<>( 3 );
-                    posMap.put( "offset", intValue( pos.getOffset() ) );
-                    posMap.put( "line", intValue( pos.getLine() ) );
-                    posMap.put( "column", intValue( pos.getColumn() ) );
-                    notificationMap.put( "position", VirtualValues.map( posMap ) );
+                    builder.add( "position", VirtualValues.map( new String[]{"offset", "line", "columne"},
+                            new AnyValue[]{
+                                    intValue( pos.getOffset() ),
+                                    intValue( pos.getLine() ),
+                                    intValue( pos.getColumn() )  } ) );
                 }
 
-                out.add( VirtualValues.map( notificationMap ) );
+                out.add( builder.build() );
             }
             return VirtualValues.fromList( out );
         }

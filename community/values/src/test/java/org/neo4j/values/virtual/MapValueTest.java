@@ -135,7 +135,6 @@ class MapValueTest
         MapValue b = VirtualValues.map( new String[]{"k1", "k2", "k4"},
                 new AnyValue[]{stringValue( "version1" ), stringValue( "version2" ), stringValue( "version4" )} );
 
-
         // When
         MapValue updated = a.updatedWith( b );
 

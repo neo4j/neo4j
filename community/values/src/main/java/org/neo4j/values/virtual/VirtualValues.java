@@ -22,7 +22,6 @@ package org.neo4j.values.virtual;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -147,11 +146,6 @@ public final class VirtualValues
         {
             map.put( keys[i], values[i] );
         }
-        return new MapValue.MapWrappingMapValue( map );
-    }
-
-    public static MapValue map( Map<String,AnyValue> map )
-    {
         return new MapValue.MapWrappingMapValue( map );
     }
 

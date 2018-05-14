@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +39,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
@@ -53,7 +53,6 @@ import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
 import static org.neo4j.graphdb.QueryExecutionType.explained;
 import static org.neo4j.graphdb.QueryExecutionType.query;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.intValue;
@@ -98,7 +97,7 @@ public class CypherAdapterStreamTest
 
         // Then
         assertThat( meta.get( "type" ), equalTo( stringValue( "rw" ) ) );
-        assertThat( meta.get( "stats" ), equalTo( VirtualValues.map( mapValues(
+        assertThat( meta.get( "stats" ), equalTo( mapValues(
                 "nodes-created", intValue( 1 ),
                 "nodes-deleted", intValue( 2 ),
                 "relationships-created", intValue( 3 ),
@@ -109,7 +108,7 @@ public class CypherAdapterStreamTest
                 "constraints-added", intValue( 8 ),
                 "constraints-removed", intValue( 9 ),
                 "labels-added", intValue( 10 ),
-                "labels-removed", intValue( 11 ) )
+                "labels-removed", intValue( 11 )
         ) ) );
         assertThat( meta.get( "result_consumed_after" ), equalTo( longValue( 1337L ) ) );
     }
@@ -136,19 +135,18 @@ public class CypherAdapterStreamTest
         MapValue meta = metadataOf( stream );
 
         // Then
-        Map<String,AnyValue> expectedChild = mapValues(
-                "args", VirtualValues.map( mapValues( "arg2", intValue( 1 ) ) ),
+        MapValue expectedChild = mapValues(
+                "args", mapValues( "arg2", intValue( 1 ) ),
                 "identifiers", list( stringValue( "id2" ) ),
                 "operatorType", stringValue( "Scan" ),
                 "children", VirtualValues.EMPTY_LIST
         );
-        Map<String,AnyValue> expectedPlan = mapValues(
-                "args", VirtualValues.map( mapValues( "arg1", intValue( 1 ) ) ),
+        MapValue expectedPlan = mapValues(
+                "args", mapValues( "arg1", intValue( 1 ) ),
                 "identifiers", list( stringValue( "id1" ) ),
                 "operatorType", stringValue( "Join" ),
-                "children", list( VirtualValues.map( expectedChild ) )
-        );
-        assertThat( meta.get( "plan" ), equalTo( VirtualValues.map( expectedPlan ) ) );
+                "children", list( expectedChild ) );
+        assertThat( meta.get( "plan" ), equalTo( expectedPlan ) );
     }
 
     @Test
@@ -173,8 +171,8 @@ public class CypherAdapterStreamTest
         MapValue meta = metadataOf( stream );
 
         // Then
-        Map<String,AnyValue> expectedChild = mapValues(
-                "args", VirtualValues.map( mapValues( "arg2", intValue( 1 ) ) ),
+        MapValue expectedChild = mapValues(
+                "args", mapValues( "arg2", intValue( 1 ) ) ,
                 "identifiers", list( stringValue( "id2" ) ),
                 "operatorType", stringValue( "Scan" ),
                 "children", VirtualValues.EMPTY_LIST,
@@ -185,11 +183,11 @@ public class CypherAdapterStreamTest
                 "pageCacheHitRatio", doubleValue( 4.0 / 11 )
         );
 
-        Map<String,AnyValue> expectedProfile = mapValues(
-                "args", VirtualValues.map( mapValues( "arg1", intValue( 1 ) ) ),
+        MapValue expectedProfile = mapValues(
+                "args",  mapValues( "arg1", intValue( 1 ) ),
                 "identifiers", list( stringValue( "id1" ) ),
                 "operatorType", stringValue( "Join" ),
-                "children", list( VirtualValues.map( expectedChild ) ),
+                "children", list( expectedChild ),
                 "rows", longValue( 1L ),
                 "dbHits", longValue( 2L ),
                 "pageCacheHits", longValue( 4L ),
@@ -197,12 +195,18 @@ public class CypherAdapterStreamTest
                 "pageCacheHitRatio", doubleValue( 4.0 / 7 )
         );
 
-        assertMapEqualsWithDelta( (MapValue) meta.get( "profile" ), VirtualValues.map( expectedProfile ), 0.0001 );
+        assertMapEqualsWithDelta( (MapValue) meta.get( "profile" ),  expectedProfile, 0.0001 );
     }
 
-    private Map<String,AnyValue> mapValues( Object... values )
+    private MapValue mapValues( Object... values )
     {
-        return genericMap( values );
+        int i = 0;
+        MapValueBuilder builder = new MapValueBuilder();
+        while ( i < values.length )
+        {
+            builder.add( (String) values[i++], (AnyValue) values[i++] );
+        }
+        return builder.build();
     }
 
     @Test
@@ -229,30 +233,29 @@ public class CypherAdapterStreamTest
         MapValue meta = metadataOf( stream );
 
         // Then
-        Map<String,AnyValue> msg1 = mapValues(
+        MapValue msg1 = mapValues(
                 "severity", stringValue( "WARNING" ),
                 "code", stringValue( "Neo.ClientError.Schema.IndexNotFound" ),
                 "title",
                 stringValue( "The request (directly or indirectly) referred to an index that does not exist." ),
                 "description", stringValue( "The hinted index does not exist, please check the schema" )
         );
-        Map<String,AnyValue> msg2 = mapValues(
+        MapValue msg2 = mapValues(
                 "severity", stringValue( "WARNING" ),
                 "code", stringValue( "Neo.ClientNotification.Statement.PlannerUnsupportedWarning" ),
                 "title", stringValue( "This query is not supported by the COST planner." ),
                 "description",
                 stringValue( "Using COST planner is unsupported for this query, please use RULE planner instead" ),
-                "position", VirtualValues
-                        .map( mapValues( "offset", intValue( 4 ), "column", intValue( 6 ), "line", intValue( 5 ) ) )
+                "position", mapValues( "offset", intValue( 4 ), "column", intValue( 6 ), "line", intValue( 5 ) )
         );
 
         assertThat( meta.get( "notifications" ),
-                equalTo( list( VirtualValues.map( msg1 ), VirtualValues.map( msg2 ) ) ) );
+                equalTo( list( msg1, msg2 ) ) );
     }
 
     private MapValue metadataOf( CypherAdapterStream stream ) throws Exception
     {
-        final Map<String,AnyValue> meta = new HashMap<>();
+        final MapValueBuilder meta = new MapValueBuilder(  );
         stream.accept( new BoltResult.Visitor()
         {
             @Override
@@ -264,10 +267,10 @@ public class CypherAdapterStreamTest
             @Override
             public void addMetadata( String key, AnyValue value )
             {
-                meta.put( key, value );
+                meta.add( key, value );
             }
         } );
-        return VirtualValues.map( meta );
+        return meta.build();
     }
 
     private static void assertMapEqualsWithDelta( MapValue a, MapValue b, double delta )

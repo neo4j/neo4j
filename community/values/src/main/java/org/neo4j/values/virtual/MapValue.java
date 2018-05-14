@@ -295,9 +295,9 @@ public abstract class MapValue extends VirtualValue
     {
         private final MapValue[] maps;
 
-        CombinedMapValue( MapValue...mapValues)
+        CombinedMapValue( MapValue... mapValues )
         {
-          this.maps = mapValues;
+            this.maps = mapValues;
         }
 
         public Set<String> keySet()

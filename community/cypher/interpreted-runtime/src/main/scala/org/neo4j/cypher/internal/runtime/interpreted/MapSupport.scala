@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.util
-import java.util.Map
 
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
+import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{MapValue, VirtualRelationshipValue, VirtualNodeValue, VirtualValues}
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.{MapValue, VirtualNodeValue, VirtualRelationshipValue}
 
 import scala.collection.immutable
 
@@ -43,16 +44,16 @@ trait MapSupport {
 
   def castToMap: PartialFunction[AnyValue, QueryContext => MapValue] = {
     case x: MapValue => _ => x
-    case x: VirtualNodeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.nodeOps, x.id()))
-    case x: VirtualRelationshipValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.relationshipOps, x.id()))
+    case x: VirtualNodeValue => ctx => new LazyMap(ctx, ctx.nodeOps, x.id())
+    case x: VirtualRelationshipValue => ctx => new LazyMap(ctx, ctx.relationshipOps, x.id())
   }
 }
 
 class LazyMap[T](ctx: QueryContext, ops: Operations[T], id: Long)
-  extends java.util.Map[String, AnyValue] {
+  extends MapValue {
 
-  import scala.collection.JavaConverters._
-
+ import scala.collection.JavaConverters._
+//
   private lazy val allProps: util.Map[String, AnyValue] = ops.propertyKeyIds(id)
     .map(propertyId => {
       val value: AnyValue = ops.getProperty(id, propertyId)
@@ -60,41 +61,27 @@ class LazyMap[T](ctx: QueryContext, ops: Operations[T], id: Long)
     }
     ).toMap.asJava
 
-  override def values(): util.Collection[AnyValue] = allProps.values()
-
-  override def containsValue(value: scala.Any): Boolean = allProps.containsValue(value)
-
-  override def remove(key: scala.Any): AnyValue = throw new UnsupportedOperationException()
-
-  override def put(key: String,
-                   value: AnyValue): AnyValue = throw new UnsupportedOperationException()
-
-  override def putAll(m: util.Map[_ <: String, _ <: AnyValue]): Unit = throw new UnsupportedOperationException()
-
-  override def get(key: scala.Any): AnyValue =
-    ctx.getOptPropertyKeyId(key.asInstanceOf[String]) match {
-      case Some(keyId) =>
-        ops.getProperty(id, keyId)
-      case None =>
-        null
-    }
-
   override def keySet(): util.Set[String] = allProps.keySet()
 
-  override def entrySet(): util.Set[util.Map.Entry[String, AnyValue]] = allProps.entrySet()
+  override def foreach[E <: Exception](f: ThrowingBiConsumer[String, AnyValue, E]): Unit = {
+    val it = allProps.entrySet().iterator()
+    while(it.hasNext) {
+      val entry = it.next()
+      f.accept(entry.getKey, entry.getValue)
+    }
+  }
 
-  override def containsKey(key: Any): Boolean = ctx.getOptPropertyKeyId(key.asInstanceOf[String])
-    .exists(ops.hasProperty(id, _))
+  override def containsKey(key: String): Boolean = ctx.getOptPropertyKeyId(key).exists(ops.hasProperty(id, _))
 
-  override def clear(): Unit = throw new UnsupportedOperationException
+  override def get(key: String): AnyValue =
+      ctx.getOptPropertyKeyId(key) match {
+        case Some(keyId) =>
+          ops.getProperty(id, keyId)
+        case None =>
+          Values.NO_VALUE
+      }
 
-  override lazy val isEmpty: Boolean = ops.propertyKeyIds(id).isEmpty
-
-  override lazy val size: Int = ops.propertyKeyIds(id).size
-
-  override def hashCode(): Int = allProps.hashCode()
-
-  override def equals(obj: scala.Any): Boolean = allProps.equals(obj)
+  override def size(): Int = ops.propertyKeyIds(id).size
 }
 
 object MapSupport {

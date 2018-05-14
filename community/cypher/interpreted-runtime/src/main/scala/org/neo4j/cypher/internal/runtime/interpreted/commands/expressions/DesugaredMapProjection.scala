@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions, IsMap}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions, IsMap}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.{MapValueBuilder, VirtualValues}
 
-import scala.collection.JavaConverters._
 import scala.collection.Map
 
 case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalExpressions: Map[String, Expression])
@@ -38,12 +37,13 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
       case v if v == Values.NO_VALUE => return Values.NO_VALUE
       case IsMap(m) => if (includeAllProps) m(state.query) else VirtualValues.emptyMap()
     }
-    val mapOfLiteralValues = literalExpressions.map {
-      case (k, e) => (k, e(ctx, state))
-    }.toMap.asJava
+    val builder = new MapValueBuilder()
+    literalExpressions.foreach {
+      case (k, e) => builder.add(k, e(ctx, state))
+    }
 
 
-    mapOfProperties.updatedWith(VirtualValues.map(mapOfLiteralValues))
+    mapOfProperties.updatedWith(builder.build())
   }
 
   override def rewrite(f: (Expression) => Expression) =

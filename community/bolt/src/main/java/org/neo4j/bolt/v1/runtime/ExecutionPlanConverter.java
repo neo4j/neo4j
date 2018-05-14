@@ -19,16 +19,15 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.doubleValue;
@@ -44,21 +43,21 @@ class ExecutionPlanConverter
 
     public static MapValue convert( ExecutionPlanDescription plan )
     {
-        Map<String,AnyValue> out = new HashMap<>();
-        out.put( "operatorType", stringValue( plan.getName() ) );
-        out.put( "args", ValueUtils.asMapValue( plan.getArguments() ) );
-        out.put( "identifiers", ValueUtils.asListValue( plan.getIdentifiers() ) );
-        out.put( "children", children( plan ) );
+        MapValueBuilder out = new MapValueBuilder(  );
+        out.add( "operatorType", stringValue( plan.getName() ) );
+        out.add( "args", ValueUtils.asMapValue( plan.getArguments() ) );
+        out.add( "identifiers", ValueUtils.asListValue( plan.getIdentifiers() ) );
+        out.add( "children", children( plan ) );
         if ( plan.hasProfilerStatistics() )
         {
             ExecutionPlanDescription.ProfilerStatistics profile = plan.getProfilerStatistics();
-            out.put( "dbHits", longValue( profile.getDbHits() ) );
-            out.put( "pageCacheHits", longValue( profile.getPageCacheHits() ) );
-            out.put( "pageCacheMisses", longValue( profile.getPageCacheMisses() ) );
-            out.put( "pageCacheHitRatio", doubleValue( profile.getPageCacheHitRatio() ) );
-            out.put( "rows", longValue( profile.getRows() ) );
+            out.add( "dbHits", longValue( profile.getDbHits() ) );
+            out.add( "pageCacheHits", longValue( profile.getPageCacheHits() ) );
+            out.add( "pageCacheMisses", longValue( profile.getPageCacheMisses() ) );
+            out.add( "pageCacheHitRatio", doubleValue( profile.getPageCacheHitRatio() ) );
+            out.add( "rows", longValue( profile.getRows() ) );
         }
-        return VirtualValues.map( out );
+        return out.build();
     }
 
     private static ListValue children( ExecutionPlanDescription plan )
