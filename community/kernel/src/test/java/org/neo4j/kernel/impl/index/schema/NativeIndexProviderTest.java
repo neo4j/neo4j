@@ -168,7 +168,7 @@ public abstract class NativeIndexProviderTest
         // then
         try
         {
-            provider.getPopulationFailure( descriptor( failedIndexId ) );
+            provider.getPopulationFailure( descriptor( nonFailedIndexId ) );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )

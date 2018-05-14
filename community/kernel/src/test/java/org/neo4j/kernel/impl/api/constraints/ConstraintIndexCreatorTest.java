@@ -34,17 +34,17 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -63,6 +63,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
@@ -78,10 +79,10 @@ public class ConstraintIndexCreatorTest
 {
     private static final int PROPERTY_KEY_ID = 456;
     private static final int LABEL_ID = 123;
-    private static final long INDEX_ID = 2468L;
+    private static final long INDEX_ID = 0L;
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
-    private final IndexDescriptor index = TestIndexDescriptorFactory.uniqueForLabel( 123, 456 );
+    private final IndexDescriptor index = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final IndexReference indexReference = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final SchemaRead schemaRead = schemaRead();
     private final TokenRead tokenRead = mock( TokenRead.class );
@@ -91,11 +92,11 @@ public class ConstraintIndexCreatorTest
     {
         // given
         StubKernel kernel = new StubKernel();
-        StatementOperationParts indexCreationContext = mockedParts();
         IndexProxy indexProxy = mock( IndexProxy.class );
         IndexingService indexingService = mock( IndexingService.class );
         when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
+        when( indexProxy.getDescriptor() ).thenReturn( index.withId( INDEX_ID ).withoutCapabilities() );
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         ConstraintIndexCreator creator =
                 new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
@@ -363,6 +364,7 @@ public class ConstraintIndexCreatorTest
         when( transaction.schemaRead() ).thenReturn( schemaRead );
         TransactionState transactionState = mock( TransactionState.class );
         when( transaction.txState() ).thenReturn( transactionState );
+        when( transaction.indexUniqueCreate( any(SchemaDescriptor.class ) ) ).thenAnswer( i-> IndexDescriptorFactory.uniqueForSchema( i.getArgument( 0 ) ) );
         return transaction;
     }
 }

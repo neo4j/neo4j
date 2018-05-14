@@ -27,9 +27,9 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule.Kind;
 
@@ -42,7 +42,6 @@ import static org.neo4j.string.UTF8.getDecodedStringFrom;
 public class SchemaRuleDeserializer2_0to3_1
 {
     private static final Long NO_OWNED_INDEX_RULE = null;
-    private static final long NO_OWNING_CONSTRAINT = -1;
 
     private SchemaRuleDeserializer2_0to3_1()
     {
@@ -104,8 +103,10 @@ public class SchemaRuleDeserializer2_0to3_1
         IndexDescriptor descriptor = constraintIndex ?
                                      IndexDescriptorFactory.uniqueForSchema( schema, name, providerDescriptor ) :
                                      IndexDescriptorFactory.forSchema( schema, name, providerDescriptor );
-        long owningConstraint = constraintIndex ? readOwningConstraint( serialized ) : NO_OWNING_CONSTRAINT;
-        return descriptor.withIds( id, owningConstraint );
+        StoreIndexDescriptor storeIndexDescriptor = constraintIndex
+                                                    ? descriptor.withIds( id, readOwningConstraint( serialized ) )
+                                                    : descriptor.withId( id );
+        return storeIndexDescriptor;
     }
 
     private static IndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer serialized )

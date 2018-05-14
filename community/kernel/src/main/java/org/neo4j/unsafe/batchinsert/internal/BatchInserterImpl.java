@@ -610,7 +610,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         long constraintRuleId = schemaStore.nextId();
 
         StoreIndexDescriptor storeIndexDescriptor =
-                IndexDescriptorFactory.forSchema(
+                IndexDescriptorFactory.uniqueForSchema(
                         schema,
                         this.indexProviderMap.getDefaultProvider().getProviderDescriptor()
                 ).withIds( indexId, constraintRuleId );

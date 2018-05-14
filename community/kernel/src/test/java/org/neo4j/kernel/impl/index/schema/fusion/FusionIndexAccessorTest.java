@@ -74,7 +74,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class FusionIndexAccessorTest
 {
     private FusionIndexAccessor fusionIndexAccessor;
-    private final long indexId = 10;
+    private final long indexId = 0;
     private final DropAction dropAction = mock( DropAction.class );
     private IndexAccessor[] accessors;
     private IndexAccessor[] aliveAccessors;
