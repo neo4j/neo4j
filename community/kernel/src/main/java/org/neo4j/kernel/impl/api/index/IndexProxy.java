@@ -58,7 +58,7 @@ import org.neo4j.values.storable.Value;
  *
  * @see ContractCheckingIndexProxy
  */
-public interface IndexProxy extends SchemaDescriptorSupplier
+public interface IndexProxy
 {
     void start();
 

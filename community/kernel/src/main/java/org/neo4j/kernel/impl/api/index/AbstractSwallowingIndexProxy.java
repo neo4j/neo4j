@@ -80,12 +80,6 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public SchemaDescriptor schema()
-    {
-        return capableIndexDescriptor.schema();
-    }
-
-    @Override
     public void close()
     {
     }

@@ -73,12 +73,6 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public SchemaDescriptor schema()
-    {
-        return getDelegate().schema();
-    }
-
-    @Override
     public void force( IOLimiter ioLimiter ) throws IOException
     {
         getDelegate().force( ioLimiter );

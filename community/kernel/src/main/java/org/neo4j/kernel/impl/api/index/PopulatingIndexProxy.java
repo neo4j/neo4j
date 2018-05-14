@@ -93,12 +93,6 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public SchemaDescriptor schema()
-    {
-        return capableIndexDescriptor.schema();
-    }
-
-    @Override
     public InternalIndexState getState()
     {
         return InternalIndexState.POPULATING;

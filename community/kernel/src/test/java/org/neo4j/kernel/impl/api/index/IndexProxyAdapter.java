@@ -79,12 +79,6 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public LabelSchemaDescriptor schema()
-    {
-        return null;
-    }
-
-    @Override
     public IndexReader newReader()
     {
         return IndexReader.EMPTY;
