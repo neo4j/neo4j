@@ -19,8 +19,10 @@
  */
 package org.neo4j.values.virtual;
 
-import java.util.Collections;
-import java.util.HashMap;
+import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.api.map.MutableMap;
+import org.eclipse.collections.impl.factory.Maps;
+
 import java.util.List;
 
 import org.neo4j.values.AnyValue;
@@ -35,7 +37,7 @@ import org.neo4j.values.virtual.PathValue.DirectPathValue;
 @SuppressWarnings( "WeakerAccess" )
 public final class VirtualValues
 {
-    public static final MapValue EMPTY_MAP = new MapValue.MapWrappingMapValue( Collections.emptyMap() );
+    public static final MapValue EMPTY_MAP = new MapValue.MapWrappingMapValue( Maps.immutable.empty() );
     public static final ListValue EMPTY_LIST = new ListValue.ArrayListValue( new AnyValue[0] );
 
     private VirtualValues()
@@ -141,10 +143,33 @@ public final class VirtualValues
     public static MapValue map( String[] keys, AnyValue[] values )
     {
         assert keys.length == values.length;
-        HashMap<String,AnyValue> map = new HashMap<>( keys.length );
-        for ( int i = 0; i < keys.length; i++ )
+
+        ImmutableMap<String,AnyValue> map;
+        switch ( keys.length )
         {
-            map.put( keys[i], values[i] );
+        case 0:
+            map = Maps.immutable.empty();
+            break;
+        case 1:
+            map = Maps.immutable.with(keys[0], values[0]);
+            break;
+        case 2:
+            map = Maps.immutable.with(keys[0], values[0], keys[1], values[1]);
+            break;
+        case 3:
+            map = Maps.immutable.with(keys[0], values[0], keys[1], values[1],  keys[2], values[2]);
+            break;
+        case 4:
+            map = Maps.immutable.with(keys[0], values[0], keys[1], values[1],  keys[2], values[2], keys[3], values[3]);
+            break;
+        default:
+            MutableMap<String,AnyValue> mutable = Maps.mutable.withInitialCapacity( keys.length );
+            for ( int i = 0; i < keys.length; i++ )
+            {
+                mutable.put(keys[i], values[i]);
+            }
+            map = mutable.toImmutable();
+
         }
         return new MapValue.MapWrappingMapValue( map );
     }

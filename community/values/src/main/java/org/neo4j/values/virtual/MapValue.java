@@ -19,12 +19,16 @@
  */
 package org.neo4j.values.virtual;
 
+import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.api.tuple.Pair;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.values.AnyValue;
@@ -39,30 +43,25 @@ public abstract class MapValue extends VirtualValue
 {
     static final class MapWrappingMapValue extends MapValue
     {
-        private final Map<String,AnyValue> map;
+        private final ImmutableMap<String,AnyValue> map;
 
-        MapWrappingMapValue( Map<String,AnyValue> map )
+        MapWrappingMapValue( ImmutableMap<String,AnyValue> map )
         {
             this.map = map;
         }
 
-        public Set<String> keySet()
+        public Iterable<String> keySet()
         {
-            return map.keySet();
+            return map.keysView();
         }
 
         @Override
         public <E extends Exception> void foreach( ThrowingBiConsumer<String,AnyValue,E> f ) throws E
         {
-            for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
+            for ( Pair<String,AnyValue> valuePair : map.keyValuesView() )
             {
-                f.accept( entry.getKey(), entry.getValue() );
+                f.accept( valuePair.getOne(), valuePair.getTwo() );
             }
-        }
-
-        public Set<Map.Entry<String,AnyValue>> entrySet()
-        {
-            return map.entrySet();
         }
 
         public boolean containsKey( String key )
@@ -72,7 +71,7 @@ public abstract class MapValue extends VirtualValue
 
         public AnyValue get( String key )
         {
-            return map.getOrDefault( key, NO_VALUE );
+            return map.getIfAbsentValue( key, NO_VALUE );
         }
 
         public int size()
@@ -94,7 +93,8 @@ public abstract class MapValue extends VirtualValue
             this.filter = filter;
         }
 
-        public Set<String> keySet()
+        @Override
+        public Iterable<String> keySet()
         {
             HashSet<String> keys = new HashSet<>();
             foreach( ( key, value ) -> {
@@ -181,7 +181,7 @@ public abstract class MapValue extends VirtualValue
             return map.keys();
         }
 
-        public Set<String> keySet()
+        public Iterable<String> keySet()
         {
             return map.keySet();
         }
@@ -242,12 +242,43 @@ public abstract class MapValue extends VirtualValue
             return VirtualValues.concat( map.keys(), VirtualValues.fromArray( Values.stringArray( updatedKeys ) ) );
         }
 
-        public Set<String> keySet()
+        public Iterable<String> keySet()
         {
-            HashSet<String> newKeys = new HashSet<>( map.keySet() );
-            newKeys.addAll( Arrays.asList( updatedKeys ) );
+            return () -> new Iterator<String>()
+            {
+                private Iterator<String> internal = map.keySet().iterator();
+                private int index;
 
-            return newKeys;
+                @Override
+                public boolean hasNext()
+                {
+                    if ( internal.hasNext() )
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return index < updatedKeys.length;
+                    }
+                }
+
+                @Override
+                public String next()
+                {
+                    if ( internal.hasNext() )
+                    {
+                        return internal.next();
+                    }
+                    else if ( index < updatedKeys.length )
+                    {
+                        return updatedKeys[index++];
+                    }
+                    else
+                    {
+                        throw new NoSuchElementException();
+                    }
+                }
+            };
         }
 
         @Override
@@ -300,14 +331,44 @@ public abstract class MapValue extends VirtualValue
             this.maps = mapValues;
         }
 
-        public Set<String> keySet()
+        @Override
+        public Iterable<String> keySet()
         {
-            HashSet<String> keys = new HashSet<>();
-            for ( MapValue map : maps )
-            {
-                keys.addAll( map.keySet() );
-            }
-            return keys;
+           return () -> new Iterator<String>()
+           {
+               private int mapIndex;
+               private Iterator<String> internal;
+
+               @Override
+               public boolean hasNext()
+               {
+                   if ( internal == null )
+                   {
+                       internal = maps[mapIndex].keySet().iterator();
+                   }
+                   return internal.hasNext();
+               }
+
+               @Override
+               public String next()
+               {
+                   while ( true )
+                   {
+                       if ( hasNext() )
+                       {
+                           return internal.next();
+                       }
+                       else if ( mapIndex < maps.length - 1 )
+                       {
+                           internal = maps[++mapIndex].keySet().iterator();
+                       }
+                       else
+                       {
+                           throw new NoSuchElementException();
+                       }
+                   }
+               }
+           };
         }
 
         @Override
@@ -404,7 +465,7 @@ public abstract class MapValue extends VirtualValue
             return false;
         }
 
-        Set<String> keys = keySet();
+        Iterable<String> keys = keySet();
         for ( String key : keys )
         {
             if ( get( key ).equals( that.get( key ) ) )
@@ -416,12 +477,17 @@ public abstract class MapValue extends VirtualValue
         return false;
     }
 
-    public abstract Set<String> keySet();
+    public abstract Iterable<String> keySet();
 
     public ListValue keys()
     {
-        String[] strings = keySet().toArray( new String[size()] );
-        return VirtualValues.fromArray( Values.stringArray( strings ) );
+        String[] keys = new String[size()];
+        int i = 0;
+        for ( String key : keySet() )
+        {
+            keys[i++] = key;
+        }
+        return VirtualValues.fromArray( Values.stringArray( keys ) );
     }
 
     @Override
@@ -442,9 +508,9 @@ public abstract class MapValue extends VirtualValue
         int compare = Integer.compare( size, otherMap.size() );
         if ( compare == 0 )
         {
-            String[] thisKeys = keySet().toArray( new String[size] );
+            String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false).toArray( String[]::new  );
             Arrays.sort( thisKeys, String::compareTo );
-            String[] thatKeys = otherMap.keySet().toArray( new String[size] );
+            String[] thatKeys = StreamSupport.stream( otherMap.keySet().spliterator(), false).toArray( String[]::new  );
             Arrays.sort( thatKeys, String::compareTo );
             for ( int i = 0; i < size; i++ )
             {
@@ -485,9 +551,9 @@ public abstract class MapValue extends VirtualValue
         {
             return Boolean.FALSE;
         }
-        String[] thisKeys = keySet().toArray( new String[size] );
+        String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false ).toArray( String[]::new );
         Arrays.sort( thisKeys, String::compareTo );
-        String[] thatKeys = otherMap.keySet().toArray( new String[size] );
+        String[] thatKeys = StreamSupport.stream( otherMap.keySet().spliterator(), false ).toArray( String[]::new );
         Arrays.sort( thatKeys, String::compareTo );
         for ( int i = 0; i < size; i++ )
         {
