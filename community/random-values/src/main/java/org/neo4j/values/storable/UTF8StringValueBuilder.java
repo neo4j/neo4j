@@ -29,7 +29,7 @@ import java.util.Arrays;
  */
 class UTF8StringValueBuilder
 {
-    private static final int DEFAULT_SIZE = Byte.SIZE;
+    private static final int DEFAULT_SIZE = 8;
     private byte[] bytes;
     private int length;
 
