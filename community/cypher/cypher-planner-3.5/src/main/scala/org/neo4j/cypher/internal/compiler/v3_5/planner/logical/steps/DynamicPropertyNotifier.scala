@@ -39,6 +39,8 @@ object DynamicPropertyNotifier {
     }
   }
 
-  private def withIndex(labelName: LabelName, context: LogicalPlanningContext) =
-    context.planContext.indexExistsForLabel(labelName.name)
+  private def withIndex(labelName: LabelName, context: LogicalPlanningContext) = {
+    val maybeLabelId = context.semanticTable.id(labelName)
+    maybeLabelId.fold(false)(context.planContext.indexExistsForLabel(_))
+  }
 }

@@ -56,21 +56,17 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       .flatMap(getOnlineIndex)
   }
 
-  override def indexExistsForLabel(labelName: String): Boolean = {
-    try {
-      val labelId = getLabelId(labelName)
-      val onlineIndexDescriptors = tc.schemaRead.indexesGetForLabel(labelId).asScala
-        .flatMap(getOnlineIndex)
-
-      onlineIndexDescriptors.nonEmpty
-    } catch {
-      case _: KernelException => false
-    }
+  override def indexExistsForLabel(labelId: Int): Boolean = {
+      tc.schemaRead.indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex).nonEmpty
   }
 
   override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {
-    val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKey)
-    getOnlineIndex(tc.schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*)).isDefined
+    try {
+      val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKey)
+      getOnlineIndex(tc.schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*)).isDefined
+    } catch {
+      case _: KernelException => false
+    }
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =

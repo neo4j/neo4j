@@ -122,8 +122,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
-      override def indexExistsForLabel(labelName: String): Boolean =
+      override def indexExistsForLabel(labelId: Int): Boolean = {
+        val labelName = config.labelsById(labelId)
         config.indexes.exists(_._1 == labelName) || config.uniqueIndexes.exists(_._1 == labelName)
+      }
 
       override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
         config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey))

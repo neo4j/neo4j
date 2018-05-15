@@ -51,8 +51,8 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
     translateException(inner.functionSignature(name))
 
-  override def indexExistsForLabel(labelName: String): Boolean =
-    translateException(inner.indexExistsForLabel(labelName))
+  override def indexExistsForLabel(labelId: Int): Boolean =
+    translateException(inner.indexExistsForLabel(labelId))
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
     translateException(inner.hasPropertyExistenceConstraint(labelName, propertyKey))

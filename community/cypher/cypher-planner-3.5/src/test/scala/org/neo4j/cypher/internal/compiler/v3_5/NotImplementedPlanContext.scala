@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.{ProcedureSignature, Qualifi
 class NotImplementedPlanContext extends PlanContext {
   override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
 
-  override def indexExistsForLabel(labelName: String): Boolean = ???
+  override def indexExistsForLabel(labelId: Int): Boolean = ???
 
   override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = ???
 
