@@ -103,7 +103,6 @@ public class ClusterShutdownIT
         final CountDownLatch acquiredLocksCountdown = new CountDownLatch( NUMBER_OF_LOCK_ACQUIRERS );
         final CountDownLatch locksHolder = new CountDownLatch( 1 );
         final AtomicReference<Node> node = new AtomicReference<>();
-        final AtomicReference<Exception> txFailure = new AtomicReference<>();
 
         CompletableFuture<Void> preShutdown = new CompletableFuture<>();
 
@@ -127,35 +126,22 @@ public class ClusterShutdownIT
                 {
                     try ( Transaction tx = leader.beginTx() )
                     {
-                        tx.acquireWriteLock( node.get() );
                         acquiredLocksCountdown.countDown();
+                        tx.acquireWriteLock( node.get() );
                         locksHolder.await();
                         tx.success();
                     }
                     catch ( Exception e )
                     {
-                        txFailure.accumulateAndGet( e, ( e1, e2 ) ->
-                        {
-                            if ( e1 != null && e2 != null && !e1.equals( e2 ) )
-                            {
-                                e1.addSuppressed( e2 );
-                                return e1;
-                            }
-                            return e2;
-                        } );
+                        /* Since we are shutting down, a plethora of possible exceptions are expected. */
                     }
                 } );
             }
 
             // await locks
-            acquiredLocksCountdown.await( LONG_TIME, MILLISECONDS );
-
-            // check for premature failures
-            Thread.sleep( 100 );
-            Exception prematureFailure = txFailure.get();
-            if ( prematureFailure != null )
+            if ( !acquiredLocksCountdown.await( LONG_TIME, MILLISECONDS ) )
             {
-                throw new RuntimeException( "Failed prematurely", prematureFailure );
+                throw new IllegalStateException( "Failed to acquire locks" );
             }
 
             // then shutdown in given order works
