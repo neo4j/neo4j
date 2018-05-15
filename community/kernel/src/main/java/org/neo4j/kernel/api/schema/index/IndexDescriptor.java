@@ -111,10 +111,6 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         return type;
     }
 
-    /**
-     * This method currently returns the specific LabelSchemaDescriptor, as we do not support indexes on relations.
-     * When we do, consider down-typing this to a SchemaDescriptor.
-     */
     @Override
     public SchemaDescriptor schema()
     {
