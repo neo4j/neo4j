@@ -20,25 +20,26 @@
 package org.neo4j.collection;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PrimitiveLongArrayQueueTest
+class PrimitiveLongArrayQueueTest
 {
 
     @Test
-    public void newQueueIsEmpty()
+    void newQueueIsEmpty()
     {
         assertTrue( createQueue().isEmpty() );
     }
 
     @Test
-    public void growQueueOnElementOffer()
+    void growQueueOnElementOffer()
     {
         PrimitiveLongArrayQueue longArrayQueue = createQueue();
         for ( int i = 1; i < 1000; i++ )
@@ -49,7 +50,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void addRemoveElementKeepQueueEmpty()
+    void addRemoveElementKeepQueueEmpty()
     {
         PrimitiveLongArrayQueue longArrayQueue = createQueue();
         for ( int i = 0; i < 1000; i++ )
@@ -61,7 +62,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void offerLessThenQueueCapacityElements()
+    void offerLessThenQueueCapacityElements()
     {
         PrimitiveLongArrayQueue arrayQueue = createQueue();
         for ( int i = 1; i < 16; i++ )
@@ -71,14 +72,14 @@ public class PrimitiveLongArrayQueueTest
         }
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void failToRemoveElementFromNewEmptyQueue()
+    @Test
+    void failToRemoveElementFromNewEmptyQueue()
     {
-        createQueue().dequeue();
+        assertThrows( IllegalStateException.class, () -> createQueue().dequeue() );
     }
 
     @Test
-    public void offerMoreThenQueueCapacityElements()
+    void offerMoreThenQueueCapacityElements()
     {
         PrimitiveLongArrayQueue arrayQueue = createQueue();
         for ( int i = 1; i < 1234; i++ )
@@ -93,7 +94,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void emptyQueueAfterClear()
+    void emptyQueueAfterClear()
     {
         PrimitiveLongArrayQueue queue = createQueue();
         queue.enqueue( 2 );
@@ -107,7 +108,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void tailBeforeHeadCorrectSize()
+    void tailBeforeHeadCorrectSize()
     {
         PrimitiveLongArrayQueue queue = createQueue();
         for ( int i = 0; i < 14; i++ )
@@ -127,7 +128,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void tailBeforeHeadCorrectResize()
+    void tailBeforeHeadCorrectResize()
     {
         PrimitiveLongArrayQueue queue = createQueue();
         for ( int i = 0; i < 14; i++ )
@@ -151,7 +152,7 @@ public class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    public void tailBeforeHeadCorrectIteration()
+    void tailBeforeHeadCorrectIteration()
     {
         PrimitiveLongArrayQueue queue = createQueue();
         for ( int i = 0; i < 14; i++ )
@@ -177,14 +178,14 @@ public class PrimitiveLongArrayQueueTest
         assertFalse( iterator.hasNext() );
     }
 
-    @Test( expected = NoSuchElementException.class )
-    public void failToGetNextOnEmptyQueueIterator()
+    @Test
+    void failToGetNextOnEmptyQueueIterator()
     {
-        createQueue().longIterator().next();
+        assertThrows( NoSuchElementException.class, () -> createQueue().longIterator().next() );
     }
 
     @Test
-    public void addAllElementsFromOtherQueue()
+    void addAllElementsFromOtherQueue()
     {
         PrimitiveLongArrayQueue queue = createQueue();
         queue.enqueue( 1 );
@@ -204,10 +205,10 @@ public class PrimitiveLongArrayQueueTest
         assertTrue( queue.isEmpty() );
     }
 
-    @Test( expected = AssertionError.class )
-    public void doNotAllowCreationOfQueueWithRandomCapacity()
+    @Test
+    void doNotAllowCreationOfQueueWithRandomCapacity()
     {
-        new PrimitiveLongArrayQueue( 7 );
+        assertThrows( IllegalArgumentException.class, () -> new PrimitiveLongArrayQueue( 7 ) );
     }
 
     private PrimitiveLongArrayQueue createQueue()

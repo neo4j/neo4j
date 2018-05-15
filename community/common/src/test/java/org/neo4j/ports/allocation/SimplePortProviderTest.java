@@ -19,20 +19,20 @@
  */
 package org.neo4j.ports.allocation;
 
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
-
-public class SimplePortProviderTest
+class SimplePortProviderTest
 {
     @Test
-    public void shouldProvideUniquePorts()
+    void shouldProvideUniquePorts()
     {
         PortProvider portProvider = new SimplePortProvider( port -> false, 42 );
 
@@ -43,7 +43,7 @@ public class SimplePortProviderTest
     }
 
     @Test
-    public void shouldSkipOccupiedPorts()
+    void shouldSkipOccupiedPorts()
     {
         PortProbe portProbe = mock( PortProbe.class );
         PortProvider portProvider = new SimplePortProvider( portProbe, 40 );
@@ -58,7 +58,7 @@ public class SimplePortProviderTest
     }
 
     @Test
-    public void shouldNotOverRun()
+    void shouldNotOverRun()
     {
         PortProvider portProvider = new SimplePortProvider( port -> false, 65534 );
 
@@ -69,7 +69,7 @@ public class SimplePortProviderTest
         {
             portProvider.getNextFreePort( "foo" );
 
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalStateException e )
         {

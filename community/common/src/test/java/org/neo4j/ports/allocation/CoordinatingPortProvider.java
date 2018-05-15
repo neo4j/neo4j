@@ -28,7 +28,7 @@ public class CoordinatingPortProvider implements PortProvider
     private final PortRepository portRepository;
     private final PortProbe portProbe;
 
-    public CoordinatingPortProvider( PortRepository portRepository, PortProbe portProbe )
+    CoordinatingPortProvider( PortRepository portRepository, PortProbe portProbe )
     {
         this.portRepository = portRepository;
         this.portProbe = portProbe;

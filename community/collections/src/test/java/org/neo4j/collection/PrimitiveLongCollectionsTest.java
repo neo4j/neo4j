@@ -23,7 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,18 +36,18 @@ import java.util.function.Supplier;
 import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class PrimitiveLongCollectionsTest
+class PrimitiveLongCollectionsTest
 {
     @Test
-    public void arrayOfItemsAsIterator()
+    void arrayOfItemsAsIterator()
     {
         // GIVEN
         long[] items = new long[] { 2, 5, 234 };
@@ -60,7 +60,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void filter()
+    void filter()
     {
         // GIVEN
         LongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
@@ -103,7 +103,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void singleWithDefaultMustAutoCloseIterator()
+    void singleWithDefaultMustAutoCloseIterator()
     {
         AtomicInteger counter = new AtomicInteger();
         CountingPrimitiveLongIteratorResource itr = new CountingPrimitiveLongIteratorResource(
@@ -113,7 +113,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void singleWithDefaultMustAutoCloseEmptyIterator()
+    void singleWithDefaultMustAutoCloseEmptyIterator()
     {
         AtomicInteger counter = new AtomicInteger();
         CountingPrimitiveLongIteratorResource itr = new CountingPrimitiveLongIteratorResource(
@@ -123,7 +123,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void indexOf()
+    void indexOf()
     {
         // GIVEN
         Supplier<LongIterator> items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
@@ -136,7 +136,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void count()
+    void count()
     {
         // GIVEN
         LongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
@@ -149,7 +149,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void asArray()
+    void asArray()
     {
         // GIVEN
         LongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
@@ -162,7 +162,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void shouldDeduplicate()
+    void shouldDeduplicate()
     {
         // GIVEN
         long[] array = new long[] {1L, 1L, 2L, 5L, 6L, 6L};
@@ -175,7 +175,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void shouldNotContinueToCallNextOnHasNextFalse()
+    void shouldNotContinueToCallNextOnHasNextFalse()
     {
         // GIVEN
         AtomicLong count = new AtomicLong( 2 );
@@ -201,7 +201,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void convertJavaCollectionToSetOfPrimitives()
+    void convertJavaCollectionToSetOfPrimitives()
     {
         List<Long> longs = asList( 1L, 4L, 7L );
         LongSet longSet = PrimitiveLongCollections.asSet( longs );
@@ -212,7 +212,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void convertPrimitiveSetToJavaSet()
+    void convertPrimitiveSetToJavaSet()
     {
         LongSet longSet = LongHashSet.newSetWith( 1L, 3L, 5L );
         Set<Long> longs = PrimitiveLongCollections.toSet( longSet );
@@ -221,7 +221,7 @@ public class PrimitiveLongCollectionsTest
 
     private void assertNoMoreItems( LongIterator iterator )
     {
-        assertFalse( iterator + " should have no more items", iterator.hasNext() );
+        assertFalse( iterator.hasNext(), iterator + " should have no more items" );
         try
         {
             iterator.next();
@@ -235,7 +235,7 @@ public class PrimitiveLongCollectionsTest
 
     private void assertNextEquals( long expected, LongIterator iterator )
     {
-        assertTrue( iterator + " should have had more items", iterator.hasNext() );
+        assertTrue( iterator.hasNext(), iterator + " should have had more items" );
         assertEquals( expected, iterator.next() );
     }
 
@@ -246,15 +246,5 @@ public class PrimitiveLongCollectionsTest
             assertNextEquals( expectedItem, iterator );
         }
         assertNoMoreItems( iterator );
-    }
-
-    private long[] reverse( long[] items )
-    {
-        long[] result = new long[items.length];
-        for ( int i = 0; i < items.length; i++ )
-        {
-            result[i] = items[items.length - i - 1];
-        }
-        return result;
     }
 }

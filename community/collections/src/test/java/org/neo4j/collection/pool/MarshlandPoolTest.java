@@ -19,11 +19,11 @@
  */
 package org.neo4j.collection.pool;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -31,10 +31,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class MarshlandPoolTest
+class MarshlandPoolTest
 {
     @Test
-    public void shouldNotLooseObjectsWhenThreadsDie() throws Exception
+    void shouldNotLooseObjectsWhenThreadsDie() throws Exception
     {
         // Given
         Pool<Object> delegatePool = mock( Pool.class );
@@ -52,7 +52,7 @@ public class MarshlandPoolTest
     }
 
     @Test
-    public void shouldReturnToDelegatePoolIfLocalPoolIsFull()
+    void shouldReturnToDelegatePoolIfLocalPoolIsFull()
     {
         // Given
         Pool<Object> delegatePool = mock( Pool.class );
@@ -76,7 +76,7 @@ public class MarshlandPoolTest
     }
 
     @Test
-    public void shouldReleaseAllSlotsOnClose()
+    void shouldReleaseAllSlotsOnClose()
     {
         // Given
         Pool<Object> delegatePool = mock( Pool.class );

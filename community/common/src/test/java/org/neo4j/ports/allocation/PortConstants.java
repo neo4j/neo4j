@@ -19,8 +19,8 @@
  */
 package org.neo4j.ports.allocation;
 
-public class PortConstants
+class PortConstants
 {
-    public static final int EphemeralPortMinimum = 49152;
-    public static final int EphemeralPortMaximum = 65535;
+    static final int EphemeralPortMinimum = 49152;
+    static final int EphemeralPortMaximum = 65535;
 }
