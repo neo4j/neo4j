@@ -184,6 +184,8 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def sourceNodeReference(): Long = inner.sourceNodeReference()
 
     override def targetNodeReference(): Long = inner.targetNodeReference()
+
+    override def propertiesReference(): Long = inner.propertiesReference()
   }
 
   class ProfilerOperations[T](inner: Operations[T]) extends DelegatingOperations[T](inner) {

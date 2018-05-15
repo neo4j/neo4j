@@ -39,6 +39,8 @@ public interface RelationshipSelectionCursor extends AutoCloseable
 
     long targetNodeReference();
 
+    long propertiesReference();
+
     final class EMPTY implements RelationshipSelectionCursor
     {
         @Override
@@ -79,6 +81,12 @@ public interface RelationshipSelectionCursor extends AutoCloseable
 
         @Override
         public long targetNodeReference()
+        {
+            return -1;
+        }
+
+        @Override
+        public long propertiesReference()
         {
             return -1;
         }

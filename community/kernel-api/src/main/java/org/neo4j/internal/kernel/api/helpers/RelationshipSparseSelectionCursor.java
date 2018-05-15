@@ -65,4 +65,10 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
     {
         return cursor.targetNodeReference();
     }
+
+    @Override
+    public long propertiesReference()
+    {
+        return cursor.propertiesReference();
+    }
 }
