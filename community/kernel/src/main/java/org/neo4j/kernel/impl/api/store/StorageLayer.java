@@ -176,7 +176,7 @@ public class StorageLayer implements StoreReadLayer
         }
         catch ( TokenNotFoundException e )
         {
-            throw new LabelNotFoundKernelException( "Label by id " + labelId, e );
+            throw new LabelNotFoundKernelException( labelId, e );
         }
     }
 

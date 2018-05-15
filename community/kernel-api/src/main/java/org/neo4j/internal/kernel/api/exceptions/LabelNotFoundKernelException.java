@@ -21,10 +21,12 @@ package org.neo4j.internal.kernel.api.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
+import static java.lang.String.format;
+
 public class LabelNotFoundKernelException extends KernelException
 {
-    public LabelNotFoundKernelException( String message, Exception cause )
+    public LabelNotFoundKernelException( long labelId, Exception cause )
     {
-        super( Status.Schema.LabelAccessFailed, cause, message );
+        super( Status.Schema.LabelAccessFailed, cause, format( "Label with id=%d not found", labelId ) );
     }
 }
