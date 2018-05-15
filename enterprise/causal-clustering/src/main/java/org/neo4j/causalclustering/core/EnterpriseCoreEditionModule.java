@@ -39,7 +39,7 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.RaftProtocolClientInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstaller;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.replication.ReplicationBenchmarkProcedure;
 import org.neo4j.causalclustering.core.replication.Replicator;

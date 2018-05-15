@@ -20,7 +20,7 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.messaging.marshalling;
+package org.neo4j.causalclustering.messaging.marshalling.v1;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
+import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 
 public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.ClusterIdAwareMessage>
 {
@@ -43,7 +44,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
     }
 
     @Override
-    protected synchronized void encode( ChannelHandlerContext ctx,
+    public synchronized void encode( ChannelHandlerContext ctx,
             RaftMessages.ClusterIdAwareMessage decoratedMessage,
             ByteBuf out ) throws Exception
     {

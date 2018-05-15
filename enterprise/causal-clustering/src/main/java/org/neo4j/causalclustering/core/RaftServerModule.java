@@ -35,7 +35,7 @@ import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessageMonitoringHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessageNettyHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.ReceivedInstantClusterIdAwareMessage;
-import org.neo4j.causalclustering.core.consensus.RaftProtocolServerInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstaller;
 import org.neo4j.causalclustering.core.server.CoreServerModule;
 import org.neo4j.causalclustering.core.state.RaftMessageApplier;
 import org.neo4j.causalclustering.identity.MemberId;

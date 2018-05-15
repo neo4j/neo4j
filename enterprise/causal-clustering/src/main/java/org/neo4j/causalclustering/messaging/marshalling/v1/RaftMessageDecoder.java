@@ -20,7 +20,7 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.messaging.marshalling;
+package org.neo4j.causalclustering.messaging.marshalling.v1;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -37,6 +37,7 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 
 import static org.neo4j.causalclustering.core.consensus.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
@@ -62,7 +63,7 @@ public class RaftMessageDecoder extends ByteToMessageDecoder
     }
 
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list ) throws Exception
+    public void decode( ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list ) throws Exception
     {
         ReadableChannel channel = new NetworkReadableClosableChannelNetty4( buffer );
         ClusterId clusterId = ClusterId.Marshal.INSTANCE.unmarshal( channel );

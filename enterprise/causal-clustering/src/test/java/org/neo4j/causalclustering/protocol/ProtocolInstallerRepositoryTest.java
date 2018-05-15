@@ -27,8 +27,8 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.causalclustering.core.consensus.RaftProtocolClientInstaller;
-import org.neo4j.causalclustering.core.consensus.RaftProtocolServerInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols;
 import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
