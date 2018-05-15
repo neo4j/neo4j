@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.frontend.v3_5.phases.devNullLogger
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_5.{Cardinality, LabelId, RelTypeId}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
@@ -110,5 +111,107 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     transactionalContext.close(true)
     transaction.close()
+  }
+
+  test("indexesGetForLabel should return both regular and unique indexes") {
+    val graph = new GraphDatabaseCypherService(database)
+
+    val setupTransaction = graph.beginTransaction(explicit, AUTH_DISABLED)
+    database.schema().indexFor(Label.label("L1")).on("prop").create()
+    database.schema().indexFor(Label.label("L2")).on("prop").create()
+    database.schema().constraintFor(Label.label("L1")).assertPropertyIsUnique("prop2").create()
+    database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
+    setupTransaction.success()
+    setupTransaction.close()
+
+    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
+    val transactionalContext = createTransactionContext(graph, transaction)
+
+    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
+
+    val l1id = planContext.getLabelId("L1")
+    val prop1id = planContext.getPropertyKeyId("prop")
+    val prop2id = planContext.getPropertyKeyId("prop2")
+    planContext.indexesGetForLabel(l1id).toSet should equal(Set(
+      IndexDescriptor(l1id, prop1id),
+      IndexDescriptor(l1id, prop2id)
+    ))
+  }
+
+  test("uniqueIndexesGetForLabel should return only unique indexes") {
+    val graph = new GraphDatabaseCypherService(database)
+
+    val setupTransaction = graph.beginTransaction(explicit, AUTH_DISABLED)
+    database.schema().indexFor(Label.label("L1")).on("prop").create()
+    database.schema().indexFor(Label.label("L2")).on("prop").create()
+    database.schema().constraintFor(Label.label("L1")).assertPropertyIsUnique("prop2").create()
+    database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
+    setupTransaction.success()
+    setupTransaction.close()
+
+    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
+    val transactionalContext = createTransactionContext(graph, transaction)
+
+    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
+
+    val l1id = planContext.getLabelId("L1")
+    val prop2id = planContext.getPropertyKeyId("prop2")
+    planContext.uniqueIndexesGetForLabel(l1id).toSet should equal(Set(
+      IndexDescriptor(l1id, prop2id)
+    ))
+  }
+
+  test("indexExistsForLabel should return true for both regular and unique indexes") {
+    val graph = new GraphDatabaseCypherService(database)
+
+    val setupTransaction = graph.beginTransaction(explicit, AUTH_DISABLED)
+    database.schema().indexFor(Label.label("L1")).on("prop").create()
+    database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
+    setupTransaction.success()
+    setupTransaction.close()
+
+    val setupTransaction2 = graph.beginTransaction(explicit, AUTH_DISABLED)
+    database.createNode(Label.label("L3"))
+    setupTransaction2.success()
+    setupTransaction2.close()
+
+    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
+    val transactionalContext = createTransactionContext(graph, transaction)
+
+    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
+
+    val l1id = planContext.getLabelId("L1")
+    val l2id = planContext.getLabelId("L2")
+    val l3id = planContext.getLabelId("L3")
+    planContext.indexExistsForLabel(l1id) should be(true)
+    planContext.indexExistsForLabel(l2id) should be(true)
+    planContext.indexExistsForLabel(l3id) should be(false)
+  }
+
+  test("indexExistsForLabelAndProperties should return true for both regular and unique indexes") {
+    val graph = new GraphDatabaseCypherService(database)
+
+    val setupTransaction = graph.beginTransaction(explicit, AUTH_DISABLED)
+    database.schema().indexFor(Label.label("L1")).on("prop").create()
+    database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
+    setupTransaction.success()
+    setupTransaction.close()
+
+    val setupTransaction2 = graph.beginTransaction(explicit, AUTH_DISABLED)
+    database.createNode(Label.label("L3"))
+    setupTransaction2.success()
+    setupTransaction2.close()
+
+    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
+    val transactionalContext = createTransactionContext(graph, transaction)
+
+    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
+
+    planContext.indexExistsForLabelAndProperties("L1", Seq("prop")) should be(true)
+    planContext.indexExistsForLabelAndProperties("L1", Seq("prop2")) should be(false)
+    planContext.indexExistsForLabelAndProperties("L2", Seq("prop")) should be(false)
+    planContext.indexExistsForLabelAndProperties("L2", Seq("prop2")) should be(true)
+    planContext.indexExistsForLabelAndProperties("L3", Seq("prop")) should be(false)
+    planContext.indexExistsForLabelAndProperties("L3", Seq("prop2")) should be(false)
   }
 }
