@@ -2798,7 +2798,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK );
         assertTrue( cursor.next() );
 
-        Thread unmapper = fork( $close( pagedFile ) );
+        Thread unmapper = fork( closePageFile( pagedFile ) );
         unmapper.join( 100 );
 
         cursor.close();
@@ -2816,7 +2816,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK );
         assertTrue( cursor.next() ); // Got a read lock
 
-        fork( $close( pagedFile ) ).join();
+        fork( closePageFile( pagedFile ) ).join();
 
         cursor.close();
     }
@@ -2832,7 +2832,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK );
         assertTrue( cursor.next() ); // Got a pessimistic read lock
 
-        fork( $close( pagedFile ) ).join();
+        fork( closePageFile( pagedFile ) ).join();
 
         expectedException.expect( FileIsNotMappedException.class );
         cursor.next();
@@ -2851,7 +2851,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTrue( cursor.next() );    // fault + unpin page 0
         assertTrue( cursor.next( 0 ) ); // potentially optimistic read lock page 0
 
-        fork( $close( pagedFile ) ).join();
+        fork( closePageFile( pagedFile ) ).join();
 
         try
         {
@@ -2877,7 +2877,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTrue( cursor.next() );    // fault + unpin page 0
         assertTrue( cursor.next( 0 ) ); // potentially optimistic read lock page 0
 
-        fork( $close( pagedFile ) ).join();
+        fork( closePageFile( pagedFile ) ).join();
         pageCache.close();
         pageCache = null;
 

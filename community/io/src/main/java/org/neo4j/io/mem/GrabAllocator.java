@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.mem;
 
+import sun.misc.Cleaner;
+
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
@@ -31,18 +33,9 @@ import static org.neo4j.util.FeatureToggles.getInteger;
  */
 public final class GrabAllocator implements MemoryAllocator
 {
-    /**
-     * The amount of memory, in bytes, to grab in each Grab.
-     */
-    private static final long GRAB_SIZE = getInteger( GrabAllocator.class, "GRAB_SIZE", (int) kibiBytes( 512 ) );
-
-    /**
-     * The amount of memory that this memory manager can still allocate.
-     */
-    private long memoryReserve;
-    private final MemoryAllocationTracker memoryTracker;
-
-    private Grab grabs;
+    private final Grabs grabs;
+    @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
+    private final Cleaner cleaner;
 
     /**
      * Create a new GrabAllocator that will allocate the given amount of memory, to pointers that are aligned to the
@@ -53,126 +46,32 @@ public final class GrabAllocator implements MemoryAllocator
      */
     GrabAllocator( long expectedMaxMemory, MemoryAllocationTracker memoryTracker )
     {
-        this.memoryReserve = expectedMaxMemory;
-        this.memoryTracker = memoryTracker;
+        this.grabs = new Grabs( expectedMaxMemory, memoryTracker );
+        this.cleaner = Cleaner.create( this, new GrabsDeallocator( grabs ) );
     }
 
     @Override
     public synchronized long usedMemory()
     {
-        long sum = 0;
-        Grab grab = grabs;
-        while ( grab != null )
-        {
-            sum += grab.nextPointer - grab.address;
-            grab = grab.next;
-        }
-        return sum;
+        return grabs.usedMemory();
     }
 
     @Override
     public synchronized long availableMemory()
     {
-        Grab grab = grabs;
-        long availableInCurrentGrab = 0;
-        if ( grab != null )
-        {
-            availableInCurrentGrab = grab.limit - grab.nextPointer;
-        }
-        return Math.max( memoryReserve, 0L ) + availableInCurrentGrab;
+        return grabs.availableMemory();
     }
 
     @Override
     public synchronized long allocateAligned( long bytes, long alignment )
     {
-        if ( alignment <= 0 )
-        {
-            throw new IllegalArgumentException( "Invalid alignment: " + alignment + ". Alignment must be positive." );
-        }
-        long grabSize = Math.min( GRAB_SIZE, memoryReserve );
-        try
-        {
-            if ( bytes > GRAB_SIZE )
-            {
-                // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
-                grabSize = bytes;
-                Grab nextGrab = grabs == null ? null : grabs.next;
-                Grab allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
-                if ( !allocationGrab.canAllocate( bytes, alignment ) )
-                {
-                    allocationGrab.free();
-                    grabSize = bytes + alignment;
-                    allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
-                }
-                long allocation = allocationGrab.allocate( bytes, alignment );
-                grabs = grabs == null ? allocationGrab : grabs.setNext( allocationGrab );
-                memoryReserve -= bytes;
-                return allocation;
-            }
-
-            if ( grabs == null || !grabs.canAllocate( bytes, alignment ) )
-            {
-                if ( grabSize < bytes )
-                {
-                    grabSize = bytes;
-                    Grab grab = new Grab( grabs, grabSize, memoryTracker );
-                    if ( grab.canAllocate( bytes, alignment ) )
-                    {
-                        memoryReserve -= grabSize;
-                        grabs = grab;
-                        return grabs.allocate( bytes, alignment );
-                    }
-                    grab.free();
-                    grabSize = bytes + alignment;
-                }
-                grabs = new Grab( grabs, grabSize, memoryTracker );
-                memoryReserve -= grabSize;
-            }
-            return grabs.allocate( bytes, alignment );
-        }
-        catch ( OutOfMemoryError oome )
-        {
-            NativeMemoryAllocationRefusedError error =
-                    new NativeMemoryAllocationRefusedError( grabSize, usedMemory() );
-            initCause( error, oome );
-            throw error;
-        }
-    }
-
-    private void initCause( NativeMemoryAllocationRefusedError error, OutOfMemoryError cause )
-    {
-        try
-        {
-            error.initCause( cause );
-        }
-        catch ( Throwable ignore )
-        {
-            // This can only happen if our NMARE somehow already has a cause initialised, which should not
-            // be the case, but it could if the JDK decided to inject a default cause in some future version.
-            // To avoid loosing the ability to trace this cause back, we'll add it as a suppressed exception
-            // instead.
-            try
-            {
-                error.addSuppressed( cause );
-            }
-            catch ( Throwable ignore2 )
-            {
-                // Okay, we tried.
-            }
-        }
+        return grabs.allocateAligned( bytes, alignment );
     }
 
     @Override
-    protected synchronized void finalize() throws Throwable
+    public void close()
     {
-        super.finalize();
-        Grab current = grabs;
-
-        while ( current != null )
-        {
-            current.free();
-            current = current.next;
-        }
+        cleaner.clean();
     }
 
     private static class Grab
@@ -244,6 +143,154 @@ public final class GrabAllocator implements MemoryAllocator
             long reserve = nextPointer > limit ? 0 : limit - nextPointer;
             double use = (1.0 - reserve / ((double) size)) * 100.0;
             return String.format( "Grab[size = %d bytes, reserve = %d bytes, use = %5.2f %%]", size, reserve, use );
+        }
+    }
+
+    private static final class Grabs
+    {
+        /**
+         * The amount of memory, in bytes, to grab in each Grab.
+         */
+        private static final long GRAB_SIZE = getInteger( GrabAllocator.class, "GRAB_SIZE", (int) kibiBytes( 512 ) );
+
+        private final MemoryAllocationTracker memoryTracker;
+        private long expectedMaxMemory;
+        private Grab head;
+
+        Grabs( long expectedMaxMemory, MemoryAllocationTracker memoryTracker )
+        {
+            this.expectedMaxMemory = expectedMaxMemory;
+            this.memoryTracker = memoryTracker;
+        }
+
+        long usedMemory()
+        {
+            long sum = 0;
+            Grab grab = head;
+            while ( grab != null )
+            {
+                sum += grab.nextPointer - grab.address;
+                grab = grab.next;
+            }
+            return sum;
+        }
+
+        long availableMemory()
+        {
+            Grab grab = head;
+            long availableInCurrentGrab = 0;
+            if ( grab != null )
+            {
+                availableInCurrentGrab = grab.limit - grab.nextPointer;
+            }
+            return Math.max( expectedMaxMemory, 0L ) + availableInCurrentGrab;
+        }
+
+        public void close()
+        {
+            Grab current = head;
+
+            while ( current != null )
+            {
+                current.free();
+                current = current.next;
+            }
+            head = null;
+        }
+
+        long allocateAligned( long bytes, long alignment )
+        {
+            if ( alignment <= 0 )
+            {
+                throw new IllegalArgumentException( "Invalid alignment: " + alignment + ". Alignment must be positive." );
+            }
+            long grabSize = Math.min( GRAB_SIZE, expectedMaxMemory );
+            try
+            {
+                if ( bytes > GRAB_SIZE )
+                {
+                    // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
+                    grabSize = bytes;
+                    Grab nextGrab = head == null ? null : head.next;
+                    Grab allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
+                    if ( !allocationGrab.canAllocate( bytes, alignment ) )
+                    {
+                        allocationGrab.free();
+                        grabSize = bytes + alignment;
+                        allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
+                    }
+                    long allocation = allocationGrab.allocate( bytes, alignment );
+                    head = head == null ? allocationGrab : head.setNext( allocationGrab );
+                    expectedMaxMemory -= bytes;
+                    return allocation;
+                }
+
+                if ( head == null || !head.canAllocate( bytes, alignment ) )
+                {
+                    if ( grabSize < bytes )
+                    {
+                        grabSize = bytes;
+                        Grab grab = new Grab( head, grabSize, memoryTracker );
+                        if ( grab.canAllocate( bytes, alignment ) )
+                        {
+                            expectedMaxMemory -= grabSize;
+                            head = grab;
+                            return head.allocate( bytes, alignment );
+                        }
+                        grab.free();
+                        grabSize = bytes + alignment;
+                    }
+                    head = new Grab( head, grabSize, memoryTracker );
+                    expectedMaxMemory -= grabSize;
+                }
+                return head.allocate( bytes, alignment );
+            }
+            catch ( OutOfMemoryError oome )
+            {
+                NativeMemoryAllocationRefusedError error =
+                        new NativeMemoryAllocationRefusedError( grabSize, usedMemory() );
+                initCause( error, oome );
+                throw error;
+            }
+        }
+
+        private static void initCause( NativeMemoryAllocationRefusedError error, OutOfMemoryError cause )
+        {
+            try
+            {
+                error.initCause( cause );
+            }
+            catch ( Throwable ignore )
+            {
+                // This can only happen if our NMARE somehow already has a cause initialised, which should not
+                // be the case, but it could if the JDK decided to inject a default cause in some future version.
+                // To avoid loosing the ability to trace this cause back, we'll add it as a suppressed exception
+                // instead.
+                try
+                {
+                    error.addSuppressed( cause );
+                }
+                catch ( Throwable ignore2 )
+                {
+                    // Okay, we tried.
+                }
+            }
+        }
+    }
+
+    private static final class GrabsDeallocator implements Runnable
+    {
+        private final Grabs grabs;
+
+        GrabsDeallocator( Grabs grabs )
+        {
+            this.grabs = grabs;
+        }
+
+        @Override
+        public void run()
+        {
+            grabs.close();
         }
     }
 }
