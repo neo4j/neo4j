@@ -736,8 +736,7 @@ public class ReadOperations implements TxStateHolder,
             throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
-        return storageReader.indexUpdatesAndSize(
-                SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
+        return storageReader.indexUpdatesAndSize( index, target );
     }
 
     @Override
@@ -745,8 +744,7 @@ public class ReadOperations implements TxStateHolder,
             throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
-        return storageReader.indexSample(
-                SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
+        return storageReader.indexSample( index, target );
     }
 
     @Override
