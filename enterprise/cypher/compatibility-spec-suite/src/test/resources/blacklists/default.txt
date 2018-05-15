@@ -16,3 +16,6 @@ Feature "DeleteAcceptance": Scenario "Deleting connected nodes"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+
+//Bug in TCK keys should not mandate order
+Feature "KeysAcceptance": Scenario "Using `keys()` on a literal map"
