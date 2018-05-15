@@ -53,7 +53,7 @@ class LazyMap[T](ctx: QueryContext, ops: Operations[T], id: Long)
   extends MapValue {
 
  import scala.collection.JavaConverters._
-//
+
   private lazy val allProps: util.Map[String, AnyValue] = ops.propertyKeyIds(id)
     .map(propertyId => {
       val value: AnyValue = ops.getProperty(id, propertyId)
@@ -81,7 +81,7 @@ class LazyMap[T](ctx: QueryContext, ops: Operations[T], id: Long)
           Values.NO_VALUE
       }
 
-  override def size(): Int = ops.propertyKeyIds(id).size
+  override def size(): Int = allProps.size()
 }
 
 object MapSupport {
