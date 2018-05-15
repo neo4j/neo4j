@@ -36,6 +36,7 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 
@@ -87,7 +88,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         commit();
 
         // then
-        assertTrue( "Created node was not found", nodeId == foundId );
+        assertEquals( "Created node was not found", nodeId, foundId );
     }
 
     @Test
@@ -124,7 +125,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         commit();
 
         // then
-        assertTrue( "Created node was not found", nodeId == foundId );
+        assertEquals( "Created node was not found", nodeId, foundId );
     }
 
     @Test

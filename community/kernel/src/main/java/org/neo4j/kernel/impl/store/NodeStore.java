@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -41,7 +40,7 @@ import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FO
 /**
  * Implementation of the node store.
  */
-public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader> implements StoreStatement.Nodes
+public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
 {
     public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
     {
@@ -58,7 +57,6 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader> imp
         return bits.getLong( requiredBits );
     }
 
-    @Override
     public RecordCursor<DynamicRecord> newLabelCursor()
     {
         return dynamicLabelStore.newRecordCursor( dynamicLabelStore.newRecord() ).acquire( getNumberOfReservedLowIds(),

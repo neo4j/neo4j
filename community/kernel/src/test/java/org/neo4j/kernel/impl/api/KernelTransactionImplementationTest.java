@@ -35,12 +35,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.test.DoubleLatch;
 
@@ -379,14 +379,14 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         } ).when( storageEngine ).createCommands(
                 any( Collection.class ),
                 any( TransactionState.class ),
-                any( StorageStatement.class ),
+                any( StorageReader.class ),
                 any( ResourceLocker.class ),
                 anyLong() );
 
         try ( KernelTransactionImplementation transaction = newTransaction( loginContext() ) )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( mock( Locks.Client.class ) );
-            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
+            transaction.begin( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
                     SecurityContext.AUTH_DISABLED, 0L, 1L );
             transaction.txState();
             try ( KernelStatement statement = transaction.acquireStatement() )
@@ -448,7 +448,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         // WHEN
         transaction.close();
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
+        transaction.begin( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
                 loginContext().authorize( s -> -1 ), 0L, 1L );
 
         // THEN
@@ -670,7 +670,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( s -> -1 ), 0L, 0L );
+        tx.begin( 42, 42, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( s -> -1 ), 0L, 0L );
 
         assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
 
@@ -690,7 +690,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit,
+        tx.begin( 42, 42, statementLocks, KernelTransaction.Type.implicit,
                 loginContext().authorize( s -> -1 ), 0L, 0L );
 
         assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
@@ -758,7 +758,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         for ( int i = 0; i < times; i++ )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( s -> -1 ), 0L, 0L );
+            tx.begin( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( s -> -1 ), 0L, 0L );
             tx.close();
         }
     }

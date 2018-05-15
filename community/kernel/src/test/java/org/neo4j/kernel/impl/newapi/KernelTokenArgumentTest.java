@@ -25,14 +25,14 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class KernelTokenArgumentTest
 {
-    private KernelToken token = new KernelToken( mock( StoreReadLayer.class ), mock( KernelTransactionImplementation.class) );
+    private KernelToken token = new KernelToken( mock( StorageReader.class ), mock( KernelTransactionImplementation.class) );
 
     @Test
     public void labelGetOrCreateForName()

@@ -79,7 +79,6 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -158,7 +157,6 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
-import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.FeatureToggles;
 
@@ -462,7 +460,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     logFiles,
                     transactionLogModule.transactionAppender(),
                     dependencies.resolveDependency( IndexingService.class ),
-                    storageEngine.storeReadLayer(),
                     databaseSchemaState,
                     dependencies.resolveDependency( LabelScanStore.class ),
                     storageEngine,
@@ -481,7 +478,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             dependencies.satisfyDependency( this );
             dependencies.satisfyDependency( databaseSchemaState );
-            dependencies.satisfyDependency( storageEngine.storeReadLayer() );
             dependencies.satisfyDependency( logEntryReader );
             dependencies.satisfyDependency( storageEngine );
             dependencies.satisfyDependency( explicitIndexProviderLookup );
@@ -652,7 +648,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
             IndexingService indexingService,
-            StoreReadLayer storeLayer, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
+            DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
             AvailabilityGuard availabilityGuard, SystemNanoClock clock, PropertyAccessor propertyAccessor )
     {
@@ -685,9 +681,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 constraintIndexCreator, statementOperationParts, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
-                cpuClockRef, heapAllocationRef, accessCapability, DefaultCursors::new, autoIndexing,
+                cpuClockRef, heapAllocationRef, accessCapability, autoIndexing,
                 explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                databaseSchemaState, indexingService ) );
+                databaseSchemaState, indexingService, propertyKeyTokenHolder ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
@@ -847,11 +843,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         storageEngine.registerDiagnostics( manager );
         manager.registerAll( Diagnostics.class, this );
-    }
-
-    public StoreReadLayer getStoreLayer()
-    {
-        return storageEngine.storeReadLayer();
     }
 
     public DependencyResolver getDependencyResolver()

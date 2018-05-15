@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -40,10 +40,10 @@ import static org.mockito.Mockito.when;
 public class KernelStatementTest
 {
     @Test
-    public void shouldReleaseStorageStatementWhenForceClosed()
+    public void shouldReleaseStorageReaderWhenForceClosed()
     {
         // given
-        StorageStatement storeStatement = mock( StorageStatement.class );
+        StorageReader storeStatement = mock( StorageReader.class );
         KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
                 null, storeStatement, LockTracer.NONE,
                 mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );
@@ -60,7 +60,7 @@ public class KernelStatementTest
         }
 
         // then
-        verify( storeStatement ).release();
+        verify( storeStatement ).endStatement();
     }
 
     @Test( expected = NotInTransactionException.class )
@@ -68,7 +68,7 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );
-        StorageStatement storeStatement = mock( StorageStatement.class );
+        StorageReader storeStatement = mock( StorageReader.class );
         KernelStatement statement = new KernelStatement( transaction, txStateHolder,
                 storeStatement, LockTracer.NONE, mock( StatementOperationParts.class ),
                 new ClockContext(), EmptyVersionContextSupplier.EMPTY );
@@ -81,7 +81,7 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );
-        StorageStatement storeStatement = mock( StorageStatement.class );
+        StorageReader storeStatement = mock( StorageReader.class );
 
         KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ) );

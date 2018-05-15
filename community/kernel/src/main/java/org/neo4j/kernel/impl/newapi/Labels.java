@@ -46,7 +46,7 @@ public class Labels implements LabelSet
         return new Labels( labels );
     }
 
-    static Labels from( Collection<Integer> integers )
+    public static Labels from( Collection<Integer> integers )
     {
         int size = integers.size();
         long[] tokens = new long[size];
@@ -58,7 +58,7 @@ public class Labels implements LabelSet
         return new Labels( tokens );
     }
 
-    static Labels from( IntSet set )
+    public static Labels from( IntSet set )
     {
         return new Labels( asLongArray( set ) );
     }

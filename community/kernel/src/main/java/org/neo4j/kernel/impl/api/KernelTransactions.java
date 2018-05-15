@@ -44,12 +44,12 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.ExplicitIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -98,10 +98,10 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final VersionContextSupplier versionContextSupplier;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
-    private final Supplier<DefaultCursors> cursorsSupplier;
     private final AutoIndexing autoIndexing;
     private final ExplicitIndexStore explicitIndexStore;
     private final IndexingService indexingService;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final SchemaState schemaState;
 
@@ -143,14 +143,14 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore,
             SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
-            Supplier<DefaultCursors> cursorsSupplier,
             AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore,
             VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics,
             SchemaState schemaState,
-            IndexingService indexingService )
+            IndexingService indexingService,
+            PropertyKeyTokenHolder propertyKeyTokenHolder )
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -171,13 +171,13 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.autoIndexing = autoIndexing;
         this.explicitIndexStore = explicitIndexStore;
         this.indexingService = indexingService;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.explicitIndexTxStateSupplier = () ->
                 new CachingExplicitIndexTransactionState(
                         new ExplicitIndexTransactionStateImpl( indexConfigStore, explicitIndexProviderLookup ) );
         this.versionContextSupplier = versionContextSupplier;
         this.clock = clock;
         doBlockNewTransactions();
-        this.cursorsSupplier = cursorsSupplier;
         this.collectionsFactorySupplier = collectionsFactorySupplier;
         this.constraintSemantics = constraintSemantics;
         this.schemaState = schemaState;
@@ -186,8 +186,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext securityContext = loginContext.authorize( p -> storageEngine
-                .storeReadLayer().propertyKeyGetOrCreateForName( p ) );
+        SecurityContext securityContext = loginContext.authorize( propertyKeyTokenHolder::getOrCreateId );
         try
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )
@@ -200,7 +199,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                 TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
                 KernelTransactionImplementation tx = localTxPool.acquire();
                 StatementLocks statementLocks = statementLocksFactory.newInstance();
-                tx.initialize( lastCommittedTransaction.transactionId(), lastCommittedTransaction.commitTimestamp(),
+                tx.begin( lastCommittedTransaction.transactionId(), lastCommittedTransaction.commitTimestamp(),
                         statementLocks, type, securityContext, timeout, userTransactionIdCounter.incrementAndGet() );
                 return tx;
             }
@@ -372,7 +371,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             transactionCommitProcess, transactionMonitor, explicitIndexTxStateSupplier, localTxPool,
                             clock, cpuClockRef, heapAllocationRef, tracers.transactionTracer, tracers.lockTracer,
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
-                            cursorsSupplier.get(), autoIndexing,
+                            autoIndexing,
                             explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, indexingService );
             this.transactions.add( tx );
