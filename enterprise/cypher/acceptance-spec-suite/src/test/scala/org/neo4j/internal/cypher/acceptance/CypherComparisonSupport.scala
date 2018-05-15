@@ -345,14 +345,14 @@ object CypherComparisonSupport {
 
     object V3_3 extends Version("3.3") {
       // 3.3 has 3.4 runtime
-      override val acceptedRuntimeVersionNames = Set("3.4")
+      override val acceptedRuntimeVersionNames = Set("3.5")
     }
 
-    object v3_5 extends Version("3.4")
+    object v3_5 extends Version("3.5")
 
     object Default extends Version("") {
-      override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.3", "3.4")
-      override val acceptedPlannerVersionNames = Set("2.3", "3.1", "3.3", "3.4")
+      override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.3", "3.5")
+      override val acceptedPlannerVersionNames = Set("2.3", "3.1", "3.3", "3.5")
     }
 
   }

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_5.InternalException
-import org.neo4j.cypher.internal.v3_5.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyName, PropertyKeyToken, Expression => ASTExpression}
+import org.neo4j.cypher.internal.v3_5.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
 import org.neo4j.cypher.internal.v3_5.functions.Point
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
@@ -36,7 +36,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, Boolean, 
                      cardinalities: Cardinalities): InternalPlanDescription = {
     new LogicalPlan2PlanDescription(readOnly, cardinalities).create(input)
       .addArgument(Version("CYPHER "+plannerName.version))
-      .addArgument(RuntimeVersion("3.4"))
+      .addArgument(RuntimeVersion("3.5"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
       .addArgument(PlannerVersion(plannerName.version))

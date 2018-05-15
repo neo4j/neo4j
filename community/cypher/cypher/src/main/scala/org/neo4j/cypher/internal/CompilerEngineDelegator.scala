@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.util.v3_5.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, exceptionHandler, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK, RUNTIME_UNSUPPORTED, START_DEPRECATED, START_UNAVAILABLE_FALLBACK}
+import org.neo4j.graphdb.impl.notification.NotificationCode._
 import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.message
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Config
@@ -169,7 +169,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
           produceParsedQuery(preParsedQuery, tracer, preParsingNotifications)
 
         parserQuery.onError {
-          // if there is a create unique in the cypher 3.4 query try to fallback to 3.1
+          // if there is a create unique in the cypher 3.5 query try to fallback to 3.1
           case ex: util.v3_5.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             preParsingNotifications = preParsingNotifications +
               createUniqueNotification(ex, preParsedQuery)
