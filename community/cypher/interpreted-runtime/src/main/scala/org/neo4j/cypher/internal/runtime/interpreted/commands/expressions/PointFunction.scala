@@ -33,7 +33,7 @@ import org.neo4j.values.virtual.{MapValue, VirtualNodeValue, VirtualRelationship
 object PointFunction {
   private val FILTER_VALID_KEYS = new BiFunction[String, AnyValue, java.lang.Boolean] {
     override def apply(t: String,
-                       u: AnyValue): java.lang.Boolean = PointValue.ALLOWED_KEYS.exists(_.equalsIgnoreCase(t))
+                       ignore: AnyValue): java.lang.Boolean = PointValue.ALLOWED_KEYS.exists(_.equalsIgnoreCase(t))
   }
 }
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
@@ -47,7 +47,7 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
       } else {
         //TODO: We might consider removing this code if the PointBuilder.allowOpenMaps=true remains default
         if (value.isInstanceOf[VirtualNodeValue] || value.isInstanceOf[VirtualRelationshipValue]) {
-          map.filter(PointFunction.FILTER_VALID_KEYS)
+          PointValue.fromMap(map.filter(PointFunction.FILTER_VALID_KEYS))
         }
         else {
           PointValue.fromMap(map)
