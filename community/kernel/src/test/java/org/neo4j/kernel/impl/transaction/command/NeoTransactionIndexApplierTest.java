@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
 
-import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;

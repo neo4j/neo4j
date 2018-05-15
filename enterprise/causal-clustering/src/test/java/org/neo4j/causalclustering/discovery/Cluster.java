@@ -66,12 +66,12 @@ import org.neo4j.test.DbRepresentation;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.function.Predicates.await;
 import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.function.Predicates.notNull;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
+import static org.neo4j.util.concurrent.Futures.combine;
 
 public class Cluster
 {

@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
-import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -57,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;

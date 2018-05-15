@@ -17,19 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.concurrent;
+package org.neo4j.util.concurrent;
+
+import java.util.concurrent.ExecutionException;
 
 /**
- * An end-point of sorts, through which events can be sent or queued up for background processing.
- *
- * @param <T> The type of {@code AsyncEvent} objects this {@code AsyncEventSender} and process.
+ * The past or future application of work submitted asynchronously to a {@link WorkSync}.
  */
-public interface AsyncEventSender<T extends AsyncEvent>
+public interface AsyncApply
 {
     /**
-     * Send the given event to a background thread for processing.
+     * Await the application of the work submitted to a {@link WorkSync}.
+     * <p>
+     * If the work is already done, then this method with return immediately.
+     * <p>
+     * If the work has not been done, then this method will attempt to grab the {@code WorkSync} lock to complete the
+     * work, or block to wait for another thread to complete the work on behalf of the current thread.
      *
-     * @param event The event that needs to be processed in the background.
+     * @throws ExecutionException if this thread ends up performing the work, and an exception is thrown from the
+     * attempt to apply the work.
      */
-    void send( T event );
+    void await() throws ExecutionException;
 }

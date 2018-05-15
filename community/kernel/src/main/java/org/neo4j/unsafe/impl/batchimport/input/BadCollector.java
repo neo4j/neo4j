@@ -23,9 +23,9 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.concurrent.AsyncEvent;
-import org.neo4j.concurrent.AsyncEvents;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
+import org.neo4j.util.concurrent.AsyncEvent;
+import org.neo4j.util.concurrent.AsyncEvents;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.Exceptions.withMessage;

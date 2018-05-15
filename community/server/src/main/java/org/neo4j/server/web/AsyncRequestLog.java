@@ -33,7 +33,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.concurrent.AsyncEvents;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.FormattedLogProvider;
@@ -41,6 +40,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.logging.async.AsyncLogEvent;
 import org.neo4j.logging.async.AsyncLogProvider;
+import org.neo4j.util.concurrent.AsyncEvents;
 
 import static org.apache.commons.lang.StringUtils.defaultString;
 

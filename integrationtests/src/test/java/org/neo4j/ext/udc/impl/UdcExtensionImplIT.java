@@ -44,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.concurrent.RecentK;
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.ext.udc.UdcSettings;
@@ -59,6 +58,7 @@ import org.neo4j.test.mockito.matcher.RegexMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
+import org.neo4j.util.concurrent.RecentK;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;

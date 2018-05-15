@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
@@ -72,6 +71,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;

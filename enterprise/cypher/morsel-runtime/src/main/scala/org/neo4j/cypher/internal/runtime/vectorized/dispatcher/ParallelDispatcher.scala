@@ -23,11 +23,11 @@ import java.util.concurrent.Executor
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import java.util.{concurrent, function}
 
-import org.neo4j.concurrent.BinaryLatch
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_5.{InternalException, TaskCloser}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
+import org.neo4j.util.concurrent.BinaryLatch
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._

@@ -27,8 +27,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.test.ThreadTestUtils;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;

@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.concurrent.Runnables;
+import org.neo4j.util.concurrent.Runnables;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.ThreadLocalRandom.current;
