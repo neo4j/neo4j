@@ -22,7 +22,6 @@ package org.neo4j.server.modules;
 import java.net.URI;
 import java.util.List;
 
-import org.neo4j.concurrent.RecentK;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -40,6 +39,7 @@ import org.neo4j.server.rest.web.TransactionalService;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
+import org.neo4j.util.concurrent.RecentK;
 
 import static java.util.Arrays.asList;
 

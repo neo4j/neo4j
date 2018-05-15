@@ -33,12 +33,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.causalclustering.stresstests.Config;
 import org.neo4j.causalclustering.stresstests.Control;
-import org.neo4j.concurrent.Futures;
 import org.neo4j.diagnostics.utils.DumpUtils;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.util.concurrent.Futures;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;

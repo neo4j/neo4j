@@ -23,8 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-import org.neo4j.concurrent.AsyncEventSender;
-import org.neo4j.concurrent.AsyncEvents;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -33,6 +31,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.async.AsyncLogEvent;
 import org.neo4j.logging.async.AsyncLogProvider;
+import org.neo4j.util.concurrent.AsyncEventSender;
+import org.neo4j.util.concurrent.AsyncEvents;
 
 import static org.neo4j.util.FeatureToggles.flag;
 

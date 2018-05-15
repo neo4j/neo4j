@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.concurrent.atomic.LongAdder;
 
-import org.neo4j.concurrent.Work;
+import org.neo4j.util.concurrent.Work;
 
 class SendDownstream implements Work<Downstream,SendDownstream>
 {

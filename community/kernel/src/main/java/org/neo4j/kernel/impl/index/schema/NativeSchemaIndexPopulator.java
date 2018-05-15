@@ -29,8 +29,6 @@ import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
-import org.neo4j.concurrent.Work;
-import org.neo4j.concurrent.WorkSync;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -52,6 +50,8 @@ import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.util.concurrent.Work;
+import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;

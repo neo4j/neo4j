@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.concurrent;
+package org.neo4j.util.concurrent;
 
-/**
- * The base-class for events that can be processed with an {@link AsyncEvents} processor.
- */
-public abstract class AsyncEvent
+public class Runnables
 {
-    volatile AsyncEvent next;
+    public static final Runnable EMPTY_RUNNABLE = () ->
+    {
+        // empty
+    };
 }
