@@ -251,13 +251,6 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     }
 
     @Override
-    public long indexSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( descriptor );
-        return result.readSecond();
-    }
-
-    @Override
     public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.constraintsForSchema( descriptor );
@@ -427,23 +420,9 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor, DoubleLongRegister target )
-            throws IndexNotFoundKernelException
-    {
-        return counts.indexUpdatesAndSize( tryGetIndexId( descriptor ), target );
-    }
-
-    @Override
     public DoubleLongRegister indexUpdatesAndSize( IndexReference index, DoubleLongRegister target ) throws IndexNotFoundKernelException
     {
         return counts.indexUpdatesAndSize( tryGetIndexId( toDescriptor( index ).schema() ), target );
-    }
-
-    @Override
-    public DoubleLongRegister indexSample( SchemaDescriptor descriptor, DoubleLongRegister target )
-            throws IndexNotFoundKernelException
-    {
-        return counts.indexSample( tryGetIndexId( descriptor ), target );
     }
 
     @Override

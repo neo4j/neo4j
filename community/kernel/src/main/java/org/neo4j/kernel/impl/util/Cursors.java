@@ -27,54 +27,6 @@ import org.neo4j.cursor.RawCursor;
 
 public class Cursors
 {
-    private static Cursor<Object> EMPTY = new Cursor<Object>()
-    {
-        @Override
-        public boolean next()
-        {
-            return false;
-        }
-
-        @Override
-        public Object get()
-        {
-            throw new IllegalStateException( "no elements" );
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
-
-    @SuppressWarnings( "unchecked" )
-    private Cursors()
-    {
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public static <T> Cursor<T> empty()
-    {
-        return (Cursor<T>) EMPTY;
-    }
-
-    public static <E extends Exception> int count( RawCursor<?,E> cursor ) throws E
-    {
-        try
-        {
-            int count = 0;
-            while ( cursor.next() )
-            {
-                count++;
-            }
-            return count;
-        }
-        finally
-        {
-            cursor.close();
-        }
-    }
-
     public static <T, EX extends Exception> RawCursor<T,EX> rawCursorOf( T... values )
     {
         return new RawCursor<T,EX>()

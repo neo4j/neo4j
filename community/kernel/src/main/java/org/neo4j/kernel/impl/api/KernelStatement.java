@@ -194,11 +194,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
         recordOpenCloseMethods();
     }
 
-    final boolean isAcquired()
-    {
-        return referenceCount > 0;
-    }
-
     final void forceClose()
     {
         if ( referenceCount > 0 )
@@ -264,11 +259,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
         return versionContextSupplier.getVersionContext();
     }
 
-    void assertAllows( Function<AccessMode,Boolean> allows, String mode )
-    {
-      transaction.assertAllows( allows, mode );
-    }
-
     private void recordOpenCloseMethods()
     {
         if ( RECORD_STATEMENTS_TRACES )
@@ -282,14 +272,8 @@ public class KernelStatement extends CloseableResourceManager implements TxState
         }
     }
 
-    public ClockContext clocks()
-    {
-        return clockContext;
-    }
-
     static class StatementNotClosedException extends IllegalStateException
     {
-
         StatementNotClosedException( String s, Deque<StackTraceElement[]> openCloseTraces )
         {
             super( s );

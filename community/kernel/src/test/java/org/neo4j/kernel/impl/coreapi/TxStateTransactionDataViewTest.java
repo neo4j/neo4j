@@ -89,7 +89,6 @@ public class TxStateTransactionDataViewTest
         when( ops.allocatePropertyCursorCommitted() ).thenReturn( propertyCursor );
         relationshipCursor = new StubRelationshipCursor();
         when( ops.allocateRelationshipScanCursorCommitted() ).thenReturn( relationshipCursor );
-        when( ops.allocateRelationshipTraversalCursor() ).thenReturn( relationshipCursor );
         doAnswer( invocationOnMock ->
         {
             relationshipCursor.single( invocationOnMock.getArgument( 0 ) );

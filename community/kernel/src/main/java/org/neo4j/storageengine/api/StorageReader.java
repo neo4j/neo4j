@@ -199,53 +199,11 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      */
     void releaseRelationship( long id );
 
-    /**
-     * Returns number of stored nodes labeled with the label represented by {@code labelId}.
-     *
-     * @param labelId label id to match.
-     * @return number of stored nodes with this label.
-     */
-    long countsForNode( int labelId );
-
-    /**
-     * Returns number of stored relationships of a certain {@code typeId} whose start/end nodes are labeled
-     * with the {@code startLabelId} and {@code endLabelId} respectively.
-     *
-     * @param startLabelId label id of start nodes to match.
-     * @param typeId relationship type id to match.
-     * @param endLabelId label id of end nodes to match.
-     * @return number of stored relationships matching these criteria.
-     */
-    long countsForRelationship( int startLabelId, int typeId, int endLabelId );
-
-    /**
-     * Returns size of index, i.e. number of entities in that index.
-     *
-     * @param descriptor {@link SchemaDescriptor} to return size for.
-     * @return number of entities in the given index.
-     * @throws IndexNotFoundKernelException if no such index exists.
-     */
-    long indexSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    long nodesGetCount();
-
-    long relationshipsGetCount();
-
     int labelCount();
 
     int propertyKeyCount();
 
     int relationshipTypeCount();
-
-    DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor, DoubleLongRegister target )
-            throws IndexNotFoundKernelException;
-
-    DoubleLongRegister indexSample( SchemaDescriptor descriptor, DoubleLongRegister target )
-            throws IndexNotFoundKernelException;
-
-    boolean nodeExists( long id );
-
-    boolean relationshipExists( long id );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
 
