@@ -22,6 +22,7 @@
  */
 package org.neo4j.kernel.impl.enterprise.store.id;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,7 +56,7 @@ public class NodeIdReuseStressIT
     private static final int OPERATIONS_COUNT = 10_000;
 
     @Rule
-    public DatabaseRule db = new EnterpriseDatabaseRule()
+    public final DatabaseRule db = new EnterpriseDatabaseRule()
             .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE.name() );
 
     @Before
@@ -123,7 +124,17 @@ public class NodeIdReuseStressIT
         if ( iteration % 100 == 0 && ThreadLocalRandom.current().nextBoolean() )
         {
             DependencyResolver resolver = dependencyResolver( db );
-            resolver.resolveDependency( IdController.class ).maintenance();
+            IdController idController = resolver.resolveDependency( IdController.class );
+            if ( idController != null )
+            {
+                idController.maintenance();
+            }
+            else
+            {
+                System.out.println( "Id controller is null. Dumping resolver content." );
+                System.out.println( "Resolver: " + ReflectionToStringBuilder.toString( resolver ) );
+                throw new IllegalStateException( "Id controller not found" );
+            }
         }
     }
 
