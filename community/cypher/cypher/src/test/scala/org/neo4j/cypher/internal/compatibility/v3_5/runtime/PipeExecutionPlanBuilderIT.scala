@@ -19,14 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-import java.time.Clock
-
 import org.mockito.Mockito.{atLeastOnce, verify, when}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
@@ -38,8 +32,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken.Re
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.util.v3_5.RelTypeId
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_5.{Cardinality, RelTypeId}
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 
