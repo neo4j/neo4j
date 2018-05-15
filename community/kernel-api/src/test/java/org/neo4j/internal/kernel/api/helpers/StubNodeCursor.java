@@ -47,7 +47,7 @@ public class StubNodeCursor implements NodeCursor
         this.dense = dense;
     }
 
-    void single( long reference )
+    public void single( long reference )
     {
         offset = Integer.MAX_VALUE;
         for ( int i = 0; i < nodes.size(); i++ )

@@ -20,7 +20,11 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+
+import org.neo4j.values.storable.Value;
 
 public class TestRelationshipChain
 {
@@ -40,19 +44,34 @@ public class TestRelationshipChain
 
     public TestRelationshipChain outgoing( long id, long targetNode, int type )
     {
-        data.add( new Data( id, originNodeId, targetNode, type ) );
+        return outgoing( id, targetNode, type, Collections.emptyMap() );
+    }
+
+    public TestRelationshipChain outgoing( long id, long targetNode, int type, Map<Integer,Value> properties )
+    {
+        data.add( new Data( id, originNodeId, targetNode, type, properties ) );
         return this;
     }
 
     public TestRelationshipChain incoming( long id, long sourceNode, int type )
     {
-        data.add( new Data( id, sourceNode, originNodeId, type ) );
+        return incoming( id, sourceNode, type, Collections.emptyMap() );
+    }
+
+    public TestRelationshipChain incoming( long id, long sourceNode, int type, Map<Integer,Value> properties )
+    {
+        data.add( new Data( id, sourceNode, originNodeId, type, properties ) );
         return this;
     }
 
     public TestRelationshipChain loop( long id, int type )
     {
-        data.add( new Data( id, originNodeId, originNodeId, type ) );
+        return loop( id, type, Collections.emptyMap() );
+    }
+
+    public TestRelationshipChain loop( long id, int type, Map<Integer,Value> properties )
+    {
+        data.add( new Data( id, originNodeId, originNodeId, type, properties ) );
         return this;
     }
 
@@ -82,13 +101,15 @@ public class TestRelationshipChain
         final long source;
         final long target;
         final int type;
+        final Map<Integer,Value> properties;
 
-        Data( long id, long source, long target, int type )
+        Data( long id, long source, long target, int type, Map<Integer,Value> properties )
         {
             this.id = id;
             this.source = source;
             this.target = target;
             this.type = type;
+            this.properties = properties;
         }
     }
 }

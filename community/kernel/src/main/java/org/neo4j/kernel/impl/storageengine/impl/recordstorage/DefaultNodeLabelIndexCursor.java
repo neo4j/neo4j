@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgressor>
         implements NodeLabelIndexCursor, NodeLabelClient
 {
-    private Read read;
+    private RecordStorageReader read;
     private long node;
     private LabelSet labels;
     private LongIterator added;
@@ -115,7 +115,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
         }
     }
 
-    public void setRead( Read read )
+    public void setRead( RecordStorageReader read )
     {
         this.read = read;
     }

@@ -23,7 +23,6 @@ import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.IntSet;
 
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
@@ -31,14 +30,17 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -49,17 +51,7 @@ import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -68,28 +60,36 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 /**
  * Abstraction for accessing data from a {@link StorageEngine}.
  * <p>
- * A {@link StorageReader} must be {@link #acquire() acquired} before use. After use the statement
- * should be {@link #release() released}. After released the reader can be acquired again.
+ * A {@link StorageReader} must be {@link #initialize(TransactionalDependencies) initialized} before use in a
+ * and {@link #acquire() acquired} before use in a statement, followed by {@link #release()} after statement is completed.
+ * <p>
  * Creating and closing {@link StorageReader} can be somewhat costly, so there are benefits keeping these readers open
  * during a longer period of time, with the assumption that it's still one thread at a time using each.
- * <p>
  */
-public interface StorageReader extends AutoCloseable
+public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, SchemaRead, CursorFactory
 {
     /**
+     * Initializes some dependencies that this reader needs. Typically called once per transaction.
+     *
+     * @param dependencies {@link TransactionalDependencies} needed to implement transaction-aware cursors.
+     */
+    void initialize( TransactionalDependencies dependencies );
+
+    /**
      * Acquires this statement so that it can be used, should later be {@link #release() released}.
+     * Typically called once per statement.
      * Since a {@link StorageReader} can be reused after {@link #release() released}, this call should
      * do initialization/clearing of state whereas data structures can be kept between uses.
      */
     void acquire();
 
     /**
-     * Releases this statement so that it can later be {@link #acquire() acquired} again.
+     * Releases resources tied to this statement and makes this reader able to be {@link #acquire() acquired} again.
      */
     void release();
 
     /**
-     * Closes this statement so that it can no longer be used nor {@link #acquire() acquired}.
+     * Closes this reader and all resources so that it can no longer be used nor {@link #acquire() acquired}.
      */
     @Override
     void close();
@@ -205,17 +205,6 @@ public interface StorageReader extends AutoCloseable
     long reserveRelationship();
 
     long getGraphPropertyReference();
-
-    /**
-     * @param labelId label to list indexes for.
-     * @return {@link SchemaIndexDescriptor} associated with the given {@code labelId}.
-     */
-    Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId );
-
-    /**
-     * @return all {@link SchemaIndexDescriptor} in storage.
-     */
-    Iterator<SchemaIndexDescriptor> indexesGetAll();
 
     /**
      * Returns all indexes (including unique) related to a property.
@@ -539,103 +528,4 @@ public interface StorageReader extends AutoCloseable
     int degreeRelationshipsInGroup( long id, long groupId, Direction direction, Integer relType );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
-
-    Nodes nodes();
-
-    Relationships relationships();
-
-    Groups groups();
-
-    Properties properties();
-
-    interface RecordReads<RECORD>
-    {
-        /**
-         * Open a new PageCursor for reading nodes.
-         * <p>
-         * DANGER: make sure to always close this cursor.
-         *
-         * @param reference the initial node reference to access.
-         * @return the opened PageCursor
-         */
-        PageCursor openPageCursorForReading( long reference );
-
-        /**
-         * Load a node {@code record} with the node corresponding to the given node {@code reference}.
-         * <p>
-         * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
-         * correct page if needed.
-         *
-         * @param reference the record reference, understood to be the absolute reference to the store.
-         * @param record the record to fill.
-         * @param mode loading behaviour, read more in {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
-         * @param cursor the PageCursor to use for record loading.
-         * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
-         */
-        void getRecordByCursor( long reference, RECORD record, RecordLoad mode, PageCursor cursor )
-                throws InvalidRecordException;
-
-        long getHighestPossibleIdInUse();
-    }
-
-    interface Nodes extends RecordReads<NodeRecord>
-    {
-        /**
-         * @return a new Record cursor for accessing DynamicRecords containing labels. This comes acquired.
-         */
-        RecordCursor<DynamicRecord> newLabelCursor();
-    }
-
-    interface Relationships extends RecordReads<RelationshipRecord>
-    {
-    }
-
-    interface Groups extends RecordReads<RelationshipGroupRecord>
-    {
-    }
-
-    interface Properties extends RecordReads<PropertyRecord>
-    {
-        /**
-         * Open a new PageCursor for reading strings.
-         * <p>
-         * DANGER: make sure to always close this cursor.
-         *
-         * @param reference the initial string reference to access.
-         * @return the opened PageCursor
-         */
-        PageCursor openStringPageCursor( long reference );
-
-        /**
-         * Open a new PageCursor for reading arrays.
-         * <p>
-         * DANGER: make sure to always close this cursor.
-         *
-         * @param reference the initial array reference to access.
-         * @return the opened PageCursor
-         */
-        PageCursor openArrayPageCursor( long reference );
-
-        /**
-         * Loads a string into the given buffer. If that is too small we recreate the buffer. The buffer is returned
-         * in write mode, and needs to be flipped before reading.
-         *
-         * @param reference the initial string reference to load
-         * @param buffer the buffer to load into
-         * @param page the page cursor to be used
-         * @return the ByteBuffer of the string
-         */
-        ByteBuffer loadString( long reference, ByteBuffer buffer, PageCursor page );
-
-        /**
-         * Loads a array into the given buffer. If that is too small we recreate the buffer. The buffer is returned
-         * in write mode, and needs to be flipped before reading.
-         *
-         * @param reference the initial array reference to load
-         * @param buffer the buffer to load into
-         * @param page the page cursor to be used
-         * @return the ByteBuffer of the array
-         */
-        ByteBuffer loadArray( long reference, ByteBuffer buffer, PageCursor page );
-    }
 }

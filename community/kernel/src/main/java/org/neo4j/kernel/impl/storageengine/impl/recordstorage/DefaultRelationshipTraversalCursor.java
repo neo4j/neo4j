@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
@@ -141,7 +142,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
      * Cursor being called as a group, use the buffered records in Record
      * instead. These are guaranteed to all have the same type and direction.
      */
-    void buffered( long nodeReference, Record record, RelationshipDirection direction, int type, Read read )
+    void buffered( long nodeReference, Record record, RelationshipDirection direction, int type, RecordStorageReader read )
     {
         this.originNodeReference = nodeReference;
         this.buffer = Record.initialize( record );
@@ -155,7 +156,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     /*
      * Normal traversal. Traversal returns mixed types and directions.
      */
-    void chain( long nodeReference, long reference, Read read )
+    void chain( long nodeReference, long reference, RecordStorageReader read )
     {
         if ( pageCursor == null )
         {
@@ -174,7 +175,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     /*
      * Reference to a group record. Traversal returns mixed types and directions.
      */
-    void groups( long nodeReference, long groupReference, Read read )
+    void groups( long nodeReference, long groupReference, RecordStorageReader read )
     {
         setId( NO_ID );
         this.next = NO_ID;
@@ -191,7 +192,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
      * Grouped traversal of non-dense node. Same type and direction as first read relationship. Store relationships are
      * all assumed to be of wanted relationship type and direction iff filterStore == false.
      */
-    void filtered( long nodeReference, long reference, Read read, boolean filterStore )
+    void filtered( long nodeReference, long reference, RecordStorageReader read, boolean filterStore )
     {
         if ( pageCursor == null )
         {
@@ -210,7 +211,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     /*
      * Empty chain in store. Return from tx-state with provided relationship type and direction.
      */
-    void filteredTxState( long nodeReference, Read read, int filterType, RelationshipDirection direction )
+    void filteredTxState( long nodeReference, RecordStorageReader read, int filterType, RelationshipDirection direction )
     {
         setId( NO_ID );
         this.groupState = GroupState.NONE;

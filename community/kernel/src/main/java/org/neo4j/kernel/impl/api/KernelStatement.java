@@ -165,6 +165,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
         this.statementLocks = statementLocks;
         this.pageCursorTracer = pageCursorCounters;
         this.clockContext.initializeTransaction();
+        this.storageReader.initialize( transaction );
     }
 
     public StatementLocks locks()

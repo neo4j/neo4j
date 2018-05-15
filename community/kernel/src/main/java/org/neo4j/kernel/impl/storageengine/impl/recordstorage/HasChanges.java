@@ -17,28 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
-
-class GroupReferenceEncoding
+enum HasChanges
 {
-    private static final long DIRECT = 0x1000_0000_0000_0000L;
-
-    /**
-     * Encode a relationship id as a group reference.
-     */
-    static long encodeRelationship( long relationshipId )
-    {
-        return relationshipId | DIRECT | References.FLAG_MARKER;
-    }
-
-    /**
-     * Check whether a group reference is an encoded relationship id.
-     */
-    static boolean isRelationship( long groupReference )
-    {
-        assert groupReference != NO_ID;
-        return (groupReference & References.FLAG_MASK) == DIRECT;
-    }
+    MAYBE,
+    YES,
+    NO
 }

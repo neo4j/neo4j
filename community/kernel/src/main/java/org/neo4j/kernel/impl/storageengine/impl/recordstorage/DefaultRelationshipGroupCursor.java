@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
@@ -30,21 +30,22 @@ import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.newapi.DefaultRelationshipTraversalCursor.Record;
+import org.neo4j.kernel.impl.newapi.RelationshipDirection;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.DefaultRelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForFiltering;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForTxStateFiltering;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoIncomingRels;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoopRels;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoingRels;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.encodeForFiltering;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.encodeForTxStateFiltering;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.encodeNoIncomingRels;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.encodeNoLoopRels;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.encodeNoOutgoingRels;
 
 class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements RelationshipGroupCursor
 {
-    private Read read;
+    private RecordStorageReader read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
     private final DefaultCursors pool;
 
@@ -61,7 +62,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         this.pool = pool;
     }
 
-    void buffer( long nodeReference, long relationshipReference, Read read )
+    void buffer( long nodeReference, long relationshipReference, RecordStorageReader read )
     {
         setOwningNode( nodeReference );
         setId( NO_ID );
@@ -111,7 +112,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         }
     }
 
-    void direct( long nodeReference, long reference, Read read )
+    void direct( long nodeReference, long reference, RecordStorageReader read )
     {
         bufferedGroup = null;
         clear();

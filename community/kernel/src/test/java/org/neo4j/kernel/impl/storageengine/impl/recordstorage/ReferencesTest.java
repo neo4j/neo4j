@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.junit.Test;
 
@@ -29,14 +29,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.FILTER;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.FILTER_TX_STATE;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.GROUP;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_INCOMING_OF_TYPE;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_LOOP_OF_TYPE;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_OUTGOING_OF_TYPE;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.parseEncoding;
-import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.References.clearEncoding;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.FILTER;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.FILTER_TX_STATE;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.GROUP;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.NO_INCOMING_OF_TYPE;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.NO_LOOP_OF_TYPE;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.NO_OUTGOING_OF_TYPE;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipReferenceEncoding.parseEncoding;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 public class ReferencesTest

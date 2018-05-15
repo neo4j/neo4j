@@ -19,14 +19,16 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
-public class StubRelationshipCursor implements RelationshipTraversalCursor
+public class StubRelationshipCursor implements RelationshipTraversalCursor, RelationshipScanCursor
 {
     private final List<TestRelationshipChain> store;
 
@@ -34,9 +36,14 @@ public class StubRelationshipCursor implements RelationshipTraversalCursor
     private int chainId;
     private boolean isClosed;
 
+    public StubRelationshipCursor()
+    {
+        this( new ArrayList<>() );
+    }
+
     public StubRelationshipCursor( TestRelationshipChain chain )
     {
-        this( Collections.singletonList( chain ) );
+        this( new ArrayList<>( Arrays.asList( chain ) ) );
     }
 
     StubRelationshipCursor( List<TestRelationshipChain> store )
@@ -45,6 +52,19 @@ public class StubRelationshipCursor implements RelationshipTraversalCursor
         this.chainId = 0;
         this.offset = -1;
         this.isClosed = true;
+    }
+
+    public StubRelationshipCursor withRelationshipChain( TestRelationshipChain chain )
+    {
+        store.add( chain );
+        return this;
+    }
+
+    public void clearStore()
+    {
+        this.store.clear();
+        rewind();
+        this.chainId = 0;
     }
 
     void rewind()
@@ -92,7 +112,7 @@ public class StubRelationshipCursor implements RelationshipTraversalCursor
     @Override
     public void properties( PropertyCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        ((StubPropertyCursor) cursor).init( store.get( chainId ).get( offset ).properties );
     }
 
     @Override

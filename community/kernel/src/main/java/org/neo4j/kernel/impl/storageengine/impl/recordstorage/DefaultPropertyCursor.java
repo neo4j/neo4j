@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -54,7 +53,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INITIAL_POSITION = -1;
-    private Read read;
+    private RecordStorageReader read;
     private long next;
     private int block;
     ByteBuffer buffer;
@@ -64,20 +63,19 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     private PropertyContainerState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
-    private AssertOpen assertOpen;
     private final DefaultCursors pool;
 
-    public DefaultPropertyCursor( DefaultCursors pool )
+    DefaultPropertyCursor( DefaultCursors pool )
     {
         super( NO_ID );
         this.pool = pool;
     }
 
-    void initNode( long nodeReference, long reference, Read read, AssertOpen assertOpen )
+    void initNode( long nodeReference, long reference, RecordStorageReader read )
     {
         assert nodeReference != NO_ID;
 
-        init( reference, read, assertOpen );
+        init( reference, read );
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -87,11 +85,11 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         }
     }
 
-    void initRelationship( long relationshipReference, long reference, Read read, AssertOpen assertOpen )
+    void initRelationship( long relationshipReference, long reference, RecordStorageReader read )
     {
         assert relationshipReference != NO_ID;
 
-        init( reference, read, assertOpen );
+        init( reference, read );
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -101,9 +99,9 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         }
     }
 
-    void initGraph( long reference, Read read, AssertOpen assertOpen )
+    void initGraph( long reference, RecordStorageReader read )
     {
-        init( reference, read, assertOpen );
+        init( reference, read );
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -116,14 +114,13 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         }
     }
 
-    private void init( long reference, Read read, AssertOpen assertOpen )
+    private void init( long reference, RecordStorageReader read )
     {
         if ( getId() != NO_ID )
         {
             clear();
         }
 
-        this.assertOpen = assertOpen;
         //Set to high value to force a read
         this.block = Integer.MAX_VALUE;
         this.read = read;
@@ -152,7 +149,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
 
     private boolean allowed( int propertyKey )
     {
-        return read.ktx.securityContext().mode().allowsPropertyReads( propertyKey );
+        return read.accessMode().allowsPropertyReads( propertyKey );
     }
 
     private boolean innerNext()
@@ -296,7 +293,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
 
         Value value = readValue();
 
-        assertOpen.assertOpen();
+        read.assertOpen();
         return value;
     }
 
@@ -342,12 +339,12 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         }
     }
 
-    Value geometryValue()
+    private Value geometryValue()
     {
         return GeometryType.decode( getBlocks(), block );
     }
 
-    Value temporalValue()
+    private Value temporalValue()
     {
         return TemporalType.decode( getBlocks(), block );
     }

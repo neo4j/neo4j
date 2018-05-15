@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -289,8 +289,17 @@ public class DefaultCursors implements CursorFactory
         relationshipExplicitIndexCursor = cursor;
     }
 
-    public void release()
+    void releaseCursors()
     {
+        if ( DEBUG_CLOSING )
+        {
+            for ( CloseableStacktrace c : closeables )
+            {
+                c.assertClosed();
+            }
+            closeables.clear();
+        }
+
         if ( nodeCursor != null )
         {
             nodeCursor.release();
@@ -346,18 +355,6 @@ public class DefaultCursors implements CursorFactory
             closeables.add( new CloseableStacktrace( closeable, Arrays.copyOfRange( stackTrace, 2, stackTrace.length ) ) );
         }
         return closeable;
-    }
-
-    void assertClosed()
-    {
-        if ( DEBUG_CLOSING )
-        {
-            for ( CloseableStacktrace c : closeables )
-            {
-                c.assertClosed();
-            }
-            closeables.clear();
-        }
     }
 
     static class CloseableStacktrace

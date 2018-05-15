@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 abstract class RelationshipCursor extends RelationshipRecord implements RelationshipDataAccessor, RelationshipVisitor<RuntimeException>
 {
-    Read read;
+    RecordStorageReader read;
     private boolean hasChanges;
     private boolean checkHasChanges;
 
@@ -36,7 +36,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
         super( NO_ID );
     }
 
-    protected void init( Read read )
+    protected void init( RecordStorageReader read )
     {
         this.read = read;
         this.checkHasChanges = true;

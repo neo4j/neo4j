@@ -23,7 +23,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
-import org.neo4j.kernel.impl.newapi.ExplicitIndexProgressor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.ExplicitIndexProgressor;
 import org.neo4j.values.storable.Value;
 
 /**

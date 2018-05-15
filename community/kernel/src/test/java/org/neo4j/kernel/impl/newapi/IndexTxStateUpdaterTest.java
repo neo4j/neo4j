@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -36,8 +34,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -54,8 +54,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.filter;
+import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasLabel;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
+import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.fromDescriptor;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 
@@ -73,14 +75,18 @@ public class IndexTxStateUpdaterTest
     private TransactionState txState;
     private IndexTxStateUpdater indexTxUpdater;
 
-    private SchemaIndexDescriptor indexOn1_1 = SchemaIndexDescriptorFactory.forLabel( labelId1, propId1 );
-    private SchemaIndexDescriptor indexOn2_new = SchemaIndexDescriptorFactory.forLabel( labelId2, newPropId );
-    private SchemaIndexDescriptor uniqueOn1_2 = SchemaIndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
-    private SchemaIndexDescriptor indexOn1_1_new = SchemaIndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
-    private SchemaIndexDescriptor uniqueOn2_2_3 = SchemaIndexDescriptorFactory
-            .uniqueForLabel( labelId2, propId2, propId3 );
+    private SchemaIndexDescriptor indexDescriptorOn1_1 = SchemaIndexDescriptorFactory.forLabel( labelId1, propId1 );
+    private IndexReference indexOn1_1 = fromDescriptor( indexDescriptorOn1_1 );
+    private SchemaIndexDescriptor indexDescriptorOn2_new = SchemaIndexDescriptorFactory.forLabel( labelId2, newPropId );
+    private IndexReference indexOn2_new = fromDescriptor( indexDescriptorOn2_new );
+    private SchemaIndexDescriptor uniqueDescriptorOn1_2 = SchemaIndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
+    private IndexReference uniqueOn1_2 = fromDescriptor( uniqueDescriptorOn1_2 );
+    private SchemaIndexDescriptor indexDescriptorOn1_1_new = SchemaIndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
+    private IndexReference indexOn1_1_new = fromDescriptor( indexDescriptorOn1_1_new );
+    private SchemaIndexDescriptor uniqueDescriptorOn2_2_3 = SchemaIndexDescriptorFactory.uniqueForLabel( labelId2, propId2, propId3 );
+    private IndexReference uniqueOn2_2_3 = fromDescriptor( uniqueDescriptorOn2_2_3 );
     private List<SchemaIndexDescriptor> indexes =
-            Arrays.asList( indexOn1_1, indexOn2_new, uniqueOn1_2, indexOn1_1_new, uniqueOn2_2_3 );
+            Arrays.asList( indexDescriptorOn1_1, indexDescriptorOn2_new, uniqueDescriptorOn1_2, indexDescriptorOn1_1_new, uniqueDescriptorOn2_2_3 );
     private StubNodeCursor node;
     private StubPropertyCursor propertyCursor;
 
@@ -95,7 +101,7 @@ public class IndexTxStateUpdaterTest
                 .thenAnswer( x ->
                 {
                     Integer argument = x.getArgument( 0 );
-                    return filter( hasLabel( argument ), indexes.iterator() );
+                    return map( DefaultIndexReference::fromDescriptor, filter( hasLabel( argument ), indexes.iterator() ) );
                 } );
 
         when( storageReader.indexesGetRelatedToProperty( anyInt() ) )
@@ -114,14 +120,12 @@ public class IndexTxStateUpdaterTest
 
         propertyCursor = new StubPropertyCursor();
 
-        Read readOps = mock( Read.class );
-        when( readOps.txState() ).thenReturn( txState );
-
         IndexingService indexingService = mock( IndexingService.class );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( indexProxy );
-        indexTxUpdater = new IndexTxStateUpdater( storageReader, readOps, indexingService );
-
+        TxStateHolder txStateHolder = mock( TxStateHolder.class );
+        when( txStateHolder.txState() ).thenReturn( txState );
+        indexTxUpdater = new IndexTxStateUpdater( storageReader, txStateHolder, indexingService );
     }
 
     // LABELS
@@ -144,8 +148,8 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onLabelChange( labelId1, node, propertyCursor, ADDED_LABEL );
 
         // THEN
-        verifyIndexUpdate( indexOn1_1.schema(), node.nodeReference(), null, values( "hi1" ) );
-        verifyIndexUpdate( uniqueOn1_2.schema(), node.nodeReference(), null, values( "hi2" ) );
+        verifyIndexUpdate( indexDescriptorOn1_1.schema(), node.nodeReference(), null, values( "hi1" ) );
+        verifyIndexUpdate( uniqueDescriptorOn1_2.schema(), node.nodeReference(), null, values( "hi2" ) );
         verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), isNull(), any() );
     }
 
@@ -156,7 +160,7 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onLabelChange( labelId2, node, propertyCursor, REMOVED_LABEL );
 
         // THEN
-        verifyIndexUpdate( uniqueOn2_2_3.schema(), node.nodeReference(), values( "hi2", "hi3" ), null );
+        verifyIndexUpdate( uniqueDescriptorOn2_2_3.schema(), node.nodeReference(), values( "hi2", "hi3" ), null );
         verify( txState, times( 1 ) ).indexDoUpdateEntry( any(), anyLong(), any(), isNull() );
     }
 
@@ -179,8 +183,8 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onPropertyAdd( node, propertyCursor, newPropId, Values.of( "newHi" ) );
 
         // THEN
-        verifyIndexUpdate( indexOn2_new.schema(), node.nodeReference(), null, values( "newHi" ) );
-        verifyIndexUpdate( indexOn1_1_new.schema(), node.nodeReference(), null, values( "hi1", "newHi" ) );
+        verifyIndexUpdate( indexDescriptorOn2_new.schema(), node.nodeReference(), null, values( "newHi" ) );
+        verifyIndexUpdate( indexDescriptorOn1_1_new.schema(), node.nodeReference(), null, values( "hi1", "newHi" ) );
         verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), isNull(), any() );
     }
 
@@ -191,8 +195,8 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onPropertyRemove( node, propertyCursor, propId2, Values.of( "hi2" ) );
 
         // THEN
-        verifyIndexUpdate( uniqueOn1_2.schema(), node.nodeReference(), values( "hi2" ), null );
-        verifyIndexUpdate( uniqueOn2_2_3.schema(), node.nodeReference(), values( "hi2", "hi3" ), null );
+        verifyIndexUpdate( uniqueDescriptorOn1_2.schema(), node.nodeReference(), values( "hi2" ), null );
+        verifyIndexUpdate( uniqueDescriptorOn2_2_3.schema(), node.nodeReference(), values( "hi2", "hi3" ), null );
         verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), any(), isNull() );
     }
 
@@ -203,8 +207,8 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onPropertyChange( node, propertyCursor, propId2, Values.of( "hi2" ), Values.of( "new2" ) );
 
         // THEN
-        verifyIndexUpdate( uniqueOn1_2.schema(), node.nodeReference(), values( "hi2" ), values( "new2" ) );
-        verifyIndexUpdate( uniqueOn2_2_3.schema(), node.nodeReference(), values( "hi2", "hi3" ), values( "new2", "hi3" ) );
+        verifyIndexUpdate( uniqueDescriptorOn1_2.schema(), node.nodeReference(), values( "hi2" ), values( "new2" ) );
+        verifyIndexUpdate( uniqueDescriptorOn2_2_3.schema(), node.nodeReference(), values( "hi2", "hi3" ), values( "new2", "hi3" ) );
         verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), any(), any() );
     }
 

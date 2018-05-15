@@ -26,15 +26,19 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Iterator;
 
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.toDescriptor;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -43,15 +47,15 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 public class IndexTxStateUpdater
 {
     private final StorageReader storageReader;
-    private final Read read;
+    private final TxStateHolder txStateHolder;
     private final IndexingService indexingService;
 
     // We can use the StorageReader directly instead of the SchemaReadOps, because we know that in transactions
     // where this class is needed we will never have index changes.
-    public IndexTxStateUpdater( StorageReader storageReader, Read read, IndexingService indexingService )
+    public IndexTxStateUpdater( StorageReader storageReader, TxStateHolder txStateHolder, IndexingService indexingService )
     {
         this.storageReader = storageReader;
-        this.read = read;
+        this.txStateHolder = txStateHolder;
         this.indexingService = indexingService;
     }
 
@@ -84,22 +88,23 @@ public class IndexTxStateUpdater
         }
 
         // Check all indexes of the changed label
-        Iterator<SchemaIndexDescriptor> indexes = storageReader.indexesGetForLabel( labelId );
+        Iterator<IndexReference> indexes = storageReader.indexesGetForLabel( labelId );
         while ( indexes.hasNext() )
         {
-            SchemaIndexDescriptor index = indexes.next();
-            int[] indexPropertyIds = index.schema().getPropertyIds();
+            IndexReference index = indexes.next();
+            int[] indexPropertyIds = index.properties();
             if ( nodeHasIndexProperties( nodePropertyIds, indexPropertyIds ) )
             {
                 Value[] values = getValueTuple( node, propertyCursor, indexPropertyIds );
+                SchemaDescriptor schema = toDescriptor( index ).schema();
                 switch ( changeType )
                 {
                 case ADDED_LABEL:
-                    indexingService.validateBeforeCommit( index.schema(), values );
-                    read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, ValueTuple.of( values ) );
+                    indexingService.validateBeforeCommit( schema, values );
+                    txStateHolder.txState().indexDoUpdateEntry( schema, node.nodeReference(), null, ValueTuple.of( values ) );
                     break;
                 case REMOVED_LABEL:
-                    read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), ValueTuple.of( values ), null );
+                    txStateHolder.txState().indexDoUpdateEntry( schema, node.nodeReference(), ValueTuple.of( values ), null );
                     break;
                 default:
                     throw new IllegalStateException( changeType + " is not a supported event" );
@@ -110,7 +115,7 @@ public class IndexTxStateUpdater
 
     private boolean noSchemaChangedInTx()
     {
-        return !(read.txState().hasChanges() && !read.txState().hasDataChanges());
+        return !(txStateHolder.txState().hasChanges() && !txStateHolder.txState().hasDataChanges());
     }
 
     //PROPERTY CHANGES
@@ -125,7 +130,7 @@ public class IndexTxStateUpdater
                 {
                     Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, index.schema().getPropertyIds() );
                     indexingService.validateBeforeCommit( index.schema(), values );
-                    read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, ValueTuple.of( values ) );
+                    txStateHolder.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, ValueTuple.of( values ) );
                 } );
     }
 
@@ -138,7 +143,7 @@ public class IndexTxStateUpdater
                 ( index, propertyKeyIds ) ->
                 {
                     Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, index.schema().getPropertyIds() );
-                    read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), ValueTuple.of( values ), null );
+                    txStateHolder.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), ValueTuple.of( values ), null );
                 } );
     }
 
@@ -178,7 +183,7 @@ public class IndexTxStateUpdater
                         }
                     }
                     indexingService.validateBeforeCommit( index.schema(), valuesAfter );
-                    read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(),
+                    txStateHolder.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(),
                             ValueTuple.of( valuesBefore ), ValueTuple.of( valuesAfter ) );
                 } );
     }
