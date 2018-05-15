@@ -67,9 +67,9 @@ public class SchemaCache
         this.schemaCacheState = new SchemaCacheState( constraintSemantics, initialRules, indexProviderMap );
     }
 
-    public Iterable<CapableIndexDescriptor> indexRules()
+    public Iterable<CapableIndexDescriptor> indexDescriptors()
     {
-        return schemaCacheState.indexRules();
+        return schemaCacheState.indexDescriptors();
     }
 
     public Iterable<ConstraintRule> constraintRules()
@@ -87,9 +87,9 @@ public class SchemaCache
         return schemaCacheState.hasConstraintRule( descriptor );
     }
 
-    public boolean hasIndexRule( SchemaDescriptor descriptor )
+    public boolean hasIndex( SchemaDescriptor descriptor )
     {
-        return schemaCacheState.hasIndexRule( descriptor );
+        return schemaCacheState.hasIndex( descriptor );
     }
 
     public Iterator<ConstraintDescriptor> constraints()
@@ -181,7 +181,7 @@ public class SchemaCache
         private final ConstraintSemantics constraintSemantics;
         private final IndexProviderMap indexProviderMap;
         private final Set<ConstraintDescriptor> constraints;
-        private final MutableLongObjectMap<CapableIndexDescriptor> indexRuleById;
+        private final MutableLongObjectMap<CapableIndexDescriptor> indexDescriptorById;
         private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
 
         private final Map<SchemaDescriptor,CapableIndexDescriptor> indexDescriptors;
@@ -196,7 +196,7 @@ public class SchemaCache
             this.constraintSemantics = constraintSemantics;
             this.indexProviderMap = indexProviderMap;
             this.constraints = new HashSet<>();
-            this.indexRuleById = new LongObjectHashMap<>();
+            this.indexDescriptorById = new LongObjectHashMap<>();
             this.constraintRuleById = new LongObjectHashMap<>();
 
             this.indexDescriptors = new HashMap<>();
@@ -209,7 +209,7 @@ public class SchemaCache
         SchemaCacheState( SchemaCacheState schemaCacheState )
         {
             this.constraintSemantics = schemaCacheState.constraintSemantics;
-            this.indexRuleById = LongObjectHashMap.newMap( schemaCacheState.indexRuleById );
+            this.indexDescriptorById = LongObjectHashMap.newMap( schemaCacheState.indexDescriptorById );
             this.constraintRuleById = LongObjectHashMap.newMap( schemaCacheState.constraintRuleById );
             this.constraints = new HashSet<>( schemaCacheState.constraints );
 
@@ -228,9 +228,9 @@ public class SchemaCache
             }
         }
 
-        Iterable<CapableIndexDescriptor> indexRules()
+        Iterable<CapableIndexDescriptor> indexDescriptors()
         {
-            return indexRuleById.values();
+            return indexDescriptorById.values();
         }
 
         Iterable<ConstraintRule> constraintRules()
@@ -248,7 +248,7 @@ public class SchemaCache
             return constraints.contains( descriptor );
         }
 
-        boolean hasIndexRule( SchemaDescriptor descriptor )
+        boolean hasIndex( SchemaDescriptor descriptor )
         {
             return indexDescriptors.containsKey( descriptor );
         }
@@ -291,7 +291,7 @@ public class SchemaCache
             else if ( rule instanceof StoreIndexDescriptor )
             {
                 CapableIndexDescriptor index = ((StoreIndexDescriptor) rule).withCapabilities( indexProviderMap );
-                indexRuleById.put( index.getId(), index );
+                indexDescriptorById.put( index.getId(), index );
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );
 
@@ -315,9 +315,9 @@ public class SchemaCache
                 ConstraintRule rule = constraintRuleById.remove( id );
                 constraints.remove( rule.getConstraintDescriptor() );
             }
-            else if ( indexRuleById.containsKey( id ) )
+            else if ( indexDescriptorById.containsKey( id ) )
             {
-                CapableIndexDescriptor index = indexRuleById.remove( id );
+                CapableIndexDescriptor index = indexDescriptorById.remove( id );
                 SchemaDescriptor schema = index.schema();
                 indexDescriptors.remove( schema );
 

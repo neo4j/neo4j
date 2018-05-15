@@ -284,7 +284,7 @@ class RecordStorageReader implements StorageReader
     @Override
     public Iterator<CapableIndexDescriptor> indexesGetAll()
     {
-        return schemaCache.indexRules().iterator();
+        return schemaCache.indexDescriptors().iterator();
     }
 
     @Override
@@ -672,7 +672,7 @@ class RecordStorageReader implements StorageReader
 
     private StoreIndexDescriptor getStoreIndexDescriptor( IndexDescriptor index )
     {
-        for ( StoreIndexDescriptor descriptor : schemaCache.indexRules() )
+        for ( StoreIndexDescriptor descriptor : schemaCache.indexDescriptors() )
         {
             if ( descriptor.equals( index ) )
             {

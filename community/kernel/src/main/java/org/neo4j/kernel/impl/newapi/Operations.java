@@ -892,7 +892,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                 IndexDescriptorFactory.forSchema( descriptor,
                                                   name,
                                                   providerDescriptor );
-        ktx.txState().indexRuleDoAdd( index );
+        ktx.txState().indexDoAdd( index );
         return index;
     }
 
@@ -904,7 +904,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                 IndexDescriptorFactory.uniqueForSchema( schema,
                                                   Optional.empty(),
                                                   providerDescriptor );
-        ktx.txState().indexRuleDoAdd( index );
+        ktx.txState().indexDoAdd( index );
         return index;
     }
 

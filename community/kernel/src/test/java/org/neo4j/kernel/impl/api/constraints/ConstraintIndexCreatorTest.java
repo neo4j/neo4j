@@ -319,7 +319,6 @@ public class ConstraintIndexCreatorTest
         verifyNoMoreInteractions( schemaRead );
     }
 
-
     private class StubKernel implements Kernel, Session
     {
         private final List<KernelTransactionImplementation> transactions = new ArrayList<>();
