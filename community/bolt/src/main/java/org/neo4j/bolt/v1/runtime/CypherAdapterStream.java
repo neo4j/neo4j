@@ -162,7 +162,7 @@ class CypherAdapterStream extends BoltResult
                 if ( includePosition )
                 {
                     // only add the position if it is not empty
-                    builder.add( "position", VirtualValues.map( new String[]{"offset", "line", "columne"},
+                    builder.add( "position", VirtualValues.map( new String[]{"offset", "line", "column"},
                             new AnyValue[]{
                                     intValue( pos.getOffset() ),
                                     intValue( pos.getLine() ),
