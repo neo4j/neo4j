@@ -148,9 +148,9 @@ class CypherAdapterStream extends BoltResult
         public static AnyValue convert( Iterable<Notification> notifications )
         {
             List<AnyValue> out = new ArrayList<>();
-            MapValueBuilder builder = new MapValueBuilder();
             for ( Notification notification : notifications )
             {
+                MapValueBuilder builder = new MapValueBuilder();
 
                 builder.add( "code", stringValue( notification.getCode() ) );
                 builder.add( "title", stringValue( notification.getTitle() ) );
