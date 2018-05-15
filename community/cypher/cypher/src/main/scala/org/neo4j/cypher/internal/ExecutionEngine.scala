@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Result
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{QueryExecution, ResultBuffer, TransactionalContext}
-import org.neo4j.kernel.monitoring.{Monitors, Monitors => KernelMonitors}
+import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.{MapValue, VirtualValues}
 
