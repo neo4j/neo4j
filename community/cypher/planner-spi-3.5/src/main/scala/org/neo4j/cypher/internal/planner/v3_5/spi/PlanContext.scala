@@ -31,15 +31,25 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.{ProcedureSignature, Qualifi
  */
 trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
+  /**
+    * Return all indexes (general and unique) for a given label
+    */
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
 
-  def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
-
-  def indexExistsForLabel(labelName: String): Boolean
-
+  /**
+    * Return all unique indexes for a given label
+    */
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
 
-  def uniqueIndexGet(labelName: String, propertyKey: Seq[String]): Option[IndexDescriptor]
+  /**
+    * Checks if an index exists (general or unique) for a given label
+    */
+  def indexExistsForLabel(labelName: String): Boolean
+
+  /**
+    * Checks if an index exists (general or unique) for a given label and properties
+    */
+  def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean
 
   def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 

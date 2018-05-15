@@ -46,9 +46,6 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   protected def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor]
 
-  protected def findIndexesFor(label: String, properties: Seq[String], context: LogicalPlanningContext): Option[IndexDescriptor]
-
-
   override def producePlanFor(predicates: Set[Expression],
                               qg: QueryGraph,
                               context: LogicalPlanningContext): Set[LeafPlansForVariable] = {

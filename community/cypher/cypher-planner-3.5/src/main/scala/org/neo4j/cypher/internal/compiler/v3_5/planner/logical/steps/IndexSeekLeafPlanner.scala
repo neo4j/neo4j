@@ -37,16 +37,6 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
       context.logicalPlanProducer.planNodeIndexSeek(idName, label, propertyKeys, valueExpr, solvedPredicates,
         predicatesForCardinalityEstimation, hint, argumentIds, context)
 
-  protected def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
+  override def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.indexesGetForLabel(labelId)
-
-  protected def findIndexesFor(label: String, properties: Seq[String], context: LogicalPlanningContext): Option[IndexDescriptor] = {
-    if (uniqueIndexDefinedFor(label, properties, context).isDefined) None else anyIndex(label, properties, context)
-  }
-
-  private def anyIndex(label: String, properties: Seq[String], context: LogicalPlanningContext) =
-    context.planContext.indexGet(label, properties)
-
-  private def uniqueIndexDefinedFor(label: String, properties: Seq[String], context: LogicalPlanningContext) =
-    context.planContext.uniqueIndexGet(label, properties)
 }
