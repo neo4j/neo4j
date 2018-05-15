@@ -50,11 +50,6 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
         this( NOT_INITIALIZED, NOT_INITIALIZED, OnHeapCollectionsFactory.INSTANCE );
     }
 
-    public MutableLongDiffSetsImpl( MutableLongSet added, MutableLongSet removed )
-    {
-        this( added, removed, OnHeapCollectionsFactory.INSTANCE );
-    }
-
     public MutableLongDiffSetsImpl( MutableLongSet added, MutableLongSet removed, CollectionsFactory collectionsFactory )
     {
         this.added = added;
