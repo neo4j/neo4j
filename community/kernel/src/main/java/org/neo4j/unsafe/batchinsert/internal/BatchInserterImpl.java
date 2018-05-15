@@ -436,7 +436,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
         ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForSchema( schemaDescriptor );
         ConstraintDescriptor nodeKeyDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schemaDescriptor );
-        if ( schemaCache.hasIndexRule( schemaDescriptor ) ||
+        if ( schemaCache.hasIndex( schemaDescriptor ) ||
              schemaCache.hasConstraintRule( constraintDescriptor ) ||
              schemaCache.hasConstraintRule( nodeKeyDescriptor ) )
         {
@@ -466,7 +466,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    private void createIndexRule( int labelId, int[] propertyKeyIds )
+    private void createIndex( int labelId, int[] propertyKeyIds )
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
         StoreIndexDescriptor schemaRule =
@@ -584,7 +584,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private StoreIndexDescriptor[] getIndexesNeedingPopulation()
     {
         List<StoreIndexDescriptor> indexesNeedingPopulation = new ArrayList<>();
-        for ( StoreIndexDescriptor rule : schemaCache.indexRules() )
+        for ( StoreIndexDescriptor rule : schemaCache.indexDescriptors() )
         {
             IndexProvider provider = indexProviderMap.lookup( rule.providerDescriptor() );
             if ( provider.getInitialState( rule ) != InternalIndexState.FAILED )
@@ -1161,7 +1161,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
             validateIndexCanBeCreated( labelId, propertyKeyIds );
 
-            createIndexRule( labelId, propertyKeyIds );
+            createIndex( labelId, propertyKeyIds );
             return new IndexDefinitionImpl( this, label, propertyKeys, false );
         }
 

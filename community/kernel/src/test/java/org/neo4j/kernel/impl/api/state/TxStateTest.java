@@ -266,8 +266,8 @@ public class TxStateTest
     public void shouldAddAndGetByLabel()
     {
         // WHEN
-        state.indexRuleDoAdd( indexOn_1_1 );
-        state.indexRuleDoAdd( indexOn_2_1 );
+        state.indexDoAdd( indexOn_1_1 );
+        state.indexDoAdd( indexOn_2_1 );
 
         // THEN
         assertEquals( asSet( indexOn_1_1 ),
@@ -278,7 +278,7 @@ public class TxStateTest
     public void shouldAddAndGetByRuleId()
     {
         // GIVEN
-        state.indexRuleDoAdd( indexOn_1_1 );
+        state.indexDoAdd( indexOn_1_1 );
 
         // THEN
         assertEquals( asSet( indexOn_1_1 ), state.indexChanges().getAdded() );

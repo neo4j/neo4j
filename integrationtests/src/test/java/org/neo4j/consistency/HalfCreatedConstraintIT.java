@@ -98,7 +98,7 @@ public class HalfCreatedConstraintIT
             KernelTransaction kernelTransaction = statementBridge.getKernelTransactionBoundToThisThread( true );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
             IndexDescriptor index = IndexDescriptorFactory.uniqueForSchema( descriptor );
-            ((KernelTransactionImplementation) kernelTransaction).txState().indexRuleDoAdd( index );
+            ((KernelTransactionImplementation) kernelTransaction).txState().indexDoAdd( index );
             transaction.success();
         }
     }

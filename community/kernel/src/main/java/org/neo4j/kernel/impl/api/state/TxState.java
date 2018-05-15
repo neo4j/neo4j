@@ -783,8 +783,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void
-    indexRuleDoAdd( IndexDescriptor descriptor )
+    public void indexDoAdd( IndexDescriptor descriptor )
     {
         DiffSets<IndexDescriptor> diff = indexChangesDiffSets();
         if ( !diff.unRemove( descriptor ) )

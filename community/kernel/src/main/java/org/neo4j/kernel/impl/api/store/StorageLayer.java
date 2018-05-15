@@ -199,7 +199,7 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Iterator<CapableIndexDescriptor> indexesGetAll()
     {
-        return schemaCache.indexRules().iterator();
+        return schemaCache.indexDescriptors().iterator();
     }
 
     @Override
@@ -587,7 +587,7 @@ public class StorageLayer implements StoreReadLayer
 
     private StoreIndexDescriptor getStoreIndexDescriptor( IndexDescriptor index )
     {
-        for ( StoreIndexDescriptor descriptor : schemaCache.indexRules() )
+        for ( StoreIndexDescriptor descriptor : schemaCache.indexDescriptors() )
         {
             if ( descriptor.equals( index ) )
             {
