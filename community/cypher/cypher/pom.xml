@@ -258,10 +258,20 @@
       </exclusions>
     </dependency>
 
-      <dependency>
+    <dependency>
       <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-primitive-collections</artifactId>
-        <version>3.4.0-rc01</version>
+      <artifactId>neo4j-primitive-collections</artifactId>
+      <version>3.4.0-rc01</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-unsafe</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-resource</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
       <dependency>
