@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions, IsMap}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions, IsMap, LazyMap}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{MapValueBuilder, VirtualValues}
@@ -42,6 +42,11 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
       case (k, e) => builder.add(k, e(ctx, state))
     }
 
+    //in case we get a lazy map we need to make sure it has been loaded
+    mapOfProperties match {
+      case m :LazyMap[_] => m.load()
+      case _ =>
+    }
 
     mapOfProperties.updatedWith(builder.build())
   }

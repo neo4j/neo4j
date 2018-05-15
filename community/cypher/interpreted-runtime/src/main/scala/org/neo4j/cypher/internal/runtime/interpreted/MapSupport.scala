@@ -82,6 +82,9 @@ class LazyMap[T](ctx: QueryContext, ops: Operations[T], id: Long)
       }
 
   override def size(): Int = allProps.size()
+
+  //we need a way forcefully load lazy values
+  def load(): Boolean = allProps != null
 }
 
 object MapSupport {
