@@ -47,7 +47,7 @@ public class PrimitiveLongArrayQueue
     {
         if ( capacity == 0 || (capacity & (capacity - 1)) != 0 )
         {
-            throw new IllegalArgumentException( "Capacity should be power of 2." );
+            throw new IllegalArgumentException( "Capacity should be power of 2. Requested capacity: " + capacity );
         }
         initValues( capacity );
     }
