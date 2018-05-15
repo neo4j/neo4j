@@ -23,7 +23,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 
-abstract class RelationshipCursor<STORECURSOR extends StoreRelationshipCursor> implements RelationshipDataAccessor
+abstract class DefaultRelationshipCursor<STORECURSOR extends StoreRelationshipCursor> implements RelationshipDataAccessor
 {
     Read read;
     private boolean hasChanges;
@@ -31,7 +31,7 @@ abstract class RelationshipCursor<STORECURSOR extends StoreRelationshipCursor> i
 
     final STORECURSOR storeCursor;
 
-    RelationshipCursor( STORECURSOR storeCursor )
+    DefaultRelationshipCursor( STORECURSOR storeCursor )
     {
         this.storeCursor = storeCursor;
     }

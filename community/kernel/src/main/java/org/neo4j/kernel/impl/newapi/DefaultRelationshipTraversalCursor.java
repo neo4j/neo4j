@@ -32,7 +32,7 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class DefaultRelationshipTraversalCursor extends RelationshipCursor<StoreRelationshipTraversalCursor>
+class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<StoreRelationshipTraversalCursor>
         implements RelationshipTraversalCursor
 {
     private enum FilterState

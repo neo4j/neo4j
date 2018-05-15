@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class DefaultRelationshipScanCursor extends RelationshipCursor<StoreRelationshipScanCursor> implements RelationshipScanCursor
+class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StoreRelationshipScanCursor> implements RelationshipScanCursor
 {
     private int type;
     private long single;
