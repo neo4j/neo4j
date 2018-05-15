@@ -500,13 +500,13 @@ public abstract class MapValue extends VirtualValue
         Iterable<String> keys = keySet();
         for ( String key : keys )
         {
-            if ( get( key ).equals( that.get( key ) ) )
+            if ( !get( key ).equals( that.get( key ) ) )
             {
                 return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     public abstract Iterable<String> keySet();
