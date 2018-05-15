@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.util
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
@@ -84,7 +85,10 @@ class LazyMap[T](ctx: QueryContext, ops: Operations[T], id: Long)
   override def size(): Int = allProps.size()
 
   //we need a way forcefully load lazy values
-  def load(): Boolean = allProps != null
+  def load(): MapValue =
+    if (allProps != null) this
+    else throw new InternalException("properties must be loadable at this instant")
+
 }
 
 object MapSupport {
