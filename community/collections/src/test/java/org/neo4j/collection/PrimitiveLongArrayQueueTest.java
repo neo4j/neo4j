@@ -208,7 +208,7 @@ class PrimitiveLongArrayQueueTest
     @Test
     void doNotAllowCreationOfQueueWithRandomCapacity()
     {
-        assertThrows( AssertionError.class, () -> new PrimitiveLongArrayQueue( 7 ) );
+        assertThrows( IllegalArgumentException.class, () -> new PrimitiveLongArrayQueue( 7 ) );
     }
 
     private PrimitiveLongArrayQueue createQueue()

@@ -20,7 +20,6 @@
 package org.neo4j.ports.allocation;
 
 import org.junit.Rule;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.TemporaryFolder;
@@ -39,7 +38,7 @@ import static org.neo4j.ports.allocation.PortConstants.EphemeralPortMinimum;
 public class PortRepositoryIT
 {
     @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Test
     void shouldReservePorts() throws Exception
@@ -68,23 +67,6 @@ public class PortRepositoryIT
         int port6 = portRepository1.reserveNextPort( "foo" );
 
         assertThat( new HashSet<>( asList( port1, port2, port3, port4, port5, port6 ) ).size(), is( 6 ) );
-    }
-
-    @Test
-    @Disabled
-    void shouldNotInterfereWithOtherRepositories() throws Exception
-    {
-        PortRepository portRepository1 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
-        PortRepository portRepository2 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
-
-        int port1 = portRepository1.reserveNextPort( "foo" );
-        int port2 = portRepository1.reserveNextPort( "foo" );
-        int port3 = portRepository1.reserveNextPort( "foo" );
-        int port4 = portRepository2.reserveNextPort( "foo" );
-        int port5 = portRepository2.reserveNextPort( "foo" );
-        int port6 = portRepository1.reserveNextPort( "foo" );
-
-        assertThat( new HashSet<>( asList( port1, port2, port3, port4, port5, port6 ) ).size(), is( 4 ) );
     }
 
     @Test

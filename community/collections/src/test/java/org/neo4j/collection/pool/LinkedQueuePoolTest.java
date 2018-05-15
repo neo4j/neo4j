@@ -340,8 +340,8 @@ class LinkedQueuePoolTest
     {
         AtomicInteger currentPeakSize = new AtomicInteger( -1 );
         AtomicInteger targetSize = new AtomicInteger( -1 );
-        public AtomicInteger created = new AtomicInteger( 0 );
-        public AtomicInteger acquired = new AtomicInteger( 0 );
+        AtomicInteger created = new AtomicInteger( 0 );
+        AtomicInteger acquired = new AtomicInteger( 0 );
         AtomicInteger disposed = new AtomicInteger( 0 );
 
         @Override
