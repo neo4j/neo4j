@@ -45,7 +45,7 @@ abstract class TransactionBoundTokenContext(txSupplier: () => KernelTransaction)
   def getLabelId(labelName: String): Int = {
     val labelId: Int = txSupplier().tokenRead().nodeLabel(labelName)
     if (labelId == TokenRead.NO_TOKEN)
-      throw new LabelNotFoundKernelException("No such label", null)
+      throw new LabelNotFoundKernelException(labelId, null)
     labelId
   }
 

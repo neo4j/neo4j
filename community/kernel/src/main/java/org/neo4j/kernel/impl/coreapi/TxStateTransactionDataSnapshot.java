@@ -60,7 +60,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
 import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 
 /**
@@ -224,7 +223,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                         }
                         catch ( PropertyKeyIdNotFoundKernelException e )
                         {
-                            throw new IllegalStateException( "An entity that does not exist was modified.", e );
+                            throw new IllegalStateException( "Nonexisting property was modified for node " + nodeId, e );
                         }
 
                         node.get().labels().forEach( labelId ->
@@ -235,7 +234,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             }
                             catch ( LabelNotFoundKernelException e )
                             {
-                                throw new IllegalStateException( "An entity that does not exist was modified; labelId = " + labelId, e );
+                                throw new IllegalStateException( "Nonexisting label was modified for node " + nodeId, e );
                             }
                         } );
                     }
@@ -261,7 +260,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                         }
                         catch ( PropertyKeyIdNotFoundKernelException e )
                         {
-                            throw new IllegalStateException( "An entity that does not exist was modified.", e );
+                            throw new IllegalStateException( "Nonexisting node property was modified for relationship " + relId, e );
                         }
                     }
                 }
@@ -287,7 +286,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     }
                     catch ( PropertyKeyIdNotFoundKernelException e )
                     {
-                        throw new IllegalStateException( format( "Node property that does not exist was modified, nodeId=%d, propId=%d", nodeId, id ), e );
+                        throw new IllegalStateException( "Nonexisting node property was modified for node " + nodeId, e );
                     }
                 } );
 
@@ -316,8 +315,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     }
                     catch ( PropertyKeyIdNotFoundKernelException e )
                     {
-                        throw new IllegalStateException(
-                                format( "Relationship property that does not exist was modified, relId=%d, propId=%d", relState.getId(), id ), e );
+                        throw new IllegalStateException( "Nonexisting property was modified for relationship " + relState.getId(), e );
                     }
                 } );
             }
@@ -339,7 +337,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
             catch ( LabelNotFoundKernelException e )
             {
-                throw new IllegalStateException( "An entity that does not exist was modified.", e );
+                throw new IllegalStateException( "Nonexisting label was modified for node " + nodeId, e );
             }
         } );
     }
@@ -363,7 +361,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             catch ( EntityNotFoundException e )
             {
                 throw new IllegalStateException(
-                        "Getting deleted relationship data should have been covered by the tx state" );
+                        "Getting deleted relationship data should have been covered by the tx state", e );
             }
         }
         return relationship;
@@ -474,7 +472,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             if ( newValue == null || newValue == Values.NO_VALUE )
             {
-                throw new IllegalStateException( "This property has been removed, it has no value anymore." );
+                throw new IllegalStateException( "This property has been removed, it has no value anymore: " + this );
             }
             return newValue.asObjectCopy();
         }
@@ -529,7 +527,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             if ( newValue == null || newValue == Values.NO_VALUE )
             {
-                throw new IllegalStateException( "This property has been removed, it has no value anymore." );
+                throw new IllegalStateException( "This property has been removed, it has no value anymore: " + this );
             }
             return newValue.asObjectCopy();
         }
