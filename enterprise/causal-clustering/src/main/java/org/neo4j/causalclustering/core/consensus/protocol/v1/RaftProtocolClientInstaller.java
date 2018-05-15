@@ -20,18 +20,16 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.core.consensus;
+package org.neo4j.causalclustering.core.consensus.protocol.v1;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelInboundHandler;
 
-import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
-import org.neo4j.causalclustering.messaging.marshalling.RaftMessageDecoder;
+import org.neo4j.causalclustering.messaging.marshalling.v1.CoreReplicatedContentMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.v1.RaftMessageEncoder;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
@@ -40,41 +38,38 @@ import org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class RaftProtocolServerInstaller implements ProtocolInstaller<Orientation.Server>
+public class RaftProtocolClientInstaller implements ProtocolInstaller<Orientation.Client>
 {
     private static final Protocol.ApplicationProtocols APPLICATION_PROTOCOL = Protocol.ApplicationProtocols.RAFT_1;
 
-    public static class Factory extends ProtocolInstaller.Factory<Orientation.Server, RaftProtocolServerInstaller>
+    public static class Factory extends ProtocolInstaller.Factory<Orientation.Client, RaftProtocolClientInstaller>
     {
-        public Factory( ChannelInboundHandler raftMessageHandler, NettyPipelineBuilderFactory pipelineBuilderFactory, LogProvider logProvider )
+        public Factory( NettyPipelineBuilderFactory clientPipelineBuilderFactory, LogProvider logProvider )
         {
             super( APPLICATION_PROTOCOL,
-                    modifiers -> new RaftProtocolServerInstaller( raftMessageHandler, pipelineBuilderFactory, modifiers, logProvider ) );
+                    modifiers -> new RaftProtocolClientInstaller( clientPipelineBuilderFactory, modifiers, logProvider ) );
         }
     }
 
-    private final ChannelInboundHandler raftMessageHandler;
-    private final NettyPipelineBuilderFactory pipelineBuilderFactory;
-    private final List<ModifierProtocolInstaller<Orientation.Server>> modifiers;
+    private final List<ModifierProtocolInstaller<Orientation.Client>> modifiers;
     private final Log log;
+    private final NettyPipelineBuilderFactory clientPipelineBuilderFactory;
 
-    public RaftProtocolServerInstaller( ChannelInboundHandler raftMessageHandler, NettyPipelineBuilderFactory pipelineBuilderFactory,
-            List<ModifierProtocolInstaller<Orientation.Server>> modifiers, LogProvider logProvider )
+    public RaftProtocolClientInstaller( NettyPipelineBuilderFactory clientPipelineBuilderFactory, List<ModifierProtocolInstaller<Orientation.Client>> modifiers,
+            LogProvider logProvider )
     {
-        this.raftMessageHandler = raftMessageHandler;
-        this.pipelineBuilderFactory = pipelineBuilderFactory;
         this.modifiers = modifiers;
         this.log = logProvider.getLog( getClass() );
+        this.clientPipelineBuilderFactory = clientPipelineBuilderFactory;
     }
 
     @Override
     public void install( Channel channel ) throws Exception
     {
-        pipelineBuilderFactory.server( channel, log )
+        clientPipelineBuilderFactory.client( channel, log )
                 .modify( modifiers )
                 .addFraming()
-                .add( "raft_decoder", new RaftMessageDecoder( new CoreReplicatedContentMarshal(), Clock.systemUTC() ) )
-                .add( "raft_handler", raftMessageHandler )
+                .add( "raft_encoder", new RaftMessageEncoder( new CoreReplicatedContentMarshal() ) )
                 .install();
     }
 

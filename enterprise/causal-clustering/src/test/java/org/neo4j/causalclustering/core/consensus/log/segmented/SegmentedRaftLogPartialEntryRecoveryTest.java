@@ -39,7 +39,7 @@ import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenReque
 import org.neo4j.causalclustering.core.state.machines.token.TokenType;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.v1.CoreReplicatedContentMarshal;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.id.IdType;

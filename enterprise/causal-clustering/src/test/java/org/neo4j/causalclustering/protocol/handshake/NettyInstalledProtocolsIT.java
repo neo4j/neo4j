@@ -54,8 +54,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.RaftProtocolClientInstaller;
-import org.neo4j.causalclustering.core.consensus.RaftProtocolServerInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;

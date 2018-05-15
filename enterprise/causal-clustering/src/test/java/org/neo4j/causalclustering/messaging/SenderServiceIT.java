@@ -35,8 +35,8 @@ import java.util.UUID;
 import java.util.concurrent.Semaphore;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.RaftProtocolClientInstaller;
-import org.neo4j.causalclustering.core.consensus.RaftProtocolServerInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;

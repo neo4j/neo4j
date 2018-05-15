@@ -20,7 +20,7 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.causalclustering.messaging;
+package org.neo4j.causalclustering.messaging.marshalling.v1;
 
 import java.io.IOException;
 
@@ -39,6 +39,7 @@ import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenReque
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionSerializer;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
+import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 

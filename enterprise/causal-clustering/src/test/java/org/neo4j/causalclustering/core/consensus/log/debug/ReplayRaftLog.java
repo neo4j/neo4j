@@ -31,7 +31,7 @@ import org.neo4j.causalclustering.core.consensus.log.segmented.SegmentedRaftLog;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionFactory;
-import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.v1.CoreReplicatedContentMarshal;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;

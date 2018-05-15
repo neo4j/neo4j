@@ -23,9 +23,10 @@
 package org.neo4j.causalclustering.core.replication;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.UUID;
 
-import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.v1.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.LocalOperationId;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
@@ -111,5 +112,28 @@ public class  DistributedOperation implements ReplicatedContent
                ", globalSession=" + globalSession +
                ", operationId=" + operationId +
                '}';
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        DistributedOperation that = (DistributedOperation) o;
+        return Objects.equals( content, that.content ) && Objects.equals( globalSession, that.globalSession ) &&
+                Objects.equals( operationId, that.operationId );
+    }
+
+    @Override
+    public int hashCode()
+    {
+
+        return Objects.hash( content, globalSession, operationId );
     }
 }

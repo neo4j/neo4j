@@ -29,7 +29,7 @@ import java.io.PrintStream;
 
 import org.neo4j.causalclustering.core.consensus.log.EntryRecord;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.v1.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Args;
@@ -43,7 +43,7 @@ class DumpSegmentedRaftLog
 {
     private final FileSystemAbstraction fileSystem;
     private static final String TO_FILE = "tofile";
-    private ChannelMarshal<ReplicatedContent> marshal = new CoreReplicatedContentMarshal();
+    private ChannelMarshal<ReplicatedContent> marshal;
 
     private DumpSegmentedRaftLog( FileSystemAbstraction fileSystem, ChannelMarshal<ReplicatedContent> marshal )
     {

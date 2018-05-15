@@ -23,13 +23,13 @@
 package org.neo4j.causalclustering.core.state.machines.dummy;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
-import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -99,5 +99,26 @@ public class DummyRequest implements CoreReplicatedContent
             }
             return new DummyRequest( data );
         }
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        DummyRequest that = (DummyRequest) o;
+        return Arrays.equals( data, that.data );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Arrays.hashCode( data );
     }
 }
