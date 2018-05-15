@@ -600,9 +600,9 @@ abstract class Read implements TxStateHolder,
 
     abstract long relationshipHighMark();
 
-    abstract TextValue string( DefaultPropertyCursor cursor, long reference, PageCursor page );
+    abstract TextValue string( StorePropertyCursor cursor, long reference, PageCursor page );
 
-    abstract ArrayValue array( DefaultPropertyCursor cursor, long reference, PageCursor page );
+    abstract ArrayValue array( StorePropertyCursor cursor, long reference, PageCursor page );
 
     @Override
     public TransactionState txState()

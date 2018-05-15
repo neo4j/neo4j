@@ -50,7 +50,7 @@ abstract class StoreRelationshipCursor extends RelationshipRecord implements Rel
 
     public boolean hasProperties()
     {
-        return nextProp != DefaultPropertyCursor.NO_ID;
+        return nextProp != NO_ID;
     }
 
     public void source( NodeCursor cursor )
