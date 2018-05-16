@@ -227,26 +227,9 @@ public class InputCacheTest
         }
     }
 
-    //TODO this should use random.nextValue but cannot since there is a bug here somewhere
-    //that fails when using non-ascii strings
     private Object nextProperty( RandomValues randomValues )
     {
-        int type = randomValues.nextInt( 5 );
-        switch ( type )
-        {
-        case 0:
-            return randomValues.nextNumberValue().asObject();
-        case 1:
-            return randomValues.nextBoolean();
-        case 2:
-            return randomValues.nextAsciiTextValue().stringValue();
-        case 3:
-            return randomValues.nextPointValue().asObject();
-        case 4:
-            return randomValues.nextTemporalValue().asObject();
-        default:
-            throw new IllegalArgumentException( type + " is not an expected type" );
-        }
+        return randomValues.nextValue().asObject();
     }
 
     private String randomType( RandomValues random )

@@ -216,7 +216,7 @@ public abstract class ValueType
             @Override
             public int length( Object value )
             {
-                return Integer.BYTES + ((String)value).length() * Character.BYTES; // pessimistic
+                return Integer.BYTES + UTF8.encode( (String)value ).length * Character.BYTES; // pessimistic
             }
 
             @Override
@@ -481,9 +481,9 @@ public abstract class ValueType
         public int length( Object value )
         {
             ValueType componentType = typeOf( value.getClass().getComponentType() );
-            int arrayLlength = Array.getLength( value );
+            int arrayLength = Array.getLength( value );
             int length = Integer.BYTES; // array length
-            for ( int i = 0; i < arrayLlength; i++ )
+            for ( int i = 0; i < arrayLength; i++ )
             {
                 length += componentType.length( Array.get( value, i ) );
             }
