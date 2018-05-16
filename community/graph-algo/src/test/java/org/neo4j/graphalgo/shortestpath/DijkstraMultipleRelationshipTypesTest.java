@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
-import org.neo4j.graphalgo.impl.util.DoubleComparator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -35,7 +34,7 @@ public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
     protected Dijkstra<Double> getDijkstra( String startNode, String endNode, RelationshipType... relTypes )
     {
         return new Dijkstra<>( 0.0, graph.getNode( startNode ), graph.getNode( endNode ),
-                ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
+                ( relationship, direction ) -> 1.0, new DoubleAdder(), Double::compareTo, Direction.BOTH,
                 relTypes );
     }
 

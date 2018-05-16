@@ -69,7 +69,7 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
 
     public final class BestFirstSelector implements BranchSelector
     {
-        private final PriorityMap<TraversalBranch, Node, P> queue = new PriorityMap( CONVERTER, interest.comparator(),
+        private final PriorityMap<TraversalBranch, Node, P> queue = new PriorityMap<>( CONVERTER, interest.comparator(),
                 interest.stopAfterLowestCost() );
         private TraversalBranch current;
         private P currentAggregatedValue;

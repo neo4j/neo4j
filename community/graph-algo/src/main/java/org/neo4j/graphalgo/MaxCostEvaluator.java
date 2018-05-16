@@ -24,7 +24,9 @@ package org.neo4j.graphalgo;
  *
  * @author Peter Neubauer
  * @param <T> The cost value type
+ * @deprecated This is not in use anymore, left for backward comparability
  */
+@Deprecated
 public interface MaxCostEvaluator<T>
 {
     /**
