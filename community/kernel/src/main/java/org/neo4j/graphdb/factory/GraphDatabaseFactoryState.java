@@ -35,6 +35,10 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 
+/**
+ * @deprecated This will be moved to an internal package in the future.
+ */
+@Deprecated
 public class GraphDatabaseFactoryState
 {
     // Keep these fields volatile or equivalent because of this scenario:

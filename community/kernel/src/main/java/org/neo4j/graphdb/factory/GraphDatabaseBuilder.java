@@ -41,6 +41,10 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public class GraphDatabaseBuilder
 {
+    /**
+     * @deprecated This will be moved to an internal package in the future.
+     */
+    @Deprecated
     public interface DatabaseCreator
     {
         /**
@@ -64,6 +68,10 @@ public class GraphDatabaseBuilder
     protected DatabaseCreator creator;
     protected Map<String,String> config = new HashMap<>();
 
+    /**
+     * @deprecated Use {@link GraphDatabaseFactory} to get instances of this class.
+     */
+    @Deprecated
     public GraphDatabaseBuilder( DatabaseCreator creator )
     {
         this.creator = creator;
@@ -207,6 +215,10 @@ public class GraphDatabaseBuilder
         return config;
     }
 
+    /**
+     * @deprecated This will be removed in the future.
+     */
+    @Deprecated
     public static class Delegator extends GraphDatabaseBuilder
     {
         private final GraphDatabaseBuilder actual;
