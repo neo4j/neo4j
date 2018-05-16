@@ -42,8 +42,8 @@ public enum DeadlockStrategies implements ForsetiLockManager.DeadlockResolutionS
                         return true;
                     }
 
-                    int ourCount = clientThatsAsking.lockCount();
-                    int otherCount = clientWereDeadlockedWith.lockCount();
+                    long ourCount = clientThatsAsking.activeLockCount();
+                    long otherCount = clientWereDeadlockedWith.activeLockCount();
                     if ( ourCount > otherCount )
                     {
                         // We hold more locks than the other client, we stay the course!
