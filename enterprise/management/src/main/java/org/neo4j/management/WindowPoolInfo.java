@@ -22,6 +22,7 @@ package org.neo4j.management;
 import java.beans.ConstructorProperties;
 import java.io.Serializable;
 
+@Deprecated
 public final class WindowPoolInfo implements Serializable
 {
     private static final long serialVersionUID = 7743724554758487292L;

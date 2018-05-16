@@ -22,6 +22,7 @@ package org.neo4j.management;
 import org.neo4j.jmx.Description;
 import org.neo4j.jmx.ManagementInterface;
 
+@Deprecated
 @ManagementInterface( name = BranchedStore.NAME )
 @Description( "Information about the branched stores present in this HA cluster member" )
 public interface BranchedStore

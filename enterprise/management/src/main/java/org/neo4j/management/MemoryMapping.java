@@ -22,6 +22,7 @@ package org.neo4j.management;
 import org.neo4j.jmx.Description;
 import org.neo4j.jmx.ManagementInterface;
 
+@Deprecated
 @ManagementInterface( name = MemoryMapping.NAME )
 @Description( "The status of Neo4j memory mapping" )
 public interface MemoryMapping
