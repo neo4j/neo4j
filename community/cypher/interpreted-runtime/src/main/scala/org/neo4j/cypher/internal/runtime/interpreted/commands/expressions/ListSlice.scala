@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ExecutionContext, ListSupport}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.ListValue
 
 case class ListSlice(collection: Expression, from: Option[Expression], to: Option[Expression])
   extends NullInNullOutExpression(collection) with ListSupport {
@@ -78,10 +78,10 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
     toValue match {
       case None => Values.NO_VALUE
       case Some(value) if value >= 0 =>
-       VirtualValues.take(collectionValue, value)
+       collectionValue.take(value)
       case Some(value) =>
         val end = collectionValue.size + value
-        VirtualValues.take(collectionValue, end)
+        collectionValue.take(end)
     }
   }
 

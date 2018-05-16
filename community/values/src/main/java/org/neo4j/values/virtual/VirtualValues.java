@@ -63,12 +63,6 @@ public final class VirtualValues
         return new ListValue.ArrayValueListValue( arrayValue );
     }
 
-    public static ListValue take( ListValue list, int n )
-    {
-        int end = Math.max( 0, Math.min( n, list.size() ) );
-        return new ListValue.ListSlice( list, 0, end );
-    }
-
     /*
     TOMBSTONE: TransformedListValue & FilteredListValue
 

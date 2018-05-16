@@ -227,7 +227,7 @@ public class ListTest
                             NO_VALUE ).dropNoValues(),
                     list( -2L, 1L, 4L, 7L, 10L ).slice( 1, 4 ),
                     list( -2L, 1L, 4L, 7L ).drop( 1 ),
-                    VirtualValues.take( list( 1L, 4L, 7L, 10L, 13L ), 3 ),
+                    list( 1L, 4L, 7L, 10L, 13L ).take( 3 ),
                     VirtualValues.reverse( list( 7L, 4L, 1L ) ),
                     VirtualValues.concat( list( 1L, 4L ), list( 7L ) )
             };
@@ -245,7 +245,7 @@ public class ListTest
                             NO_VALUE ).dropNoValues(),
                     list( -2L, 1L, 5L, 8L, 11L ).slice( 1, 4 ),
                     list( -2L, 6L, 9L, 12L ).drop( 1 ),
-                    VirtualValues.take( list( 7L, 10L, 13L, 10L, 13L ), 3 ),
+                    list( 7L, 10L, 13L, 10L, 13L ).take( 3 ),
                     VirtualValues.reverse( list( 15L, 12L, 9L ) ),
                     VirtualValues.concat( list( 10L, 13L ), list( 16L ) )
             };

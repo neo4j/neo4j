@@ -26,7 +26,6 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.list;
-import static org.neo4j.values.virtual.VirtualValues.take;
 
 public class ListSliceTest
 {
@@ -120,7 +119,7 @@ public class ListSliceTest
                 longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
 
         // When
-        ListValue take = take( inner, 3 );
+        ListValue take = inner.take( 3 );
 
         // Then
         ListValue expected = list( longValue( 5L ), longValue( 6L ), longValue( 7L ) );
