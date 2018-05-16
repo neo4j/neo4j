@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.ByteUnit;
 
+@Deprecated
 public class Format
 {
     /**
