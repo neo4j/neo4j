@@ -26,6 +26,7 @@ import java.util.Base64;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -46,6 +47,15 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
     {
         server = CommunityServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
+                .build();
+        server.start();
+    }
+
+    protected void startServer( boolean authEnabled, String accessControlAllowOrigin ) throws IOException
+    {
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
+                .withProperty( ServerSettings.http_access_control_allow_origin.name(), accessControlAllowOrigin )
                 .build();
         server.start();
     }

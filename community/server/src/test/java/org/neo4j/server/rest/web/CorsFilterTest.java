@@ -49,7 +49,7 @@ public class CorsFilterTest
     private final HttpServletResponse response = responseMock();
     private final FilterChain chain = filterChainMock();
 
-    private final CorsFilter filter = new CorsFilter( NullLogProvider.getInstance() );
+    private final CorsFilter filter = new CorsFilter( NullLogProvider.getInstance(), "*" );
 
     @Test
     public void shouldCallChainDoFilter() throws Exception
