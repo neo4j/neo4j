@@ -28,8 +28,10 @@ import static java.util.Arrays.copyOf;
 /**
  * Methods "missing" from {@link Arrays} are provided here.
  */
+@Deprecated
 public abstract class ArrayUtil
 {
+    @Deprecated
     public static int hashCode( Object array )
     {
         assert array.getClass().isArray() : array + " is not an array";
@@ -43,6 +45,7 @@ public abstract class ArrayUtil
         return result;
     }
 
+    @Deprecated
     public interface ArrayEquality
     {
         boolean typeEquals( Class<?> firstType, Class<?> otherType );
@@ -50,6 +53,7 @@ public abstract class ArrayUtil
         boolean itemEquals( Object firstArray, Object otherArray );
     }
 
+    @Deprecated
     public static final ArrayEquality DEFAULT_ARRAY_EQUALITY = new ArrayEquality()
     {
         @Override
@@ -65,6 +69,7 @@ public abstract class ArrayUtil
         }
     };
 
+    @Deprecated
     public static final ArrayEquality BOXING_AWARE_ARRAY_EQUALITY = new ArrayEquality()
     {
         @Override
@@ -122,6 +127,7 @@ public abstract class ArrayUtil
         }
     };
 
+    @Deprecated
     public static boolean equals( Object firstArray, Object otherArray )
     {
         return equals( firstArray, otherArray, DEFAULT_ARRAY_EQUALITY );
@@ -139,6 +145,7 @@ public abstract class ArrayUtil
      *
      * @see Arrays#equals(byte[], byte[]) for similar functionality.
      */
+    @Deprecated
     public static boolean equals( Object firstArray, Object otherArray, ArrayEquality equality )
     {
         assert firstArray.getClass().isArray() : firstArray + " is not an array";
@@ -160,6 +167,7 @@ public abstract class ArrayUtil
         return false;
     }
 
+    @Deprecated
     public static Object clone( Object array )
     {
         if ( array instanceof Object[] )
@@ -210,6 +218,7 @@ public abstract class ArrayUtil
      * @param <T> The type of the array items
      * @return how many of the items in {@code contains} are missing from {@code array}.
      */
+    @Deprecated
     public static <T> int missing( T[] array, T[] contains )
     {
         int missing = 0;
@@ -232,6 +241,7 @@ public abstract class ArrayUtil
      * @param <T> The type of the array items
      * @return {@code true} if all items in {@code contains} exists in {@code array}, otherwise {@code false}.
      */
+    @Deprecated
     public static <T> boolean containsAll( T[] array, T[] contains )
     {
         for ( T check : contains )
@@ -252,6 +262,7 @@ public abstract class ArrayUtil
      * @param <T> The type of the array items
      * @return {@code true} if {@code contains} exists in {@code array}, otherwise {@code false}.
      */
+    @Deprecated
     public static <T> boolean contains( T[] array, T contains )
     {
         return contains( array, array.length, contains );
@@ -266,6 +277,7 @@ public abstract class ArrayUtil
      * @param <T> The type of the array items
      * @return {@code true} if {@code contains} exists in {@code array}, otherwise {@code false}.
      */
+    @Deprecated
     public static <T> boolean contains( T[] array, int arrayLength, T contains )
     {
         for ( int i = 0; i < arrayLength; i++ )
@@ -287,6 +299,7 @@ public abstract class ArrayUtil
      * @param <T> The type of the items
      * @return {@code true} if {@code first} and {@code other} are both {@code null} or are both equal.
      */
+    @Deprecated
     public static <T> boolean nullSafeEquals( T first, T other )
     {
         return first == null ? first == other : first.equals( other );
@@ -302,6 +315,7 @@ public abstract class ArrayUtil
      * @return an array containing the union of {@code first} and {@code other}. Items occurring in
      * both {@code first} and {@code other} will only have of the two in the resulting union.
      */
+    @Deprecated
     public static <T> T[] union( T[] first, T[] other )
     {
         if ( first == null || other == null )
@@ -335,6 +349,7 @@ public abstract class ArrayUtil
      * @param array - array to check
      * @return true if array is null or empty
      */
+    @Deprecated
     public static boolean isEmpty( Object[] array )
     {
         return (array == null) || (array.length == 0);
@@ -348,6 +363,7 @@ public abstract class ArrayUtil
      * @param <T> The type of the array
      * @return a {@link String} representation of {@code items} with a custom delimiter in between.
      */
+    @Deprecated
     public static <T> String join( T[] items, String delimiter )
     {
         StringBuilder builder = new StringBuilder();
@@ -368,6 +384,7 @@ public abstract class ArrayUtil
      * @param <TO> type of the converted items
      * @return a new array with all items from {@code from} converted into type {@code toClass}.
      */
+    @Deprecated
     public static <FROM, TO> TO[] map( FROM[] from, Function<FROM,TO> transformer, Class<TO> toClass )
     {
         @SuppressWarnings( "unchecked" )
@@ -388,6 +405,7 @@ public abstract class ArrayUtil
      * @return a concatenated array where {@code first} as the item at index {@code 0} and the additional
      * items following it.
      */
+    @Deprecated
     public static <T> T[] concat( T first, T... additional )
     {
         @SuppressWarnings( "unchecked" )
@@ -405,6 +423,7 @@ public abstract class ArrayUtil
      * @param <T> the type of the array items
      * @return a concatenated array and the additional items following it.
      */
+    @Deprecated
     public static <T> T[] concat( T[] initial, T... additional )
     {
         @SuppressWarnings( "unchecked" )
@@ -421,12 +440,14 @@ public abstract class ArrayUtil
      * @param <T> the type of the items
      * @return the array version of the vararg argument.
      */
+    @Deprecated
     @SafeVarargs
     public static <T> T[] array( T... varargs )
     {
         return varargs;
     }
 
+    @Deprecated
     public static <T> int indexOf( T[] array, T item )
     {
         for ( int i = 0; i < array.length; i++ )
@@ -439,6 +460,7 @@ public abstract class ArrayUtil
         return -1;
     }
 
+    @Deprecated
     public static <T> T[] without( T[] source, T... toRemove )
     {
         T[] result = source.clone();
@@ -458,6 +480,7 @@ public abstract class ArrayUtil
         return length == result.length ? result : Arrays.copyOf( result, length );
     }
 
+    @Deprecated
     public static <T> void reverse( T[] array )
     {
         for ( int low = 0, high = array.length - 1; high - low > 0; low++, high-- )
