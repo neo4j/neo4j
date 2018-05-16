@@ -20,12 +20,13 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -41,7 +42,7 @@ public final class SharedDiscoveryService
 
     private final ConcurrentMap<MemberId,CoreServerInfo> coreMembers;
     private final ConcurrentMap<MemberId,ReadReplicaInfo> readReplicas;
-    private final Set<SharedDiscoveryCoreClient> listeningClients;
+    private final List<SharedDiscoveryCoreClient> listeningClients;
     private final ConcurrentMap<String,ClusterId> clusterIdDbNames;
     private final ConcurrentMap<String,LeaderInfo> leaderMap;
     private final CountDownLatch enoughMembers;
@@ -50,7 +51,7 @@ public final class SharedDiscoveryService
     {
         coreMembers = new ConcurrentHashMap<>();
         readReplicas = new ConcurrentHashMap<>();
-        listeningClients = new ConcurrentSkipListSet<>();
+        listeningClients = new CopyOnWriteArrayList<>();
         clusterIdDbNames = new ConcurrentHashMap<>();
         leaderMap = new ConcurrentHashMap<>();
         enoughMembers = new CountDownLatch( MIN_DISCOVERY_MEMBERS );
@@ -95,6 +96,7 @@ public final class SharedDiscoveryService
         CoreServerInfo previousMember = coreMembers.putIfAbsent( client.getMemberId(), client.getCoreServerInfo() );
         if ( previousMember == null )
         {
+
             listeningClients.add( client );
             enoughMembers.countDown();
             notifyCoreClients();

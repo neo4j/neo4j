@@ -32,7 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreTopologyService, Comparable<SharedDiscoveryCoreClient>
+class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreTopologyService
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final MemberId myself;
@@ -56,12 +56,6 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
         this.log = logProvider.getLog( getClass() );
         this.refusesToBeLeader = config.get( CausalClusteringSettings.refuse_to_be_leader );
         this.localDBName = config.get( CausalClusteringSettings.database );
-    }
-
-    @Override
-    public int compareTo( SharedDiscoveryCoreClient o )
-    {
-        return Optional.ofNullable( o ).map( c -> c.myself.getUuid().compareTo( this.myself.getUuid() ) ).orElse( -1 );
     }
 
     @Override
