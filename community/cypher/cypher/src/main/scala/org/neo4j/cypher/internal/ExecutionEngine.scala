@@ -96,6 +96,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       val combinedParams = VirtualValues.combine(params, cachedExecutableQuery.extractedParams)
       cachedExecutableQuery.plan.run(context, preParsedQuery.executionMode, combinedParams)
 
+    } catch {
+      case t: Throwable =>
+        context.close(false)
+        throw t
     } finally queryTracer.close()
   }
 
