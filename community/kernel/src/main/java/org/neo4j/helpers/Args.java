@@ -65,10 +65,12 @@ import org.neo4j.kernel.impl.util.Validator;
  *
  * where {@code Metadata} would be the metadata of {@code my-value}.
  */
+@Deprecated
 public class Args
 {
     private static final char OPTION_METADATA_DELIMITER = ':';
 
+    @Deprecated
     public static class ArgsParser
     {
         private final String[] flags;
@@ -84,6 +86,7 @@ public class Args
         }
     }
 
+    @Deprecated
     public static class Option<T>
     {
         private final T value;
@@ -125,11 +128,13 @@ public class Args
     private final Map<String, List<Option<String>>> map = new HashMap<>();
     private final List<String> orphans = new ArrayList<>();
 
+    @Deprecated
     public static ArgsParser withFlags( String... flags )
     {
         return new ArgsParser( flags );
     }
 
+    @Deprecated
     public static Args parse( String...args )
     {
         return withFlags().parse( args );
@@ -157,11 +162,13 @@ public class Args
         parseArgs( optionParser, args );
     }
 
+    @Deprecated
     public Args( Map<String, String> source )
     {
         this( DEFAULT_OPTION_PARSER, source );
     }
 
+    @Deprecated
     public Args( Function<String,Option<String>> optionParser, Map<String, String> source )
     {
         this.flags = new String[] {};
@@ -172,11 +179,13 @@ public class Args
         }
     }
 
+    @Deprecated
     public String[] source()
     {
         return this.args;
     }
 
+    @Deprecated
     public Map<String, String> asMap()
     {
         Map<String,String> result = new HashMap<>();
@@ -188,17 +197,20 @@ public class Args
         return result;
     }
 
+    @Deprecated
     public boolean has( String  key )
     {
         return this.map.containsKey( key );
     }
 
+    @Deprecated
     public boolean hasNonNull( String key )
     {
         List<Option<String>> values = this.map.get( key );
         return values != null && !values.isEmpty();
     }
 
+    @Deprecated
     private String getSingleOptionOrNull( String key )
     {
         List<Option<String>> values = this.map.get( key );
@@ -218,17 +230,20 @@ public class Args
      * @param key name of the option, without any `-` or `--` prefix, eg. "o".
      * @return the string value of the option, or null if the user has not specified it
      */
+    @Deprecated
     public String get( String key )
     {
         return getSingleOptionOrNull( key );
     }
 
+    @Deprecated
     public String get( String key, String defaultValue )
     {
         String value = getSingleOptionOrNull( key );
         return value != null ? value : defaultValue;
     }
 
+    @Deprecated
     public String get( String key, String defaultValueIfNotFound, String defaultValueIfNoValue )
     {
         String value = getSingleOptionOrNull( key );
@@ -239,12 +254,14 @@ public class Args
         return this.map.containsKey( key ) ? defaultValueIfNoValue : defaultValueIfNotFound;
     }
 
+    @Deprecated
     public Number getNumber( String key, Number defaultValue )
     {
         String value = getSingleOptionOrNull( key );
         return value != null ? Double.valueOf( value ) : defaultValue;
     }
 
+    @Deprecated
     public long getDuration( String key, long defaultValueInMillis )
     {
         String value = getSingleOptionOrNull( key );
@@ -263,6 +280,7 @@ public class Args
      * @param key argument key.
      * @return {@code true} if argument was specified w/o value, or w/ value {@code true}, otherwise {@code false}.
      */
+    @Deprecated
     public boolean getBoolean( String key )
     {
         return getBoolean( key, false );
@@ -276,6 +294,7 @@ public class Args
      * @param defaultValueIfNotSpecified used if argument not specified.
      * @return argument boolean value depending on what was specified, see above.
      */
+    @Deprecated
     public Boolean getBoolean( String key, Boolean defaultValueIfNotSpecified )
     {
         return getBoolean( key, defaultValueIfNotSpecified, Boolean.TRUE );
@@ -297,6 +316,7 @@ public class Args
      * @param defaultValueIfSpecifiedButNoValue used if argument specified w/o value.
      * @return argument boolean value depending on what was specified, see above.
      */
+    @Deprecated
     public Boolean getBoolean( String key, Boolean defaultValueIfNotSpecified,
             Boolean defaultValueIfSpecifiedButNoValue )
     {
@@ -308,6 +328,7 @@ public class Args
         return this.map.containsKey( key ) ? defaultValueIfSpecifiedButNoValue : defaultValueIfNotSpecified;
     }
 
+    @Deprecated
     public <T extends Enum<T>> T getEnum( Class<T> enumClass, String key, T defaultValue )
     {
         String raw = getSingleOptionOrNull( key );
@@ -335,6 +356,7 @@ public class Args
      *
      * @return list of orphan arguments
      */
+    @Deprecated
     public List<String> orphans()
     {
         return new ArrayList<>( this.orphans );
@@ -344,11 +366,13 @@ public class Args
      * @see #orphans()
      * @return list of orphan arguments.
      */
+    @Deprecated
     public String[] orphansAsArray()
     {
         return orphans.toArray( new String[0] );
     }
 
+    @Deprecated
     public String[] asArgs()
     {
         List<String> list = new ArrayList<>( orphans.size() );
@@ -466,6 +490,7 @@ public class Args
         values.add( new Option<>( value, option.metadata() ) );
     }
 
+    @Deprecated
     public static String jarUsage( Class<?> main, String... params )
     {
         StringBuilder usage = new StringBuilder( "USAGE: java [-cp ...] " );
@@ -493,6 +518,7 @@ public class Args
      * @param maxLength line length to split at, actually closest previous white space.
      * @return description split into multiple lines if need be.
      */
+    @Deprecated
     public static String[] splitLongLine( String description, int maxLength )
     {
         List<String> lines = new ArrayList<>();
@@ -531,6 +557,7 @@ public class Args
         return position + 1;
     }
 
+    @Deprecated
     @SafeVarargs
     public final <T> T interpretOption( String key, Function<String,T> defaultValue,
             Function<String,T> converter, Validator<T>... validators )
@@ -560,6 +587,7 @@ public class Args
      * @param <T> The type of the option values
      * @return The option values
      */
+    @Deprecated
     @SafeVarargs
     public final <T> Collection<T> interpretOptions( String key, Function<String,T> defaultValue,
             Function<String,T> converter, Validator<T>... validators )
@@ -587,6 +615,7 @@ public class Args
      * @param <T> The type of the option values
      * @return The option values
      */
+    @Deprecated
     @SafeVarargs
     public final <T> Collection<Option<T>> interpretOptionsWithMetadata( String key, Function<String,T> defaultValue,
             Function<String,T> converter, Validator<T>... validators )
@@ -611,6 +640,7 @@ public class Args
         return values;
     }
 
+    @Deprecated
     @SafeVarargs
     public final <T> T interpretOrphan( int index, Function<String,T> defaultValue,
             Function<String,T> converter, Validator<T>... validators )
