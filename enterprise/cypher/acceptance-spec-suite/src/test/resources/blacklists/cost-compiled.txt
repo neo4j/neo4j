@@ -193,6 +193,7 @@ min() over integers
 max() over floats
 min() over floats
 Multiple aggregations should work
+percentileDisc on empty data should return null
 
 //MatchAcceptance.feature
 difficult to plan query number 1
