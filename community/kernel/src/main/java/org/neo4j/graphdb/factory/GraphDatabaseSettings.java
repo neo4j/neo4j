@@ -61,6 +61,7 @@ import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
+import static org.neo4j.kernel.configuration.Settings.TIMEZONE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
@@ -398,7 +399,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Database timezone for temporal functions. All Time and DateTime values that are created without " +
             "an explicit timezone will use this configured default timezone." )
     public static final Setting<ZoneId> db_temporal_timezone =
-            setting( "db.temporal.timezone", DateTimeValue::parseZoneOffsetOrZoneName, ZoneOffset.UTC.toString() );
+            setting( "db.temporal.timezone", TIMEZONE, ZoneOffset.UTC.toString() );
 
     @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
     @Internal
