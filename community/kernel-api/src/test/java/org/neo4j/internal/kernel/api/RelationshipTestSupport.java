@@ -248,6 +248,7 @@ public class RelationshipTestSupport
     }
 
     private static Function<Node,StartRelationship>[] sparseDenseRels = Iterators.array(
+            loop( "FOO" ), // loops are the hardest, let's have two to try to interfere with outgoing/incoming code
             outgoing( "FOO" ),
             outgoing( "BAR" ),
             outgoing( "BAR" ),

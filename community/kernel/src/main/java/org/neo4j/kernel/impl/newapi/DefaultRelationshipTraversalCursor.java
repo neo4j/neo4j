@@ -59,7 +59,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
                     @Override
                     boolean check( long source, long target, long origin )
                     {
-                        return origin == target;
+                        return origin == target && source != target;
                     }
                 },
         // allow only outgoing relationships
@@ -68,7 +68,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
                     @Override
                     boolean check( long source, long target, long origin )
                     {
-                        return origin == source;
+                        return origin == source && source != target;
                     }
                 },
         // allow only loop relationships
