@@ -36,6 +36,9 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstaller;
 import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstaller;
+import org.neo4j.causalclustering.core.replication.DistributedOperation;
+import org.neo4j.causalclustering.core.replication.session.GlobalSession;
+import org.neo4j.causalclustering.core.replication.session.LocalOperationId;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.token.TokenType;
@@ -44,7 +47,7 @@ import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.FormattedLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -63,13 +66,17 @@ public class RaftMessageEncoderDecoderTest
         return new RaftMessages.RaftMessage[]{
                                 new RaftMessages.Heartbeat( MEMBER_ID, 1, 2, 3 ),
                                 new RaftMessages.HeartbeatResponse( MEMBER_ID ),
-                                new RaftMessages.NewEntry.Request( MEMBER_ID, new ReplicatedTransaction( new byte[]{1, 2, 3} ) ),
-                new RaftMessages.AppendEntries.Request( MEMBER_ID, 1, 2, 3,
-                        new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedTokenRequest( TokenType.LABEL, "name", new byte[]{2, 3, 4} ) ),
-                                new RaftLogEntry( 1, new ReplicatedLockTokenRequest( MEMBER_ID, 2 ) )}, 5 ),
+                                new RaftMessages.NewEntry.Request( MEMBER_ID, new ReplicatedTransaction( new byte[]{1, 2, 3, 4, 5} ) ),
+                                new RaftMessages.NewEntry.Request( MEMBER_ID, new DistributedOperation(
+                                        new DistributedOperation( new ReplicatedTransaction( new byte[]{1, 2, 3, 4, 5} ),
+                                                new GlobalSession( UUID.randomUUID(), MEMBER_ID ), new LocalOperationId( 1, 2 ) ),
+                                        new GlobalSession( UUID.randomUUID(), MEMBER_ID ), new LocalOperationId( 3, 4 ) ) ),
+                                new RaftMessages.AppendEntries.Request( MEMBER_ID, 1, 2, 3, new RaftLogEntry[]{
+                                        new RaftLogEntry( 0, new ReplicatedTokenRequest( TokenType.LABEL, "name", new byte[]{2, 3, 4} ) ),
+                                        new RaftLogEntry( 1, new ReplicatedLockTokenRequest( MEMBER_ID, 2 ) )}, 5 ),
                                 new RaftMessages.AppendEntries.Response( MEMBER_ID, 1, true, 2, 3 ),
                                 new RaftMessages.Vote.Request( MEMBER_ID, Long.MAX_VALUE, MEMBER_ID, Long.MIN_VALUE, 1 ),
-                new RaftMessages.Vote.Response( MEMBER_ID, 1, true ),
+                                new RaftMessages.Vote.Response( MEMBER_ID, 1, true ),
                                 new RaftMessages.PreVote.Request( MEMBER_ID, Long.MAX_VALUE, MEMBER_ID, Long.MIN_VALUE, 1 ),
                                 new RaftMessages.PreVote.Response( MEMBER_ID, 1, true ),
                                 new RaftMessages.LogCompactionInfo( MEMBER_ID, Long.MAX_VALUE, Long.MIN_VALUE )};
@@ -85,9 +92,9 @@ public class RaftMessageEncoderDecoderTest
         inbound = new EmbeddedChannel();
 
         new RaftProtocolClientInstaller( new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER ), Collections.emptyList(),
-                NullLogProvider.getInstance() ).install( outbound );
+                FormattedLogProvider.toOutputStream( System.out ) ).install( outbound );
         new RaftProtocolServerInstaller( handler, new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER ), Collections.emptyList(),
-                NullLogProvider.getInstance() ).install( inbound );
+                FormattedLogProvider.toOutputStream( System.out ) ).install( inbound );
     }
 
     @After
@@ -119,7 +126,6 @@ public class RaftMessageEncoderDecoderTest
             inbound.writeInbound( o );
         }
         RaftMessages.ReceivedInstantClusterIdAwareMessage<RaftMessages.RaftMessage> message = handler.getRaftMessage();
-        System.out.println( message );
         assertEquals( clusterId, message.clusterId() );
         assertEquals( raftMessage, message.message() );
         assertNull( inbound.readInbound() );

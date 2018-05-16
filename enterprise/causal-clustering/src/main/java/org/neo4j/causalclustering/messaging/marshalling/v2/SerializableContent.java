@@ -20,6 +20,8 @@
 package org.neo4j.causalclustering.messaging.marshalling.v2;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.storageengine.api.WritableChannel;

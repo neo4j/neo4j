@@ -17,33 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.messaging.marshalling.v2.encoding;
+package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-import java.io.IOException;
-
-import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
-import org.neo4j.causalclustering.messaging.marshalling.v2.SerializableContent;
-import org.neo4j.storageengine.api.WritableChannel;
-
-public class SerializableContentEncoder extends MessageToByteEncoder<SerializableContent.SimpleSerializableContent>
+public class ReplicatedContentChunkEncoder extends MessageToByteEncoder<ReplicatedContentChunk>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, SerializableContent.SimpleSerializableContent msg, ByteBuf out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, ReplicatedContentChunk msg, ByteBuf out )
     {
-        sendToNetwork( ctx, msg, out );
-    }
-
-    public void marshal( SerializableContent serializableContent, WritableChannel channel ) throws IOException
-    {
-        serializableContent.serialize( channel );
-    }
-
-    private void sendToNetwork( ChannelHandlerContext ctx, SerializableContent msg, ByteBuf out ) throws IOException
-    {
-            msg.serialize( new NetworkFlushableChannelNetty4( out ) );
+        msg.serialize( out );
     }
 }

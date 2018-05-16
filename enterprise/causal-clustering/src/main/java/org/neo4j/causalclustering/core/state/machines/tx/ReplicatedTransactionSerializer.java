@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
+import org.neo4j.causalclustering.messaging.marshalling.v2.SerializableContent;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
