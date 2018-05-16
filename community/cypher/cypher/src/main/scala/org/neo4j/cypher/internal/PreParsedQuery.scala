@@ -51,6 +51,6 @@ case class PreParsedQuery(statement: String,
     }
     val debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
 
-    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $debugFlags $statement".replaceAll("\\s+", " ")
+    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $debugFlags $statement"
   }
 }
