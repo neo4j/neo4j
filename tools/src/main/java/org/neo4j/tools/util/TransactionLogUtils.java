@@ -84,12 +84,11 @@ public class TransactionLogUtils
      * @return {@link LogVersionedStoreChannel} for the file. Its version is determined by its log header.
      * @throws IOException on I/O error.
      */
-    public static LogVersionedStoreChannel openVersionedChannel( FileSystemAbstraction fileSystem, File file ) throws IOException
+    public static PhysicalLogVersionedStoreChannel openVersionedChannel( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
         StoreChannel fileChannel = fileSystem.open( file, OpenMode.READ );
         LogHeader logHeader = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), fileChannel, true, file );
-        PhysicalLogVersionedStoreChannel channel =
-                new PhysicalLogVersionedStoreChannel( fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
+        PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel( fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
         return channel;
     }
 }

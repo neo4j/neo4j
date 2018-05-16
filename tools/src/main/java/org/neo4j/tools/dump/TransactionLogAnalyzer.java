@@ -49,8 +49,8 @@ import org.neo4j.tools.dump.log.TransactionLogEntryCursor;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 import static org.neo4j.tools.util.TransactionLogUtils.openVersionedChannel;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 
 /**
  * Merely a utility which, given a store directory or log file, reads the transaction log(s) as a stream of transactions

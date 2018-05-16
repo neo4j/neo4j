@@ -28,7 +28,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
-import org.neo4j.com.CommittedTransactionSerializer;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 
 public class TxPullResponseEncoder extends MessageToByteEncoder<TxPullResponse>
 {
@@ -37,6 +37,6 @@ public class TxPullResponseEncoder extends MessageToByteEncoder<TxPullResponse>
     {
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( out );
         StoreIdMarshal.INSTANCE.marshal( response.storeId(), channel );
-        new CommittedTransactionSerializer( channel ).visit( response.tx() );
+        new LogEntryWriter( channel ).serialize( response.tx() );
     }
 }
