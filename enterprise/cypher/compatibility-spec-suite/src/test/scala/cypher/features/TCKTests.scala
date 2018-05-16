@@ -21,12 +21,9 @@ package cypher.features
 
 import java.nio.file.FileSystems
 
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
 import org.junit.jupiter.api.AfterEach
 import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
-@RunWith(classOf[JUnitPlatform])
 class TCKTests extends BaseFeatureTest {
 
   // these two should be empty on commit!
