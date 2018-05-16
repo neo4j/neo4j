@@ -733,6 +733,21 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         case "monthsofyear":
             val = months % 12;
             break;
+        case "monthsofquarter":
+            val = months % 3;
+            break;
+        case "quarters":
+            val = months / 3;
+            break;
+        case "quartersofyear":
+            val = (months / 3) % 4;
+            break;
+        case "weeks":
+            val = days / 7;
+            break;
+        case "daysofweek":
+            val = days % 7;
+            break;
         case "days":
             val = days;
             break;

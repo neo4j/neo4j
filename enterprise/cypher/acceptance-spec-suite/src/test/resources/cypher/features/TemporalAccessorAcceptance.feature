@@ -132,17 +132,17 @@ Feature: TemporalAccessorAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE (:Val {prop: duration({years: 1, months:1, days: 1, hours:1, minutes: 1, seconds: 1, nanoseconds: 111111111}) })
+      CREATE (:Val {prop: duration({years: 1, months:4, days: 10, hours:1, minutes: 1, seconds: 1, nanoseconds: 111111111}) })
       """
     When executing query:
       """
       MATCH (v:Val)
       WITH v.prop as d
-      RETURN d.years, d.months, d.days,
+      RETURN d.years, d.quarters, d.months, d.weeks, d.days,
              d.hours, d.minutes, d.seconds, d.milliseconds, d.microseconds, d.nanoseconds,
-             d.monthsOfYear, d.minutesOfHour, d.secondsOfMinute, d.millisecondsOfSecond, d.microsecondsOfSecond, d.nanosecondsOfSecond
+             d.quartersOfYear, d.monthsOfQuarter, d.monthsOfYear, d.daysOfWeek, d.minutesOfHour, d.secondsOfMinute, d.millisecondsOfSecond, d.microsecondsOfSecond, d.nanosecondsOfSecond
       """
     Then the result should be, in order:
-      | d.years | d.months | d.days | d.hours | d.minutes | d.seconds | d.milliseconds | d.microseconds | d.nanoseconds | d.monthsOfYear | d.minutesOfHour | d.secondsOfMinute | d.millisecondsOfSecond | d.microsecondsOfSecond | d.nanosecondsOfSecond |
-      | 1       | 13       | 1      | 1       | 61        | 3661      |  3661111       | 3661111111     | 3661111111111 | 1              | 1               | 1                 | 111                    | 111111                 | 111111111             |
+      | d.years | d.quarters | d.months | d.weeks | d.days | d.hours | d.minutes | d.seconds | d.milliseconds | d.microseconds | d.nanoseconds | d.quartersOfYear | d.monthsOfQuarter| d.monthsOfYear | d.daysOfWeek | d.minutesOfHour | d.secondsOfMinute | d.millisecondsOfSecond | d.microsecondsOfSecond | d.nanosecondsOfSecond |
+      | 1       | 5          | 16       | 1       | 10     | 1       | 61        | 3661      |  3661111       | 3661111111     | 3661111111111 | 1                | 1                | 4              | 3            | 1               | 1                 | 111                    | 111111                 | 111111111             |
     And no side effects
