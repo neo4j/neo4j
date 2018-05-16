@@ -326,8 +326,8 @@ public class BuiltInProceduresTest
                         "Clears all query caches.", "DBMS" ),
                 record( "db.createIndex",
                         "db.createIndex(index :: STRING?, providerName :: STRING?) :: (index :: STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", lucene+native-2.0 )) - " +
-                                "YIELD index, providerName, status", "WRITE" )
+                        "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", \"lucene+native-2.0\")) - " +
+                                "YIELD index, providerName, status", "SCHEMA" )
         ) );
     }
 
