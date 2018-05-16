@@ -26,7 +26,8 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.List;
 
 import org.neo4j.causalclustering.catchup.Protocol;
-import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.causalclustering.core.replication.ReplicatedContent;
+import org.neo4j.causalclustering.messaging.marshalling.v2.ContentBuilder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 import org.neo4j.causalclustering.messaging.marshalling.v2.CoreReplicatedContentSerializer;
 
@@ -34,10 +35,9 @@ public class ReplicatedContentDecoder extends ByteToMessageDecoder
 {
     private final CoreReplicatedContentSerializer coreReplicatedContentSerializer = new CoreReplicatedContentSerializer();
     private final Protocol<ContentType> protocol;
-    private CoreReplicatedContentSerializer.ReplicatedContentBuilder replicatedContentBuilder =
-            CoreReplicatedContentSerializer.ReplicatedContentBuilder.emptyUnfinished();
+    private ContentBuilder<ReplicatedContent> contentBuilder = ContentBuilder.emptyUnfinished();
 
-    public ReplicatedContentDecoder( Protocol<ContentType> protocol )
+    ReplicatedContentDecoder( Protocol<ContentType> protocol )
     {
         this.protocol = protocol;
     }
@@ -45,11 +45,11 @@ public class ReplicatedContentDecoder extends ByteToMessageDecoder
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
     {
-        replicatedContentBuilder.combine( coreReplicatedContentSerializer.decode( new NetworkReadableClosableChannelNetty4( in ) ) );
-        if ( replicatedContentBuilder.isComplete() )
+        contentBuilder.combine( coreReplicatedContentSerializer.decode( in ) );
+        if ( contentBuilder.isComplete() )
         {
-            out.add( replicatedContentBuilder.build() );
-            replicatedContentBuilder = CoreReplicatedContentSerializer.ReplicatedContentBuilder.emptyUnfinished();
+            out.add( contentBuilder.build() );
+            contentBuilder = ContentBuilder.emptyUnfinished();
             protocol.expect( ContentType.MessageType );
         }
     }

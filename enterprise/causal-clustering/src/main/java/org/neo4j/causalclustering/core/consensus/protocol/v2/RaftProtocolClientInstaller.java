@@ -20,11 +20,13 @@
 package org.neo4j.causalclustering.core.consensus.protocol.v2;
 
 import io.netty.channel.Channel;
+import io.netty.handler.stream.ChunkedWriteHandler;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentChunkEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.CoreReplicatedContentSerializer;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.ContentTypeEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermEncoder;
@@ -72,6 +74,8 @@ public class RaftProtocolClientInstaller implements ProtocolInstaller<Orientatio
                 .addFraming()
                 .add( "raft_message_encoder", new RaftMessageEncoder() )
                 .add( "raft_content_type_encoder", new ContentTypeEncoder() )
+                .add( "raft_chunked_replicated_content", new ReplicatedContentChunkEncoder() )
+                .add( "raft_chunked_writer", new ChunkedWriteHandler(  ) )
                 .add( "raft_content_encoder", new SerializableContentEncoder() )
                 .add( "raft_log_entry_encoder", new RaftLogEntryTermEncoder() )
                 .add( "raft_message_content_encoder", new RaftMessageContentEncoder( new CoreReplicatedContentSerializer() ) )

@@ -19,11 +19,13 @@
  */
 package org.neo4j.causalclustering.messaging.marshalling.v2;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
-import java.util.function.Function;
 
 import org.neo4j.causalclustering.core.consensus.NewLeaderBarrier;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
@@ -39,11 +41,14 @@ import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenR
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenSerializer;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequestSerializer;
+import org.neo4j.causalclustering.core.state.machines.tx.ChunkedReplicatedTransactionInput;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionSerializer;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
+import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentChunk;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -65,7 +70,7 @@ public class CoreReplicatedContentSerializer extends SafeChannelMarshal<Replicat
     {
         if ( content instanceof ReplicatedTransaction )
         {
-            return singleton( simple( TX_CONTENT_TYPE, channel -> ReplicatedTransactionSerializer.marshal( (ReplicatedTransaction) content, channel ) ) );
+            return singleton( new ChunkedReplicatedTransactionInput( TX_CONTENT_TYPE, (ReplicatedTransaction) content ) );
         }
         else if ( content instanceof MemberIdSet )
         {
@@ -114,24 +119,63 @@ public class CoreReplicatedContentSerializer extends SafeChannelMarshal<Replicat
         }
     }
 
-    public ReplicatedContentBuilder decode( ReadableChannel channel ) throws IOException, EndOfStreamException
+    public ContentBuilder<ReplicatedContent> decode( ByteBuf byteBuf ) throws IOException, EndOfStreamException
+    {
+        byte type = byteBuf.readByte();
+        byteBuf.readerIndex( byteBuf.readerIndex() - 1 );
+        switch ( type )
+        {
+        case TX_CONTENT_TYPE:
+            ReplicatedContentChunk replicatedContentChunk = ReplicatedContentChunk.deSerialize( byteBuf );
+            UnfinishedChunk unfinishedChunk = UnfinishedChunk.create( replicatedContentChunk.content() );
+            return new ContentBuilder<>( replicatedContent ->
+            {
+                UnfinishedChunk chunk;
+                if ( replicatedContent != null )
+                {
+                    chunk = unfinishedChunk.consume( (UnfinishedChunk) replicatedContent );
+                    //                    chunk = ( (UnfinishedChunk) replicatedContent ).consume( unfinishedChunk );
+                }
+                else
+                {
+                    chunk = unfinishedChunk;
+                }
+                if ( !replicatedContentChunk.isFirst() )
+                {
+                    return chunk;
+                }
+                else
+                {
+                    int length = chunk.byteBuf.readableBytes();
+                    byte[] bytes = new byte[length];
+                    chunk.byteBuf.readBytes( bytes );
+                    chunk.byteBuf.release();
+                    return new ReplicatedTransaction( bytes );
+                }
+            }, replicatedContentChunk.isLast() );
+
+        default:
+            return read( new NetworkReadableClosableChannelNetty4( byteBuf ) );
+        }
+    }
+
+    public ContentBuilder<ReplicatedContent> read( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
         byte type = channel.get();
         switch ( type )
-
         {
         case TX_CONTENT_TYPE:
-            return new ReplicatedContentBuilder( ReplicatedTransactionSerializer.unmarshal( channel ) );
+            return new ContentBuilder<>( ReplicatedTransactionSerializer.unmarshal( channel ) );
         case RAFT_MEMBER_SET_TYPE:
-            return new ReplicatedContentBuilder( MemberIdSetSerializer.unmarshal( channel ) );
+            return new ContentBuilder<>( MemberIdSetSerializer.unmarshal( channel ) );
         case ID_RANGE_REQUEST_TYPE:
-            return new ReplicatedContentBuilder( ReplicatedIdAllocationRequestSerializer.unmarshal( channel ) );
+            return new ContentBuilder<>( ReplicatedIdAllocationRequestSerializer.unmarshal( channel ) );
         case TOKEN_REQUEST_TYPE:
-            return new ReplicatedContentBuilder( ReplicatedTokenRequestSerializer.unmarshal( channel ) );
+            return new ContentBuilder<>( ReplicatedTokenRequestSerializer.unmarshal( channel ) );
         case NEW_LEADER_BARRIER_TYPE:
-            return new ReplicatedContentBuilder( new NewLeaderBarrier() );
+            return new ContentBuilder<>( new NewLeaderBarrier() );
         case LOCK_TOKEN_REQUEST:
-            return new ReplicatedContentBuilder( ReplicatedLockTokenSerializer.unmarshal( channel ) );
+            return new ContentBuilder<>( ReplicatedLockTokenSerializer.unmarshal( channel ) );
         case DISTRIBUTED_OPERATION:
         {
             long mostSigBits = channel.getLong();
@@ -143,56 +187,46 @@ public class CoreReplicatedContentSerializer extends SafeChannelMarshal<Replicat
             long sequenceNumber = channel.getLong();
             LocalOperationId localOperationId = new LocalOperationId( localSessionId, sequenceNumber );
 
-            return new ReplicatedContentBuilder( replicatedContent -> new DistributedOperation( replicatedContent, globalSession, localOperationId ) );
+            return new ContentBuilder<>( replicatedContent ->
+            {
+                if ( replicatedContent instanceof UnfinishedChunk )
+                {
+                    throw new IllegalStateException( "Cannot combine with unfinished chunk" );
+                }
+                return new DistributedOperation( replicatedContent, globalSession, localOperationId );
+            }, false );
         }
         case DUMMY_REQUEST:
-            return new ReplicatedContentBuilder( DummyRequest.Marshal.INSTANCE.unmarshal( channel ) );
+            return new ContentBuilder<>( DummyRequest.Marshal.INSTANCE.unmarshal( channel ) );
         default:
             throw new IllegalStateException( "Not a recognized content type: " + type );
         }
     }
 
-    public static class ReplicatedContentBuilder
+    private static class UnfinishedChunk implements ReplicatedContent
     {
-        private boolean isComplete;
-        private Function<ReplicatedContent,ReplicatedContent> contentFunction;
+        ByteBuf byteBuf;
 
-        public static ReplicatedContentBuilder emptyUnfinished()
+        private UnfinishedChunk( ByteBuf content )
         {
-            return new ReplicatedContentBuilder( replicatedContent -> replicatedContent );
+            byteBuf = content.copy();
         }
 
-        private ReplicatedContentBuilder( Function<ReplicatedContent,ReplicatedContent> contentFunction )
+        public static UnfinishedChunk create( ByteBuf content )
         {
-            this.contentFunction = contentFunction;
-            this.isComplete = false;
+            return new UnfinishedChunk( content );
         }
 
-        private ReplicatedContentBuilder( ReplicatedContent replicatedContent )
+        public UnfinishedChunk consume( UnfinishedChunk chunk )
         {
-            this.isComplete = true;
-            this.contentFunction = replicatedContent1 -> replicatedContent;
-        }
-
-        public boolean isComplete()
-        {
-            return isComplete;
-        }
-
-        public ReplicatedContentBuilder combine( ReplicatedContentBuilder replicatedContentBuilder )
-        {
-            if ( isComplete )
-            {
-                throw new IllegalStateException( "This content builder has already completed and cannot be combined." );
-            }
-            contentFunction = contentFunction.compose( replicatedContentBuilder.contentFunction );
-            isComplete = replicatedContentBuilder.isComplete;
+            byteBuf.writeBytes( chunk.byteBuf );
+            chunk.byteBuf.release();
             return this;
         }
 
-        public ReplicatedContent build()
+        public byte[] array()
         {
-            return contentFunction.apply( null );
+            return Arrays.copyOf( byteBuf.array(), byteBuf.writerIndex() );
         }
     }
 
@@ -208,10 +242,10 @@ public class CoreReplicatedContentSerializer extends SafeChannelMarshal<Replicat
     @Override
     protected ReplicatedContent unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
-        ReplicatedContentBuilder contentBuilder = decode( channel );
+        ContentBuilder<ReplicatedContent> contentBuilder = read( channel );
         while ( !contentBuilder.isComplete() )
         {
-            contentBuilder = contentBuilder.combine( decode( channel ) );
+            contentBuilder = contentBuilder.combine( read( channel ) );
         }
         return contentBuilder.build();
     }

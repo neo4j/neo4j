@@ -67,7 +67,7 @@ public class ClusterSeedingIT
     private DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public RuleChain rules = RuleChain.outerRule( fileSystemRule ).around( testDir ).around( suppressOutput );
+    public RuleChain rules = RuleChain.outerRule( fileSystemRule ).around( testDir );
 
     private Cluster backupCluster;
     private Cluster cluster;
