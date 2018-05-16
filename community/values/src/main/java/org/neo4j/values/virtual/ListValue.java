@@ -556,7 +556,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             {
                 return base.value( offset );
             }
-            else if ( offset < size + appended.length)
+            else if ( offset < size + appended.length )
             {
                 return appended[offset - size];
             }
@@ -575,6 +575,62 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 return super.iterator();
             case ITERATION:
                 return Iterators.appendTo( base.iterator(), appended );
+            default:
+                throw new IllegalStateException( "unknown iteration preference" );
+            }
+        }
+    }
+
+    static final class PrependList extends ListValue
+    {
+        private final ListValue base;
+        private final AnyValue[] prepended;
+
+        PrependList( ListValue base, AnyValue[] prepended )
+        {
+            this.base = base;
+            this.prepended = prepended;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return base.iterationPreference();
+        }
+
+        @Override
+        public int size()
+        {
+            return prepended.length + base.size();
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            int size = base.size();
+            if ( offset < prepended.length )
+            {
+                return prepended[offset];
+            }
+            else if ( offset < size + prepended.length )
+            {
+                return base.value( offset - size );
+            }
+            else
+            {
+                throw new IndexOutOfBoundsException( offset + " is outside range " + size );
+            }
+        }
+
+        @Override
+        public Iterator<AnyValue> iterator()
+        {
+            switch ( base.iterationPreference() )
+            {
+            case RANDOM_ACCESS:
+                return super.iterator();
+            case ITERATION:
+                return Iterators.prependTo( base.iterator(), prepended );
             default:
                 throw new IllegalStateException( "unknown iteration preference" );
             }
@@ -793,9 +849,22 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         return new ReversedList( this );
     }
 
-    public ListValue append( AnyValue...value )
+    public ListValue append( AnyValue...values )
     {
-        return new AppendList( this, value );
+        if ( values.length == 0 )
+        {
+            return this;
+        }
+        return new AppendList( this, values );
+    }
+
+    public ListValue prepend( AnyValue...values )
+    {
+        if ( values.length == 0 )
+        {
+            return this;
+        }
+        return new PrependList( this, values );
     }
 
     private AnyValue[] iterationAsArray()

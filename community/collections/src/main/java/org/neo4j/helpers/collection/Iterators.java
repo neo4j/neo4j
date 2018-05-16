@@ -122,7 +122,7 @@ public final class Iterators
      * Returns the given iterator's single element or {@code null} if no
      * element found. If there is more than one element in the iterator a
      * {@link NoSuchElementException} will be thrown.
-     *
+     * <p>
      * If the {@code iterator} implements {@link Resource} it will be {@link Resource#close() closed}
      * in a {@code finally} block after the single item has been retrieved, or failed to be retrieved.
      *
@@ -141,7 +141,7 @@ public final class Iterators
      * Returns the given iterator's single element. If there are no elements
      * or more than one element in the iterator a {@link NoSuchElementException}
      * will be thrown.
-     *
+     * <p>
      * If the {@code iterator} implements {@link Resource} it will be {@link Resource#close() closed}
      * in a {@code finally} block after the single item has been retrieved, or failed to be retrieved.
      *
@@ -234,7 +234,7 @@ public final class Iterators
      * Returns the given iterator's single element or {@code itemIfNone} if no
      * element found. If there is more than one element in the iterator a
      * {@link NoSuchElementException} will be thrown.
-     *
+     * <p>
      * If the {@code iterator} implements {@link Resource} it will be {@link Resource#close() closed}
      * in a {@code finally} block after the single item has been retrieved, or failed to be retrieved.
      *
@@ -253,7 +253,7 @@ public final class Iterators
             if ( iterator.hasNext() )
             {
                 throw new NoSuchElementException( "More than one element in " + iterator + ". First element is '"
-                        + result + "' and the second element is '" + iterator.next() + "'" );
+                                                  + result + "' and the second element is '" + iterator.next() + "'" );
             }
             return result;
         }
@@ -268,6 +268,7 @@ public final class Iterators
 
     /**
      * Adds all the items in {@code iterator} to {@code collection}.
+     *
      * @param <C> the type of {@link Collection} to add to items to.
      * @param <T> the type of items in the collection and iterator.
      * @param iterator the {@link Iterator} to grab the items from.
@@ -275,7 +276,7 @@ public final class Iterators
      * @return the {@code collection} which was passed in, now filled
      * with the items from {@code iterator}.
      */
-    public static <C extends Collection<T>,T> C addToCollection( Iterator<T> iterator,
+    public static <C extends Collection<T>, T> C addToCollection( Iterator<T> iterator,
             C collection )
     {
         while ( iterator.hasNext() )
@@ -287,6 +288,7 @@ public final class Iterators
 
     /**
      * Adds all the items in {@code iterator} to {@code collection}.
+     *
      * @param <C> the type of {@link Collection} to add to items to.
      * @param <T> the type of items in the collection and iterator.
      * @param iterator the {@link Iterator} to grab the items from.
@@ -294,7 +296,7 @@ public final class Iterators
      * @return the {@code collection} which was passed in, now filled
      * with the items from {@code iterator}.
      */
-    public static <C extends Collection<T>,T> C addToCollectionUnique( Iterator<T> iterator,
+    public static <C extends Collection<T>, T> C addToCollectionUnique( Iterator<T> iterator,
             C collection )
     {
         while ( iterator.hasNext() )
@@ -309,12 +311,13 @@ public final class Iterators
         if ( !collection.add( item ) )
         {
             throw new IllegalStateException( "Encountered an already added item:" + item +
-                    " when adding items uniquely to a collection:" + collection );
+                                             " when adding items uniquely to a collection:" + collection );
         }
     }
 
     /**
      * Adds all the items in {@code iterator} to {@code collection}.
+     *
      * @param <C> the type of {@link Collection} to add to items to.
      * @param <T> the type of items in the collection and iterator.
      * @param iterable the {@link Iterator} to grab the items from.
@@ -322,7 +325,7 @@ public final class Iterators
      * @return the {@code collection} which was passed in, now filled
      * with the items from {@code iterator}.
      */
-    public static <C extends Collection<T>,T> C addToCollectionUnique( Iterable<T> iterable,
+    public static <C extends Collection<T>, T> C addToCollectionUnique( Iterable<T> iterable,
             C collection )
     {
         return addToCollectionUnique( iterable.iterator(), collection );
@@ -371,6 +374,7 @@ public final class Iterators
     /**
      * Counts the number of filtered in the {@code iterator} by looping
      * through it.
+     *
      * @param <T> the type of items in the iterator.
      * @param iterator the {@link Iterator} to count items in.
      * @param filter the filter to test items against
@@ -399,7 +403,7 @@ public final class Iterators
         return addToCollection( iterator, new ArrayList<>() );
     }
 
-    public static <T, EX extends Exception> List<T> asList( RawIterator<T, EX> iterator ) throws EX
+    public static <T, EX extends Exception> List<T> asList( RawIterator<T,EX> iterator ) throws EX
     {
         List<T> out = new ArrayList<>();
         while ( iterator.hasNext() )
@@ -577,13 +581,13 @@ public final class Iterators
     }
 
     @SafeVarargs
-    public static <T> Iterator<T> iterator( T ... items )
+    public static <T> Iterator<T> iterator( T... items )
     {
         return asIterator( items.length, items );
     }
 
     @SafeVarargs
-    public static <T> Iterator<T> iterator( int maxItems, T ... items )
+    public static <T> Iterator<T> iterator( int maxItems, T... items )
     {
         return asIterator( maxItems, items );
     }
@@ -610,6 +614,37 @@ public final class Iterators
                 else if ( index < appended.length )
                 {
                     return appended[index++];
+                }
+                else
+                {
+                    throw new NoSuchElementException();
+                }
+            }
+        };
+    }
+
+    public static <T> Iterator<T> prependTo( Iterator<T> iterator, T... prepended )
+    {
+        return new Iterator<T>()
+        {
+            private int index;
+
+            @Override
+            public boolean hasNext()
+            {
+                return index < prepended.length || iterator.hasNext();
+            }
+
+            @Override
+            public T next()
+            {
+                if ( index < prepended.length )
+                {
+                    return prepended[index++];
+                }
+                else if ( iterator.hasNext() )
+                {
+                    return iterator.next();
                 }
                 else
                 {
@@ -685,18 +720,18 @@ public final class Iterators
         return new FilterIterable.FilterIterator<>( i, specification );
     }
 
-    public static <FROM, TO> Iterator<TO> map( Function<? super FROM, ? extends TO> function, Iterator<FROM> from )
+    public static <FROM, TO> Iterator<TO> map( Function<? super FROM,? extends TO> function, Iterator<FROM> from )
     {
         return new MapIterable.MapIterator<>( from, function );
     }
 
-    public static <FROM, TO, EX extends Exception> RawIterator<TO, EX> map(
-            ThrowingFunction<? super FROM, ? extends TO, EX> function, RawIterator<FROM, EX> from )
+    public static <FROM, TO, EX extends Exception> RawIterator<TO,EX> map(
+            ThrowingFunction<? super FROM,? extends TO,EX> function, RawIterator<FROM,EX> from )
     {
         return new RawMapIterator<>( from, function );
     }
 
-    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator( Iterator<T> iter )
+    public static <T, EX extends Exception> RawIterator<T,EX> asRawIterator( Iterator<T> iter )
     {
         return new RawIterator<T,EX>()
         {
@@ -714,14 +749,15 @@ public final class Iterators
         };
     }
 
-    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator( Stream<T> stream )
+    public static <T, EX extends Exception> RawIterator<T,EX> asRawIterator( Stream<T> stream )
     {
         return asRawIterator( stream.iterator() );
     }
 
-    public static <FROM, TO> Iterator<TO> flatMap( Function<? super FROM, ? extends Iterator<TO>> function, Iterator<FROM> from )
+    public static <FROM, TO> Iterator<TO> flatMap( Function<? super FROM,? extends Iterator<TO>> function,
+            Iterator<FROM> from )
     {
-        return new CombiningIterator<>( map(function, from) );
+        return new CombiningIterator<>( map( function, from ) );
     }
 
     @SafeVarargs
@@ -775,7 +811,7 @@ public final class Iterators
 
     /**
      * Create a stream from the given iterator.
-     * <p>
+     *
      * <b>Note:</b> returned stream needs to be closed via {@link Stream#close()} if the given iterator implements
      * {@link Resource}.
      *
@@ -791,7 +827,7 @@ public final class Iterators
 
     /**
      * Create a stream from the given iterator with given characteristics.
-     * <p>
+     *
      * <b>Note:</b> returned stream needs to be closed via {@link Stream#close()} if the given iterator implements
      * {@link Resource}.
      *

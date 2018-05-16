@@ -29,7 +29,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-public class AppendedListTest
+public class AppendedPrependListTest
 {
     @Test
     public void shouldAppendToList()
@@ -45,13 +45,22 @@ public class AppendedListTest
         ListValue expected = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
                 longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ),
                 longValue( 12L ), longValue( 13L ), longValue( 14L ));
-
-        assertEquals( expected, appended );
-        assertEquals( expected.hashCode(), appended.hashCode() );
-        assertArrayEquals( expected.asArray(), appended.asArray() );
-        assertTrue( iteratorsEqual(expected.iterator(), appended.iterator()) );
+        assertListValuesEquals( appended, expected );
     }
 
+    @Test
+    public void shouldHandleEmptyAppend()
+    {
+        // Given
+        ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
+                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+
+        // When
+        ListValue appended = inner.append( );
+
+        // Then
+        assertListValuesEquals( appended, inner );
+    }
 
     @Test
     public void shouldAppendToListWithDroppedNull()
@@ -67,7 +76,60 @@ public class AppendedListTest
         ListValue expected = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
                 longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ),
                 longValue( 12L ), longValue( 13L ), longValue( 14L ));
+        assertListValuesEquals( appended, expected );
+    }
 
+    @Test
+    public void shouldPrependoList()
+    {
+        // Given
+        ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
+                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+
+        // When
+        ListValue prepend = inner.prepend( longValue( 2L ), longValue( 3L ), longValue( 4L ) );
+
+        // Then
+        ListValue expected = list( longValue( 2L ), longValue( 3L ), longValue( 4L ), longValue( 5L ), longValue( 6L ),
+                longValue( 7L ),
+                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+        assertListValuesEquals( prepend, expected );
+    }
+
+    @Test
+    public void shouldHandleEmptyPrepend()
+    {
+        // Given
+        ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
+                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+
+        // When
+        ListValue prepend = inner.prepend( );
+
+        // Then
+        assertListValuesEquals( prepend, inner );
+    }
+
+    @Test
+    public void shouldPrependToListWithDroppedNull()
+    {
+        // Given
+        ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
+                longValue( 8L ), NO_VALUE, longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+
+        // When
+        ListValue appended = inner.dropNoValues().prepend( longValue( 2L ), longValue( 3L ), longValue( 4L ) );
+
+        // Then
+        ListValue expected = list( longValue( 2L ), longValue( 3L ), longValue( 4L ), longValue( 5L ), longValue( 6L ),
+                longValue( 7L ),
+                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+
+        assertListValuesEquals( appended, expected );
+    }
+
+    private void assertListValuesEquals( ListValue appended, ListValue expected )
+    {
         assertEquals( expected, appended );
         assertEquals( expected.hashCode(), appended.hashCode() );
         assertArrayEquals( expected.asArray(), appended.asArray() );

@@ -80,14 +80,6 @@ public final class VirtualValues
         return new ListValue.ConcatList( lists );
     }
 
-    public static ListValue prependToList( ListValue list, AnyValue value )
-    {
-        AnyValue[] newValues = new AnyValue[list.size() + 1];
-        newValues[0] = value;
-        System.arraycopy( list.asArray(), 0, newValues, 1, list.size() );
-        return VirtualValues.list( newValues );
-    }
-
     public static MapValue emptyMap()
     {
         return EMPTY_MAP;

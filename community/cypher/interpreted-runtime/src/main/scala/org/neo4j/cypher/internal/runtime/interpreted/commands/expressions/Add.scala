@@ -40,7 +40,7 @@ case class Add(a: Expression, b: Expression) extends Expression {
       case (x: TextValue, y: TextValue) => Values.stringValue(x.stringValue() + y.stringValue())
       case (IsList(x), IsList(y)) => VirtualValues.concat(x, y)
       case (IsList(x), y)         => x.append(y)
-      case (x, IsList(y))         => VirtualValues.prependToList(y, x)
+      case (x, IsList(y))         => y.prepend(x)
       case (x: TextValue, y: IntegralValue) => Values.stringValue(x.stringValue() + y.longValue())
       case (x: IntegralValue, y: TextValue) => Values.stringValue(x.longValue() + y.stringValue())
       case (x: TextValue, y: FloatValue) => Values.stringValue(x.stringValue() + y.doubleValue())
@@ -56,12 +56,6 @@ case class Add(a: Expression, b: Expression) extends Expression {
 
 
   def arguments = Seq(a, b)
-
-  private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
-    val collectionType = collection.asInstanceOf[ListType]
-    val mergedInnerType = collectionType.innerType.leastUpperBound(singleElement)
-    CTList(mergedInnerType)
-  }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
