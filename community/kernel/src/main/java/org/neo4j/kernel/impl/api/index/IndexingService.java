@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -105,6 +106,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private final Monitor monitor;
     private final SchemaState schemaState;
     private final IndexPopulationJobController populationJobController;
+    private final Map<Long,IndexProxy> indexesToDropAfterCompletedRecovery = new HashMap<>();
 
     enum State
     {
@@ -242,6 +244,10 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         state = State.STARTING;
 
+        // During recovery there could have been dropped indexes. Dropping an index means also updating the counts store,
+        // which is problematic during recovery. So instead drop those indexes here, after recovery completed.
+        performRecoveredIndexDropActions();
+
         // Recovery will not do refresh (update read views) while applying recovered transactions and instead
         // do it at one point after recovery... i.e. here
         indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "refresh", IndexProxy::refresh ) );
@@ -333,6 +339,31 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 } );
 
         state = State.RUNNING;
+    }
+
+    private void performRecoveredIndexDropActions()
+    {
+        indexesToDropAfterCompletedRecovery.values().forEach( index ->
+        {
+            try
+            {
+                index.drop();
+            }
+            catch ( Exception e )
+            {
+                // This is OK to get during recovery because the underlying index can be in any unknown state
+                // while we're recovering. Let's just move on to closing it instead.
+                try
+                {
+                    index.close();
+                }
+                catch ( IOException closeException )
+                {
+                    // This is OK for the same reason as above
+                }
+            }
+        } );
+        indexesToDropAfterCompletedRecovery.clear();
     }
 
     /**
@@ -497,10 +528,17 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         {
             long indexId = rule.getId();
             IndexProxy index = indexMap.removeIndexProxy( indexId );
+
             if ( state == State.RUNNING )
             {
                 assert index != null : "Index " + rule + " doesn't exists";
                 index.drop();
+            }
+            else if ( index != null )
+            {
+                // Dropping an index means also updating the counts store, which is problematic during recovery.
+                // So instead make a note of it and actually perform the index drops after recovery.
+                indexesToDropAfterCompletedRecovery.put( indexId, index );
             }
             return indexMap;
         } );
@@ -698,11 +736,17 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
 
         @Override
-        public IndexMap apply( IndexMap indexMap ) throws IOException
+        public IndexMap apply( IndexMap indexMap )
         {
             for ( IndexRule rule : rules )
             {
                 long ruleId = rule.getId();
+                if ( state == State.NOT_STARTED )
+                {
+                    // In case of recovery remove any previously recorded INDEX DROP for this particular index rule id,
+                    // in some scenario where rule ids may be reused.
+                    indexesToDropAfterCompletedRecovery.remove( ruleId );
+                }
                 IndexProxy index = indexMap.getIndexProxy( ruleId );
                 if ( index != null && state == State.NOT_STARTED )
                 {

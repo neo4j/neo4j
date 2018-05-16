@@ -646,7 +646,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private class IndexDropAction implements Runnable
     {
-
         private int labelIdToDropIndexFor;
 
         private IndexDropAction( int labelIdToDropIndexFor )
