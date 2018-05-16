@@ -60,7 +60,6 @@ public class CatchupClientBuilder
     private NettyPipelineBuilderFactory pipelineBuilder = new NettyPipelineBuilderFactory( VOID_WRAPPER );
     private ApplicationSupportedProtocols catchupProtocols = new ApplicationSupportedProtocols( CATCHUP, emptyList() );
     private Collection<ModifierSupportedProtocols> modifierProtocols = emptyList();
-    private long inactivityTimeoutMillis = SECONDS.toMillis( 20 );
     private Clock clock = systemClock();
 
     public CatchupClientBuilder()
@@ -68,14 +67,13 @@ public class CatchupClientBuilder
     }
 
     public CatchupClientBuilder( ApplicationSupportedProtocols catchupProtocols, Collection<ModifierSupportedProtocols> modifierProtocols,
-            NettyPipelineBuilderFactory pipelineBuilder, Duration handshakeTimeout, long inactivityTimeoutMillis, LogProvider logProvider, Clock clock )
+            NettyPipelineBuilderFactory pipelineBuilder, Duration handshakeTimeout, LogProvider logProvider, Clock clock )
     {
         this.catchupProtocols = catchupProtocols;
         this.modifierProtocols = modifierProtocols;
         this.pipelineBuilder = pipelineBuilder;
         this.handshakeTimeout = handshakeTimeout;
         this.logProvider = logProvider;
-        this.inactivityTimeoutMillis = inactivityTimeoutMillis;
         this.clock = clock;
     }
 
@@ -100,12 +98,6 @@ public class CatchupClientBuilder
     public CatchupClientBuilder handshakeTimeout( Duration handshakeTimeout )
     {
         this.handshakeTimeout = handshakeTimeout;
-        return this;
-    }
-
-    public CatchupClientBuilder inactivityTimeoutMillis( long inactivityTimeoutMillis )
-    {
-        this.inactivityTimeoutMillis = inactivityTimeoutMillis;
         return this;
     }
 
@@ -137,6 +129,6 @@ public class CatchupClientBuilder
                     handshakeTimeout, logProvider );
         };
 
-        return new CatchUpClient( logProvider, clock, inactivityTimeoutMillis, channelInitializer );
+        return new CatchUpClient( logProvider, clock, channelInitializer );
     }
 }
