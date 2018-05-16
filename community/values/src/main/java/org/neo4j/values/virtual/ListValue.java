@@ -35,6 +35,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
 public abstract class ListValue extends VirtualValue implements SequenceValue, Iterable<AnyValue>
 {
@@ -895,5 +896,19 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public ListValue dropNoValues()
     {
         return new DropNoValuesListValue( this );
+    }
+
+    public ListValue slice( int from, int to )
+    {
+        int f = Math.max( from, 0 );
+        int t = Math.min( to, size() );
+        if ( f > t )
+        {
+            return EMPTY_LIST;
+        }
+        else
+        {
+            return new ListSlice( this, f, t );
+        }
     }
 }

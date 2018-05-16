@@ -63,20 +63,6 @@ public final class VirtualValues
         return new ListValue.ArrayValueListValue( arrayValue );
     }
 
-    public static ListValue slice( ListValue list, int from, int to )
-    {
-        int f = Math.max( from, 0 );
-        int t = Math.min( to, list.size() );
-        if ( f > t )
-        {
-            return EMPTY_LIST;
-        }
-        else
-        {
-            return new ListValue.ListSlice( list, f, t );
-        }
-    }
-
     public static ListValue drop( ListValue list, int n )
     {
         int start = Math.max( 0, Math.min( n, list.size() ) );

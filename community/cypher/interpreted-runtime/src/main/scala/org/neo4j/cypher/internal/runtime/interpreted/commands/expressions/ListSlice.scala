@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ListSupport}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ExecutionContext, ListSupport}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
@@ -47,17 +46,17 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
       case (Some(fromValue), Some(toValue)) =>
         val size = collectionValue.size
         if (fromValue >= 0 && toValue >= 0)
-          VirtualValues.slice(collectionValue, fromValue, toValue)
+          collectionValue.slice(fromValue, toValue)
         else if (fromValue >= 0) {
           val end = size + toValue
-          VirtualValues.slice(collectionValue, fromValue, end)
+          collectionValue.slice(fromValue, end)
         } else if (toValue >= 0) {
           val start = size + fromValue
-          VirtualValues.slice(collectionValue, start, toValue)
+          collectionValue.slice(start, toValue)
         } else {
           val start = size + fromValue
           val end = size + toValue
-          VirtualValues.slice(collectionValue, start, end)
+          collectionValue.slice(start, end)
         }
     }
   }
