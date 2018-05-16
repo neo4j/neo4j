@@ -80,7 +80,7 @@ public class AppendedPrependListTest
     }
 
     @Test
-    public void shouldPrependoList()
+    public void shouldPrependToList()
     {
         // Given
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),

@@ -614,7 +614,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             }
             else if ( offset < size + prepended.length )
             {
-                return base.value( offset - size );
+                return base.value( offset - prepended.length );
             }
             else
             {
