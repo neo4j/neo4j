@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -524,6 +525,62 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
     }
 
+    static final class AppendList extends ListValue
+    {
+        private final ListValue base;
+        private final AnyValue[] appended;
+
+        AppendList( ListValue base, AnyValue[] appended )
+        {
+            this.base = base;
+            this.appended = appended;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return base.iterationPreference();
+        }
+
+        @Override
+        public int size()
+        {
+            return base.size() + appended.length;
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            int size = base.size();
+            if ( offset < size )
+            {
+                return base.value( offset );
+            }
+            else if ( offset < size + appended.length)
+            {
+                return appended[offset - size];
+            }
+            else
+            {
+                throw new IndexOutOfBoundsException( offset + " is outside range " + size );
+            }
+        }
+
+        @Override
+        public Iterator<AnyValue> iterator()
+        {
+            switch ( base.iterationPreference() )
+            {
+            case RANDOM_ACCESS:
+                return super.iterator();
+            case ITERATION:
+                return Iterators.appendTo( base.iterator(), appended );
+            default:
+                throw new IllegalStateException( "unknown iteration preference" );
+            }
+        }
+    }
+
     public boolean isEmpty()
     {
         return size() == 0;
@@ -734,6 +791,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public ListValue reverse()
     {
         return new ReversedList( this );
+    }
+
+    public ListValue append( AnyValue...value )
+    {
+        return new AppendList( this, value );
     }
 
     private AnyValue[] iterationAsArray()

@@ -80,14 +80,6 @@ public final class VirtualValues
         return new ListValue.ConcatList( lists );
     }
 
-    public static ListValue appendToList( ListValue list, AnyValue value )
-    {
-        AnyValue[] newValues = new AnyValue[list.size() + 1];
-        System.arraycopy( list.asArray(), 0, newValues, 0, list.size() );
-        newValues[list.size()] = value;
-        return VirtualValues.list( newValues );
-    }
-
     public static ListValue prependToList( ListValue list, AnyValue value )
     {
         AnyValue[] newValues = new AnyValue[list.size() + 1];

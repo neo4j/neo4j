@@ -78,11 +78,11 @@ public final class CompiledMathHelper
             }
             else if ( rhs instanceof AnyValue )
             {
-                return VirtualValues.appendToList( (ListValue) lhs, (AnyValue) rhs );
+                return ((ListValue) lhs).append( (AnyValue) rhs );
             }
             else
             {
-                return VirtualValues.appendToList( (ListValue) lhs, ValueUtils.of( rhs ) );
+                return ((ListValue) lhs).append( ValueUtils.of( rhs ) );
             }
         }
         else if ( rhs instanceof ListValue )

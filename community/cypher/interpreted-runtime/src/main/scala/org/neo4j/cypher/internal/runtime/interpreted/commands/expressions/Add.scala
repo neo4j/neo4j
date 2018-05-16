@@ -39,7 +39,7 @@ case class Add(a: Expression, b: Expression) extends Expression {
       case (x: UTF8StringValue, y: UTF8StringValue) => UTF8Utils.add(x, y)
       case (x: TextValue, y: TextValue) => Values.stringValue(x.stringValue() + y.stringValue())
       case (IsList(x), IsList(y)) => VirtualValues.concat(x, y)
-      case (IsList(x), y)         => VirtualValues.appendToList(x, y)
+      case (IsList(x), y)         => x.append(y)
       case (x, IsList(y))         => VirtualValues.prependToList(y, x)
       case (x: TextValue, y: IntegralValue) => Values.stringValue(x.stringValue() + y.longValue())
       case (x: IntegralValue, y: TextValue) => Values.stringValue(x.longValue() + y.stringValue())
