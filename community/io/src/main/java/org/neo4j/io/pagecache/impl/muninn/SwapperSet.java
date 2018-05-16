@@ -46,7 +46,7 @@ final class SwapperSet
     // The tombstone is used as a marker to reserve allocation entries that have been freed, but not yet vacuumed.
     // An allocation cannot be reused until it has been vacuumed.
     private static final SwapperMapping TOMBSTONE = new SwapperMapping( 0, null );
-    private static final int MAX_SWAPPER_ID = Short.MAX_VALUE;
+    private static final int MAX_SWAPPER_ID = (1 << 21) - 1;
     private volatile SwapperMapping[] swapperMappings = new SwapperMapping[] { SENTINEL };
     private final MutableIntSet free = new IntHashSet();
     private final Object vacuumLock = new Object();
@@ -70,7 +70,7 @@ final class SwapperSet
     /**
      * Get the {@link SwapperMapping} for the given swapper id.
      */
-    SwapperMapping getAllocation( short id )
+    SwapperMapping getAllocation( int id )
     {
         checkId( id );
         SwapperMapping swapperMapping = swapperMappings[id];
@@ -198,10 +198,10 @@ final class SwapperSet
         }
     }
 
-    synchronized short countAvailableIds()
+    synchronized int countAvailableIds()
     {
         // the max id is one less than the allowed count, but we subtract one for the reserved id 0
-        short available = MAX_SWAPPER_ID;
+        int available = MAX_SWAPPER_ID;
         available -= swapperMappings.length; // ids that are allocated are not available
         available += free.size(); // add back the ids that are free to be reused
         return available;
