@@ -72,7 +72,8 @@ class LazyMap[T <: PropertyContainer](ctx: QueryContext, ops: Operations[T], id:
 
   override def putAll(m: util.Map[_ <: String, _ <: AnyValue]): Unit = throw new UnsupportedOperationException()
 
-  override def get(key: scala.Any): AnyValue = ops.getProperty(id, ctx.getPropertyKeyId(key.asInstanceOf[String]))
+  override def get(key: scala.Any): AnyValue =
+    ctx.getOptPropertyKeyId(key.asInstanceOf[String]).flatMap( (pkId: Int) => Option(ops.getProperty(id, pkId)) ).orNull
 
   override def keySet(): util.Set[String] = allProps.keySet()
 

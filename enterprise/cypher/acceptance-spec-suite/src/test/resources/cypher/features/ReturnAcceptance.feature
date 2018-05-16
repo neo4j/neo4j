@@ -96,3 +96,34 @@ Feature: ReturnAcceptance
       | result |
       | null   |
     And no side effects
+
+  Scenario: Accessing a non-existing property with string should work
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    When executing query:
+      """
+      WITH 'prop' AS prop
+      MATCH (n) RETURN n[prop] AS result
+      """
+    Then the result should be:
+      | result |
+      | null   |
+    And no side effects
+
+  Scenario: Accessing a non-existing property with literal should work
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()
+      """
+    When executing query:
+      """
+      MATCH (n) RETURN n['prop'] AS result
+      """
+    Then the result should be:
+      | result |
+      | null   |
+    And no side effects
