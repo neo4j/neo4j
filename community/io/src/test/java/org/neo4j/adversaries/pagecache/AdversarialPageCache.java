@@ -130,6 +130,12 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
+    public void reportEvents()
+    {
+        delegate.reportEvents();
+    }
+
+    @Override
     public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
         adversary.injectFailure( NoSuchFileException.class, IOException.class );

@@ -1325,10 +1325,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             List<PagedFile> existingMappings = pageCache.listExistingMappings();
             assertThat( existingMappings.size(), is( 2 ) );
             assertThat( existingMappings, containsInAnyOrder( pf1, pf2 ) );
-            for ( PagedFile existingMapping : existingMappings )
-            {
-                existingMapping.close();
-            }
         }
     }
 

@@ -29,7 +29,7 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
     private final MuninnPagedFile pagedFile;
     private final long victimPage;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
-    private PageCacheTracer pageCacheTracer;
+    private final PageCacheTracer pageCacheTracer;
     private final VersionContextSupplier versionContextSupplier;
 
     /**
