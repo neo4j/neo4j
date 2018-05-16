@@ -156,7 +156,7 @@ public enum StoreType
                 }
 
                 @Override
-                void close( NeoStores me, Object object )
+                void close( Object object )
                 {
                     try
                     {
@@ -227,7 +227,7 @@ public enum StoreType
         return storeFile;
     }
 
-    void close( NeoStores me, Object object )
+    void close( Object object )
     {
         ((CommonAbstractStore) object).close();
     }

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
-import java.time.Clock;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -147,7 +146,7 @@ public class DataSourceModule
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
-        guard = createGuard( deps, platformModule.clock, logging );
+        guard = createGuard( deps );
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
@@ -244,7 +243,7 @@ public class DataSourceModule
         }
     }
 
-    private Guard createGuard( Dependencies deps, Clock clock, LogService logging )
+    private Guard createGuard( Dependencies deps )
     {
         TerminationGuard guard = createGuard();
         deps.satisfyDependency( guard );
