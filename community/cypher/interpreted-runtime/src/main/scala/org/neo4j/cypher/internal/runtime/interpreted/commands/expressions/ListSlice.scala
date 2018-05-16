@@ -66,10 +66,10 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
     fromValue match {
       case None => Values.NO_VALUE
       case Some(value) if value >= 0 =>
-        VirtualValues.drop(collectionValue, value)
+        collectionValue.drop(value)
       case Some(value) =>
         val end = collectionValue.size + value
-        VirtualValues.drop(collectionValue, end)
+        collectionValue.drop(end)
     }
   }
 

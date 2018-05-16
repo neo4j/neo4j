@@ -63,12 +63,6 @@ public final class VirtualValues
         return new ListValue.ArrayValueListValue( arrayValue );
     }
 
-    public static ListValue drop( ListValue list, int n )
-    {
-        int start = Math.max( 0, Math.min( n, list.size() ) );
-        return new ListValue.ListSlice( list, start, list.size() );
-    }
-
     public static ListValue take( ListValue list, int n )
     {
         int end = Math.max( 0, Math.min( n, list.size() ) );

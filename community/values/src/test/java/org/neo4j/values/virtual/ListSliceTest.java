@@ -25,7 +25,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
-import static org.neo4j.values.virtual.VirtualValues.drop;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.take;
 
@@ -104,7 +103,7 @@ public class ListSliceTest
                 longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
 
         // When
-        ListValue drop = drop( inner, 4 );
+        ListValue drop = inner.drop( 4 );
 
         // Then
         ListValue expected = list( longValue( 9L ), longValue( 10L ), longValue( 11L ) );

@@ -911,4 +911,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             return new ListSlice( this, f, t );
         }
     }
+
+    public ListValue drop( int n )
+    {
+        int size = size();
+        int start = Math.max( 0, Math.min( n, size ) );
+        return new ListSlice( this, start, size );
+    }
 }
