@@ -33,7 +33,7 @@ import static java.util.Collections.emptyMap;
 
 public class CoreTopology implements Topology<CoreServerInfo>
 {
-    static CoreTopology EMPTY = new CoreTopology( null, false, emptyMap() );
+    static final CoreTopology EMPTY = new CoreTopology( null, false, emptyMap() );
 
     private final ClusterId clusterId;
     private final boolean canBeBootstrapped;

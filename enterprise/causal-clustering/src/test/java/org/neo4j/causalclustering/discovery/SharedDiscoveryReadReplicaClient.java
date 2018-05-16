@@ -26,12 +26,13 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.SocketAddressParser.socketAddress;
 
-class SharedDiscoveryReadReplicaClient extends AbstractTopologyService
+class SharedDiscoveryReadReplicaClient implements TopologyService, Lifecycle
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final ReadReplicaInfo addresses;
@@ -52,6 +53,12 @@ class SharedDiscoveryReadReplicaClient extends AbstractTopologyService
     }
 
     @Override
+    public void init()
+    {
+        // nothing to do
+    }
+
+    @Override
     public void start()
     {
         sharedDiscoveryService.registerReadReplica( this );
@@ -65,15 +72,33 @@ class SharedDiscoveryReadReplicaClient extends AbstractTopologyService
     }
 
     @Override
+    public void shutdown()
+    {
+        // nothing to do
+    }
+
+    @Override
     public CoreTopology allCoreServers()
     {
         return sharedDiscoveryService.getCoreTopology( dbName, false );
     }
 
     @Override
+    public CoreTopology localCoreServers()
+    {
+        return allCoreServers().filterTopologyByDb( dbName );
+    }
+
+    @Override
     public ReadReplicaTopology allReadReplicas()
     {
         return sharedDiscoveryService.getReadReplicaTopology();
+    }
+
+    @Override
+    public ReadReplicaTopology localReadReplicas()
+    {
+        return allReadReplicas().filterTopologyByDb( dbName );
     }
 
     @Override

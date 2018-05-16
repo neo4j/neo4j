@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.discovery.AbstractTopologyService;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
@@ -200,7 +199,7 @@ public class UserDefinedConfigurationStrategyTest
 
     static TopologyService fakeTopologyService( CoreTopology coreTopology, ReadReplicaTopology readReplicaTopology )
     {
-        return new AbstractTopologyService()
+        return new TopologyService()
         {
             private Map<MemberId,AdvertisedSocketAddress> catchupAddresses = extractCatchupAddressesMap( coreTopology, readReplicaTopology );
 
@@ -211,9 +210,21 @@ public class UserDefinedConfigurationStrategyTest
             }
 
             @Override
+            public CoreTopology localCoreServers()
+            {
+                return coreTopology; // N.B: not supporting local db!
+            }
+
+            @Override
             public ReadReplicaTopology allReadReplicas()
             {
                 return readReplicaTopology;
+            }
+
+            @Override
+            public ReadReplicaTopology localReadReplicas()
+            {
+                return readReplicaTopology; // N.B: not supporting local db!
             }
 
             @Override

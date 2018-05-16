@@ -48,7 +48,7 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     {
         configureHazelcast( config, logProvider );
         return new HazelcastClient( new HazelcastClientConnector( config, logProvider, hostnameResolver ), jobScheduler,
-                logProvider, config, myself, topologyServiceRetryStrategy );
+                logProvider, config, myself );
     }
 
     public static void configureHazelcast( Config config, LogProvider logProvider )
