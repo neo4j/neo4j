@@ -75,11 +75,6 @@ public final class VirtualValues
 
     */
 
-    public static ListValue reverse( ListValue list )
-    {
-        return new ListValue.ReversedList( list );
-    }
-
     public static ListValue concat( ListValue... lists )
     {
         return new ListValue.ConcatList( lists );

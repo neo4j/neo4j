@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ListSupport}
 import org.opencypher.v9_0.util.attribution.Id
-import org.neo4j.values.virtual.VirtualValues.reverse
-import org.neo4j.values.virtual.{RelationshipReference, RelationshipValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipReference, RelationshipValue}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
@@ -46,7 +45,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
       case Some((NotInScope(startNode, endNode), rels)) if !directed =>
         Iterator(
           executionContextFactory.copyWith(context, start, startNode, end, endNode),
-          executionContextFactory.copyWith(context, start, endNode, end, startNode, relName, reverse(rels))
+          executionContextFactory.copyWith(context, start, endNode, end, startNode, relName, rels.reverse())
         )
       case Some((startAndEnd, rels)) =>
         Iterator(context.set(start, startAndEnd.start, end, startAndEnd.end))

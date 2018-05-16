@@ -924,4 +924,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         int end = Math.max( 0, Math.min( n, size() ) );
         return new ListSlice( this, 0, end );
     }
+
+    public ListValue reverse()
+    {
+        return new ReversedList( this );
+    }
 }
