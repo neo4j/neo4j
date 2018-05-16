@@ -49,15 +49,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
-import static org.neo4j.server.security.ssl.HttpsRequestCustomizer.PUBLIC_KEY_PINS_HTTP_HEADER;
 
 public class HttpHeadersIT extends ExclusiveServerTestBase
 {
     private static final String HSTS_HEADER_VALUE = "max-age=31536000; includeSubDomains; preload";
-    private static final String HPKP_HEADER_VALUE = "max-age=5184000; " +
-                                                    "pin-sha256=\"d6qzRu9zOECb90Uez27xWltNsj0e1Md7GkYYkVoZWmM=\"; " +
-                                                    "pin-sha256=\"E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=\"; " +
-                                                    "includeSubDomains";
 
     private CommunityNeoServer server;
 
@@ -87,14 +82,14 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
     @Test
     public void shouldNotSendHstsHeaderWithHttpResponse() throws Exception
     {
-        startServer( HSTS_HEADER_VALUE, null );
+        startServer( HSTS_HEADER_VALUE );
         assertNull( runRequestAndGetHstsHeaderValue( httpUri() ) );
     }
 
     @Test
     public void shouldSendHstsHeaderWithHttpsResponse() throws Exception
     {
-        startServer( HSTS_HEADER_VALUE, null );
+        startServer( HSTS_HEADER_VALUE );
         assertEquals( HSTS_HEADER_VALUE, runRequestAndGetHstsHeaderValue( httpsUri() ) );
     }
 
@@ -105,39 +100,18 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
         assertNull( runRequestAndGetHstsHeaderValue( httpsUri() ) );
     }
 
-    @Test
-    public void shouldNotSendHpkpHeaderWithHttpResponse() throws Exception
-    {
-        startServer( null, HPKP_HEADER_VALUE );
-        assertNull( runRequestAndGetHpkpHeaderValue( httpUri() ) );
-    }
-
-    @Test
-    public void shouldSendHpkpHeaderWithHttpsResponse() throws Exception
-    {
-        startServer( null, HPKP_HEADER_VALUE );
-        assertEquals( HPKP_HEADER_VALUE, runRequestAndGetHpkpHeaderValue( httpsUri() ) );
-    }
-
-    @Test
-    public void shouldNotSendHpkpHeaderWithHttpsResponseWhenNotConfigured() throws Exception
-    {
-        startServer();
-        assertNull( runRequestAndGetHpkpHeaderValue( httpsUri() ) );
-    }
-
     private void startServer() throws Exception
     {
-        startServer( null, null );
+        startServer( null );
     }
 
-    private void startServer( String hstsValue, String hpkpValue ) throws Exception
+    private void startServer( String hstsValue ) throws Exception
     {
-        server = buildServer( hstsValue, hpkpValue );
+        server = buildServer( hstsValue );
         server.start();
     }
 
-    private CommunityNeoServer buildServer( String hstsValue, String hpkpValue ) throws Exception
+    private CommunityNeoServer buildServer( String hstsValue ) throws Exception
     {
         CommunityServerBuilder builder = serverOnRandomPorts()
                 .withHttpsEnabled()
@@ -146,10 +120,6 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
         if ( hstsValue != null )
         {
             builder.withProperty( ServerSettings.http_strict_transport_security.name(), hstsValue );
-        }
-        if ( hpkpValue != null )
-        {
-            builder.withProperty( ServerSettings.http_public_key_pins.name(), hpkpValue );
         }
 
         return builder.build();
@@ -180,11 +150,6 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
     private static String runRequestAndGetHstsHeaderValue( URI baseUri ) throws Exception
     {
         return runRequestAndGetHeaderValue( baseUri, STRICT_TRANSPORT_SECURITY.asString() );
-    }
-
-    private static String runRequestAndGetHpkpHeaderValue( URI baseUri ) throws Exception
-    {
-        return runRequestAndGetHeaderValue( baseUri, PUBLIC_KEY_PINS_HTTP_HEADER );
     }
 
     private static String runRequestAndGetHeaderValue( URI baseUri, String header ) throws Exception

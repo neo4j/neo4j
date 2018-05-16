@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.ssl;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -29,12 +28,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.junit.Test;
 
-import java.util.Map;
-
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ServerSettings;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.unmodifiableMap;
 import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
 import static org.eclipse.jetty.http.HttpScheme.HTTPS;
 import static org.eclipse.jetty.server.HttpConfiguration.Customizer;
@@ -43,18 +39,9 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.configuration.ServerSettings.http_public_key_pins;
-import static org.neo4j.server.configuration.ServerSettings.http_strict_transport_security;
-import static org.neo4j.server.security.ssl.HttpsRequestCustomizer.PUBLIC_KEY_PINS_HTTP_HEADER;
 
 public class HttpsRequestCustomizerTest
 {
-    private static final Map<String,String> settingNameToHttpHeader = unmodifiableMap( stringMap(
-            http_strict_transport_security.name(), STRICT_TRANSPORT_SECURITY.asString(),
-            http_public_key_pins.name(), PUBLIC_KEY_PINS_HTTP_HEADER
-    ) );
-
     @Test
     public void shouldSetRequestSchemeToHttps()
     {
@@ -69,65 +56,26 @@ public class HttpsRequestCustomizerTest
     @Test
     public void shouldAddHstsHeaderWhenConfigured()
     {
-        testHeadersPresence( stringMap( http_strict_transport_security.name(), "max-age=3600; includeSubDomains" ) );
-    }
-
-    @Test
-    public void shouldNotAddHstsHeaderWhenNotConfigured()
-    {
-        testHeaderNotPresentWhenConfigurationMissing( STRICT_TRANSPORT_SECURITY.asString() );
-    }
-
-    @Test
-    public void shouldAddHpkpHeaderWhenConfigured()
-    {
-        testHeadersPresence( stringMap( http_public_key_pins.name(), "pin-sha256=\"cUPcTAZWKaASuYWhhneDttWpY3oBAkE3h2+soZS7sWs=\"; " +
-                                                                     "pin-sha256=\"M8HztCzM3elUxkcjR2S5P4hhyBNf6lHkmjAHKhpGPWE=\"; " +
-                                                                     "max-age=5184000; includeSubDomains;" ) );
-    }
-
-    @Test
-    public void shouldNotAddHpkpHeaderWhenNotConfigured()
-    {
-        testHeaderNotPresentWhenConfigurationMissing( PUBLIC_KEY_PINS_HTTP_HEADER );
-    }
-
-    @Test
-    public void shouldAddBothHstsAndHpkpHeadersWhenConfigured()
-    {
-        testHeadersPresence( stringMap(
-                http_strict_transport_security.name(), "max-age=31536000; includeSubDomains; preload",
-                http_public_key_pins.name(), "pin-sha256=\"cUPcTAZWKaASuYWhhneDttWpY3oBAkE3h2+soZS7sWs=\"; " +
-                                             "pin-sha256=\"M8HztCzM3elUxkcjR2S5P4hhyBNf6lHkmjAHKhpGPWE=\"; " +
-                                             "max-age=5184000; includeSubDomains; " +
-                                             "report-uri=\"https://www.example.org/hpkp-report\"" ) );
-    }
-
-    private static void testHeadersPresence( Map<String,String> settingsWithValues )
-    {
-        Customizer customizer = newCustomizer( settingsWithValues );
+        String configuredValue = "max-age=3600; includeSubDomains";
+        Customizer customizer = newCustomizer( configuredValue );
         Request request = newRequest();
 
         customize( customizer, request );
 
-        HttpFields httpFields = request.getResponse().getHttpFields();
-        for ( Map.Entry<String,String> entry : settingsWithValues.entrySet() )
-        {
-            String settingName = entry.getKey();
-            String settingValue = entry.getValue();
-            String headerName = settingNameToHttpHeader.get( settingName );
-            assertEquals( settingValue, httpFields.get( headerName ) );
-        }
+        String receivedValue = request.getResponse().getHttpFields().get( STRICT_TRANSPORT_SECURITY );
+        assertEquals( configuredValue, receivedValue );
     }
 
-    private static void testHeaderNotPresentWhenConfigurationMissing( String header )
+    @Test
+    public void shouldNotAddHstsHeaderWhenNotConfigured()
     {
         Customizer customizer = newCustomizer();
         Request request = newRequest();
 
         customize( customizer, request );
 
-        assertNull( request.getResponse().getHttpFields().get( header ) );
+        String hstsValue = request.getResponse().getHttpFields().get( STRICT_TRANSPORT_SECURITY );
+        assertNull( hstsValue );
     }
 
     private static void customize( Customizer customizer, Request request )
@@ -147,12 +95,12 @@ public class HttpsRequestCustomizerTest
 
     private static Customizer newCustomizer()
     {
-        return newCustomizer( emptyMap() );
+        return newCustomizer( null );
     }
 
-    private static Customizer newCustomizer( Map<String,String> settingsWithValues )
+    private static Customizer newCustomizer( String hstsValue )
     {
-        Config config = Config.defaults( settingsWithValues );
+        Config config = Config.defaults( ServerSettings.http_strict_transport_security, hstsValue );
         return new HttpsRequestCustomizer( config );
     }
 }
