@@ -111,6 +111,10 @@ public class ProcedureResourcesIT
 
     private void verifyProcedureCloseAllAcquiredKernelStatements( ProcedureData proc ) throws ExecutionException, InterruptedException
     {
+        if ( proc.skip )
+        {
+            return;
+        }
         String failureMessage = "Failed on procedure " + proc.name;
         try ( Transaction outer = db.beginTx() )
         {
@@ -176,6 +180,7 @@ public class ProcedureResourcesIT
         private final List<Object> params = new ArrayList<>();
         private String setupQuery;
         private String postQuery;
+        private boolean skip;
 
         private ProcedureData( ProcedureSignature procedure )
         {
@@ -353,6 +358,15 @@ public class ProcedureResourcesIT
         case "db.createIndex":
             proc.withParam( "':Person(name)'" );
             proc.withParam( "'lucene+native-2.0'" );
+            break;
+        case "db.createNodeKey":
+            // Grabs schema lock an so can not execute concurrently with node creation
+            proc.skip = true;
+            break;
+        case "db.createUniquePropertyConstraint":
+            // Grabs schema lock an so can not execute concurrently with node creation
+            proc.skip = true;
+            break;
         default:
         }
         return proc;
