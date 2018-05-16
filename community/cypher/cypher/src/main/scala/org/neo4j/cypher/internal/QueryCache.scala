@@ -20,11 +20,7 @@
 package org.neo4j.cypher.internal
 
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
-import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.graphdb.Result
-import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.values.virtual.{MapValue, VirtualValues}
 
 /**
   * The result of one cache lookup.
@@ -61,8 +57,7 @@ trait CacheTracer[QUERY_KEY] {
   */
 class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximumSize: Int,
                                                                   val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
-                                                                  val tracer: CacheTracer[QUERY_KEY],
-                                                                  val BEING_RECOMPILED: EXECUTABLE_QUERY) {
+                                                                  val tracer: CacheTracer[QUERY_KEY]) {
 
   val inner: Cache[QUERY_KEY, EXECUTABLE_QUERY] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, EXECUTABLE_QUERY]()
 
@@ -90,9 +85,6 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximumSiz
         case NOT_PRESENT =>
           compileAndCache(queryKey, tc, compile, metaData)
 
-        case BEING_RECOMPILED =>
-          awaitConcurrentReplan(queryKey, metaData)
-
         case executableQuery =>
           stalenessCaller.staleness(tc, executableQuery) match {
             case NotStale =>
@@ -117,30 +109,9 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximumSiz
                         compile: () => EXECUTABLE_QUERY,
                         metaData: String
                        ): CacheLookup[EXECUTABLE_QUERY] = {
-    val currentValue = inner.asMap().put(queryKey, BEING_RECOMPILED)
-    currentValue match {
-      case BEING_RECOMPILED =>
-        awaitConcurrentReplan(queryKey, metaData)
-
-      case x =>
-        val newExecutableQuery = compile()
-        inner.put(queryKey, newExecutableQuery)
-        miss(queryKey, newExecutableQuery, metaData)
-    }
-  }
-
-  /**
-    * Some other thread already started compiling this query. Let's what for that and use that plan.
-    */
-  private def awaitConcurrentReplan(queryKey: QUERY_KEY,
-                                    metaData: String
-                                   ): CacheMiss[EXECUTABLE_QUERY] = {
-    var cachedExecutableQuery = inner.getIfPresent(queryKey)
-    while (cachedExecutableQuery == BEING_RECOMPILED) {
-      Thread.`yield`()
-      cachedExecutableQuery = inner.getIfPresent(queryKey)
-    }
-    miss(queryKey, cachedExecutableQuery, metaData)
+    val newExecutableQuery = compile()
+    inner.put(queryKey, newExecutableQuery)
+    miss(queryKey, newExecutableQuery, metaData)
   }
 
   private def hit(queryKey: QUERY_KEY,
@@ -172,11 +143,5 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximumSiz
 }
 
 object QueryCache {
-  val BEING_RECOMPILED_PLAN: ExecutionPlan = new ExecutionPlan {
-    override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = ???
-    override def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result = ???
-    override val plannerInfo: PlannerInfo = null
-  }
-  val BEING_RECOMPILED = CachedExecutableQuery(BEING_RECOMPILED_PLAN, Nil, VirtualValues.emptyMap())
   val NOT_PRESENT: CachedExecutableQuery = null
 }

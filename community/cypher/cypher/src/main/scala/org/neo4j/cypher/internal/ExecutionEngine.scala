@@ -64,7 +64,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                                                    lastCommittedTxIdProvider,
                                                    planReusabilitiy)
   private val queryCache: QueryCache[String, CachedExecutableQuery] =
-    new QueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer, QueryCache.BEING_RECOMPILED)
+    new QueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer)
 
   private val compilerEngineDelegator: CompilerEngineDelegator =
     new CompilerEngineDelegator(queryService, kernelMonitors, config, logProvider, compatibilityFactory)
