@@ -891,4 +891,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     {
         return size();
     }
+
+    public ListValue dropNoValues()
+    {
+        return new DropNoValuesListValue( this );
+    }
 }

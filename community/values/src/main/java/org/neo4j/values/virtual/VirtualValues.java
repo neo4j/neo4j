@@ -63,11 +63,6 @@ public final class VirtualValues
         return new ListValue.ArrayValueListValue( arrayValue );
     }
 
-    public static ListValue dropNoValues( ListValue list )
-    {
-        return new ListValue.DropNoValuesListValue( list );
-    }
-
     public static ListValue slice( ListValue list, int from, int to )
     {
         int f = Math.max( from, 0 );
