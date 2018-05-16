@@ -50,13 +50,15 @@ class PreParser(configuredVersion: CypherVersion,
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String, profile: Boolean = false): PreParsedQuery = {
-    preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText, profile))
+    val preParsedQuery = preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
+    if (profile) preParsedQuery.copy(executionMode = CypherExecutionMode.profile)
+    else preParsedQuery
   }
 
-  private def actuallyPreParse(queryText: String, profile: Boolean): PreParsedQuery = {
+  private def actuallyPreParse(queryText: String): PreParsedQuery = {
     val preParsedStatement = exceptionHandler.runSafely(CypherPreParser(queryText))
 
-    val executionMode: PPOption[CypherExecutionMode] = new PPOption(if (profile) CypherExecutionMode.profile else CypherExecutionMode.default)
+    val executionMode: PPOption[CypherExecutionMode] = new PPOption(CypherExecutionMode.default)
     val version: PPOption[CypherVersion] = new PPOption(configuredVersion)
     val planner: PPOption[CypherPlanner] = new PPOption(configuredPlanner)
     val runtime: PPOption[CypherRuntime] = new PPOption(configuredRuntime)
