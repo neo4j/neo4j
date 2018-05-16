@@ -41,11 +41,16 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
+/**
+ * @deprecated This will be moved to an internal package in the future.
+ */
+@Deprecated
 @Service.Implementation( KernelExtensionFactory.class )
 public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineBackupExtensionFactory.Dependencies>
 {
     static final String KEY = "online backup";
 
+    @Deprecated
     public interface Dependencies
     {
         Config getConfig();

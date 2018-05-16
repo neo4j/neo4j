@@ -50,7 +50,9 @@ import org.neo4j.kernel.impl.logging.LogService;
  * case, the resolve method is expected to return a valid URI, with a scheme
  * which is the same as the one passed to it (ie the service's name).
  * </p>
+ * @deprecated This will move to an internal package in the future.
  */
+@Deprecated
 public abstract class BackupExtensionService extends Service
 {
     public BackupExtensionService( String name )
