@@ -52,6 +52,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   require(queryService != null, "Can't work with a null graph database")
 
+  // HELPER OBJECTS
+
   private val preParser = new PreParser(config.version, config.planner, config.runtime, config.queryCacheSize)
   private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
   private def planReusabilitiy(cachedExecutableQuery: CachedExecutableQuery,
@@ -81,6 +83,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   private val schemaHelper = new SchemaHelper(queryCache)
 
+  // ACTUAL FUNCTIONALITY
+
   def profile(query: String, params: MapValue, context: TransactionalContext): Result =
     execute(query, params, context, profile = true)
 
@@ -94,6 +98,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         checkParameters(cachedExecutableQuery.paramNames, params, cachedExecutableQuery.extractedParams)
       }
       val combinedParams = VirtualValues.combine(params, cachedExecutableQuery.extractedParams)
+      context.executingQuery().planningCompleted(cachedExecutableQuery.plan.plannerInfo)
       cachedExecutableQuery.plan.run(context, preParsedQuery.executionMode, combinedParams)
 
     } catch {
