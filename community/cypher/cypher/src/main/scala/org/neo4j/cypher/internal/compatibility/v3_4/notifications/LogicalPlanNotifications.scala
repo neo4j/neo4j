@@ -32,7 +32,7 @@ object LogicalPlanNotifications {
   def checkForNotifications(logicalPlan: LogicalPlan,
                             planContext: PlanContext,
                             config: CypherCompilerConfiguration): Seq[InternalNotification] = {
-    val notificationCheckers: Seq[NotificationChecker] = Seq(
+    val notificationCheckers = Seq(
       checkForEagerLoadCsv,
       checkForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold),
       checkForIndexLimitation(planContext))

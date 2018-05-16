@@ -46,11 +46,8 @@ case class checkForIndexLimitation(planContext: PlanContext) extends Notificatio
     }
   }
 
-  def getLimitations(label: LabelToken, property: PropertyKeyToken): Set[IndexLimitation] = {
+  private def getLimitations(label: LabelToken, property: PropertyKeyToken): Set[IndexLimitation] = {
     planContext.indexGet(label.name, Seq(property.name)).fold(Set.empty[IndexLimitation])(_.limitations) union
     planContext.uniqueIndexGet(label.name, Seq(property.name)).fold(Set.empty[IndexLimitation])(_.limitations)
   }
-
-  private def cardinality(labelName: String): Cardinality =
-    planContext.statistics.nodesWithLabelCardinality(planContext.getOptLabelId(labelName).map(LabelId))
 }

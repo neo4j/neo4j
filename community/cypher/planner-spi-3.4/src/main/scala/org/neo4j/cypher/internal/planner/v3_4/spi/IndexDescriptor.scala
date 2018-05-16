@@ -25,13 +25,13 @@ sealed trait IndexLimitation
 case object SlowContains extends IndexLimitation
 
 object IndexDescriptor {
-  def apply(label: Int, property: Int): IndexDescriptor = IndexDescriptor(LabelId(label), Seq(PropertyKeyId(property)), Set.empty[IndexLimitation])
+  def apply(label: Int, property: Int): IndexDescriptor = IndexDescriptor(LabelId(label), Seq(PropertyKeyId(property)))
   def apply(label: Int, property: Int, limitations: Set[IndexLimitation]): IndexDescriptor = IndexDescriptor(LabelId(label), Seq(PropertyKeyId(property)), limitations)
 
-  def apply(label: Int, properties: Seq[Int]): IndexDescriptor = IndexDescriptor(LabelId(label), properties.map(PropertyKeyId), Set.empty[IndexLimitation])
+  def apply(label: Int, properties: Seq[Int]): IndexDescriptor = IndexDescriptor(LabelId(label), properties.map(PropertyKeyId))
   def apply(label: Int, properties: Seq[Int], limitations: Set[IndexLimitation]): IndexDescriptor = IndexDescriptor(LabelId(label), properties.map(PropertyKeyId), limitations)
 
-  def apply(label: LabelId, property: PropertyKeyId): IndexDescriptor = IndexDescriptor(label, Seq(property), Set.empty[IndexLimitation])
+  def apply(label: LabelId, property: PropertyKeyId): IndexDescriptor = IndexDescriptor(label, Seq(property))
   def apply(label: LabelId, property: PropertyKeyId, limitations: Set[IndexLimitation]): IndexDescriptor = IndexDescriptor(label, Seq(property), limitations)
 
   implicit def toKernelEncode(properties: Seq[PropertyKeyId]): Array[Int] = properties.map(_.id).toArray
