@@ -30,6 +30,7 @@ sealed trait CacheLookup[EXECUTABLE_QUERY] {
 }
 case class CacheHit[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extends CacheLookup[EXECUTABLE_QUERY]
 case class CacheMiss[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extends CacheLookup[EXECUTABLE_QUERY]
+case class CacheDisabled[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extends CacheLookup[EXECUTABLE_QUERY]
 
 /**
   * Tracer for cache activity.
@@ -79,7 +80,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximumSiz
                              metaData: String = ""
                             ): CacheLookup[EXECUTABLE_QUERY] = {
     if (maximumSize == 0)
-      CacheMiss(compile())
+      CacheDisabled(compile())
     else {
       inner.getIfPresent(queryKey) match {
         case NOT_PRESENT =>

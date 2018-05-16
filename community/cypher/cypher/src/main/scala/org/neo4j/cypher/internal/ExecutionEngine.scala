@@ -118,7 +118,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                                                             tc,
                                                             () => compileQuery(preParsedQuery, tracer, tc))
         cacheLookup match {
-          case CacheHit(executableQuery) =>
+          case _: CacheHit[_] |
+               _: CacheDisabled[_] =>
+            val executableQuery = cacheLookup.executableQuery
             if (schemaHelper.lockLabels(schemaToken, executableQuery.plan, preParsedQuery.version, tc)) {
               tc.cleanForReuse()
               return executableQuery
