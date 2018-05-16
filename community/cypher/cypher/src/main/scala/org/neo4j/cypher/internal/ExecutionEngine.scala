@@ -58,6 +58,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                                transactionalContext: TransactionalContext): ReusabilityState =
     cachedExecutableQuery.plan.reusabilityState(lastCommittedTxIdProvider, transactionalContext)
 
+  // Log on stale query discard from query cache
+  private val log = logProvider.getLog( getClass )
+  kernelMonitors.addMonitorListener( new StringCacheMonitor {
+    override def cacheDiscard(ignored: String, query: String, secondsSinceReplan: Int) {
+      log.info(s"Discarded stale query from the query cache after ${secondsSinceReplan} seconds: $query")
+    }
+  })
+
   private val planStalenessCaller =
     new PlanStalenessCaller[CachedExecutableQuery](clock,
                                                    config.statsDivergenceCalculator,
@@ -116,7 +124,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         val schemaToken = schemaHelper.readSchemaToken(tc)
         val cacheLookup = queryCache.computeIfAbsentOrStale(cacheKey,
                                                             tc,
-                                                            () => compileQuery(preParsedQuery, tracer, tc))
+                                                            () => compileQuery(preParsedQuery, tracer, tc),
+                                                            preParsedQuery.rawStatement)
         cacheLookup match {
           case _: CacheHit[_] |
                _: CacheDisabled[_] =>

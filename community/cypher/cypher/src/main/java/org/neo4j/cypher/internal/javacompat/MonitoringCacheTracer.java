@@ -49,7 +49,7 @@ public class MonitoringCacheTracer implements CacheTracer<String>
     @Override
     public void queryCacheStale( String queryKey, int secondsSincePlan, String metaData )
     {
-        monitor.cacheDiscard( queryKey, "", secondsSincePlan );
+        monitor.cacheDiscard( queryKey, metaData, secondsSincePlan );
     }
 
     @Override

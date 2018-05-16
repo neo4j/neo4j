@@ -27,7 +27,7 @@ import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.{GraphDatabaseCypherService, MonitoringCacheTracer}
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.tracing.CompilationTracer
+import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -95,9 +95,11 @@ object ExecutionEngineHelper {
     val compatibilityFactory = resolver.resolveDependency( classOf[CompatibilityFactory] )
     val config = resolver.resolveDependency(classOf[Config])
 
+    val tracer = new TimingCompilationTracer(kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
+
     new ExecutionEngine(graphDatabaseCypherService,
                         kernelMonitors,
-                        CompilationTracer.NO_COMPILATION_TRACING,
+                        tracer,
                         cacheTracer,
                         CypherConfiguration.fromConfig(config),
                         compatibilityFactory,
