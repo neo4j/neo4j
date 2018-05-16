@@ -51,6 +51,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -70,7 +71,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-public class HazelcastCoreTopologyService extends AbstractTopologyService implements CoreTopologyService
+public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecycle
 {
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private static final int HAZELCAST_MIN_CLUSTER = 2;
@@ -93,8 +94,12 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private final AtomicReference<Optional<LeaderInfo>> stepDownInfo = new AtomicReference<>( Optional.empty() );
 
     private volatile HazelcastInstance hazelcastInstance;
-    private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
+
+    /* cached data updated during each refresh */
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
+    private volatile CoreTopology localCoreTopology = CoreTopology.EMPTY;
+    private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
+    private volatile ReadReplicaTopology localReadReplicaTopology = ReadReplicaTopology.EMPTY;
     private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
     private volatile Map<MemberId,RoleInfo> coreRoles = Collections.emptyMap();
 
@@ -185,6 +190,12 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     }
 
     @Override
+    public void init()
+    {
+        // nothing to do
+    }
+
+    @Override
     public void start()
     {
         /*
@@ -245,6 +256,12 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
                 log.warn( "Failed to stop Hazelcast", e );
             }
         }
+    }
+
+    @Override
+    public void shutdown()
+    {
+        // nothing to do
     }
 
     private HazelcastInstance createHazelcastInstance()
@@ -365,9 +382,21 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     }
 
     @Override
+    public CoreTopology localCoreServers()
+    {
+        return localCoreTopology;
+    }
+
+    @Override
     public ReadReplicaTopology allReadReplicas()
     {
         return readReplicaTopology;
+    }
+
+    @Override
+    public ReadReplicaTopology localReadReplicas()
+    {
+        return localReadReplicaTopology;
     }
 
     @Override
@@ -414,7 +443,9 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
 
         CoreTopology newCoreTopology = getCoreTopology( hazelcastInstance, config, log );
         TopologyDifference difference = coreTopology.difference( newCoreTopology );
+
         coreTopology = newCoreTopology;
+        localCoreTopology = newCoreTopology.filterTopologyByDb( localDBName );
 
         if ( difference.hasChanges() )
         {
@@ -426,15 +457,17 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private void refreshReadReplicaTopology() throws InterruptedException
     {
         waitOnHazelcastInstanceCreation();
-        ReadReplicaTopology newReadReplicaTopology = getReadReplicaTopology( hazelcastInstance, log );
 
+        ReadReplicaTopology newReadReplicaTopology = getReadReplicaTopology( hazelcastInstance, log );
         TopologyDifference difference = readReplicaTopology.difference( newReadReplicaTopology );
+
+        this.readReplicaTopology = newReadReplicaTopology;
+        this.localReadReplicaTopology = newReadReplicaTopology.filterTopologyByDb( localDBName );
+
         if ( difference.hasChanges() )
         {
             log.info( "Read replica topology changed %s", difference );
         }
-
-        this.readReplicaTopology = newReadReplicaTopology;
     }
 
     /*

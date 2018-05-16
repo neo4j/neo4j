@@ -32,10 +32,11 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreTopologyService
+class SharedDiscoveryCoreClient implements CoreTopologyService, Lifecycle
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final MemberId myself;
@@ -97,6 +98,12 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     }
 
     @Override
+    public void init()
+    {
+        // nothing to do
+    }
+
+    @Override
     public void start() throws InterruptedException
     {
         coreTopology = sharedDiscoveryService.getCoreTopology( this );
@@ -117,9 +124,21 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     }
 
     @Override
+    public void shutdown()
+    {
+        // nothing to do
+    }
+
+    @Override
     public ReadReplicaTopology allReadReplicas()
     {
         return readReplicaTopology;
+    }
+
+    @Override
+    public ReadReplicaTopology localReadReplicas()
+    {
+        return allReadReplicas().filterTopologyByDb( localDBName );
     }
 
     @Override
@@ -138,6 +157,12 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
         // for the database local to the host upon which this method is called.
         // TODO: evaluate returning clusterId = null for global Topologies returned by allCoreServers()
         return this.coreTopology;
+    }
+
+    @Override
+    public CoreTopology localCoreServers()
+    {
+        return allCoreServers().filterTopologyByDb( localDBName );
     }
 
     @Override
