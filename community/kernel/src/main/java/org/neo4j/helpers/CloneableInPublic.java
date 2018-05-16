@@ -19,6 +19,7 @@
  */
 package org.neo4j.helpers;
 
+@Deprecated
 public interface CloneableInPublic extends Cloneable
 {
     Object clone();
