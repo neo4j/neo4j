@@ -19,20 +19,24 @@
  */
 package org.neo4j.helpers;
 
+@Deprecated
 public class Reference<T>
 {
     private T t;
 
+    @Deprecated
     public Reference( T initial )
     {
         this.t = initial;
     }
 
+    @Deprecated
     public void set( T t )
     {
         this.t = t;
     }
 
+    @Deprecated
     public T get()
     {
         return t;
