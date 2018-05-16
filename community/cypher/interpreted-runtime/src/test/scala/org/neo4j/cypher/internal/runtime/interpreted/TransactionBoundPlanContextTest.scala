@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.util.concurrent.TimeUnit.SECONDS
+
 import org.neo4j.cypher.internal.frontend.v3_5.phases.devNullLogger
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
@@ -129,6 +131,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
 
+    database.schema().awaitIndexesOnline(10, SECONDS)
     val l1id = planContext.getLabelId("L1")
     val prop1id = planContext.getPropertyKeyId("prop")
     val prop2id = planContext.getPropertyKeyId("prop2")
@@ -154,6 +157,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
 
+    database.schema().awaitIndexesOnline(10, SECONDS)
     val l1id = planContext.getLabelId("L1")
     val prop2id = planContext.getPropertyKeyId("prop2")
     planContext.uniqueIndexesGetForLabel(l1id).toSet should equal(Set(
@@ -180,6 +184,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
 
+    database.schema().awaitIndexesOnline(10, SECONDS)
     val l1id = planContext.getLabelId("L1")
     val l2id = planContext.getLabelId("L2")
     val l3id = planContext.getLabelId("L3")
@@ -207,6 +212,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
 
+    database.schema().awaitIndexesOnline(10, SECONDS)
     planContext.indexExistsForLabelAndProperties("L1", Seq("prop")) should be(true)
     planContext.indexExistsForLabelAndProperties("L1", Seq("prop2")) should be(false)
     planContext.indexExistsForLabelAndProperties("L2", Seq("prop")) should be(false)
