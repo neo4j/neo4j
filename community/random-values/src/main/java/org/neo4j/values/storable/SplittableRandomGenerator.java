@@ -25,7 +25,7 @@ public class SplittableRandomGenerator implements Generator
 {
     private final SplittableRandom random;
 
-    public SplittableRandomGenerator( SplittableRandom random )
+    SplittableRandomGenerator( SplittableRandom random )
     {
         this.random = random;
     }

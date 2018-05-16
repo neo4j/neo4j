@@ -30,6 +30,7 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
@@ -60,8 +61,6 @@ import static org.neo4j.values.storable.Values.shortValue;
 public class RandomValues
 {
 
-    private static final int BYTES_PER_INT = Integer.SIZE / Byte.SIZE;
-
     enum Types
     {
         BOOLEAN,
@@ -85,8 +84,6 @@ public class RandomValues
         GEOGRAPHIC_POINT_3D,
         ARRAY
     }
-
-    private static Types[] TYPES = Types.values();
 
     public interface Configuration
     {
@@ -127,11 +124,11 @@ public class RandomValues
     }
 
     public static Configuration DEFAULT_CONFIGURATION = new Default();
+    private static Types[] TYPES = Types.values();
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     private final Generator generator;
     private final Configuration configuration;
-
-    private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     private RandomValues( Generator generator )
     {
@@ -1098,7 +1095,7 @@ public class RandomValues
         {
             //For each random int we get up to four random bytes
             int rand = nextInt();
-            int numBytesToShift = Math.min( length - index, BYTES_PER_INT );
+            int numBytesToShift = Math.min( length - index, Integer.BYTES );
 
             //byte 4   byte 3   byte 2   byte 1
             //aaaaaaaa bbbbbbbb cccccccc dddddddd
@@ -1434,7 +1431,7 @@ public class RandomValues
     {
         for ( T item : array )
         {
-            if ( nullSafeEquals( item, contains ) )
+            if ( Objects.equals( item, contains ) )
             {
                 return true;
             }
@@ -1442,21 +1439,11 @@ public class RandomValues
         return false;
     }
 
-    private static <T> boolean nullSafeEquals( T first, T other )
-    {
-        return first == null ? other == null : first.equals( other );
-    }
-
     private Instant randomInstant()
     {
         return Instant.ofEpochSecond(
                 nextLong( LocalDateTime.MIN.toEpochSecond( UTC ), LocalDateTime.MAX.toEpochSecond( UTC ) ),
                 nextLong( NANOS_PER_SECOND ) );
-    }
-
-    private int nextPowerOf2( int i )
-    {
-        return 1 << (32 - Integer.numberOfLeadingZeros( i ));
     }
 
     private long nextLong( long origin, long bound )
@@ -1467,5 +1454,10 @@ public class RandomValues
     private Types nextType()
     {
         return TYPES[generator.nextInt( TYPES.length )];
+    }
+
+    private static int nextPowerOf2( int i )
+    {
+        return 1 << (32 - Integer.numberOfLeadingZeros( i ));
     }
 }

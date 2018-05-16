@@ -25,7 +25,7 @@ public class RandomGenerator implements Generator
 {
     private final Random random;
 
-    public RandomGenerator( Random random )
+    RandomGenerator( Random random )
     {
         this.random = random;
     }
