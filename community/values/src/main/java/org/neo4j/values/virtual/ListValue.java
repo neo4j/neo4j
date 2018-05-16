@@ -19,12 +19,14 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
@@ -33,6 +35,7 @@ import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
@@ -44,7 +47,482 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     @Override
     public abstract AnyValue value( int offset );
 
-    public abstract AnyValue[] asArray();
+    static final class ArrayValueListValue extends ListValue
+    {
+        private final ArrayValue array;
+
+        ArrayValueListValue( ArrayValue array )
+        {
+            this.array = array;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return RANDOM_ACCESS;
+        }
+
+        @Override
+        public boolean storable()
+        {
+            return true;
+        }
+
+        @Override
+        public ArrayValue toStorableArray()
+        {
+            return array;
+        }
+
+        @Override
+        public int size()
+        {
+            return array.length();
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            return array.value( offset );
+        }
+
+        @Override
+        public int computeHash()
+        {
+            return array.hashCode();
+        }
+    }
+
+    static final class ArrayListValue extends ListValue
+    {
+        private final AnyValue[] values;
+
+        ArrayListValue( AnyValue[] values )
+        {
+            assert values != null;
+            assert !containsNull( values );
+
+            this.values = values;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return RANDOM_ACCESS;
+        }
+
+        @Override
+        public int size()
+        {
+            return values.length;
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            return values[offset];
+        }
+
+        @Override
+        public AnyValue[] asArray()
+        {
+            return values;
+        }
+
+        @Override
+        public int computeHash()
+        {
+            return Arrays.hashCode( values );
+        }
+    }
+
+    static final class JavaListListValue extends ListValue
+    {
+        private final List<AnyValue> values;
+
+        JavaListListValue( List<AnyValue> values )
+        {
+            assert values != null;
+            assert !containsNull( values );
+
+            this.values = values;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return IterationPreference.ITERATION;
+        }
+
+        @Override
+        public int size()
+        {
+            return values.size();
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            return values.get( offset );
+        }
+
+        @Override
+        public AnyValue[] asArray()
+        {
+            return values.toArray( new AnyValue[0] );
+        }
+
+        @Override
+        public int computeHash()
+        {
+            return values.hashCode();
+        }
+
+        @Override
+        public Iterator<AnyValue> iterator()
+        {
+            return values.iterator();
+        }
+    }
+
+    static final class ListSlice extends ListValue
+    {
+        private final ListValue inner;
+        private final int from;
+        private final int to;
+
+        ListSlice( ListValue inner, int from, int to )
+        {
+            assert from >= 0;
+            assert to <= inner.size();
+            assert from <= to;
+            this.inner = inner;
+            this.from = from;
+            this.to = to;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return inner.iterationPreference();
+        }
+
+        @Override
+        public int size()
+        {
+            return to - from;
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            return inner.value( offset + from );
+        }
+
+        @Override
+        public Iterator<AnyValue> iterator()
+        {
+            switch ( inner.iterationPreference() )
+            {
+            case RANDOM_ACCESS:
+                return super.iterator();
+            case ITERATION:
+                return new PrefetchingIterator<AnyValue>()
+                {
+                    private int count;
+                    private Iterator<AnyValue> innerIterator = inner.iterator();
+
+                    @Override
+                    protected AnyValue fetchNextOrNull()
+                    {
+                        //make sure we are at least at first element
+                        while ( count < from && innerIterator.hasNext() )
+                        {
+                            innerIterator.next();
+                            count++;
+                        }
+                        //check if we are done
+                        if ( count < from || count >= to || !innerIterator.hasNext() )
+                        {
+                            return null;
+                        }
+                        //take the next step
+                        count++;
+                        return innerIterator.next();
+                    }
+                };
+
+            default:
+                throw new IllegalStateException( "unknown iteration preference" );
+            }
+        }
+    }
+
+    static final class ReversedList extends ListValue
+    {
+        private final ListValue inner;
+
+        ReversedList( ListValue inner )
+        {
+            this.inner = inner;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return inner.iterationPreference();
+        }
+
+        @Override
+        public int size()
+        {
+            return inner.size();
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            return inner.value( size() - 1 - offset );
+        }
+    }
+
+    static final class DropNoValuesListValue extends ListValue
+    {
+        private final ListValue inner;
+        private int size = -1;
+
+        DropNoValuesListValue( ListValue inner )
+        {
+            this.inner = inner;
+        }
+
+        @Override
+        public int size()
+        {
+            if ( size < 0 )
+            {
+                int s = 0;
+                for ( int i = 0; i < inner.size(); i++ )
+                {
+                    if ( inner.value( i ) != NO_VALUE )
+                    {
+                        s++;
+                    }
+                }
+                size = s;
+            }
+
+            return size;
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            int actualOffset = 0;
+            int size = inner.size();
+            for ( int i = 0; i < size; i++ )
+            {
+                AnyValue value = inner.value( i );
+                if ( value != NO_VALUE )
+                {
+                    if ( actualOffset == offset )
+                    {
+                        return value;
+                    }
+                    actualOffset++;
+                }
+            }
+
+            throw new IndexOutOfBoundsException();
+        }
+
+        @Override
+        public Iterator<AnyValue> iterator()
+        {
+            return new FilteredIterator();
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return IterationPreference.ITERATION;
+        }
+
+        private class FilteredIterator implements Iterator<AnyValue>
+        {
+            private AnyValue next;
+            private int index;
+
+            FilteredIterator()
+            {
+                computeNext();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return next != null;
+            }
+
+            @Override
+            public AnyValue next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+
+                AnyValue current = next;
+                computeNext();
+                return current;
+            }
+
+            private void computeNext()
+            {
+                if ( index >= inner.size() )
+                {
+                    next = null;
+                }
+                else
+                {
+                    while ( true )
+                    {
+                        if ( index >= inner.size() )
+                        {
+                            next = null;
+                            return;
+                        }
+                        AnyValue candidate = inner.value( index++ );
+                        if ( candidate != NO_VALUE )
+                        {
+                            next = candidate;
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    static final class IntegralRangeListValue extends ListValue
+    {
+        private final long start;
+        private final long end;
+        private final long step;
+        private int length = -1;
+
+        IntegralRangeListValue( long start, long end, long step )
+        {
+            this.start = start;
+            this.end = end;
+            this.step = step;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return RANDOM_ACCESS;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Range(" + start + "..." + end + ", step = " + step + ")";
+        }
+
+        @Override
+        public int size()
+        {
+            if ( length != -1 )
+            {
+                return length;
+            }
+            else
+            {
+                long l = ((end - start) / step) + 1;
+                if ( l > Integer.MAX_VALUE )
+                {
+                    throw new OutOfMemoryError( "Cannot index an collection of size " + l );
+                }
+                length = (int) l;
+                return length;
+            }
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            if ( offset >= size() )
+            {
+                throw new IndexOutOfBoundsException();
+            }
+            else
+            {
+                return Values.longValue( start + offset * step );
+            }
+        }
+
+        @Override
+        public int computeHash()
+        {
+            int hashCode = 1;
+            long current = start;
+            int size = size();
+            for ( int i = 0; i < size; i++, current += step )
+            {
+                hashCode = 31 * hashCode + Long.hashCode( current );
+            }
+            return hashCode;
+        }
+
+    }
+
+    static final class ConcatList extends ListValue
+    {
+        private final ListValue[] lists;
+        private int size = -1;
+
+        ConcatList( ListValue[] lists )
+        {
+            this.lists = lists;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return IterationPreference.ITERATION;
+        }
+
+        @Override
+        public int size()
+        {
+            if ( size < 0 )
+            {
+                int s = 0;
+                for ( ListValue list : lists )
+                {
+                    s += list.size();
+                }
+                size = s;
+            }
+            return size;
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            for ( ListValue list : lists )
+            {
+                int size = list.size();
+                if ( offset < size )
+                {
+                    return list.value( offset );
+                }
+                offset -= size;
+            }
+            throw new IndexOutOfBoundsException();
+        }
+    }
 
     public boolean isEmpty()
     {
@@ -147,714 +625,16 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         };
     }
 
-    static final class ArrayValueListValue extends ListValue
-    {
-        private final ArrayValue array;
-
-        ArrayValueListValue( ArrayValue array )
-        {
-            this.array = array;
-        }
-
-        @Override
-        public IterationPreference iterationPreference()
-        {
-            return IterationPreference.RANDOM_ACCESS;
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            int length = array.length();
-            writer.beginList( length );
-            for ( int i = 0; i < length; i++ )
-            {
-                array.value( i ).writeTo( writer );
-            }
-            writer.endList();
-        }
-
-        @Override
-        public boolean storable()
-        {
-            return true;
-        }
-
-        @Override
-        public ArrayValue toStorableArray()
-        {
-            return array;
-        }
-
-        @Override
-        public int size()
-        {
-            return array.length();
-        }
-
-        @Override
-        public AnyValue value( int offset )
-        {
-            return array.value( offset );
-        }
-
-        @Override
-        public AnyValue[] asArray()
-        {
-            int size = size();
-            AnyValue[] values = new AnyValue[size];
-            for ( int i = 0; i < size; i++ )
-            {
-                values[i] = array.value( i );
-            }
-
-            return values;
-        }
-
-        @Override
-        public int computeHash()
-        {
-            return array.hashCode();
-        }
-    }
-
-    static final class ArrayListValue extends ListValue
-    {
-        private final AnyValue[] values;
-
-        ArrayListValue( AnyValue[] values )
-        {
-            assert values != null;
-            assert !containsNull( values );
-
-            this.values = values;
-        }
-
-        @Override
-        public IterationPreference iterationPreference()
-        {
-            return IterationPreference.RANDOM_ACCESS;
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            writer.beginList( values.length );
-            for ( AnyValue value : values )
-            {
-                value.writeTo( writer );
-            }
-            writer.endList();
-        }
-
-        @Override
-        public int size()
-        {
-            return values.length;
-        }
-
-        @Override
-        public AnyValue value( int offset )
-        {
-            return values[offset];
-        }
-
-        @Override
-        public AnyValue[] asArray()
-        {
-            return values;
-        }
-
-        @Override
-        public int computeHash()
-        {
-            return Arrays.hashCode( values );
-        }
-    }
-
-    static final class JavaListListValue extends ListValue
-    {
-        private final List<AnyValue> values;
-
-        JavaListListValue( List<AnyValue> values )
-        {
-            assert values != null;
-            assert !containsNull( values );
-
-            this.values = values;
-        }
-
-        @Override
-        public IterationPreference iterationPreference()
-        {
-            return IterationPreference.ITERATION;
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            writer.beginList( values.size() );
-            for ( AnyValue value : values )
-            {
-                value.writeTo( writer );
-            }
-            writer.endList();
-        }
-
-        @Override
-        public int size()
-        {
-            return values.size();
-        }
-
-        @Override
-        public AnyValue value( int offset )
-        {
-            return values.get( offset );
-        }
-
-        @Override
-        public AnyValue[] asArray()
-        {
-            return values.toArray( new AnyValue[values.size()] );
-        }
-
-        @Override
-        public int computeHash()
-        {
-            return values.hashCode();
-        }
-    }
-
-    static final class ListSlice extends ListValue
-    {
-        private final ListValue inner;
-        private final int from;
-        private final int to;
-
-        ListSlice( ListValue inner, int from, int to )
-        {
-            assert from >= 0;
-            assert to <= inner.size();
-            assert from <= to;
-            this.inner = inner;
-            this.from = from;
-            this.to = to;
-        }
-
-        @Override
-        public IterationPreference iterationPreference()
-        {
-            return inner.iterationPreference();
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            writer.beginList( size() );
-            for ( int i = from; i < to; i++ )
-            {
-                inner.value( i ).writeTo( writer );
-            }
-            writer.endList();
-        }
-
-        @Override
-        public int size()
-        {
-            return to - from;
-        }
-
-        @Override
-        public AnyValue value( int offset )
-        {
-            return inner.value( offset + from );
-        }
-
-        @Override
-        public AnyValue[] asArray()
-        {
-            int len = size();
-            AnyValue[] anyValues = new AnyValue[len];
-            int index = 0;
-            for ( int i = from; i < to; i++ )
-            {
-                anyValues[index++] = inner.value( i );
-            }
-            return anyValues;
-        }
-
-        @Override
-        public int computeHash()
-        {
-            int hashCode = 1;
-            for ( int i = from; i < to; i++ )
-            {
-                hashCode = 31 * hashCode + inner.value( i ).hashCode();
-            }
-            return hashCode;
-        }
-    }
-
-    static final class ReversedList extends ListValue
-    {
-        private final ListValue inner;
-
-        ReversedList( ListValue inner )
-        {
-            this.inner = inner;
-        }
-
-        @Override
-        public IterationPreference iterationPreference()
-        {
-            return inner.iterationPreference();
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            writer.beginList( size() );
-            for ( int i = inner.size() - 1; i >= 0; i-- )
-            {
-                inner.value( i ).writeTo( writer );
-            }
-            writer.endList();
-        }
-
-        @Override
-        public int size()
-        {
-            return inner.size();
-        }
-
-        @Override
-        public AnyValue value( int offset )
-        {
-            return inner.value( size() - 1 - offset );
-        }
-
-        @Override
-        public AnyValue[] asArray()
-        {
-            int len = size();
-            AnyValue[] anyValues = new AnyValue[len];
-            for ( int i = 0; i < len; i++ )
-            {
-                anyValues[i] = value( i );
-            }
-            return anyValues;
-        }
-
-        @Override
-        public int computeHash()
-        {
-            int hashCode = 1;
-            for ( int i = inner.size() - 1; i >= 0; i-- )
-            {
-                hashCode = 31 * hashCode + inner.value( i ).hashCode();
-            }
-            return hashCode;
-        }
-    }
-
-    static final class DropNoValuesListValue extends ListValue
-    {
-        private final ListValue inner;
-        private int size = -1;
-
-        DropNoValuesListValue( ListValue inner )
-        {
-            this.inner = inner;
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            writer.beginList( size() );
-            for ( int i = 0; i < inner.size(); i++ )
-            {
-                AnyValue value = inner.value( i );
-                if ( value != NO_VALUE )
-                {
-                    value.writeTo( writer );
-                }
-            }
-            writer.endList();
-        }
-
-        @Override
-        public int size()
-        {
-            if ( size < 0 )
-            {
-
-                int s = 0;
-                for ( int i = 0; i < inner.size(); i++ )
-                {
-                    if ( inner.value( i ) != NO_VALUE )
-                    {
-                        s++;
-                    }
-                }
-                size = s;
-            }
-
-            return size;
-        }
-
-        @Override
-        public AnyValue value( int offset )
-        {
-            int actualOffset = 0;
-            int size = inner.size();
-            for ( int i = 0; i < size; i++ )
-            {
-                AnyValue value = inner.value( i );
-                if ( value != NO_VALUE )
-                {
-                    if ( actualOffset == offset )
-                    {
-                        return value;
-                    }
-                    actualOffset++;
-                }
-            }
-
-            throw new IndexOutOfBoundsException();
-        }
-
-        @Override
-        public AnyValue[] asArray()
-        {
-            int len = size();
-            AnyValue[] anyValues = new AnyValue[len];
-            int index = 0;
-            for ( int i = 0; i < inner.size(); i++ )
-            {
-                AnyValue value = inner.value( i );
-                if ( value != NO_VALUE )
-                {
-                    anyValues[index++] = value;
-                }
-            }
-            return anyValues;
-        }
-
-        @Override
-        public int computeHash()
-        {
-            int hashCode = 1;
-            for ( int i = 0; i < inner.size(); i++ )
-            {
-                AnyValue value = inner.value( i );
-                if ( value != NO_VALUE )
-                {
-                    hashCode = 31 * hashCode + value.hashCode();
-                }
-            }
-            return hashCode;
-        }
-
-        @Override
-        public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
-        {
-            if ( !(other instanceof ListValue) )
-            {
-                throw new IllegalArgumentException( "Cannot compare different virtual values" );
-            }
-            ListValue otherList = (ListValue) other;
-            Iterator<AnyValue> thisIterator = iterator();
-            Iterator<AnyValue> thatIterator = otherList.iterator();
-            while ( thisIterator.hasNext() )
-            {
-                if ( !thatIterator.hasNext() )
-                {
-                    return 1;
-                }
-                int compare = comparator.compare( thisIterator.next(), thatIterator.next() );
-                if ( compare != 0 )
-                {
-                    return compare;
-                }
-            }
-            if ( thatIterator.hasNext() )
-            {
-                return -1;
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        @Override
-        public Iterator<AnyValue> iterator()
-        {
-            return new FilteredIterator();
-        }
-
-        @Override
-        public IterationPreference iterationPreference()
-        {
-            return IterationPreference.ITERATION;
-        }
-
-        private class FilteredIterator implements Iterator<AnyValue>
-        {
-            private AnyValue next;
-            private int index;
-
-            FilteredIterator()
-            {
-                computeNext();
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return next != null;
-            }
-
-            @Override
-            public AnyValue next()
-            {
-                if ( !hasNext() )
-                {
-                    throw new NoSuchElementException();
-                }
-
-                AnyValue current = next;
-                computeNext();
-                return current;
-            }
-
-            private void computeNext()
-            {
-                if ( index >= inner.size() )
-                {
-                    next = null;
-                }
-                else
-                {
-                    while ( true )
-                    {
-                        if ( index >= inner.size() )
-                        {
-                            next = null;
-                            return;
-                        }
-                        AnyValue candidate = inner.value( index++ );
-                        if ( candidate != NO_VALUE )
-                        {
-                            next = candidate;
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    static final class IntegralRangeListValue extends ListValue
-    {
-        private final long start;
-        private final long end;
-        private final long step;
-        private int length = -1;
-
-        IntegralRangeListValue( long start, long end, long step )
-        {
-            this.start = start;
-            this.end = end;
-            this.step = step;
-        }
-
-        @Override
-        public IterationPreference iterationPreference()
-        {
-            return IterationPreference.RANDOM_ACCESS;
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            int size = size();
-            writer.beginList( size );
-            for ( long current = start; check( current ); current += step )
-            {
-                Values.longValue( current ).writeTo( writer );
-            }
-            writer.endList();
-
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Range(" + start + "..." + end + ", step = " + step + ")";
-        }
-
-        private boolean check( long current )
-        {
-            if ( step > 0 )
-            {
-                return current <= end;
-            }
-            else
-            {
-                return current >= end;
-            }
-        }
-
-        @Override
-        public int size()
-        {
-            if ( length != -1 )
-            {
-                return length;
-            }
-            else
-            {
-                long l = ((end - start) / step) + 1;
-                if ( l > Integer.MAX_VALUE )
-                {
-                    throw new OutOfMemoryError( "Cannot index an collection of size " + l );
-                }
-                length = (int) l;
-                return length;
-            }
-        }
-
-        @Override
-        public AnyValue value( int offset )
-        {
-            if ( offset >= size() )
-            {
-                throw new IndexOutOfBoundsException();
-            }
-            else
-            {
-                return Values.longValue( start + offset * step );
-            }
-        }
-
-        @Override
-        public AnyValue[] asArray()
-        {
-            int len = size();
-            AnyValue[] anyValues = new AnyValue[len];
-            int i = 0;
-            for ( long current = start; check( current ); current += step, i++ )
-            {
-                anyValues[i] = Values.longValue( current );
-            }
-            return anyValues;
-        }
-
-        @Override
-        public int computeHash()
-        {
-            int hashCode = 1;
-            long current = start;
-            int size = size();
-            for ( int i = 0; i < size; i++, current += step )
-            {
-                hashCode = 31 * hashCode + Long.hashCode( current );
-            }
-            return hashCode;
-        }
-
-    }
-
-    static final class ConcatList extends ListValue
-    {
-        private final ListValue[] lists;
-        private int size = -1;
-
-        ConcatList( ListValue[] lists )
-        {
-            this.lists = lists;
-        }
-
-        @Override
-        public IterationPreference iterationPreference()
-        {
-            return IterationPreference.ITERATION;
-        }
-
-        @Override
-        public int size()
-        {
-            if ( size < 0 )
-            {
-                int s = 0;
-                for ( ListValue list : lists )
-                {
-                    s += list.size();
-                }
-                size = s;
-            }
-            return size;
-        }
-
-        @Override
-        public AnyValue value( int offset )
-        {
-            for ( ListValue list : lists )
-            {
-                int size = list.size();
-                if ( offset < size )
-                {
-                    return list.value( offset );
-                }
-                offset -= size;
-            }
-            throw new IndexOutOfBoundsException();
-        }
-
-        @Override
-        public AnyValue[] asArray()
-        {
-            AnyValue[] values = new AnyValue[size()];
-            int start = 0;
-            for ( ListValue list : lists )
-            {
-                int length = list.length();
-                System.arraycopy( list.asArray(), 0, values, start, length );
-                start += length;
-            }
-            return values;
-        }
-
-        @Override
-        public int computeHash()
-        {
-            int hashCode = 1;
-            int size = size();
-            for ( int i = 0; i < size; i++ )
-            {
-                hashCode = 31 * hashCode + value( i ).hashCode();
-            }
-            return hashCode;
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            writer.beginList( size() );
-            for ( int i = 0; i < size(); i++ )
-            {
-                value( i ).writeTo( writer );
-            }
-            writer.endList();
-        }
-    }
-
     @Override
     public VirtualValueGroup valueGroup()
     {
         return VirtualValueGroup.LIST;
+    }
+
+    @Override
+    public int length()
+    {
+        return size();
     }
 
     @Override
@@ -864,33 +644,59 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         {
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }
-        //more efficient to use another implementation here
-        if ( other instanceof DropNoValuesListValue )
-        {
-            return -other.compareTo( this, comparator );
-        }
+
         ListValue otherList = (ListValue) other;
-        int x = Integer.compare( this.length(), otherList.length() );
-
-        if ( x == 0 )
+        if ( iterationPreference() == RANDOM_ACCESS && otherList.iterationPreference() == RANDOM_ACCESS )
         {
-            for ( int i = 0; i < length(); i++ )
-            {
-                x = comparator.compare( this.value( i ), otherList.value( i ) );
-                if ( x != 0 )
-                {
-                    return x;
-                }
-            }
+            return randomAccessCompareTo( comparator, otherList );
         }
+        else
+        {
+            return iteratorCompareTo( comparator, otherList );
+        }
+    }
 
-        return x;
+    public AnyValue[] asArray()
+    {
+        switch ( iterationPreference() )
+        {
+        case RANDOM_ACCESS:
+            return randomAccessAsArray();
+        case ITERATION:
+            return iterationAsArray();
+        default:
+            throw new IllegalStateException( "not a valid iteration preference" );
+        }
     }
 
     @Override
-    public int length()
+    public int computeHash()
     {
-        return size();
+        switch ( iterationPreference() )
+        {
+        case RANDOM_ACCESS:
+            return randomAccessComputeHash();
+        case ITERATION:
+            return iterationComputeHash();
+        default:
+            throw new IllegalStateException( "not a valid iteration preference" );
+        }
+    }
+
+    @Override
+    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+    {
+        switch ( iterationPreference() )
+        {
+        case RANDOM_ACCESS:
+            randomAccessWriteTo( writer );
+            break;
+        case ITERATION:
+            iterationWriteTo( writer );
+            break;
+        default:
+            throw new IllegalStateException( "not a valid iteration preference" );
+        }
     }
 
     public ListValue dropNoValues()
@@ -928,5 +734,114 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public ListValue reverse()
     {
         return new ReversedList( this );
+    }
+
+    private AnyValue[] iterationAsArray()
+    {
+        ArrayList<AnyValue> values = new ArrayList<>();
+        int size = 0;
+        for ( AnyValue value : this )
+        {
+            values.add( value );
+            size++;
+        }
+        return values.toArray( new AnyValue[size] );
+    }
+
+    private AnyValue[] randomAccessAsArray()
+    {
+        int size = size();
+        AnyValue[] values = new AnyValue[size];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            values[i] = value( i );
+        }
+        return values;
+    }
+
+    private int randomAccessComputeHash()
+    {
+        int hashCode = 1;
+        int size = size();
+        for ( int i = 0; i < size; i++ )
+        {
+            hashCode = 31 * hashCode + value( i ).hashCode();
+        }
+        return hashCode;
+    }
+
+    private int iterationComputeHash()
+    {
+        int hashCode = 1;
+        for ( AnyValue value : this )
+        {
+            hashCode = 31 * hashCode + value.hashCode();
+        }
+        return hashCode;
+    }
+
+    private <E extends Exception> void randomAccessWriteTo( AnyValueWriter<E> writer ) throws E
+    {
+        writer.beginList( size() );
+        for ( int i = 0; i < size(); i++ )
+        {
+            value( i ).writeTo( writer );
+        }
+        writer.endList();
+    }
+
+    private <E extends Exception> void iterationWriteTo( AnyValueWriter<E> writer ) throws E
+    {
+        writer.beginList( size() );
+        for ( AnyValue value : this )
+        {
+            value.writeTo( writer );
+        }
+        writer.endList();
+    }
+
+    private int randomAccessCompareTo( Comparator<AnyValue> comparator, ListValue otherList )
+    {
+        int x = Integer.compare( this.length(), otherList.length() );
+
+        if ( x == 0 )
+        {
+            for ( int i = 0; i < length(); i++ )
+            {
+                x = comparator.compare( this.value( i ), otherList.value( i ) );
+                if ( x != 0 )
+                {
+                    return x;
+                }
+            }
+        }
+
+        return x;
+    }
+
+    private int iteratorCompareTo( Comparator<AnyValue> comparator, ListValue otherList )
+    {
+        Iterator<AnyValue> thisIterator = iterator();
+        Iterator<AnyValue> thatIterator = otherList.iterator();
+        while ( thisIterator.hasNext() )
+        {
+            if ( !thatIterator.hasNext() )
+            {
+                return 1;
+            }
+            int compare = comparator.compare( thisIterator.next(), thatIterator.next() );
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+        }
+        if ( thatIterator.hasNext() )
+        {
+            return -1;
+        }
+        else
+        {
+            return 0;
+        }
     }
 }

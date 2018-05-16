@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.list;
@@ -44,6 +46,7 @@ public class ListSliceTest
         assertEquals( expected, slice );
         assertEquals( expected.hashCode(), slice.hashCode() );
         assertArrayEquals( expected.asArray(), slice.asArray() );
+        assertTrue( iteratorsEqual(expected.iterator(), slice.iterator()) );
     }
 
     @Test
@@ -58,6 +61,7 @@ public class ListSliceTest
 
         // Then
         assertEquals( slice, EMPTY_LIST );
+        assertTrue( iteratorsEqual(slice.iterator(), EMPTY_LIST.iterator()) );
     }
 
     @Test
@@ -76,6 +80,7 @@ public class ListSliceTest
         assertEquals( expected, slice );
         assertEquals( expected.hashCode(), slice.hashCode() );
         assertArrayEquals( expected.asArray(), slice.asArray() );
+        assertTrue( iteratorsEqual(expected.iterator(), slice.iterator()) );
     }
 
     @Test
@@ -92,6 +97,7 @@ public class ListSliceTest
         assertEquals( inner, slice );
         assertEquals( inner.hashCode(), slice.hashCode() );
         assertArrayEquals( inner.asArray(), slice.asArray() );
+        assertTrue( iteratorsEqual(inner.iterator(), slice.iterator()) );
     }
 
     @Test
@@ -109,6 +115,7 @@ public class ListSliceTest
         assertEquals( expected, drop );
         assertEquals( expected.hashCode(), drop.hashCode() );
         assertArrayEquals( expected.asArray(), drop.asArray() );
+        assertTrue( iteratorsEqual(expected.iterator(), drop.iterator()) );
     }
 
     @Test
@@ -126,5 +133,6 @@ public class ListSliceTest
         assertEquals( expected, take );
         assertEquals( expected.hashCode(), take.hashCode() );
         assertArrayEquals( expected.asArray(), take.asArray() );
+        assertTrue( iteratorsEqual(expected.iterator(), take.iterator()) );
     }
 }
