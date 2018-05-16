@@ -22,80 +22,60 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
-import java.util.Set;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.function.LongPredicate;
 
+import org.neo4j.function.Predicates;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.store.NodeLabelsField;
-import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
-import static java.util.Collections.emptySet;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class DefaultNodeCursor extends NodeRecord implements NodeCursor
+class DefaultNodeCursor implements NodeCursor
 {
     private Read read;
-    private RecordCursor<DynamicRecord> labelCursor;
-    private PageCursor pageCursor;
-    private long next;
-    private long highMark;
     private HasChanges hasChanges = HasChanges.MAYBE;
-    private Set<Long> addedNodes;
+    private Iterator<Long> addedNodes;
+    private StoreNodeCursor storeCursor;
+    private long single;
 
     private final DefaultCursors pool;
 
     DefaultNodeCursor( DefaultCursors pool )
     {
-        super( NO_ID );
         this.pool = pool;
+        this.storeCursor = new StoreNodeCursor();
     }
 
     void scan( Read read )
     {
-        if ( getId() != NO_ID )
-        {
-            reset();
-        }
-        if ( pageCursor == null )
-        {
-            pageCursor = read.nodePage( 0 );
-        }
-        this.next = 0;
-        this.highMark = read.nodeHighMark();
+        storeCursor.scan( read );
         this.read = read;
+        this.single = NO_ID;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = emptySet();
+        this.addedNodes = Collections.emptyIterator();
     }
 
     void single( long reference, Read read )
     {
-        if ( getId() != NO_ID )
-        {
-            reset();
-        }
-        if ( pageCursor == null )
-        {
-            pageCursor = read.nodePage( reference );
-        }
-        this.next = reference;
-        //This marks the cursor as a "single cursor"
-        this.highMark = NO_ID;
+        storeCursor.single( reference, read );
         this.read = read;
+        this.single = reference;
         this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = emptySet();
+        this.addedNodes = Collections.emptyIterator();
     }
 
     @Override
     public long nodeReference()
     {
-        return getId();
+        return storeCursor.nodeReference();
     }
 
     @Override
@@ -104,15 +84,15 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
-            if ( txState.nodeIsAddedInThisTx( getId() ) )
+            if ( txState.nodeIsAddedInThisTx( storeCursor.nodeReference() ) )
             {
                 //Node just added, no reason to go down to store and check
-                return Labels.from( txState.nodeStateLabelDiffSets( getId() ).getAdded() );
+                return Labels.from( txState.nodeStateLabelDiffSets( storeCursor.nodeReference() ).getAdded() );
             }
             else
             {
                 //Get labels from store and put in intSet, unfortunately we get longs back
-                long[] longs = NodeLabelsField.get( this, labelCursor() );
+                long[] longs = storeCursor.labels();
                 final MutableIntSet labels = new IntHashSet();
                 for ( long labelToken : longs )
                 {
@@ -120,13 +100,13 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
                 }
 
                 //Augment what was found in store with what we have in tx state
-                return Labels.from( txState.augmentLabels( labels, txState.getNodeState( getId() ) ) );
+                return Labels.from( txState.augmentLabels( labels, txState.getNodeState( storeCursor.nodeReference() ) ) );
             }
         }
         else
         {
             //Nothing in tx state, just read the data.
-            return Labels.from( NodeLabelsField.get( this, labelCursor()) );
+            return Labels.from( storeCursor.labels() );
         }
     }
 
@@ -136,7 +116,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
-            ReadableDiffSets<Integer> diffSets = txState.nodeStateLabelDiffSets( getId() );
+            ReadableDiffSets<Integer> diffSets = txState.nodeStateLabelDiffSets( storeCursor.nodeReference() );
             if ( diffSets.getAdded().contains( label ) )
             {
                 return true;
@@ -148,124 +128,71 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         }
 
         //Get labels from store and put in intSet, unfortunately we get longs back
-        long[] longs = NodeLabelsField.get( this, labelCursor() );
-        for ( long labelToken : longs )
-        {
-            if ( labelToken == label )
-            {
-                assert (int) labelToken == labelToken : "value too big to be represented as and int";
-                return true;
-            }
-        }
-        return false;
+        return storeCursor.hasLabel( label );
     }
 
     @Override
     public boolean hasProperties()
     {
-        return nextProp != NO_ID;
+        return storeCursor.hasProperties();
     }
 
     @Override
     public void relationships( RelationshipGroupCursor cursor )
     {
-        read.relationshipGroups( getId(), relationshipGroupReference(), cursor );
+        read.relationshipGroups( storeCursor.nodeReference(), relationshipGroupReference(), cursor );
     }
 
     @Override
     public void allRelationships( RelationshipTraversalCursor cursor )
     {
-        read.relationships( getId(), allRelationshipsReference(), cursor );
+        read.relationships( storeCursor.nodeReference(), allRelationshipsReference(), cursor );
     }
 
     @Override
     public void properties( PropertyCursor cursor )
     {
-        read.nodeProperties( getId(), propertiesReference(), cursor );
+        read.nodeProperties( storeCursor.nodeReference(), propertiesReference(), cursor );
     }
 
     @Override
     public long relationshipGroupReference()
     {
-        return isDense() ? getNextRel() : GroupReferenceEncoding.encodeRelationship( getNextRel() );
+        return storeCursor.relationshipGroupReference();
     }
 
     @Override
     public long allRelationshipsReference()
     {
-        return isDense() ? RelationshipReferenceEncoding.encodeGroup( getNextRel() ) : getNextRel();
+        return storeCursor.allRelationshipsReference();
     }
 
     @Override
     public long propertiesReference()
     {
-        return getNextProp();
+        return storeCursor.propertiesReference();
+    }
+
+    @Override
+    public boolean isDense()
+    {
+        return storeCursor.isDense();
     }
 
     @Override
     public boolean next()
     {
-        if ( next == NO_ID )
-        {
-            reset();
-            return false;
-        }
-
         // Check tx state
         boolean hasChanges = hasChanges();
-        TransactionState txs = hasChanges ? read.txState() : null;
+        LongPredicate isDeleted = hasChanges ? read.txState()::nodeIsDeletedInThisTx : Predicates.alwaysFalseLong;
 
-        do
+        if ( hasChanges && addedNodes.hasNext() )
         {
-            if ( hasChanges && containsNode( txs ) )
-            {
-                setId( next++ );
-                setInUse( true );
-            }
-            else if ( hasChanges && txs.nodeIsDeletedInThisTx( next ) )
-            {
-                next++;
-                setInUse( false );
-            }
-            else
-            {
-                read.node( this, next++, pageCursor );
-            }
-
-            if ( next > highMark )
-            {
-                if ( isSingle() )
-                {
-                    //we are a "single cursor"
-                    next = NO_ID;
-                    return inUse();
-                }
-                else
-                {
-                    //we are a "scan cursor"
-                    //Check if there is a new high mark
-                    highMark = read.nodeHighMark();
-                    if ( next > highMark )
-                    {
-                        next = NO_ID;
-                        return inUse();
-                    }
-                }
-            }
-            else if ( next < 0 )
-            {
-                //no more longs out there...
-                next = NO_ID;
-                return inUse();
-            }
+            storeCursor.setCurrent( addedNodes.next() );
+            return true;
         }
-        while ( !inUse() );
-        return true;
-    }
 
-    private boolean containsNode( TransactionState txs )
-    {
-        return isSingle() ? txs.nodeIsAddedInThisTx( next ) : addedNodes.contains( next );
+        return storeCursor.next( isDeleted );
     }
 
     @Override
@@ -275,8 +202,8 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         {
             read = null;
             hasChanges = HasChanges.MAYBE;
-            addedNodes = emptySet();
-            reset();
+            addedNodes = Collections.emptyIterator();
+            storeCursor.reset();
 
             pool.accept( this );
         }
@@ -300,9 +227,14 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             boolean changes = read.hasTxStateWithChanges();
             if ( changes )
             {
-                if ( !isSingle() )
+                if ( single != NO_ID )
                 {
-                    addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot();
+                    addedNodes = read.txState().nodeIsAddedInThisTx( single ) ?
+                                 Iterators.iterator( single ) : Collections.emptyIterator();
+                }
+                else
+                {
+                    addedNodes = read.txState().addedAndRemovedNodes().getAddedSnapshot().iterator();
                 }
                 hasChanges = HasChanges.YES;
             }
@@ -320,27 +252,6 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         }
     }
 
-    private void reset()
-    {
-        next = NO_ID;
-        setId( NO_ID );
-        clear();
-    }
-
-    private RecordCursor<DynamicRecord> labelCursor()
-    {
-        if ( labelCursor == null )
-        {
-            labelCursor = read.labelCursor();
-        }
-        return labelCursor;
-    }
-
-    private boolean isSingle()
-    {
-        return highMark == NO_ID;
-    }
-
     @Override
     public String toString()
     {
@@ -350,22 +261,12 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         }
         else
         {
-            return "NodeCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", underlying record=" + super.toString() + " ]";
+            return "NodeCursor[id=" + nodeReference() + ", open state with: underlying record=" + storeCursor.toString() + " ]";
         }
     }
 
     void release()
     {
-        if ( labelCursor != null )
-        {
-            labelCursor.close();
-            labelCursor = null;
-        }
-
-        if ( pageCursor != null )
-        {
-            pageCursor.close();
-            pageCursor = null;
-        }
+        storeCursor.release();
     }
 }

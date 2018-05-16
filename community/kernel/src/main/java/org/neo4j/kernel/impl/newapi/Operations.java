@@ -320,7 +320,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             }
             else
             {
-                txState.relationshipDoDelete( relationship, relationshipCursor.getType(),
+                txState.relationshipDoDelete( relationship, relationshipCursor.type(),
                         relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
             }
             return true;

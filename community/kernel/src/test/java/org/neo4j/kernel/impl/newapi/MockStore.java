@@ -220,7 +220,6 @@ public class MockStore extends Read implements TestRule
     public long countsForNode( int labelId )
     {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
@@ -272,123 +271,109 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException
+    public ProcedureHandle procedureGet( QualifiedName name )
     {
         throw new UnsupportedOperationException( "not implemented" );
-
     }
 
     @Override
-    public Set<ProcedureSignature> proceduresGetAll(  ) throws ProcedureException
+    public Set<ProcedureSignature> proceduresGetAll(  )
     {
         throw new UnsupportedOperationException( "not implemented" );
-
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallRead( int id, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallReadOverride( int id, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallWrite( int id, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( int id, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallSchema( int id, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( int id, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] arguments )
-            throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public AnyValue functionCall( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
+    public AnyValue functionCall( QualifiedName name, AnyValue[] arguments )
     {
        throw new UnsupportedOperationException();
     }
 
     @Override
-    public AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
+    public AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments )
     {
        throw new UnsupportedOperationException();
     }
 
     @Override
-    public UserAggregator aggregationFunction( QualifiedName name ) throws ProcedureException
+    public UserAggregator aggregationFunction( QualifiedName name )
     {
        throw new UnsupportedOperationException();
     }
 
     @Override
-    public UserAggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
+    public UserAggregator aggregationFunctionOverride( QualifiedName name )
     {
        throw new UnsupportedOperationException();
     }
@@ -400,25 +385,25 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
+    public AnyValue functionCall( int id, AnyValue[] arguments )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public AnyValue functionCallOverride( int id, AnyValue[] arguments ) throws ProcedureException
+    public AnyValue functionCallOverride( int id, AnyValue[] arguments )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public UserAggregator aggregationFunction( int id ) throws ProcedureException
+    public UserAggregator aggregationFunction( int id )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
+    public UserAggregator aggregationFunctionOverride( int id )
     {
         throw new UnsupportedOperationException();
     }
@@ -431,7 +416,6 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public Map<String,String> nodeExplicitIndexGetConfiguration( String indexName )
-            throws ExplicitIndexNotFoundKernelException
     {
         throw new UnsupportedOperationException();
     }
@@ -456,7 +440,6 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName )
-            throws ExplicitIndexNotFoundKernelException
     {
         throw new UnsupportedOperationException();
     }
@@ -617,13 +600,13 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    TextValue string( DefaultPropertyCursor cursor, long reference, PageCursor page )
+    TextValue string( StorePropertyCursor cursor, long reference, PageCursor page )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    ArrayValue array( DefaultPropertyCursor cursor, long reference, PageCursor page )
+    ArrayValue array( StorePropertyCursor cursor, long reference, PageCursor page )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
