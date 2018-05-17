@@ -171,7 +171,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         @Override
         void markTreeAsOnline() throws IOException
         {
-            tree.checkpoint( IOLimiter.unlimited(), settings.headerWriter( BYTE_ONLINE ) );
+            tree.checkpoint( IOLimiter.UNLIMITED, settings.headerWriter( BYTE_ONLINE ) );
         }
     }
 

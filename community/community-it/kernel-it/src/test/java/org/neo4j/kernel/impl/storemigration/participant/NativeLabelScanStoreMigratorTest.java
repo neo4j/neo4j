@@ -215,7 +215,7 @@ public class NativeLabelScanStoreMigratorTest
             {
                 labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[0], new long[]{1} ) );
             }
-            nativeLabelScanStore.force( IOLimiter.unlimited() );
+            nativeLabelScanStore.force( IOLimiter.UNLIMITED );
         }
     }
 

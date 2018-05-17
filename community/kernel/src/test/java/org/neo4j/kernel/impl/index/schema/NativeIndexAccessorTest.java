@@ -214,7 +214,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
             applyUpdatesToExpectedData( expectedData, batch );
             // verifyUpdates
             forceAndCloseAccessor();
-            verifyUpdates( expectedData.toArray( new IndexEntryUpdate[expectedData.size()] ) );
+            verifyUpdates( expectedData.toArray( new IndexEntryUpdate[0] ) );
             setupAccessor();
         }
     }
@@ -551,7 +551,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
         processAll( data );
 
         // when
-        accessor.force( IOLimiter.unlimited() );
+        accessor.force( IOLimiter.UNLIMITED );
         accessor.close();
 
         // then
@@ -878,7 +878,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     @SuppressWarnings( "unchecked" )
     private IndexEntryUpdate<IndexDescriptor> selectRandomItem( Set<IndexEntryUpdate<IndexDescriptor>> expectedData )
     {
-        return expectedData.toArray( new IndexEntryUpdate[expectedData.size()] )[random.nextInt( expectedData.size() )];
+        return expectedData.toArray( new IndexEntryUpdate[0] )[random.nextInt( expectedData.size() )];
     }
 
     @SafeVarargs
@@ -896,7 +896,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
 
     private void forceAndCloseAccessor() throws IOException
     {
-        accessor.force( IOLimiter.unlimited() );
+        accessor.force( IOLimiter.UNLIMITED );
         closeAccessor();
     }
 

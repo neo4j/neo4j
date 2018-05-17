@@ -117,7 +117,7 @@ public class LuceneIndexProviderTest
                 new DirectoryFactory.InMemoryDirectoryFactory(), fs, graphDbDir );
 
         // We assert that 'force' does not throw an exception
-        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force( IOLimiter.unlimited() );
+        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force( IOLimiter.UNLIMITED );
     }
 
     private void createEmptySchemaIndex( DirectoryFactory directoryFactory ) throws IOException

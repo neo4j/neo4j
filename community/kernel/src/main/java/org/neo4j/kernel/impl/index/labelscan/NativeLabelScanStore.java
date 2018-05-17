@@ -433,7 +433,7 @@ public class NativeLabelScanStore implements LabelScanStore
                 numberOfNodes = fullStoreChangeStream.applyTo( writer );
             }
 
-            index.checkpoint( IOLimiter.unlimited(), writeClean );
+            index.checkpoint( IOLimiter.UNLIMITED, writeClean );
 
             monitor.rebuilt( numberOfNodes );
             needsRebuild = false;

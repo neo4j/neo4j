@@ -164,7 +164,7 @@ public class RecordStorageEngineTest
     @Test
     public void mustFlushStoresWithGivenIOLimiter()
     {
-        IOLimiter limiter = ( stamp, completedIOs, swapper ) -> 0;
+        IOLimiter limiter = IOLimiter.UNLIMITED;
         FileSystemAbstraction fs = fsRule.get();
         AtomicReference<IOLimiter> observedLimiter = new AtomicReference<>();
         PageCache pageCache = new DelegatingPageCache( pageCacheRule.getPageCache( fs ) )

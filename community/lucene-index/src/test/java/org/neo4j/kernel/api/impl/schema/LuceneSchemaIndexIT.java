@@ -88,7 +88,7 @@ public class LuceneSchemaIndexIT
         try ( LuceneIndexAccessor indexAccessor = createDefaultIndexAccessor() )
         {
             generateUpdates( indexAccessor, 32 );
-            indexAccessor.force( IOLimiter.unlimited() );
+            indexAccessor.force( IOLimiter.UNLIMITED );
 
             // When & Then
             List<String> singlePartitionFileTemplates = Arrays.asList( ".cfe", ".cfs", ".si", "segments_1" );

@@ -518,7 +518,7 @@ public class RecoveryIT
 
     private void flush( GraphDatabaseService db )
     {
-        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.unlimited() );
+        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.UNLIMITED );
     }
 
     private void checkPoint( GraphDatabaseService db ) throws IOException

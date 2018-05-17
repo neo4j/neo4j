@@ -261,7 +261,7 @@ public class TestRecoveryScenarios
                     @Override
                     void flush( GraphDatabaseAPI db )
                     {
-                        IOLimiter limiter = IOLimiter.unlimited();
+                        IOLimiter limiter = IOLimiter.UNLIMITED;
                         db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( limiter );
                     }
                 },

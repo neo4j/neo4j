@@ -130,7 +130,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( Procedures.class ),
-                IOLimiter.unlimited(),
+                IOLimiter.UNLIMITED,
                 availabilityGuard, clock,
                 new CanWrite(), new StoreCopyCheckPointMutex(),
                 RecoveryCleanupWorkCollector.IMMEDIATE,

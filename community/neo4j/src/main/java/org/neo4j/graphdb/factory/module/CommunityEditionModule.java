@@ -141,7 +141,7 @@ public class CommunityEditionModule extends EditionModule
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
-        ioLimiter = IOLimiter.unlimited();
+        ioLimiter = IOLimiter.UNLIMITED;
 
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 

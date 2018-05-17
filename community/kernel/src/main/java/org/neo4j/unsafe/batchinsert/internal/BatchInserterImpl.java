@@ -972,7 +972,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         try
         {
             repopulateAllIndexes();
-            labelScanStore.force( IOLimiter.unlimited() );
+            labelScanStore.force( IOLimiter.UNLIMITED );
         }
         catch ( IOException | IndexEntryConflictException e )
         {
