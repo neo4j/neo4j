@@ -29,10 +29,10 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
 
 class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements IndexPopulator
 {
@@ -40,9 +40,10 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     private final DropAction dropAction;
     private final boolean archiveFailedIndex;
 
-    FusionIndexPopulator( IndexPopulator[] populators, Selector selector, long indexId, DropAction dropAction, boolean archiveFailedIndex )
+    FusionIndexPopulator( SlotSelector slotSelector, InstanceSelector<IndexPopulator> instanceSelector, long indexId, DropAction dropAction,
+            boolean archiveFailedIndex )
     {
-        super( populators, selector );
+        super( slotSelector, instanceSelector );
         this.indexId = indexId;
         this.dropAction = dropAction;
         this.archiveFailedIndex = archiveFailedIndex;
@@ -52,37 +53,33 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     public void create() throws IOException
     {
         dropAction.drop( indexId, archiveFailedIndex );
-        forAll( IndexPopulator::create, instances );
+        instanceSelector.forAll( IndexPopulator::create );
     }
 
     @Override
     public void drop()
     {
-        forAll( IndexPopulator::drop, instances );
+        instanceSelector.forAll( IndexPopulator::drop );
         dropAction.drop( indexId );
     }
 
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
-        Collection<IndexEntryUpdate<?>>[] batches = new Collection[instances.length];
+        LazyInstanceSelector<Collection<IndexEntryUpdate<?>>> batchSelector =
+                new LazyInstanceSelector<>( new Collection[INSTANCE_COUNT], slot -> new ArrayList<>() );
         for ( IndexEntryUpdate<?> update : updates )
         {
-            int slot = selector.selectSlot( update.values() );
-            Collection<IndexEntryUpdate<?>> batch = batches[slot];
-            if ( batch == null )
-            {
-                batch = new ArrayList<>();
-                batches[slot] = batch;
-            }
-            batch.add( update );
+            batchSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).add( update );
         }
 
-        for ( int i = 0; i < instances.length; i++ )
+        // Manual loop due do multiple exception types
+        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
         {
-            if ( batches[i] != null )
+            Collection<IndexEntryUpdate<?>> batch = batchSelector.getIfInstantiated( slot );
+            if ( batch != null )
             {
-                instances[i].add( batches[i] );
+                this.instanceSelector.select( slot ).add( batch );
             }
         }
     }
@@ -91,39 +88,42 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        for ( IndexPopulator populator : instances )
+        // Manual loop due do multiple exception types
+        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
         {
-            populator.verifyDeferredConstraints( propertyAccessor );
+            instanceSelector.select( slot ).verifyDeferredConstraints( propertyAccessor );
         }
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        return new FusionIndexUpdater( instancesAs( IndexUpdater.class, populator -> populator.newPopulatingUpdater( accessor ) ), selector );
+        LazyInstanceSelector<IndexUpdater> updaterSelector =
+                new LazyInstanceSelector<>( new IndexUpdater[INSTANCE_COUNT], slot -> instanceSelector.select( slot ).newPopulatingUpdater( accessor ) );
+        return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
 
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( populator -> populator.close( populationCompletedSuccessfully ), instances );
+        instanceSelector.close( populator -> populator.close( populationCompletedSuccessfully ) );
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        forAll( populator -> populator.markAsFailed( failure ), instances );
+        instanceSelector.forAll( populator -> populator.markAsFailed( failure ) );
     }
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        selector.select( instances, update.values() ).includeSample( update );
+        instanceSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).includeSample( update );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples( instancesAs( IndexSample.class, IndexPopulator::sampleResult ) );
+        return combineSamples( instanceSelector.instancesAs( new IndexSample[INSTANCE_COUNT], IndexPopulator::sampleResult ) );
     }
 }

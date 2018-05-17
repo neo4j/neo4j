@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSelector00;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSlotSelector00;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -111,7 +111,7 @@ public class LuceneIndexProviderFactory extends
         {
             priority = 100;
         }
-        return new FusionIndexProvider( EMPTY, EMPTY, spatial, temporal, lucene, new FusionSelector00(),
+        return new FusionIndexProvider( EMPTY, EMPTY, spatial, temporal, lucene, new FusionSlotSelector00(),
                 PROVIDER_DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs, archiveFailedIndex );
     }
 

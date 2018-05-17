@@ -28,20 +28,16 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.Race;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -132,7 +128,7 @@ public class TemporalIndexCacheTest
         }, 1 );
         race.addContestant( () ->
         {
-            cache.shutInstantiateCloseLock();
+            cache.closeInstantiateCloseLock();
             instantiatedAtClose.setValue( count( cache ) );
         }, 1 );
 

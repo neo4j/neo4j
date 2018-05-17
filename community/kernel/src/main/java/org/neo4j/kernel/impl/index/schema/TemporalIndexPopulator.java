@@ -109,7 +109,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        shutInstantiateCloseLock();
+        closeInstantiateCloseLock();
         for ( NativeSchemaIndexPopulator part : this )
         {
             part.close( populationCompletedSuccessfully );

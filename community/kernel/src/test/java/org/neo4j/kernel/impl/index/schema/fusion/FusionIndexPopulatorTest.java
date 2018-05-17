@@ -50,17 +50,17 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyCallFail;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
 
 @RunWith( Parameterized.class )
 public class FusionIndexPopulatorTest
@@ -120,7 +120,7 @@ public class FusionIndexPopulatorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexPopulator = new FusionIndexPopulator( populators, fusionVersion.selector(), indexId, dropAction, false );
+        fusionIndexPopulator = new FusionIndexPopulator( fusionVersion.slotSelector(), new InstanceSelector<>( populators ), indexId, dropAction, false );
     }
 
     private void resetMocks()
@@ -232,7 +232,7 @@ public class FusionIndexPopulatorTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyAddWithCorrectPopulator( populators[FusionIndexBase.LUCENE], firstValue, secondValue );
+                verifyAddWithCorrectPopulator( populators[LUCENE], firstValue, secondValue );
             }
         }
     }
@@ -302,9 +302,10 @@ public class FusionIndexPopulatorTest
     @Test
     public void closeMustThrowIfCloseAnyThrow() throws Exception
     {
-        for ( IndexPopulator alivePopulator : alivePopulators )
+        for ( int i = 0; i < alivePopulators.length; i++ )
         {
             // given
+            IndexPopulator alivePopulator = alivePopulators[i];
             IOException failure = new IOException( "fail" );
             doThrow( failure ).when( alivePopulator ).close( anyBoolean() );
 
@@ -314,8 +315,7 @@ public class FusionIndexPopulatorTest
                 return null;
             } );
 
-            // reset throw for testing of next populator
-            doAnswer( invocation -> null ).when( alivePopulator ).close( anyBoolean() );
+            initiateMocks();
         }
     }
 
@@ -345,10 +345,11 @@ public class FusionIndexPopulatorTest
     @Test
     public void closeMustCloseOthersIfAnyThrow() throws Exception
     {
-        for ( IndexPopulator throwingPopulator : alivePopulators )
+        for ( int i = 0; i < alivePopulators.length; i++ )
         {
+            IndexPopulator throwingPopulator = alivePopulators[i];
             verifyOtherCloseOnThrow( throwingPopulator );
-            resetMocks();
+            initiateMocks();
         }
     }
 

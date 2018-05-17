@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
@@ -55,15 +54,16 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.GROUP_OF;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
 
 @RunWith( Parameterized.class )
 public class FusionIndexProviderTest
@@ -73,7 +73,8 @@ public class FusionIndexProviderTest
     private IndexProvider[] providers;
     private IndexProvider[] aliveProviders;
     private IndexProvider fusionIndexProvider;
-    private Selector selector;
+    private SlotSelector slotSelector;
+    private InstanceSelector<IndexProvider> instanceSelector;
 
     @Parameterized.Parameters( name = "{0}" )
     public static FusionVersion[] versions()
@@ -90,7 +91,7 @@ public class FusionIndexProviderTest
     @Before
     public void setup()
     {
-        selector = fusionVersion.selector();
+        slotSelector = fusionVersion.slotSelector();
         setupMocks();
     }
 
@@ -110,7 +111,7 @@ public class FusionIndexProviderTest
             for ( Value value : group )
             {
                 // when
-                IndexProvider selected = selector.select( providers, value );
+                IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( value ), GROUP_OF ) );
 
                 // then
                 assertSame( orLucene( providers[i] ), selected );
@@ -123,7 +124,7 @@ public class FusionIndexProviderTest
             for ( Value secondValue : allValues )
             {
                 // when
-                IndexProvider selected = selector.select( providers, firstValue, secondValue );
+                IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( firstValue, secondValue ), GROUP_OF ) );
 
                 // then
                 assertSame( providers[LUCENE], selected );
@@ -318,7 +319,8 @@ public class FusionIndexProviderTest
                 providers[SPATIAL],
                 providers[TEMPORAL],
                 providers[LUCENE],
-                fusionVersion.selector(), DESCRIPTOR, 10, NONE, mock( FileSystemAbstraction.class ), false );
+                fusionVersion.slotSelector(), DESCRIPTOR, 10, NONE, mock( FileSystemAbstraction.class ), false );
+        instanceSelector = new InstanceSelector<>( providers );
     }
 
     private IndexProvider mockProvider( Class<? extends IndexProvider> providerClass, String name )

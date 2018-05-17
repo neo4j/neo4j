@@ -21,10 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -37,13 +33,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  *
  * @param <T> Type of parts
  */
-class SpatialIndexCache<T> implements Iterable<T>
+class SpatialIndexCache<T> extends IndexPartsCache<CoordinateReferenceSystem,T>
 {
     private final Factory<T> factory;
-    private ConcurrentHashMap<CoordinateReferenceSystem,T> spatials = new ConcurrentHashMap<>();
-    private final Lock instantiateCloseLock = new ReentrantLock();
-    // guarded by instantiateCloseLock
-    private boolean closed;
 
     SpatialIndexCache( Factory<T> factory )
     {
@@ -59,7 +51,7 @@ class SpatialIndexCache<T> implements Iterable<T>
      */
     T uncheckedSelect( CoordinateReferenceSystem crs )
     {
-        T existing = spatials.get( crs );
+        T existing = cache.get( crs );
         if ( existing != null )
         {
             return existing;
@@ -72,7 +64,7 @@ class SpatialIndexCache<T> implements Iterable<T>
         try
         {
             assertOpen();
-            return spatials.computeIfAbsent( crs, key ->
+            return cache.computeIfAbsent( crs, key ->
             {
                 try
                 {
@@ -88,21 +80,6 @@ class SpatialIndexCache<T> implements Iterable<T>
         {
             instantiateCloseLock.unlock();
         }
-    }
-
-    protected void assertOpen()
-    {
-        if ( closed )
-        {
-            throw new IllegalStateException( this + " is already closed" );
-        }
-    }
-
-    void closeInstantiateCloseLock()
-    {
-        instantiateCloseLock.lock();
-        closed = true;
-        instantiateCloseLock.unlock();
     }
 
     /**
@@ -136,7 +113,7 @@ class SpatialIndexCache<T> implements Iterable<T>
      */
     <RESULT> RESULT selectOrElse( CoordinateReferenceSystem crs, Function<T, RESULT> function, RESULT orElse )
     {
-        T part = spatials.get( crs );
+        T part = cache.get( crs );
         if ( part == null )
         {
             return orElse;
@@ -150,12 +127,6 @@ class SpatialIndexCache<T> implements Iterable<T>
         {
             uncheckedSelect( crs );
         }
-    }
-
-    @Override
-    public Iterator<T> iterator()
-    {
-        return spatials.values().iterator();
     }
 
     /**

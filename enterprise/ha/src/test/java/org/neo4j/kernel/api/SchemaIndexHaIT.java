@@ -454,7 +454,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
         {
             return delegate.newPopulatingUpdater( propertyAccessor );
         }

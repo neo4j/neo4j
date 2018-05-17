@@ -27,6 +27,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.IntFunction;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -36,24 +37,26 @@ import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.ArrayUtil.without;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.change;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.remove;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
 
 @RunWith( Parameterized.class )
 public class FusionIndexUpdaterTest
@@ -113,7 +116,15 @@ public class FusionIndexUpdaterTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexUpdater = new FusionIndexUpdater( updaters, fusionVersion.selector() );
+        fusionIndexUpdater = new FusionIndexUpdater( fusionVersion.slotSelector(), new LazyInstanceSelector<>( updaters, throwingFactory() ) );
+    }
+
+    private IntFunction<IndexUpdater> throwingFactory()
+    {
+        return i ->
+        {
+            throw new IllegalStateException( "All updaters should exist already" );
+        };
     }
 
     private void resetMocks()
@@ -325,20 +336,22 @@ public class FusionIndexUpdaterTest
     @Test
     public void closeMustThrowIfAnyThrow() throws Exception
     {
-        for ( IndexUpdater updater : aliveUpdaters )
+        for ( int i = 0; i < aliveUpdaters.length; i++ )
         {
+            IndexUpdater updater = aliveUpdaters[i];
             FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updater, fusionIndexUpdater );
-            resetMocks();
+            initiateMocks();
         }
     }
 
     @Test
     public void closeMustCloseOthersIfAnyThrow() throws Exception
     {
-        for ( IndexUpdater updater : aliveUpdaters )
+        for ( int i = 0; i < aliveUpdaters.length; i++ )
         {
+            IndexUpdater updater = aliveUpdaters[i];
             FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updater, fusionIndexUpdater, without( aliveUpdaters, updater ) );
-            resetMocks();
+            initiateMocks();
         }
     }
 
@@ -346,5 +359,38 @@ public class FusionIndexUpdaterTest
     public void closeMustThrowIfAllThrow() throws Exception
     {
         FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow( fusionIndexUpdater, aliveUpdaters );
+    }
+
+    @Test
+    public void shouldInstantiatePartLazilyForSpecificValueGroupUpdates() throws IOException, IndexEntryConflictException
+    {
+        // given
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
+        for ( int i = 0; i < updaters.length; i++ )
+        {
+            if ( updaters[i] != SwallowingIndexUpdater.INSTANCE )
+            {
+                // when
+                Value value = values[i][0];
+                fusionIndexUpdater.process( add( value ) );
+                for ( int j = 0; j < updaters.length; j++ )
+                {
+                    // then
+                    if ( updaters[j] != SwallowingIndexUpdater.INSTANCE )
+                    {
+                        if ( i == j )
+                        {
+                            verify( updaters[i] ).process( any( IndexEntryUpdate.class ) );
+                        }
+                        else
+                        {
+                            verifyNoMoreInteractions( updaters[j] );
+                        }
+                    }
+                }
+            }
+
+            initiateMocks();
+        }
     }
 }

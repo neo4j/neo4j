@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
 
 enum FusionVersion
 {
@@ -36,9 +36,9 @@ enum FusionVersion
                 }
 
                 @Override
-                FusionIndexProvider.Selector selector()
+                SlotSelector slotSelector()
                 {
-                    return new FusionSelector00();
+                    return new FusionSlotSelector00();
                 }
             },
     v10
@@ -50,9 +50,9 @@ enum FusionVersion
                 }
 
                 @Override
-                FusionIndexProvider.Selector selector()
+                SlotSelector slotSelector()
                 {
-                    return new FusionSelector10();
+                    return new FusionSlotSelector10();
                 }
             },
     v20
@@ -64,13 +64,13 @@ enum FusionVersion
                 }
 
                 @Override
-                FusionIndexProvider.Selector selector()
+                SlotSelector slotSelector()
                 {
-                    return new FusionSelector20();
+                    return new FusionSlotSelector20();
                 }
             };
 
     abstract int[] aliveSlots();
 
-    abstract FusionIndexProvider.Selector selector();
+    abstract SlotSelector slotSelector();
 }
