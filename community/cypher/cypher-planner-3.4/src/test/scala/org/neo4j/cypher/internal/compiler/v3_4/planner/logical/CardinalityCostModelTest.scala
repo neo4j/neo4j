@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.ir.v3_4.LazyMode
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.util.v3_4.{Cardinality, Cost}
+import org.neo4j.cypher.internal.util.v3_4.Cost
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.{HasLabels, LabelName, SemanticDirection}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
-class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport2  {
+class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("expand should only be counted once") {
     val cardinalities = new Cardinalities
@@ -42,7 +42,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
           ), cardinalities, 10.0), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)
       ), cardinalities, 10.0)
 
-    CardinalityCostModel(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(231))
+    costFor(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(231))
   }
 
   test("should introduce increase cost when estimating an eager operator and lazyness is preferred") {
@@ -57,7 +57,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
     val whatever = QueryGraphSolverInput.empty
 
-    CardinalityCostModel(plan, whatever, cardinalities) should be < CardinalityCostModel(plan, pleaseLazy, cardinalities)
+    costFor(plan, whatever, cardinalities) should be < costFor(plan, pleaseLazy, cardinalities)
   }
 
   test("non-lazy plan should be penalized when estimating cost wrt a lazy one when lazyness is preferred") {
@@ -91,10 +91,10 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     ), eagerCardinalities, 250.0)
 
     val whatever = QueryGraphSolverInput.empty
-    CardinalityCostModel(lazyPlan, whatever, lazyCardinalities) should be > CardinalityCostModel(eagerPlan, whatever, eagerCardinalities)
+    costFor(lazyPlan, whatever, lazyCardinalities) should be > costFor(eagerPlan, whatever, eagerCardinalities)
 
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
-    CardinalityCostModel(lazyPlan, pleaseLazy, lazyCardinalities) should be < CardinalityCostModel(eagerPlan, pleaseLazy, eagerCardinalities)
+    costFor(lazyPlan, pleaseLazy, lazyCardinalities) should be < costFor(eagerPlan, pleaseLazy, eagerCardinalities)
   }
 
   test("multiple property expressions are counted for in cost") {
@@ -106,8 +106,14 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val numberOfPredicates = 3
     val costForSelection = cardinality * numberOfPredicates
-    val costForArgument = cardinality *   .1
-    CardinalityCostModel(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(costForSelection + costForArgument))
+    val costForArgument = cardinality * .1
+    costFor(plan, QueryGraphSolverInput.empty, cardinalities) should equal(Cost(costForSelection + costForArgument))
+  }
+
+  private def costFor(plan: LogicalPlan,
+                      input: QueryGraphSolverInput = QueryGraphSolverInput.empty,
+                      cardinalities: Cardinalities) = {
+    CardinalityCostModel(cypherCompilerConfig).apply(plan, input, cardinalities)
   }
 
 }

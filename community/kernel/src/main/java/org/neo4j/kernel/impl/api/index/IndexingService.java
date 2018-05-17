@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,11 +21,15 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
@@ -53,6 +57,7 @@ import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -69,6 +74,8 @@ import org.neo4j.values.storable.Value;
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -101,6 +108,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private final Monitor monitor;
     private final SchemaState schemaState;
     private final IndexPopulationJobController populationJobController;
+    private final Map<Long,IndexProxy> indexesToDropAfterCompletedRecovery = new HashMap<>();
 
     enum State
     {
@@ -112,6 +120,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     public interface Monitor
     {
+        void initialState( SchemaIndexDescriptor descriptor, InternalIndexState state );
+
         void populationCompleteOn( SchemaIndexDescriptor descriptor );
 
         void indexPopulationScanStarting();
@@ -123,6 +133,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     public static class MonitorAdapter implements Monitor
     {
+        @Override
+        public void initialState( SchemaIndexDescriptor descriptor, InternalIndexState state )
+        {   // Do nothing
+        }
+
         @Override
         public void populationCompleteOn( SchemaIndexDescriptor descriptor )
         {   // Do nothing
@@ -201,18 +216,19 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 switch ( initialState )
                 {
                 case ONLINE:
-                    indexProxy =
-                    indexProxyCreator.createOnlineIndexProxy( indexId, descriptor, providerDescriptor );
+                    monitor.initialState( descriptor, ONLINE );
+                    indexProxy = indexProxyCreator.createOnlineIndexProxy( indexId, descriptor, providerDescriptor );
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
+                    monitor.initialState( descriptor, POPULATING );
                     indexProxy = indexProxyCreator.createRecoveringIndexProxy(
                             indexId, descriptor, providerDescriptor );
                     break;
                 case FAILED:
+                    monitor.initialState( descriptor, FAILED );
                     IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId, descriptor ) );
-                    indexProxy = indexProxyCreator
-                            .createFailedIndexProxy( indexId, descriptor, providerDescriptor, failure );
+                    indexProxy = indexProxyCreator.createFailedIndexProxy( indexId, descriptor, providerDescriptor, failure );
                     break;
                 default:
                     throw new IllegalArgumentException( "" + initialState );
@@ -229,6 +245,10 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     public void start() throws Exception
     {
         state = State.STARTING;
+
+        // During recovery there could have been dropped indexes. Dropping an index means also updating the counts store,
+        // which is problematic during recovery. So instead drop those indexes here, after recovery completed.
+        performRecoveredIndexDropActions();
 
         // Recovery will not do refresh (update read views) while applying recovered transactions and instead
         // do it at one point after recovery... i.e. here
@@ -325,6 +345,31 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 } );
 
         state = State.RUNNING;
+    }
+
+    private void performRecoveredIndexDropActions()
+    {
+        indexesToDropAfterCompletedRecovery.values().forEach( index ->
+        {
+            try
+            {
+                index.drop();
+            }
+            catch ( Exception e )
+            {
+                // This is OK to get during recovery because the underlying index can be in any unknown state
+                // while we're recovering. Let's just move on to closing it instead.
+                try
+                {
+                    index.close();
+                }
+                catch ( IOException closeException )
+                {
+                    // This is OK for the same reason as above
+                }
+            }
+        } );
+        indexesToDropAfterCompletedRecovery.clear();
     }
 
     /**
@@ -476,23 +521,23 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
-    public void dropIndex( IndexRule rule )
+    public void dropIndex( IndexRule rule ) throws IOException
     {
         indexMapRef.modify( indexMap ->
         {
             long indexId = rule.getId();
             IndexProxy index = indexMap.removeIndexProxy( indexId );
+
             if ( state == State.RUNNING )
             {
                 assert index != null : "Index " + rule + " doesn't exists";
-                try
-                {
-                    index.drop();
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( e );
-                }
+                index.drop();
+            }
+            else if ( index != null )
+            {
+                // Dropping an index means also updating the counts store, which is problematic during recovery.
+                // So instead make a note of it and actually perform the index drops after recovery.
+                indexesToDropAfterCompletedRecovery.put( indexId, index );
             }
             return indexMap;
         } );
@@ -696,6 +741,12 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             for ( IndexRule rule : rules )
             {
                 long ruleId = rule.getId();
+                if ( state == State.NOT_STARTED )
+                {
+                    // In case of recovery remove any previously recorded INDEX DROP for this particular index rule id,
+                    // in some scenario where rule ids may be reused.
+                    indexesToDropAfterCompletedRecovery.remove( ruleId );
+                }
                 IndexProxy index = indexMap.getIndexProxy( ruleId );
                 if ( index != null && state == State.NOT_STARTED )
                 {

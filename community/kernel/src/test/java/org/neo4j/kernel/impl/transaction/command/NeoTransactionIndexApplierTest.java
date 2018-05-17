@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -81,7 +81,8 @@ public class NeoTransactionIndexApplierTest
         after.setLabelField( 18, emptyDynamicRecords );
         final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
-        when( labelScanStore.get() ).thenReturn( mock( LabelScanWriter.class ) );
+        LabelScanWriter labelScanWriter = mock( LabelScanWriter.class );
+        when( labelScanStore.get() ).thenReturn( labelScanWriter );
 
         // when
         boolean result;

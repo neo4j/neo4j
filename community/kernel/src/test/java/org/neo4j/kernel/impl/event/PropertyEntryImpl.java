@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,14 +21,13 @@ package org.neo4j.kernel.impl.event;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.event.PropertyEntry;
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Strings;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.ArrayUtil.BOXING_AWARE_ARRAY_EQUALITY;
 
 class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
 {
@@ -114,17 +113,7 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
         }
         else
         {
-            assertEquals( o1.getClass().isArray(), o2.getClass().isArray() );
-            if ( o1.getClass().isArray() )
-            {
-                assertTrue( entityDescription + " (" + o1.getClass().getComponentType().getSimpleName() + ") " +
-                        Strings.prettyPrint( o1 ) + " not equal to " + Strings.prettyPrint( o2 ),
-                        ArrayUtil.equals( o1, o2, BOXING_AWARE_ARRAY_EQUALITY ) );
-            }
-            else
-            {
-                assertEquals( entityDescription, o1, o2 );
-            }
+            assertEquals( entityDescription, Values.of( o1 ) , Values.of( o2 ) );
         }
     }
 }

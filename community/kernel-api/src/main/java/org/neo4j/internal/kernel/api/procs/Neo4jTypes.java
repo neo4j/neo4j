@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,6 +35,7 @@ public class Neo4jTypes
     public static final FloatType NTFloat = new FloatType();
     public static final BooleanType NTBoolean = new BooleanType();
     public static final MapType NTMap = new MapType();
+    public static final ByteArrayType NTByteArray = new ByteArrayType();
     public static final NodeType NTNode = new NodeType();
     public static final RelationshipType NTRelationship = new RelationshipType();
     public static final PathType NTPath = new PathType();
@@ -168,6 +169,19 @@ public class Neo4jTypes
         }
 
         protected MapType( String name )
+        {
+            super( name );
+        }
+    }
+
+    public static class ByteArrayType extends AnyType
+    {
+        public ByteArrayType()
+        {
+            super( "BYTEARRAY?" );
+        }
+
+        protected ByteArrayType( String name )
         {
             super( name );
         }

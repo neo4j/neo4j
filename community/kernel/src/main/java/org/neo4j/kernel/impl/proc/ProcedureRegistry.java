@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -74,13 +74,13 @@ public class ProcedureRegistry
         CallableProcedure oldImplementation = procedures.get( name );
         if ( oldImplementation == null )
         {
-            procedures.put( name, proc );
+            procedures.put( name, proc, signature.caseInsensitive() );
         }
         else
         {
             if ( overrideCurrentImplementation )
             {
-                procedures.put( name, proc );
+                procedures.put( name, proc, signature.caseInsensitive() );
             }
             else
             {
@@ -103,13 +103,13 @@ public class ProcedureRegistry
         CallableUserFunction oldImplementation = functions.get( name );
         if ( oldImplementation == null )
         {
-            functions.put( name, function );
+            functions.put( name, function, signature.caseInsensitive() );
         }
         else
         {
             if ( overrideCurrentImplementation )
             {
-                functions.put( name, function );
+                functions.put( name, function, signature.caseInsensitive() );
             }
             else
             {
@@ -132,13 +132,13 @@ public class ProcedureRegistry
         CallableUserFunction oldImplementation = functions.get( name );
         if ( oldImplementation == null )
         {
-            aggregationFunctions.put( name, function );
+            aggregationFunctions.put( name, function, signature.caseInsensitive() );
         }
         else
         {
             if ( overrideCurrentImplementation )
             {
-                aggregationFunctions.put( name, function );
+                aggregationFunctions.put( name, function, signature.caseInsensitive() );
             }
             else
             {

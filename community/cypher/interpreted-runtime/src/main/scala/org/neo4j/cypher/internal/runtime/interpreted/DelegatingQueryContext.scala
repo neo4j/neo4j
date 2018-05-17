@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -287,8 +287,6 @@ class DelegatingOperations[T](protected val inner: Operations[T]) extends Operat
   override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
 
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
-
-  override def exists(id: Long): Boolean = singleDbHit(inner.exists(id))
 
   override def getByIdIfExists(id: Long): Option[T] = singleDbHit(inner.getByIdIfExists(id))
 }

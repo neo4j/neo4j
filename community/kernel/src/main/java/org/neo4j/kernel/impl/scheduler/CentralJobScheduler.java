@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -47,15 +48,30 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     // fashion.
     private final ConcurrentHashMap<Group,ExecutorService> workStealingExecutors;
 
-    private final ThreadGroup topLevelGroup;
+    private final TopLevelGroup topLevelGroup;
     private final ThreadPoolManager pools;
 
     private volatile boolean started;
 
+    private static class TopLevelGroup extends ThreadGroup
+    {
+        TopLevelGroup()
+        {
+            super( "Neo4j-" + INSTANCE_COUNTER.incrementAndGet() );
+        }
+
+        public void setName( String name ) throws Exception
+        {
+            Field field = ThreadGroup.class.getDeclaredField( "name" );
+            field.setAccessible( true );
+            field.set( this, name );
+        }
+    }
+
     public CentralJobScheduler()
     {
         workStealingExecutors = new ConcurrentHashMap<>( 1 );
-        topLevelGroup = new ThreadGroup( "Neo4j-" + INSTANCE_COUNTER.incrementAndGet() );
+        topLevelGroup = new TopLevelGroup();
         pools = new ThreadPoolManager( topLevelGroup );
         ThreadFactory threadFactory = new GroupedDaemonThreadFactory( SCHEDULER_GROUP, topLevelGroup );
         scheduler = new TimeBasedTaskScheduler( Clocks.nanoClock(), pools );
@@ -64,6 +80,18 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         schedulerThread = threadFactory.newThread( scheduler );
         int priority = Thread.NORM_PRIORITY + 1;
         schedulerThread.setPriority( priority );
+    }
+
+    @Override
+    public void setTopLevelGroupName( String name )
+    {
+        try
+        {
+            topLevelGroup.setName( name );
+        }
+        catch ( Exception ignore )
+        {
+        }
     }
 
     @Override

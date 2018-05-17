@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.backup.impl;
 
@@ -129,16 +132,9 @@ public class OnlineBackupCommandTest
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
             usage.printUsageForCommand( new OnlineBackupCommandProvider(), ps::println );
 
-            /*
-
-usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>
-                          [--from=<address>] [--protocol=<catchup>]
-                          [--fallback-to-full[=<true|false>]]
-                          [--timeout=<timeout>] [--pagecache=<8m>]
-             */
             assertEquals(
                     format( "usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>%n" +
-                            "                          [--from=<address>] [--protocol=<catchup>]%n" +
+                            "                          [--from=<address>] [--protocol=<any|catchup|common>]%n" +
                             "                          [--fallback-to-full[=<true|false>]]%n" +
                             "                          [--timeout=<timeout>] [--pagecache=<8m>]%n" +
                             "                          [--check-consistency[=<true|false>]]%n" +
@@ -173,8 +169,8 @@ usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>
                             "                                           backup will be attempted.%n" +
                             "  --from=<address>                         Host and port of Neo4j.%n" +
                             "                                           [default:localhost:6362]%n" +
-                            "  --protocol=<catchup>                     Preferred protocol to use for%n" +
-                            "                                           communication [default:any]%n" +
+                            "  --protocol=<any|catchup|common>          Preferred backup protocol%n" +
+                            "                                           [default:any]%n" +
                             "  --fallback-to-full=<true|false>          If an incremental backup fails backup%n" +
                             "                                           will move the old backup to%n" +
                             "                                           <name>.err.<N> and fallback to a full%n" +

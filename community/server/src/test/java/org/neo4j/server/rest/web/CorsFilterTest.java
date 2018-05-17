@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -49,7 +49,7 @@ public class CorsFilterTest
     private final HttpServletResponse response = responseMock();
     private final FilterChain chain = filterChainMock();
 
-    private final CorsFilter filter = new CorsFilter( NullLogProvider.getInstance() );
+    private final CorsFilter filter = new CorsFilter( NullLogProvider.getInstance(), "*" );
 
     @Test
     public void shouldCallChainDoFilter() throws Exception

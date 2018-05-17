@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -761,6 +761,39 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             fail( format(
                     "Expected at least one log statement with message as %s, but none found. Actual log calls were:\n%s",
                     description.toString(), serialize( logCalls.iterator() ) ) );
+        }
+    }
+
+    public void assertContainsExactlyOneMessageMatching( Matcher<String> messageMatcher )
+    {
+        boolean found = false;
+        synchronized ( logCalls )
+        {
+            for ( LogCall logCall : logCalls )
+            {
+                if ( messageMatcher.matches( logCall.message ) )
+                {
+                    if ( !found )
+                    {
+                        found = true;
+                    }
+                    else
+                    {
+                        StringDescription description = new StringDescription();
+                        description.appendDescriptionOf( messageMatcher );
+                        fail( format( "Expected exactly one log statement with message as %s, but multiple found. Actual log calls were:%n%s",
+                                 description.toString(), serialize( logCalls.iterator() ) ) );
+                    }
+                }
+            }
+            if ( !found )
+            {
+                StringDescription description = new StringDescription();
+                description.appendDescriptionOf( messageMatcher );
+                fail( format(
+                        "Expected at least one log statement with message as %s, but none found. Actual log calls were:\n%s",
+                        description.toString(), serialize( logCalls.iterator() ) ) );
+            }
         }
     }
 

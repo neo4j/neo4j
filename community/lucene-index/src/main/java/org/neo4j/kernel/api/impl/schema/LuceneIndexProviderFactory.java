@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,7 +43,6 @@ import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @Service.Implementation( KernelExtensionFactory.class )
@@ -83,7 +82,7 @@ public class LuceneIndexProviderFactory extends
         FileSystemAbstraction fs = dependencies.fileSystem();
         Monitors monitors = dependencies.monitors();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( LuceneIndexProvider.class );
-        monitors.addMonitorListener( new LoggingMonitor( log ), KEY );
+        monitors.addMonitorListener( new LoggingMonitor( log ), PROVIDER_DESCRIPTOR.toString() );
         IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, KEY );
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.databaseInfo().operationalMode;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,8 +30,6 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import org.neo4j.cypher.internal.compiler.v3_4.spi.NodeIdWrapper;
-import org.neo4j.cypher.internal.compiler.v3_4.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
 import org.neo4j.cypher.internal.util.v3_4.UnorderableValueException;
 import org.neo4j.graphdb.Path;
@@ -41,6 +39,8 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValues;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static java.lang.String.format;
 
@@ -189,17 +189,17 @@ public class CypherOrderability
             {
                 return LIST;
             }
-            else if ( value instanceof NodeIdWrapper )
+            else if ( value instanceof VirtualNodeValue )
             {
-                if ( ((NodeIdWrapper) value).id() == -1 )
+                if ( ((VirtualNodeValue) value).id() == -1 )
                 {
                     return VOID;
                 }
                 return NODE;
             }
-            else if ( value instanceof RelationshipIdWrapper )
+            else if ( value instanceof VirtualRelationshipValue )
             {
-                if ( ((RelationshipIdWrapper) value).id() == -1 )
+                if ( ((VirtualRelationshipValue) value).id() == -1 )
                 {
                     return VOID;
                 }
@@ -284,10 +284,10 @@ public class CypherOrderability
 
     private static Comparator<Boolean> BOOLEAN_COMPARATOR = Boolean::compareTo;
 
-    private static Comparator<NodeIdWrapper> NODE_COMPARATOR = Comparator.comparingLong( NodeIdWrapper::id );
+    private static Comparator<VirtualNodeValue> NODE_COMPARATOR = Comparator.comparingLong( VirtualNodeValue::id );
 
-    private static Comparator<RelationshipIdWrapper> RELATIONSHIP_COMPARATOR =
-            Comparator.comparingLong( RelationshipIdWrapper::id );
+    private static Comparator<VirtualRelationshipValue> RELATIONSHIP_COMPARATOR =
+            Comparator.comparingLong( VirtualRelationshipValue::id );
 
     // TODO test
     private static Comparator<Path> PATH_COMPARATOR = ( lhs, rhs ) ->

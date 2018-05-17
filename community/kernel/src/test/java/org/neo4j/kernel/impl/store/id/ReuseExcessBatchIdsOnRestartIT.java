@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,8 +34,10 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 
 public class ReuseExcessBatchIdsOnRestartIT
 {
@@ -70,13 +72,14 @@ public class ReuseExcessBatchIdsOnRestartIT
     }
 
     @Test( timeout = 30_000 )
-    public void shouldBeAbleToReuseAllIdsInConcurrentCommitsWithRestart() throws Exception
+    public void shouldBeAbleToReuseIdsInConcurrentCommitsWithRestart() throws Exception
     {
         // given
         int threads = Runtime.getRuntime().availableProcessors();
         int batchSize = Integer.parseInt( GraphDatabaseSettings.record_id_batch_size.getDefaultValue() );
         ExecutorService executor = Executors.newFixedThreadPool( threads );
-        SimpleBitSet usedIds = new SimpleBitSet( threads * batchSize );
+        int idsToAllocate = threads * batchSize;
+        SimpleBitSet usedIds = new SimpleBitSet( idsToAllocate );
         for ( int i = 0; i < threads; i++ )
         {
             executor.submit( () ->
@@ -100,16 +103,16 @@ public class ReuseExcessBatchIdsOnRestartIT
 
         // when/then
         db.restartDatabase();
+        int reusedIds = 0;
         try ( Transaction tx = db.beginTx() )
         {
-            while ( !allSet( usedIds ) )
+            while ( toIntExact( db.createNode().getId() ) < idsToAllocate )
             {
-                int index = toIntExact( db.createNode().getId() );
-                assert !usedIds.contains( index );
-                usedIds.put( index );
+                reusedIds++;
             }
             tx.success();
         }
+        assertThat( reusedIds, greaterThan( 0 ) );
     }
 
     private static boolean allSet( SimpleBitSet bitSet )

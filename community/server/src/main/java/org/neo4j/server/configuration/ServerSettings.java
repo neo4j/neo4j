@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -129,6 +129,12 @@ public class ServerSettings implements LoadableConfig
                 }
             },
             EMPTY );
+
+    @Description( "Value of the Access-Control-Allow-Origin header sent over any HTTP or HTTPS " +
+            "connector. This defaults to '*', which allows broadest compatibility. Note " +
+            "that any URI provided here limits HTTP/HTTPS access to that URI only." )
+    public static final Setting<String> http_access_control_allow_origin =
+            setting( "dbms.security.http_access_control_allow_origin", STRING, "*" );
 
     @Description( "Enable HTTP request logging." )
     public static final Setting<Boolean> http_logging_enabled = setting( "dbms.logs.http.enabled", BOOLEAN, FALSE );

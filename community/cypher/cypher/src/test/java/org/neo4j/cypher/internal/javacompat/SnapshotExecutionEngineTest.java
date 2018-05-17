@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -74,7 +74,8 @@ public class SnapshotExecutionEngineTest
         when( kernelStatement.getVersionContext() ).thenReturn( versionContext );
         when( transactionalContext.statement() ).thenReturn( kernelStatement );
         Result result = mock( Result.class );
-        when( result.getQueryStatistics() ).thenReturn( mock( QueryStatistics.class ) );
+        QueryStatistics statistics = mock( QueryStatistics.class );
+        when( result.getQueryStatistics() ).thenReturn( statistics );
         when( executor.execute( any(), anyMap(), any() ) ).thenReturn( result );
     }
 

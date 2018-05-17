@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.procedure;
 
@@ -385,8 +388,7 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute(
-                    "CALL org.neo4j.procedure.listWithDefault" );
+            Result res = db.execute( "CALL org.neo4j.procedure.listWithDefault" );
 
             // Then
             assertThat( res.next(), equalTo( map( "list", asList( 42L, 1337L ) ) ) );
@@ -401,8 +403,7 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute(
-                    "CALL org.neo4j.procedure.genericListWithDefault" );
+            Result res = db.execute( "CALL org.neo4j.procedure.genericListWithDefault" );
 
             // Then
             assertThat( res.next(), equalTo( map( "list", asList( 42L, 1337L ) ) ) );
@@ -411,7 +412,71 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureListWithNull()
+    public void shouldCallProcedureWithByteArrayWithParameter() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.incrBytes($param)", map( "param", new byte[]{4, 5, 6} ) );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{5, 6, 7} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithByteArrayWithParameterAndYield() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "WITH $param AS b CALL org.neo4j.procedure.incrBytes(b) YIELD bytes RETURN bytes", map( "param", new byte[]{7, 8, 9} ) );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{8, 9, 10} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithByteArrayWithParameterAndYieldAndParameterReuse() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "WITH $param AS param CALL org.neo4j.procedure.incrBytes(param) YIELD bytes RETURN bytes, param",
+                    map( "param", new byte[]{10, 11, 12} ) );
+
+            // Then
+            assertTrue(res.hasNext());
+            Map<String,Object> results = res.next();
+            assertFalse( res.hasNext() );
+            assertThat( results.get( "bytes" ), equalTo( new byte[]{11, 12, 13} ) );
+            assertThat( results.get( "param" ), equalTo( new byte[]{10, 11, 12} ) );
+        }
+    }
+
+    @Test
+    public void shouldNotBeAbleCallWithCypherLiteralInByteArrayProcedure() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Cannot convert 1 to byte for input to procedure" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            Result result = db.execute( "CALL org.neo4j.procedure.incrBytes([1,2,3])" );
+            result.next();
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureListWithNull() throws Throwable
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -1296,7 +1361,76 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldUseGuardToDetectTransactionTermination()
+    public void shouldCallFunctionWithByteArrayWithParameter() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "RETURN org.neo4j.procedure.decrBytes($param) AS bytes", map( "param", new byte[]{4, 5, 6} ) );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{3, 4, 5} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallFuctionWithByteArrayWithBoundLiteral() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res =
+                    db.execute( "WITH $param AS param RETURN org.neo4j.procedure.decrBytes(param) AS bytes, param", map( "param", new byte[]{10, 11, 12} ) );
+
+            // Then
+            assertTrue(res.hasNext());
+            Map<String,Object> results = res.next();
+            assertFalse( res.hasNext() );
+            assertThat( results.get( "bytes" ), equalTo( new byte[]{9, 10, 11} ) );
+            assertThat( results.get( "param" ), equalTo( new byte[]{10, 11, 12} ) );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowNonByteValuesInImplicitByteArrayConversionWithUserDefinedFunction() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Cannot convert 1 to byte for input to procedure" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
+            Result result = db.execute( "RETURN org.neo4j.procedure.decrBytes([1,2,5]) AS bytes" );
+            result.next();
+        }
+    }
+
+    @Test
+    public void shouldCallAggregationFunctionWithByteArrays() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            byte[][] data = new byte[3][];
+            data[0] = new byte[]{1, 2, 3};
+            data[1] = new byte[]{3, 2, 1};
+            data[2] = new byte[]{1, 2, 1};
+            Result res = db.execute( "UNWIND $data AS bytes RETURN org.neo4j.procedure.aggregateByteArrays(bytes) AS bytes", map( "data", data ) );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{5, 6, 5} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldUseGuardToDetectTransactionTermination() throws Throwable
     {
         exception.expect( QueryExecutionException.class );
         exception.expectMessage( "The transaction has been terminated. Retry your operation in a new " +
@@ -1367,6 +1501,16 @@ public class ProcedureIT
         public ListOutput( List<Long> list )
         {
             this.list = list;
+        }
+    }
+
+    public static class BytesOutput
+    {
+        public byte[] bytes;
+
+        public BytesOutput( byte[] bytes )
+        {
+            this.bytes = bytes;
         }
     }
 
@@ -1552,17 +1696,25 @@ public class ProcedureIT
         }
 
         @Procedure
-        public Stream<ListOutput> listWithDefault( @Name( value = "list", defaultValue = "[42, 1337]" ) List<Long>
-                list )
+        public Stream<ListOutput> listWithDefault( @Name( value = "list", defaultValue = "[42, 1337]" ) List<Long> list )
         {
             return Stream.of( new ListOutput( list ) );
         }
 
         @Procedure
-        public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]" )
-                List<List<Long>> list )
+        public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]" ) List<List<Long>> list )
         {
             return Stream.of( new ListOutput( list == null ? null : list.get( 0 ) ) );
+        }
+
+        @Procedure
+        public Stream<BytesOutput> incrBytes( @Name( value = "bytes" ) byte[] bytes )
+        {
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] += 1;
+            }
+            return Stream.of( new BytesOutput( bytes ) );
         }
 
         @Procedure
@@ -1838,6 +1990,46 @@ public class ProcedureIT
         public long functionWithDescription()
         {
             return 0;
+        }
+
+        @UserFunction
+        public byte[] decrBytes( @Name( value = "bytes" ) byte[] bytes )
+        {
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] -= 1;
+            }
+            return bytes;
+        }
+
+        @UserAggregationFunction
+        public ByteArrayAggregator aggregateByteArrays()
+        {
+            return new ByteArrayAggregator();
+        }
+
+        public static class ByteArrayAggregator
+        {
+            byte[] aggregated;
+
+            @UserAggregationUpdate
+            public void update( @Name( "bytes" ) byte[] bytes )
+            {
+                if ( aggregated == null )
+                {
+                    aggregated = new byte[bytes.length];
+                }
+                for ( int i = 0; i < Math.min( bytes.length, aggregated.length ); i++ )
+                {
+                    aggregated[i] += bytes[i];
+                }
+            }
+
+            @UserAggregationResult
+            public byte[] result()
+            {
+                return aggregated == null ? new byte[0] : aggregated;
+            }
         }
     }
 

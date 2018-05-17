@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.com.storecopy;
 
@@ -69,67 +72,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeL
  */
 public class StoreCopyClient
 {
-    public interface Monitor
-    {
-        void startReceivingStoreFiles();
-
-        void finishReceivingStoreFiles();
-
-        void startReceivingStoreFile( File file );
-
-        void finishReceivingStoreFile( File file );
-
-        void startReceivingTransactions( long startTxId );
-
-        void finishReceivingTransactions( long endTxId );
-
-        void startRecoveringStore();
-
-        void finishRecoveringStore();
-
-        class Adapter implements Monitor
-        {
-            @Override
-            public void startReceivingStoreFiles()
-            {   // empty
-            }
-
-            @Override
-            public void finishReceivingStoreFiles()
-            {   // empty
-            }
-
-            @Override
-            public void startReceivingStoreFile( File file )
-            {   // empty
-            }
-
-            @Override
-            public void finishReceivingStoreFile( File file )
-            {   // empty
-            }
-
-            @Override
-            public void startReceivingTransactions( long startTxId )
-            {   // empty
-            }
-
-            @Override
-            public void finishReceivingTransactions( long endTxId )
-            {   // empty
-            }
-
-            @Override
-            public void startRecoveringStore()
-            {   // empty
-            }
-
-            @Override
-            public void finishRecoveringStore()
-            {   // empty
-            }
-        }
-    }
 
     /**
      * This is built as a pluggable interface to allow backup and HA to use this code independently of each other,
@@ -148,19 +90,19 @@ public class StoreCopyClient
     private final Log log;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final Monitor monitor;
+    private final StoreCopyClientMonitor monitor;
     private final boolean forensics;
     private final FileMoveProvider fileMoveProvider;
 
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
-            FileSystemAbstraction fs, PageCache pageCache, Monitor monitor, boolean forensics )
+            FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics )
     {
         this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMoveProvider( pageCache,
                 fs ) );
     }
 
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
-            FileSystemAbstraction fs, PageCache pageCache, Monitor monitor, boolean forensics, FileMoveProvider fileMoveProvider )
+            FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics, FileMoveProvider fileMoveProvider )
     {
         this.storeDir = storeDir;
         this.config = config;

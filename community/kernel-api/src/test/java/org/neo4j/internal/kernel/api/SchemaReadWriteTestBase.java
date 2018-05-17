@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,7 +46,7 @@ import static org.neo4j.internal.kernel.api.CapableIndexReference.NO_INDEX;
 @SuppressWarnings( "Duplicates" )
 public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
-    private int label, type, prop1, prop2;
+    private int label, label2, type, prop1, prop2, prop3;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -71,10 +71,22 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             TokenWrite tokenWrite = transaction.tokenWrite();
             label = tokenWrite.labelGetOrCreateForName( "label" );
+            label2 = tokenWrite.labelGetOrCreateForName( "label2" );
             type = tokenWrite.relationshipTypeGetOrCreateForName( "relationship" );
             prop1 = tokenWrite.propertyKeyGetOrCreateForName( "prop1" );
             prop2 = tokenWrite.propertyKeyGetOrCreateForName( "prop2" );
+            prop3 = tokenWrite.propertyKeyGetOrCreateForName( "prop3" );
             transaction.success();
+        }
+    }
+
+    @Test
+    public void shouldNotFindNonExistentIndex() throws Exception
+    {
+        try ( Transaction transaction = session.beginTransaction() )
+        {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertThat( schemaRead.index( label, prop1 ), equalTo( CapableIndexReference.NO_INDEX ) );
         }
     }
 
@@ -105,6 +117,18 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             assertThat( index.providerKey(), equalTo( "Undecided" ));
             assertThat( index.providerVersion(), equalTo( "0" ));
+        }
+    }
+
+    @Test
+    public void createdIndexShouldPopulateInTx() throws Exception
+    {
+        IndexReference index;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            index = tx.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            assertThat( tx.schemaRead().indexGetState( index ), equalTo( InternalIndexState.POPULATING ) );
+            tx.success();
         }
     }
 
@@ -177,8 +201,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexReference index;
         try ( Transaction transaction = session.beginTransaction() )
         {
-            index =
-                    transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
             transaction.success();
         }
 
@@ -187,6 +210,67 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             transaction.schemaWrite().indexDrop( index );
             SchemaRead schemaRead = transaction.schemaRead();
             assertThat( schemaRead.index( label, prop2 ), equalTo( NO_INDEX ) );
+        }
+    }
+
+    @Test
+    public void shouldListAllIndexes() throws Exception
+    {
+        IndexReference toRetain;
+        IndexReference toRetain2;
+        IndexReference toDrop;
+        IndexReference created;
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            toRetain = tx.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            toRetain2 = tx.schemaWrite().indexCreate( labelDescriptor( label2, prop1 ) );
+            toDrop = tx.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            created = tx.schemaWrite().indexCreate( labelDescriptor( label2, prop2 ) );
+            tx.schemaWrite().indexDrop( toDrop );
+
+            Iterable<IndexReference> allIndexes = () -> tx.schemaRead().indexesGetAll();
+            assertThat( allIndexes, containsInAnyOrder( toRetain, toRetain2, created ) );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldListIndexesByLabel() throws Exception
+    {
+        int wrongLabel;
+
+        IndexReference inStore;
+        IndexReference droppedInTx;
+        IndexReference createdInTx;
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            wrongLabel = tx.tokenWrite().labelGetOrCreateForName( "wrongLabel" );
+            tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( wrongLabel, prop1 ) );
+
+            inStore = tx.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            droppedInTx = tx.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            createdInTx = tx.schemaWrite().indexCreate( labelDescriptor( label, prop3 ) );
+            tx.schemaWrite().indexCreate( labelDescriptor( wrongLabel, prop2 ) );
+            tx.schemaWrite().indexDrop( droppedInTx );
+
+            Iterable<IndexReference> indexes = () -> tx.schemaRead().indexesGetForLabel( label );
+            assertThat( indexes, containsInAnyOrder( inStore, createdInTx ) );
+
+            tx.success();
         }
     }
 
@@ -646,6 +730,66 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat( schemaRead.index( type, prop2 ), equalTo( NO_INDEX ) );
             assertThat( asList( schemaRead.constraintsGetForLabel( label ) ), empty() );
 
+        }
+    }
+
+    @Test
+    public void shouldListAllConstraints() throws Exception
+    {
+        ConstraintDescriptor toRetain;
+        ConstraintDescriptor toRetain2;
+        ConstraintDescriptor toDrop;
+        ConstraintDescriptor created;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            toRetain = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
+            toRetain2 = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label2, prop1 ) );
+            toDrop = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop2 ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            created = tx.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptor( label, prop1 ) );
+            tx.schemaWrite().constraintDrop( toDrop );
+
+            Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetAll();
+            assertThat( allConstraints, containsInAnyOrder( toRetain, toRetain2, created ) );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldListConstraintsByLabel() throws Exception
+    {
+        int wrongLabel;
+
+        ConstraintDescriptor inStore;
+        ConstraintDescriptor droppedInTx;
+        ConstraintDescriptor createdInTx;
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            wrongLabel = tx.tokenWrite().labelGetOrCreateForName( "wrongLabel" );
+            tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( wrongLabel, prop1 ) );
+
+            inStore = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
+            droppedInTx = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop2 ) );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            createdInTx = tx.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptor( label, prop1 ) );
+            tx.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptor( wrongLabel, prop1 ) );
+            tx.schemaWrite().constraintDrop( droppedInTx );
+
+            Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetForLabel( label );
+            assertThat( allConstraints, containsInAnyOrder( inStore, createdInTx ) );
+
+            tx.success();
         }
     }
 

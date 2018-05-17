@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,7 +35,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
-import static org.neo4j.values.storable.UTF8StringValue.codePointByteArrayCompare;
+import static org.neo4j.values.storable.UTF8StringValue.byteArrayCompare;
 
 abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,NativeSchemaValue>
 {
@@ -53,7 +53,7 @@ abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,Nativ
     @Override
     int compareIndexedPropertyValue( StringSchemaKey key1, StringSchemaKey key2 )
     {
-        return codePointByteArrayCompare(
+        return byteArrayCompare(
                 copyOf( key1.bytes, key1.bytesLength ),
                 copyOf( key2.bytes, key2.bytesLength ) );
     }

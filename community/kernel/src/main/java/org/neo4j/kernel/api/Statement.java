@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,8 +23,13 @@ import org.neo4j.graphdb.Resource;
 
 /**
  * A statement which is a smaller coherent unit of work inside a {@link KernelTransaction}.
- * There are accessors for different types of operations. The operations are divided into
- * read and write operations.
+ *
+ * The main purpose of the statement is to keep resources open for the duration of the statement, and
+ * then close all resources at statement close.
+ *
+ * Note that Statement used to be the access-point for all kernel reads and writes before 3.4. For
+ * accessing the graph now, see {@link org.neo4j.internal.kernel.api.Transaction}. The only remainder
+ * the QueryRegistryOperations, which will eventually also move from here.
  */
 public interface Statement extends Resource, ResourceManager
 {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -55,7 +55,7 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -65,7 +65,7 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config)
     )
     val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, idNames = Set(aNode))
     val plans = rightOuterHashJoin(optionalQg, left, context, solveds, cardinalities)
@@ -84,7 +84,7 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -94,7 +94,7 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config)
     )
     val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, Set(aNode))
     val plan = rightOuterHashJoin(optionalQg, left, context, solveds, cardinalities).getOrElse(fail("No result from outerHashJoin"))

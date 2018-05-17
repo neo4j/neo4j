@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.identity;
 
@@ -62,10 +65,11 @@ public class ClusterBinderTest
     private final int minCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
     private final String dbName = config.get( CausalClusteringSettings.database );
 
-    private ClusterBinder clusterBinder( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService )
+    private ClusterBinder clusterBinder( SimpleStorage<ClusterId> clusterIdStorage,
+            CoreTopologyService topologyService )
     {
-        return new ClusterBinder( clusterIdStorage, topologyService, NullLogProvider.getInstance(), clock,
-                () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000, coreBootstrapper, dbName, minCoreHosts );
+        return new ClusterBinder( clusterIdStorage, new StubSimpleStorage<>(), topologyService, clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
+                coreBootstrapper, dbName, minCoreHosts, NullLogProvider.getInstance() );
     }
 
     @Test
@@ -80,7 +84,7 @@ public class ClusterBinderTest
         int minCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
         String dbName = config.get( CausalClusteringSettings.database );
 
-        ClusterBinder binder = clusterBinder( new StubClusterIdStorage(), topologyService );
+        ClusterBinder binder = clusterBinder( new StubSimpleStorage<>(), topologyService );
 
         try
         {
@@ -108,7 +112,7 @@ public class ClusterBinderTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.localCoreServers() ).thenReturn( unboundTopology ).thenReturn( boundTopology );
 
-        ClusterBinder binder = clusterBinder( new StubClusterIdStorage(), topologyService );
+        ClusterBinder binder = clusterBinder( new StubSimpleStorage<>(), topologyService );
 
         // when
         binder.bindToCluster();
@@ -129,7 +133,7 @@ public class ClusterBinderTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.setClusterId( previouslyBoundClusterId, "default" ) ).thenReturn( true );
 
-        StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
+        StubSimpleStorage<ClusterId> clusterIdStorage = new StubSimpleStorage<>();
         clusterIdStorage.writeState( previouslyBoundClusterId );
 
         ClusterBinder binder = clusterBinder( clusterIdStorage, topologyService );
@@ -153,7 +157,7 @@ public class ClusterBinderTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.setClusterId( previouslyBoundClusterId, "default" ) ).thenReturn( false );
 
-        StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
+        StubSimpleStorage<ClusterId> clusterIdStorage = new StubSimpleStorage<>();
         clusterIdStorage.writeState( previouslyBoundClusterId );
 
         ClusterBinder binder = clusterBinder( clusterIdStorage, topologyService );
@@ -187,7 +191,7 @@ public class ClusterBinderTest
         CoreSnapshot snapshot = mock( CoreSnapshot.class );
         when( coreBootstrapper.bootstrap( any() ) ).thenReturn( snapshot );
 
-        ClusterBinder binder = clusterBinder( new StubClusterIdStorage(), topologyService );
+        ClusterBinder binder = clusterBinder( new StubSimpleStorage<>(), topologyService );
 
         // when
         BoundState boundState = binder.bindToCluster();
@@ -201,26 +205,26 @@ public class ClusterBinderTest
         assertEquals( boundState.snapshot().get(), snapshot );
     }
 
-    private class StubClusterIdStorage implements SimpleStorage<ClusterId>
+    private class StubSimpleStorage<T> implements SimpleStorage<T>
     {
-        private ClusterId clusterId;
+        private T state;
 
         @Override
         public boolean exists()
         {
-            return clusterId != null;
+            return state != null;
         }
 
         @Override
-        public ClusterId readState()
+        public T readState()
         {
-            return clusterId;
+            return state;
         }
 
         @Override
-        public void writeState( ClusterId state )
+        public void writeState( T state )
         {
-            clusterId = state;
+            this.state = state;
         }
     }
 }

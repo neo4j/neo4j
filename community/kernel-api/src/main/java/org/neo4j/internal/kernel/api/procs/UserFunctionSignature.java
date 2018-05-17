@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -18,7 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.internal.kernel.api.procs;
-
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -41,13 +40,15 @@ public final class UserFunctionSignature
     private final String[] allowed;
     private final String deprecated;
     private final String description;
+    private final boolean caseInsensitive;
 
     public UserFunctionSignature( QualifiedName name,
             List<FieldSignature> inputSignature,
             Neo4jTypes.AnyType type,
             String deprecated,
             String[] allowed,
-            String description )
+            String description,
+            boolean caseInsensitive )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -55,6 +56,7 @@ public final class UserFunctionSignature
         this.deprecated = deprecated;
         this.description = description;
         this.allowed = allowed;
+        this.caseInsensitive = caseInsensitive;
     }
 
     public QualifiedName name()
@@ -85,6 +87,11 @@ public final class UserFunctionSignature
     public String[] allowed()
     {
         return allowed;
+    }
+
+    public boolean caseInsensitive()
+    {
+        return caseInsensitive;
     }
 
     @Override
@@ -169,7 +176,7 @@ public final class UserFunctionSignature
             {
                 throw new IllegalStateException( "output type must be set" );
             }
-            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, allowed, description );
+            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, allowed, description, false  );
         }
     }
 

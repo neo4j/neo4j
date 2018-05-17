@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -191,6 +191,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     case Neo4jTypes.NTNumber => CTNumber
     case Neo4jTypes.NTBoolean => CTBoolean
     case l: Neo4jTypes.ListType => CTList(asCypherType(l.innerType()))
+    case Neo4jTypes.NTByteArray => CTList(CTAny)
     case Neo4jTypes.NTDateTime => CTDateTime
     case Neo4jTypes.NTLocalDateTime => CTLocalDateTime
     case Neo4jTypes.NTDate => CTDate

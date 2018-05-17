@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,19 +19,29 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.function.ToDoubleFunction;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.StoreType;
 
 import static java.lang.String.format;
+import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.active_database;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.ONE_GIBI_BYTE;
 import static org.neo4j.io.ByteUnit.ONE_KIBI_BYTE;
@@ -39,6 +49,7 @@ import static org.neo4j.io.ByteUnit.ONE_MEBI_BYTE;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
 
@@ -66,7 +77,9 @@ public class MemoryRecommendationsCommand implements AdminCommand
             new Bracket( 1024.0, 30, 31 ),
     };
     private static final String ARG_MEMORY = "memory";
+    private final Path homeDir;
     private final OutsideWorld outsideWorld;
+    private final Path configDir;
 
     static long recommendOsMemory( long totalMemoryBytes )
     {
@@ -118,7 +131,12 @@ public class MemoryRecommendationsCommand implements AdminCommand
         return new Arguments()
                 .withArgument( new OptionalNamedArg( ARG_MEMORY, memory, memory,
                         "Recommend memory settings with respect to the given amount of memory, " +
-                        "instead of the total memory of the system running the command." ) );
+                        "instead of the total memory of the system running the command." ) )
+                .withDatabase(
+                        "Name of specific database to calculate page cache memory requirement for. " +
+                        "The generic calculation is still a good generic recommendation for this machine, " +
+                        "but there will be an additional calculation for minimal required page cache memory " +
+                        "for mapping all store and index files that are managed by the page cache." );
     }
 
     static String bytesToString( double bytes )
@@ -159,13 +177,15 @@ public class MemoryRecommendationsCommand implements AdminCommand
         }
     }
 
-    MemoryRecommendationsCommand( OutsideWorld outsideWorld )
+    MemoryRecommendationsCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
+        this.homeDir = homeDir;
         this.outsideWorld = outsideWorld;
+        this.configDir = configDir;
     }
 
     @Override
-    public void execute( String[] args ) throws IncorrectUsage
+    public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
         Arguments arguments = buildArgs().parse( args );
 
@@ -174,6 +194,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         String os = bytesToString( recommendOsMemory( memory ) );
         String heap = bytesToString( recommendHeapMemory( memory ) );
         String pagecache = bytesToString( recommendPageCacheMemory( memory ) );
+        boolean specificDb = arguments.has( ARG_DATABASE );
 
         print( "# Memory settings recommendation from neo4j-admin memrec:" );
         print( "#" );
@@ -199,6 +220,109 @@ public class MemoryRecommendationsCommand implements AdminCommand
         print( initialHeapSize.name() + "=" + heap );
         print( maxHeapSize.name() + "=" + heap );
         print( pagecache_memory.name() + "=" + pagecache );
+
+        if ( !specificDb )
+        {
+            return;
+        }
+        String databaseName = arguments.get( ARG_DATABASE );
+        File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
+        File storeDir = getConfig( configFile, databaseName ).get( database_path );
+        long pageCacheSize = dbSpecificPageCacheSize( storeDir );
+        long luceneSize = dbSpecificLuceneSize( storeDir );
+
+        print( "#" );
+        print( "# The numbers below have been derived based on your current data volume in database and index configuration of database '" + databaseName +
+                "'." );
+        print( "# They can be used as an input into more detailed memory analysis." );
+        print( "# Lucene indexes: " + bytesToString( luceneSize ) );
+        print( "# Data volume and native indexes: " + bytesToString( pageCacheSize ) );
+    }
+
+    private long dbSpecificPageCacheSize( File storeDir )
+    {
+        return sumStoreFiles( storeDir ) + sumIndexFiles( baseSchemaIndexFolder( storeDir ), getNativeIndexFileFilter( false ) );
+    }
+
+    private long dbSpecificLuceneSize( File storeDir )
+    {
+        return sumIndexFiles( baseSchemaIndexFolder( storeDir ), getNativeIndexFileFilter( true ) );
+    }
+
+    private FilenameFilter getNativeIndexFileFilter( boolean inverse )
+    {
+        return ( dir, name ) ->
+        {
+            File file = new File( dir, name );
+            if ( outsideWorld.fileSystem().isDirectory( file ) )
+            {
+                // Always go down directories
+                return true;
+            }
+            if ( name.equals( FailureStorage.DEFAULT_FAILURE_FILE_NAME ) )
+            {
+                // Never include failure-storage files
+                return false;
+            }
+
+            Path path = file.toPath();
+            int nameCount = path.getNameCount();
+            // Lucene index files lives in:
+            // - schema/index/lucene_native-x.y/<indexId>/lucene-x.y/x/.....
+            boolean isLuceneFilePart1 = nameCount >= 3 && path.getName( nameCount - 3 ).toString().startsWith( "lucene-" );
+            // - schema/index/lucene/<indexId>/<partition>/.....
+            boolean isLuceneFilePart2 = nameCount >= 4 && path.getName( nameCount - 4 ).toString().equals( "lucene" );
+
+            boolean isLuceneFile = isLuceneFilePart1 || isLuceneFilePart2;
+            return inverse == isLuceneFile;
+        };
+    }
+
+    private long sumStoreFiles( File storeDir )
+    {
+        long total = 0;
+        for ( StoreType type : StoreType.values() )
+        {
+            if ( type.isRecordStore() )
+            {
+                File file = new File( storeDir, type.getStoreFile().storeFileName() );
+                if ( outsideWorld.fileSystem().fileExists( file ) )
+                {
+                    total += outsideWorld.fileSystem().getFileSize( file );
+                }
+            }
+        }
+        return total;
+    }
+
+    private long sumIndexFiles( File file, FilenameFilter filter )
+    {
+        long total = 0;
+        if ( outsideWorld.fileSystem().isDirectory( file ) )
+        {
+            File[] children = outsideWorld.fileSystem().listFiles( file, filter );
+            if ( children != null )
+            {
+                for ( File child : children )
+                {
+                    total += sumIndexFiles( child, filter );
+                }
+            }
+        }
+        else
+        {
+            total += outsideWorld.fileSystem().getFileSize( file );
+        }
+        return total;
+    }
+
+    private Config getConfig( File configFile, String databaseName ) throws CommandFailed
+    {
+        if ( !outsideWorld.fileSystem().fileExists( configFile ) )
+        {
+            throw new CommandFailed( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
+        }
+        return Config.fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).withConnectorsDisabled().build();
     }
 
     private void print( String text )

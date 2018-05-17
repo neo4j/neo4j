@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -453,7 +454,7 @@ public class MuninnPageCache implements PageCache
     @Override
     public synchronized List<PagedFile> listExistingMappings() throws IOException
     {
-        assertHealthy();
+        assertNotClosed();
         ensureThreadsInitialised();
 
         List<PagedFile> list = new ArrayList<>();
@@ -573,30 +574,43 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized void flushAndForce( IOLimiter limiter ) throws IOException
+    public void flushAndForce( IOLimiter limiter ) throws IOException
     {
         if ( limiter == null )
         {
             throw new IllegalArgumentException( "IOLimiter cannot be null" );
         }
         assertNotClosed();
-        flushAllPages( limiter );
+        List<PagedFile> files = listExistingMappings();
+        flushAllPages( files, limiter );
         clearEvictorException();
     }
 
-    private void flushAllPages( IOLimiter limiter ) throws IOException
+    private void flushAllPages( List<PagedFile> files, IOLimiter limiter ) throws IOException
     {
         try ( MajorFlushEvent cacheFlush = pageCacheTracer.beginCacheFlush() )
         {
-            FileMapping fileMapping = mappedFiles;
-            while ( fileMapping != null )
+            for ( PagedFile file : files )
             {
-                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( fileMapping.pagedFile.swapper ) )
+                MuninnPagedFile muninnPagedFile = (MuninnPagedFile) file;
+                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper ) )
                 {
                     FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
-                    fileMapping.pagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
+                    muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
                 }
-                fileMapping = fileMapping.next;
+                catch ( ClosedChannelException e )
+                {
+                    if ( muninnPagedFile.getRefCount() > 0 )
+                    {
+                        // The file is not supposed to be closed, since we have a positive ref-count, yet we got a
+                        // ClosedChannelException anyway? It's an odd situation, so let's tell the outside world about
+                        // this failure.
+                        throw e;
+                    }
+                    // Otherwise: The file was closed while we were trying to flush it. Since unmapping implies a flush
+                    // anyway, we can safely assume that this is not a problem. The file was flushed, and it doesn't
+                    // really matter how that happened. We'll ignore this exception.
+                }
             }
             syncDevice();
         }
@@ -945,10 +959,10 @@ public class MuninnPageCache implements PageCache
             {
                 try
                 {
+                    pageCountToEvict--;
                     if ( pages.tryEvict( pageRef, evictionRunEvent ) )
                     {
                         clearEvictorException();
-                        pageCountToEvict--;
                         addFreePageToFreelist( pageRef );
                     }
                 }

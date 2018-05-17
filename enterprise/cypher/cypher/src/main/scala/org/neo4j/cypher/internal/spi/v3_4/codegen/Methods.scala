@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
@@ -26,7 +29,6 @@ import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterato
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.QueryExecutionEvent
-import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
@@ -40,7 +42,7 @@ import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy, RelationshipProxy}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue, VirtualNodeValue, VirtualRelationshipValue}
 
 object Methods {
 
@@ -104,11 +106,12 @@ object Methods {
   val newNodeProxyById: MethodReference = method[EmbeddedProxySPI, NodeProxy]("newNodeProxy", typeRef[Long])
   val newRelationshipProxyById: MethodReference = method[EmbeddedProxySPI, RelationshipProxy]("newRelationshipProxy", typeRef[Long])
   val materializeAnyResult: MethodReference = method[CompiledConversionUtils, AnyValue]("materializeAnyResult", typeRef[EmbeddedProxySPI], typeRef[Object])
+  val materializeAnyValueResult: MethodReference = method[CompiledConversionUtils, AnyValue]("materializeAnyValueResult", typeRef[EmbeddedProxySPI], typeRef[Object])
   val materializeNodeValue: MethodReference = method[CompiledConversionUtils, NodeValue]("materializeNodeValue", typeRef[EmbeddedProxySPI], typeRef[Object])
   val materializeRelationshipValue: MethodReference =
     method[CompiledConversionUtils, RelationshipValue]("materializeRelationshipValue", typeRef[EmbeddedProxySPI], typeRef[Object])
-  val nodeId: MethodReference = method[NodeIdWrapper, Long]("id")
-  val relId: MethodReference = method[RelationshipIdWrapper, Long]("id")
+  val nodeId: MethodReference = method[VirtualNodeValue, Long]("id")
+  val relId: MethodReference = method[VirtualRelationshipValue, Long]("id")
   val set: MethodReference = method[ResultRecord, Unit]("set", typeRef[Int], typeRef[AnyValue])
   val visit: MethodReference = method[QueryResultVisitor[_], Boolean]("visit", typeRef[Record])
   val executeOperator: MethodReference = method[QueryExecutionTracer, QueryExecutionEvent]("executeOperator", typeRef[Id])
@@ -118,7 +121,7 @@ object Methods {
   val unboxBoolean: MethodReference = method[java.lang.Boolean, Boolean]("booleanValue")
   val unboxLong: MethodReference = method[java.lang.Long, Long]("longValue")
   val unboxDouble: MethodReference = method[java.lang.Double, Double]("doubleValue")
-  val unboxNode: MethodReference = method[CompiledConversionUtils, Long]("unboxNodeOrNull", typeRef[NodeIdWrapper])
-  val unboxRel: MethodReference = method[CompiledConversionUtils, Long]("unboxRelationshipOrNull", typeRef[RelationshipIdWrapper])
+  val unboxNode: MethodReference = method[CompiledConversionUtils, Long]("unboxNodeOrNull", typeRef[VirtualNodeValue])
+  val unboxRel: MethodReference = method[CompiledConversionUtils, Long]("unboxRelationshipOrNull", typeRef[VirtualRelationshipValue])
   val reboxValue: MethodReference = method[Values, Object]("asObject", typeRef[Value])
 }

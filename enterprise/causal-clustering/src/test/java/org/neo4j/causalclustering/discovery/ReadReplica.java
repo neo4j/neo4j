@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.discovery;
 
@@ -46,9 +49,9 @@ import static org.neo4j.helpers.AdvertisedSocketAddress.advertisedAddress;
 import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ReadReplica implements ClusterMember
+@SuppressWarnings( "WeakerAccess" )
+public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
 {
-    protected final Map<String,String> config = stringMap();
     protected final DiscoveryServiceFactory discoveryServiceFactory;
     private final File neo4jHome;
     protected final File storeDir;
@@ -71,6 +74,7 @@ public class ReadReplica implements ClusterMember
                 .collect( joining( "," ) );
         boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
 
+        Map<String,String> config = stringMap();
         config.put( "dbms.mode", "READ_REPLICA" );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialHosts );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
@@ -125,7 +129,7 @@ public class ReadReplica implements ClusterMember
     @Override
     public void start()
     {
-        database = new ReadReplicaGraphDatabase( storeDir, Config.defaults( config ),
+        database = new ReadReplicaGraphDatabase( storeDir, memberConfig,
                 GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory,
                 memberId() );
     }
@@ -166,13 +170,13 @@ public class ReadReplica implements ClusterMember
     @Override
     public ClientConnectorAddresses clientConnectorAddresses()
     {
-        return ClientConnectorAddresses.extractFromConfig( Config.defaults( this.config ) );
+        return ClientConnectorAddresses.extractFromConfig( memberConfig );
     }
 
     @Override
     public String settingValue( String settingName )
     {
-        return config.get(settingName);
+        return memberConfig.getRaw().get( settingName );
     }
 
     @Override
@@ -211,12 +215,12 @@ public class ReadReplica implements ClusterMember
 
     public void setUpstreamDatabaseSelectionStrategy( String key )
     {
-        config.put( CausalClusteringSettings.upstream_selection_strategy.name(), key );
+        updateConfig( CausalClusteringSettings.upstream_selection_strategy, key );
     }
 
     public MemberId memberId()
     {
-        return new MemberId( new UUID( serverId, 0 ) );
+        return new MemberId( new UUID( ((long) serverId) << 32, 0 ) );
     }
 
     public int serverId()

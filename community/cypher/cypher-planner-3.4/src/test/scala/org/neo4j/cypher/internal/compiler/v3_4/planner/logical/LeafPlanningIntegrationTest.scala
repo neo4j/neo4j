@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,13 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.BeLikeMatcher._
-import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v3_4.planner.{LogicalPlanningTestSupport2, StubbedLogicalPlanningConfiguration}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.ir.v3_4.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.v3_4._
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Union, _}
 
@@ -743,5 +745,97 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (a:Person)-->(b) WHERE b.prop = a.name AND b.prop = 42 RETURN b")._2 should beLike {
       case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _), _, _, _, _, _, _)) => ()
     }
+  }
+
+  //---------------------------------------------------------------------------
+  // Test expand order with multiple configurations and
+  // unsupported.cypher.plan_with_minimum_cardinality_estimates setting
+  //
+  // To succeed this test assumes:
+  // *  (:A) should have lower cardinality than (:B) and (:C) so it is selected as starting point
+  // * (a)--(b) should have lower cardinality than (a)--(c) so that it is expanded first
+  //
+  // Ideally (and at the time of writing) the intrinsic order when the cardinalities are equal
+  // is different from the assertion and would cause failure
+  private def testAndAssertExpandOrder(config: StubbedLogicalPlanningConfiguration) {
+    val query = "MATCH (b:B)-[rB]->(a:A)<-[rC]-(c:C) RETURN a, b, c"
+
+    val plan = (config getLogicalPlanFor query)._2
+
+    // Expected plan
+    // Since (a)--(b) has a lower cardinality estimate than (a)--(c) it should be selected first
+    val scanA = NodeByLabelScan("a", LabelName("A")(pos), Set.empty)
+    val expandB = Expand(scanA, "a", INCOMING, Seq.empty, "b", "rB", ExpandAll)
+    val selectionB = Selection(Seq(HasLabels(Variable("b")(pos), Seq(LabelName("B")(pos)))(pos)), expandB)
+    val expandC = Expand(selectionB, "a", INCOMING, Seq.empty, "c", "rC", ExpandAll)
+    val selectionC = Selection(Seq(Not(Equals(Variable("rB")(pos), Variable("rC")(pos))(pos))(pos),
+      HasLabels(Variable("c")(pos), Seq(LabelName("C")(pos)))(pos)), expandC)
+    val expected = selectionC
+
+    plan should equal(expected)
+  }
+
+  test("should pick expands in an order that minimizes early cardinality increase") {
+    val config = new given {
+      cardinality = mapCardinality {
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b") => 200.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "c") => 300.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 100.0
+        case _ => throw new IllegalStateException("Unexpected PlannerQuery")
+      }
+      knownLabels = Set("A", "B", "C")
+    }
+    testAndAssertExpandOrder(config)
+  }
+
+  test("should pick expands in an order that minimizes early cardinality increase (plan_with_minimum_cardinality_estimates enabled)") {
+    val config = new givenPlanWithMinimumCardinalityEnabled {
+      cardinality = mapCardinality {
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b") => 200.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "c") => 300.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 100.0
+        case _ => throw new IllegalStateException("Unexpected PlannerQuery")
+      }
+      knownLabels = Set("A", "B", "C")
+    }
+    testAndAssertExpandOrder(config)
+  }
+
+  test("should pick expands in an order that minimizes early cardinality increase with estimates < 1.0") {
+    val config = new given {
+      cardinality = mapCardinality {
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") =>  5.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b") => 0.4
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "c") => 0.5
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 0.1
+        case _ => throw new IllegalStateException("Unexpected PlannerQuery")
+      }
+      knownLabels = Set("A", "B", "C")
+    }
+    testAndAssertExpandOrder(config)
+  }
+
+  test("should pick expands in an order that minimizes early cardinality increase with estimates < 1.0 (plan_with_minimum_cardinality_estimates enabled)") {
+    val config = new givenPlanWithMinimumCardinalityEnabled {
+      cardinality = mapCardinality {
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") =>  5.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b") => 0.4
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "c") => 0.5
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 0.1
+        case _ => throw new IllegalStateException("Unexpected PlannerQuery")
+      }
+      knownLabels = Set("A", "B", "C")
+    }
+    testAndAssertExpandOrder(config)
   }
 }

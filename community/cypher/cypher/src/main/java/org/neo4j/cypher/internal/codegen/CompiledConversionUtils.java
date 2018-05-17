@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,16 +36,22 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.neo4j.cypher.internal.compiler.v3_4.spi.NodeIdWrapper;
-import org.neo4j.cypher.internal.compiler.v3_4.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException;
 import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.util.NodeProxyWrappingNodeValue;
+import org.neo4j.kernel.impl.util.RelationshipProxyWrappingValue;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -280,21 +286,9 @@ public abstract class CompiledConversionUtils
         {
             return NO_VALUE;
         }
-        else if ( anyValue instanceof VirtualNodeValue )
+        else if ( anyValue instanceof AnyValue )
         {
-            if ( anyValue instanceof NodeValue )
-            {
-                return (AnyValue) anyValue;
-            }
-            return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( ((VirtualNodeValue) anyValue).id() ) );
-        }
-        else if ( anyValue instanceof VirtualRelationshipValue )
-        {
-            if ( anyValue instanceof RelationshipValue )
-            {
-                return (AnyValue) anyValue;
-            }
-            return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( ((VirtualRelationshipValue) anyValue).id() ) );
+            return materializeAnyValueResult( proxySpi, anyValue );
         }
         else if ( anyValue instanceof List )
         {
@@ -364,23 +358,42 @@ public abstract class CompiledConversionUtils
                 return VirtualValues.list( copy );
             }
         }
-        else if ( anyValue instanceof AnyValue )
-        {
-            // If it is a list or map, run it through a ValueMapper that will create proxy objects for entities (storable arrays should
-            // TODO: This is expensive and will copy all the data even if no conversion is actually performed.
-            // Investigate if it pays off to (1) first do a dry run and return as is if no conversion is needed,
-            // or (2) always create proxy objects directly whenever we create values so we can skip this,
-            // or (3) wrap with TransformedListValue (existing) or TransformedMapValue (non-existing) that does the conversion lazily
-            if ( (anyValue instanceof ListValue && !((ListValue) anyValue).storable()) || anyValue instanceof MapValue )
-            {
-                return CompiledMaterializeValueMapper.mapAnyValue( proxySpi, (AnyValue) anyValue );
-            }
-            return (AnyValue) anyValue;
-        }
         else
         {
             return ValueUtils.of( anyValue );
         }
+    }
+
+    // NOTE: This assumes anyValue is an instance of AnyValue
+    public static AnyValue materializeAnyValueResult( EmbeddedProxySPI proxySpi, Object anyValue )
+    {
+        if ( anyValue instanceof VirtualNodeValue )
+        {
+            if ( anyValue instanceof NodeValue )
+            {
+                return (AnyValue) anyValue;
+            }
+            return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( ((VirtualNodeValue) anyValue).id() ) );
+        }
+        if ( anyValue instanceof VirtualRelationshipValue )
+        {
+            if ( anyValue instanceof RelationshipValue )
+            {
+                return (AnyValue) anyValue;
+            }
+            return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( ((VirtualRelationshipValue) anyValue).id() ) );
+        }
+        // If it is a list or map, run it through a ValueMapper that will create proxy objects for entities if needed.
+        // This will first do a dry run and return as it is if no conversion is needed.
+        // If in the future we will always create proxy objects directly whenever we create values we can skip this
+        // Doing this conversion lazily instead, by wrapping with TransformedListValue or TransformedMapValue is probably not a
+        // good idea because of the complexities involved (see TOMBSTONE in VirtualValues about why TransformedListValue was killed).
+        // NOTE: There is also a case where a ListValue can be storable (ArrayValueListValue) where no conversion is needed
+        if ( (anyValue instanceof ListValue && !((ListValue) anyValue).storable()) || anyValue instanceof MapValue )
+        {
+            return CompiledMaterializeValueMapper.mapAnyValue( proxySpi, (AnyValue) anyValue );
+        }
+        return (AnyValue) anyValue;
     }
 
     public static NodeValue materializeNodeValue( EmbeddedProxySPI proxySpi, Object anyValue )
@@ -393,6 +406,10 @@ public abstract class CompiledConversionUtils
         else if ( anyValue instanceof VirtualNodeValue )
         {
             return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( ((VirtualNodeValue) anyValue).id() ) );
+        }
+        else if ( anyValue instanceof Node )
+        {
+            return ValueUtils.fromNodeProxy( (Node) anyValue );
         }
         throw new IllegalArgumentException( "Do not know how to materialize node value from type " + anyValue.getClass().getName() );
     }
@@ -407,6 +424,10 @@ public abstract class CompiledConversionUtils
         else if ( anyValue instanceof VirtualRelationshipValue )
         {
             return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( ((VirtualRelationshipValue) anyValue).id() ) );
+        }
+        else if ( anyValue instanceof Relationship )
+        {
+            return ValueUtils.fromRelationshipProxy( (Relationship) anyValue );
         }
         throw new IllegalArgumentException( "Do not know how to materialize relationship value from type " + anyValue.getClass().getName() );
     }
@@ -546,7 +567,7 @@ public abstract class CompiledConversionUtils
     }
 
     @SuppressWarnings( "unused" ) // called from compiled code
-    public static long unboxNodeOrNull( NodeIdWrapper value )
+    public static long unboxNodeOrNull( VirtualNodeValue value )
     {
         if ( value == null )
         {
@@ -556,7 +577,7 @@ public abstract class CompiledConversionUtils
     }
 
     @SuppressWarnings( "unused" ) // called from compiled code
-    public static long unboxRelationshipOrNull( RelationshipIdWrapper value )
+    public static long unboxRelationshipOrNull( VirtualRelationshipValue value )
     {
         if ( value == null )
         {
@@ -571,14 +592,6 @@ public abstract class CompiledConversionUtils
         if ( obj == null || obj == NO_VALUE )
         {
             return -1L;
-        }
-        else if ( obj instanceof NodeIdWrapper )
-        {
-            return ((NodeIdWrapper) obj).id();
-        }
-        else if ( obj instanceof RelationshipIdWrapper )
-        {
-            return ((RelationshipIdWrapper) obj).id();
         }
         else if ( obj instanceof VirtualNodeValue )
         {
@@ -611,15 +624,52 @@ public abstract class CompiledConversionUtils
     @SuppressWarnings( "unchecked" )
     public static Object mapGetProperty( Object object, String key )
     {
-        try
+        if ( object instanceof MapValue )
         {
             MapValue map = (MapValue) object;
             return map.get( key );
         }
-        catch ( ClassCastException e )
+        if ( object instanceof NodeProxyWrappingNodeValue )
         {
-            throw new CypherTypeException( "Type mismatch: expected a map but was " + object, e );
+            return Values.of( ((NodeProxyWrappingNodeValue) object).nodeProxy().getProperty( key ) );
         }
+        if ( object instanceof RelationshipProxyWrappingValue )
+        {
+            return Values.of( ((RelationshipProxyWrappingValue) object).relationshipProxy().getProperty( key ) );
+        }
+        if ( object instanceof PropertyContainer ) // Entity that is not wrapped by an AnyValue
+        {
+            return Values.of( ((PropertyContainer) object).getProperty( key ) );
+        }
+        if ( object instanceof NodeValue )
+        {
+            return ((NodeValue) object).properties().get( key );
+        }
+        if ( object instanceof RelationshipValue )
+        {
+            return ((RelationshipValue) object).properties().get( key );
+        }
+        if ( object instanceof Map<?,?> )
+        {
+            Map<String,Object> map = (Map<String,Object>) object;
+            return map.get( key );
+        }
+        if ( object instanceof TemporalValue<?,?> )
+        {
+            return ((TemporalValue<?,?>) object).get( key );
+        }
+        if ( object instanceof DurationValue )
+        {
+            return ((DurationValue) object).get( key );
+        }
+        if ( object instanceof PointValue )
+        {
+            return ((PointValue) object).get( key );
+        }
+
+        // NOTE: VirtualNodeValue and VirtualRelationshipValue will fall through to here
+        // To handle these we would need specialized cursor code
+        throw new CypherTypeException( String.format( "Type mismatch: expected a map but was %s", object ), null );
     }
 
     static class ArrayIterator implements Iterator

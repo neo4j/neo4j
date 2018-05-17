@@ -1,31 +1,35 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.discovery;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -41,7 +45,7 @@ public final class SharedDiscoveryService
 
     private final ConcurrentMap<MemberId,CoreServerInfo> coreMembers;
     private final ConcurrentMap<MemberId,ReadReplicaInfo> readReplicas;
-    private final Set<SharedDiscoveryCoreClient> listeningClients;
+    private final List<SharedDiscoveryCoreClient> listeningClients;
     private final ConcurrentMap<String,ClusterId> clusterIdDbNames;
     private final ConcurrentMap<String,LeaderInfo> leaderMap;
     private final CountDownLatch enoughMembers;
@@ -50,7 +54,7 @@ public final class SharedDiscoveryService
     {
         coreMembers = new ConcurrentHashMap<>();
         readReplicas = new ConcurrentHashMap<>();
-        listeningClients = new ConcurrentSkipListSet<>();
+        listeningClients = new CopyOnWriteArrayList<>();
         clusterIdDbNames = new ConcurrentHashMap<>();
         leaderMap = new ConcurrentHashMap<>();
         enoughMembers = new CountDownLatch( MIN_DISCOVERY_MEMBERS );
@@ -95,6 +99,7 @@ public final class SharedDiscoveryService
         CoreServerInfo previousMember = coreMembers.putIfAbsent( client.getMemberId(), client.getCoreServerInfo() );
         if ( previousMember == null )
         {
+
             listeningClients.add( client );
             enoughMembers.countDown();
             notifyCoreClients();
@@ -126,19 +131,24 @@ public final class SharedDiscoveryService
         notifyCoreClients();
     }
 
-    synchronized void casLeaders( LeaderInfo leaderInfo, String dbName )
+    void casLeaders( LeaderInfo leaderInfo, String dbName )
     {
-        Optional<LeaderInfo> current = Optional.ofNullable( leaderMap.get( dbName ) );
-
-        boolean noUpdate = current.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
-
-        boolean greaterOrEqualTermExists =  current.map(l -> l.term() >= leaderInfo.term() ).orElse( false );
-
-        boolean success = !( greaterOrEqualTermExists || noUpdate );
-
-        if ( success )
+        synchronized ( leaderMap )
         {
-            leaderMap.put( dbName, leaderInfo );
+            Optional<LeaderInfo> current = Optional.ofNullable( leaderMap.get( dbName ) );
+
+            boolean sameLeader = current.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
+
+            int termComparison = current.map( l -> Long.compare( l.term(), leaderInfo.term() ) ).orElse( -1 );
+
+            boolean greaterTermExists = termComparison > 0;
+
+            boolean sameTermButNoStepDown = termComparison == 0 && !leaderInfo.isSteppingDown();
+
+            if ( !( greaterTermExists || sameTermButNoStepDown || sameLeader ) )
+            {
+                leaderMap.put( dbName, leaderInfo );
+            }
         }
     }
 

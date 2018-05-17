@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Arrays;
@@ -60,10 +61,11 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     private static final int headerStateRefCountMax = 0x7FFF;
     private static final long headerStateRefCountMask = 0x7FFF_0000_0000_0000L;
     private static final long headerStateLastPageIdMask = 0x8000_FFFF_FFFF_FFFFL;
+    private static final int PF_LOCK_MASK = PF_SHARED_WRITE_LOCK | PF_SHARED_READ_LOCK;
 
     final MuninnPageCache pageCache;
     final int filePageSize;
-    final PageCacheTracer pageCacheTracer;
+    private final PageCacheTracer pageCacheTracer;
     final LatchMap pageFaultLatches;
 
     // This is the table where we translate file-page-ids to cache-page-ids. Only one thread can perform a resize at
@@ -173,29 +175,37 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     @Override
     public PageCursor io( long pageId, int pf_flags )
     {
-        int lockMask = PF_SHARED_WRITE_LOCK | PF_SHARED_READ_LOCK;
-        if ( (pf_flags & lockMask) == 0 )
-        {
-            throw new IllegalArgumentException(
-                    "Must specify either PF_SHARED_WRITE_LOCK or PF_SHARED_READ_LOCK" );
-        }
-        if ( (pf_flags & lockMask) == lockMask )
-        {
-            throw new IllegalArgumentException(
-                    "Cannot specify both PF_SHARED_WRITE_LOCK and PF_SHARED_READ_LOCK" );
-        }
+        int lockFlags = pf_flags & PF_LOCK_MASK;
         MuninnPageCursor cursor;
-        if ( (pf_flags & PF_SHARED_READ_LOCK) == 0 )
+        if ( lockFlags == PF_SHARED_READ_LOCK )
+        {
+            cursor = cursorPool.takeReadCursor( pageId, pf_flags );
+        }
+        else if ( lockFlags == PF_SHARED_WRITE_LOCK )
         {
             cursor = cursorPool.takeWriteCursor( pageId, pf_flags );
         }
         else
         {
-            cursor = cursorPool.takeReadCursor( pageId, pf_flags );
+            throw wrongLocksArgument( lockFlags );
         }
 
         cursor.rewind();
         return cursor;
+    }
+
+    private IllegalArgumentException wrongLocksArgument( int lockFlags )
+    {
+        if ( lockFlags == 0 )
+        {
+            return new IllegalArgumentException(
+                    "Must specify either PF_SHARED_WRITE_LOCK or PF_SHARED_READ_LOCK" );
+        }
+        else
+        {
+            return new IllegalArgumentException(
+                    "Cannot specify both PF_SHARED_WRITE_LOCK and PF_SHARED_READ_LOCK" );
+        }
     }
 
     @Override
@@ -347,7 +357,21 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
     }
 
-    void flushAndForceInternal( FlushEventOpportunity flushOpportunity, boolean forClosing, IOLimiter limiter )
+    void flushAndForceInternal( FlushEventOpportunity flushes, boolean forClosing, IOLimiter limiter )
+            throws IOException
+    {
+        try
+        {
+            doFlushAndForceInternal( flushes, forClosing, limiter );
+        }
+        catch ( ClosedChannelException e )
+        {
+            e.addSuppressed( closeStackTrace );
+            throw e;
+        }
+    }
+
+    private void doFlushAndForceInternal( FlushEventOpportunity flushes, boolean forClosing, IOLimiter limiter )
             throws IOException
     {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
@@ -415,14 +439,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                 }
                 if ( pagesGrabbed > 0 )
                 {
-                    vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushOpportunity, forClosing );
+                    vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushes, forClosing );
                     limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
                     pagesGrabbed = 0;
                 }
             }
             if ( pagesGrabbed > 0 )
             {
-                vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushOpportunity, forClosing );
+                vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushes, forClosing );
                 limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
             }
         }
@@ -525,15 +549,20 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         long state = getHeaderState();
         if ( refCountOf( state ) == 0 )
         {
-            FileIsNotMappedException exception = new FileIsNotMappedException( file() );
-            Exception closedBy = closeStackTrace;
-            if ( closedBy != null )
-            {
-                exception.addSuppressed( closedBy );
-            }
-            throw exception;
+            throw fileIsNotMappedException();
         }
         return state & headerStateLastPageIdMask;
+    }
+
+    private FileIsNotMappedException fileIsNotMappedException()
+    {
+        FileIsNotMappedException exception = new FileIsNotMappedException( file() );
+        Exception closedBy = closeStackTrace;
+        if ( closedBy != null )
+        {
+            exception.addSuppressed( closedBy );
+        }
+        return exception;
     }
 
     private long getHeaderState()
@@ -651,7 +680,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * Remove the mapping of the given filePageId from the translation table, and return the evicted page object.
      * @param filePageId The id of the file page to evict.
      */
-    void evictPage( long filePageId )
+    private void evictPage( long filePageId )
     {
         int chunkId = computeChunkId( filePageId );
         long chunkOffset = computeChunkOffset( filePageId );

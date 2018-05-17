@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,6 +30,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.nio.channels.ClosedChannelException;
@@ -373,7 +374,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void writesFlushedFromPageFileMustBeObservableEvenWhenRacingWithEviction() throws IOException
     {
-        PageCache cache = getPageCache( fs, 20, PageCacheTracer.NULL,
+        getPageCache( fs, 20, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
 
         long startPageId = 0;
@@ -381,7 +382,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         int iterations = 500;
         int shortsPerPage = pageCachePageSize / 2;
 
-        try ( PagedFile pagedFile = cache.map( file( "a" ), pageCachePageSize ) )
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageCachePageSize ) )
         {
             for ( int i = 1; i <= iterations; i++ )
             {
@@ -418,6 +419,112 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void flushAndForceMustNotLockPageCacheForWholeDuration() throws Exception
+    {
+        maxPages = 5000;
+        configureStandardPageCache();
+        PageCache pageCache = this.pageCache;
+        this.pageCache = null; // `null` out to prevent `tearDown` from getting stuck if test fails.
+        File a = existingFile( "a" );
+        File b = existingFile( "b" );
+        try ( PagedFile pfA = pageCache.map( a, filePageSize ) )
+        {
+            // Dirty a bunch of pages.
+            try ( PageCursor cursor = pfA.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                for ( int i = 0; i < maxPages; i++ )
+                {
+                    assertTrue( cursor.next() );
+                }
+            }
+
+            BinaryLatch limiterStartLatch = new BinaryLatch();
+            BinaryLatch limiterBlockLatch = new BinaryLatch();
+            Future<?> flusher = executor.submit( () ->
+            {
+                pageCache.flushAndForce( ( stamp, ios, flushable ) ->
+                {
+                    limiterStartLatch.release();
+                    limiterBlockLatch.await();
+                    return 0;
+                } );
+                return null;
+            } );
+
+            limiterStartLatch.await(); // Flusher is now stuck inside flushAndForce.
+
+            // We should be able to map and close paged files.
+            pageCache.map( b, filePageSize ).close();
+            // We should be able to get and list existing mappings.
+            pageCache.listExistingMappings();
+            pageCache.getExistingMapping( a ).ifPresent( pf ->
+            {
+                try
+                {
+                    pf.close();
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+            } );
+
+            limiterBlockLatch.release();
+            flusher.get();
+        }
+    }
+
+    @Test
+    public void flushAndForceMustTolerateAsynchronousFileUnmapping() throws Exception
+    {
+        configureStandardPageCache();
+        PageCache pageCache = this.pageCache;
+        this.pageCache = null; // `null` out to prevent `tearDown` from getting stuck if test fails.
+        File a = existingFile( "a" );
+        File b = existingFile( "b" );
+        File c = existingFile( "c" );
+
+        BinaryLatch limiterStartLatch = new BinaryLatch();
+        BinaryLatch limiterBlockLatch = new BinaryLatch();
+        Future<?> flusher;
+
+        try ( PagedFile pfA = pageCache.map( a, filePageSize );
+              PagedFile pfB = pageCache.map( b, filePageSize );
+              PagedFile pfC = pageCache.map( c, filePageSize ) )
+        {
+            // Dirty a bunch of pages.
+            try ( PageCursor cursor = pfA.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            try ( PageCursor cursor = pfB.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            try ( PageCursor cursor = pfC.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            flusher = executor.submit( () ->
+            {
+                pageCache.flushAndForce( ( stamp, ios, flushable ) ->
+                {
+                    limiterStartLatch.release();
+                    limiterBlockLatch.await();
+                    return 0;
+                } );
+                return null;
+            } );
+
+            limiterStartLatch.await(); // Flusher is now stuck inside flushAndForce.
+        } // We should be able to unmap all the files.
+        // And then when the flusher resumes again, it should not throw any exceptions from the asynchronously
+        // closed files.
+        limiterBlockLatch.release();
+        flusher.get(); // This must not throw.
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void writesFlushedFromPageCacheMustBeExternallyObservable() throws IOException
     {
         configureStandardPageCache();
@@ -437,7 +544,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         verifyRecordsInFile( file, recordCount );
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void writesToPagesMustNotBleedIntoAdjacentPages() throws IOException
     {
         configureStandardPageCache();

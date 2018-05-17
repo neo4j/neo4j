@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -52,7 +52,8 @@ class DurationFunction implements CallableUserFunction
                     new QualifiedName( new String[0], "duration" ),
                     Collections.singletonList( inputField( "input", Neo4jTypes.NTAny ) ),
                     Neo4jTypes.NTDuration, null, new String[0],
-                    DurationFunction.class.getAnnotation( Description.class ).value() );
+                    DurationFunction.class.getAnnotation( Description.class ).value(),
+                    true );
 
     static void register( Procedures procedures ) throws ProcedureException
     {
@@ -125,7 +126,7 @@ class DurationFunction implements CallableUserFunction
                     new QualifiedName( new String[] {"duration"}, unit ),
                     SIGNATURE, Neo4jTypes.NTDuration, null, new String[0],
                     String.format(
-                            DESCRIPTION, unitString ) );
+                            DESCRIPTION, unitString ), true );
         }
 
         @Override

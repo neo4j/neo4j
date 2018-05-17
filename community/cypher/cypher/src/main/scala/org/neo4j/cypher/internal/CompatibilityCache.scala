@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
+import java.util.concurrent.ConcurrentHashMap
+
 import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_3.{CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorV3_3}
@@ -32,8 +34,6 @@ import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
-
-import scala.collection.mutable
 
 sealed trait PlannerSpec
 final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec
@@ -92,10 +92,13 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
 }
 
 class CompatibilityCache(factory: CompatibilityFactory) extends CompatibilityFactory {
-  private val cache_v2_3 = new mutable.HashMap[PlannerSpec_v2_3, v2_3.Compatibility]
-  private val cache_v3_1 = new mutable.HashMap[PlannerSpec_v3_1, v3_1.Compatibility]
-  private val cache_v3_3 = new mutable.HashMap[PlannerSpec_v3_3, v3_3compat.Compatibility[_,_,_]]
-  private val cache_v3_4 = new mutable.HashMap[PlannerSpec_v3_4, Compatibility[_,_]]
+
+  import scala.collection.convert.decorateAsScala._
+
+  private val cache_v2_3 = new ConcurrentHashMap[PlannerSpec_v2_3, v2_3.Compatibility].asScala
+  private val cache_v3_1 = new ConcurrentHashMap[PlannerSpec_v3_1, v3_1.Compatibility].asScala
+  private val cache_v3_3 = new ConcurrentHashMap[PlannerSpec_v3_3, v3_3compat.Compatibility[_,_,_]].asScala
+  private val cache_v3_4 = new ConcurrentHashMap[PlannerSpec_v3_4, Compatibility[_,_]].asScala
 
   override def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility =
     cache_v2_3.getOrElseUpdate(spec, factory.create(spec, config))

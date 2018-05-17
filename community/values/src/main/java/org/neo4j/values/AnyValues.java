@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -67,7 +67,7 @@ public final class AnyValues
      *  <li> VOID (i.e. the type of null)
      * </ul>
      */
-    private static final AnyValueComparator comp = new AnyValueComparator( Values.COMPARATOR, Values.TERNARY_COMPARATOR, VirtualValueGroup::compareTo );
+    private static final AnyValueComparator comp = new AnyValueComparator( Values.COMPARATOR, VirtualValueGroup::compareTo );
     public static final Comparator<AnyValue> COMPARATOR = comp;
     public static final TernaryComparator<AnyValue> TERNARY_COMPARATOR = comp;
 

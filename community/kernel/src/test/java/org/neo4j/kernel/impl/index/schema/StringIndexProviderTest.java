@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -42,6 +43,12 @@ public class StringIndexProviderTest extends NativeIndexProviderTest
                                        Monitor monitor, RecoveryCleanupWorkCollector collector )
     {
         return new StringIndexProvider( pageCache, fs, dir, monitor, collector, true );
+    }
+
+    @Override
+    protected InternalIndexState expectedStateOnNonExistingSubIndex()
+    {
+        return InternalIndexState.POPULATING;
     }
 
     @Override

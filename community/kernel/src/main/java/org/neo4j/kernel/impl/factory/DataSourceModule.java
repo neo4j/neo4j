@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -262,10 +262,11 @@ public class DataSourceModule
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
         EmbeddedProxySPI proxySPI = platform.dependencies.resolveDependency( EmbeddedProxySPI.class );
 
+        ProcedureConfig procedureConfig = new ProcedureConfig( platform.config );
         Procedures procedures = new Procedures( proxySPI,
                 new SpecialBuiltInProcedures( Version.getNeo4jVersion(),
                         platform.databaseInfo.edition.toString() ),
-                pluginDir, internalLog, new ProcedureConfig( platform.config ) );
+                pluginDir, internalLog, procedureConfig );
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
@@ -300,7 +301,7 @@ public class DataSourceModule
         // Edition procedures
         try
         {
-            editionModule.registerProcedures( procedures );
+            editionModule.registerProcedures( procedures, procedureConfig );
         }
         catch ( KernelException e )
         {

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
@@ -32,7 +35,6 @@ import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{AnyValueType, BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
-import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods._
@@ -41,13 +43,13 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue, VirtualValues}
+import org.neo4j.values.virtual._
 
 import scala.collection.mutable
 
@@ -287,14 +289,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   // NOTE: This method assumes that code for converting from null to NoValue for nullable expressions has already been generated outside it
   private def toAnyValue(expression: Expression, codeGenType: CodeGenType, materializeEntities: Boolean): Expression = codeGenType match {
     case CypherCodeGenType(_, _: AnyValueType) =>
-      expression // Already an AnyValue
+      cast(typeRef[AnyValue], expression) // Already an AnyValue
 
     // == Node ==
     case CodeGenType.primitiveNode =>
       if (materializeEntities)
         createNewNodeValueFromPrimitive(nodeManager, expression)
       else
-        createNewInstance(typeRef[NodeIdWrapperImpl], (typeRef[Long], expression))
+        createNewNodeReference(expression)
 
     case CypherCodeGenType(CTNode, _) => // NOTE: This may already be a NodeValue
       invoke(method[ValueUtils, NodeValue]("asNodeValue", typeRef[Object]), expression)
@@ -304,7 +306,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       if (materializeEntities)
         createNewRelationshipValueFromPrimitive(nodeManager, expression)
       else
-        createNewInstance(typeRef[RelationshipIdWrapperImpl], (typeRef[Long], expression))
+        createNewRelationshipReference(expression)
 
     case CypherCodeGenType(CTRelationship, _) => // NOTE: This may already be a RelationshipValue
       invoke(method[ValueUtils, RelationshipValue]("asRelationshipValue", typeRef[Object]), expression)
@@ -380,11 +382,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       invoke(materializeNodeValue, nodeManager, generator.load(nodeIdVar))
     else
       invoke(nodeManager, newNodeProxyById,
-        invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId))
+        invoke(cast(typeRef[VirtualNodeValue], generator.load(nodeIdVar)), nodeId))
 
   override def node(nodeIdVar: String, codeGenType: CodeGenType) =
     if (codeGenType.isPrimitive) generator.load(nodeIdVar)
-    else invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId)
+    else invoke(cast(typeRef[VirtualNodeValue], generator.load(nodeIdVar)), nodeId)
 
   // Unused in production
   override def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
@@ -412,13 +414,18 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       invoke(materializeRelationshipValue, nodeManager, generator.load(relIdVar))
     else
       invoke(nodeManager, newRelationshipProxyById,
-        invoke(cast(typeRef[RelationshipIdWrapper], generator.load(relIdVar)), relId))
+        invoke(cast(typeRef[VirtualRelationshipValue], generator.load(relIdVar)), relId))
 
   override def relationship(relIdVar: String, codeGenType: CodeGenType) =
     generator.load(relIdVar)
 
-  override def materializeAny(expression: Expression) =
-    invoke(materializeAnyResult, nodeManager, expression)
+  override def materializeAny(expression: Expression, codeGenType: CodeGenType) =
+    codeGenType match {
+      case CypherCodeGenType(_, _: AnyValueType) =>
+        invoke(materializeAnyValueResult, nodeManager, expression)
+      case _ =>
+        invoke(materializeAnyResult, nodeManager, expression)
+    }
 
   override def trace[V](planStepId: String, maybeSuffix: Option[String] = None)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
   else {
@@ -453,10 +460,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       // a primitive variable we need to force it to be unboxed
       codeGenType match {
         case CodeGenType.primitiveNode =>
-          unbox(Expression.cast(typeRef[NodeIdWrapper], invokeLoadParameter),
+          unbox(Expression.cast(typeRef[VirtualNodeValue], invokeLoadParameter),
             CypherCodeGenType(symbols.CTNode, ReferenceType))
         case CodeGenType.primitiveRel =>
-          unbox(Expression.cast(typeRef[RelationshipIdWrapper], invokeLoadParameter),
+          unbox(Expression.cast(typeRef[VirtualRelationshipValue], invokeLoadParameter),
             CypherCodeGenType(symbols.CTRelationship, ReferenceType))
         case CodeGenType.primitiveInt =>
           Expression.unbox(Expression.cast(typeRef[java.lang.Long], invokeLoadParameter))
@@ -539,9 +546,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def box(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
     case CypherCodeGenType(symbols.CTNode, LongType) =>
-      createNewInstance(typeRef[NodeIdWrapperImpl], (typeRef[Long], expression))
+      createNewNodeReference(expression)
     case CypherCodeGenType(symbols.CTRelationship, LongType) =>
-      createNewInstance(typeRef[RelationshipIdWrapperImpl], (typeRef[Long], expression))
+      createNewRelationshipReference(expression)
     case _ => Expression.box(expression)
   }
 
@@ -881,9 +888,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                     invoke(method[CompiledEquivalenceUtils, Int]("hashCode", typeRef[Object]),
                            box(expression, cgType)))
     } else {
+      val elementType = deriveCommonType(structure.values.map(_._1))
       generator.put(generator.load(varName), FieldReference.field(typ, typeRef[Int], "hashCode"),
-                    invoke(method[CompiledEquivalenceUtils, Int]("hashCode", typeRef[Array[Object]]),
-                           newArray(typeRef[Object], structure.values.map(_._2).toSeq: _*)))
+        invoke(method[CompiledEquivalenceUtils, Int]("hashCode", TypeReference.arrayOf(elementType)),
+          if (elementType.isPrimitive)
+            newArray(elementType, structure.values.map(_._2).toSeq: _*)
+          else
+            newArray(elementType, structure.values.map(e => Expression.box(e._2)).toSeq: _*)
+        ))
     }
   }
 
@@ -1639,5 +1651,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case _: ReferenceType =>
       invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Long], "extractLong", typeRef[Object]), generator.load(name))
     case _ => throw new IllegalStateException(s"$name has type $typ which cannot be represented as a long")
+  }
+
+  // Lowers a sequence of types and returns either a type that all elements share or Object if any types are different
+  private def deriveCommonType(codeGenTypes: Iterable[CodeGenType]): TypeReference = {
+    val lowerTypes = codeGenTypes.map(lowerTypeScalarSubset) // We use a subset version of lowerType that does not give us the specializations for sequence values (CTList)
+    lowerTypes.reduce((a, b) => if (a == b) a else typeRef[Object])
   }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursorTestBase;
 
-public class NodeLabelIndexCursorTest extends NodeLabelIndexCursorTestBase<ReadTestSupport>
+public class NodeLabelIndexCursorTest extends NodeLabelIndexCursorTestBase<WriteTestSupport>
 {
     @Override
-    public ReadTestSupport newTestSupport()
+    public WriteTestSupport newTestSupport()
     {
-        return new ReadTestSupport();
+        return new WriteTestSupport();
     }
 }

@@ -1,28 +1,30 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.backup.impl;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -34,6 +36,7 @@ import org.junit.runners.Parameterized.Parameters;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -57,9 +60,9 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -72,15 +75,15 @@ import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandHaIT
 {
-    @ClassRule
-    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );
+    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( db );
 
-    private final File backupDir = testDirectory.directory( "backups" );
+    private File backupDir;
 
     @Parameter
     public String recordFormat;
@@ -110,6 +113,7 @@ public class OnlineBackupCommandHaIT
     @Before
     public void resetTasks()
     {
+        backupDir = testDirectory.directory( "backups" );
         oneOffShutdownTasks = new ArrayList<>();
     }
 
@@ -129,13 +133,13 @@ public class OnlineBackupCommandHaIT
         startDb( backupPort );
         assertEquals( "should not be able to do backup when noone is listening",
                 1,
-                runBackupTool( "--from", "127.0.0.1:" + PortAuthority.allocatePort(),
+                runBackupTool( testDirectory.absolutePath(), "--from", "127.0.0.1:" + PortAuthority.allocatePort(),
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
         assertEquals(
                 0,
-                runBackupTool( "--from", "127.0.0.1:" + backupPort,
+                runBackupTool( testDirectory.absolutePath(), "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
@@ -143,7 +147,7 @@ public class OnlineBackupCommandHaIT
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupTool( "--from", "127.0.0.1:" + backupPort,
+                runBackupTool( testDirectory.absolutePath(), "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
@@ -167,7 +171,9 @@ public class OnlineBackupCommandHaIT
 
         // then backup is successful
         String ip = ":" + backupPort;
-        assertEquals( 0, runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=defaultport" + recordFormat ) );
+        String backupName = "usableState" + recordFormat;
+        assertEquals( 0, runBackupTool( testDirectory.absolutePath(),
+                "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=" + backupName ) );
         db.shutdown();
     }
 
@@ -178,7 +184,8 @@ public class OnlineBackupCommandHaIT
         startDb( backupPort );
         String ip = ":" + backupPort;
         String name = "backupWithTxLogs" + recordFormat;
-        assertEquals( 0, runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+        assertEquals( 0, runBackupTool( testDirectory.absolutePath(),
+                "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
                 "--name=" + name ) );
         db.shutdown();
 
@@ -193,17 +200,17 @@ public class OnlineBackupCommandHaIT
     @Test
     public void backupFailsWithCatchupProtoOverride() throws Exception
     {
-        String backupName = "customport" + recordFormat; // due to ClassRule not cleaning between tests
+        String backupName = "portOverride" + recordFormat; // due to ClassRule not cleaning between tests
 
         int backupPort = PortAuthority.allocatePort();
         startDb( backupPort );
 
         assertEquals(
                 1,
-                runBackupTool( "--from", "127.0.0.1:" + backupPort,
+                runBackupTool( testDirectory.absolutePath(), "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
-                        "--proto=catchup",
+                        "--protocol=catchup",
                         "--name=" + backupName ) );
     }
 
@@ -211,7 +218,7 @@ public class OnlineBackupCommandHaIT
     public void backupDoesNotDisplayExceptionWhenSuccessful() throws Exception
     {
         // given
-        String backupName = "customPort" + recordFormat;
+        String backupName = "noErrorTest_" + recordFormat;
         int backupPort = PortAuthority.allocatePort();
         startDb( backupPort );
 
@@ -226,7 +233,7 @@ public class OnlineBackupCommandHaIT
         // when
         assertEquals(
                 0,
-                runBackupTool( outputStream, errorStream,
+                runBackupTool( testDirectory.absolutePath(), outputStream, errorStream,
                         "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
@@ -235,6 +242,51 @@ public class OnlineBackupCommandHaIT
         // then
         assertFalse( byteArrayErrorStream.toString().toLowerCase().contains( "exception" ) );
         assertFalse( byteArrayOutputStream.toString().toLowerCase().contains( "exception" ) );
+    }
+
+    @Test
+    public void reportsProgress() throws Exception
+    {
+        // given
+        String backupName = "reportsProgress_" + recordFormat;
+        int backupPort = PortAuthority.allocatePort();
+        startDb( backupPort );
+
+        // and
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PrintStream outputStream = wrapWithNormalOutput( System.out, new PrintStream( byteArrayOutputStream ) );
+
+        // and
+        ByteArrayOutputStream byteArrayErrorStream = new ByteArrayOutputStream();
+        PrintStream errorStream = wrapWithNormalOutput( System.err, new PrintStream( byteArrayErrorStream ) );
+
+        // when
+        assertEquals(
+                0,
+                runBackupTool( backupDir, outputStream, errorStream,
+                        "--from", "127.0.0.1:" + backupPort,
+                        "--protocol=common",
+                        "--cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=" + backupName ) );
+
+        // then
+        String output = byteArrayOutputStream.toString();
+        String legacyImplementationDetail = "temp-copy";
+        String location = Paths.get( backupDir.toString(), backupName, legacyImplementationDetail ).toString();
+        assertTrue( output.contains( "Start receiving store files" ) );
+        assertTrue( output.contains( "Finish receiving store files" ) );
+        String tested = Paths.get( location, "neostore.nodestore.db.labels" ).toString();
+        assertTrue( tested, output.contains( format( "Start receiving store file %s", tested ) ) );
+        assertTrue( tested, output.contains( format( "Finish receiving store file %s", tested ) ) );
+        assertFalse( output.contains( "Start receiving transactions from " ) );
+        assertFalse( output.contains( "Finish receiving transactions at " ) );
+        assertTrue( output.contains( "Start recovering store" ) );
+        assertTrue( output.contains( "Finish recovering store" ) );
+        assertFalse( output.contains( "Start receiving index snapshots" ) );
+        assertFalse( output.contains( "Start receiving index snapshot id 1" ) );
+        assertFalse( output.contains( "Finished receiving index snapshot id 1" ) );
+        assertFalse( output.contains( "Finished receiving index snapshots" ) );
     }
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
@@ -270,15 +322,15 @@ public class OnlineBackupCommandHaIT
         createSomeData( db );
     }
 
-    private static int runBackupTool( PrintStream outputStream, PrintStream errorStream, String... args ) throws Exception
+    private static int runBackupTool( File neo4jHome, PrintStream outputStream, PrintStream errorStream, String... args ) throws Exception
     {
-        return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), outputStream, errorStream, false, args );
+        return runBackupToolFromOtherJvmToGetExitCode( neo4jHome, outputStream, errorStream, false, args );
     }
 
-    private static int runBackupTool( String... args )
+    private static int runBackupTool( File neo4jHome, String... args )
             throws Exception
     {
-        return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
+        return runBackupToolFromOtherJvmToGetExitCode( neo4jHome, args );
     }
 
     private DbRepresentation getDbRepresentation()

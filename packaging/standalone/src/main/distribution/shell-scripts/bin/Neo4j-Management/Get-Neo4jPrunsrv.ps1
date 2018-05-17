@@ -1,5 +1,5 @@
-# Copyright (c) 2002-2018 "Neo Technology,"
-# Network Engine for Objects in Lund AB [http://neotechnology.com]
+# Copyright (c) 2002-2018 "Neo4j,"
+# Neo4j Sweden AB [http://neo4j.com]
 #
 # This file is part of Neo4j.
 #
@@ -31,7 +31,10 @@ An object representing a valid Neo4j Server object
 Retrieve the PrunSrv command line to install a Neo4j Server
 
 .PARAMETER ForServerUninstall
-Retrieve the PrunSrv command line to install a Neo4j Server
+Retrieve the PrunSrv command line to uninstall a Neo4j Server
+
+.PARAMETER ForServerUpdate
+Retrieve the PrunSrv command line to update a Neo4j Server
 
 .PARAMETER ForConsole
 Retrieve the PrunSrv command line to start a Neo4j Server in the console.
@@ -55,6 +58,9 @@ Function Get-Neo4jPrunsrv
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerUninstallInvoke')]
     [switch]$ForServerUninstall
+
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerUpdateInvoke')]
+    [switch]$ForServerUpdate
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ConsoleInvoke')]
     [switch]$ForConsole
@@ -92,8 +98,13 @@ Function Get-Neo4jPrunsrv
 
     # Build the PRUNSRV command line
     switch ($PsCmdlet.ParameterSetName) {
-      "ServerInstallInvoke"   {
+      "ServerInstallInvoke"     {
         $PrunArgs += @("`"//IS//$($Name)`"")
+      }
+      "ServerUpdateInvoke" {
+        $PrunArgs += @("`"//US//$($Name)`"")
+      }
+      {$_ -in @("ServerInstallInvoke", "ServerUpdateInvoke")} {
 
         $JvmOptions = @()
 
@@ -151,17 +162,16 @@ Function Get-Neo4jPrunsrv
           }
         }
 
-        if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.OpenEnterpriseEntryPoint' }
         if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
         if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterEntryPoint' }
         if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
         $PrunArgs += @("`"--StopClass=$($serverMainClass)`"",
                        "`"--StartClass=$($serverMainClass)`"")
       }
-      "ServerUninstallInvoke" { $PrunArgs += @("`"//DS//$($Name)`"") }
-      "ConsoleInvoke"         { $PrunArgs += @("`"//TS//$($Name)`"") }
+      "ServerUninstallInvoke"   { $PrunArgs += @("`"//DS//$($Name)`"") }
+      "ConsoleInvoke"           { $PrunArgs += @("`"//TS//$($Name)`"") }
       default {
-        throw "Unknown ParameterSerName $($PsCmdlet.ParameterSetName)"
+        throw "Unknown ParameterSetName $($PsCmdlet.ParameterSetName)"
         return $null
       }
     }

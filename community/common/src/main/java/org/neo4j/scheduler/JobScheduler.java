@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -254,6 +254,14 @@ public interface JobScheduler extends Lifecycle
          */
         void cancelled( boolean mayInterruptIfRunning );
     }
+
+    /**
+     * Assign a specific name to the top-most scheduler group.
+     * <p>
+     * This is just a suggestion for debugging purpose. The specific scheduler implementation is free to ignore calls
+     * to this method.
+     */
+    void setTopLevelGroupName( String name );
 
     /** Expose a group scheduler as an {@link Executor} */
     Executor executor( Group group );

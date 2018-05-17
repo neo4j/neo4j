@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.discovery;
 
@@ -23,8 +26,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
@@ -34,7 +39,6 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
@@ -47,6 +51,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -66,7 +71,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-public class HazelcastCoreTopologyService extends AbstractTopologyService implements CoreTopologyService
+public class HazelcastCoreTopologyService implements CoreTopologyService, Lifecycle
 {
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private static final int HAZELCAST_MIN_CLUSTER = 2;
@@ -85,10 +90,16 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
 
-    private volatile LeaderInfo leaderInfo = LeaderInfo.INITIAL;
+    private final AtomicReference<LeaderInfo> leaderInfo = new AtomicReference<>( LeaderInfo.INITIAL );
+    private final AtomicReference<Optional<LeaderInfo>> stepDownInfo = new AtomicReference<>( Optional.empty() );
+
     private volatile HazelcastInstance hazelcastInstance;
-    private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
+
+    /* cached data updated during each refresh */
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
+    private volatile CoreTopology localCoreTopology = CoreTopology.EMPTY;
+    private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
+    private volatile ReadReplicaTopology localReadReplicaTopology = ReadReplicaTopology.EMPTY;
     private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
     private volatile Map<MemberId,RoleInfo> coreRoles = Collections.emptyMap();
 
@@ -132,11 +143,37 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     }
 
     @Override
-    public void setLeader( LeaderInfo leaderInfo, String dbName )
+    public void setLeader( LeaderInfo newLeaderInfo, String dbName )
     {
-        if ( this.leaderInfo.term() < leaderInfo.term() )
+        leaderInfo.updateAndGet( currentLeaderInfo ->
         {
-            this.leaderInfo = leaderInfo;
+            if ( currentLeaderInfo.term() < newLeaderInfo.term() && localDBName.equals( dbName ) )
+            {
+                log.info( "Leader %s updating leader info for database %s and term %s", myself, localDBName, newLeaderInfo.term() );
+                return newLeaderInfo;
+            }
+            else
+            {
+                return currentLeaderInfo;
+            }
+        } );
+    }
+
+    @Override
+    public void handleStepDown( long term, String dbName )
+    {
+        LeaderInfo localLeaderInfo = leaderInfo.get();
+
+        boolean wasLeaderForDbAndTerm =
+                Objects.equals( myself, localLeaderInfo.memberId() ) &&
+                localDBName.equals( dbName ) &&
+                term == localLeaderInfo.term();
+
+        if ( wasLeaderForDbAndTerm )
+        {
+            log.info( "Step down event detected. This topology member, with MemberId %s, was leader in term %s, now moving " +
+                    "to follower.", myself, localLeaderInfo.term() );
+            stepDownInfo.set( Optional.of( localLeaderInfo.stepDown() ) );
         }
     }
 
@@ -150,6 +187,12 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     public String localDBName()
     {
         return localDBName;
+    }
+
+    @Override
+    public void init()
+    {
+        // nothing to do
     }
 
     @Override
@@ -213,6 +256,12 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
                 log.warn( "Failed to stop Hazelcast", e );
             }
         }
+    }
+
+    @Override
+    public void shutdown()
+    {
+        // nothing to do
     }
 
     private HazelcastInstance createHazelcastInstance()
@@ -333,9 +382,21 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     }
 
     @Override
+    public CoreTopology localCoreServers()
+    {
+        return localCoreTopology;
+    }
+
+    @Override
     public ReadReplicaTopology allReadReplicas()
     {
         return readReplicaTopology;
+    }
+
+    @Override
+    public ReadReplicaTopology localReadReplicas()
+    {
+        return localReadReplicaTopology;
     }
 
     @Override
@@ -352,10 +413,17 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private void refreshRoles() throws InterruptedException
     {
         waitOnHazelcastInstanceCreation();
+        LeaderInfo localLeaderInfo = leaderInfo.get();
+        Optional<LeaderInfo> localStepDownInfo = stepDownInfo.get();
 
-        if ( leaderInfo.memberId() != null && leaderInfo.memberId().equals( myself ) )
+        if ( localStepDownInfo.isPresent() )
         {
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName );
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, localStepDownInfo.get(), localDBName );
+            stepDownInfo.compareAndSet( localStepDownInfo, Optional.empty() );
+        }
+        else if ( localLeaderInfo.memberId() != null && localLeaderInfo.memberId().equals( myself ) )
+        {
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, localLeaderInfo, localDBName );
         }
 
         coreRoles = HazelcastClusterTopology.getCoreRoles( hazelcastInstance, allCoreServers().members().keySet() );
@@ -375,7 +443,9 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
 
         CoreTopology newCoreTopology = getCoreTopology( hazelcastInstance, config, log );
         TopologyDifference difference = coreTopology.difference( newCoreTopology );
+
         coreTopology = newCoreTopology;
+        localCoreTopology = newCoreTopology.filterTopologyByDb( localDBName );
 
         if ( difference.hasChanges() )
         {
@@ -387,15 +457,17 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private void refreshReadReplicaTopology() throws InterruptedException
     {
         waitOnHazelcastInstanceCreation();
-        ReadReplicaTopology newReadReplicaTopology = getReadReplicaTopology( hazelcastInstance, log );
 
+        ReadReplicaTopology newReadReplicaTopology = getReadReplicaTopology( hazelcastInstance, log );
         TopologyDifference difference = readReplicaTopology.difference( newReadReplicaTopology );
+
+        this.readReplicaTopology = newReadReplicaTopology;
+        this.localReadReplicaTopology = newReadReplicaTopology.filterTopologyByDb( localDBName );
+
         if ( difference.hasChanges() )
         {
             log.info( "Read replica topology changed %s", difference );
         }
-
-        this.readReplicaTopology = newReadReplicaTopology;
     }
 
     /*

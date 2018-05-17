@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,15 +36,15 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTLocalDateTime;
 @Description( "Create a LocalDateTime instant." )
 class LocalDateTimeFunction extends TemporalFunction<LocalDateTimeValue>
 {
-    LocalDateTimeFunction()
+    LocalDateTimeFunction( Supplier<ZoneId> defaultZone )
     {
-        super( NTLocalDateTime );
+        super( NTLocalDateTime, defaultZone );
     }
 
     @Override
-    protected LocalDateTimeValue now( Clock clock, String timezone )
+    protected LocalDateTimeValue now( Clock clock, String timezone, Supplier<ZoneId> defaultZone )
     {
-        return timezone == null ? LocalDateTimeValue.now( clock ) : LocalDateTimeValue.now( clock, timezone );
+        return timezone == null ? LocalDateTimeValue.now( clock, defaultZone ) : LocalDateTimeValue.now( clock, timezone );
     }
 
     @Override

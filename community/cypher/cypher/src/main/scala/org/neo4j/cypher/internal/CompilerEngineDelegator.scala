@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -64,7 +64,7 @@ case class PreParsedQuery(statement: String, rawStatement: String, version: Cyph
     }
     val debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
 
-    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $debugFlags $statement".replaceAll("\\s+", " ")
+    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $debugFlags $statement"
   }
 }
 
@@ -83,6 +83,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
                               errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                               errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
                               legacyCsvQuoteEscaping: Boolean,
+                              planWithMinimumCardinalityEstimates: Boolean,
                               logProvider: LogProvider,
                               compatibilityFactory: CompatibilityFactory) {
 
@@ -99,7 +100,8 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     errorIfShortestPathFallbackUsedAtRuntime = errorIfShortestPathFallbackUsedAtRuntime,
     errorIfShortestPathHasCommonNodesAtRuntime = errorIfShortestPathHasCommonNodesAtRuntime,
     legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
-    nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
+    nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
+    planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates
   )
 
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled), (CypherPlanner.rule, CypherRuntime.slotted))
@@ -137,7 +139,6 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   def parseQuery(preParsedQueryArg: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
     import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
     import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
-    import org.neo4j.cypher.internal.compatibility.v3_3.helpers._
 
     var preParsedQuery = preParsedQueryArg
     val supportedRuntimes3_1 = Seq(CypherRuntime.interpreted, CypherRuntime.default)

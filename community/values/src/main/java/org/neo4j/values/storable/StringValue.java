@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -166,22 +166,7 @@ public abstract class StringValue extends TextValue
     {
         String thisString = value();
         String thatString = other.stringValue();
-        int len1 = thisString.length();
-        int len2 = thatString.length();
-        int lim = Math.min( len1, len2 );
-
-        int k = 0;
-        while ( k < lim )
-        {
-            int c1 = thisString.codePointAt( k );
-            int c2 = thatString.codePointAt( k );
-            if ( c1 != c2 )
-            {
-                return c1 - c2;
-            }
-            k += Character.charCount( c1 );
-        }
-        return length() - other.length();
+        return thisString.compareTo( thatString );
     }
 
     static TextValue EMTPY = new StringValue()

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -224,16 +224,16 @@ public class BufferedCharSeeker implements CharSeeker
 
     private boolean isWhitespace( int ch )
     {
-        return ch == ' ' |
-                ch == Character.SPACE_SEPARATOR |
-                ch == Character.PARAGRAPH_SEPARATOR |
-                ch == '\u00A0' |
-                ch == '\u001C' |
-                ch == '\u001D' |
-                ch == '\u001E' |
-                ch == '\u001F' |
-                ch == '\u2007' |
-                ch == '\u202F' |
+        return ch == ' ' ||
+                ch == Character.SPACE_SEPARATOR ||
+                ch == Character.PARAGRAPH_SEPARATOR ||
+                ch == '\u00A0' ||
+                ch == '\u001C' ||
+                ch == '\u001D' ||
+                ch == '\u001E' ||
+                ch == '\u001F' ||
+                ch == '\u2007' ||
+                ch == '\u202F' ||
                 ch == '\t';
 
     }

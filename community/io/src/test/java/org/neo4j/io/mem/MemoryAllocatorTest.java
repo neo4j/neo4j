@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -60,6 +60,27 @@ public class MemoryAllocatorTest
     }
 
     @Test
+    public void allocatedPointerMustBeAlignedToArbitraryByte()
+    {
+        int pageSize = UnsafeUtil.pageSize();
+        for ( int initialOffset = 0; initialOffset < 8; initialOffset++ )
+        {
+            for ( int i = 0; i < pageSize - 1; i++ )
+            {
+                MemoryAllocator mman = createAllocator( ONE_PAGE );
+                mman.allocateAligned( initialOffset, 1 );
+                long alignment = 1 + i;
+                long address = mman.allocateAligned( PageCache.PAGE_SIZE, alignment );
+                assertThat( "With initial offset " + initialOffset +
+                            ", iteration " + i +
+                            ", aligning to " + alignment +
+                            " and got address " + address,
+                        address % alignment, is( 0L ) );
+            }
+        }
+    }
+
+    @Test
     public void mustBeAbleToAllocatePastMemoryLimit()
     {
         MemoryAllocator mman = createAllocator( ONE_PAGE );
@@ -68,6 +89,24 @@ public class MemoryAllocatorTest
             assertThat( mman.allocateAligned( 1, 2 ) % 2, is( 0L ) );
         }
         // Also asserts that no OutOfMemoryError is thrown.
+    }
+
+    @Test
+    public void allocatedPointersMustBeAlignedPastMemoryLimit()
+    {
+        MemoryAllocator mman = createAllocator( ONE_PAGE );
+        for ( int i = 0; i < 4100; i++ )
+        {
+            assertThat( mman.allocateAligned( 1, 2 ) % 2, is( 0L ) );
+        }
+
+        int pageSize = UnsafeUtil.pageSize();
+        for ( int i = 0; i < pageSize - 1; i++ )
+        {
+            int alignment = pageSize - i;
+            long address = mman.allocateAligned( PageCache.PAGE_SIZE, alignment );
+            assertThat( "iteration " + i + ", aligning to " + alignment,  address % alignment, is( 0L ) );
+        }
     }
 
     @Test( expected = IllegalArgumentException.class )

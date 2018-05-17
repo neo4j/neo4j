@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -116,10 +116,10 @@ public class UTF8StringValueTest
                 int x = stringValue( string1 ).compareTo( utf8Value( string2.getBytes( UTF_8 ) ) );
                 int y = utf8Value( string1.getBytes( UTF_8 ) ).compareTo( stringValue( string2 ) );
                 int z = utf8Value( string1.getBytes( UTF_8 ) )
-                        .compareTo( utf8Value( string2.getBytes( UTF_8 ) ) );
+                         .compareTo( utf8Value( string2.getBytes( UTF_8 ) ) );
 
-                assertThat( x, equalTo( y ) );
-                assertThat( x, equalTo( z ) );
+                assertThat( Math.signum( x ), equalTo( Math.signum( y ) ) );
+                assertThat( Math.signum( x ), equalTo( Math.signum( z ) ) );
             }
         }
     }

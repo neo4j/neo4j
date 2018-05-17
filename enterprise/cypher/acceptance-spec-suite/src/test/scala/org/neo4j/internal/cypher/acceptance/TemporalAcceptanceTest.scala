@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -47,6 +50,20 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     }
     shouldReturnSomething("datetime({epochMillis:timestamp()})")
     shouldReturnSomething("datetime({epochSeconds:timestamp() / 1000})")
+  }
+
+  test("should find case insensitive names for built in functions") {
+    for (s <- Seq("dAtE", "lOcAlTiMe", "TiMe", "lOcAlDaTeTiMe", "DaTeTiMe")) {
+      shouldReturnSomething(s"$s()")
+      shouldReturnSomething(s"$s.traNsaction()")
+      shouldReturnSomething(s"$s.staTement()")
+      shouldReturnSomething(s"$s.reaLtime()")
+      shouldReturnSomething(s"$s.traNsaction('America/Los_Angeles')")
+      shouldReturnSomething(s"$s.staTEment('America/Los_Angeles')")
+      shouldReturnSomething(s"$s.reaLTime('America/Los_Angeles')")
+    }
+    shouldReturnSomething("DateTime({epochMillis:timestamp()})")
+    shouldReturnSomething("DateTime({epochSeconds:timestamp() / 1000})")
   }
 
   // Should handle temporal and duration as parameters, also with compiled
@@ -687,17 +704,26 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     }
   }
 
+  test("should not allow invalid time fields") {
+    for (arg <- Seq("2018-04-01T12:45:45+45", "2018-04-01T12:45:65+05", "2018-04-01T12:65:45+05", "2018-04-01T65:45:45+05", "2018-04-65T12:45:45+05", "2018-65-01T12:45:45+05")) {
+      val query = s"RETURN datetime('$arg') as value"
+      withClue(s"Executing $query") {
+        failWithError(failConf2, query, Seq("Invalid value for", "not in valid range"))
+      }
+    }
+  }
+
   // Accessors
 
   test("should not provide undefined accessors for date") {
     shouldNotHaveAccessor("date", Seq("hour", "minute", "second", "millisecond", "microsecond", "nanosecond",
-      "timezone", "offset", "offsetMinutes", "epochSeconds", "epochMillis",
+      "timezone", "offset", "offsetMinutes", "offsetSeconds", "epochSeconds", "epochMillis",
       "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
   }
 
   test("should not provide undefined accessors for local time") {
     shouldNotHaveAccessor("localtime", Seq("year", "quarter", "month", "week", "weekYear", "day",  "ordinalDay", "weekDay", "dayOfQuarter",
-      "timezone", "offset", "offsetMinutes", "epochSeconds", "epochMillis",
+      "timezone", "offset", "offsetMinutes", "offsetSeconds", "epochSeconds", "epochMillis",
       "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
   }
 
@@ -708,7 +734,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   }
 
   test("should not provide undefined accessors for local date time") {
-    shouldNotHaveAccessor("localdatetime", Seq("timezone", "offset", "offsetMinutes", "epochSeconds", "epochMillis",
+    shouldNotHaveAccessor("localdatetime", Seq("timezone", "offset", "offsetMinutes", "offsetSeconds", "epochSeconds", "epochMillis",
       "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
   }
 
@@ -719,7 +745,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   test("should not provide undefined accessors for duration") {
     shouldNotHaveAccessor("duration", Seq("year", "quarter", "month", "week", "weekYear", "day",  "ordinalDay", "weekDay", "dayOfQuarter",
       "hour", "minute", "second", "millisecond", "microsecond", "nanosecond",
-      "timezone", "offset", "offsetMinutes", "epochSeconds", "epochMillis"), "{days: 14, hours:16, minutes: 12}")
+      "timezone", "offset", "offsetMinutes", "offsetSeconds", "epochSeconds", "epochMillis"), "{days: 14, hours:16, minutes: 12}")
   }
 
   // Duration between

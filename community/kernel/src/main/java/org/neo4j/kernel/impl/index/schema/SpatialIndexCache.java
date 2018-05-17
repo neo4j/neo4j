@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,8 +22,9 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -39,8 +40,10 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 class SpatialIndexCache<T> implements Iterable<T>
 {
     private final Factory<T> factory;
-
-    private Map<CoordinateReferenceSystem,T> spatials = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<CoordinateReferenceSystem,T> spatials = new ConcurrentHashMap<>();
+    private final Lock instantiateCloseLock = new ReentrantLock();
+    // guarded by instantiateCloseLock
+    private boolean closed;
 
     SpatialIndexCache( Factory<T> factory )
     {
@@ -56,17 +59,50 @@ class SpatialIndexCache<T> implements Iterable<T>
      */
     T uncheckedSelect( CoordinateReferenceSystem crs )
     {
-        return spatials.computeIfAbsent( crs, key ->
+        T existing = spatials.get( crs );
+        if ( existing != null )
         {
-            try
+            return existing;
+        }
+
+        // Instantiate from factory. Do this under lock so that we coordinate with any concurrent call to close.
+        // Concurrent calls to instantiating parts won't contend with each other since there's only
+        // a single writer at a time anyway.
+        instantiateCloseLock.lock();
+        try
+        {
+            assertOpen();
+            return spatials.computeIfAbsent( crs, key ->
             {
-                return factory.newSpatial( crs );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        } );
+                try
+                {
+                    return factory.newSpatial( crs );
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+            } );
+        }
+        finally
+        {
+            instantiateCloseLock.unlock();
+        }
+    }
+
+    protected void assertOpen()
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException( this + " is already closed" );
+        }
+    }
+
+    void closeInstantiateCloseLock()
+    {
+        instantiateCloseLock.lock();
+        closed = true;
+        instantiateCloseLock.unlock();
     }
 
     /**

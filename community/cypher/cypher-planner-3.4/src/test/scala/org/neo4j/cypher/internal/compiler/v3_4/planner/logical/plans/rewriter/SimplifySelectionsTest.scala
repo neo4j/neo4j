@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{FakePlan, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.util.v3_4.symbols.CTAny
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{DropResult, LogicalPlan, Selection}
@@ -33,93 +34,17 @@ class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupp
       DropResult( source))
   }
 
-  test("should rewrite Selection(Seq(false, false, false), source) to DropResult(source)") {
-    val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(False()(pos), False()(pos), False()(pos)), source)
-
-    selection.endoRewrite(simplifySelections) should equal(
-      DropResult(source))
-  }
-
-  test("should rewrite Selection(Or(false, false), source) to DropResult(source)") {
-    val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(Or(False()(pos), False()(pos))(pos)), source)
-
-    selection.endoRewrite(simplifySelections) should equal(
-      DropResult( source))
-  }
-
-  test("should not rewrite Selection(Or(true, false), source) to DropResult(source)") {
-    val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(Or(True()(pos), False()(pos))(pos)), source)
-
-    selection.endoRewrite(simplifySelections) should equal(selection)
-  }
-
-  test("should rewrite Selection(And(false, false), source) to DropResult(source)") {
-    val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(And(False()(pos), False()(pos))(pos)), source)
-
-    selection.endoRewrite(simplifySelections) should equal(
-      DropResult( source))
-  }
-
-  test("should rewrite Selection(And(false, true), source) to DropResult(source)") {
-    val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(And(False()(pos), True()(pos))(pos)), source)
-
-    selection.endoRewrite(simplifySelections) should equal(
-      DropResult( source))
-  }
-
-  test("should rewrite Selection(And(true, false), source) to DropResult(source)") {
-    val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(And(True()(pos), False()(pos))(pos)), source)
-
-    selection.endoRewrite(simplifySelections) should equal(
-      DropResult( source))
-  }
-
-  test("should rewrite Selection(And(true, or(false,false), source) to DropResult(source)") {
-    val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(And(True()(pos), Or(False()(pos), False()(pos))(pos))(pos)), source)
-
-    selection.endoRewrite(simplifySelections) should equal(
-      DropResult( source))
-  }
-
-  test("should rewrite Selection(And(true, source) to source") {
+  test("should rewrite Selection(true, source) to source") {
     val source: LogicalPlan = FakePlan(Set.empty)
     val selection = Selection(Seq(True()(pos)), source)
 
     selection.endoRewrite(simplifySelections) should equal(source)
   }
 
-  test("should rewrite Selection(And(true, true, source) to source") {
+  test("should not rewrite plans not obviously true or false") {
     val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(True()(pos), True()(pos)), source)
-
-    selection.endoRewrite(simplifySelections) should equal(source)
-  }
-
-  test("should not rewrite Selection(And(true, false, source) to source") {
-    val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(True()(pos), False()(pos)), source)
+    val selection = Selection(Seq(DummyExpression(CTAny)), source)
 
     selection.endoRewrite(simplifySelections) should equal(selection)
-  }
-
-  test("should rewrite Selection(Or(true, true), source) to source") {
-    val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(Or(True()(pos), True()(pos))(pos)), source)
-
-    selection.endoRewrite(simplifySelections) should equal(source)
-  }
-
-  test("should rewrite Selection(Or(false, true), source) to source") {
-    val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(Or(False()(pos), True()(pos))(pos)), source)
-
-    selection.endoRewrite(simplifySelections) should equal(source)
   }
 }

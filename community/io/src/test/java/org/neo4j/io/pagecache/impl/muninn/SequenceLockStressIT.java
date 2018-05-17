@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,28 +36,35 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public class SequenceLockStressIT
 {
-    private static final ExecutorService executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
+    private static ExecutorService executor;
+    private static long lockAddr;
+
+    @BeforeClass
+    public static void initialise()
+    {
+        lockAddr = UnsafeUtil.allocateMemory( Long.BYTES );
+        executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
+    }
 
     @AfterClass
-    public static void shutDownExecutor()
+    public static void cleanup()
     {
         executor.shutdown();
+        UnsafeUtil.free( lockAddr, Long.BYTES, GlobalMemoryTracker.INSTANCE );
     }
 
     @Rule
     public RepeatRule repeatRule = new RepeatRule();
 
-    private long lockAddr;
-
     @Before
     public void allocateLock()
     {
-        lockAddr = UnsafeUtil.allocateMemory( Long.BYTES );
         UnsafeUtil.putLong( lockAddr, 0 );
     }
 

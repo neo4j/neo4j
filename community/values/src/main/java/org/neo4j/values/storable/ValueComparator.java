@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,12 +21,13 @@ package org.neo4j.values.storable;
 
 import java.util.Comparator;
 
+import org.neo4j.values.Comparison;
 import org.neo4j.values.TernaryComparator;
 
 /**
  * Comparator for values. Usable for sorting values, for example during index range scans.
  */
-class ValueComparator implements Comparator<Value>, TernaryComparator<Value>
+public final class ValueComparator implements Comparator<Value>, TernaryComparator<Value>
 {
     private final Comparator<ValueGroup> valueGroupComparator;
 
@@ -54,7 +55,7 @@ class ValueComparator implements Comparator<Value>, TernaryComparator<Value>
     }
 
     @Override
-    public Integer ternaryCompare( Value v1, Value v2 )
+    public Comparison ternaryCompare( Value v1, Value v2 )
     {
         assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
 
@@ -67,13 +68,13 @@ class ValueComparator implements Comparator<Value>, TernaryComparator<Value>
         {
             return v1.unsafeTernaryCompareTo( v2 );
         }
-        return x;
+        return Comparison.from( x );
     }
 
     @Override
     public boolean equals( Object obj )
     {
-        return obj != null && obj instanceof ValueComparator;
+        return obj instanceof ValueComparator;
     }
 
     @Override

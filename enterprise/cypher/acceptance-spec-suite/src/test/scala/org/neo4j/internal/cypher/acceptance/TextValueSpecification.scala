@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -121,13 +124,13 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
     val stringY = stringValue(y)
     val utf8X = utf8Value(x.getBytes(StandardCharsets.UTF_8))
     val utf8Y = utf8Value(y.getBytes(StandardCharsets.UTF_8))
-    val compare = stringX.compareTo(stringY)
-    compare == stringX.compareTo(utf8Y) &&
-      compare == utf8X.compareTo(stringY) &&
-      compare == utf8X.compareTo(utf8Y) &&
-      compare == -stringY.compareTo(utf8X) &&
-      compare == -utf8Y.compareTo(stringX) &&
-      compare == -utf8Y.compareTo(utf8X)
+    val compare = Math.signum(stringX.compareTo(stringY))
+    compare == Math.signum(stringX.compareTo(utf8Y)) &&
+      compare == Math.signum(utf8X.compareTo(stringY)) &&
+      compare == Math.signum(utf8X.compareTo(utf8Y)) &&
+      compare == Math.signum(-stringY.compareTo(utf8X)) &&
+      compare == Math.signum(-utf8Y.compareTo(stringX)) &&
+      compare == Math.signum(-utf8Y.compareTo(utf8X))
   }
 
   property("compareTo") = forAll { (x: String) =>

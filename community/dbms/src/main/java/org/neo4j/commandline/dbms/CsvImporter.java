@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -115,8 +115,8 @@ class CsvImporter implements Importer
                 null, false, databaseConfig, storeDir, highIO ) );
 
         // Extract the default time zone from the database configuration
-        LogTimeZone dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_timezone );
-        Supplier<ZoneId> defaultTimeZone = () -> dbTimeZone.getZoneId();
+        ZoneId dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_temporal_timezone );
+        Supplier<ZoneId> defaultTimeZone = () -> dbTimeZone;
 
         CsvInput input = new CsvInput(
                 nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( defaultTimeZone ),

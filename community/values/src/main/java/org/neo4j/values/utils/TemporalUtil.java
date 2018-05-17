@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,6 +46,11 @@ public final class TemporalUtil
     public static long nanosOfDayToUTC( long nanosOfDayLocal, int offsetSeconds )
     {
         return nanosOfDayLocal - offsetSeconds * NANOS_PER_SECOND;
+    }
+
+    public static long nanosOfDayToLocal( long nanosOfDayUTC, int offsetSeconds )
+    {
+        return nanosOfDayUTC + (long) offsetSeconds * NANOS_PER_SECOND;
     }
 
     public static long getNanosOfDayUTC( OffsetTime value )

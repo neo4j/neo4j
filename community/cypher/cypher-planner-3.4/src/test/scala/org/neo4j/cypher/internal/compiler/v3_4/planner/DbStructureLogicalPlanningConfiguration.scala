@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import java.util
 
+import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.util.v3_4.{LabelId, PropertyKeyId, RelTypeId}
@@ -30,7 +31,7 @@ import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructure
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-object DbStructureLogicalPlanningConfiguration {
+case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherCompilerConfiguration) {
 
   def apply(visitable: Visitable[DbStructureVisitor]): LogicalPlanningConfiguration = {
     val collector = new DbStructureCollector
@@ -44,7 +45,7 @@ object DbStructureLogicalPlanningConfiguration {
     val resolvedPropertyKeys = resolveTokens(lookup.properties())(PropertyKeyId)
     val resolvedRelTypeNames = resolveTokens(lookup.relationshipTypes())(RelTypeId)
 
-    new RealLogicalPlanningConfiguration {
+    new RealLogicalPlanningConfiguration(cypherCompilerConfig) {
 
       override def updateSemanticTableWithTokens(table: SemanticTable) = {
         resolvedPropertyKeys.foreach { case (keyName, keyId) => table.resolvedPropertyKeyNames.put(keyName, PropertyKeyId(keyId)) }

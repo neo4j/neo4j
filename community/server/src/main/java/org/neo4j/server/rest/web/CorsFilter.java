@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -48,12 +48,30 @@ public class CorsFilter implements Filter
     public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
     public static final String ACCESS_CONTROL_REQUEST_METHOD = "Access-Control-Request-Method";
     public static final String ACCESS_CONTROL_REQUEST_HEADERS = "Access-Control-Request-Headers";
+    public static final String VARY = "Vary";
 
     private final Log log;
+    private final String accessControlAllowOrigin;
+    private final String vary;
 
-    public CorsFilter( LogProvider logProvider )
+    public CorsFilter( LogProvider logProvider, String accessControlAllowOrigin )
     {
         this.log = logProvider.getLog( getClass() );
+        this.accessControlAllowOrigin = accessControlAllowOrigin;
+        if ( "*".equals( accessControlAllowOrigin ) )
+        {
+            vary = null;
+        }
+        else
+        {
+            // If the server specifies an origin host rather than "*", then it must also include Origin in
+            // the Vary response header to indicate to clients that server responses will differ based on
+            // the value of the Origin request header.
+            //
+            // -- https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
+            //
+            vary = "Origin";
+        }
     }
 
     @Override
@@ -68,7 +86,11 @@ public class CorsFilter implements Filter
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        response.setHeader( ACCESS_CONTROL_ALLOW_ORIGIN, "*" );
+        response.setHeader( ACCESS_CONTROL_ALLOW_ORIGIN, accessControlAllowOrigin );
+        if ( vary != null )
+        {
+            response.setHeader( VARY, vary );
+        }
 
         Enumeration<String> requestMethodEnumeration = request.getHeaders( ACCESS_CONTROL_REQUEST_METHOD );
         if ( requestMethodEnumeration != null )

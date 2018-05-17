@@ -1,33 +1,42 @@
 #
-# Copyright (c) 2002-2018 "Neo Technology,"
-# Network Engine for Objects in Lund AB [http://neotechnology.com]
+# Copyright (c) 2002-2018 "Neo4j,"
+# Neo4j Sweden AB [http://neo4j.com]
 #
-# This file is part of Neo4j.
-#
-# Neo4j is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+# This file is part of Neo4j Enterprise Edition. The included source
+# code can be redistributed and/or modified under the terms of the
+# GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+# (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+# Commons Clause, as found in the associated LICENSE.txt file.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
 #
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# Neo4j object code can be licensed independently from the source
+# under separate terms from the AGPL. Inquiries can be directed to:
+# licensing@neo4j.com
+#
+# More information is also available at:
+# https://neo4j.com/licensing/
 #
 
 Feature: TemporalArithmeticAcceptance
 
   Scenario: Should add or subtract duration to or from date
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: date({year:1984, month:10, day:11})}),
+             (:Durations {prop: [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 2}),
+              duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
+              duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] })
+      """
     When executing query:
       """
-      WITH date({year:1984, month:10, day:11}) as x
-      UNWIND [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 2}),
-              duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
-              duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] as dur
+      MATCH (v:Val), (d:Durations)
+      WITH v.prop as x, d
+      UNWIND d.prop as dur
       RETURN x+dur, x-dur
       """
     Then the result should be, in order:
@@ -39,12 +48,18 @@ Feature: TemporalArithmeticAcceptance
 
   Scenario: Should add or subtract duration to or from local time
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: localtime({hour:12, minute:31, second:14, nanosecond: 1})}),
+             (:Durations {prop: [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 2}),
+              duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
+              duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] })
+      """
     When executing query:
       """
-      WITH localtime({hour:12, minute:31, second:14, nanosecond: 1}) as x
-      UNWIND [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 2}),
-              duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
-              duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] as dur
+      MATCH (v:Val), (d:Durations)
+      WITH v.prop as x, d
+      UNWIND d.prop as dur
       RETURN x+dur, x-dur
       """
     Then the result should be, in order:
@@ -56,12 +71,18 @@ Feature: TemporalArithmeticAcceptance
 
   Scenario: Should add or subtract duration to or from time
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: time({hour:12, minute:31, second:14, nanosecond: 1, timezone: '+01:00'})}),
+             (:Durations {prop: [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 2}),
+              duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
+              duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] })
+      """
     When executing query:
       """
-      WITH time({hour:12, minute:31, second:14, nanosecond: 1, timezone: '+01:00'}) as x
-      UNWIND [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 2}),
-              duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
-              duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] as dur
+      MATCH (v:Val), (d:Durations)
+      WITH v.prop as x, d
+      UNWIND d.prop as dur
       RETURN x+dur, x-dur
       """
     Then the result should be, in order:
@@ -73,12 +94,18 @@ Feature: TemporalArithmeticAcceptance
 
   Scenario: Should add or subtract duration to or from local date time
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 1})}),
+             (:Durations {prop:  [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 2}),
+              duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
+              duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] })
+      """
     When executing query:
       """
-      WITH localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 1}) as x
-      UNWIND [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 2}),
-              duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
-              duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] as dur
+      MATCH (v:Val), (d:Durations)
+      WITH v.prop as x, d
+      UNWIND d.prop as dur
       RETURN x+dur, x-dur
       """
     Then the result should be, in order:
@@ -90,16 +117,22 @@ Feature: TemporalArithmeticAcceptance
 
   Scenario: Should add or subtract duration to or from date time
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 1, timezone: '+01:00'})}),
+             (:Durations {prop: [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 2}),
+              duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
+              duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] })
+      """
     When executing query:
       """
-      WITH datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 1, timezone: '+01:00'}) as x
-      UNWIND [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 2}),
-              duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
-              duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] as dur
+      MATCH (v:Val), (d:Durations)
+      WITH v.prop as x, d
+      UNWIND d.prop as dur
       RETURN x+dur, x-dur
       """
     Then the result should be, in order:
-      | x+dur                           | x-dur |
+      | x+dur                                 | x-dur |
       | '1997-03-26T04:44:24.000000003+01:00' | '1972-04-26T20:18:03.999999999+01:00' |
       | '1984-10-29T04:20:24.000000001+01:00' | '1984-09-24T20:42:04.000000001+01:00' |
       | '1997-10-11T22:29:27.500000004+01:00' | '1971-10-12T02:33:00.499999998+01:00' |
@@ -107,13 +140,17 @@ Feature: TemporalArithmeticAcceptance
 
   Scenario: Should add or subtract durations
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Durations {prop: [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 1}),
+            duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
+            duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] })
+      """
     When executing query:
       """
-      WITH [duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 1}),
-            duration({months:1, days: -14, hours: 16, minutes: -12, seconds: 70}),
-            duration({years: 12.5, months: 5.5, days: 14.5, hours: 16.5, minutes: 12.5, seconds: 70.5, nanoseconds: 3})] as list
-      UNWIND list as dur
-      UNWIND list as dur2
+      MATCH (d:Durations)
+      UNWIND d.prop as dur
+      UNWIND d.prop as dur2
       RETURN dur+dur2, dur-dur2
       """
     Then the result should be, in order:
@@ -131,14 +168,18 @@ Feature: TemporalArithmeticAcceptance
 
   Scenario: Should multiply or divide durations by numbers
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Durations {prop: duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 1}) })
+      """
     When executing query:
       """
-      WITH duration({years: 12, months: 5, days: 14, hours: 16, minutes: 12, seconds: 70, nanoseconds: 1}) as dur
+      MATCH (d:Durations)
       UNWIND [1, 2, 0.5] as num
-      RETURN dur*num, dur/num
+      RETURN d.prop*num, d.prop/num
       """
     Then the result should be, in order:
-      | dur*num                          | dur/num                          |
+      | d.prop*num                       | d.prop/num                       |
       | 'P12Y5M14DT16H13M10.000000001S'  | 'P12Y5M14DT16H13M10.000000001S'  |
       | 'P24Y10M28DT32H26M20.000000002S' | 'P6Y2M22DT13H21M8S'              |
       | 'P6Y2M22DT13H21M8S'              | 'P24Y10M28DT32H26M20.000000002S' |

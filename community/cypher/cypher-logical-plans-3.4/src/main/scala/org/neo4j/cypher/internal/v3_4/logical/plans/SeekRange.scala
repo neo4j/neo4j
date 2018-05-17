@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -132,7 +132,7 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
 final case class PrefixRange[T](prefix: T) extends SeekRange[T] {
   def map[X](f: T => X): PrefixRange[X] = copy(f(prefix))
 
-  override def toString: String = prefix.toString
+  override def toString: String = s"STARTS WITH ${if(prefix == null) "null" else prefix.toString}"
 }
 
 final case class PointDistanceRange[T](point: T, distance: T, inclusive: Boolean) extends SeekRange[T] {

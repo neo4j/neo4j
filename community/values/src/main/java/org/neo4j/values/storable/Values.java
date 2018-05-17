@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -94,9 +94,7 @@ public final class Values
      *
      * To get Comparability semantics, use .ternaryCompare
      */
-    private static final ValueComparator comp = new ValueComparator( ValueGroup::compareTo );
-    public static final Comparator<Value> COMPARATOR = comp;
-    public static final TernaryComparator<Value> TERNARY_COMPARATOR = comp;
+    public static final ValueComparator COMPARATOR = new ValueComparator( ValueGroup::compareTo );
 
     public static boolean isNumberValue( Object value )
     {

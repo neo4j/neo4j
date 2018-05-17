@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,6 +27,7 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
@@ -43,13 +44,13 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
-import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
@@ -95,40 +96,40 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
     public void setup() throws Exception
     {
         address = server.lookupDefaultConnector();
-
-        connection1 = performHandshake( newConnection() );
-        connection2 = performHandshake( newConnection() );
-        connection3 = performHandshake( newConnection() );
     }
 
     @After
     public void cleanup() throws Exception
     {
-        connection1.disconnect();
-        connection2.disconnect();
-        connection3.disconnect();
+        close( connection1 );
+        close( connection2 );
+        close( connection3 );
     }
 
     @Test
-    public void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy() throws Exception
+    public void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy() throws Throwable
     {
         // it's enough to get the bolt state machine into streaming mode to have
         // the thread sticked to the connection, causing all the available threads
         // to be busy (logically)
-        enterStreaming( connection1 );
-        enterStreaming( connection2 );
+        connection1 = enterStreaming();
+        connection2 = enterStreaming();
 
         try
         {
-            connection3.send( util.chunk( run( "RETURN 1" ), pullAll() ) );
+            connection3 = connectAndPerformBoltHandshake( newConnection() );
+
+            connection3.send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
             assertThat( connection3, util.eventuallyReceives(
-                    msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ),
                     msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
 
-            userLogProvider.assertContainsMessageContaining( "since there are no available threads to serve it at the moment. You can retry at a later time" );
-            internalLogProvider.assertAtLeastOnce( AssertableLogProvider.inLog( startsWith( BoltConnection.class.getPackage().getName() ) ).error(
-                    containsString( "since there are no available threads to serve it at the moment. You can retry at a later time" ),
-                    isA( RejectedExecutionException.class ) ) );
+            userLogProvider.assertContainsMessageContaining(
+                    "since there are no available threads to serve it at the moment. You can retry at a later time" );
+            internalLogProvider.assertAtLeastOnce( AssertableLogProvider
+                    .inLog( startsWith( BoltConnection.class.getPackage().getName() ) )
+                    .error(
+                        containsString( "since there are no available threads to serve it at the moment. You can retry at a later time" ),
+                        isA( RejectedExecutionException.class ) ) );
         }
         finally
         {
@@ -137,21 +138,64 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         }
     }
 
-    private TransportConnection performHandshake( TransportConnection connection ) throws Exception
+    private TransportConnection enterStreaming() throws Throwable
     {
-        connection.connect( address ).send( util.acceptedVersions( 1, 0, 0, 0 ) ).send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
+        TransportConnection connection = null;
+        Throwable error = null;
 
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+        // retry couple times because worker threads might seem busy
+        for ( int i = 1; i <= 7; i++ )
+        {
+            try
+            {
+                connection = newConnection();
+                enterStreaming( connection, i );
+                error = null;
+                return connection;
+            }
+            catch ( Throwable t )
+            {
+                // failed to enter the streaming state, record the error and retry
+                if ( error == null )
+                {
+                    error = t;
+                }
+                else
+                {
+                    error.addSuppressed( t );
+                }
 
-        return connection;
+                close( connection );
+                SECONDS.sleep( i );
+            }
+        }
+
+        if ( error != null )
+        {
+            throw error;
+        }
+
+        throw new IllegalStateException( "Unable to enter the streaming state" );
     }
 
-    private void enterStreaming( TransportConnection connection ) throws Exception
+    private void enterStreaming( TransportConnection connection, int sleepSeconds ) throws Exception
     {
-        connection.send( util.chunk( run( "UNWIND RANGE (1, 100) AS x RETURN x" ) ) );
+        connectAndPerformBoltHandshake( connection );
 
+        connection.send( util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+
+        SECONDS.sleep( sleepSeconds ); // sleep a bit to allow worker thread return back to the pool
+
+        connection.send( util.chunk( run( "UNWIND RANGE (1, 100) AS x RETURN x" ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+    }
+
+    private TransportConnection connectAndPerformBoltHandshake( TransportConnection connection ) throws Exception
+    {
+        connection.connect( address ).send( util.acceptedVersions( 1, 0, 0, 0 ) );
+        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        return connection;
     }
 
     private void exitStreaming( TransportConnection connection ) throws Exception
@@ -159,5 +203,19 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         connection.send( util.chunk( discardAll() ) );
 
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+    }
+
+    private void close( TransportConnection connection )
+    {
+        if ( connection != null )
+        {
+            try
+            {
+                connection.disconnect();
+            }
+            catch ( IOException ignore )
+            {
+            }
+        }
     }
 }

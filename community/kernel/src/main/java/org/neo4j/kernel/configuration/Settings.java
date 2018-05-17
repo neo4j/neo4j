@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,6 +25,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,6 +55,7 @@ import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.values.storable.DateTimeValue;
 
 import static java.lang.Character.isDigit;
 import static java.lang.Long.parseLong;
@@ -529,6 +531,21 @@ public class Settings
         public String toString()
         {
             return "a duration (" + TimeUtil.VALID_TIME_DESCRIPTION + ")";
+        }
+    };
+
+    public static final Function<String,ZoneId> TIMEZONE = new Function<String,ZoneId>()
+    {
+        @Override
+        public ZoneId apply( String value )
+        {
+            return DateTimeValue.parseZoneOffsetOrZoneName(value);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "a string describing a timezone, either described by offset (e.g. '+02:00') or by name (e.g. 'Europe/Stockholm')";
         }
     };
 

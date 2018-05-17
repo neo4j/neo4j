@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
@@ -58,11 +61,11 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.fs.FileUtils.relativePath;
 
@@ -90,7 +93,7 @@ public class CatchupServerIT
     private DefaultFileSystemAbstraction fsa = fileSystemRule.get();
 
     @Before
-    public void startDb()
+    public void startDb() throws Throwable
     {
         temporaryDirectory = testDirectory.directory();
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fsa ).newEmbeddedDatabase( testDirectory.graphDbDir() );
@@ -106,7 +109,7 @@ public class CatchupServerIT
     }
 
     @After
-    public void stopDb() throws IOException
+    public void stopDb() throws Throwable
     {
         pageCache.flushAndForce();
         if ( graphDb != null )
@@ -148,7 +151,8 @@ public class CatchupServerIT
         assertTransactionIdMatches( prepareStoreCopyResponse.lastTransactionId() );
 
         //and
-        assertIndexIdsMatch( prepareStoreCopyResponse.getIndexIds(), neoStoreDataSource );
+        assertTrue( "Expected an empty set of ids. Found size " + prepareStoreCopyResponse.getIndexIds().size(),
+                prepareStoreCopyResponse.getIndexIds().isEmpty() );
     }
 
     @Test
@@ -275,12 +279,6 @@ public class CatchupServerIT
         List<String> expectedStoreFiles = getExpectedStoreFiles( neoStoreDataSource );
         List<String> givenFile = Arrays.stream( files ).map( File::getName ).collect( toList() );
         assertThat( givenFile, containsInAnyOrder( expectedStoreFiles.toArray( new String[givenFile.size()] ) ) );
-    }
-
-    private void assertIndexIdsMatch( PrimitiveLongSet indexIds, NeoStoreDataSource neoStoreDataSource )
-    {
-        PrimitiveLongSet expectedIndexIds = getExpectedIndexIds( neoStoreDataSource );
-        assertThat( expectedIndexIds, equalTo( indexIds ) );
     }
 
     private PrimitiveLongSet getExpectedIndexIds( NeoStoreDataSource neoStoreDataSource )

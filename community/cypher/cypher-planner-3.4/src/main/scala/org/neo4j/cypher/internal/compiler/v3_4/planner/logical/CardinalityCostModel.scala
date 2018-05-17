@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics._
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
@@ -26,7 +27,7 @@ import org.neo4j.cypher.internal.util.v3_4.{Cardinality, Cost, CostPerRow, Multi
 import org.neo4j.cypher.internal.v3_4.expressions.{HasLabels, Property}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
-object CardinalityCostModel extends CostModel {
+case class CardinalityCostModel(config: CypherCompilerConfiguration) extends CostModel {
   def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
 
   private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
@@ -92,9 +93,7 @@ object CardinalityCostModel extends CostModel {
          _: ProcedureCall
     => DEFAULT_COST_PER_ROW
 
-    case _: FindShortestPaths |
-         _: DirectedRelationshipByIdSeek |
-         _: UndirectedRelationshipByIdSeek
+    case _: FindShortestPaths
     => 12.0
 
     case _ // Default
@@ -105,10 +104,22 @@ object CardinalityCostModel extends CostModel {
     case _ => plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(cardinalities.get(plan.id))
   }
 
+  private def minimumCardinalityEstimateForPlan(plan: LogicalPlan): Cardinality = plan match {
+    case _: AllNodesScan | _: NodeByLabelScan | _: NodeIndexScan =>
+      Cardinality(10)
+    case _: NodeIndexContainsScan | _: NodeIndexEndsWithScan =>
+      Cardinality(5)
+    case _ =>
+      Cardinality.EMPTY
+  }
+
+  private val planWithMinimumCardinalityEstimates: Boolean = config.planWithMinimumCardinalityEstimates
+
   def apply(plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities): Cost = {
     val cost = plan match {
       case CartesianProduct(lhs, rhs) =>
-        apply(lhs, input, cardinalities) + cardinalities.get(lhs.id) * apply(rhs, input, cardinalities)
+        val lhsCardinality = Cardinality.max(Cardinality.SINGLE, cardinalities.get(lhs.id))
+        apply(lhs, input, cardinalities) + lhsCardinality * apply(rhs, input, cardinalities)
 
       case ApplyVariants(lhs, rhs) =>
         val lCost = apply(lhs, input, cardinalities)
@@ -132,8 +143,13 @@ object CardinalityCostModel extends CostModel {
         val lhsCost = plan.lhs.map(p => apply(p, input, cardinalities)).getOrElse(Cost(0))
         val rhsCost = plan.rhs.map(p => apply(p, input, cardinalities)).getOrElse(Cost(0))
         val planCardinality = cardinalityForPlan(plan, cardinalities)
+        val effectivePlanCardinality =
+          if (planWithMinimumCardinalityEstimates)
+            Cardinality.max(planCardinality, minimumCardinalityEstimateForPlan(plan))
+          else
+            planCardinality
         val rowCost = costPerRow(plan)
-        val costForThisPlan = planCardinality * rowCost
+        val costForThisPlan = effectivePlanCardinality * rowCost
         val totalCost = costForThisPlan + lhsCost + rhsCost
         totalCost
     }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -105,9 +105,20 @@ public class MethodSignatureCompiler
                 }
 
                 seenDefault = defaultValue.isPresent();
-                signature.add( defaultValue.isPresent()
-                        ? inputField( name, valueConverter.type(), defaultValue.get() )
-                        : inputField( name, valueConverter.type() ) );
+
+                // Currently only byte[] is not supported as a Cypher type, so we have specific conversion here.
+                // Should we add more unsupported types we should generalize this.
+                if ( type == byte[].class )
+                {
+                    FieldSignature.InputMapper mapper = new ByteArrayConverter();
+                    signature.add( defaultValue.map( neo4jValue -> inputField( name, valueConverter.type(), neo4jValue, mapper ) ).orElseGet(
+                            () -> inputField( name, valueConverter.type(), mapper ) ) );
+                }
+                else
+                {
+                    signature.add( defaultValue.map( neo4jValue -> inputField( name, valueConverter.type(), neo4jValue ) ).orElseGet(
+                            () -> inputField( name, valueConverter.type() ) ) );
+                }
             }
             catch ( ProcedureException e )
             {

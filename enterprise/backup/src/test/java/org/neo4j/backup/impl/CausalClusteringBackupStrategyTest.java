@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.backup.impl;
 
@@ -24,10 +27,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
+import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -58,12 +63,16 @@ public class CausalClusteringBackupStrategyTest
     Path desiredBackupLocation = mock( Path.class );
     Config config = mock( Config.class );
     OptionalHostnamePort userProvidedAddress = new OptionalHostnamePort( (String) null, null, null );
+    StoreFiles storeFiles = mock( StoreFiles.class );
+    StoreId expectedStoreId = new StoreId( 11, 22, 33, 44 );
 
     @Before
-    public void setup()
+    public void setup() throws IOException, StoreIdDownloadFailedException
     {
         when( addressResolver.resolveCorrectCCAddress( any(), any() ) ).thenReturn( resolvedFromAddress );
-        subject = new CausalClusteringBackupStrategy( backupDelegator, addressResolver, NullLogProvider.getInstance() );
+        when( storeFiles.readStoreId( any() ) ).thenReturn( expectedStoreId );
+        when( backupDelegator.fetchStoreId( any() ) ).thenReturn( expectedStoreId );
+        subject = new CausalClusteringBackupStrategy( backupDelegator, addressResolver, NullLogProvider.getInstance(), storeFiles );
     }
 
     @Test
@@ -97,32 +106,27 @@ public class CausalClusteringBackupStrategyTest
     @Test
     public void incrementalRunsCatchupWithTargetsStoreId() throws StoreIdDownloadFailedException, StoreCopyFailedException
     {
-        // given
-        StoreId storeId = anyStoreId();
-
-        when( backupDelegator.fetchStoreId( resolvedFromAddress ) ).thenReturn( storeId );
 
         // when
         subject.performIncrementalBackup( desiredBackupLocation, config, userProvidedAddress );
 
         // then
         verify( backupDelegator ).fetchStoreId( resolvedFromAddress );
-        verify( backupDelegator ).tryCatchingUp( eq( resolvedFromAddress ), eq( storeId ), any() );
+        verify( backupDelegator ).tryCatchingUp( eq( resolvedFromAddress ), eq( expectedStoreId ), any() );
     }
 
     @Test
-    public void fullRunsRetrieveStoreWithTargetsStoreId() throws StoreIdDownloadFailedException, StoreCopyFailedException
+    public void fullRunsRetrieveStoreWithTargetsStoreId() throws StoreIdDownloadFailedException, StoreCopyFailedException, IOException
     {
         // given
-        StoreId storeId = anyStoreId();
-        when( backupDelegator.fetchStoreId( resolvedFromAddress ) ).thenReturn( storeId );
+        when( storeFiles.readStoreId( any() ) ).thenThrow( IOException.class );
 
         // when
         subject.performFullBackup( desiredBackupLocation, config, userProvidedAddress );
 
         // then
         verify( backupDelegator ).fetchStoreId( resolvedFromAddress );
-        verify( backupDelegator ).copy( resolvedFromAddress, storeId, desiredBackupLocation );
+        verify( backupDelegator ).copy( resolvedFromAddress, expectedStoreId, desiredBackupLocation );
     }
 
     @Test
@@ -145,9 +149,7 @@ public class CausalClusteringBackupStrategyTest
     public void failingToCopyStoresCausesFailWithStatus_incrementalBackup() throws StoreIdDownloadFailedException, StoreCopyFailedException
     {
         // given
-        StoreId storeId = anyStoreId();
-        when( backupDelegator.fetchStoreId( any() ) ).thenReturn( storeId );
-        when( backupDelegator.tryCatchingUp( any(), eq( storeId ), any() ) ).thenThrow( StoreCopyFailedException.class );
+        when( backupDelegator.tryCatchingUp( any(), eq( expectedStoreId ), any() ) ).thenThrow( StoreCopyFailedException.class );
 
         // when
         Fallible state = subject.performIncrementalBackup( desiredBackupLocation, config, userProvidedAddress );
@@ -173,16 +175,20 @@ public class CausalClusteringBackupStrategyTest
     }
 
     @Test
-    public void failingToCopyStoresCausesFailWithStatus_fullBackup() throws StoreCopyFailedException
+    public void failingToCopyStoresCausesFailWithStatus_fullBackup() throws StoreCopyFailedException, IOException
     {
         // given
         doThrow( StoreCopyFailedException.class ).when( backupDelegator ).copy( any(), any(), any() );
+
+        // and
+        when( storeFiles.readStoreId( any() ) ).thenThrow( IOException.class );
 
         // when
         Fallible state = subject.performFullBackup( desiredBackupLocation, config, userProvidedAddress );
 
         // then
         assertEquals( BackupStageOutcome.FAILURE, state.getState() );
+        System.out.println( state.getCause() );
         assertEquals( StoreCopyFailedException.class, state.getCause().get().getClass() );
     }
 
@@ -220,8 +226,45 @@ public class CausalClusteringBackupStrategyTest
         verify( backupDelegator ).stop();
     }
 
-    private StoreId anyStoreId()
+    @Test
+    public void exceptionWhenStoreMismatchNoExistingBackup() throws IOException
     {
-        return new StoreId( 1, 2, 3, 4 );
+        // given
+        when( storeFiles.readStoreId( any() ) ).thenThrow( IOException.class );
+
+        // when
+        Fallible<BackupStageOutcome> state = subject.performIncrementalBackup( desiredBackupLocation, config, userProvidedAddress );
+
+        // then
+        assertEquals( StoreIdDownloadFailedException.class, state.getCause().get().getClass() );
+        assertEquals( BackupStageOutcome.FAILURE, state.getState() );
+    }
+
+    @Test
+    public void exceptionWhenStoreMismatch() throws IOException
+    {
+        // given
+        when( storeFiles.readStoreId( any() ) ).thenReturn( new StoreId( 5, 4, 3, 2 ) );
+
+        // when
+        Fallible<BackupStageOutcome> state = subject.performIncrementalBackup( desiredBackupLocation, config, userProvidedAddress );
+
+        // then
+        assertEquals( StoreIdDownloadFailedException.class, state.getCause().get().getClass() );
+        assertEquals( BackupStageOutcome.FAILURE, state.getState() );
+    }
+
+    @Test
+    public void fullBackupFailsWhenTargetHasStoreId() throws IOException
+    {
+        // given
+        when( storeFiles.readStoreId( any() ) ).thenReturn( expectedStoreId );
+
+        // when
+        Fallible<BackupStageOutcome> state = subject.performFullBackup( desiredBackupLocation, config, userProvidedAddress );
+
+        // then
+        assertEquals( StoreIdDownloadFailedException.class, state.getCause().get().getClass() );
+        assertEquals( BackupStageOutcome.FAILURE, state.getState() );
     }
 }

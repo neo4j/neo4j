@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,15 +36,15 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
 @Description( "Create a Time instant." )
 class TimeFunction extends TemporalFunction<TimeValue>
 {
-    TimeFunction()
+    TimeFunction( Supplier<ZoneId> defaultZone )
     {
-        super( NTTime );
+        super( NTTime, defaultZone );
     }
 
     @Override
-    protected TimeValue now( Clock clock, String timezone )
+    protected TimeValue now( Clock clock, String timezone, Supplier<ZoneId> defaultZone )
     {
-        return timezone == null ? TimeValue.now( clock ) : TimeValue.now( clock, timezone );
+        return timezone == null ? TimeValue.now( clock, defaultZone ) : TimeValue.now( clock, timezone );
     }
 
     @Override

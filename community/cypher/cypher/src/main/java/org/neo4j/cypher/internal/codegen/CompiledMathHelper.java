@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,8 +28,11 @@ import org.neo4j.cypher.internal.util.v3_4.CypherTypeException;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -136,7 +139,11 @@ public final class CompiledMathHelper
         {
             if ( rhs instanceof Value )
             {
-                return String.valueOf( lhs ) + ((Value) rhs).prettyPrint();
+                // Unfortunately string concatenation is not defined for temporal and spatial types, so we need to exclude them
+                if ( !(rhs instanceof TemporalValue || rhs instanceof DurationValue || rhs instanceof PointValue) )
+                {
+                    return String.valueOf( lhs ) + ((Value) rhs).prettyPrint();
+                }
             }
             else
             {
@@ -147,7 +154,11 @@ public final class CompiledMathHelper
         {
             if ( lhs instanceof Value )
             {
-                return ((Value) lhs).prettyPrint() + String.valueOf( rhs );
+                // Unfortunately string concatenation is not defined for temporal and spatial types, so we need to exclude them
+                if ( !(lhs instanceof TemporalValue || lhs instanceof DurationValue || lhs instanceof PointValue) )
+                {
+                    return ((Value) lhs).prettyPrint() + String.valueOf( rhs );
+                }
             }
             else
             {
@@ -223,6 +234,26 @@ public final class CompiledMathHelper
             // other numbers we cannot add
         }
 
+        // Temporal values
+        if ( lhs instanceof TemporalValue )
+        {
+            if ( rhs instanceof DurationValue )
+            {
+                return ((TemporalValue) lhs).plus( (DurationValue) rhs );
+            }
+        }
+        if ( lhs instanceof DurationValue )
+        {
+            if ( rhs instanceof TemporalValue )
+            {
+                return ((TemporalValue) rhs).plus( (DurationValue) lhs );
+            }
+            if ( rhs instanceof DurationValue )
+            {
+                return ((DurationValue) lhs).add( (DurationValue) rhs );
+            }
+        }
+
         throw new CypherTypeException(
                 String.format( "Don't know how to add `%s` and `%s`", lhs, rhs), null );
     }
@@ -272,6 +303,22 @@ public final class CompiledMathHelper
             // other numbers we cannot subtract
         }
 
+        // Temporal values
+        if ( lhs instanceof TemporalValue )
+        {
+            if ( rhs instanceof DurationValue )
+            {
+                return ((TemporalValue) lhs).minus( (DurationValue) rhs );
+            }
+        }
+        if ( lhs instanceof DurationValue )
+        {
+            if ( rhs instanceof DurationValue )
+            {
+                return ((DurationValue) lhs).sub( (DurationValue) rhs );
+            }
+        }
+
         throw new CypherTypeException( "Cannot subtract " + lhs.getClass().getSimpleName() +
                                        " and " + rhs.getClass().getSimpleName(), null );
     }
@@ -281,6 +328,30 @@ public final class CompiledMathHelper
         if ( lhs == null || rhs == null || lhs == Values.NO_VALUE || rhs == Values.NO_VALUE )
         {
             return null;
+        }
+
+        // Temporal values
+        if ( lhs instanceof DurationValue )
+        {
+            if ( rhs instanceof NumberValue )
+            {
+                return ((DurationValue) lhs).mul( (NumberValue) rhs );
+            }
+            if ( rhs instanceof Number )
+            {
+                return ((DurationValue) lhs).mul( Values.numberValue( (Number) rhs ) );
+            }
+        }
+        if ( rhs instanceof DurationValue )
+        {
+            if ( lhs instanceof NumberValue )
+            {
+                return ((DurationValue) rhs).mul( (NumberValue) lhs );
+            }
+            if ( lhs instanceof Number )
+            {
+                return ((DurationValue) rhs).mul( Values.numberValue( (Number) lhs ) );
+            }
         }
 
         // Handle NumberValues
@@ -330,6 +401,19 @@ public final class CompiledMathHelper
         if ( lhs == null || rhs == null || lhs == Values.NO_VALUE || rhs == Values.NO_VALUE )
         {
             return null;
+        }
+
+        // Temporal values
+        if ( lhs instanceof DurationValue )
+        {
+            if ( rhs instanceof NumberValue )
+            {
+                return ((DurationValue) lhs).div( (NumberValue) rhs );
+            }
+            if ( rhs instanceof Number )
+            {
+                return ((DurationValue) lhs).div( Values.numberValue( (Number) rhs ) );
+            }
         }
 
         // Handle NumberValues

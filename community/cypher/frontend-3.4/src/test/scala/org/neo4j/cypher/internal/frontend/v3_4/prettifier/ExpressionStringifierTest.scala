@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,9 @@ class ExpressionStringifierTest
       "not(((1) = (2)) and ((3) = (4)))" -> "not (1 = 2 AND 3 = 4)",
       "reduce(totalAge = 0, n IN nodes(p)| totalAge + n.age)" ->
         "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age)",
-      "$param1+{param2}" -> "$param1 + $param2"
+      "$param1+{param2}" -> "$param1 + $param2",
+      "p.name starts with 'Keanu'" -> """p.name STARTS WITH "Keanu"""",
+      "p.name ends with 'Reeves'" -> """p.name ENDS WITH "Reeves""""
     )
 
   tests foreach {

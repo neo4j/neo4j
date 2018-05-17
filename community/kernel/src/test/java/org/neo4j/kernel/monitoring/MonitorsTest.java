@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,10 +19,19 @@
  */
 package org.neo4j.kernel.monitoring;
 
+import org.junit.Assert;
 import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -137,5 +146,31 @@ public class MonitorsTest
 
         // Then
         assertFalse( monitors.hasListeners( MyMonitor.class ) );
+    }
+
+    @Test
+    public void exceptionsInHandlersAreLogged()
+    {
+        // given
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        OutputStream outputStream = new PrintStream( byteArrayOutputStream );
+        LogProvider logProvider = FormattedLogProvider.toOutputStream( outputStream );
+        Monitors monitors = new Monitors( logProvider );
+
+        // and
+        MyMonitor listener = mock( MyMonitor.class );
+        RuntimeException runtimeException = new RuntimeException( "Exception message" );
+        doThrow( runtimeException ).when( listener ).aVoid();
+        monitors.addMonitorListener( listener );
+
+        // when
+        MyMonitor monitor = monitors.newMonitor( MyMonitor.class );
+        monitor.aVoid();
+
+        // then
+        String logOutput = byteArrayOutputStream.toString();
+        assertTrue( logOutput.contains( "RuntimeException: Exception message" ) );
+        assertTrue( logOutput.contains( this.getClass().getName() ) );
+        assertTrue( logOutput.contains( "Encountered exception while handling listener for monitor method aVoid" ) );
     }
 }

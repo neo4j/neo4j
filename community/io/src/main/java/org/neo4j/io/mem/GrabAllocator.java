@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -98,7 +98,7 @@ public final class GrabAllocator implements MemoryAllocator
                 grabSize = bytes;
                 Grab nextGrab = grabs == null ? null : grabs.next;
                 Grab allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
-                if ( !allocationGrab.canAllocate( bytes ) )
+                if ( !allocationGrab.canAllocate( bytes, alignment ) )
                 {
                     allocationGrab.free();
                     grabSize = bytes + alignment;
@@ -110,13 +110,13 @@ public final class GrabAllocator implements MemoryAllocator
                 return allocation;
             }
 
-            if ( grabs == null || !grabs.canAllocate( bytes ) )
+            if ( grabs == null || !grabs.canAllocate( bytes, alignment ) )
             {
                 if ( grabSize < bytes )
                 {
                     grabSize = bytes;
                     Grab grab = new Grab( grabs, grabSize, memoryTracker );
-                    if ( grab.canAllocate( bytes ) )
+                    if ( grab.canAllocate( bytes, alignment ) )
                     {
                         memoryReserve -= grabSize;
                         grabs = grab;
@@ -203,12 +203,16 @@ public final class GrabAllocator implements MemoryAllocator
 
         private long nextAligned( long pointer, long alignment )
         {
-            long mask = alignment - 1;
-            if ( (pointer & ~mask) == pointer )
+            if ( alignment == 1 )
             {
                 return pointer;
             }
-            return (pointer + mask) & ~mask;
+            long off = pointer % alignment;
+            if ( off == 0 )
+            {
+                return pointer;
+            }
+            return pointer + (alignment - off);
         }
 
         long allocate( long bytes, long alignment )
@@ -223,9 +227,9 @@ public final class GrabAllocator implements MemoryAllocator
             UnsafeUtil.free( address, limit - address, memoryTracker );
         }
 
-        boolean canAllocate( long bytes )
+        boolean canAllocate( long bytes, long alignment )
         {
-            return nextPointer + bytes <= limit;
+            return nextAligned( nextPointer, alignment ) + bytes <= limit;
         }
 
         Grab setNext( Grab grab )

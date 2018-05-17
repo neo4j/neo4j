@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,8 @@ package org.neo4j.tooling.procedure;
 
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -46,6 +48,7 @@ public class ProcedureTest
     @Rule
     public Neo4jRule graphDb = new Neo4jRule()
             .withConfig( ServerSettings.script_enabled, Settings.TRUE )
+            .dumpLogsOnFailure( System.out )
             .withProcedure( PROCEDURES_CLASS );
     private String procedureNamespace = PROCEDURES_CLASS.getPackage().getName();
 
@@ -120,7 +123,9 @@ public class ProcedureTest
 
     private Config configuration()
     {
-        return Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
+        return Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .withConnectionTimeout( 10, TimeUnit.SECONDS )
+                .toConfig();
     }
 
 }

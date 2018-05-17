@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,15 +50,26 @@ sealed trait ExplicitIndexHint extends UsingHint {
   def variables = NonEmptyList(variable)
 }
 
+sealed trait UsingIndexHintSpec {
+  def fulfilledByScan: Boolean
+}
+case object SeekOnly extends UsingIndexHintSpec {
+  override def fulfilledByScan: Boolean = false
+}
+case object SeekOrScan extends UsingIndexHintSpec {
+  override def fulfilledByScan: Boolean = true
+}
+
 case class UsingIndexHint(
                            variable: Variable,
                            label: LabelName,
-                           properties: Seq[PropertyKeyName]
+                           properties: Seq[PropertyKeyName],
+                           spec: UsingIndexHintSpec = SeekOrScan
                          )(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
   def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant, variable)
 
-  override def toString: String = s"USING INDEX ${variable.name}:${label.name}(${properties.map(_.name).mkString(", ")})"
+  override def toString: String = s"USING INDEX ${if(spec == SeekOnly) "SEEK " else ""}${variable.name}:${label.name}(${properties.map(_.name).mkString(", ")})"
 }
 
 case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {

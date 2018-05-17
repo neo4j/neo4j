@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -110,6 +110,11 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     public static TimeValue now( Clock clock, String timezone )
     {
         return now( clock.withZone( parseZoneName( timezone ) ) );
+    }
+
+    public static TimeValue now( Clock clock, Supplier<ZoneId> defaultZone )
+    {
+        return now( clock.withZone( defaultZone.get() ) );
     }
 
     public static TimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
@@ -260,7 +265,6 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     private TimeValue( OffsetTime value )
     {
-        // truncate the offset to whole minutes
         this.value = value;
         this.nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC( this.value );
     }
@@ -382,7 +386,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     private static final String OFFSET_PATTERN = "(?<zone>Z|[+-](?<zoneHour>[0-9]{2})(?::?(?<zoneMinute>[0-9]{2}))?)";
     static final String TIME_PATTERN = LocalTimeValue.TIME_PATTERN + "(?:" + OFFSET_PATTERN + ")?";
     private static final Pattern PATTERN = Pattern.compile( "(?:T)?" + TIME_PATTERN );
-    private static final Pattern OFFSET = Pattern.compile( OFFSET_PATTERN );
+    static final Pattern OFFSET = Pattern.compile( OFFSET_PATTERN );
 
     static ZoneOffset parseOffset( String offset )
     {

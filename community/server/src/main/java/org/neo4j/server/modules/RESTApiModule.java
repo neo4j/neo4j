@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -42,6 +42,7 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.server.configuration.ServerSettings.http_access_control_allow_origin;
 
 /**
  * Mounts the database REST API.
@@ -70,7 +71,7 @@ public class RESTApiModule implements ServerModule
         URI restApiUri = restApiUri( );
 
         webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
-        webServer.addFilter( new CorsFilter( logProvider ), "/*" );
+        webServer.addFilter( new CorsFilter( logProvider, config.get( http_access_control_allow_origin ) ), "/*" );
         webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
         loadPlugins();
     }

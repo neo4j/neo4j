@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,8 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.neo4j.configuration.Description;
@@ -45,6 +47,7 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
+import org.neo4j.values.storable.DateTimeValue;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -58,6 +61,7 @@ import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
+import static org.neo4j.kernel.configuration.Settings.TIMEZONE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
@@ -201,7 +205,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<String> cypher_runtime = setting(
             "unsupported.cypher.runtime",
-            options( "INTERPRETED", "COMPILED", "SLOTTED" , "MORSEL", DEFAULT ), DEFAULT );
+        optionsIgnoreCase( "INTERPRETED", "COMPILED", "SLOTTED" , "MORSEL", DEFAULT ), DEFAULT );
 
     @Description( "Enable tracing of compilation in cypher." )
     @Internal
@@ -284,6 +288,18 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<String> cypher_replan_algorithm = setting( "unsupported.cypher.replan_algorithm",
             options( "inverse", "exponential", "none", DEFAULT ), DEFAULT );
+
+    @Description( "Enable using minimum cardinality estimates in the Cypher cost planner, so that cardinality " +
+                  "estimates for logical plan operators are not allowed to go below certain thresholds even when " +
+                  "the statistics give smaller numbers. " +
+                  "This is especially useful for large import queries that write nodes and relationships " +
+                  "into an empty or small database, where the generated query plan needs to be able to scale " +
+                  "beyond the initial statistics. Otherwise, when this is disabled, the statistics on an empty " +
+                  "or tiny database may lead the cost planner to for example pick a scan over an index seek, even " +
+                  "when an index exists, because of a lower estimated cost." )
+    @Internal
+    public static final Setting<Boolean> cypher_plan_with_minimum_cardinality_estimates =
+            setting( "unsupported.cypher.plan_with_minimum_cardinality_estimates", BOOLEAN, TRUE );
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
@@ -370,7 +386,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
             options( Level.class ), "INFO" );
 
-    @Description( "Database timezone." )
+    @Description( "Database timezone. Among other things, this setting influences which timezone the logs and monitoring procedures use." )
     public static final Setting<LogTimeZone> db_timezone =
             setting( "dbms.db.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
 
@@ -379,6 +395,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     @ReplacedBy( "dbms.db.timezone" )
     public static final Setting<LogTimeZone> log_timezone =
             setting( "dbms.logs.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
+
+    @Description( "Database timezone for temporal functions. All Time and DateTime values that are created without " +
+            "an explicit timezone will use this configured default timezone." )
+    public static final Setting<ZoneId> db_temporal_timezone =
+            setting( "db.temporal.timezone", TIMEZONE, ZoneOffset.UTC.toString() );
 
     @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
     @Internal

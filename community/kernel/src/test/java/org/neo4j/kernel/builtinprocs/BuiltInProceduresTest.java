@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,7 +22,6 @@ package org.neo4j.kernel.builtinprocs;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.HashMap;
@@ -63,6 +62,7 @@ import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
@@ -99,6 +99,7 @@ public class BuiltInProceduresTest
     private final KernelTransaction tx = mock( KernelTransaction.class );
     private final DependencyResolver resolver = mock( DependencyResolver.class );
     private final GraphDatabaseAPI graphDatabaseAPI = mock( GraphDatabaseAPI.class );
+    private final Log log = mock( Log.class );
 
     private final Procedures procs = new Procedures();
     private final ResourceTracker resourceTracker = new StubResourceManager();
@@ -482,6 +483,7 @@ public class BuiltInProceduresTest
         procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( GRAPHDATABASEAPI ), false );
         procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
 
+        procs.registerComponent( Log.class, ctx -> ctx.get( LOG), false );
         procs.registerType( Node.class, NTNode );
         procs.registerType( Relationship.class, NTRelationship );
         procs.registerType( Path.class, NTPath );
@@ -555,6 +557,7 @@ public class BuiltInProceduresTest
         ctx.put( DEPENDENCY_RESOLVER, resolver );
         ctx.put( GRAPHDATABASEAPI, graphDatabaseAPI );
         ctx.put( SECURITY_CONTEXT, SecurityContext.AUTH_DISABLED );
+        ctx.put( LOG, log );
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
         return Iterators.asList( procs.callProcedure(
@@ -566,4 +569,7 @@ public class BuiltInProceduresTest
 
     private static final Key<GraphDatabaseAPI> GRAPHDATABASEAPI =
             Key.key( "GraphDatabaseAPI", GraphDatabaseAPI.class );
+
+    private static final Key<Log> LOG =
+            Key.key( "Log", Log.class );
 }

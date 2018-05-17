@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -297,26 +297,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
             @Override
             public String toString()
             {
-                try
-                {
-                    return Paths.defaultPathToString( this );
-                }
-                catch ( NotInTransactionException | DatabaseShutdownException e )
-                {
-                    // We don't keep the rel-name lookup if the database is shut down. Source ID and target ID also requires
-                    // database access in a transaction. However, failing on toString would be uncomfortably evil, so we fall
-                    // back to noting the relationship type id.
-                }
-                StringBuilder sb = new StringBuilder();
-                for ( Relationship rel : this.relationships() )
-                {
-                    if ( sb.length() == 0 )
-                    {
-                        sb.append( "(?)" );
-                    }
-                    sb.append( "-[?," ).append( rel.getId() ).append( "]-(?)" );
-                }
-                return sb.toString();
+                return Paths.defaultPathToStringWithNotInTransactionFallback( this );
             }
         } );
     }

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core;
 
@@ -40,7 +43,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;
@@ -88,7 +90,12 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Boolean> refuse_to_be_leader =
             setting( "causal_clustering.refuse_to_be_leader", BOOLEAN, FALSE );
 
-    @Description( "The name of the database hosted by this server instance" )
+    @Description( "The name of the database being hosted by this server instance. This configuration setting may be safely ignored " +
+            "unless deploying a multicluster. Instances may be allocated to distinct sub-clusters by assigning them distinct database " +
+            "names using this setting. For instance if you had 6 instances you could form 2 sub-clusters by assigning half " +
+            "the database name \"foo\", half the name \"bar\". The setting value must match exactly between members of the same sub-cluster. " +
+            "This setting is a one-off: once an instance is configured with a database name it may not be changed in future without using " +
+            "neo4j-admin unbind." )
     public static final Setting<String> database =
             setting( "causal_clustering.database", STRING, "default" );
 
@@ -133,7 +140,9 @@ public class CausalClusteringSettings implements LoadableConfig
             "setting alone. If you have 5 machines then you can survive failures down to 3 remaining, e.g. with 2 dead members. The three remaining can " +
             "still vote another replacement member in successfully up to a total of 6 (2 of which are still dead) and then after this, one of the " +
             "superfluous dead members will be immediately and automatically voted out (so you are left with 5 members in the consensus group, 1 of which " +
-            "is currently dead). Operationally you can now bring the last machine up by bringing in another replacement or repairing the dead one." )
+            "is currently dead). Operationally you can now bring the last machine up by bringing in another replacement or repairing the dead one. " +
+            "When using multi-clustering (configuring multiple distinct database names across core hosts), this setting is used to define the minimum size " +
+            "of *each* sub-cluster at runtime." )
     public static final Setting<Integer> minimum_core_cluster_size_at_runtime =
             buildSetting( "causal_clustering.minimum_core_cluster_size_at_runtime", INTEGER, "3" ).constraint( min( 2 ) ).build();
 
@@ -463,8 +472,7 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.load_balancing.plugin", STRING, "server_policies" );
 
     @Description( "Time out for protocol negotiation handshake" )
-    public static final Setting<Duration> handshake_timeout =
-            setting( "causal_clustering.handshake_timeout", DURATION, "5000ms" );
+    public static final Setting<Duration> handshake_timeout = setting( "causal_clustering.handshake_timeout", DURATION, "20s" );
 
     @Description( "The configuration must be valid for the configured plugin and usually exists" +
             "under matching subkeys, e.g. ..config.server_policies.*" +

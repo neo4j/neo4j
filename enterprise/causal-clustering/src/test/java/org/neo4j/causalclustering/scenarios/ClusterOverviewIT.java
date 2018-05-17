@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.scenarios;
 
@@ -29,6 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.net.URI;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,8 +45,10 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
+import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.collection.RawIterator;
@@ -54,6 +60,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -62,6 +69,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.neo4j.causalclustering.discovery.RoleInfo.FOLLOWER;
 import static org.neo4j.causalclustering.discovery.RoleInfo.LEADER;
 import static org.neo4j.causalclustering.discovery.RoleInfo.READ_REPLICA;
@@ -266,13 +274,48 @@ public class ClusterOverviewIT
         }
     }
 
+    @Test
+    public void shouldDiscoverTimeoutBasedLeaderStepdown() throws Exception
+    {
+        clusterRule.withNumberOfCoreMembers( 3 );
+        clusterRule.withNumberOfReadReplicas( 2 );
+
+        Cluster cluster = clusterRule.startCluster();
+        List<CoreClusterMember> followers = cluster.getAllMembersWithRole( Role.FOLLOWER );
+        CoreClusterMember leader = cluster.getMemberWithRole( Role.LEADER );
+        followers.forEach( CoreClusterMember::shutdown );
+
+        assertEventualOverview( cluster, containsRole( LEADER, 0 ), leader.serverId() );
+    }
+
+    @Test
+    public void shouldDiscoverGreaterTermBasedLeaderStepdown() throws Exception
+    {
+        int originalCoreMembers = 3;
+        clusterRule.withNumberOfCoreMembers( originalCoreMembers );
+
+        Cluster cluster = clusterRule.startCluster();
+        CoreClusterMember leader = cluster.awaitLeader();
+        leader.config().augment( CausalClusteringSettings.refuse_to_be_leader, Settings.TRUE );
+
+        List<MemberInfo> preElectionOverview = clusterOverview( leader.database() );
+
+        CoreClusterMember follower = cluster.getMemberWithRole( Role.FOLLOWER );
+        follower.raft().triggerElection( Clock.systemUTC() );
+
+        assertEventualOverview( cluster, allOf(
+                containsRole( LEADER, 1 ),
+                containsRole( FOLLOWER, originalCoreMembers - 1 ),
+                not( equalTo( preElectionOverview ) ) ), leader.serverId() );
+    }
+
     private void assertEventualOverview( Cluster cluster, Matcher<List<MemberInfo>> expected, int coreServerId )
             throws KernelException, InterruptedException
     {
         Function<List<MemberInfo>, String> printableMemberInfos =
                 memberInfos -> memberInfos.stream().map( MemberInfo::toString ).collect( Collectors.joining( ", " ) );
         assertEventually( memberInfos -> "should have overview from core " + coreServerId + " but view was " + printableMemberInfos.apply( memberInfos ),
-                () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 60, SECONDS );
+                () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 90, SECONDS );
     }
 
     @SafeVarargs

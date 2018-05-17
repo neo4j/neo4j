@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -50,7 +50,15 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
 
   val neoValues: Seq[AnyRef] = javaValues.map(ValueUtils.of)
 
-  val values: Seq[AnyRef] = javaValues ++ neoValues
+  val neoOnlyValues: Seq[AnyRef] =
+    Seq(
+      // Temporal and spatial types should only ever reach the compiled runtime as neo values
+      DateValue.date(2018, 5, 3).asInstanceOf[AnyRef],
+      DurationValue.duration(1, 1, 0, 0).asInstanceOf[AnyRef],
+      PointValue.parse("{x: 2, y: 3}").asInstanceOf[AnyRef]
+    )
+
+  val values: Seq[AnyRef] = javaValues ++ neoValues ++ neoOnlyValues
 
   property("+") {
     forAll(getTable(CompiledMathHelper.add)) {
@@ -96,6 +104,17 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_: NumberValue,       _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (l: TemporalValue[_, _], r: DurationValue,       Right(result)) => result should equal(l.plus(r))
+      case (l: DurationValue,       r: TemporalValue[_, _], Right(result)) => result should equal(r.plus(l))
+      case (l: DurationValue,       r: DurationValue,       Right(result)) => result should equal(l.add(r))
+
+      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: PointValue,          _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Lists
       case (l1: util.List[_], l2: util.List[_], Right(result)) => result should equal(concat(l1, l2))
@@ -201,6 +220,15 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
 
+      case (l: TemporalValue[_, _], r: DurationValue,       Right(result)) => result should equal(l.minus(r))
+      case (l: DurationValue,       r: DurationValue,       Right(result)) => result should equal(l.sub(r))
+      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: PointValue,          _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
+
       // Lists
       case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
       case (l1: ListValue,    l2: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -290,6 +318,17 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
 
+      case (l: DurationValue,       r: NumberValue,     Right(result)) => result should equal(l.mul(r))
+      case (l: DurationValue,       r: Number,          Right(result)) => result should equal(l.mul(Values.numberValue(r)))
+      case (l: NumberValue,         r: DurationValue,   Right(result)) => result should equal(r.mul(l))
+      case (l: Number,              r: DurationValue,   Right(result)) => result should equal(r.mul(Values.numberValue(l)))
+      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: PointValue,          _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
+
       // Lists
       case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
       case (l1: ListValue,    l2: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -378,6 +417,15 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_: NumberValue,       _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (l: DurationValue,       r: NumberValue,     Right(result)) => result should equal(l.div(r))
+      case (l: DurationValue,       r: Number,          Right(result)) => result should equal(l.div(Values.numberValue(r)))
+      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: PointValue,          _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Lists
       case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -469,6 +517,13 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_: NumberValue,       _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: PointValue,          _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Lists
       case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]

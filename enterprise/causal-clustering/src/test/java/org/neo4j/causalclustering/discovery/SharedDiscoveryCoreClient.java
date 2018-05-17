@@ -1,25 +1,29 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.discovery;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -28,10 +32,11 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreTopologyService, Comparable<SharedDiscoveryCoreClient>
+class SharedDiscoveryCoreClient implements CoreTopologyService, Lifecycle
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final MemberId myself;
@@ -55,12 +60,6 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
         this.log = logProvider.getLog( getClass() );
         this.refusesToBeLeader = config.get( CausalClusteringSettings.refuse_to_be_leader );
         this.localDBName = config.get( CausalClusteringSettings.database );
-    }
-
-    @Override
-    public int compareTo( SharedDiscoveryCoreClient o )
-    {
-        return Optional.ofNullable( o ).map( c -> c.myself.getUuid().compareTo( this.myself.getUuid() ) ).orElse( -1 );
     }
 
     @Override
@@ -99,6 +98,12 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     }
 
     @Override
+    public void init()
+    {
+        // nothing to do
+    }
+
+    @Override
     public void start() throws InterruptedException
     {
         coreTopology = sharedDiscoveryService.getCoreTopology( this );
@@ -119,9 +124,21 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     }
 
     @Override
+    public void shutdown()
+    {
+        // nothing to do
+    }
+
+    @Override
     public ReadReplicaTopology allReadReplicas()
     {
         return readReplicaTopology;
+    }
+
+    @Override
+    public ReadReplicaTopology localReadReplicas()
+    {
+        return allReadReplicas().filterTopologyByDb( localDBName );
     }
 
     @Override
@@ -140,6 +157,24 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
         // for the database local to the host upon which this method is called.
         // TODO: evaluate returning clusterId = null for global Topologies returned by allCoreServers()
         return this.coreTopology;
+    }
+
+    @Override
+    public CoreTopology localCoreServers()
+    {
+        return allCoreServers().filterTopologyByDb( localDBName );
+    }
+
+    @Override
+    public void handleStepDown( long stepDownTerm, String dbName )
+    {
+        boolean wasLeaderForTerm = Objects.equals( myself, leaderInfo.memberId() ) && stepDownTerm == leaderInfo.term();
+        if ( wasLeaderForTerm )
+        {
+            log.info( String.format( "Step down event detected. This topology member, with MemberId %s, was leader in term %s, now moving " +
+                    "to follower.", myself, leaderInfo.term() ) );
+            sharedDiscoveryService.casLeaders( leaderInfo.stepDown(), dbName );
+        }
     }
 
     @Override

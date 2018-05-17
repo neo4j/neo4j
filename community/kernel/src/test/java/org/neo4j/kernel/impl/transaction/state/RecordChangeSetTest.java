@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -56,11 +56,16 @@ public class RecordChangeSetTest
     {
         // GIVEN
         NeoStores mockStore = mock( NeoStores.class );
-        when( mockStore.getNodeStore() ).thenReturn( mock( NodeStore.class ) );
-        when( mockStore.getRelationshipStore() ).thenReturn( mock( RelationshipStore.class ) );
-        when( mockStore.getPropertyStore() ).thenReturn( mock( PropertyStore.class ) );
-        when( mockStore.getSchemaStore() ).thenReturn( mock( SchemaStore.class ) );
-        when( mockStore.getRelationshipGroupStore() ).thenReturn( mock( RelationshipGroupStore.class ) );
+        NodeStore store = mock( NodeStore.class );
+        when( mockStore.getNodeStore() ).thenReturn( store );
+        RelationshipStore relationshipStore = mock( RelationshipStore.class );
+        when( mockStore.getRelationshipStore() ).thenReturn( relationshipStore );
+        PropertyStore propertyStore = mock( PropertyStore.class );
+        when( mockStore.getPropertyStore() ).thenReturn( propertyStore );
+        SchemaStore schemaStore = mock( SchemaStore.class );
+        when( mockStore.getSchemaStore() ).thenReturn( schemaStore );
+        RelationshipGroupStore groupStore = mock( RelationshipGroupStore.class );
+        when( mockStore.getRelationshipGroupStore() ).thenReturn( groupStore );
 
         RecordChangeSet changeSet = new RecordChangeSet( new Loaders( mockStore ) );
 

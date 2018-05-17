@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,20 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Hint, UsingJoinHint}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, LogicalPlan, LeftOuterHashJoin}
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities}
-import org.neo4j.cypher.internal.util.v3_4.{Cost, InputPosition}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.v3_4.Cost
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.{PatternExpression, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, LeftOuterHashJoin, LogicalPlan}
 
 class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
+
 
   val aNode = "a"
   val bNode = "b"
@@ -55,7 +58,8 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -65,7 +69,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config)
     )
     val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, idNames = Set(aNode))
     val plans = leftOuterHashJoin(optionalQg, left, context, solveds, cardinalities)
@@ -84,7 +88,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -94,7 +98,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config)
     )
     val left = newMockedLogicalPlanWithPatterns(solveds, cardinalities, Set(aNode))
     val plan = leftOuterHashJoin(optionalQg, left, context, solveds, cardinalities).getOrElse(fail("No result from outerHashJoin"))
@@ -102,4 +106,6 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     plan should equal(LeftOuterHashJoin(Set(aNode), left, innerPlan))
     solveds.get(plan.id).lastQueryGraph.allHints should equal (theHint)
   }
+
+
 }

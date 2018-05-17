@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,8 +23,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -323,4 +325,27 @@ public class Paths
         }
     }
 
+    public static String defaultPathToStringWithNotInTransactionFallback( Path path )
+    {
+        try
+        {
+            return Paths.defaultPathToString( path );
+        }
+        catch ( NotInTransactionException | DatabaseShutdownException e )
+        {
+            // We don't keep the rel-name lookup if the database is shut down. Source ID and target ID also requires
+            // database access in a transaction. However, failing on toString would be uncomfortably evil, so we fall
+            // back to noting the relationship type id.
+        }
+        StringBuilder sb = new StringBuilder();
+        for ( Relationship rel : path.relationships() )
+        {
+            if ( sb.length() == 0 )
+            {
+                sb.append( "(?)" );
+            }
+            sb.append( "-[?," ).append( rel.getId() ).append( "]-(?)" );
+        }
+        return sb.toString();
+    }
 }

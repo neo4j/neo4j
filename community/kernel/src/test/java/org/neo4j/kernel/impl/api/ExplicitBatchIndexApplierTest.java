@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -76,7 +76,8 @@ public class ExplicitBatchIndexApplierTest
         when( commitment.hasExplicitIndexChanges() ).thenReturn( true );
         IndexConfigStore config = newIndexConfigStore( names, applierName );
         ExplicitIndexApplierLookup applierLookup = mock( ExplicitIndexApplierLookup.class );
-        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( TransactionApplier.class ) );
+        TransactionApplier transactionApplier = mock( TransactionApplier.class );
+        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( transactionApplier );
         try ( ExplicitBatchIndexApplier applier = new ExplicitBatchIndexApplier( config, applierLookup, BYPASS, INTERNAL ) )
         {
             TransactionToApply tx = new TransactionToApply( null, 2 );
@@ -104,7 +105,8 @@ public class ExplicitBatchIndexApplierTest
         Map<String,Integer> keys = MapUtil.genericMap( "key", 0 );
         String applierName = "test-applier";
         ExplicitIndexApplierLookup applierLookup = mock( ExplicitIndexApplierLookup.class );
-        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( TransactionApplier.class ) );
+        TransactionApplier transactionApplier = mock( TransactionApplier.class );
+        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( transactionApplier );
         IndexConfigStore config = newIndexConfigStore( names, applierName );
 
         // WHEN multiple explicit index transactions are running, they should be done in order

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -18,8 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.kernel.impl.api.index;
-
-import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -563,7 +561,6 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         void flip() throws FlipFailedKernelException
         {
-            MutableBoolean indexFlipped = new MutableBoolean();
             flipper.flip( () ->
             {
                 populatorLock.lock();
@@ -573,27 +570,23 @@ public class MultipleIndexPopulator implements IndexPopulator
                     {
                         populator.add( takeCurrentBatch() );
                         populateFromQueueIfAvailable( Long.MAX_VALUE );
-                        IndexSample sample = populator.sampleResult();
-                        storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
                         if ( populations.contains( IndexPopulation.this ) )
                         {
+                            IndexSample sample = populator.sampleResult();
+                            storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
                             populator.close( true );
+                            return true;
                         }
-
-                        populationOngoing = false;
-                        indexFlipped.setTrue();
                     }
+                    return false;
                 }
                 finally
                 {
+                    populationOngoing = false;
                     populatorLock.unlock();
                 }
-                return indexFlipped.booleanValue();
             }, failedIndexProxyFactory );
-            if ( indexFlipped.isTrue() )
-            {
-                removeFromOngoingPopulations( this );
-            }
+            removeFromOngoingPopulations( this );
             log.info( "Index population completed. Index [%s] is %s.", indexUserDescription, flipper.getState().name() );
         }
 

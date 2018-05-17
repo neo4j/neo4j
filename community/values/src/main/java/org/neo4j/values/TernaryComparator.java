@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,7 @@
 package org.neo4j.values;
 
 /**
- * Comparator that allows {@code null}.
+ * Comparator that allows undefined comparison.
  */
 @FunctionalInterface
 public interface TernaryComparator<T>
@@ -31,5 +31,5 @@ public interface TernaryComparator<T>
      * 0 if o1 and o2 are equal, and
      * {@code null} if they are not comparable.
      */
-    Integer ternaryCompare( T o1, T o2 );
+    Comparison ternaryCompare( T o1, T o2 );
 }

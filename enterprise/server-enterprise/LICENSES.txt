@@ -27,7 +27,6 @@ Apache Software License, Version 2.0
   Data Mapper for Jackson
   FindBugs-jsr305
   Graphite Integration for Metrics
-  Guava: Google Core Libraries for Java
   hazelcast-all
   Jackson
   JAX-RS provider for JSON content type

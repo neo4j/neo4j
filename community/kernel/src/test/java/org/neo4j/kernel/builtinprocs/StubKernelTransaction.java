@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -177,6 +178,12 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public AuthSubject subjectOrAnonymous()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public Optional<Status> getReasonIfTerminated()
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -255,19 +262,19 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public NodeCursor nodeCursor()
+    public NodeCursor ambientNodeCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public RelationshipScanCursor relationshipCursor()
+    public RelationshipScanCursor ambientRelationshipCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public PropertyCursor propertyCursor()
+    public PropertyCursor ambientPropertyCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -29,6 +32,31 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
+
+  test("should handle negative node id gracefully") {
+    createNode("id" -> 0)
+    for (i <- 1 to 1000) createNode("id" -> i)
+    val result = executeWith(
+      Configs.Interpreted - Configs.OldAndRule,
+      "MATCH (n) WHERE id(n) IN {ids} RETURN n.id",
+      params = Map("ids" -> List(-2, -3, 0, -4)))
+    result.executionPlanDescription() should useOperators("NodeByIdSeek")
+    result.toList should equal(List(Map("n.id" -> 0)))
+  }
+
+  test("should handle negative relationship id gracefully") {
+    var prevNode = createNode("id" -> 0)
+    for (i <- 1 to 1000) {
+      val n = createNode("id" -> i)
+      relate(prevNode, n)
+      prevNode = n
+    }
+    val result = innerExecuteDeprecated( // Bug in 3.1 makes it difficult to use the backwards compability mode here
+      queryText = "MATCH ()-[r]->() WHERE id(r) IN {ids} RETURN id(r)",
+      params = Map("ids" -> List(-2, -3, 0, -4)))
+    result.executionPlanDescription() should useOperators("DirectedRelationshipByIdSeek")
+    result.toList should equal(List(Map("id(r)" -> 0)))
+  }
 
   test("Do not count null elements in nodes without labels") {
 
@@ -607,9 +635,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   // Not TCK material -- id()
   test("should return empty result when there are no relationship with the given id") {
-    executeWith(Configs.All + Configs.Morsel, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
-    executeWith(Configs.All + Configs.Morsel, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
-    executeWith(Configs.All + Configs.Morsel, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.Interpreted + Configs.Morsel, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.Interpreted + Configs.Morsel, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.Interpreted + Configs.Morsel, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 
   // Not TCK material -- id()
@@ -859,22 +887,43 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(Map("a" -> n)))
   }
 
-  test("should not touch the database when for impossible predicates") {
+  test("should not touch the database when for impossible anded predicates") {
     // Given
     for (_ <- 1 to 50) createNode()
 
     // When
-    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n) WHERE 1 = 0 AND 1 > 5 RETURN n")
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n) WHERE 1 = 0 AND 5 > 1 RETURN n")
 
     // Then
     result.executionPlanDescription().totalDbHits should equal(Some(0))
   }
 
-  test("should remove predicates") {
+  test("should not touch the database when for impossible or'd predicates") {
+    // Given
+    for (_ <- 1 to 50) createNode()
+
+    // When
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n) WHERE 1 = 0 OR 1 > 5 RETURN n")
+
+    // Then
+    result.executionPlanDescription().totalDbHits should equal(Some(0))
+  }
+
+  test("should remove anded predicates that is always true") {
     // Given an empty database
 
     // When
     val result = executeWith(Configs.All + Configs.Morsel, "PROFILE MATCH (n) WHERE 1 = 1 AND 5 > 1 RETURN n")
+
+    // Then
+    result.executionPlanDescription().find("Selection") shouldBe empty
+  }
+
+  test("should remove or'd predicates that is always true") {
+    // Given an empty database
+
+    // When
+    val result = executeWith(Configs.All + Configs.Morsel, "PROFILE MATCH (n) WHERE FALSE OR 1 = 1 RETURN n")
 
     // Then
     result.executionPlanDescription().find("Selection") shouldBe empty

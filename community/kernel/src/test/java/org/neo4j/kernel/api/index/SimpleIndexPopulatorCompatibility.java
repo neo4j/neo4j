@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -79,7 +79,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         String failure = "The contrived failure";
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         // WHEN (this will attempt to call close)
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.markAsFailed( failure ) );
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.markAsFailed( failure ), false );
         // THEN
         assertThat( indexProvider.getPopulationFailure( 17, descriptor ), containsString( failure ) );
     }
@@ -98,7 +98,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
 
             // THEN
             assertEquals( FAILED, indexProvider.getInitialState( 17, descriptor ) );
-        } );
+        }, false );
     }
 
     @Test
@@ -144,7 +144,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
                 assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
             }
-            accessor.close();
         }
     }
 
@@ -206,7 +205,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     assertEquals( entry.nodeId, single( nodes, NO_SUCH_NODE ) );
                 }
             }
-            accessor.close();
         }
     }
 
@@ -236,7 +234,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     assertEquals( entry.nodeId, single( nodes, NO_SUCH_NODE ) );
                 }
             }
-            accessor.close();
         }
     }
 
@@ -272,7 +269,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                         assertEquals( asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ) );
                     }
                 }
-                accessor.close();
             }
         }
     }

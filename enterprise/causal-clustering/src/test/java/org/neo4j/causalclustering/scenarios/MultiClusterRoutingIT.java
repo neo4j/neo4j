@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.scenarios;
 
@@ -64,8 +67,8 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.DATABASE;
 import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
 import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
-import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_SUB_CLUSTER_ROUTERS;
-import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_SUPER_CLUSTER_ROUTERS;
+import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_DATABASE;
+import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_ALL_DATABASES;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )
@@ -133,10 +136,10 @@ public class MultiClusterRoutingIT
     public void superCallShouldReturnAllRouters()
     {
         List<CoreGraphDatabase> dbs = dbNames.stream()
-                .map( n -> cluster.getDbWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() ).collect( Collectors.toList() );
+                .map( n -> cluster.getMemberWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() ).collect( Collectors.toList() );
 
         Stream<Optional<MultiClusterRoutingResult>> optResults = dbs.stream()
-                .map( db -> callProcedure( db, GET_SUPER_CLUSTER_ROUTERS, Collections.emptyMap() ) );
+                .map( db -> callProcedure( db, GET_ROUTERS_FOR_ALL_DATABASES, Collections.emptyMap() ) );
 
         List<MultiClusterRoutingResult> results = optResults.filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() );
         assertEquals("There should be a result for each database against which the procedure is executed.",  dbNames.size(), results.size() );
@@ -153,11 +156,11 @@ public class MultiClusterRoutingIT
     public void subCallShouldReturnLocalRouters()
     {
         String dbName = getFirstDbName( dbNames );
-        Stream<CoreGraphDatabase> members = dbNames.stream().map( n -> cluster.getDbWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() );
+        Stream<CoreGraphDatabase> members = dbNames.stream().map( n -> cluster.getMemberWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() );
 
         Map<String,Object> params = new HashMap<>();
         params.put( DATABASE.parameterName(), dbName );
-        Stream<Optional<MultiClusterRoutingResult>> optResults = members.map( db -> callProcedure( db, GET_SUB_CLUSTER_ROUTERS, params ) );
+        Stream<Optional<MultiClusterRoutingResult>> optResults = members.map( db -> callProcedure( db, GET_ROUTERS_FOR_DATABASE, params ) );
         List<MultiClusterRoutingResult> results = optResults.filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() );
 
         boolean consistentResults = results.stream().distinct().count() == 1;
@@ -176,16 +179,16 @@ public class MultiClusterRoutingIT
     public void procedureCallsShouldReflectMembershipChanges() throws Exception
     {
         String dbName = getFirstDbName( dbNames );
-        CoreClusterMember follower = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER );
+        CoreClusterMember follower = cluster.getMemberWithAnyRole( dbName, Role.FOLLOWER );
         int followerId = follower.serverId();
 
         cluster.removeCoreMemberWithServerId( followerId );
 
-        CoreGraphDatabase db = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER, Role.LEADER ).database();
+        CoreGraphDatabase db = cluster.getMemberWithAnyRole( dbName, Role.FOLLOWER, Role.LEADER ).database();
 
         Function<CoreGraphDatabase, Set<Endpoint>> getResult = database ->
         {
-            Optional<MultiClusterRoutingResult> optResult = callProcedure( database, GET_SUPER_CLUSTER_ROUTERS, Collections.emptyMap() );
+            Optional<MultiClusterRoutingResult> optResult = callProcedure( database, GET_ROUTERS_FOR_ALL_DATABASES, Collections.emptyMap() );
 
             return optResult.map( r ->
                     r.routers().values().stream()

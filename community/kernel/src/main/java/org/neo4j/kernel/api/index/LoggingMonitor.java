@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import java.util.Map;
+import java.util.StringJoiner;
 
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.logging.Log;
@@ -42,13 +43,12 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void recoveryCompleted( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, Map<String,Object> data )
+    public void recoveryCompleted( SchemaIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
     {
-        StringBuilder builder =
-                new StringBuilder(
-                        "Schema index recovery completed: indexId: " + indexId + " descriptor: " + schemaIndexDescriptor
-                                .toString() );
-        data.forEach( ( key, value ) -> builder.append( format( " %s: %s", key, value ) ) );
-        log.info( builder.toString() );
+        StringJoiner joiner = new StringJoiner( ", ", "Schema index recovery completed: ", "" );
+        joiner.add( "descriptor=" + schemaIndexDescriptor );
+        joiner.add( "file=" + indexFile );
+        data.forEach( ( key, value ) -> joiner.add( format( "%s=%s", key, value ) ) );
+        log.info( joiner.toString() );
     }
 }

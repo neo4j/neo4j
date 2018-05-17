@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
+import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CardinalityCostModel, ExpressionEvaluator, Metrics, StatisticsBackedCardinalityModel}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
@@ -28,7 +29,7 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinaliti
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, Cost}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
-case class RealLogicalPlanningConfiguration()
+case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherCompilerConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
 
   override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
@@ -39,7 +40,7 @@ case class RealLogicalPlanningConfiguration()
   }
 
   override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = {
-    val model: Metrics.CostModel = CardinalityCostModel
+    val model: Metrics.CostModel = CardinalityCostModel(cypherCompilerConfig)
     ({
       case (plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities) => model(plan, input, cardinalities)
     })

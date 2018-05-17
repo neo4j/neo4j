@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -50,6 +50,7 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationSchemaKey, Na
 
     public static DurationValue randomDuration( Randoms random )
     {
+        // not using random.randomDuration, since it cannot mix durations greater and smaller than 1 day
         return DurationValue.duration( random.nextLong( -999_999_999L * 12, 999_999_999L * 12),
                 random.nextLong( -999_999_999L * 12 * 28, 999_999_999L * 12 * 28),
                 random.nextLong(),

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -47,8 +47,11 @@ abstract class IdSeekIterator[T]
 
   private def computeNextEntity(): T = {
     while (entityIds.hasNext) {
-      val id = asLongEntityId(entityIds.next())
-      val maybeEntity = operations.getByIdIfExists(id.longValue())
+      val maybeEntity = for {
+        id <- asLongEntityId(entityIds.next())
+        entity <- operations.getByIdIfExists(id)
+      } yield entity
+
       if(maybeEntity.isDefined) return maybeEntity.get
     }
     null.asInstanceOf[T]

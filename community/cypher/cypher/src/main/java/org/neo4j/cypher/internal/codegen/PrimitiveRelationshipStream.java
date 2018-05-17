@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,12 +25,13 @@ import java.util.List;
 import java.util.function.LongFunction;
 import java.util.stream.LongStream;
 
-import org.neo4j.cypher.internal.compiler.v3_4.spi.RelationshipIdWrapper;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
 
-public class PrimitiveRelationshipStream extends PrimitiveEntityStream<RelationshipIdWrapper>
+public class PrimitiveRelationshipStream extends PrimitiveEntityStream<VirtualRelationshipValue>
 {
     public PrimitiveRelationshipStream( LongStream inner )
     {
@@ -63,9 +64,9 @@ public class PrimitiveRelationshipStream extends PrimitiveEntityStream<Relations
 
     @Override
     // This method is only used when we do not know the element type at compile time, so it has to box the elements
-    public Iterator<RelationshipIdWrapper> iterator()
+    public Iterator<VirtualRelationshipValue> iterator()
     {
-        return inner.mapToObj( (LongFunction<RelationshipIdWrapper>) RelationshipIdWrapperImpl::new ).iterator();
+        return inner.mapToObj( (LongFunction<VirtualRelationshipValue>) VirtualValues::relationship ).iterator();
     }
 
     private static final PrimitiveRelationshipStream empty = new PrimitiveRelationshipStream( LongStream.empty() );

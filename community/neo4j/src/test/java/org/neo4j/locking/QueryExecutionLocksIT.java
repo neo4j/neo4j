@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -372,7 +373,7 @@ public class QueryExecutionLocksIT
             this.lockOperationRecords = lockOperationRecords;
         }
 
-        public List<LockOperationRecord> getLockOperationRecords()
+        List<LockOperationRecord> getLockOperationRecords()
         {
             return lockOperationRecords;
         }
@@ -696,6 +697,12 @@ public class QueryExecutionLocksIT
         }
 
         @Override
+        public AuthSubject subjectOrAnonymous()
+        {
+            return internal.subjectOrAnonymous();
+        }
+
+        @Override
         public Optional<Status> getReasonIfTerminated()
         {
             return internal.getReasonIfTerminated();
@@ -774,21 +781,21 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public NodeCursor nodeCursor()
+        public NodeCursor ambientNodeCursor()
         {
-            return internal.nodeCursor();
+            return internal.ambientNodeCursor();
         }
 
         @Override
-        public RelationshipScanCursor relationshipCursor()
+        public RelationshipScanCursor ambientRelationshipCursor()
         {
-            return internal.relationshipCursor();
+            return internal.ambientRelationshipCursor();
         }
 
         @Override
-        public PropertyCursor propertyCursor()
+        public PropertyCursor ambientPropertyCursor()
         {
-            return internal.propertyCursor();
+            return internal.ambientPropertyCursor();
         }
 
         @Override

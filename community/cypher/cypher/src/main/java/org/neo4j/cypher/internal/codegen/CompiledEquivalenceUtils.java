@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.codegen;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -95,6 +96,26 @@ public final class CompiledEquivalenceUtils
         {
             return hashCode( (boolean) element );
         }
+        else if ( element instanceof AnyValue[] )
+        {
+            return hashCode( (AnyValue[]) element );
+        }
+        else if ( element instanceof Object[] )
+        {
+            return hashCode( (Object[]) element );
+        }
+        else if ( element instanceof long[] )
+        {
+            return hashCode( (long[]) element );
+        }
+        else if ( element instanceof double[] )
+        {
+            return hashCode( (double[]) element );
+        }
+        else if ( element instanceof boolean[] )
+        {
+            return hashCode( (boolean[]) element );
+        }
         else if ( element instanceof List<?> )
         {
             return hashCode( (List<?>) element );
@@ -102,10 +123,6 @@ public final class CompiledEquivalenceUtils
         else if ( element instanceof Map<?,?> )
         {
             return hashCode( (Map<String,Object>) element );
-        }
-        else if ( element instanceof Object[] )
-        {
-            return hashCode( (Object[]) element );
         }
         else if ( element instanceof byte[] )
         {
@@ -119,10 +136,6 @@ public final class CompiledEquivalenceUtils
         {
             return hashCode( (int[]) element );
         }
-        else if ( element instanceof long[] )
-        {
-            return hashCode( (long[]) element );
-        }
         else if ( element instanceof char[] )
         {
             return hashCode( (char[]) element );
@@ -130,14 +143,6 @@ public final class CompiledEquivalenceUtils
         else if ( element instanceof float[] )
         {
             return hashCode( (float[]) element );
-        }
-        else if ( element instanceof double[] )
-        {
-            return hashCode( (double[]) element );
-        }
-        else if ( element instanceof boolean[] )
-        {
-            return hashCode( (boolean[]) element );
         }
         else
         {
@@ -260,6 +265,16 @@ public final class CompiledEquivalenceUtils
         default:
             return len * (31 * hashCode( array[0] ) + hashCode( array[len / 2] ) * 31 + hashCode( array[len - 1] ));
         }
+    }
+
+    /**
+     * Calculate hash code of a AnyValue[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
+     */
+    public static int hashCode( AnyValue[] array )
+    {
+        return Arrays.hashCode( array );
     }
 
     /**

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -54,12 +55,23 @@ public class LogEntryWriter
         channel.put( CURRENT.byteCode() ).put( type );
     }
 
+    public void writeStartEntry( LogEntryStart entry ) throws IOException
+    {
+        writeStartEntry( entry.getMasterId(), entry.getLocalId(), entry.getTimeWritten(), entry.getLastCommittedTxWhenTransactionStarted(),
+                entry.getAdditionalHeader() );
+    }
+
     public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
                                  byte[] additionalHeaderData ) throws IOException
     {
         writeLogEntryHeader( TX_START );
         channel.putInt( masterId ).putInt( authorId ).putLong( timeWritten ).putLong( latestCommittedTxWhenStarted )
                .putInt( additionalHeaderData.length ).put( additionalHeaderData, additionalHeaderData.length );
+    }
+
+    public void writeCommitEntry( LogEntryCommit entry ) throws IOException
+    {
+        writeCommitEntry( entry.getTxId(), entry.getTimeWritten() );
     }
 
     public void writeCommitEntry( long transactionId, long timeWritten ) throws IOException
@@ -71,6 +83,13 @@ public class LogEntryWriter
     public void serialize( TransactionRepresentation tx ) throws IOException
     {
         tx.accept( serializer );
+    }
+
+    public void serialize( CommittedTransactionRepresentation tx ) throws IOException
+    {
+        writeStartEntry( tx.getStartEntry() );
+        serialize( tx.getTransactionRepresentation() );
+        writeCommitEntry( tx.getCommitEntry() );
     }
 
     public void serialize( Collection<StorageCommand> commands ) throws IOException

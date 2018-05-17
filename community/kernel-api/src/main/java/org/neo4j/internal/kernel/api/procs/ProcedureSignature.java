@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -45,15 +45,18 @@ public class ProcedureSignature
     private final String[] allowed;
     private final String description;
     private final String warning;
+    private final boolean caseInsensitive;
 
-    public ProcedureSignature( QualifiedName name,
+    public ProcedureSignature(
+            QualifiedName name,
             List<FieldSignature> inputSignature,
             List<FieldSignature> outputSignature,
             Mode mode,
             String deprecated,
             String[] allowed,
             String description,
-            String warning )
+            String warning,
+            boolean caseInsensitive )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -63,6 +66,7 @@ public class ProcedureSignature
         this.allowed = allowed;
         this.description = description;
         this.warning = warning;
+        this.caseInsensitive = caseInsensitive;
     }
 
     public QualifiedName name()
@@ -83,6 +87,11 @@ public class ProcedureSignature
     public String[] allowed()
     {
         return allowed;
+    }
+
+    public boolean caseInsensitive()
+    {
+        return caseInsensitive;
     }
 
     public List<FieldSignature> inputSignature()
@@ -217,7 +226,7 @@ public class ProcedureSignature
         public ProcedureSignature build()
         {
             return new ProcedureSignature( name, inputSignature, outputSignature, mode, deprecated, allowed,
-                    description, warning );
+                    description, warning, false );
         }
     }
 

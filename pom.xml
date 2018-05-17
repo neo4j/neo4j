@@ -25,7 +25,7 @@
 
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3</name>
+      <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
       <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
     </license>
   </licenses>
@@ -85,8 +85,7 @@
     <forkCounts>0</forkCounts>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
 
-    <licensesVersion>7</licensesVersion>
-    <license-text.header>AGPL-3-header.txt</license-text.header>
+    <license-text.header>build/AGPL-3-header.txt</license-text.header>
 
     <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
@@ -157,7 +156,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.0.0</version>
           <executions>
             <execution>
               <id>generate-javadocs</id>
@@ -176,7 +175,6 @@
             <detectLinks>false</detectLinks>
             <detectOfflineLinks>false</detectOfflineLinks>
             <quiet>true</quiet>
-            <sourcepath>${project.build.sourceDirectory}</sourcepath>
             <reportOutputDirectory>${project.build.directory}/apidocs</reportOutputDirectory>
 
             <!-- Defines grouping for overview -->
@@ -737,13 +735,6 @@
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <dependencies>
-          <dependency>
-            <groupId>org.neo4j.maven</groupId>
-            <artifactId>licenses</artifactId>
-            <version>${licensesVersion}</version>
-          </dependency>
-        </dependencies>
         <executions>
           <execution>
             <id>check-licenses</id>
@@ -1013,7 +1004,7 @@
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>1.5.1</version>
+        <version>1.5.2</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1082,7 +1073,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.17.0</version>
+        <version>2.18.3</version>
         <scope>test</scope>
       </dependency>
 
@@ -1241,7 +1232,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
-        <version>4.1.23.Final</version>
+        <version>4.1.24.Final</version>
       </dependency>
 
       <dependency>

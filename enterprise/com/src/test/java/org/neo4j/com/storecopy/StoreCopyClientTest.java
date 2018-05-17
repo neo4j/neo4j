@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.com.storecopy;
 
@@ -123,7 +126,7 @@ public class StoreCopyClientTest
         final File originalDir = new File( directory.directory(), "original" );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
-        StoreCopyClient.Monitor storeCopyMonitor = new StoreCopyClient.Monitor.Adapter()
+        StoreCopyClientMonitor storeCopyMonitor = new StoreCopyClientMonitor.Adapter()
         {
             @Override
             public void finishRecoveringStore()
@@ -184,7 +187,7 @@ public class StoreCopyClientTest
         Config config = Config.defaults( logical_logs_location, copyCustomLogFilesLocation.getName() );
         StoreCopyClient copier = new StoreCopyClient(
                 copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
-                new StoreCopyClient.Monitor.Adapter(), false );
+                new StoreCopyClientMonitor.Adapter(), false );
 
         GraphDatabaseAPI original = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( originalDir )
@@ -236,7 +239,7 @@ public class StoreCopyClientTest
         final File originalDir = new File( directory.directory(), "original" );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
-        StoreCopyClient.Monitor storeCopyMonitor = new StoreCopyClient.Monitor.Adapter()
+        StoreCopyClientMonitor storeCopyMonitor = new StoreCopyClientMonitor.Adapter()
         {
             @Override
             public void finishReceivingStoreFiles()
@@ -297,7 +300,7 @@ public class StoreCopyClientTest
 
         StoreCopyClient copier =
                 new StoreCopyClient( backupStore, Config.defaults(), loadKernelExtensions(), NullLogProvider
-                        .getInstance(), fileSystem, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
+                        .getInstance(), fileSystem, pageCache, new StoreCopyClientMonitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
                 requestFactory.create( (GraphDatabaseAPI) initialDatabase, initialStore, fileSystem, false );
@@ -325,7 +328,7 @@ public class StoreCopyClientTest
         GraphDatabaseService initialDatabase = createInitialDatabase( initialStore );
         StoreCopyClient copier =
                 new StoreCopyClient( backupStore, Config.defaults(), loadKernelExtensions(), NullLogProvider
-                        .getInstance(), fileSystem, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
+                        .getInstance(), fileSystem, pageCache, new StoreCopyClientMonitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
 
         RuntimeException exception = new RuntimeException( "Boom!" );
@@ -362,7 +365,7 @@ public class StoreCopyClientTest
         Config config = Config.defaults( record_format, recordFormatsName );
         StoreCopyClient copier = new StoreCopyClient(
                 copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
-                new StoreCopyClient.Monitor.Adapter(), false );
+                new StoreCopyClientMonitor.Adapter(), false );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, recordFormatsName );
         StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, originalDir,

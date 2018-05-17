@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -115,7 +115,8 @@ public class IndexTxStateUpdaterTest
         when( readOps.txState() ).thenReturn( txState );
 
         IndexingService indexingService = mock( IndexingService.class );
-        when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( mock( IndexProxy.class ) );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( indexProxy );
         indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps, indexingService );
 
     }

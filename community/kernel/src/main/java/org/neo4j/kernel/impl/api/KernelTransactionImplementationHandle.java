@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -48,7 +48,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long timeoutMillis;
     private final KernelTransactionImplementation tx;
     private final SystemNanoClock clock;
-    private final SecurityContext securityContext;
+    private final AuthSubject subject;
     private final Optional<Status> terminationReason;
     private final ExecutingQueryList executingQueries;
     private final Map<String,Object> metaData;
@@ -61,7 +61,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.startTime = tx.startTime();
         this.timeoutMillis = tx.timeout();
-        this.securityContext = tx.securityContext();
+        this.subject = tx.subjectOrAnonymous();
         this.terminationReason = tx.getReasonIfTerminated();
         this.executingQueries = tx.executingQueries();
         this.metaData = tx.getMetaData();
@@ -107,9 +107,9 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public SecurityContext securityContext()
+    public AuthSubject subject()
     {
-        return securityContext;
+        return subject;
     }
 
     @Override

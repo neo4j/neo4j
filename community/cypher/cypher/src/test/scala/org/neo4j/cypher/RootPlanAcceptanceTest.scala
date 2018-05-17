@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{InterpretedRuntimeName, RuntimeName}
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.javacompat.PlanDescription
 import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
 import org.neo4j.graphdb.ExecutionPlanDescription
 
@@ -31,6 +30,12 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v3_4)
       .shouldHavePlanner(CostBasedPlannerName.default)
+  }
+
+  test("3.3 query should have 3.3 version") {
+    given("match (n) return n")
+      .withCypherVersion(CypherVersion.v3_3)
+      .shouldHaveCypherVersion(CypherVersion.v3_3)
   }
 
   test("interpreted should be default runtime in 3.4") {

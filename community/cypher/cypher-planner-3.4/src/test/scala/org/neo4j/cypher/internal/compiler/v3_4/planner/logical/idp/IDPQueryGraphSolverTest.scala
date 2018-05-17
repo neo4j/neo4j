@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -865,7 +865,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             ProjectEndpoints(
               Argument(Set("r2", "r1", "a", "d", "b", "c")),
               "r2", "c", startInScope = true, "d", endInScope = true, None, directed = true, SimplePatternLength),
-            "r1", "a" , startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength),
+            "r1", "a", startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength),
           "a", OUTGOING, List(), "d", "r3", ExpandInto))
     }
   }

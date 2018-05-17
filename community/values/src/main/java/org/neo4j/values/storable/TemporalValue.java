@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -324,6 +324,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             return Values.intValue( getZoneOffset().getTotalSeconds() / 60 );
         }
+        if ( field == Field.offsetSeconds )
+        {
+            return Values.intValue( getZoneOffset().getTotalSeconds() );
+        }
         if ( field == null || field.field == null )
         {
             throw new UnsupportedTemporalUnitException( "No such field: " + fieldName );
@@ -605,6 +609,15 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
         },
         offsetMinutes//<pre>
+        { //</pre>
+
+            @Override
+            void assign( Builder<?> builder, AnyValue value )
+            {
+                throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
+            }
+        },
+        offsetSeconds//<pre>
         { //</pre>
 
             @Override
@@ -1502,8 +1515,13 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         String timezone;
 
         @Override
-        public void assign( String key, String value )
+        public void assign( String key, Object valueObj )
         {
+            if ( !(valueObj instanceof String) )
+            {
+                throw new InvalidValuesArgumentException( String.format( "Cannot assign %s to field %s", valueObj, key ) );
+            }
+            String value = (String) valueObj;
             if ( "timezone".equals( key.toLowerCase() ) )
             {
                 if ( timezone == null )
@@ -1525,7 +1543,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( timezone != null )
             {
-                ZoneId tz = ZoneId.of( timezone );
+                ZoneId tz = DateTimeValue.parseZoneName( timezone );
                 // Override defaultZone
                 return () -> tz;
             }

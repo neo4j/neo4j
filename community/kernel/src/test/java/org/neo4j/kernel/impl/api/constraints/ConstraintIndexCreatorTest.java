@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -364,7 +364,8 @@ public class ConstraintIndexCreatorTest
         when( transaction.statementLocks() ).thenReturn( locks );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( transaction.schemaRead() ).thenReturn( schemaRead );
-        when( transaction.txState() ).thenReturn( mock( TransactionState.class ) );
+        TransactionState transactionState = mock( TransactionState.class );
+        when( transaction.txState() ).thenReturn( transactionState );
         return transaction;
     }
 }

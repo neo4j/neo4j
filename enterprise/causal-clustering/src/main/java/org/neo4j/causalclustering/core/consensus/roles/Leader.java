@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core.consensus.roles;
 
@@ -87,7 +90,7 @@ public class Leader implements RaftMessageHandler
                 return outcome;
             }
 
-            stepDownToFollower( outcome );
+            stepDownToFollower( outcome, ctx );
             log.info( "Moving to FOLLOWER state after receiving heartbeat at term %d (my term is " + "%d) from %s",
                     heartbeat.leaderTerm(), ctx.term(), heartbeat.from() );
             Heart.beat( ctx, outcome, heartbeat, log );
@@ -113,7 +116,7 @@ public class Leader implements RaftMessageHandler
         {
             if ( !isQuorum( ctx.votingMembers().size(), ctx.heartbeatResponses().size() ) )
             {
-                stepDownToFollower( outcome );
+                stepDownToFollower( outcome, ctx );
                 log.info( "Moving to FOLLOWER state after not receiving heartbeat responses in this election timeout " +
                         "period. Heartbeats received: %s", ctx.heartbeatResponses() );
             }
@@ -142,7 +145,7 @@ public class Leader implements RaftMessageHandler
             else
             {
                 // There is a new leader in a later term, we should revert to follower. (§5.1)
-                stepDownToFollower( outcome );
+                stepDownToFollower( outcome, ctx );
                 log.info( "Moving to FOLLOWER state after receiving append request at term %d (my term is " +
                         "%d) from %s", req.leaderTerm(), ctx.term(), req.from() );
                 Appending.handleAppendEntriesRequest( ctx, outcome, req, log );
@@ -162,7 +165,7 @@ public class Leader implements RaftMessageHandler
             else if ( response.term() > ctx.term() )
             {
                 outcome.setNextTerm( response.term() );
-                stepDownToFollower( outcome );
+                stepDownToFollower( outcome, ctx );
                 log.info( "Moving to FOLLOWER state after receiving append response at term %d (my term is " +
                         "%d) from %s", response.term(), ctx.term(), response.from() );
                 outcome.replaceFollowerStates( new FollowerStates<>() );
@@ -235,7 +238,7 @@ public class Leader implements RaftMessageHandler
         {
             if ( req.term() > ctx.term() )
             {
-                stepDownToFollower( outcome );
+                stepDownToFollower( outcome, ctx );
                 log.info(
                         "Moving to FOLLOWER state after receiving vote request at term %d (my term is " + "%d) from %s",
                         req.term(), ctx.term(), req.from() );
@@ -286,7 +289,7 @@ public class Leader implements RaftMessageHandler
             {
                 if ( req.term() > ctx.term() )
                 {
-                    stepDownToFollower( outcome );
+                    stepDownToFollower( outcome, ctx );
                     log.info( "Moving to FOLLOWER state after receiving pre vote request from %s at term %d (I am at %d)",
                             req.from(), req.term(), ctx.term() );
                 }
@@ -307,9 +310,9 @@ public class Leader implements RaftMessageHandler
             return outcome;
         }
 
-        private void stepDownToFollower( Outcome outcome )
+        private void stepDownToFollower( Outcome outcome, ReadableRaftState raftState )
         {
-            outcome.steppingDown();
+            outcome.steppingDown( raftState.term() );
             outcome.setNextRole( FOLLOWER );
             outcome.setLeader( null );
         }

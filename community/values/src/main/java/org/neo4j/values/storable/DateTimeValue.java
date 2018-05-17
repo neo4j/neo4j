@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -62,6 +62,7 @@ import static org.neo4j.values.storable.DateValue.DATE_PATTERN;
 import static org.neo4j.values.storable.DateValue.parseDate;
 import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalDateTimeValue.optTime;
+import static org.neo4j.values.storable.TimeValue.OFFSET;
 import static org.neo4j.values.storable.TimeValue.TIME_PATTERN;
 import static org.neo4j.values.storable.TimeValue.parseOffset;
 
@@ -160,6 +161,11 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     public static DateTimeValue now( Clock clock, String timezone )
     {
         return now( clock.withZone( parseZoneName( timezone ) ) );
+    }
+
+    public static DateTimeValue now( Clock clock, Supplier<ZoneId> defaultZone )
+    {
+        return now( clock.withZone( defaultZone.get() ) );
     }
 
     public static DateTimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
@@ -629,6 +635,23 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             throw new TemporalParseException( e.getMessage(), e.getParsedString(), e.getErrorIndex(), e );
         }
         return parsedName;
+    }
+
+    public static ZoneId parseZoneOffsetOrZoneName( String zoneName )
+    {
+        Matcher matcher = OFFSET.matcher( zoneName );
+        if ( matcher.matches() )
+        {
+            return parseOffset( matcher );
+        }
+        try
+        {
+            return ZONE_NAME_PARSER.parse( zoneName.replace( ' ', '_' ) ).query( TemporalQueries.zoneId() );
+        }
+        catch ( DateTimeParseException e )
+        {
+            throw new TemporalParseException( e.getMessage(), e.getParsedString(), e.getErrorIndex(), e );
+        }
     }
 
     abstract static class DateTimeBuilder<Result> extends Builder<Result>

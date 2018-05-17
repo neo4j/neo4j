@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
@@ -46,7 +49,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
     private final Duration timeout;
     private final ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstaller;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
-    private final TimeoutStrategy timeoutStrategy;
+    private final TimeoutStrategy handshakeDelay;
     private final Log log;
 
     public HandshakeClientInitializer( ApplicationProtocolRepository applicationProtocolRepository, ModifierProtocolRepository modifierProtocolRepository,
@@ -59,7 +62,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
         this.timeout = handshakeTimeout;
         this.protocolInstaller = protocolInstallerRepository;
         this.pipelineBuilderFactory = pipelineBuilderFactory;
-        this.timeoutStrategy = new ExponentialBackoffStrategy( 1, 2000, MILLISECONDS );
+        this.handshakeDelay = new ExponentialBackoffStrategy( 1, 2000, MILLISECONDS );
     }
 
     private void installHandlers( Channel channel, HandshakeClient handshakeClient ) throws Exception
@@ -79,14 +82,16 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
         HandshakeClient handshakeClient = new HandshakeClient();
         installHandlers( channel, handshakeClient );
 
-        scheduleHandshake( channel, handshakeClient, timeoutStrategy.newTimeout() );
+        log.info( "Scheduling handshake (and timeout) local %s remote %s", channel.localAddress(), channel.remoteAddress() );
+
+        scheduleHandshake( channel, handshakeClient, handshakeDelay.newTimeout() );
         scheduleTimeout( channel, handshakeClient );
     }
 
     /**
      * schedules the handshake initiation after the connection attempt
      */
-    private void scheduleHandshake( SocketChannel ch, HandshakeClient handshakeClient, TimeoutStrategy.Timeout timeout )
+    private void scheduleHandshake( SocketChannel ch, HandshakeClient handshakeClient, TimeoutStrategy.Timeout handshakeDelay )
     {
         ch.eventLoop().schedule( () ->
         {
@@ -96,14 +101,14 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
             }
             else if ( ch.isOpen() )
             {
-                timeout.increment();
-                scheduleHandshake( ch, handshakeClient, timeout );
+                handshakeDelay.increment();
+                scheduleHandshake( ch, handshakeClient, handshakeDelay );
             }
             else
             {
                 handshakeClient.failIfNotDone( "Channel closed" );
             }
-        }, timeout.getMillis(), MILLISECONDS );
+        }, handshakeDelay.getMillis(), MILLISECONDS );
     }
 
     private void scheduleTimeout( SocketChannel ch, HandshakeClient handshakeClient )
@@ -118,6 +123,8 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
 
     private void initiateHandshake( Channel channel, HandshakeClient handshakeClient )
     {
+        log.info( "Initiating handshake local %s remote %s", channel.localAddress(), channel.remoteAddress() );
+
         SimpleNettyChannel channelWrapper = new SimpleNettyChannel( channel, log );
         CompletableFuture<ProtocolStack> handshake = handshakeClient.initiate( channelWrapper, applicationProtocolRepository, modifierProtocolRepository );
 

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.scenarios;
 
@@ -35,9 +38,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -49,7 +54,9 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.TestStoreId.getStoreIds;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
@@ -181,12 +188,8 @@ public class MultiClusteringIT
     @Test
     public void rejoiningFollowerShouldDownloadSnapshotFromCorrectDatabase() throws Exception
     {
-        String dbName = dbNames.stream()
-                .findFirst()
-                .orElseThrow( () -> new IllegalArgumentException( "The dbNames parameter must not be empty." ) );
-
-        int followerId = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER ).serverId();
-
+        String dbName = getFirstDbName( dbNames );
+        int followerId = cluster.getMemberWithAnyRole( dbName, Role.FOLLOWER ).serverId();
         cluster.removeCoreMemberWithServerId( followerId );
 
         for ( int  i = 0; i < 100; i++ )
@@ -229,6 +232,34 @@ public class MultiClusteringIT
         assertEquals( message, 1, storeIds.size() );
     }
 
+    @Test
+    public void shouldNotBeAbleToChangeClusterMembersDatabaseName() throws Exception
+    {
+        CoreClusterMember member = cluster.coreMembers().stream().findFirst().orElseThrow( IllegalArgumentException::new );
+
+        cluster.shutdownCoreMember( member );
+
+        //given
+        member.updateConfig( CausalClusteringSettings.database, "new_name" );
+
+        try
+        {
+            //when
+            cluster.startCoreMember( member );
+            fail( "Cluster member should fail to restart after database name change." );
+        }
+        catch ( ExecutionException e )
+        {
+            //expected
+        }
+    }
+
     //TODO: Test that rejoining followers wait for majority of hosts *for each database* to be available before joining
 
+    private static String getFirstDbName( Set<String> dbNames ) throws Exception
+    {
+        return dbNames.stream()
+                .findFirst()
+                .orElseThrow( () -> new IllegalArgumentException( "The dbNames parameter must not be empty." ) );
+    }
 }

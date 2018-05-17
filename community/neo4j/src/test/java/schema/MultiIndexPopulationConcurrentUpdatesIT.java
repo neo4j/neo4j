@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -646,7 +647,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private class IndexDropAction implements Runnable
     {
-
         private int labelIdToDropIndexFor;
 
         private IndexDropAction( int labelIdToDropIndexFor )
@@ -660,7 +660,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor =
                     SchemaDescriptorFactory.forLabel( labelIdToDropIndexFor, propertyId );
             IndexRule rule = findRuleForLabel( descriptor );
-            indexService.dropIndex( rule );
+            try
+            {
+                indexService.dropIndex( rule );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
 
         private IndexRule findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )

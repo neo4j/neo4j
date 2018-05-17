@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -193,6 +193,7 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
     case Neo4jTypes.NTGeometry => symbols.CTGeometry
     case Neo4jTypes.NTMap => symbols.CTMap
     case Neo4jTypes.NTAny => symbols.CTAny
+    case Neo4jTypes.NTByteArray => symbols.CTList(symbols.CTAny)
     case Neo4jTypes.NTDateTime => symbols.CTAny
     case Neo4jTypes.NTLocalDateTime => symbols.CTAny
     case Neo4jTypes.NTDate => symbols.CTAny

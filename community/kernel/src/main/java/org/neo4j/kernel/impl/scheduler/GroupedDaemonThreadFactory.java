@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,7 +40,23 @@ final class GroupedDaemonThreadFactory implements ThreadFactory, ForkJoinPool.Fo
     @Override
     public Thread newThread( @SuppressWarnings( "NullableProblems" ) Runnable job )
     {
-        Thread thread = new Thread( threadGroup, job, group.threadName() );
+        Thread thread = new Thread( threadGroup, job, group.threadName() )
+        {
+            @Override
+            public String toString()
+            {
+                StringBuilder sb = new StringBuilder( "Thread[" ).append( getName() );
+                ThreadGroup group = getThreadGroup();
+                String sep = ", in ";
+                while ( group != null )
+                {
+                    sb.append( sep ).append( group.getName() );
+                    group = group.getParent();
+                    sep = "/";
+                }
+                return sb.append( ']' ).toString();
+            }
+        };
         thread.setDaemon( true );
         return thread;
     }

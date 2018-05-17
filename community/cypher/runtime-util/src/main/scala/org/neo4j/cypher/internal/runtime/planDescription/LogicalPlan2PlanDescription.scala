@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,7 +36,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, ReadOnlie
                      cardinalities: Cardinalities): InternalPlanDescription = {
     val readOnly = readOnlies.get(input.id)
     new LogicalPlan2PlanDescription(readOnly, cardinalities).create(input)
-      .addArgument(Version("CYPHER 3.4"))
+      .addArgument(Version("CYPHER "+plannerName.version))
       .addArgument(RuntimeVersion("3.4"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))

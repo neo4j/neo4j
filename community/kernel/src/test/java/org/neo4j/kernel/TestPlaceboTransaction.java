@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -54,7 +54,8 @@ public class TestPlaceboTransaction
     public void before()
     {
         ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
-        when( bridge.get() ).thenReturn( mock( Statement.class ) );
+        Statement statement = mock( Statement.class );
+        when( bridge.get() ).thenReturn( statement );
         kernelTransaction = spy( KernelTransaction.class );
         locks = mock( Locks.class );
         when(kernelTransaction.locks()).thenReturn( locks );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -108,6 +108,18 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
     }
 
     @Test
+    public void shouldAddCorsHeaderWhenConfigured() throws Exception
+    {
+        String origin = "https://example.com:7687";
+        startServer( false, origin );
+
+        testCorsAllowMethods( POST, origin );
+        testCorsAllowMethods( GET, origin );
+        testCorsAllowMethods( PATCH, origin );
+        testCorsAllowMethods( DELETE, origin );
+    }
+
+    @Test
     public void shouldAddCorsRequestHeaders() throws Exception
     {
         startServer( false );
@@ -123,12 +135,17 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
 
     private void testCorsAllowMethods( HttpMethod method ) throws Exception
     {
+        testCorsAllowMethods( method, "*" );
+    }
+
+    private void testCorsAllowMethods( HttpMethod method, String origin ) throws Exception
+    {
         HTTP.Builder requestBuilder = requestWithHeaders( "authDisabled", "authDisabled" )
                 .withHeaders( ACCESS_CONTROL_REQUEST_METHOD, method.toString() );
         HTTP.Response response = runQuery( requestBuilder );
 
         assertEquals( OK.getStatusCode(), response.status() );
-        assertCorsHeaderPresent( response );
+        assertCorsHeaderEquals( response, origin );
         assertEquals( method, HttpMethod.valueOf( response.header( ACCESS_CONTROL_ALLOW_METHODS ) ) );
     }
 
@@ -160,6 +177,11 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
 
     private static void assertCorsHeaderPresent( HTTP.Response response )
     {
-        assertEquals( "*", response.header( ACCESS_CONTROL_ALLOW_ORIGIN ) );
+        assertCorsHeaderEquals( response, "*" );
+    }
+
+    private static void assertCorsHeaderEquals( HTTP.Response response, String origin )
+    {
+        assertEquals( origin, response.header( ACCESS_CONTROL_ALLOW_ORIGIN ) );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -48,50 +48,48 @@ public class MarshlandPool<T> implements Pool<T>
      *  - If none found, use the delegate pool.
      */
 
-    private final Pool<T> pool;
-    private final ThreadLocal<LocalSlot<T>> puddle = new ThreadLocal<LocalSlot<T>>()
-    {
-        @Override
-        protected LocalSlot<T> initialValue()
-        {
-            LocalSlot<T> localSlot = new LocalSlot<>( objectsFromDeadThreads );
-            slotReferences.add( localSlot.slotWeakReference );
-            return localSlot;
-        }
-    };
+    private final Pool<T> delegate;
 
     // Used to reclaim objects from dead threads
-    private final Set<LocalSlotReference> slotReferences = newSetFromMap( new ConcurrentHashMap<>() );
+    private final Set<LocalSlotReference<T>> slotReferences = newSetFromMap( new ConcurrentHashMap<>() );
     private final ReferenceQueue<LocalSlot<T>> objectsFromDeadThreads = new ReferenceQueue<>();
+
+    private final ThreadLocal<LocalSlot<T>> puddle = ThreadLocal.withInitial( () ->
+    {
+        LocalSlot<T> localSlot = new LocalSlot<>( objectsFromDeadThreads );
+        slotReferences.add( localSlot.slotWeakReference );
+        return localSlot;
+    } );
 
     public MarshlandPool( Pool<T> delegatePool )
     {
-        this.pool = delegatePool;
+        this.delegate = delegatePool;
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     public T acquire()
     {
         // Try and get it from the thread local
         LocalSlot<T> localSlot = puddle.get();
 
-        T object = localSlot.object;
-        if ( object != null )
+        T obj = localSlot.localSlotObject;
+        if ( obj != null )
         {
             localSlot.set( null );
-            return object;
+            return obj;
         }
 
         // Try the reference queue, containing objects from dead threads
-        LocalSlotReference<T> slotReference = (LocalSlotReference) objectsFromDeadThreads.poll();
-        if ( slotReference != null && slotReference.object != null )
+        LocalSlotReference<T> slotReference = (LocalSlotReference<T>) objectsFromDeadThreads.poll();
+        if ( slotReference != null && slotReference.localSlotReferenceObject != null )
         {
-            slotReferences.remove( slotReference );
-            return slotReference.object;
+            slotReferences.remove( slotReference ); // remove from old threads
+            return slotReference.localSlotReferenceObject;
         }
 
         // Fall back to the delegate pool
-        return pool.acquire();
+        return delegate.acquire();
     }
 
     @Override
@@ -100,71 +98,75 @@ public class MarshlandPool<T> implements Pool<T>
         // Return it locally if possible
         LocalSlot<T> localSlot = puddle.get();
 
-        if ( localSlot.object == null )
+        if ( localSlot.localSlotObject == null )
         {
             localSlot.set( obj );
         }
-
-        // Fall back to the delegate pool
-        else
+        else // Fall back to the delegate pool
         {
-            pool.release( obj );
+            delegate.release( obj );
         }
     }
 
     /**
      * Dispose of all objects in this pool, releasing them back to the delegate pool
      */
+    @SuppressWarnings( "unchecked" )
     @Override
     public void close()
     {
-        for ( LocalSlotReference slotReference : slotReferences )
+        for ( LocalSlotReference<T> slotReference : slotReferences )
         {
-            T object = (T) slotReference.object;
-            if ( object != null )
+            LocalSlot<T> slot = slotReference.get();
+            if ( slot != null )
             {
-                slotReference.object = null;
-                LocalSlot<T> slot = (LocalSlot<T>) slotReference.get();
-                if ( slot != null )
+                T obj = slot.localSlotObject;
+                if ( obj != null )
                 {
                     slot.set( null );
+                    delegate.release( obj );
                 }
-                slotReference.clear();
-                pool.release( object );
             }
         }
-        slotReferences.clear();
+
+        for ( LocalSlotReference<T> reference; (reference = (LocalSlotReference<T>) objectsFromDeadThreads.poll()) != null; )
+        {
+            T obj = reference.localSlotReferenceObject;
+            if ( obj != null )
+            {
+                delegate.release( obj );
+            }
+        }
     }
 
     /**
      * Container for the "puddle", the small local pool each thread keeps.
      */
-    private static class LocalSlot<T>
+    private static final class LocalSlot<T>
     {
+        private T localSlotObject;
+        private final LocalSlotReference<T> slotWeakReference;
 
-        private T object;
-        private final LocalSlotReference slotWeakReference;
-
-        LocalSlot( ReferenceQueue<LocalSlot<T>> referenceQueue )
+        private LocalSlot( ReferenceQueue<LocalSlot<T>> referenceQueue )
         {
-            slotWeakReference = new LocalSlotReference( this, referenceQueue );
+            slotWeakReference = new LocalSlotReference<>( this, referenceQueue );
         }
 
         public void set( T obj )
         {
-            slotWeakReference.object = obj;
-            this.object = obj;
+            slotWeakReference.localSlotReferenceObject = obj;
+            this.localSlotObject = obj;
         }
     }
 
     /**
      * This is used to trigger the GC to notify us whenever the thread local has been garbage collected.
      */
-    private static class LocalSlotReference<T> extends WeakReference<LocalSlot>
+    private static final class LocalSlotReference<T> extends WeakReference<LocalSlot<T>>
     {
-        private T object;
+        private T localSlotReferenceObject;
 
-        private LocalSlotReference( LocalSlot referent, ReferenceQueue<? super LocalSlot> q )
+        private LocalSlotReference( LocalSlot<T> referent, ReferenceQueue<? super LocalSlot<T>> q )
         {
             super( referent, q );
         }

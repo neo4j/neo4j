@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -121,8 +121,9 @@ public class OperationsLockTest
         when( cursors.allocatePropertyCursor() ).thenReturn( propertyCursor );
         when( cursors.allocateRelationshipScanCursor() ).thenReturn( relationshipCursor );
         AutoIndexing autoindexing = mock( AutoIndexing.class );
-        when( autoindexing.nodes() ).thenReturn( mock( AutoIndexOperations.class ) );
-        when( autoindexing.relationships() ).thenReturn( mock( AutoIndexOperations.class ) );
+        AutoIndexOperations autoIndexOperations = mock( AutoIndexOperations.class );
+        when( autoindexing.nodes() ).thenReturn( autoIndexOperations );
+        when( autoindexing.relationships() ).thenReturn( autoIndexOperations );
         StorageStatement storageStatement = mock( StorageStatement.class );
         StorageEngine engine = mock( StorageEngine.class );
         storeReadLayer = mock( StoreReadLayer.class );
@@ -492,7 +493,7 @@ public class OperationsLockTest
     {
         long nodeId = 1L;
         returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
-        when(transaction.nodeCursor()).thenReturn( new StubNodeCursor( false ) );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
 
         operations.nodeDetachDelete( nodeId );
 
@@ -507,7 +508,7 @@ public class OperationsLockTest
         long nodeId = 1L;
         returnRelationships( transaction, false,
                 new TestRelationshipChain( nodeId ).outgoing( 1, 2L, 42 ) );
-        when( transaction.nodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
         operations.nodeDetachDelete( nodeId );
 
         order.verify( locks ).acquireExclusive(

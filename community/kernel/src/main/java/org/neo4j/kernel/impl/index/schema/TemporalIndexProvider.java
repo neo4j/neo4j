@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -110,12 +109,6 @@ public class TemporalIndexProvider extends IndexProvider
         TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
 
         final Iterable<TemporalIndexFiles.FileLayout> existing = temporalIndexFiles.existing();
-        if ( !existing.iterator().hasNext() )
-        {
-            monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.",
-                    new NoSuchFileException( temporalIndexFiles.date().indexFile.getAbsolutePath() ) );
-            return InternalIndexState.POPULATING;
-        }
         InternalIndexState state = InternalIndexState.ONLINE;
         for ( TemporalIndexFiles.FileLayout subIndex : existing )
         {
