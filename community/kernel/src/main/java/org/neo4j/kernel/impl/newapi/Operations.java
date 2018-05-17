@@ -81,6 +81,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
@@ -126,6 +127,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private final DefaultCursors cursors;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final ConstraintSemantics constraintSemantics;
+    private final IndexingProvidersService indexProviders;
 
     public Operations(
             AllStoreHolder allStoreHolder,
@@ -136,7 +138,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             DefaultCursors cursors,
             AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator,
-            ConstraintSemantics constraintSemantics )
+            ConstraintSemantics constraintSemantics,
+            IndexingProvidersService indexProviders )
     {
         this.token = token;
         this.autoIndexing = autoIndexing;
@@ -147,6 +150,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         this.cursors = cursors;
         this.constraintIndexCreator = constraintIndexCreator;
         this.constraintSemantics = constraintSemantics;
+        this.indexProviders = indexProviders;
     }
 
     public void initialize()
@@ -887,7 +891,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
 
-        IndexProvider.Descriptor providerDescriptor = ktx.indexProviderForOrDefault( provider );
+        IndexProvider.Descriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
         IndexDescriptor index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
         ktx.txState().indexDoAdd( index );
         return index;
@@ -896,7 +900,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
     public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
     {
-        IndexProvider.Descriptor providerDescriptor = ktx.indexProviderForOrDefault( provider );
+        IndexProvider.Descriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
         IndexDescriptor index =
                 IndexDescriptorFactory.uniqueForSchema( schema,
                                                   Optional.empty(),

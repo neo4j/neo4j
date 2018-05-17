@@ -29,7 +29,7 @@ import java.util.Iterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -44,15 +44,15 @@ public class IndexTxStateUpdater
 {
     private final StorageReader storageReader;
     private final Read read;
-    private final IndexingService indexingService;
+    private final IndexingProvidersService indexProviders;
 
     // We can use the StorageReader directly instead of the SchemaReadOps, because we know that in transactions
     // where this class is needed we will never have index changes.
-    public IndexTxStateUpdater( StorageReader storageReader, Read read, IndexingService indexingService )
+    public IndexTxStateUpdater( StorageReader storageReader, Read read, IndexingProvidersService indexProviders )
     {
         this.storageReader = storageReader;
         this.read = read;
-        this.indexingService = indexingService;
+        this.indexProviders = indexProviders;
     }
 
     // LABEL CHANGES
@@ -95,7 +95,7 @@ public class IndexTxStateUpdater
                 switch ( changeType )
                 {
                 case ADDED_LABEL:
-                    indexingService.validateBeforeCommit( index.schema(), values );
+                    indexProviders.validateBeforeCommit( index.schema(), values );
                     read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, ValueTuple.of( values ) );
                     break;
                 case REMOVED_LABEL:
@@ -124,7 +124,7 @@ public class IndexTxStateUpdater
                 ( index, propertyKeyIds ) ->
                 {
                     Value[] values = getValueTuple( node, propertyCursor, propertyKeyId, value, index.schema().getPropertyIds() );
-                    indexingService.validateBeforeCommit( index.schema(), values );
+                    indexProviders.validateBeforeCommit( index.schema(), values );
                     read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(), null, ValueTuple.of( values ) );
                 } );
     }
@@ -177,7 +177,7 @@ public class IndexTxStateUpdater
                             valuesAfter[i] = value;
                         }
                     }
-                    indexingService.validateBeforeCommit( index.schema(), valuesAfter );
+                    indexProviders.validateBeforeCommit( index.schema(), valuesAfter );
                     read.txState().indexDoUpdateEntry( index.schema(), node.nodeReference(),
                             ValueTuple.of( valuesBefore ), ValueTuple.of( valuesAfter ) );
                 } );

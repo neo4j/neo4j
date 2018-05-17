@@ -649,7 +649,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
             IndexingService indexingService,
-            DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
+             DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
             AvailabilityGuard availabilityGuard, SystemNanoClock clock, PropertyAccessor propertyAccessor )
     {

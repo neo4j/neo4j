@@ -67,12 +67,11 @@ import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureExce
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -195,7 +194,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
-            SchemaState schemaState, IndexingService indexingService )
+            SchemaState schemaState, IndexingProvidersService indexProviders )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -223,9 +222,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageReader, allStoreHolder, indexingService ), storageReader,
-                        this, new KernelToken( storageReader, this ), cursors, autoIndexing, constraintIndexCreator,
-                        constraintSemantics );
+                        new IndexTxStateUpdater( storageReader, allStoreHolder, indexProviders ), storageReader,
+                        this,
+                        new KernelToken( storageReader, this ),
+                        cursors,
+                        autoIndexing,
+                        constraintIndexCreator,
+                        constraintSemantics,
+                        indexProviders );
         this.collectionsFactory = collectionsFactorySupplier.create();
     }
 
@@ -1049,11 +1053,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Statistics getStatistics()
     {
         return statistics;
-    }
-
-    public IndexProvider.Descriptor indexProviderForOrDefault( Optional<String> provider )
-    {
-        return storageEngine.indexProviderForOrDefault( provider );
     }
 
     public static class Statistics

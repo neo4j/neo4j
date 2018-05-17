@@ -35,6 +35,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.function.ThrowingConsumer;
@@ -90,7 +91,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * If, however, it is {@link InternalIndexState#ONLINE}, the index provider is required to
  * also guarantee that the index had been flushed to disk.
  */
-public class IndexingService extends LifecycleAdapter implements IndexingUpdateService
+public class IndexingService extends LifecycleAdapter implements IndexingUpdateService, IndexingProvidersService
 {
     private final IndexSamplingController samplingController;
     private final IndexProxyCreator indexProxyCreator;
@@ -427,9 +428,20 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
+    @Override
     public void validateBeforeCommit( SchemaDescriptor index, Value[] tuple )
     {
         indexMapRef.validateBeforeCommit( index, tuple );
+    }
+
+    @Override
+    public IndexProvider.Descriptor indexProviderForNameOrDefault( Optional<String> providerName )
+    {
+        if ( providerName.isPresent() )
+        {
+            return providerMap.lookup( providerName.get() ).getProviderDescriptor();
+        }
+        return providerMap.getDefaultProvider().getProviderDescriptor();
     }
 
     /**

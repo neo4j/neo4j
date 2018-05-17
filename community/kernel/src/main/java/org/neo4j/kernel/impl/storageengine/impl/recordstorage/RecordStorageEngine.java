@@ -249,16 +249,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public IndexProvider.Descriptor indexProviderForOrDefault( Optional<String> providerName )
-    {
-        if ( providerName.isPresent() )
-        {
-            return indexProviderMap.lookup( providerName.get() ).getProviderDescriptor();
-        }
-        return indexProviderMap.getDefaultProvider().getProviderDescriptor();
-    }
-
-    @Override
     public RecordStorageCommandCreationContext allocateCommandCreationContext()
     {
         return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, recordIdBatchSize );
