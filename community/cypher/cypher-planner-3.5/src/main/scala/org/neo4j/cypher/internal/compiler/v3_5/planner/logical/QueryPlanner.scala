@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPlanProducer, SystemOutCostLogger, devNullListener}
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_5.phases.Phase
 import org.neo4j.cypher.internal.ir.v3_5.{PeriodicCommit, PlannerQuery, UnionQuery}
@@ -40,6 +40,15 @@ case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext,
   override def postConditions = Set(CompilationContains[LogicalPlan])
 
   override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
+    val debugCosts = context.debugOptions.contains("dumpcosts")
+
+    val costComparisonListener = if (debugCosts)
+      new ReportCostComparisonsAsRows
+    else if (java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE"))
+      SystemOutCostLogger
+    else
+      devNullListener
+
     val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, from.solveds, from.cardinalities, context.logicalPlanIdGen)
     val logicalPlanningContext = LogicalPlanningContext(
       planContext = context.planContext,
@@ -52,11 +61,16 @@ case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext,
       errorIfShortestPathFallbackUsedAtRuntime = context.config.errorIfShortestPathFallbackUsedAtRuntime,
       errorIfShortestPathHasCommonNodesAtRuntime = context.config.errorIfShortestPathHasCommonNodesAtRuntime,
       config = QueryPlannerConfiguration.default.withUpdateStrategy(context.updateStrategy),
-      legacyCsvQuoteEscaping = context.config.legacyCsvQuoteEscaping
+      legacyCsvQuoteEscaping = context.config.legacyCsvQuoteEscaping,
+      costComparisonListener = costComparisonListener
     )
 
     val (perCommit, logicalPlan) = plan(from.unionQuery, logicalPlanningContext, from.solveds, from.cardinalities, context.logicalPlanIdGen)
-    from.copy(maybePeriodicCommit = Some(perCommit), maybeLogicalPlan = Some(logicalPlan))
+
+    costComparisonListener match {
+      case debug: ReportCostComparisonsAsRows => debug.addPlan(from)
+      case _ => from.copy(maybePeriodicCommit = Some(perCommit), maybeLogicalPlan = Some(logicalPlan))
+    }
   }
 
   private def getMetricsFrom(context: CompilerContext) = if (context.debugOptions.contains("inverse_cost")) {
@@ -77,7 +91,7 @@ case class QueryPlanner(planSingleQuery: ((PlannerQuery, LogicalPlanningContext,
   private def createProduceResultOperator(in: LogicalPlan,
                                           unionQuery: UnionQuery,
                                           context: LogicalPlanningContext): LogicalPlan =
-  context.logicalPlanProducer.planProduceResult(in, unionQuery.returns, context)
+    context.logicalPlanProducer.planProduceResult(in, unionQuery.returns, context)
 
   private def planQueries(queries: Seq[PlannerQuery], distinct: Boolean, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities, idGen: IdGen) = {
     val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p, context, solveds, cardinalities, idGen))

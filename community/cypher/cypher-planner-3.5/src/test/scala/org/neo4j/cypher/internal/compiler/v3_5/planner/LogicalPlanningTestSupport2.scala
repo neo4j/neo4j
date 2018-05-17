@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter.unnestApply
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
@@ -206,7 +206,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable = semanticTable,
         strategy = queryGraphSolver,
         input = QueryGraphSolverInput.empty,
-        notificationLogger = devNullLogger
+        notificationLogger = devNullLogger,
+        costComparisonListener = devNullListener
       )
       f(config, ctx, solveds, cardinalities)
     }
@@ -222,7 +223,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable = semanticTable,
         strategy = queryGraphSolver,
         input = QueryGraphSolverInput.empty,
-        notificationLogger = devNullLogger
+        notificationLogger = devNullLogger,
+        costComparisonListener = devNullListener
       )
       f(config, ctx)
     }
