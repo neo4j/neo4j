@@ -42,15 +42,15 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
 
   private def projectVarLength(qtx: QueryContext): Projector = (context: ExecutionContext) => {
     findVarLengthRelEndpoints(context, qtx) match {
-      case Some((startNode, endNode, _)) if directed =>
-        Iterator(
-          context.newWith2(start, startNode, end, endNode)
-        )
-      case Some((startNode, endNode, rels)) if !directed =>
+      case Some((InScopeReversed(startNode, endNode), rels)) if !directed =>
+        Iterator(context.newWith3(start, endNode, end, startNode, relName, rels.reverse))
+      case Some((NotInScope(startNode, endNode), rels)) if !directed =>
         Iterator(
           context.newWith2(start, startNode, end, endNode),
           context.newWith3(start, endNode, end, startNode, relName, rels.reverse)
         )
+      case Some((startAndEnd, rels)) =>
+        Iterator(context.newWith2(start, startAndEnd.start, end, startAndEnd.end))
       case None =>
         Iterator.empty
     }
@@ -58,42 +58,59 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
 
   private def project(qtx: QueryContext): Projector = (context: ExecutionContext) => {
     findSimpleLengthRelEndpoints(context, qtx) match {
-      case Some((startNode, endNode)) if directed =>
-        Iterator(context.newWith2(start, startNode, end, endNode))
-      case Some((startNode, endNode)) if !directed =>
+      case Some(InScopeReversed(startNode, endNode)) if !directed =>
+        Iterator(context.newWith2(start, endNode, end, startNode))
+      case Some(NotInScope(startNode, endNode)) if !directed =>
         Iterator(
           context.newWith2(start, startNode, end, endNode),
           context.newWith2(start, endNode, end, startNode)
         )
+      case Some(startAndEnd) =>
+        Iterator(context.newWith2(start, startAndEnd.start, end, startAndEnd.end))
       case None =>
         Iterator.empty
     }
   }
 
-  private def findSimpleLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(Node, Node)] = {
+  private def findSimpleLengthRelEndpoints(context: ExecutionContext,
+                                           qtx: QueryContext
+                                          ): Option[StartAndEnd] = {
     val rel = Some(context(relName).asInstanceOf[Relationship]).filter(hasAllowedType)
-    rel.flatMap { rel => pickStartAndEnd(rel, rel, context, qtx)}
+    rel.flatMap( rel => pickStartAndEnd(rel, rel, context, qtx) )
   }
 
-  private def findVarLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(Node, Node, Seq[Relationship])] = {
+  private def findVarLengthRelEndpoints(context: ExecutionContext,
+                                        qtx: QueryContext
+                                       ): Option[(StartAndEnd, Seq[Relationship])] = {
     val rels = makeTraversable(context(relName)).toIndexedSeq.asInstanceOf[Seq[Relationship]]
     if (rels.nonEmpty && rels.forall(hasAllowedType)) {
-      pickStartAndEnd(rels.head, rels.last, context, qtx).map { case (s, e) => (s, e, rels) }
+      pickStartAndEnd(rels.head, rels.last, context, qtx).map(startAndEnd => (startAndEnd, rels))
     } else {
       None
     }
   }
 
   private def hasAllowedType(rel: Relationship): Boolean =
-    relTypes.map(_.names.contains(rel.getType.name())).getOrElse(true)
+    relTypes.forall(_.names.contains(rel.getType.name()))
 
   private def pickStartAndEnd(relStart: Relationship, relEnd: Relationship,
-                              context: ExecutionContext, qtx: QueryContext): Option[(Node, Node)] = {
-    val startNode = qtx.relationshipStartNode(relStart)
-    val endNode = qtx.relationshipEndNode(relEnd)
-    Some((startNode, endNode)).filter {
-      case (s, e) =>
-        (!startInScope || context(start) == s) && (!endInScope || context(end) == e)
-    }
+                              context: ExecutionContext, qtx: QueryContext): Option[StartAndEnd] = {
+    val s = qtx.relationshipStartNode(relStart)
+    val e = qtx.relationshipEndNode(relEnd)
+
+    if (!startInScope && !endInScope) Some(NotInScope(s, e))
+    else if ((!startInScope || context(start) == s) && (!endInScope || context(end) == e))
+      Some(InScope(s, e))
+    else if (!directed && (!startInScope || context(start) == e ) && (!endInScope || context(end) == s))
+      Some(InScopeReversed(s, e))
+    else None
   }
+
+  sealed trait StartAndEnd {
+    def start: Node
+    def end: Node
+  }
+  case class NotInScope(start: Node, end: Node) extends StartAndEnd
+  case class InScope(start: Node, end: Node) extends StartAndEnd
+  case class InScopeReversed(start: Node, end: Node) extends StartAndEnd
 }

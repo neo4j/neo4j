@@ -68,3 +68,6 @@ Nested unwind with longs
 Nested unwind with doubles
 Nested unwind with strings
 Nested unwind with mixed types
+
+// PatternPredicate.feature
+Undirected NOOP path predicate 1
