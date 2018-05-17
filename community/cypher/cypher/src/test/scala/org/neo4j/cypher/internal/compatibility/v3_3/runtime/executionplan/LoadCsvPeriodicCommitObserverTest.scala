@@ -106,7 +106,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
     // When
     verify(resource, times(1)).getCsvIterator(url, Some(";"), legacyCsvQuoteEscaping = false,
-                                              DEFAULT_BUFFER_SIZE)
+                                              DEFAULT_BUFFER_SIZE, false)
   }
 
   override protected def beforeEach() {

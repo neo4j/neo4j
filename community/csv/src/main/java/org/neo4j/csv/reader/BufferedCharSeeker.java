@@ -22,11 +22,9 @@ package org.neo4j.csv.reader;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
 
 import org.neo4j.csv.reader.Source.Chunk;
 
-import static java.lang.Character.isWhitespace;
 import static java.lang.String.format;
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 
@@ -337,7 +335,9 @@ public class BufferedCharSeeker implements CharSeeker
                             dataLength + ". A common cause of this is that a field has an unterminated " +
                             "quote and so will try to seek until the next quote, which ever line it may be on." +
                             " This should not happen if multi-line fields are disabled, given that the fields contains " +
-                            "no new-line characters. This field started at " + sourceDescription() + ":" + lineNumber() );
+                            "no new-line characters. If you are running a `LOAD CSV query it may also be possible that " +
+                            "increasing the buffer size via `dbms.import.csv.buffer_size` could help. " +
+                            "This field started at " + sourceDescription() + ":" + lineNumber() );
                 }
             }
 
