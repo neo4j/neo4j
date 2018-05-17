@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.hashing.HashFunction;
+
 public abstract class IntegralArray extends NumberArray
 {
     abstract long longValue( int offset );
@@ -39,5 +41,17 @@ public abstract class IntegralArray extends NumberArray
     public NumberType numberType()
     {
         return NumberType.INTEGRAL;
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        int len = length();
+        hash = hashFunction.update( hash, len );
+        for ( int i = 0; i < len; i++ )
+        {
+            hash = hashFunction.update( hash, longValue( i ) );
+        }
+        return hash;
     }
 }

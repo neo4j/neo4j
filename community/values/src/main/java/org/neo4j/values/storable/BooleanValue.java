@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
@@ -57,6 +58,12 @@ public abstract class BooleanValue extends ScalarValue
     public NumberType numberType()
     {
         return NumberType.NO_NUMBER;
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        return hashFunction.update( hash, hashCode() );
     }
 
     public static final BooleanValue TRUE = new BooleanValue()

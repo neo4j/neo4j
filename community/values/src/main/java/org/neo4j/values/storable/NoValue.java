@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
@@ -53,6 +54,12 @@ final class NoValue extends Value
     public <T> T map( ValueMapper<T> mapper )
     {
         return mapper.mapNoValue();
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        return hashFunction.update( hash, hashCode() );
     }
 
     @Override

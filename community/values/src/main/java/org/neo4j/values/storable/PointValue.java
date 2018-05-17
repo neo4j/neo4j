@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
 import org.neo4j.values.ValueMapper;
@@ -212,6 +213,17 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         result = 31 * result + NumberValues.hash( crs.getCode() );
         result = 31 * result + NumberValues.hash( coordinate );
         return result;
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        hash = hashFunction.update( hash, crs.getCode() );
+        for ( double v : coordinate )
+        {
+            hash = hashFunction.update( hash, Double.doubleToLongBits( v ) );
+        }
+        return hash;
     }
 
     @Override

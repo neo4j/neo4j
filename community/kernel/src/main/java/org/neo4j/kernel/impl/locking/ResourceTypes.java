@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.locking;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
-import java.lang.reflect.Array;
-
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.helpers.Strings;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -179,92 +177,9 @@ public enum ResourceTypes implements ResourceType
         for ( IndexQuery.ExactPredicate predicate : predicates )
         {
             int propertyKeyId = predicate.propertyKeyId();
-            Value v = predicate.value();
-            Object value = v.asObject();
-            Class<?> type = value.getClass();
-
             hash = indexEntryHash_4_x.update( hash, propertyKeyId );
-
-            if ( type == String.class )
-            {
-                String str = (String) value;
-                int length = str.length();
-
-                hash = indexEntryHash_4_x.update( hash, length );
-
-                for ( int i = 0; i < length; i++ )
-                {
-                    hash = indexEntryHash_4_x.update( hash, str.charAt( i ) );
-                }
-            }
-            else if ( type.isArray() )
-            {
-                int length = Array.getLength( value );
-                Class<?> componentType = type.getComponentType();
-
-                hash = indexEntryHash_4_x.update( hash, length );
-
-                if ( componentType == String.class )
-                {
-                    for ( int i = 0; i < length; i++ )
-                    {
-                        String str = (String) Array.get( value, i );
-                        int len = str.length();
-
-                        hash = indexEntryHash_4_x.update( hash, len );
-
-                        for ( int j = 0; j < len; j++ )
-                        {
-                            hash = indexEntryHash_4_x.update( hash, str.charAt( j ) );
-                        }
-                    }
-                }
-                else if ( componentType == Double.TYPE )
-                {
-                    for ( int i = 0; i < length; i++ )
-                    {
-                        hash = indexEntryHash_4_x.update(
-                                hash, Double.doubleToLongBits( Array.getDouble( value, i ) ) );
-                    }
-                }
-                else if ( componentType == Boolean.TYPE )
-                {
-                    for ( int i = 0; i < length; i++ )
-                    {
-                        hash = indexEntryHash_4_x.update( hash, Boolean.hashCode( Array.getBoolean( value, i ) ) );
-                    }
-                }
-                else if ( componentType == Character.TYPE )
-                {
-                    for ( int i = 0; i < length; i++ )
-                    {
-                        hash = indexEntryHash_4_x.update( hash, Array.getChar( value, i ) );
-                    }
-                }
-                else
-                {
-                    for ( int i = 0; i < length; i++ )
-                    {
-                        hash = indexEntryHash_4_x.update( hash, ((Number) Array.get( value, i )).longValue() );
-                    }
-                }
-            }
-            else if ( type == Double.class )
-            {
-                hash = indexEntryHash_4_x.update( hash, Double.doubleToLongBits( (Double) value ) );
-            }
-            else if ( type == Boolean.class )
-            {
-                hash = indexEntryHash_4_x.update( hash, value.hashCode() );
-            }
-            else if ( type == Character.class )
-            {
-                hash = indexEntryHash_4_x.update( hash, (char) value );
-            }
-            else
-            {
-                hash = indexEntryHash_4_x.update( hash, ((Number) value).longValue() );
-            }
+            Value value = predicate.value();
+            hash = value.updateHash( indexEntryHash_4_x, hash );
         }
 
         return indexEntryHash_4_x.finalise( hash );
