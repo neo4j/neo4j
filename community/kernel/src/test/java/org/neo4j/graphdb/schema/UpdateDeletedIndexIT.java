@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo4j,"
- * Neo4j Sweden AB [http://neo4j.com]
+ * Copyright (c) 2002-2018 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,8 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongConsumer;
-import java.util.function.LongFunction;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
