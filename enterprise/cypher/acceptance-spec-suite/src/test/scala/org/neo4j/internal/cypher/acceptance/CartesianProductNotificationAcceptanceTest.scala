@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_3.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.spi.v3_3.CSVResources
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -120,8 +121,9 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
+    csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
     nonIndexedLabelWarningThreshold = 10000L,
-    false
+    planWithMinimumCardinalityEstimates = false
   )
   private lazy val monitors = WrappedMonitors(kernelMonitors)
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)

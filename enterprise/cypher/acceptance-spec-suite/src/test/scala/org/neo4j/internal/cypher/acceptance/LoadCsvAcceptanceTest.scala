@@ -40,7 +40,7 @@ import scala.collection.JavaConverters._
 
 class LoadCsvAcceptanceTest
   extends ExecutionEngineFunSuite with BeforeAndAfterAll
-  with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport{
+  with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport with RunWithConfigTestSupport {
 
   val expectedToSucceed = Configs.CommunityInterpreted - Configs.Cost2_3
   val expectedToFail = Configs.CommunityInterpreted - Configs.Cost2_3 + TestConfiguration(Versions.Default, Planners.Default,
@@ -594,6 +594,23 @@ class LoadCsvAcceptanceTest
       )
 
       result.toList should equal(List(Map("count(*)" -> 0)))
+    }
+  }
+
+  test("should be able to configure db to handle huge fields") {
+    runWithConfig(GraphDatabaseSettings.csv_buffer_size -> (4 * 1024 * 1024).toString) { db =>
+      val longName  = "f"* 6000000
+      val urls = csvUrls({
+        writer =>
+          writer.println("\"prop\"")
+          writer.println(longName)
+      })
+      for (url <- urls) {
+        val result = db.execute(
+          s"""LOAD CSV WITH HEADERS FROM '$url' AS row
+             |RETURN row.prop""".stripMargin)
+        result.next().get("row.prop") should equal(longName)
+      }
     }
   }
 

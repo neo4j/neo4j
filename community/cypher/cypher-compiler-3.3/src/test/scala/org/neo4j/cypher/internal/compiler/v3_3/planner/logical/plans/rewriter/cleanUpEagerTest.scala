@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
+import org.neo4j.csv.reader.Configuration.DEFAULT_BUFFER_SIZE_4MB
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.ast.StringLiteral
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
@@ -78,11 +79,12 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should move eager on top of load csv to below it") {
     val leaf = newMockedLogicalPlan()
     val url = StringLiteral("file:///tmp/foo.csv")(pos)
-    val loadCSV = LoadCSV(leaf, url, "a", NoHeaders, None, legacyCsvQuoteEscaping = false)(solved)
+    val loadCSV = LoadCSV(leaf, url, "a", NoHeaders, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB)(solved)
     val eager = Eager(loadCSV)(solved)
     val topPlan = Projection(eager, Map.empty)(solved)
 
-    rewrite(topPlan) should equal(Projection(LoadCSV(Eager(leaf)(solved), url, "a", NoHeaders, None, false)(solved), Map.empty)(solved))
+    rewrite(topPlan) should equal(Projection(LoadCSV(Eager(leaf)(solved), url, "a", NoHeaders, None,
+                                                     legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB)(solved), Map.empty)(solved))
   }
 
   test("should move eager on top of limit to below it") {
@@ -100,7 +102,8 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should not rewrite plan with eager below load csv") {
     val leaf = newMockedLogicalPlan()
     val eager = Eager(leaf)(solved)
-    val loadCSV = LoadCSV(eager, StringLiteral("file:///tmp/foo.csv")(pos), "a", NoHeaders, None, false)(solved)
+    val loadCSV = LoadCSV(eager, StringLiteral("file:///tmp/foo.csv")(pos), "a", NoHeaders, None,
+                          legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB)(solved)
     val topPlan = Projection(loadCSV, Map.empty)(solved)
 
     rewrite(topPlan) should equal(topPlan)

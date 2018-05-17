@@ -304,6 +304,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       queryService, GraphDatabaseSettings.csv_legacy_quote_escaping,
       GraphDatabaseSettings.csv_legacy_quote_escaping.getDefaultValue.toBoolean
     )
+    val csvBufferSize = optGraphSetting[java.lang.Integer](
+      queryService, GraphDatabaseSettings.csv_buffer_size,
+      GraphDatabaseSettings.csv_buffer_size.getDefaultValue.toInt
+    )
     val planWithMinimumCardinalityEstimates = optGraphSetting[java.lang.Boolean](
       queryService, GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates,
       GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates.getDefaultValue.toBoolean
@@ -320,7 +324,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     val compatibilityCache = new CompatibilityCache(compatibilityFactory)
     new CompilerEngineDelegator(queryService, kernel, kernelMonitors, version, planner, runtime,
       useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, errorIfShortestPathFallbackUsedAtRuntime,
-      errorIfShortestPathHasCommonNodesAtRuntime, legacyCsvQuoteEscaping, planWithMinimumCardinalityEstimates,
+      errorIfShortestPathHasCommonNodesAtRuntime, legacyCsvQuoteEscaping, csvBufferSize, planWithMinimumCardinalityEstimates,
       logProvider, compatibilityCache)
   }
 

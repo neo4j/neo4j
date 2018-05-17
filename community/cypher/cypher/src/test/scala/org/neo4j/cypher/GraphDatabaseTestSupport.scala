@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.mockito.Mockito.when
+import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
@@ -281,6 +282,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
+    csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     planWithMinimumCardinalityEstimates = false
   )
 

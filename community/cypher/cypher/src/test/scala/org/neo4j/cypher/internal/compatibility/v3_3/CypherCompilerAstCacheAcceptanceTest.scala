@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, StatsDivergenceCalculator, Transformer}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.spi.v3_3.CSVResources.DEFAULT_BUFFER_SIZE
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.internal.{CypherExecutionMode, PreParsedQuery}
 import org.neo4j.graphdb.config.Setting
@@ -55,6 +56,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       errorIfShortestPathFallbackUsedAtRuntime = false,
       errorIfShortestPathHasCommonNodesAtRuntime = true,
       legacyCsvQuoteEscaping = false,
+      csvBufferSize = DEFAULT_BUFFER_SIZE,
       nonIndexedLabelWarningThreshold = 10000L,
       planWithMinimumCardinalityEstimates = false
     )

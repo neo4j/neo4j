@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters.namePatternPredicatePatternElements
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
@@ -113,7 +114,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
-      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default)
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, csvBufferSize = config.csvBufferSize,
+                           config = QueryPlannerConfiguration.default)
 
   def newMockedStatistics = mock[GraphStatistics]
   def hardcodedStatistics = HardcodedGraphStatistics
@@ -158,6 +160,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
+    csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
     planWithMinimumCardinalityEstimates = false
   )

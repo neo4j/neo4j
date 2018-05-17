@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
+import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
@@ -69,6 +70,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
+    csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
     planWithMinimumCardinalityEstimates = false
   )

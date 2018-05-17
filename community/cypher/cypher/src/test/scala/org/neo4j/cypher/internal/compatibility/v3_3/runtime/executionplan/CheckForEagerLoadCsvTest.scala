@@ -24,17 +24,20 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{AllNodesScanP
 import org.neo4j.cypher.internal.frontend.v3_3.notification.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.HasHeaders
+import org.neo4j.cypher.internal.spi.v3_3.CSVResources.DEFAULT_BUFFER_SIZE
 
 class CheckForEagerLoadCsvTest extends CypherFunSuite {
 
   test("should notify for EagerPipe on top of LoadCsvPipe") {
-    val pipe = EagerPipe(LoadCSVPipe(AllNodesScanPipe("a")(), HasHeaders, Literal("foo"), "bar", None, false)())()
+    val pipe = EagerPipe(LoadCSVPipe(AllNodesScanPipe("a")(), HasHeaders, Literal("foo"), "bar", None,
+                                     legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)())()
 
     checkForEagerLoadCsv(pipe) should equal(Some(EagerLoadCsvNotification))
   }
 
   test("should not notify for LoadCsv on top of eager pipe") {
-    val pipe = LoadCSVPipe(EagerPipe(AllNodesScanPipe("a")())(), HasHeaders, Literal("foo"), "bar", None, false)()
+    val pipe = LoadCSVPipe(EagerPipe(AllNodesScanPipe("a")())(), HasHeaders, Literal("foo"), "bar", None,
+                           legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)()
 
     checkForEagerLoadCsv(pipe) should equal(None)
   }

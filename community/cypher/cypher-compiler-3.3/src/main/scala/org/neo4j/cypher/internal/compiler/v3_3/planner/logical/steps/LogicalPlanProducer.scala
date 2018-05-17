@@ -427,7 +427,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   def planLoadCSV(inner: LogicalPlan, variableName: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral])
                  (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.updateTailOrSelf(_.withHorizon(LoadCSVProjection(variableName, url, format, fieldTerminator)))
-    LoadCSVPlan(inner, url, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping)(solved)
+    LoadCSVPlan(inner, url, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping, context.csvBufferSize)(solved)
   }
 
   def planUnwind(inner: LogicalPlan, name: String, expression: Expression, reported: Expression)(implicit context: LogicalPlanningContext): LogicalPlan = {
