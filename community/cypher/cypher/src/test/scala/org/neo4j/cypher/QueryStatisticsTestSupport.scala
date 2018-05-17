@@ -34,9 +34,7 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
     }
 
     def apply(actual: InternalExecutionResult) {
-      implicit val monitor = new QueryExecutionMonitor {
-        override def startQueryExecution(query: ExecutingQuery) {}
-
+      implicit val monitor: QueryExecutionMonitor = new QueryExecutionMonitor {
         override def endSuccess(query: ExecutingQuery){}
 
         override def endFailure(query: ExecutingQuery, throwable: Throwable){}
@@ -62,7 +60,7 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
                    existenceConstraintsRemoved: Int = 0,
                    nodekeyConstraintsAdded: Int = 0,
                    nodekeyConstraintsRemoved: Int = 0
-  ) = {
+  ): Unit = {
     assertStatsResult(
       nodesCreated,
       relationshipsCreated,

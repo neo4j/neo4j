@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 import java.time.Clock
 
 import org.neo4j.cypher.internal.util.v3_5.{CypherException, InputPosition}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_5.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
@@ -44,11 +43,7 @@ class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosit
                               override val logicalPlanIdGen: IdGen)
   extends CompilerContext(exceptionCreator, tracer,
                           notificationLogger, planContext, monitors, metrics,
-                          config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen) {
-
-  val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
-    new PlanFingerprintReference(clock, config.statsDivergenceCalculator, _)
-}
+                          config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen)
 
 object CommunityRuntimeContextCreator extends ContextCreator[CommunityRuntimeContext] {
 

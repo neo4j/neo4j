@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.compiled
 
 import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
+import org.neo4j.cypher.internal.{MaybeReusable, PlanFingerprintReference, ReusabilityState}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
@@ -29,10 +30,9 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
 import org.neo4j.cypher.internal.frontend.v3_5.phases.Phase
-import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
-import org.neo4j.cypher.internal.runtime.compiled.codegen._
+import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenConfiguration, CodeGenerator}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.util.v3_5.TaskCloser
@@ -62,7 +62,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
                                                     from.cardinalities)
       val executionPlan: ExecutionPlan =
         new CompiledExecutionPlan(compiled,
-                                  context.createFingerprintReference(compiled.fingerprint),
+                                  new PlanFingerprintReference(compiled.fingerprint),
                                   notifications(context))
       new CompilationState(from, Success(executionPlan))
     } catch {
@@ -121,7 +121,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
       }
     }
 
-    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.checkPlanReusability(lastTxId, statistics)
+    override def reusability: ReusabilityState = MaybeReusable(fingerprint)
 
     override def runtimeUsed: RuntimeName = CompiledRuntimeName
 

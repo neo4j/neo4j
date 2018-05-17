@@ -271,7 +271,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     innerExecute(queryText, params)
 
   private def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {
-    val innerResult: Result = eengine.execute(queryText, params, graph.transactionalContext(query = queryText -> params))
+    val innerResult: Result = eengine.execute(queryText, asMapValue(params), graph.transactionalContext(query = queryText -> params))
     RewindableExecutionResult(innerResult)
   }
 

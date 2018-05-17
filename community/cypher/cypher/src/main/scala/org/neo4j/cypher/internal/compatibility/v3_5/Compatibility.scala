@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlann
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v3_5.expressions.Parameter
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
@@ -54,11 +55,20 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                                                    runtime: CypherRuntime,
                                                                                    updateStrategy: CypherUpdateStrategy,
                                                                                    runtimeBuilder: RuntimeBuilder[T],
-                                                                                   contextCreatorv3_5: ContextCreator[CONTEXT])
-  extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement](config, clock, kernelMonitors, log, planner, runtime, updateStrategy, runtimeBuilder, contextCreatorv3_5) {
+                                                                                   contextCreatorv3_5: ContextCreator[CONTEXT],
+                                                                                   txIdProvider: () => Long)
+  extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement](config,
+                                                                           clock,
+                                                                           kernelMonitors,
+                                                                           log,
+                                                                           planner,
+                                                                           runtime,
+                                                                           updateStrategy,
+                                                                           runtimeBuilder,
+                                                                           contextCreatorv3_5,
+                                                                           txIdProvider) {
 
   val monitors: Monitors = WrappedMonitors(kernelMonitors)
-  val cacheMonitor: AstCacheMonitor[Statement] = monitors.newMonitor[AstCacheMonitor[Statement]]("cypher3.4")
   monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher3.4")
 
   val maybePlannerNamev3_5: Option[CostBasedPlannerName] = planner match {
@@ -99,12 +109,13 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                               preParsedQuery.debugOptions,
                               Some(preParsedQuery.offset), preparationTracer))
     new ParsedQuery {
-      override def plan(transactionalContext: TransactionalContextWrapper, planningTracer: CompilationPhaseTracer):
+      override def plan(transactionalContext: TransactionalContext, planningTracer: CompilationPhaseTracer):
         (ExecutionPlan, Map[String, Any], Seq[String]) = runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_4.get
 
         //Context used for db communication during planning
-        val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(transactionalContext, notificationLogger))
+        val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(
+                                    TransactionalContextWrapper(transactionalContext), notificationLogger))
         //Context used to create logical plans
         val logicalPlanIdGen = new SequentialIdGen()
         val context = contextCreatorv3_5.create(planningTracer, notificationLogger, planContext,
@@ -116,42 +127,38 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
         val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
-        val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
-        val isStale = (plan: ExecutionPlan_v3_5) => plan.checkPlanResusability(planContext.txIdProvider, planContext.statistics)
+
+        checkForSchemaChanges(planContext)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
-        val createPlan = new PlanProducer[ExecutionPlan_v3_5] {
-          override def produceWithExistingTX: ExecutionPlan_v3_5 = {
-            val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
-            LogicalPlanNotifications
-              .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
-              .foreach(notificationLogger.log)
+        def createPlan(): ExecutionPlan_v3_5 = {
+          val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
+          LogicalPlanNotifications
+            .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
+            .foreach(notificationLogger.log)
 
-            val result = createExecPlan.transform(logicalPlanState, context)
-            result.maybeExecutionPlan.get
-          }
+          val result = createExecPlan.transform(logicalPlanState, context)
+          result.maybeExecutionPlan.get
         }
-        val executionPlan = if (preParsedQuery.debugOptions.isEmpty)
-          cache.getOrElseUpdate(syntacticQuery.statement(), syntacticQuery.queryText, isStale, createPlan)._1
-        else
-          createPlan.produceWithExistingTX
 
-        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams(), queryParamNames)
+        val executionPlan =
+          if (preParsedQuery.debugOptions.isEmpty)
+            planCache.computeIfAbsentOrStale(syntacticQuery.statement(),
+                                             transactionalContext,
+                                             createPlan,
+                                             syntacticQuery.queryText).executableQuery
+          else
+            createPlan()
+
+        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications), preparedQuery.extractedParams(), queryParamNames)
       }
 
       override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_4
     }
   }
 
-  private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan_v3_5],
-                           monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan_v3_5]],
-                           planContext: PlanContext,
-                           planCacheFactory: () => LFUCache[Statement, ExecutionPlan_v3_5]): QueryCache[Statement, ExecutionPlan_v3_5] =
-    planContext.getOrCreateFromSchemaState(cacheAccessor, {
-      monitor.cacheFlushDetected(cacheAccessor)
-      val lRUCache = planCacheFactory()
-      new QueryCache(cacheAccessor, lRUCache)
-    })
+  private def checkForSchemaChanges(planContext: PlanContext): Unit =
+    planContext.getOrCreateFromSchemaState(this, planCache.clear())
 
   override val runSafelyDuringPlanning: RunSafely = runSafely
   override val runSafelyDuringRuntime: RunSafely = runSafely

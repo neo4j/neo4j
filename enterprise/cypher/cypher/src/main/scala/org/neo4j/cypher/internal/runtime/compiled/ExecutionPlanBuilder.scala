@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled
 
+import org.neo4j.cypher.internal.PlanFingerprint
 import org.neo4j.cypher.internal.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{PeriodicCommitInfo, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.CompiledRuntimeName
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{PeriodicCommitInfo, PlanFingerprint, Provider}
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription

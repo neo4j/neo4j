@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.Compatibility
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorv3_5}
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.util.v3_5.InvalidArgumentException
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
@@ -70,14 +71,14 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
       v3_1.CostCompatibility(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors, log, spec.planner, spec.runtime, spec.updateStrategy)
   }
 
-  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration) =
+  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3compat.Compatibility[_,_,_] =
     (spec.planner, spec.runtime) match {
       case (CypherPlanner.rule, _) =>
         throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.3. If you need to use it, please select compatibility mode Cypher 3.1")
       case _ =>
         v3_3compat.Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
           spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
-          CommunityRuntimeContextCreatorV3_3, CommunityRuntimeContextCreatorv3_5)
+          CommunityRuntimeContextCreatorV3_3, CommunityRuntimeContextCreatorv3_5, LastCommittedTxIdProvider(graph))
     }
 
   override def create(spec: PlannerSpec_v3_5, config: CypherCompilerConfiguration): Compatibility[_,_] =
@@ -87,7 +88,7 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
       case _ =>
         Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
                           spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
-                          CommunityRuntimeContextCreatorv3_5)
+                          CommunityRuntimeContextCreatorv3_5, LastCommittedTxIdProvider(graph))
     }
 }
 

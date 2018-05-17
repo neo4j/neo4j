@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, InternalExecutionResult}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, ExecutionEngineHelper, RunWithConfigTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.values.virtual.VirtualValues
 
 class LoadCsvWithQuotesAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTestSupport with CreateTempFileTestSupport {
   def csvUrls(f: PrintWriter => Unit) = Seq(
@@ -126,6 +127,11 @@ class LoadCsvWithQuotesAcceptanceTest extends ExecutionEngineFunSuite with RunWi
     }
   }
 
-  def executeWithCustomDb(db: GraphDatabaseCypherService, query: String): InternalExecutionResult =
-    RewindableExecutionResult(ExecutionEngineHelper.createEngine(db).execute(query, Map.empty[String, Any]))
+  def executeWithCustomDb(db: GraphDatabaseCypherService, query: String): InternalExecutionResult = {
+    val engine = ExecutionEngineHelper.createEngine(db)
+    RewindableExecutionResult(engine.execute(query,
+                                             VirtualValues.emptyMap(),
+                                             engine.queryService.transactionalContext(query = query -> Map())))
+  }
+
 }

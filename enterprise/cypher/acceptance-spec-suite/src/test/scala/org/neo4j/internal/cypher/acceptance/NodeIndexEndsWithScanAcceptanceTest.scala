@@ -29,8 +29,8 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
  * [[org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LeafPlanningIntegrationTest]]
  */
 class NodeIndexEndsWithScanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
-  val expectedToSucceed = Configs.Interpreted
-  val expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
+  private val expectedToSucceed = Configs.Interpreted
+  private val expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
 
   test("should be case sensitive for ENDS WITH with indexes") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
@@ -185,7 +185,7 @@ class NodeIndexEndsWithScanAcceptanceTest extends ExecutionEngineFunSuite with C
 
     val config = Configs.AbsolutelyAll - Configs.Compiled - TestConfiguration(Versions(V3_1, Versions.Default), Planners.Rule, Runtimes.Default)
     val query = "MATCH (l:Location) WHERE l.name ENDS WITH {param} RETURN l"
-    val message = List("Expected a string value, but got 42","Expected a string value, but got Long(42)","Expected two strings, but got London and 42")
+    val message = List("Expected a string value, but got 42","Expected a string value, but got Int(42)","Expected two strings, but got London and 42")
 
     failWithError(config, query, message, params = Map("param" -> 42))
   }

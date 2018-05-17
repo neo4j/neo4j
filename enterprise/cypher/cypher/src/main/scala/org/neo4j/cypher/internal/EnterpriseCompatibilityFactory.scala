@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.Compatibility
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContextCreator
+import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{ParallelDispatcher, SingleThreadedExecutor}
 import org.neo4j.cypher.internal.spi.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -64,6 +65,7 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
           }
         Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, logProvider.getLog(getClass),
                           spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder,
-                          EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher))
+                          EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher),
+                          LastCommittedTxIdProvider(graph))
     }
 }

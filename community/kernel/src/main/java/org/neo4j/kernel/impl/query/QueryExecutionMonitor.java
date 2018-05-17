@@ -21,15 +21,8 @@ package org.neo4j.kernel.impl.query;
 
 import org.neo4j.kernel.api.query.ExecutingQuery;
 
-/**
- * The current (December 2014) usage of this interface expects the {@code end*} methods to be idempotent.
- * That is, once either of them have been invoked with a particular session as parameter, invoking either
- * of them with the same session parameter should do nothing.
- */
 public interface QueryExecutionMonitor
 {
-    void startQueryExecution( ExecutingQuery query );
-
     void endFailure( ExecutingQuery query , Throwable failure );
 
     void endSuccess( ExecutingQuery query  );

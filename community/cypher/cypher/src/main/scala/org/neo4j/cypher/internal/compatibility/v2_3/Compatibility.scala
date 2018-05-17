@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, Ex
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, ExplainMode => ExplainModev2_3, NormalMode => NormalModev2_3, ProfileMode => ProfileModev2_3, _}
-import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, FineToReuse, NeedsReplan}
 import org.neo4j.cypher.internal.frontend.v3_5
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper}
@@ -39,7 +38,7 @@ import org.neo4j.graphdb.{Node, Relationship, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
-import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
@@ -77,10 +76,10 @@ trait Compatibility {
                                 preParsedQuery.planner.name,
                                 Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
-      def plan(transactionalContext: TransactionalContextWrapper,
+      def plan(transactionalContext: TransactionalContext,
                tracer: v3_5.phases.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any], Seq[String]) = exceptionHandler
         .runSafely {
-          val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
+          val planContext: PlanContext = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext))
           val (planImpl, extractedParameters) = compiler
             .planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
 
@@ -100,18 +99,18 @@ trait Compatibility {
     private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
       new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(transactionalContext))
 
-    def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
+    def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev2_3
         case CypherExecutionMode.profile => ProfileModev2_3
         case CypherExecutionMode.normal => NormalModev2_3
       }
 
-      val query = transactionalContext.tc.executingQuery()
+      val query = transactionalContext.executingQuery()
 
       exceptionHandler.runSafely {
         val innerResult = inner
-          .run(queryContext(transactionalContext), transactionalContext.statement, innerExecutionMode, params)
+          .run(queryContext(TransactionalContextWrapper(transactionalContext)), transactionalContext.statement, innerExecutionMode, params)
 
         new ExecutionResult(
           new ClosingExecutionResult(
@@ -122,10 +121,8 @@ trait Compatibility {
       }
     }
 
-    def isPeriodicCommit = inner.isPeriodicCommit
-
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): CacheCheckResult = {
-      val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.dataRead, ctx.schemaRead))
+    def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = {
+      val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx))
       if (stale)
         NeedsReplan(0)
       else
@@ -134,7 +131,9 @@ trait Compatibility {
 
     override val plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
 
-    override def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: MapValue): Result = {
+    override def run(transactionalContext: TransactionalContext,
+                     executionMode: CypherExecutionMode,
+                     params: MapValue): Result = {
       var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
       params.foreach(new BiConsumer[String, AnyValue] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))

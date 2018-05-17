@@ -41,6 +41,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * Holds Cypher query result sets, in tabular form. Each row of the result is a map
@@ -67,7 +68,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     /**
      * Constructor used by the Cypher framework. End-users should not
      * create an ExecutionResult directly, but instead use the result
-     * returned from calling {@link QueryExecutionEngine#executeQuery(String, Map, org.neo4j.kernel.impl.query.TransactionalContext)}.
+     * returned from calling {@link QueryExecutionEngine#executeQuery(String, MapValue, org.neo4j.kernel.impl.query.TransactionalContext)}.
      *
      * @param   projection Execution result projection to use.
      */

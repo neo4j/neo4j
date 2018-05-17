@@ -97,20 +97,6 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext tc )
-    {
-        try
-        {
-            availability.assertDatabaseAvailable();
-            return sourceModule.queryExecutor.get().executeQuery( query, parameters, tc );
-        }
-        catch ( QueryExecutionKernelException e )
-        {
-            throw e.asUserException();
-        }
-    }
-
-    @Override
     public Result executeQuery( String query, MapValue parameters, TransactionalContext tc )
     {
         try

@@ -136,6 +136,6 @@ class ShortestPathEdgeCasesAcceptanceTest extends ExecutionEngineFunSuite with C
     withoutPredicateOther should not include "relationships"
   }
 
-  def executeUsingCostPlannerOnly(query: String) =
-    RewindableExecutionResult(eengine.execute(s"CYPHER planner=COST $query", Map.empty[String, Any]))
+  private def executeUsingCostPlannerOnly(query: String) =
+    execute(s"CYPHER planner=COST $query")
 }

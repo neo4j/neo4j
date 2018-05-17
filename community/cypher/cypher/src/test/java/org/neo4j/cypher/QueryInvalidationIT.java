@@ -187,7 +187,7 @@ public class QueryInvalidationIT
         return ThreadLocalRandom.current().nextInt( max );
     }
 
-    private static class TestMonitor implements CypherCacheHitMonitor<Query>
+    private static class TestMonitor implements CypherCacheHitMonitor<String>
     {
         private final AtomicInteger hits = new AtomicInteger();
         private final AtomicInteger misses = new AtomicInteger();
@@ -195,19 +195,19 @@ public class QueryInvalidationIT
         private final AtomicLong waitTime = new AtomicLong();
 
         @Override
-        public void cacheHit( Query key )
+        public void cacheHit( String key )
         {
             hits.incrementAndGet();
         }
 
         @Override
-        public void cacheMiss( Query key )
+        public void cacheMiss( String key )
         {
             misses.incrementAndGet();
         }
 
         @Override
-        public void cacheDiscard( Query key, String ignored, int secondsSinceReplan )
+        public void cacheDiscard( String key, String ignored, int secondsSinceReplan )
         {
             discards.incrementAndGet();
             waitTime.addAndGet( secondsSinceReplan );

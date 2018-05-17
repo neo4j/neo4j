@@ -23,29 +23,20 @@ import java.util.function.Function
 
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 
-class LFUCache[K <: AnyRef, V <: AnyRef](val size: Int) extends ((K, => V) => V) {
+/**
+  * Simple thread-safe cache with a least-frequently-used eviction policy.
+  */
+class LFUCache[K <: AnyRef, V <: AnyRef](val size: Int) {
 
   val inner: Cache[K, V] = Caffeine.newBuilder().maximumSize(size).build[K, V]()
 
-  def getOrElseUpdate(key: K, f: => V): V = inner.get(key, new Function[K, V] {
+  def computeIfAbsent(key: K, f: => V): V = inner.get(key, new Function[K, V] {
     override def apply(t: K): V = f
-  })
-
-  def getOrElseUpdateByKey(key: K, f: K => V): V = inner.get(key, new Function[K, V] {
-    override def apply(t: K): V = f(t)
   })
 
   def get(key: K): Option[V] = Option(inner.getIfPresent(key))
 
-  def put(key: K, value: V) = inner.put(key, value)
-
-  def +=(kv: (K, V)) = put(kv._1, kv._2)
-
-  def remove(key: K): Option[V] = Option(inner.asMap().remove(key))
-
-  def containsKey(key: K) = inner.asMap().containsKey(key)
-
-  def apply(key: K, value: => V): V = getOrElseUpdate(key, value)
+  def put(key: K, value: V): Unit = inner.put(key, value)
 
   /**
     * Method for clearing the LRUCache

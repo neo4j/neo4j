@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs
 
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.{FineToReuse, ReusabilityState}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, FineToReuse}
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, ProcedurePlannerName}
 import org.neo4j.cypher.internal.runtime._
@@ -70,7 +70,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
 
   override def runtimeUsed: RuntimeName = ProcedureRuntimeName
 
-  override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = FineToReuse // TODO: Should this really always be reused?
+  override def reusability: ReusabilityState = FineToReuse // TODO: Should this really always be reused?
 
   override def plannerUsed: PlannerName = ProcedurePlannerName
 

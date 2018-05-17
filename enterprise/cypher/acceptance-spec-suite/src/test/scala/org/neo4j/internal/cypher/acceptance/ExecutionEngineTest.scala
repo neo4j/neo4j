@@ -47,7 +47,7 @@ import scala.collection.mutable
 
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport {
 
-  val startConf = Configs.CommunityInterpreted - Configs.Version3_3
+  private val startConf = Configs.CommunityInterpreted - Configs.Version3_3
 
   test("shouldGetRelationshipById") {
     val n = createNode()
@@ -492,7 +492,7 @@ order by a.COL1""".format(a, b))
 
     try {
       // This syntax is valid today, but should give an exception in 1.5
-      engine.execute("create a", Map.empty[String, Any])
+      execute("CREATE a")
     } catch {
       case x: SyntaxException =>
       case _: Throwable => fail("expected exception")
@@ -639,7 +639,7 @@ order by a.COL1""".format(a, b))
 
     val engine = createEngine(graph)
 
-    intercept[Throwable](engine.execute("BABY START SMILING, YOU KNOW THE SUN IS SHINING.", Map.empty[String, Any]))
+    intercept[Throwable](execute("BABY START SMILING, YOU KNOW THE SUN IS SHINING."))
 
     // Until we have a clean cut way where statement context is injected into cypher,
     // I don't know a non-hairy way to tell if this was done correctly, so here goes:
@@ -762,7 +762,7 @@ order by a.COL1""".format(a, b))
     readOnlyEngine() {
       engine =>
         //WHEN
-        val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n", Map.empty[String, Any])
+        val result = executeOfficial("MATCH (n) WHERE n:NonExistingLabel RETURN n")
 
         //THEN
         result.asScala.toList shouldBe empty
@@ -847,12 +847,6 @@ order by a.COL1""".format(a, b))
 
     val result = executeWith(startConf, "start p1=node:stuff('key:*'), p2=node:stuff('key:*') match (p1)--(e), (p2)--(e) where p1.value = 0 and p2.value = 0 AND p1 <> p2 return p1,p2,e")
     result.toList shouldBe empty
-  }
-
-  test("should be able to prettify queries") {
-    val query = "match (n)-->(x) return n"
-
-    eengine.prettify(query) should equal(String.format("MATCH (n)-->(x)%nRETURN n"))
   }
 
   test("doctest gone wild") {
@@ -954,7 +948,7 @@ order by a.COL1""".format(a, b))
       writer.println("1,2,3")
       writer.println("4,5,6")
     }
-    val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x", Map.empty[String, Any])
+    val result = executeOfficial(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x")
     result.asScala should have size 2
   }
 
@@ -964,6 +958,8 @@ order by a.COL1""".format(a, b))
   )
 
   case class PlanningListener(planRequests: mutable.ArrayBuffer[String] = mutable.ArrayBuffer.empty) extends TimingCompilationTracer.EventListener {
+    override def startQueryCompilation(query: String): Unit = {}
+
     override def queryCompiled(event: QueryEvent): Unit = {
       if(event.phases().asScala.exists(_.phase() == CompilationPhase.LOGICAL_PLANNING)) {
         planRequests.append(event.query())
@@ -979,12 +975,12 @@ order by a.COL1""".format(a, b))
     (0 until 100).foreach { _ => createLabeledNode("Person") }
 
     // WHEN
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
+    executeOfficial(s"match (n:Person) return n").resultAsString()
     planningListener.planRequests should equal(Seq(
       s"match (n:Person) return n"
     ))
     (0 until 301).foreach { _ => createLabeledNode("Person") }
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
+    executeOfficial(s"match (n:Person) return n").resultAsString()
 
     //THEN
     planningListener.planRequests should equal (Seq(
@@ -1000,12 +996,12 @@ order by a.COL1""".format(a, b))
 
     (0 until 100).foreach { _ => createLabeledNode("Person") }
     //WHEN
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
+    executeOfficial(s"match (n:Person) return n").resultAsString()
     planningListener.planRequests should equal(Seq(
       s"match (n:Person) return n"
     ))
     (0 until 9).foreach { _ => createLabeledNode("Dog") }
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
+    executeOfficial(s"match (n:Person) return n").resultAsString()
 
     //THEN
     planningListener.planRequests should equal(Seq(
@@ -1017,14 +1013,14 @@ order by a.COL1""".format(a, b))
     val planningListener = PlanningListener()
     kernelMonitors.addMonitorListener(planningListener)
 
-    val result1 = eengine.execute("match (n) return n", Map.empty[String, Any]).asScala.toList
+    val result1 = executeOfficial("match (n) return n").asScala.toList
     result1 shouldBe empty
 
     val ds = graph.getDependencyResolver.resolveDependency(classOf[NeoStoreDataSource])
     ds.stop()
     ds.start()
 
-    val result2 = eengine.execute("match (n) return n", Map.empty[String, Any]).asScala.toList
+    val result2 = executeOfficial("match (n) return n").asScala.toList
     result2 shouldBe empty
 
     planningListener.planRequests should equal(Seq(
@@ -1033,7 +1029,7 @@ order by a.COL1""".format(a, b))
     ))
   }
 
-  private def readOnlyEngine()(run: ExecutionEngine => Unit) = {
+  private def readOnlyEngine()(run: ExecutionEngine => Unit): Unit = {
     FileUtils.deleteRecursively(new File("target/readonly"))
     val old = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabase( new File( "target/readonly" ) )
     old.shutdown()
