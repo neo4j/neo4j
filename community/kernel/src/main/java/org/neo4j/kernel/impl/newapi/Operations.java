@@ -109,6 +109,9 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * Collects all Kernel API operations and guards them from being used outside of transaction.
+ *
+ * Many methods assume cursors to be initialized before use in private methods, even if they're not passed in explicitly.
+ * Keep that in mind: e.g. nodeCursor, propertyCursor and relationshipCursor
  */
 public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 {
@@ -257,7 +260,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         return true;
     }
 
-    public boolean nodeDelete( long node, boolean lock ) throws AutoIndexingKernelException
+    private boolean nodeDelete( long node, boolean lock ) throws AutoIndexingKernelException
     {
         ktx.assertOpen();
 
@@ -280,8 +283,12 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         {
             ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
         }
-        if ( allStoreHolder.nodeExistsInStore( node ) )
+
+        allStoreHolder.singleNode( node, nodeCursor );
+        if ( nodeCursor.next() )
         {
+            acquireSharedNodeLabelLocks();
+
             autoIndexing.nodes().entityRemoved( this, node );
             ktx.txState().nodeDoDelete( node );
             return true;
@@ -289,6 +296,14 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         // tried to delete node that does not exist
         return false;
+    }
+
+    /**
+     * Assuming that the nodeCursor have been initialized to the node that labels are retrieved from
+     */
+    private void acquireSharedNodeLabelLocks()
+    {
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, nodeCursor.labels().all() );
     }
 
     private boolean relationshipDelete( long relationship, boolean lock ) throws AutoIndexingKernelException
@@ -438,35 +453,34 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public boolean nodeRemoveLabel( long node, int nodeLabel ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( long node, int labelId ) throws EntityNotFoundException
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
         singleNode( node );
 
-        if ( !nodeCursor.hasLabel( nodeLabel ) )
+        if ( !nodeCursor.hasLabel( labelId ) )
         {
             //the label wasn't there, nothing to do
             return false;
         }
 
-        ktx.txState().nodeDoRemoveLabel( nodeLabel, node );
-        updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, REMOVED_LABEL );
+        acquireSharedLabelLock( labelId );
+        ktx.txState().nodeDoRemoveLabel( labelId, node );
+        updater.onLabelChange( labelId, nodeCursor, propertyCursor, REMOVED_LABEL );
         return true;
     }
 
     @Override
     public Value nodeSetProperty( long node, int propertyKey, Value value )
             throws EntityNotFoundException, ConstraintValidationException, AutoIndexingKernelException
-
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
         singleNode( node );
-        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL,
-                nodeCursor.labels().all() );
+        acquireSharedNodeLabelLocks();
         Iterator<ConstraintDescriptor> constraints = Iterators.filter( hasProperty( propertyKey ),
                 allStoreHolder.constraintsGetAll() );
         Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
@@ -522,6 +536,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         if ( existingValue != NO_VALUE )
         {
+            acquireSharedNodeLabelLocks();
             autoIndexing.nodes().propertyRemoved( this, node, propertyKey );
             ktx.txState().nodeDoRemoveProperty( node, propertyKey );
             updater.onPropertyRemove( nodeCursor, propertyCursor, propertyKey, existingValue );

@@ -32,6 +32,7 @@ import java.util.Optional;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
@@ -77,6 +78,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
@@ -492,6 +494,10 @@ public class OperationsLockTest
         long nodeId = 1L;
         returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        when( nodeCursor.next() ).thenReturn( true );
+        LabelSet labels = mock( LabelSet.class );
+        when( labels.all() ).thenReturn( EMPTY_LONG_ARRAY );
+        when( nodeCursor.labels() ).thenReturn( labels );
 
         operations.nodeDetachDelete( nodeId );
 
@@ -507,6 +513,11 @@ public class OperationsLockTest
         returnRelationships( transaction, false,
                 new TestRelationshipChain( nodeId ).outgoing( 1, 2L, 42 ) );
         when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        LabelSet labels = mock( LabelSet.class );
+        when( labels.all() ).thenReturn( EMPTY_LONG_ARRAY );
+        when( nodeCursor.labels() ).thenReturn( labels );
+        when( nodeCursor.next() ).thenReturn( true );
+
         operations.nodeDetachDelete( nodeId );
 
         order.verify( locks ).acquireExclusive(
@@ -514,6 +525,100 @@ public class OperationsLockTest
         order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
         order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, 2L );
         order.verify( txState ).nodeDoDelete( nodeId );
+    }
+
+    @Test
+    public void shouldAcquiredSharedLabelLocksWhenDeletingNode() throws AutoIndexingKernelException
+    {
+        // given
+        long nodeId = 1L;
+        long labelId1 = 1;
+        long labelId2 = 2;
+        when( nodeCursor.next() ).thenReturn( true );
+        LabelSet labels = mock( LabelSet.class );
+        when( labels.all() ).thenReturn( new long[]{labelId1, labelId2} );
+        when( nodeCursor.labels() ).thenReturn( labels );
+
+        // when
+        operations.nodeDelete( nodeId );
+
+        // then
+        InOrder order = inOrder( locks );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2 );
+        order.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldAcquiredSharedLabelLocksWhenDetachDeletingNode() throws KernelException
+    {
+        // given
+        long nodeId = 1L;
+        long labelId1 = 1;
+        long labelId2 = 2;
+
+        returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        when( nodeCursor.next() ).thenReturn( true );
+        LabelSet labels = mock( LabelSet.class );
+        when( labels.all() ).thenReturn( new long[]{labelId1, labelId2} );
+        when( nodeCursor.labels() ).thenReturn( labels );
+
+        // when
+        operations.nodeDetachDelete( nodeId );
+
+        // then
+        InOrder order = inOrder( locks );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2 );
+        order.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldAcquiredSharedLabelLocksWhenRemovingNodeLabel() throws EntityNotFoundException
+    {
+        // given
+        long nodeId = 1L;
+        int labelId = 1;
+        when( nodeCursor.next() ).thenReturn( true );
+        LabelSet labels = mock( LabelSet.class );
+        when( labels.contains( labelId ) ).thenReturn( true );
+        when( nodeCursor.labels() ).thenReturn( labels );
+
+        // when
+        operations.nodeRemoveLabel( nodeId, labelId );
+
+        // then
+        InOrder order = inOrder( locks );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
+        order.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldAcquiredSharedLabelLocksWhenRemovingNodeProperty() throws AutoIndexingKernelException, EntityNotFoundException
+    {
+        // given
+        long nodeId = 1L;
+        long labelId1 = 1;
+        long labelId2 = 1;
+        int propertyKeyId = 5;
+        when( nodeCursor.next() ).thenReturn( true );
+        LabelSet labels = mock( LabelSet.class );
+        when( labels.all() ).thenReturn( new long[]{labelId1, labelId2} );
+        when( nodeCursor.labels() ).thenReturn( labels );
+        when( propertyCursor.next() ).thenReturn( true );
+        when( propertyCursor.propertyKey() ).thenReturn( propertyKeyId );
+        when( propertyCursor.propertyValue() ).thenReturn( Values.of( "abc" ) );
+
+        // when
+        operations.nodeRemoveProperty( nodeId, propertyKeyId );
+
+        // then
+        InOrder order = inOrder( locks );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2 );
+        order.verifyNoMoreInteractions();
     }
 
     private void setStoreRelationship( long relationshipId, long sourceNode, long targetNode, int relationshipLabel )
