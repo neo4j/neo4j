@@ -505,6 +505,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> pagecache_swapper =
             setting( "dbms.memory.pagecache.swapper", STRING, (String) null );
 
+    @Internal
+    @Description( "This enables an experimental page cache feature where the page cache is eagerly populated on startup. " +
+                  "This feature assumes that the store can fit entirely in the page cache, and loads in all data of all mapped files. " +
+                  "This setting allows disabling that behavior. " +
+                  "This feature available in Neo4j Enterprise Edition." )
+    public static final Setting<Boolean> pagecache_warmup_enabled = setting( "unsupported.dbms.memory.pagecache.warmup.enable", BOOLEAN, FALSE );
+
     /**
      * Block size properties values depends from selected record format.
      * We can't figured out record format until it will be selected by corresponding edition.
