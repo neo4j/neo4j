@@ -22,7 +22,6 @@ package org.neo4j.kernel.builtinprocs;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -31,12 +30,12 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
+import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.procedure.Mode.DBMS;
 
 @SuppressWarnings( "unused" )
@@ -51,15 +50,11 @@ public class BuiltInDbmsProcedures
     @Context
     public SecurityContext securityContext;
 
+    @Admin
     @Description( "List the currently active config of Neo4j." )
     @Procedure( name = "dbms.listConfig", mode = DBMS )
     public Stream<ConfigResult> listConfig( @Name( value = "searchString", defaultValue = "" ) String searchString )
     {
-        securityContext.assertCredentialsNotExpired();
-        if ( !securityContext.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
         Config config = graph.getDependencyResolver().resolveDependency( Config.class );
         return config.getConfigValues().values().stream()
                 .filter( c -> !c.internal() )
@@ -88,16 +83,11 @@ public class BuiltInDbmsProcedures
                 .map( FunctionResult::new );
     }
 
+    @Admin
     @Description( "Clears all query caches." )
     @Procedure( name = "dbms.clearQueryCaches", mode = DBMS )
     public Stream<StringResult> clearAllQueryCaches()
     {
-        securityContext.assertCredentialsNotExpired();
-        if ( !securityContext.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-
         QueryExecutionEngine queryExecutionEngine = graph.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
         long numberOfClearedQueries = queryExecutionEngine.clearQueryCaches() - 1; // this query itself does not count
 

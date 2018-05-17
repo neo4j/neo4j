@@ -491,7 +491,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     val procedureName = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
     val emptySignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
     val signature: ProcedureSignature = new ProcedureSignature(
-      procedureName, paramSignature, resultSignature, Mode.READ, null, Array.empty,
+      procedureName, paramSignature, resultSignature, Mode.READ, false, null, Array.empty,
       null, null, false)
 
     def paramSignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
