@@ -398,7 +398,7 @@ public class ConstraintIndexCreatorTest
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
-            e.printStackTrace();
+            fail( "Expected write transaction" );
         }
         return transaction;
     }

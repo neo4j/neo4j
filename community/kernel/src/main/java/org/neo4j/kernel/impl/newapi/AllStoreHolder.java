@@ -85,6 +85,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.AnyValue;
@@ -454,7 +455,7 @@ public class AllStoreHolder extends Read
         }
         else
         {
-            return -1L;
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, ((IndexDescriptor)index).schema() );
         }
     }
 

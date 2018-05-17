@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 public class DefaultIndexProviderMap implements IndexProviderMap
 {
     private final IndexProvider defaultIndexProvider;
-    private final Map<IndexProvider.Descriptor,IndexProvider> indexProviders = new HashMap<>();
+    private final Map<Descriptor,IndexProvider> indexProvidersByDescriptor = new HashMap<>();
     private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();
 
     public DefaultIndexProviderMap( IndexProvider defaultIndexProvider )
@@ -61,8 +61,8 @@ public class DefaultIndexProviderMap implements IndexProviderMap
 
     private IndexProvider put( Descriptor providerDescriptor, IndexProvider provider )
     {
-        IndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
-        indexProvidersByName.put( providerDescriptor.name(), provider );
+        IndexProvider existing = indexProvidersByDescriptor.putIfAbsent( providerDescriptor, provider );
+        indexProvidersByName.putIfAbsent( providerDescriptor.name(), provider );
         return existing;
     }
 
@@ -73,9 +73,9 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     }
 
     @Override
-    public IndexProvider lookup( IndexProvider.Descriptor providerDescriptor )
+    public IndexProvider lookup( Descriptor providerDescriptor )
     {
-        IndexProvider provider = indexProviders.get( providerDescriptor );
+        IndexProvider provider = indexProvidersByDescriptor.get( providerDescriptor );
         if ( provider != null )
         {
             return provider;
@@ -99,12 +99,12 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     private IllegalArgumentException notFound( Object key )
     {
         return new IllegalArgumentException( "Tried to get index provider for an existing index with provider " + key +
-                " whereas available providers in this session being " + indexProviders + ", and default being " + defaultIndexProvider );
+                " whereas available providers in this session being " + indexProvidersByDescriptor + ", and default being " + defaultIndexProvider );
     }
 
     @Override
     public void accept( Consumer<IndexProvider> visitor )
     {
-        indexProviders.values().forEach( visitor );
+        indexProvidersByDescriptor.values().forEach( visitor );
     }
 }
