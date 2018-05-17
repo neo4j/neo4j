@@ -43,12 +43,14 @@ class ExecutionPlanConverter
 
     public static MapValue convert( ExecutionPlanDescription plan )
     {
-        MapValueBuilder out = new MapValueBuilder(  );
+        boolean hasProfilerStatistics = plan.hasProfilerStatistics();
+        int size = hasProfilerStatistics ? 9 : 4;
+        MapValueBuilder out = new MapValueBuilder( size );
         out.add( "operatorType", stringValue( plan.getName() ) );
         out.add( "args", ValueUtils.asMapValue( plan.getArguments() ) );
         out.add( "identifiers", ValueUtils.asListValue( plan.getIdentifiers() ) );
         out.add( "children", children( plan ) );
-        if ( plan.hasProfilerStatistics() )
+        if ( hasProfilerStatistics )
         {
             ExecutionPlanDescription.ProfilerStatistics profile = plan.getProfilerStatistics();
             out.add( "dbHits", longValue( profile.getDbHits() ) );

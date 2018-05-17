@@ -150,15 +150,16 @@ class CypherAdapterStream extends BoltResult
             List<AnyValue> out = new ArrayList<>();
             for ( Notification notification : notifications )
             {
-                MapValueBuilder builder = new MapValueBuilder();
+                InputPosition pos = notification.getPosition(); // position is optional
+                boolean includePosition = !pos.equals( InputPosition.empty );
+                int size = includePosition ? 5 : 4;
+                MapValueBuilder builder = new MapValueBuilder( size );
 
                 builder.add( "code", stringValue( notification.getCode() ) );
                 builder.add( "title", stringValue( notification.getTitle() ) );
                 builder.add( "description", stringValue( notification.getDescription() ) );
                 builder.add( "severity", stringValue( notification.getSeverity().toString() ) );
 
-                InputPosition pos = notification.getPosition(); // position is optional
-                boolean includePosition = !pos.equals( InputPosition.empty );
                 if ( includePosition )
                 {
                     // only add the position if it is not empty
