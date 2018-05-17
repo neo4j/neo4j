@@ -104,7 +104,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.uniqueIndexes.filter(p => p._1 == label).flatMap(p => uniqueIndexGet(p._1, p._2)).iterator
       }
 
-      override def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+      private def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
         if (config.uniqueIndexes((labelName, propertyKeys)))
           Some(IndexDescriptor(
             semanticTable.resolvedLabelNames(labelName).id,
@@ -113,7 +113,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
-      override def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+      private def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
         if (config.indexes((labelName, propertyKeys)) || config.uniqueIndexes((labelName, propertyKeys)))
           Some(IndexDescriptor(
             semanticTable.resolvedLabelNames(labelName).id,
@@ -122,8 +122,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
-      override def indexExistsForLabel(labelName: String): Boolean =
+      override def indexExistsForLabel(labelId: Int): Boolean = {
+        val labelName = config.labelsById(labelId)
         config.indexes.exists(_._1 == labelName) || config.uniqueIndexes.exists(_._1 == labelName)
+      }
+
+      override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
+        config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey))
 
       override def getOptPropertyKeyId(propertyKeyName: String) =
         semanticTable.resolvedPropertyKeyNames.get(propertyKeyName).map(_.id)

@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.neo4j.cypher.internal.util.v3_5.{HintException, IndexHintException, InternalException, JoinHintException}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, PlanTransformer}
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.v3_5._
 import org.neo4j.cypher.internal.v3_5.expressions.LabelName
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
   def apply(plan: LogicalPlan, expected: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
@@ -110,8 +110,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     query.allHints.flatMap {
       // using index name:label(property1,property2)
       case UsingIndexHint(_, LabelName(label), properties, _)
-        if planContext.indexGet(label, properties.map(_.name)).isDefined ||
-          planContext.uniqueIndexGet(label, properties.map(_.name)).isDefined => None
+        if planContext.indexExistsForLabelAndProperties(label, properties.map(_.name)) => None
       // no such index exists
       case hint: UsingIndexHint => Some(hint)
       // don't care about other hints

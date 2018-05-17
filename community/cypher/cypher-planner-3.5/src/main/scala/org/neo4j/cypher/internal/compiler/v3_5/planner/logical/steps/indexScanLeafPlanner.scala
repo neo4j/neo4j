@@ -87,8 +87,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     val idName = variableName
 
     for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
-         labelName <- labelPredicate.labels;
-         indexDescriptor <- findIndexesFor(labelName.name, propertyKeyName, context);
+         labelName <- labelPredicate.labels if context.planContext.indexExistsForLabelAndProperties(labelName.name, Seq(propertyKeyName));
          labelId <- semanticTable.id(labelName))
       yield {
         val hint = qg.hints.collectFirst {
@@ -101,7 +100,4 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         planProducer(idName, labelToken, keyToken, predicates, hint, qg.argumentIds)
       }
   }
-
-  private def findIndexesFor(label: String, property: String, context: LogicalPlanningContext) =
-    context.planContext.indexGet(label, Seq(property)) orElse context.planContext.uniqueIndexGet(label, Seq(property))
 }

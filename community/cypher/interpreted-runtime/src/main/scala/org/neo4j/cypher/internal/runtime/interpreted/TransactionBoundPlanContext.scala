@@ -46,39 +46,27 @@ object TransactionBoundPlanContext {
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: GraphStatistics)
   extends TransactionBoundTokenContext(tc.kernelTransaction) with PlanContext with IndexDescriptorCompatibility {
 
-  def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    tc.schemaRead.indexesGetForLabel(labelId).asScala
-      .filterNot(_.isUnique)
-      .flatMap(getOnlineIndex)
+  override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+    tc.schemaRead.indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex)
   }
 
-  def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
-    val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    getOnlineIndex(tc.schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
-  }
-
-  def indexExistsForLabel(labelName: String): Boolean = {
-    try {
-      val labelId = getLabelId(labelName)
-      val onlineIndexDescriptors = tc.schemaRead.indexesGetForLabel(labelId).asScala
-        .filterNot(_.isUnique)
-        .flatMap(getOnlineIndex)
-
-      onlineIndexDescriptors.nonEmpty
-    } catch {
-      case _: KernelException => false
-    }
-  }
-
-  def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+  override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     tc.schemaRead.indexesGetForLabel(labelId).asScala
       .filter(_.isUnique)
       .flatMap(getOnlineIndex)
   }
 
-  def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
-    val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    getOnlineIndex(tc.schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
+  override def indexExistsForLabel(labelId: Int): Boolean = {
+      tc.schemaRead.indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex).nonEmpty
+  }
+
+  override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {
+    try {
+      val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKey)
+      getOnlineIndex(tc.schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*)).isDefined
+    } catch {
+      case _: KernelException => false
+    }
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
@@ -105,28 +93,28 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
   }
 
-  def checkNodeIndex(idxName: String) {
+  override def checkNodeIndex(idxName: String) {
     if (!tc.kernelTransaction.indexRead().nodeExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
-  def checkRelIndex(idxName: String) {
+  override def checkRelIndex(idxName: String) {
     if (!tc.kernelTransaction.indexRead().relationshipExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
-  def getOrCreateFromSchemaState[T](key: Any, f: => T): T = {
+  override def getOrCreateFromSchemaState[T](key: Any, f: => T): T = {
     val javaCreator = new java.util.function.Function[Any, T]() {
       def apply(key: Any) = f
     }
     tc.schemaRead.schemaStateGetOrCreate(key, javaCreator)
   }
 
-  val statistics: GraphStatistics = graphStatistics
+  override val statistics: GraphStatistics = graphStatistics
 
-  val txIdProvider = LastCommittedTxIdProvider(tc.graph)
+  override val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: QualifiedName) = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
