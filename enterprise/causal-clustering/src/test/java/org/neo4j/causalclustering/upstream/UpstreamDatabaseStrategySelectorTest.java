@@ -24,6 +24,7 @@ package org.neo4j.causalclustering.upstream;
 
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +33,8 @@ import java.util.UUID;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.discovery.TransientClusterId;
+import org.neo4j.causalclustering.discovery.data.RefCounted;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.upstream.strategies.ConnectToRandomCoreServerStrategy;
@@ -49,6 +52,8 @@ import static org.neo4j.helpers.collection.Iterables.iterable;
 public class UpstreamDatabaseStrategySelectorTest
 {
     private MemberId dummyMemberId = new MemberId( UUID.randomUUID() );
+    private TransientClusterId clusterId = new TransientClusterId( new ClusterId( UUID.randomUUID() ), Instant.now() );
+    private RefCounted<TransientClusterId> clusterIdRef = new RefCounted<>(clusterId);
 
     @Test
     public void shouldReturnTheMemberIdFromFirstSucessfulStrategy() throws Exception
@@ -81,7 +86,7 @@ public class UpstreamDatabaseStrategySelectorTest
         TopologyService topologyService = mock( TopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
         when( topologyService.localCoreServers() ).thenReturn(
-                new CoreTopology( new ClusterId( UUID.randomUUID() ), false, mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
+                new CoreTopology( clusterIdRef, false, mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
         ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
         defaultStrategy.inject( topologyService, Config.defaults(), NullLogProvider.getInstance(), null );
@@ -102,7 +107,7 @@ public class UpstreamDatabaseStrategySelectorTest
         TopologyService topologyService = mock( TopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
         when( topologyService.localCoreServers() ).thenReturn(
-                new CoreTopology( new ClusterId( UUID.randomUUID() ), false, mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
+                new CoreTopology( clusterIdRef, false, mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
         ConnectToRandomCoreServerStrategy shouldNotUse = new ConnectToRandomCoreServerStrategy();
 

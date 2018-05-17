@@ -89,6 +89,7 @@ public class MemberId implements Serializable
      */
     public static class Marshal extends SafeStateMarshal<MemberId>
     {
+        public static final Marshal INSTANCE = new Marshal();
         private static final Charset UTF8 = Charset.forName("UTF-8");
 
         @Override

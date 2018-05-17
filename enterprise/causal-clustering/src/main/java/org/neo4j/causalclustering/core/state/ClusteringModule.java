@@ -23,6 +23,7 @@
 package org.neo4j.causalclustering.core.state;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -87,9 +88,10 @@ public class ClusteringModule
 
         String dbName = config.get( CausalClusteringSettings.database );
         int minimumCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
+        Duration clusterIdTtl = config.get( CausalClusteringSettings.clusterId_ttl );
 
         clusterBinder = new ClusterBinder( clusterIdStorage, dbNameStorage, topologyService, Clocks.systemClock(), () -> sleep( 100 ), 300_000,
-                coreBootstrapper, dbName, minimumCoreHosts, logProvider );
+                coreBootstrapper, dbName, minimumCoreHosts, logProvider, clusterIdTtl );
     }
 
     private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )

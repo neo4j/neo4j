@@ -27,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -39,6 +40,8 @@ import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
+import org.neo4j.causalclustering.discovery.TransientClusterId;
+import org.neo4j.causalclustering.discovery.data.RefCounted;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -66,7 +69,8 @@ public class GetServersProcedureV1RoutingTest
     @Parameter
     public int serverClass;
 
-    private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+    private TransientClusterId clusterId = new TransientClusterId( new ClusterId( UUID.randomUUID() ), Instant.now() );
+    private RefCounted<TransientClusterId> clusterIdRef = new RefCounted<>( clusterId );
     private Config config = Config.defaults();
 
     @Test
@@ -83,7 +87,7 @@ public class GetServersProcedureV1RoutingTest
         coreMembers.put( member( 1 ), addressesForCore( 1 ) );
         coreMembers.put( member( 2 ), addressesForCore( 2 ) );
 
-        final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
+        final CoreTopology clusterTopology = new CoreTopology( clusterIdRef, false, coreMembers );
         when( coreTopologyService.localCoreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.localReadReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 

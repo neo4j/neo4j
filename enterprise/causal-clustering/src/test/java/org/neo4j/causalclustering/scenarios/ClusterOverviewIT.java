@@ -236,8 +236,8 @@ public class ClusterOverviewIT
         }
 
         // when
-        cluster.removeReadReplicaWithMemberId( 0 );
-        cluster.removeReadReplicaWithMemberId( 1 );
+        cluster.removeReadReplicaWithServerId( 0 );
+        cluster.removeReadReplicaWithServerId( 1 );
 
         for ( int coreServerId = 0; coreServerId < coreMembers; coreServerId++ )
         {
@@ -281,8 +281,8 @@ public class ClusterOverviewIT
         clusterRule.withNumberOfReadReplicas( 2 );
 
         Cluster cluster = clusterRule.startCluster();
-        List<CoreClusterMember> followers = cluster.getAllMembersWithRole( Role.FOLLOWER );
-        CoreClusterMember leader = cluster.getMemberWithRole( Role.LEADER );
+        List<CoreClusterMember> followers = cluster.getAllCoreMembersWithRole( Role.FOLLOWER );
+        CoreClusterMember leader = cluster.getCoreMemberWithRole( Role.LEADER );
         followers.forEach( CoreClusterMember::shutdown );
 
         assertEventualOverview( cluster, containsRole( LEADER, 0 ), leader.serverId() );
@@ -300,7 +300,7 @@ public class ClusterOverviewIT
 
         List<MemberInfo> preElectionOverview = clusterOverview( leader.database() );
 
-        CoreClusterMember follower = cluster.getMemberWithRole( Role.FOLLOWER );
+        CoreClusterMember follower = cluster.getCoreMemberWithRole( Role.FOLLOWER );
         follower.raft().triggerElection( Clock.systemUTC() );
 
         assertEventualOverview( cluster, allOf(

@@ -24,6 +24,7 @@ package org.neo4j.causalclustering.identity;
 
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -40,6 +41,8 @@ import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.TestTopology;
+import org.neo4j.causalclustering.discovery.TransientClusterId;
+import org.neo4j.causalclustering.discovery.data.RefCounted;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
@@ -69,7 +72,7 @@ public class ClusterBinderTest
             CoreTopologyService topologyService )
     {
         return new ClusterBinder( clusterIdStorage, new StubSimpleStorage<>(), topologyService, clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper, dbName, minCoreHosts, NullLogProvider.getInstance() );
+                coreBootstrapper, dbName, minCoreHosts, NullLogProvider.getInstance(), config.get( CausalClusteringSettings.clusterId_ttl ) );
     }
 
     @Test
@@ -105,9 +108,10 @@ public class ClusterBinderTest
     public void shouldBindToClusterIdPublishedByAnotherMember() throws Throwable
     {
         // given
-        ClusterId publishedClusterId = new ClusterId( UUID.randomUUID() );
+        TransientClusterId transientClusterId = new TransientClusterId( new ClusterId( UUID.randomUUID() ), Instant.now() );
+        RefCounted<TransientClusterId> clusterIdRef = new RefCounted<TransientClusterId>( transientClusterId );
         CoreTopology unboundTopology = new CoreTopology( null, false, emptyMap() );
-        CoreTopology boundTopology = new CoreTopology( publishedClusterId, false, emptyMap() );
+        CoreTopology boundTopology = new CoreTopology( clusterIdRef, false, emptyMap() );
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.localCoreServers() ).thenReturn( unboundTopology ).thenReturn( boundTopology );
@@ -120,7 +124,7 @@ public class ClusterBinderTest
         // then
         Optional<ClusterId> clusterId = binder.get();
         assertTrue( clusterId.isPresent() );
-        assertEquals( publishedClusterId, clusterId.get() );
+        assertEquals( clusterIdRef.value().clusterId(), clusterId.get() );
         verify( topologyService, atLeast( 2 ) ).localCoreServers();
     }
 

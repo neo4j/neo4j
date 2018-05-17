@@ -22,12 +22,15 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;
+import org.neo4j.causalclustering.discovery.data.RefCounted;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -45,6 +48,8 @@ class SharedDiscoveryCoreClient implements CoreTopologyService, Lifecycle
     private final Log log;
     private final boolean refusesToBeLeader;
     private final String localDBName;
+    private final Duration clusterIdTtl;
+    private Optional<RefCounted<TransientClusterId>> clusterIdRef;
 
     private volatile LeaderInfo leaderInfo = LeaderInfo.INITIAL;
     private volatile CoreTopology coreTopology;
@@ -60,6 +65,8 @@ class SharedDiscoveryCoreClient implements CoreTopologyService, Lifecycle
         this.log = logProvider.getLog( getClass() );
         this.refusesToBeLeader = config.get( CausalClusteringSettings.refuse_to_be_leader );
         this.localDBName = config.get( CausalClusteringSettings.database );
+        this.clusterIdTtl = config.get( CausalClusteringSettings.clusterId_ttl );
+        this.clusterIdRef = Optional.empty();
     }
 
     @Override
@@ -78,7 +85,35 @@ class SharedDiscoveryCoreClient implements CoreTopologyService, Lifecycle
     @Override
     public boolean setClusterId( ClusterId clusterId, String dbName )
     {
-        return sharedDiscoveryService.casClusterId( clusterId, dbName );
+        Optional<RefCounted<TransientClusterId>> existing = Optional.ofNullable( sharedDiscoveryService.getClusterId( dbName ) );
+
+        boolean stateClean = true;
+        if ( existing.isPresent() )
+        {
+            RefCounted<TransientClusterId> e = existing.get();
+            if ( e.value().clusterId() == clusterId )
+            {
+                clusterIdRef = Optional.of( sharedDiscoveryService.holdClusterId( e, myself, dbName ) );
+                return true;
+            }
+            else if ( e.value().isActiveDuringLast( clusterIdTtl ) && !e.safeToRemove() )
+            {
+                stateClean = false;
+            }
+            else
+            {
+                stateClean = sharedDiscoveryService.removeClusterId( e, dbName );
+            }
+        }
+
+        TransientClusterId newClusterId = new TransientClusterId( clusterId, Instant.now() );
+        RefCounted<TransientClusterId> newClusterIdRef = new RefCounted<>( newClusterId );
+        boolean successfulSet = sharedDiscoveryService.setOnceClusterId( newClusterIdRef, dbName );
+        if ( successfulSet )
+        {
+            clusterIdRef = Optional.of( sharedDiscoveryService.holdClusterId( newClusterIdRef, myself, dbName ) );
+        }
+        return stateClean && successfulSet;
     }
 
     @Override
@@ -119,8 +154,25 @@ class SharedDiscoveryCoreClient implements CoreTopologyService, Lifecycle
     @Override
     public void stop()
     {
+        cleanupClusterIdRef();
         sharedDiscoveryService.unRegisterCoreMember( this );
         log.info( "Unregistered core server %s", myself );
+    }
+
+
+    private void cleanupClusterIdRef()
+    {
+        //TODO: does it matter if this is not an atomic ref using CAS? Only called in stop cases
+        Optional<RefCounted<TransientClusterId>> localClusterIdRef = clusterIdRef;
+        clusterIdRef = localClusterIdRef.map( r -> {
+            RefCounted<TransientClusterId> updatedRef =
+                    sharedDiscoveryService.releaseClusterId( r, myself, localDBName );
+            if( updatedRef.safeToRemove() )
+            {
+                sharedDiscoveryService.removeClusterId( updatedRef, localDBName );
+            }
+            return updatedRef;
+        } );
     }
 
     @Override

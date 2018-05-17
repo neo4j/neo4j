@@ -138,7 +138,7 @@ public class ReadReplicaToReadReplicaCatchupIT
         firstReadReplica.shutdown();
         upstreamFactory.reset();
 
-        cluster.removeReadReplicaWithMemberId( firstReadReplicaLocalMemberId );
+        cluster.removeReadReplicaWithServerId( firstReadReplicaLocalMemberId );
 
         // when
         // More transactions into core
