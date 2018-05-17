@@ -268,8 +268,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     StorageProperty property = added.next();
                     try
                     {
-                        NodePropertyEntryView entryView = new NodePropertyEntryView( nodeId, store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
-                                committedValue( nodeState.getId(), property.propertyKeyId(), nodeCursor, propertyCursor ) );
+                        NodePropertyEntryView entryView =
+                                new NodePropertyEntryView( nodeId, store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
+                                        committedValue( nodeState.getId(), property.propertyKeyId(), nodeCursor, propertyCursor ) );
                         assignedNodeProperties.add( entryView );
                     }
                     catch ( PropertyKeyIdNotFoundKernelException e )
