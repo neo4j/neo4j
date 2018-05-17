@@ -47,50 +47,10 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
 
     IndexDescriptor( IndexDescriptor indexDescriptor )
     {
-        schema = indexDescriptor.schema;
-        type = indexDescriptor.type;
-        userSuppliedName =  indexDescriptor.userSuppliedName;
-        providerDescriptor = indexDescriptor.providerDescriptor;
-    }
-
-    public enum Type
-    {
-        GENERAL,
-        UNIQUE
-
-    }
-    public enum Filter implements Predicate<IndexDescriptor>
-    {
-        GENERAL
-                {
-                    @Override
-                    public boolean test( IndexDescriptor index )
-                    {
-                        return index.type == Type.GENERAL;
-                    }
-                },
-        UNIQUE
-                {
-                    @Override
-                    public boolean test( IndexDescriptor index )
-                    {
-                        return index.type == Type.UNIQUE;
-                    }
-                },
-        ANY
-                {
-                    @Override
-                    public boolean test( IndexDescriptor index )
-                    {
-                        return true;
-                    }
-                }
-
-    }
-    public interface Supplier
-    {
-        IndexDescriptor getIndexDescriptor();
-
+        this( indexDescriptor.schema,
+              indexDescriptor.type,
+              indexDescriptor.userSuppliedName,
+              indexDescriptor.providerDescriptor );
     }
 
     public IndexDescriptor( SchemaDescriptor schema,
@@ -198,12 +158,61 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
 
     public StoreIndexDescriptor withId( long id )
     {
+        assertValidId( id, "id" );
         return new StoreIndexDescriptor( this, id );
     }
 
     public StoreIndexDescriptor withIds( long id, long owningConstraintId )
     {
-        assert owningConstraintId >= 0;
+        assertValidId( id, "id" );
+        assertValidId( owningConstraintId, "owning constraint id" );
         return new StoreIndexDescriptor( this, id, owningConstraintId );
+    }
+
+    private void assertValidId( long id, String idName )
+    {
+        if ( id < 0 )
+        {
+            throw new IllegalArgumentException( "A StoreIndexDescriptor " + idName + " must be positive, got " + id );
+        }
+    }
+
+    public enum Type
+    {
+        GENERAL,
+        UNIQUE
+    }
+
+    public enum Filter implements Predicate<IndexDescriptor>
+    {
+        GENERAL
+                {
+                    @Override
+                    public boolean test( IndexDescriptor index )
+                    {
+                        return index.type == Type.GENERAL;
+                    }
+                },
+        UNIQUE
+                {
+                    @Override
+                    public boolean test( IndexDescriptor index )
+                    {
+                        return index.type == Type.UNIQUE;
+                    }
+                },
+        ANY
+                {
+                    @Override
+                    public boolean test( IndexDescriptor index )
+                    {
+                        return true;
+                    }
+                }
+    }
+
+    public interface Supplier
+    {
+        IndexDescriptor getIndexDescriptor();
     }
 }

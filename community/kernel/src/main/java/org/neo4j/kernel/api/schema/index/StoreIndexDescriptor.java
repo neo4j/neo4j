@@ -35,7 +35,8 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
     private final Long owningConstraintId;
     private final String name;
 
-    StoreIndexDescriptor( StoreIndexDescriptor indexDescriptor )
+    // Copy-constructor used by sub-classes.
+    protected StoreIndexDescriptor( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
         this.id = indexDescriptor.id;
@@ -43,6 +44,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
         this.name = indexDescriptor.name;
     }
 
+    // General purpose constructors.
     StoreIndexDescriptor( IndexDescriptor descriptor, long id )
     {
         this( descriptor, id, null );
