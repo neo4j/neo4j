@@ -24,14 +24,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
 /**
  * Handle the collection of kernel event handlers, and fire events as needed.
  */
-public class KernelEventHandlers
-    implements Lifecycle
+public class KernelEventHandlers extends LifecycleAdapter
 {
     private final List<KernelEventHandler> kernelEventHandlers = new CopyOnWriteArrayList<>();
     private final Log log;
@@ -39,21 +38,6 @@ public class KernelEventHandlers
     public KernelEventHandlers( Log log )
     {
         this.log = log;
-    }
-
-    @Override
-    public void init()
-    {
-    }
-
-    @Override
-    public void start()
-    {
-    }
-
-    @Override
-    public void stop()
-    {
     }
 
     @Override

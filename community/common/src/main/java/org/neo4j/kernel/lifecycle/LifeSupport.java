@@ -21,7 +21,9 @@ package org.neo4j.kernel.lifecycle;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -32,12 +34,12 @@ import static java.util.stream.Collectors.toList;
  * <p>
  * Components that internally owns other components that has a lifecycle can use this to control them as well.
  */
-public class LifeSupport
-        implements Lifecycle
+public class LifeSupport implements Lifecycle
 {
     private volatile List<LifecycleInstance> instances = new ArrayList<>();
     private volatile LifecycleStatus status = LifecycleStatus.NONE;
     private final List<LifecycleListener> listeners = new ArrayList<>();
+    private LifecycleInstance last;
 
     public LifeSupport()
     {
@@ -150,31 +152,6 @@ public class LifeSupport
         }
     }
 
-    private LifecycleException stopInstances( List<LifecycleInstance> instances )
-    {
-        LifecycleException ex = null;
-        for ( int i = instances.size() - 1; i >= 0; i-- )
-        {
-            LifecycleInstance lifecycleInstance = instances.get( i );
-            try
-            {
-                lifecycleInstance.stop();
-            }
-            catch ( LifecycleException e )
-            {
-                if ( ex != null )
-                {
-                    ex.addSuppressed( e );
-                }
-                else
-                {
-                    ex = e;
-                }
-            }
-        }
-        return ex;
-    }
-
     /**
      * Shutdown all registered instances, transitioning from either STARTED or STOPPED to SHUTDOWN.
      * <p>
@@ -239,17 +216,35 @@ public class LifeSupport
     public synchronized <T extends Lifecycle> T add( T instance )
             throws LifecycleException
     {
-        assert instance != null;
-        assert notAlreadyAdded( instance );
-        LifecycleInstance newInstance = new LifecycleInstance( instance );
-        List<LifecycleInstance> tmp = new ArrayList<>( instances );
-        tmp.add( newInstance );
-        instances = tmp;
-        bringToState( newInstance );
+        addNewComponent( instance );
         return instance;
     }
 
-    private boolean notAlreadyAdded( Lifecycle instance )
+    public synchronized <T extends Lifecycle> T addLast( T instance )
+    {
+        if ( last != null )
+        {
+            throw new IllegalStateException(
+                    format( "Lifecycle supports only one last component. Already defined component: %s, new component: %s", last, instance ) );
+        }
+        last = addNewComponent( instance );
+        return instance;
+    }
+
+    private <T extends Lifecycle> LifecycleInstance addNewComponent( T instance )
+    {
+        Objects.requireNonNull( instance );
+        validateNotAlreadyPartOfLifecycle( instance );
+        LifecycleInstance newInstance = new LifecycleInstance( instance );
+        List<LifecycleInstance> tmp = new ArrayList<>( instances );
+        int position = last != null ? tmp.size() - 1 : tmp.size();
+        tmp.add( position, newInstance );
+        instances = tmp;
+        bringToState( newInstance );
+        return newInstance;
+    }
+
+    private void validateNotAlreadyPartOfLifecycle( Lifecycle instance )
     {
         for ( LifecycleInstance candidate : instances )
         {
@@ -258,7 +253,31 @@ public class LifeSupport
                 throw new IllegalStateException( instance + " already added", candidate.addedWhere );
             }
         }
-        return true;
+    }
+
+    private LifecycleException stopInstances( List<LifecycleInstance> instances )
+    {
+        LifecycleException ex = null;
+        for ( int i = instances.size() - 1; i >= 0; i-- )
+        {
+            LifecycleInstance lifecycleInstance = instances.get( i );
+            try
+            {
+                lifecycleInstance.stop();
+            }
+            catch ( LifecycleException e )
+            {
+                if ( ex != null )
+                {
+                    ex.addSuppressed( e );
+                }
+                else
+                {
+                    ex = e;
+                }
+            }
+        }
+        return ex;
     }
 
     public synchronized boolean remove( Lifecycle instance )

@@ -28,15 +28,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -50,14 +47,12 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
@@ -68,15 +63,12 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.ProcedureTransaction;
 
@@ -104,8 +96,6 @@ public class DataSourceModule
     public final Supplier<InwardKernel> kernelAPI;
 
     public final Supplier<QueryExecutionEngine> queryExecutor;
-
-    public final KernelEventHandlers kernelEventHandlers;
 
     public final TransactionEventHandlers transactionEventHandlers;
 
@@ -148,10 +138,8 @@ public class DataSourceModule
 
         guard = createGuard( deps );
 
-        kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
-
         DatabasePanicEventGenerator databasePanicEventGenerator = deps.satisfyDependency(
-                new DatabasePanicEventGenerator( kernelEventHandlers ) );
+                new DatabasePanicEventGenerator( platformModule.eventHandlers ) );
 
         DatabaseHealth databaseHealth = deps.satisfyDependency( new DatabaseHealth( databasePanicEventGenerator,
                 logging.getInternalLog( DatabaseHealth.class ) ) );
@@ -169,7 +157,6 @@ public class DataSourceModule
                 editionModule.relationshipTypeTokenHolder,
                 editionModule.propertyKeyTokenHolder );
 
-        final CollectionsFactorySupplier collectionsFactorySupplier = createCollectionsFactorySupplier( config );
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
                 storeDir,
                 config,
@@ -190,7 +177,8 @@ public class DataSourceModule
                 databaseHealth,
                 platformModule.monitors.newMonitor( LogFileCreationMonitor.class ),
                 editionModule.headerInformationFactory,
-                startupStatistics, editionModule.commitProcessFactory,
+                startupStatistics,
+                editionModule.commitProcessFactory,
                 autoIndexing,
                 pageCache,
                 editionModule.constraintSemantics,
@@ -199,27 +187,16 @@ public class DataSourceModule
                 procedures,
                 editionModule.ioLimiter,
                 platformModule.availabilityGuard,
-                platformModule.clock, editionModule.accessCapability,
+                platformModule.clock,
+                editionModule.accessCapability,
                 platformModule.storeCopyCheckPointMutex,
                 platformModule.recoveryCleanupWorkCollector,
                 editionModule.idController,
                 platformModule.databaseInfo.operationalMode,
                 platformModule.versionContextSupplier,
-                collectionsFactorySupplier ) );
+                platformModule.collectionsFactorySupplier ) );
 
         dataSourceManager.register( neoStoreDataSource );
-
-        life.add( new VmPauseMonitorComponent( config, logging.getInternalLog( VmPauseMonitorComponent.class ), platformModule.jobScheduler ) );
-
-        life.add( new PublishPageCacheTracerMetricsAfterStart( platformModule.tracers.pageCursorTracerSupplier ) );
-
-        life.add( new DatabaseAvailability( platformModule.availabilityGuard, platformModule.transactionMonitor,
-                config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis() ) );
-
-        life.add( new StartupWaiter( platformModule.availabilityGuard, editionModule.transactionStartTimeout ) );
-
-        // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
-        life.add( kernelEventHandlers );
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
@@ -227,20 +204,6 @@ public class DataSourceModule
         ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, editionModule, this, deps,
                 editionModule.coreAPIAvailabilityGuard, editionModule.relationshipTypeTokenHolder );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
-    }
-
-    private CollectionsFactorySupplier createCollectionsFactorySupplier( Config config )
-    {
-        final TransactionStateMemoryAllocation allocation = config.get( GraphDatabaseSettings.tx_state_memory_allocation );
-        switch ( allocation )
-        {
-        case ON_HEAP:
-            return CollectionsFactorySupplier.ON_HEAP;
-        case OFF_HEAP:
-            return CollectionsFactorySupplier.OFF_HEAP;
-        default:
-            throw new IllegalArgumentException( "Unknown transaction state memory allocation value: " + allocation );
-        }
     }
 
     private Guard createGuard( Dependencies deps )
@@ -309,29 +272,4 @@ public class DataSourceModule
 
         return procedures;
     }
-
-    /**
-     * At end of startup, wait for instance to become available for transactions.
-     * <p>
-     * This helps users who expect to be able to access the instance after
-     * the constructor is run.
-     */
-    private static class StartupWaiter extends LifecycleAdapter
-    {
-        private final AvailabilityGuard availabilityGuard;
-        private final long timeout;
-
-        StartupWaiter( AvailabilityGuard availabilityGuard, long timeout )
-        {
-            this.availabilityGuard = availabilityGuard;
-            this.timeout = timeout;
-        }
-
-        @Override
-        public void start()
-        {
-            availabilityGuard.isAvailable( timeout );
-        }
-    }
-
 }
