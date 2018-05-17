@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
@@ -192,7 +193,7 @@ public class SchemaCache
 
             this.indexDescriptors = new HashMap<>();
             this.indexDescriptorsByLabel = new IntObjectHashMap<>();
-            this.dependantState = new HashMap<>();
+            this.dependantState = new ConcurrentHashMap<>();
             this.indexByProperty = new IntObjectHashMap<>();
             load( rules );
         }
@@ -206,7 +207,7 @@ public class SchemaCache
 
             this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );
             this.indexDescriptorsByLabel = IntObjectHashMap.newMap( schemaCacheState.indexDescriptorsByLabel );
-            this.dependantState = new HashMap<>();
+            this.dependantState = new ConcurrentHashMap<>();
             this.indexByProperty = IntObjectHashMap.newMap( schemaCacheState.indexByProperty );
         }
 
