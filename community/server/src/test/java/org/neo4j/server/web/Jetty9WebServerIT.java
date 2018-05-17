@@ -73,7 +73,7 @@ public class Jetty9WebServerIT extends ExclusiveServerTestBase
     @Test
     public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
-        new Jetty9WebServer( NullLogProvider.getInstance(), null ).stop();
+        new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults() ).stop();
     }
 
     @After

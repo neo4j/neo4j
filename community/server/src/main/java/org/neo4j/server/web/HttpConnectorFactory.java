@@ -50,6 +50,7 @@ public class HttpConnectorFactory
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setRequestHeaderSize( configuration.get( ServerSettings.maximum_request_header_size) );
         httpConfig.setResponseHeaderSize( configuration.get( ServerSettings.maximum_response_header_size) );
+        httpConfig.setSendServerVersion( false );
         return httpConfig;
     }
 

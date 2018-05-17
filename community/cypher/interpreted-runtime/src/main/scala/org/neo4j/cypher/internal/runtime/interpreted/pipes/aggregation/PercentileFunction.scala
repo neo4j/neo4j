@@ -88,7 +88,7 @@ class PercentileDiscFunction(value: Expression, percentile: Expression)
       else idx - 1
       temp(idx)
     } else {
-      null
+      Values.NO_VALUE
     }
   }
 }

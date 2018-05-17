@@ -48,6 +48,8 @@ public class StaticContentFilter implements Filter
             response.addHeader( "Pragma", "no-cache" );
             response.addHeader( "Content-Security-Policy", "frame-ancestors 'none'" );
             response.addHeader( "X-Frame-Options", "DENY" );
+            response.addHeader( "X-Content-Type-Options", "nosniff" );
+            response.addHeader( "X-XSS-Protection", "1; mode=block" );
         }
         filterChain.doFilter( servletRequest, servletResponse);
     }

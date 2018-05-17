@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.web;
 
+import org.junit.Test;
+
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,6 +49,8 @@ public class StaticContentFilterTest
         verify( response ).addHeader( "Pragma", "no-cache" );
         verify( response ).addHeader( "Content-Security-Policy", "frame-ancestors 'none'" );
         verify( response ).addHeader( "X-Frame-Options", "DENY" );
+        verify( response ).addHeader( "X-Content-Type-Options", "nosniff" );
+        verify( response ).addHeader( "X-XSS-Protection", "1; mode=block" );
         verify( filterChain ).doFilter( request, response );
     }
 
