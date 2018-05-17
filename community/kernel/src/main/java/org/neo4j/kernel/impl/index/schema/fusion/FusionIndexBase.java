@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.function.Function;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 /**
  * Acting as a simplifier for the multiplexing that is going in inside a fusion index. A fusion index consists of multiple parts,
@@ -37,85 +36,19 @@ import org.neo4j.kernel.api.index.IndexProvider;
  */
 public abstract class FusionIndexBase<T>
 {
-    static final int INSTANCE_COUNT = 5;
+    static Function<Value,ValueGroup> GROUP_OF = Value::valueGroup;
 
-    static final int STRING = 0;
-    static final int NUMBER = 1;
-    static final int SPATIAL = 2;
-    static final int TEMPORAL = 3;
-    static final int LUCENE = 4;
+    final SlotSelector slotSelector;
+    final InstanceSelector<T> instanceSelector;
 
-    final T[] instances;
-    final FusionIndexProvider.Selector selector;
-
-    FusionIndexBase( T[] instances, FusionIndexProvider.Selector selector )
+    FusionIndexBase( SlotSelector slotSelector, InstanceSelector<T> instanceSelector )
     {
-        assert instances.length == INSTANCE_COUNT;
-        this.instances = instances;
-        this.selector = selector;
-    }
-
-    <R,E extends Exception> R[] instancesAs( Class<R> cls, ThrowingFunction<T,R,E> converter ) throws E
-    {
-        return instancesAs( instances, cls, converter );
-    }
-
-    static <T,R,E extends Exception> R[] instancesAs( T[] instances, Class<R> cls, ThrowingFunction<T,R,E> converter ) throws E
-    {
-        R[] result = (R[]) Array.newInstance( cls, instances.length );
-        for ( int i = 0; i < instances.length; i++ )
-        {
-            result[i] = converter.apply( instances[i] );
-        }
-        return result;
-    }
-
-    /**
-     * NOTE: duplicate of {@link #forAll(ThrowingConsumer, Iterable)} to avoid having to wrap subjects of one form into another.
-     * There are some real use cases for passing in an array instead of {@link Iterable} out there...
-     *
-     * Method for calling a lambda function on many objects when it is expected that the function might
-     * throw an exception. First exception will be thrown and subsequent will be suppressed.
-     *
-     * For example, in FusionIndexAccessor:
-     * <pre>
-     *    public void drop() throws IOException
-     *    {
-     *        forAll( IndexAccessor::drop, firstAccessor, secondAccessor, thirdAccessor );
-     *    }
-     * </pre>
-     *
-     * @param consumer lambda function to call on each object passed
-     * @param subjects varargs array of objects to call the function on
-     * @param <E> the type of exception anticipated, inferred from the lambda
-     * @throws E if consumption fails with this exception
-     */
-    @SafeVarargs
-    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T... subjects ) throws E
-    {
-        // Duplicate this method for array to avoid creating a purely internal list to shove that in to the other method.
-        E exception = null;
-        for ( T subject : subjects )
-        {
-            try
-            {
-                consumer.accept( subject );
-            }
-            catch ( Exception e )
-            {
-                exception = Exceptions.chain( exception, (E) e );
-            }
-        }
-        if ( exception != null )
-        {
-            throw exception;
-        }
+        this.slotSelector = slotSelector;
+        this.instanceSelector = instanceSelector;
     }
 
     /**
      * See {@link #forAll(ThrowingConsumer, Object[])}
-     * NOTE: duplicate of {@link #forAll(ThrowingConsumer, Object[])} to avoid having to wrap subjects of one form into another.
-     * There are some real use cases for passing in an Iterable instead of array out there...
      *
      * Method for calling a lambda function on many objects when it is expected that the function might
      * throw an exception. First exception will be thrown and subsequent will be suppressed.
@@ -124,28 +57,21 @@ public abstract class FusionIndexBase<T>
      * <pre>
      *    public void drop() throws IOException
      *    {
-     *        forAll( IndexAccessor::drop, firstAccessor, secondAccessor, thirdAccessor );
+     *        forAll( IndexAccessor::drop, accessorList );
      *    }
      * </pre>
      *
      * @param consumer lambda function to call on each object passed
-     * @param subjects varargs array of objects to call the function on
+     * @param subjects {@link Iterable} of objects to call the function on
      * @param <E> the type of exception anticipated, inferred from the lambda
      * @throws E if consumption fails with this exception
      */
     public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, Iterable<T> subjects ) throws E
     {
         E exception = null;
-        for ( T subject : subjects )
+        for ( T instance : subjects )
         {
-            try
-            {
-                consumer.accept( subject );
-            }
-            catch ( Exception e )
-            {
-                exception = Exceptions.chain( exception, (E) e );
-            }
+            exception = consume( exception, consumer, instance );
         }
         if ( exception != null )
         {
@@ -153,18 +79,40 @@ public abstract class FusionIndexBase<T>
         }
     }
 
-    static void validateSelectorInstances( Object[] instances, int... aliveIndex )
+    /**
+     * See {@link #forAll(ThrowingConsumer, Iterable)}
+     *
+     * Method for calling a lambda function on many objects when it is expected that the function might
+     * throw an exception. First exception will be thrown and subsequent will be suppressed.
+     *
+     * For example, in FusionIndexAccessor:
+     * <pre>
+     *    public void drop() throws IOException
+     *    {
+     *        forAll( IndexAccessor::drop, firstAccessor, secondAccessor, thirdAccessor );
+     *    }
+     * </pre>
+     *
+     * @param consumer lambda function to call on each object passed
+     * @param subjects varargs array of objects to call the function on
+     * @param <E> the type of exception anticipated, inferred from the lambda
+     * @throws E if consumption fails with this exception
+     */
+    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T[] subjects ) throws E
     {
-        for ( int i = 0; i < instances.length; i++ )
+        forAll( consumer, Arrays.asList( subjects ) );
+    }
+
+    private static <E extends Exception, T> E consume( E exception, ThrowingConsumer<T,E> consumer, T instance )
+    {
+        try
         {
-            boolean expected = PrimitiveIntCollections.contains( aliveIndex, i );
-            boolean actual = instances[i] != IndexProvider.EMPTY;
-            if ( expected != actual )
-            {
-                throw new IllegalArgumentException(
-                        String.format( "Only indexes expected to be separated from IndexProvider.EMPTY are %s but was %s",
-                                Arrays.toString( aliveIndex ), Arrays.toString( instances ) ) );
-            }
+            consumer.accept( instance );
         }
+        catch ( Exception e )
+        {
+            exception = Exceptions.chain( exception, (E) e );
+        }
+        return exception;
     }
 }

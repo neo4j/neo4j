@@ -24,13 +24,12 @@ import java.io.IOException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 
 class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexUpdater
 {
-    FusionIndexUpdater( IndexUpdater[] updaters, Selector selector )
+    FusionIndexUpdater( SlotSelector slotSelector, LazyInstanceSelector<IndexUpdater> instanceSelector )
     {
-        super( updaters, selector );
+        super( slotSelector, instanceSelector );
     }
 
     @Override
@@ -39,14 +38,14 @@ class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexU
         switch ( update.updateMode() )
         {
         case ADDED:
-            selector.select( instances, update.values() ).process( update );
+            instanceSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).process( update );
             break;
         case CHANGED:
             // Hmm, here's a little conundrum. What if we change from a value that goes into native
             // to a value that goes into fallback, or vice versa? We also don't want to blindly pass
             // all CHANGED updates to both updaters since not all values will work in them.
-            IndexUpdater from = selector.select( instances, update.beforeValues() );
-            IndexUpdater to = selector.select( instances, update.values() );
+            IndexUpdater from = instanceSelector.select( slotSelector.selectSlot( update.beforeValues(), GROUP_OF ) );
+            IndexUpdater to = instanceSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) );
             // There are two cases:
             // - both before/after go into the same updater --> pass update into that updater
             if ( from == to )
@@ -61,7 +60,7 @@ class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexU
             }
             break;
         case REMOVED:
-            selector.select( instances, update.values() ).process( update );
+            instanceSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).process( update );
             break;
         default:
             throw new IllegalArgumentException( "Unknown update mode" );
@@ -73,7 +72,7 @@ class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexU
     {
         try
         {
-            forAll( IndexUpdater::close, instances );
+            instanceSelector.close( IndexUpdater::close );
         }
         catch ( IOException | IndexEntryConflictException | RuntimeException e )
         {

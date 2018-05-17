@@ -26,7 +26,6 @@ import java.util.Arrays;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,20 +39,16 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.instancesAs;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
 
 /**
  * This {@link IndexProvider index provider} act as one logical index but is backed by four physical
@@ -61,26 +56,9 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.instance
  */
 public class FusionIndexProvider extends IndexProvider
 {
-    interface Selector
-    {
-        void validateSatisfied( Object[] instances );
-
-        int selectSlot( Value... values );
-
-        default <T> T select( T[] instances, Value... values )
-        {
-            return instances[selectSlot( values )];
-        }
-
-        /**
-         * @return Appropriate IndexReader for given predicate or null if predicate needs all readers.
-         */
-        IndexReader select( IndexReader[] instances, IndexQuery... predicates );
-    }
-
     private final boolean archiveFailedIndex;
-    private final IndexProvider[] providers = new IndexProvider[INSTANCE_COUNT];
-    private final Selector selector;
+    private final InstanceSelector<IndexProvider> providers;
+    private final SlotSelector slotSelector;
     private final DropAction dropAction;
 
     public FusionIndexProvider(
@@ -90,7 +68,7 @@ public class FusionIndexProvider extends IndexProvider
             IndexProvider spatialProvider,
             IndexProvider temporalProvider,
             IndexProvider luceneProvider,
-            Selector selector,
+            SlotSelector slotSelector,
             Descriptor descriptor,
             int priority,
             IndexDirectoryStructure.Factory directoryStructure,
@@ -98,15 +76,18 @@ public class FusionIndexProvider extends IndexProvider
             boolean archiveFailedIndex )
     {
         super( descriptor, priority, directoryStructure );
-        fillProvidersArray( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
-        selector.validateSatisfied( providers );
+        IndexProvider[] providers = new IndexProvider[INSTANCE_COUNT];
+        fillProvidersArray( providers, stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
+        slotSelector.validateSatisfied( providers );
         this.archiveFailedIndex = archiveFailedIndex;
-        this.selector = selector;
+        this.slotSelector = slotSelector;
+        this.providers = new InstanceSelector<>( providers );
         this.dropAction = new FileSystemDropAction( fs, directoryStructure() );
     }
 
-    private void fillProvidersArray( IndexProvider stringProvider, IndexProvider numberProvider, IndexProvider spatialProvider, IndexProvider temporalProvider,
-            IndexProvider luceneProvider )
+    private void fillProvidersArray( IndexProvider[] providers,
+            IndexProvider stringProvider, IndexProvider numberProvider, IndexProvider spatialProvider,
+            IndexProvider temporalProvider, IndexProvider luceneProvider )
     {
         providers[STRING] = stringProvider;
         providers[NUMBER] = numberProvider;
@@ -118,24 +99,25 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        return new FusionIndexPopulator( instancesAs( providers, IndexPopulator.class,
-                provider -> provider.getPopulator( indexId, descriptor, samplingConfig ) ), selector, indexId, dropAction, archiveFailedIndex );
+        IndexPopulator[] populators =
+                providers.instancesAs( new IndexPopulator[INSTANCE_COUNT], provider -> provider.getPopulator( indexId, descriptor, samplingConfig ) );
+        return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), indexId, dropAction, archiveFailedIndex );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new FusionIndexAccessor(
-                instancesAs( providers, IndexAccessor.class, provider -> provider.getOnlineAccessor( indexId, descriptor, samplingConfig ) ),
-                selector, indexId, descriptor, dropAction );
+        IndexAccessor[] accessors =
+                providers.instancesAs( new IndexAccessor[INSTANCE_COUNT], provider -> provider.getOnlineAccessor( indexId, descriptor, samplingConfig ) );
+        return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), indexId, descriptor, dropAction );
     }
 
     @Override
     public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
-        forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, indexId, descriptor ), providers );
+        providers.forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, indexId, descriptor ) );
         String failure = builder.toString();
         if ( !failure.isEmpty() )
         {
@@ -162,7 +144,7 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
-        InternalIndexState[] states = FusionIndexBase.instancesAs( providers, InternalIndexState.class, p -> p.getInitialState( indexId, descriptor ) );
+        InternalIndexState[] states = providers.instancesAs( new InternalIndexState[INSTANCE_COUNT], p -> p.getInitialState( indexId, descriptor ) );
         if ( Arrays.stream( states ).anyMatch( state -> state == FAILED ) )
         {
             // One of the state is FAILED, the whole state must be considered FAILED
@@ -180,11 +162,8 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        IndexCapability[] capabilities = new IndexCapability[providers.length];
-        for ( int i = 0; i < providers.length; i++ )
-        {
-            capabilities[i] = providers[i].getCapability( schemaIndexDescriptor );
-        }
+        IndexCapability[] capabilities =
+                providers.instancesAs( new IndexCapability[INSTANCE_COUNT], provider -> provider.getCapability( schemaIndexDescriptor ) );
         return new UnionIndexCapability( capabilities )
         {
             @Override
@@ -193,7 +172,7 @@ public class FusionIndexProvider extends IndexProvider
                 // No order capability when combining results from different indexes
                 if ( valueCategories.length == 1 && valueCategories[0] == ValueCategory.UNKNOWN )
                 {
-                    return new IndexOrder[0];
+                    return ORDER_NONE;
                 }
                 // Otherwise union of capabilities
                 return super.orderCapability( valueCategories );

@@ -102,9 +102,8 @@ public interface IndexPopulator
      * @param accessor accesses property data if implementation needs to be able look up property values while populating.
      * @return an {@link IndexUpdater} which will funnel changes that happen concurrently with index population
      * into the population and incorporating them as part of the index population.
-     * @throws IOException on I/O error.
      */
-    IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException;
+    IndexUpdater newPopulatingUpdater( PropertyAccessor accessor );
 
     /**
      * Close this populator and releases any resources related to it.

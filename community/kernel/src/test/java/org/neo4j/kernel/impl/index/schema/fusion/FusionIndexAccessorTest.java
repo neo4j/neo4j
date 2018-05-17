@@ -36,8 +36,11 @@ import java.util.Set;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
@@ -53,21 +56,22 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.helpers.ArrayUtil.without;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @RunWith( Parameterized.class )
@@ -131,7 +135,8 @@ public class FusionIndexAccessorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexAccessor = new FusionIndexAccessor( accessors, fusionVersion.selector(), indexId, mock( SchemaIndexDescriptor.class ), dropAction );
+        fusionIndexAccessor = new FusionIndexAccessor( fusionVersion.slotSelector(), new InstanceSelector<>( accessors ), indexId,
+                mock( SchemaIndexDescriptor.class ), dropAction );
     }
 
     private void resetMocks()
@@ -246,20 +251,22 @@ public class FusionIndexAccessorTest
     @Test
     public void closeMustThrowIfOneThrow() throws Exception
     {
-        for ( IndexAccessor accessor : aliveAccessors )
+        for ( int i = 0; i < aliveAccessors.length; i++ )
         {
+            IndexAccessor accessor = aliveAccessors[i];
             verifyFusionCloseThrowOnSingleCloseThrow( accessor, fusionIndexAccessor );
-            resetMocks();
+            initiateMocks();
         }
     }
 
     @Test
     public void closeMustCloseOthersIfOneThrow() throws Exception
     {
-        for ( IndexAccessor accessor : aliveAccessors )
+        for ( int i = 0; i < aliveAccessors.length; i++ )
         {
+            IndexAccessor accessor = aliveAccessors[i];
             verifyOtherIsClosedOnSingleThrow( accessor, fusionIndexAccessor, without( aliveAccessors, accessor ) );
-            resetMocks();
+            initiateMocks();
         }
     }
 
@@ -496,6 +503,30 @@ public class FusionIndexAccessorTest
         fusionIndexAccessor.validateBeforeCommit( new Value[] {stringValue( "test value" )} );
 
         // then no exception was thrown
+    }
+
+    @Test
+    public void shouldInstantiateReadersLazily()
+    {
+        // when getting a new reader, no part-reader should be instantiated
+        IndexReader fusionReader = fusionIndexAccessor.newReader();
+        for ( int j = 0; j < aliveAccessors.length; j++ )
+        {
+            // then
+            verifyNoMoreInteractions( aliveAccessors[j] );
+        }
+    }
+
+    @Test
+    public void shouldInstantiateUpdatersLazily()
+    {
+        // when getting a new reader, no part-reader should be instantiated
+        IndexUpdater updater = fusionIndexAccessor.newUpdater( IndexUpdateMode.ONLINE );
+        for ( int j = 0; j < aliveAccessors.length; j++ )
+        {
+            // then
+            verifyNoMoreInteractions( aliveAccessors[j] );
+        }
     }
 
     static void assertResultContainsAll( Set<Long> result, List<Long> expectedEntries )

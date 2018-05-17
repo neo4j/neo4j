@@ -21,10 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import org.neo4j.function.ThrowingSupplier;
@@ -46,7 +42,7 @@ import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zoned
  *
  * @param <T> Type of parts
  */
-class TemporalIndexCache<T> implements Iterable<T>
+class TemporalIndexCache<T> extends IndexPartsCache<TemporalIndexCache.Offset,T>
 {
     private final Factory<T> factory;
 
@@ -59,11 +55,6 @@ class TemporalIndexCache<T> implements Iterable<T>
         zonedTime,
         duration
     }
-
-    private final ConcurrentHashMap<Offset,T> cache = new ConcurrentHashMap<>();
-    private final Lock instantiateCloseLock = new ReentrantLock();
-    // guarded by instantiateCloseLock
-    private boolean closed;
 
     TemporalIndexCache( Factory<T> factory )
     {
@@ -163,21 +154,6 @@ class TemporalIndexCache<T> implements Iterable<T>
         return cachedValue != null ? function.apply( cachedValue ) : orElse;
     }
 
-    private void assertOpen()
-    {
-        if ( closed )
-        {
-            throw new IllegalStateException( this + " is already closed" );
-        }
-    }
-
-    void shutInstantiateCloseLock()
-    {
-        instantiateCloseLock.lock();
-        closed = true;
-        instantiateCloseLock.unlock();
-    }
-
     private T getOrCreatePart( Offset key, ThrowingSupplier<T,IOException> factory ) throws UncheckedIOException
     {
         T existing = cache.get( key );
@@ -256,12 +232,6 @@ class TemporalIndexCache<T> implements Iterable<T>
         {
             throw new RuntimeException( e );
         }
-    }
-
-    @Override
-    public Iterator<T> iterator()
-    {
-        return cache.values().iterator();
     }
 
     /**

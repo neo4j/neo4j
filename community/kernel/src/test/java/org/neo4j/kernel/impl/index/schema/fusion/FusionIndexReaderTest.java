@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
+import java.util.function.IntFunction;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -53,15 +54,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
 
 @RunWith( Parameterized.class )
 public class FusionIndexReaderTest
@@ -121,7 +122,16 @@ public class FusionIndexReaderTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexReader = new FusionIndexReader( readers, fusionVersion.selector(), SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
+        fusionIndexReader = new FusionIndexReader( fusionVersion.slotSelector(), new LazyInstanceSelector<>( readers, throwingFactory() ),
+                SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
+    }
+
+    private IntFunction<IndexReader> throwingFactory()
+    {
+        return i ->
+        {
+            throw new IllegalStateException( "All readers should exist already" );
+        };
     }
 
     /* close */
@@ -361,6 +371,39 @@ public class FusionIndexReaderTest
         for ( long i = 0L; i < lastId; i++ )
         {
             assertTrue( "Expected to contain " + i + ", but was " + resultSet, resultSet.contains( i ) );
+        }
+    }
+
+    @Test
+    public void shouldInstantiatePartLazilyForSpecificValueGroupQuery() throws IndexNotApplicableKernelException
+    {
+        // given
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
+        for ( int i = 0; i < readers.length; i++ )
+        {
+            if ( readers[i] != IndexReader.EMPTY )
+            {
+                // when
+                Value value = values[i][0];
+                fusionIndexReader.query( IndexQuery.exact( 0, value ) );
+                for ( int j = 0; j < readers.length; j++ )
+                {
+                    // then
+                    if ( readers[j] != IndexReader.EMPTY )
+                    {
+                        if ( i == j )
+                        {
+                            verify( readers[i] ).query( any( IndexQuery.class ) );
+                        }
+                        else
+                        {
+                            verifyNoMoreInteractions( readers[j] );
+                        }
+                    }
+                }
+            }
+
+            initiateMocks();
         }
     }
 
