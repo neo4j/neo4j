@@ -144,7 +144,7 @@ public class BackupProtocolServiceIT
     private static final Label LABEL = Label.label( "LABEL" );
 
     private final Monitors monitors = new Monitors();
-    private final IOLimiter limiter = IOLimiter.unlimited();
+    private final IOLimiter limiter = IOLimiter.UNLIMITED;
     private FileSystemAbstraction fileSystem;
     private Path storeDir;
     private Path backupDir;

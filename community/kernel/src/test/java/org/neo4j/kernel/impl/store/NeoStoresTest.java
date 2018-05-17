@@ -607,7 +607,7 @@ public class NeoStoresTest
         assertEquals( 10L, metaDataStore.getLatestConstraintIntroducingTx() );
 
         // when
-        neoStores.flush( IOLimiter.unlimited() );
+        neoStores.flush( IOLimiter.UNLIMITED );
         neoStores.close();
         neoStores = sf.openAllNeoStores();
 

@@ -151,7 +151,7 @@ public class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.force( IOLimiter.unlimited() );
+        outer.force( IOLimiter.UNLIMITED );
     }
 
     @Test( expected = IllegalStateException.class )
@@ -164,7 +164,7 @@ public class ContractCheckingIndexProxyTest
         // WHEN
         outer.start();
         outer.close();
-        outer.force( IOLimiter.unlimited() );
+        outer.force( IOLimiter.UNLIMITED );
     }
 
     @Test( expected = /* THEN */ IllegalStateException.class )
@@ -297,7 +297,7 @@ public class ContractCheckingIndexProxyTest
         actionThreadReference.set( actionThread );
 
         outer.start();
-        Thread thread = runInSeparateThread( () -> outer.force( IOLimiter.unlimited() ) );
+        Thread thread = runInSeparateThread( () -> outer.force( IOLimiter.UNLIMITED ) );
 
         ThreadTestUtils.awaitThreadState( actionThread, TEST_TIMEOUT, Thread.State.TIMED_WAITING );
         latch.countDown();

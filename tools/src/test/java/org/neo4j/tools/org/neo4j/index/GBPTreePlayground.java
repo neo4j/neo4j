@@ -132,7 +132,7 @@ public class GBPTreePlayground
         @Override
         public void run( String[] args, PrintStream out ) throws Exception
         {
-            tree.checkpoint( IOLimiter.unlimited() );
+            tree.checkpoint( IOLimiter.UNLIMITED );
         }
         @Override
         public String toString()

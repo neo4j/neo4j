@@ -269,7 +269,20 @@ public class CheckPointerImplTest
     @Test
     public void mustUseIoLimiterFromFlushing() throws Throwable
     {
-        limiter = ( stamp, ios, flushable ) -> 42;
+        limiter = new IOLimiter()
+        {
+            @Override
+            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+            {
+                return 42;
+            }
+
+            @Override
+            public boolean isLimited()
+            {
+                return true;
+            }
+        };
         when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true, false );
         mockTxIdStore();
         CheckPointerImpl checkPointing = checkPointer();
@@ -297,6 +310,12 @@ public class CheckPointerImplTest
             {
                 doneDisablingLimits.set( true );
             }
+
+            @Override
+            public boolean isLimited()
+            {
+                return doneDisablingLimits.get();
+            }
         };
         mockTxIdStore();
         CheckPointerImpl checkPointer = checkPointer();
@@ -321,6 +340,12 @@ public class CheckPointerImplTest
             public void enableLimit()
             {
                 doneDisablingLimits.set( true );
+            }
+
+            @Override
+            public boolean isLimited()
+            {
+                return doneDisablingLimits.get();
             }
         };
         mockTxIdStore();
@@ -356,6 +381,12 @@ public class CheckPointerImplTest
             public void enableLimit()
             {
                 limitDisableCounter.getAndDecrement();
+            }
+
+            @Override
+            public boolean isLimited()
+            {
+                return limitDisableCounter.get() != 0;
             }
         };
 

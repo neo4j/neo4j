@@ -584,7 +584,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             {
                 try
                 {
-                    index.checkpoint( IOLimiter.unlimited() );
+                    index.checkpoint( IOLimiter.UNLIMITED );
                     // Sleep a little in between checkpoints
                     MILLISECONDS.sleep( 20L );
                 }

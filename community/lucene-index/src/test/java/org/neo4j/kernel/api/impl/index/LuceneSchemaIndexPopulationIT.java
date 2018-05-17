@@ -106,7 +106,7 @@ public class LuceneSchemaIndexPopulationIT
             try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex, descriptor ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
-                indexAccessor.force( IOLimiter.unlimited() );
+                indexAccessor.force( IOLimiter.UNLIMITED );
 
                 // now index is online and should contain updates data
                 assertTrue( uniqueIndex.isOnline() );

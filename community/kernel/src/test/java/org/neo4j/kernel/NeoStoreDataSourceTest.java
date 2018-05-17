@@ -118,7 +118,7 @@ public class NeoStoreDataSourceTest
 
         ds.stop();
         ds.shutdown();
-        verify( pageCache ).flushAndForce( IOLimiter.unlimited() );
+        verify( pageCache ).flushAndForce( IOLimiter.UNLIMITED );
     }
 
     @Test
@@ -134,7 +134,7 @@ public class NeoStoreDataSourceTest
 
         ds.stop();
         ds.shutdown();
-        verify( pageCache ).flushAndForce( IOLimiter.unlimited() );
+        verify( pageCache ).flushAndForce( IOLimiter.UNLIMITED );
     }
 
     @Test
@@ -154,7 +154,7 @@ public class NeoStoreDataSourceTest
 
         ds.stop();
         ds.shutdown();
-        verify( pageCache, never() ).flushAndForce( IOLimiter.unlimited() );
+        verify( pageCache, never() ).flushAndForce( IOLimiter.UNLIMITED );
     }
 
     @Test

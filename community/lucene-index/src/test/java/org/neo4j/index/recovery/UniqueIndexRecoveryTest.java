@@ -248,6 +248,6 @@ public class UniqueIndexRecoveryTest
 
     private void flushAll()
     {
-        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.unlimited() );
+        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.UNLIMITED );
     }
 }

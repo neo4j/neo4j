@@ -57,8 +57,7 @@ public class ConfigurableIOLimiterTest
 
     private void createIOLimiter( int limit )
     {
-        Map<String, String> settings = stringMap(
-                GraphDatabaseSettings.check_point_iops_limit.name(), "" + limit );
+        Map<String,String> settings = stringMap( GraphDatabaseSettings.check_point_iops_limit.name(), "" + limit );
         createIOLimiter( Config.defaults( settings ) );
     }
 
@@ -229,5 +228,68 @@ public class ConfigurableIOLimiterTest
         long stamp = IOLimiter.INITIAL_STAMP;
         repeatedlyCallMaybeLimitIO( limiter, stamp, 10 );
         assertThat( pauseNanosCounter.get(), greaterThan( TimeUnit.SECONDS.toNanos( 9 ) ) );
+    }
+
+    @Test
+    public void configuredLimitMustReflectCurrentState()
+    {
+        createIOLimiter( 100 );
+
+        assertThat( limiter.isLimited(), is( true ) );
+        multipleDisableShouldReportUnlimited( limiter );
+        assertThat( limiter.isLimited(), is( true ) );
+    }
+
+    @Test
+    public void configuredDisabledLimitShouldBeUnlimited()
+    {
+        createIOLimiter( -1 );
+
+        assertThat( limiter.isLimited(), is( false ) );
+        multipleDisableShouldReportUnlimited( limiter );
+        assertThat( limiter.isLimited(), is( false ) );
+    }
+
+    @Test
+    public void unlimitedShouldAlwaysBeUnlimited()
+    {
+        IOLimiter limiter = IOLimiter.UNLIMITED;
+
+        assertThat( limiter.isLimited(), is( false ) );
+        multipleDisableShouldReportUnlimited( limiter );
+        assertThat( limiter.isLimited(), is( false ) );
+
+        limiter.enableLimit();
+        try
+        {
+            assertThat( limiter.isLimited(), is( false ) );
+        }
+        finally
+        {
+            limiter.disableLimit();
+        }
+    }
+
+    private static void multipleDisableShouldReportUnlimited( IOLimiter limiter )
+    {
+        limiter.disableLimit();
+        try
+        {
+            assertThat( limiter.isLimited(), is( false ) );
+            limiter.disableLimit();
+            try
+            {
+                assertThat( limiter.isLimited(), is( false ) );
+            }
+            finally
+            {
+                limiter.enableLimit();
+            }
+            assertThat( limiter.isLimited(), is( false ) );
+        }
+        finally
+        {
+            limiter.enableLimit();
+        }
     }
 }

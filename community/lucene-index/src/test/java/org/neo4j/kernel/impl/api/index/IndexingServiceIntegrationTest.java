@@ -206,7 +206,7 @@ public class IndexingServiceIntegrationTest
 
         expectedException.expect( UnderlyingStorageException.class );
         expectedException.expectMessage( "Unable to force" );
-        indexingService.forceAll( IOLimiter.unlimited() );
+        indexingService.forceAll( IOLimiter.UNLIMITED );
     }
 
     private PropertyKeyTokenHolder getPropertyKeyTokenHolder( GraphDatabaseService database )

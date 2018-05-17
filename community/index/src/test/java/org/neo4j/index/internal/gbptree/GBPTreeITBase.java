@@ -140,7 +140,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
                     }
                 }
 
-                index.checkpoint( IOLimiter.unlimited() );
+                index.checkpoint( IOLimiter.UNLIMITED );
                 randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
             }
 

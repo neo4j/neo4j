@@ -258,7 +258,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     @Override
     public void flushAndForce() throws IOException
     {
-        flushAndForce( IOLimiter.unlimited() );
+        flushAndForce( IOLimiter.UNLIMITED );
     }
 
     @Override
@@ -288,7 +288,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
         try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
         {
-            flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOLimiter.unlimited() );
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOLimiter.UNLIMITED );
             syncDevice();
         }
         pageCache.clearEvictorException();

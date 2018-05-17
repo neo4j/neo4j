@@ -29,7 +29,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -147,7 +148,7 @@ public class MuninnPageCache implements PageCache
     // the constructor of the PageCache, because the Executors have too many configuration options, many of which are
     // highly troublesome for our use case; caller-runs, bounded submission queues, bounded thread count, non-daemon
     // thread factories, etc.
-    private static final Executor backgroundThreadExecutor = BackgroundThreadExecutor.INSTANCE;
+    private static final BackgroundThreadExecutor backgroundThreadExecutor = BackgroundThreadExecutor.INSTANCE;
 
     private static final List<OpenOption> ignoredOpenOptions = Arrays.asList( (OpenOption) StandardOpenOption.APPEND,
             StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SPARSE );
@@ -568,7 +569,7 @@ public class MuninnPageCache implements PageCache
     @Override
     public void flushAndForce() throws IOException
     {
-        flushAndForce( IOLimiter.unlimited() );
+        flushAndForce( IOLimiter.UNLIMITED );
     }
 
     @Override
@@ -578,39 +579,84 @@ public class MuninnPageCache implements PageCache
         {
             throw new IllegalArgumentException( "IOLimiter cannot be null" );
         }
-        assertNotClosed();
         List<PagedFile> files = listExistingMappings();
-        flushAllPages( files, limiter );
+
+        try ( MajorFlushEvent ignored = pageCacheTracer.beginCacheFlush() )
+        {
+            if ( limiter.isLimited() )
+            {
+                flushAllPages( files, limiter );
+            }
+            else
+            {
+                flushAllPagesParallel( files, limiter );
+            }
+            syncDevice();
+        }
         clearEvictorException();
     }
 
     private void flushAllPages( List<PagedFile> files, IOLimiter limiter ) throws IOException
     {
-        try ( MajorFlushEvent cacheFlush = pageCacheTracer.beginCacheFlush() )
+        for ( PagedFile file : files )
         {
-            for ( PagedFile file : files )
+            flushFile( (MuninnPagedFile) file, limiter );
+        }
+    }
+
+    private void flushAllPagesParallel( List<PagedFile> files, IOLimiter limiter ) throws IOException
+    {
+        List<Future<?>> flushes = new ArrayList<>( files.size() );
+
+        // Submit all flushes to the background thread
+        for ( PagedFile file : files )
+        {
+            flushes.add( backgroundThreadExecutor.submit( () ->
             {
-                MuninnPagedFile muninnPagedFile = (MuninnPagedFile) file;
-                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper ) )
+                try
                 {
-                    FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
-                    muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
+                    flushFile( (MuninnPagedFile) file, limiter );
                 }
-                catch ( ClosedChannelException e )
+                catch ( IOException e )
                 {
-                    if ( muninnPagedFile.getRefCount() > 0 )
-                    {
-                        // The file is not supposed to be closed, since we have a positive ref-count, yet we got a
-                        // ClosedChannelException anyway? It's an odd situation, so let's tell the outside world about
-                        // this failure.
-                        throw e;
-                    }
-                    // Otherwise: The file was closed while we were trying to flush it. Since unmapping implies a flush
-                    // anyway, we can safely assume that this is not a problem. The file was flushed, and it doesn't
-                    // really matter how that happened. We'll ignore this exception.
+                    throw new UncheckedIOException( e );
                 }
+            } ) );
+        }
+
+        // Wait for all to complete
+        for ( Future<?> flush : flushes )
+        {
+            try
+            {
+                flush.get();
             }
-            syncDevice();
+            catch ( InterruptedException | ExecutionException e )
+            {
+                throw new IOException( e );
+            }
+        }
+    }
+
+    private void flushFile( MuninnPagedFile muninnPagedFile,  IOLimiter limiter ) throws IOException
+    {
+        try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper ) )
+        {
+            FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
+            muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
+        }
+        catch ( ClosedChannelException e )
+        {
+            if ( muninnPagedFile.getRefCount() > 0 )
+            {
+                // The file is not supposed to be closed, since we have a positive ref-count, yet we got a
+                // ClosedChannelException anyway? It's an odd situation, so let's tell the outside world about
+                // this failure.
+                throw e;
+            }
+            // Otherwise: The file was closed while we were trying to flush it. Since unmapping implies a flush
+            // anyway, we can safely assume that this is not a problem. The file was flushed, and it doesn't
+            // really matter how that happened. We'll ignore this exception.
         }
     }
 
