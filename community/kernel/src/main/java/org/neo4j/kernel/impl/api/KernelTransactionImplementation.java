@@ -52,6 +52,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
@@ -63,7 +64,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -98,8 +98,7 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
@@ -141,7 +140,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionMonitor transactionMonitor;
     private final PageCursorTracerSupplier cursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
-    private final StoreReadLayer storeLayer;
+    private final StorageReader storageReader;
     private final ClockContext clocks;
     private final AccessCapability accessCapability;
 
@@ -152,7 +151,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
     private final KernelStatement currentStatement;
-    private final StorageStatement storageStatement;
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
@@ -203,7 +201,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
-        this.storeLayer = storageEngine.storeReadLayer();
+        this.storageReader = storageEngine.newReader();
         this.storageEngine = storageEngine;
         this.explicitIndexTxStateSupplier = explicitIndexTxStateSupplier;
         this.pool = pool;
@@ -211,22 +209,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.versionContextSupplier = versionContextSupplier;
-        this.storageStatement = storeLayer.newStatement();
-        this.currentStatement = new KernelStatement( this, this, storageStatement,
+        this.currentStatement = new KernelStatement( this, this, storageReader,
                 lockTracer, statementOperations, this.clocks,
                 versionContextSupplier );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
-                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore,
+                new AllStoreHolder( storageReader, this, cursors, explicitIndexStore,
                         procedures, schemaState );
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, indexingService ),
-                        storageStatement,
-                        this, new KernelToken( storeLayer, this ), cursors, autoIndexing, constraintIndexCreator,
+                        new IndexTxStateUpdater( storageReader, allStoreHolder, indexingService ), storageReader,
+                        this, new KernelToken( storageReader, this ), cursors, autoIndexing, constraintIndexCreator,
                         constraintSemantics );
         this.collectionsFactory = collectionsFactorySupplier.create();
     }
@@ -613,7 +609,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 try
                 {
-                    hooksState = hooks.beforeCommit( txState, this, storageEngine.storeReadLayer(), storageStatement );
+                    hooksState = hooks.beforeCommit( txState, this, storageReader );
                     if ( hooksState != null && hooksState.failed() )
                     {
                         Throwable cause = hooksState.failure();
@@ -638,8 +634,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 Collection<StorageCommand> extractedCommands = new ArrayList<>();
                 storageEngine.createCommands(
                         extractedCommands,
-                        txState,
-                        storageStatement,
+                        txState, storageReader,
                         commitLocks,
                         lastTransactionIdWhenStarted );
                 if ( hasExplicitIndexChanges() )
@@ -722,13 +717,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         @Override
                         public void visitCreatedNode( long id )
                         {
-                            storeLayer.releaseNode( id );
+                            storageReader.releaseNode( id );
                         }
 
                         @Override
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
                         {
-                            storeLayer.releaseRelationship( id );
+                            storageReader.releaseRelationship( id );
                         }
                     } );
                 }
@@ -1021,7 +1016,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void dispose()
     {
-        storageStatement.close();
+        storageReader.close();
     }
 
     /**

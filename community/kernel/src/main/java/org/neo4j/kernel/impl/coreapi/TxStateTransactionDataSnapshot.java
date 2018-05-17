@@ -50,8 +50,7 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -69,8 +68,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 {
     private final ReadableTransactionState state;
     private final EmbeddedProxySPI proxySpi;
-    private final StorageStatement storeStatement;
-    private final StoreReadLayer store;
+    private final StorageReader store;
     private final KernelTransaction transaction;
 
     private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
@@ -84,12 +82,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
     public TxStateTransactionDataSnapshot(
             ReadableTransactionState state, EmbeddedProxySPI proxySpi,
-            StoreReadLayer storeReadLayer, StorageStatement storageStatement, KernelTransaction transaction )
+            StorageReader storageReader, KernelTransaction transaction )
     {
         this.state = state;
         this.proxySpi = proxySpi;
-        this.storeStatement = storageStatement;
-        this.store = storeReadLayer;
+        this.store = storageReader;
         this.transaction = transaction;
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
@@ -206,12 +203,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             state.addedAndRemovedNodes().getRemoved().each( nodeId ->
             {
-                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
+                try ( Cursor<NodeItem> node = store.acquireSingleNodeCursor( nodeId ) )
                 {
                     if ( node.next() )
                     {
                         Lock lock = node.get().lock();
-                        try ( Cursor<PropertyItem> properties = storeStatement
+                        try ( Cursor<PropertyItem> properties = store
                                 .acquirePropertyCursor( node.get().nextPropertyId(), lock, ALWAYS_OPEN ) )
                         {
                             while ( properties.next() )
@@ -243,12 +240,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             state.addedAndRemovedRelationships().getRemoved().each( relId ->
             {
                 Relationship relationshipProxy = relationship( relId );
-                try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
+                try ( Cursor<RelationshipItem> relationship = store.acquireSingleRelationshipCursor( relId ) )
                 {
                     if ( relationship.next() )
                     {
                         Lock lock = relationship.get().lock();
-                        try ( Cursor<PropertyItem> properties = storeStatement
+                        try ( Cursor<PropertyItem> properties = store
                                 .acquirePropertyCursor( relationship.get().nextPropertyId(), lock, ALWAYS_OPEN ) )
                         {
                             while ( properties.next() )
@@ -384,7 +381,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return Values.NO_VALUE;
         }
 
-        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId() ) )
+        try ( Cursor<NodeItem> node = store.acquireSingleNodeCursor( nodeState.getId() ) )
         {
             if ( !node.next() )
             {
@@ -392,7 +389,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
 
             Lock lock = node.get().lock();
-            try ( Cursor<PropertyItem> properties = storeStatement
+            try ( Cursor<PropertyItem> properties = store
                     .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock, ALWAYS_OPEN ) )
             {
                 if ( properties.next() )
@@ -412,7 +409,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return Values.NO_VALUE;
         }
 
-        try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor(
+        try ( Cursor<RelationshipItem> relationship = store.acquireSingleRelationshipCursor(
                 relState.getId() ) )
         {
             if ( !relationship.next() )
@@ -421,7 +418,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
 
             Lock lock = relationship.get().lock();
-            try ( Cursor<PropertyItem> properties = storeStatement
+            try ( Cursor<PropertyItem> properties = store
                     .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock, ALWAYS_OPEN ) )
             {
                 if ( properties.next() )

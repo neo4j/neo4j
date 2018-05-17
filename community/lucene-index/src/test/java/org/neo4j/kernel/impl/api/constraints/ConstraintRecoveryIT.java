@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,7 +43,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 
 public class ConstraintRecoveryIT

@@ -62,8 +62,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -98,7 +97,7 @@ public class OperationsLockTest
     private TransactionState txState;
     private AllStoreHolder allStoreHolder;
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
-    private StoreReadLayer storeReadLayer;
+    private StorageReader storageReader;
     private ConstraintIndexCreator constraintIndexCreator;
 
     @Before
@@ -124,22 +123,21 @@ public class OperationsLockTest
         AutoIndexOperations autoIndexOperations = mock( AutoIndexOperations.class );
         when( autoindexing.nodes() ).thenReturn( autoIndexOperations );
         when( autoindexing.relationships() ).thenReturn( autoIndexOperations );
-        StorageStatement storageStatement = mock( StorageStatement.class );
         StorageEngine engine = mock( StorageEngine.class );
-        storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
-        when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
-        when( storeReadLayer.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
-        when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
-        allStoreHolder = new AllStoreHolder( engine, storageStatement,  transaction, cursors, mock(
+        storageReader = mock( StorageReader.class );
+        when( storageReader.nodeExists( anyLong() ) ).thenReturn( true );
+        when( storageReader.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
+        when( storageReader.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
+        when( engine.newReader() ).thenReturn( storageReader );
+        allStoreHolder = new AllStoreHolder( storageReader,  transaction, cursors, mock(
                 ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
-        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                storageStatement, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
+        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ), storageReader,
+                transaction, new KernelToken( storageReader, transaction ), cursors, autoindexing,
                 constraintIndexCreator, mock( ConstraintSemantics.class ) );
         operations.initialize();
 
-        this.order = inOrder( locks, txState, storeReadLayer );
+        this.order = inOrder( locks, txState, storageReader );
     }
 
     @After
@@ -396,7 +394,7 @@ public class OperationsLockTest
 
         // THEN
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
-        order.verify( storeReadLayer ).constraintsGetForSchema( descriptor );
+        order.verify( storageReader ).constraintsGetForSchema( descriptor );
     }
 
     @Test
@@ -407,7 +405,7 @@ public class OperationsLockTest
 
         // THEN
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 42 );
-        order.verify( storeReadLayer ).constraintsGetForLabel( 42 );
+        order.verify( storageReader ).constraintsGetForLabel( 42 );
     }
 
     @Test
@@ -418,7 +416,7 @@ public class OperationsLockTest
 
         // THEN
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 123 );
-        order.verify( storeReadLayer ).constraintExists( any() );
+        order.verify( storageReader ).constraintExists( any() );
     }
 
     @Test
@@ -429,7 +427,7 @@ public class OperationsLockTest
         int relTypeId = 2;
         UniquenessConstraintDescriptor uniquenessConstraint = uniqueForLabel( labelId, 2, 3, 3 );
         RelExistenceConstraintDescriptor existenceConstraint = existsForRelType( relTypeId, 3, 4, 5 );
-        when( storeReadLayer.constraintsGetAll() )
+        when( storageReader.constraintsGetAll() )
                 .thenReturn( Iterators.iterator( uniquenessConstraint, existenceConstraint ) );
 
         // when
@@ -438,7 +436,7 @@ public class OperationsLockTest
 
         // then
         assertThat( asList( result ), empty() );
-        order.verify( storeReadLayer ).constraintsGetAll();
+        order.verify( storageReader ).constraintsGetAll();
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId );
     }
@@ -448,7 +446,7 @@ public class OperationsLockTest
     {
         // given
         SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
-        when( storeReadLayer.indexGetForSchema( any() )).thenReturn( index );
+        when( storageReader.indexGetForSchema( any() )).thenReturn( index );
 
         // when
         operations.indexDrop( DefaultIndexReference.fromDescriptor( index ) );
@@ -463,7 +461,7 @@ public class OperationsLockTest
     {
         // given
         when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor ) ).thenReturn( 42L );
-        when( storeReadLayer.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when
         operations.uniquePropertyConstraintCreate( descriptor );
@@ -478,7 +476,7 @@ public class OperationsLockTest
     {
         // given
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
-        when( storeReadLayer.constraintExists( constraint ) ).thenReturn( true );
+        when( storageReader.constraintExists( constraint ) ).thenReturn( true );
 
         // when
         operations.constraintDrop( constraint );

@@ -29,8 +29,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
@@ -40,17 +39,15 @@ import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 {
     private final RelationshipDataExtractor edge = new RelationshipDataExtractor();
-    private final StoreReadLayer storeLayer;
-    private final StorageStatement statement;
+    private final StorageReader storageReader;
     private final CountsRecordState counts;
     private final ReadableTransactionState txState;
 
-    public TransactionCountingStateVisitor( TxStateVisitor next, StoreReadLayer storeLayer, StorageStatement statement,
+    public TransactionCountingStateVisitor( TxStateVisitor next, StorageReader storageReader,
             ReadableTransactionState txState, CountsRecordState counts )
     {
         super( next );
-        this.storeLayer = storeLayer;
-        this.statement = statement;
+        this.storageReader = storageReader;
         this.txState = txState;
         this.counts = counts;
     }
@@ -66,7 +63,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void visitDeletedNode( long id )
     {
         counts.incrementNodeCount( ANY_LABEL, -1 );
-        statement.acquireSingleNodeCursor( id ).forAll( this::decrementCountForLabelsAndRelationships );
+        storageReader.acquireSingleNodeCursor( id ).forAll( this::decrementCountForLabelsAndRelationships );
         super.visitDeletedNode( id );
     }
 
@@ -78,7 +75,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             counts.incrementNodeCount( labelId, -1 );
         } );
 
-        storeLayer.degrees( statement, node,
+        storageReader.degrees( node,
                 ( type, out, in ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in ) );
     }
 
@@ -95,7 +92,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     {
         try
         {
-            storeLayer.relationshipVisit( id, edge );
+            storageReader.relationshipVisit( id, edge );
             updateRelationshipCount( edge.startNode(), edge.type(), edge.endNode(), -1 );
         }
         catch ( EntityNotFoundException e )
@@ -116,8 +113,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             removed.each( label -> counts.incrementNodeCount( label, -1 ) );
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
-            statement.acquireSingleNodeCursor( id )
-                    .forAll( node -> storeLayer.degrees( statement, node, ( type, out, in ) ->
+            storageReader.acquireSingleNodeCursor( id )
+                    .forAll( node -> storageReader.degrees( node, ( type, out, in ) ->
                     {
                         added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
                         removed.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in ) );
@@ -151,11 +148,11 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private void visitLabels( long nodeId, LongConsumer visitor )
     {
-        nodeCursor( statement, nodeId ).forAll( node -> node.labels().forEach( visitor::accept ) );
+        nodeCursor( nodeId ).forAll( node -> node.labels().forEach( visitor::accept ) );
     }
 
-    private Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId )
+    private Cursor<NodeItem> nodeCursor( long nodeId )
     {
-        return txState.augmentSingleNodeCursor( statement.acquireSingleNodeCursor( nodeId ), nodeId );
+        return txState.augmentSingleNodeCursor( storageReader.acquireSingleNodeCursor( nodeId ), nodeId );
     }
 }

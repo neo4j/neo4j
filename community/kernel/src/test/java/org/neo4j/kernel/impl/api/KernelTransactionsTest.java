@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
@@ -74,8 +75,7 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -345,11 +345,11 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void transactionClosesUnderlyingStoreStatementWhenDisposed() throws Throwable
+    public void transactionClosesUnderlyingStoreReaderWhenDisposed() throws Throwable
     {
-        StorageStatement storeStatement1 = mock( StorageStatement.class );
-        StorageStatement storeStatement2 = mock( StorageStatement.class );
-        StorageStatement storeStatement3 = mock( StorageStatement.class );
+        StorageReader storeStatement1 = mock( StorageReader.class );
+        StorageReader storeStatement2 = mock( StorageReader.class );
+        StorageReader storeStatement3 = mock( StorageReader.class );
 
         KernelTransactions kernelTransactions = newKernelTransactions( mock( TransactionCommitProcess.class ),
                 storeStatement1, storeStatement2, storeStatement3 );
@@ -531,33 +531,30 @@ public class KernelTransactionsTest
 
     private static KernelTransactions newTestKernelTransactions() throws Throwable
     {
-        return newKernelTransactions( true, mock( TransactionCommitProcess.class ), mock( StorageStatement.class ) );
+        return newKernelTransactions( true, mock( TransactionCommitProcess.class ), mock( StorageReader.class ) );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess ) throws Throwable
     {
-        return newKernelTransactions( false, commitProcess, mock( StorageStatement.class ) );
+        return newKernelTransactions( false, commitProcess, mock( StorageReader.class ) );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
-            StorageStatement firstStoreStatements, StorageStatement... otherStorageStatements ) throws Throwable
+            StorageReader firstReader, StorageReader... otherReaders ) throws Throwable
     {
-        return newKernelTransactions( false, commitProcess, firstStoreStatements, otherStorageStatements );
+        return newKernelTransactions( false, commitProcess, firstReader, otherReaders );
     }
 
     private static KernelTransactions newKernelTransactions( boolean testKernelTransactions,
-            TransactionCommitProcess commitProcess, StorageStatement firstStoreStatements,
-            StorageStatement... otherStorageStatements ) throws Throwable
+            TransactionCommitProcess commitProcess, StorageReader firstReader,
+            StorageReader... otherReaders ) throws Throwable
     {
         Locks locks = mock( Locks.class );
         Locks.Client client = mock( Locks.Client.class );
         when( locks.newClient() ).thenReturn( client );
 
-        StoreReadLayer readLayer = mock( StoreReadLayer.class );
-        when( readLayer.newStatement() ).thenReturn( firstStoreStatements, otherStorageStatements );
-
         StorageEngine storageEngine = mock( StorageEngine.class );
-        when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
+        when( storageEngine.newReader() ).thenReturn( firstReader, otherReaders );
         doAnswer( invocation ->
         {
             Collection<StorageCommand> argument = invocation.getArgument( 0 );
@@ -566,7 +563,7 @@ public class KernelTransactionsTest
         } ).when( storageEngine ).createCommands(
                 anyCollection(),
                 any( ReadableTransactionState.class ),
-                any( StorageStatement.class ),
+                any( StorageReader.class ),
                 any( ResourceLocker.class ),
                 anyLong() );
 
@@ -615,7 +612,7 @@ public class KernelTransactionsTest
                 DefaultCursors::new, AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
-                mock( IndexingService.class) );
+                mock( IndexingService.class), mock( PropertyKeyTokenHolder.class ) );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -628,7 +625,7 @@ public class KernelTransactionsTest
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new CanWrite(), DefaultCursors::new,
-                        AutoIndexing.UNSUPPORTED, EmptyVersionContextSupplier.EMPTY );
+                        AutoIndexing.UNSUPPORTED, EmptyVersionContextSupplier.EMPTY, mock( PropertyKeyTokenHolder.class ) );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -678,14 +675,14 @@ public class KernelTransactionsTest
                 TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability, Supplier<DefaultCursors> cursors,
-                AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier  )
+                AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier, PropertyKeyTokenHolder propertyKeyTokenHolder )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory, transactionCommitProcess,
                     indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
                     transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                     accessCapability, cursors, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier,
                     ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
-                    mock( IndexingService.class ) );
+                    mock( IndexingService.class ), propertyKeyTokenHolder );
         }
 
         @Override

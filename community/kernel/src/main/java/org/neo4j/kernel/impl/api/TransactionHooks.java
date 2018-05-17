@@ -28,8 +28,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TransactionHook.Outcome;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 public class TransactionHooks
@@ -47,7 +46,7 @@ public class TransactionHooks
     }
 
     public TransactionHooksState beforeCommit( ReadableTransactionState state, KernelTransaction tx,
-            StoreReadLayer storeReadLayer, StorageStatement storageStatement )
+            StorageReader storageReader )
     {
         if ( hooks.size() == 0 )
         {
@@ -57,7 +56,7 @@ public class TransactionHooks
         TransactionHooksState hookState = new TransactionHooksState();
         for ( TransactionHook hook : hooks )
         {
-            Outcome outcome = hook.beforeCommit( state, tx, storeReadLayer, storageStatement );
+            Outcome outcome = hook.beforeCommit( state, tx, storageReader );
             hookState.add( hook, outcome );
         }
         return hookState;
