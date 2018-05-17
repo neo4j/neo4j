@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.vectorized.dispatcher
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized.Pipeline
-import org.neo4j.cypher.internal.util.v3_5.TaskCloser
+import org.opencypher.v9_0.util.TaskCloser
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 

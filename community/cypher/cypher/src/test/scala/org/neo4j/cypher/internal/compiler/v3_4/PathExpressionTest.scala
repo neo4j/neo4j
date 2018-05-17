@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Shorte
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{NonEmpty, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateTestSupport}
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values.{FALSE, TRUE}
 import org.neo4j.values.virtual.PathValue

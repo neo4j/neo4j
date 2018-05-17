@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.runtime.compiled.CompiledExecutionResult
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, NormalMode, QueryContext}
-import org.neo4j.cypher.internal.util.v3_5.TaskCloser
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.TaskCloser
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}

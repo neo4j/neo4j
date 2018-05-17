@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.values
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class KeyTokenTest extends CypherFunSuite {
 

@@ -28,11 +28,10 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrap
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_5.notification.ExperimentalFeatureNotification
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.v3_5.phases._
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.frontend.PlannerName
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
+import org.opencypher.v9_0.frontend.phases._
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
@@ -44,7 +43,7 @@ import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.{Dispatcher, Sing
 import org.neo4j.cypher.internal.runtime.vectorized.expressions.MorselExpressionConverters
 import org.neo4j.cypher.internal.runtime.vectorized.{Pipeline, PipelineBuilder}
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, _}
-import org.neo4j.cypher.internal.util.v3_5.TaskCloser
+import org.opencypher.v9_0.util.{ExperimentalFeatureNotification, TaskCloser}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb._

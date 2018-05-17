@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.executionplan.GeneratedQueryExecution
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.util.v3_5.{ProfilerStatisticsNotReadyException, TaskCloser}
+import org.opencypher.v9_0.util.{ProfilerStatisticsNotReadyException, TaskCloser}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Notification
 

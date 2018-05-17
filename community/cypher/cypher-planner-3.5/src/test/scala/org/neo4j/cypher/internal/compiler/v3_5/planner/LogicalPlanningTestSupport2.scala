@@ -30,24 +30,23 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter.un
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters._
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.rewriting.RewriterStepSequencer.newPlain
-import org.neo4j.cypher.internal.frontend.v3_5.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_5.phases._
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.rewriting.rewriters._
+import org.opencypher.v9_0.frontend.phases._
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IDPPlannerName, IndexDescriptor}
-import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.v3_5.attribution.{Attribute, Attributes}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.util.v3_5.{Cardinality, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_5.expressions.PatternExpression
+import org.opencypher.v9_0.rewriting.RewriterStepSequencer.newPlain
+import org.opencypher.v9_0.util.attribution.{Attribute, Attributes}
+import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.opencypher.v9_0.util.{Cardinality, PropertyKeyId}
+import org.opencypher.v9_0.expressions.PatternExpression
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
+import org.opencypher.v9_0.parser.CypherParser
+import org.opencypher.v9_0.rewriting.RewriterStepSequencer
+import org.opencypher.v9_0.util.helpers.fixedPoint
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import scala.language.reflectiveCalls
@@ -262,7 +261,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     semanticTable.resolvedPropertyKeyNames(label)
 
   def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[LogicalPlan] = new BeMatcher[LogicalPlan] {
-    import org.neo4j.cypher.internal.util.v3_5.Foldable._
+    import org.opencypher.v9_0.util.Foldable._
     override def apply(actual: LogicalPlan): MatchResult = {
       val matches = actual.treeFold(false) {
         case lp if tag.runtimeClass.isInstance(lp) => acc => (true, None)

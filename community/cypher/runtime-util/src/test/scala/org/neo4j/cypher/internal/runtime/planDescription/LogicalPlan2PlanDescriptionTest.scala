@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.runtime.planDescription
 import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.util.v3_5._
-import org.neo4j.cypher.internal.util.v3_5.attribution.{Id, IdGen, SequentialIdGen}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions.{SemanticDirection, LabelName => AstLabelName, _}
+import org.opencypher.v9_0.util._
+import org.opencypher.v9_0.util.attribution.{Id, IdGen, SequentialIdGen}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions.{SemanticDirection, LabelName => AstLabelName, _}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.scalatest.prop.TableDrivenPropertyChecks
 

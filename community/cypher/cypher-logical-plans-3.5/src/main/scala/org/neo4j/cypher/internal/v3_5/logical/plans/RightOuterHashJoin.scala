@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
+import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
   * Variant of NodeHashJoin. Also builds a hash table using 'left' and produces merged left and right rows using this

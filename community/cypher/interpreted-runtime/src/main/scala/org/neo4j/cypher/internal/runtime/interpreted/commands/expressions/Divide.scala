@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.v3_5.ArithmeticException
+import org.opencypher.v9_0.util.ArithmeticException
 import org.neo4j.values._
 import org.neo4j.values.storable._
 

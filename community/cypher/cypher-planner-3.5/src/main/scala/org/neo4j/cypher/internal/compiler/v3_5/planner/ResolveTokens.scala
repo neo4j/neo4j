@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.neo4j.cypher.internal.compiler.v3_5.phases._
-import org.neo4j.cypher.internal.frontend.v3_5.ast.Query
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.frontend.v3_5.phases.{BaseState, VisitorPhase}
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.ast.Query
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.opencypher.v9_0.frontend.phases.{BaseState, VisitorPhase}
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.neo4j.cypher.internal.util.v3_5.{LabelId, PropertyKeyId, RelTypeId}
-import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, PropertyKeyName, RelTypeName}
+import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, RelTypeId}
+import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
 
 object ResolveTokens extends VisitorPhase[CompilerContext, BaseState] {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {

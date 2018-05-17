@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherCompilerConfiguration, NotImplementedPlanContext, UpdateStrategy}
 import org.neo4j.cypher.internal.executionplan.GeneratedQuery
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.frontend.v3_5.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.SingleThreadedExecutor
-import org.neo4j.cypher.internal.util.v3_5.attribution.{IdGen, SequentialIdGen}
-import org.neo4j.cypher.internal.util.v3_5.{CypherException, InputPosition, InternalException}
+import org.opencypher.v9_0.util.attribution.{IdGen, SequentialIdGen}
+import org.opencypher.v9_0.util.{CypherException, InputPosition, InternalException}
 import org.scalatest.mock.MockitoSugar
 
 object CompiledRuntimeContextHelper extends MockitoSugar {

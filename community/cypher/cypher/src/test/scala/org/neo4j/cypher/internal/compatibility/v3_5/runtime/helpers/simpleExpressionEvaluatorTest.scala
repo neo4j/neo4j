@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers
 
-import org.neo4j.cypher.internal.util.v3_5.DummyPosition
+import org.opencypher.v9_0.util.DummyPosition
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.simpleExpressionEvaluator.isNonDeterministic
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions.{FunctionInvocation, FunctionName}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions.{FunctionInvocation, FunctionName}
 
 class SimpleExpressionEvaluatorTest extends CypherFunSuite {
   private val pos = DummyPosition(-1)

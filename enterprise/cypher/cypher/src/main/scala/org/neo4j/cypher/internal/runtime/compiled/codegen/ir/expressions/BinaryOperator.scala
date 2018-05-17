@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
+import org.opencypher.v9_0.util.CypherTypeException
 import org.neo4j.cypher.internal.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.opencypher.v9_0.util.symbols._
 
 trait BinaryOperator {
   self: CodeGenExpression =>

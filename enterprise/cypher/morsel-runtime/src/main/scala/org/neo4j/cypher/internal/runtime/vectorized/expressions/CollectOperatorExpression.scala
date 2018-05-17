@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.vectorized.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.util.v3_5.symbols.CTAny
+import org.opencypher.v9_0.util.symbols.CTAny
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{ListValue, VirtualValues}

@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality._
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.{Selections, _}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.neo4j.cypher.internal.util.v3_5.{Cardinality, LabelId, RelTypeId, Selectivity}
-import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, RelTypeName, SemanticDirection}
+import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.opencypher.v9_0.expressions.{LabelName, RelTypeName, SemanticDirection}
 
 trait Pattern2Selectivity {
   def apply(pattern: PatternRelationship, labels: Map[String, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity

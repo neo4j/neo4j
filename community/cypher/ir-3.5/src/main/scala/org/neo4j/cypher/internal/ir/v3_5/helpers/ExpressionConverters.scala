@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.ir.v3_5.helpers
 
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, topDown}
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer, addUniquenessPredicates}
-import org.neo4j.cypher.internal.v3_5.expressions.{Ands, Expression, HasLabels, Not, Ors, PatternComprehension, PatternExpression, RelationshipChain, Variable}
-import org.neo4j.cypher.internal.util.v3_5.UnNamedNameGenerator._
+import org.opencypher.v9_0.util.{Rewriter, topDown}
+import org.opencypher.v9_0.rewriting.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer, addUniquenessPredicates}
+
+import org.opencypher.v9_0.expressions.{Ands, Expression, HasLabels, Not, Ors, PatternComprehension, PatternExpression, RelationshipChain, Variable}
+import org.opencypher.v9_0.util.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.ir.v3_5.helpers.PatternConverters._
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
-import org.neo4j.cypher.internal.v3_5.expressions.Range
+import org.opencypher.v9_0.expressions.Range
 
 object ExpressionConverters {
   val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)

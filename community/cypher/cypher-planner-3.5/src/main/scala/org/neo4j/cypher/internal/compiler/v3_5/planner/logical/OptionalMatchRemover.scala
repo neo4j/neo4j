@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.util.v3_5.Rewritable._
-import org.neo4j.cypher.internal.util.v3_5.{InputPosition, Rewriter, topDown}
+import org.opencypher.v9_0.util.Rewritable._
+import org.opencypher.v9_0.util.{InputPosition, Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilerContext, LogicalPlanState}
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.v3_5.phases.{Condition, Phase}
+import org.opencypher.v9_0.frontend.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer

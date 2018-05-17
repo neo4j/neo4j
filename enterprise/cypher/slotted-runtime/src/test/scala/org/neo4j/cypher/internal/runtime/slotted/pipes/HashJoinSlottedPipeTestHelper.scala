@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 
 object HashJoinSlottedPipeTestHelper extends CypherFunSuite {

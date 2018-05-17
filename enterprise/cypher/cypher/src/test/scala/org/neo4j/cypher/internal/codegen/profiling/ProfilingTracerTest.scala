@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.codegen.profiling
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 
 class ProfilingTracerTest extends CypherFunSuite {

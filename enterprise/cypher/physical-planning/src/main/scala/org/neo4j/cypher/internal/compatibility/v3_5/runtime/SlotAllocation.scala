@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.{ArgumentSizes, SlotConfigurations}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration.Size
-import org.neo4j.cypher.internal.frontend.v3_5.ast.ProcedureResultItem
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
+import org.opencypher.v9_0.ast.ProcedureResultItem
+import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.{HasHeaders, NoHeaders, ShortestPathPattern}
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
-import org.neo4j.cypher.internal.util.v3_5.{Foldable, InternalException, UnNamedNameGenerator}
-import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{Foldable, InternalException, UnNamedNameGenerator}
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.neo4j.cypher.internal.v3_5.{expressions => parserAst}
+import org.opencypher.v9_0.{expressions => parserAst}
 
 import scala.collection.mutable
 

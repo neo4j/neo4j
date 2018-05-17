@@ -20,7 +20,6 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.frontend.v3_5.notification._
 import org.neo4j.cypher.internal.javacompat.NotificationAcceptanceTest.ChangedResults
 import org.neo4j.graphdb
 import org.neo4j.graphdb.config.Setting
@@ -31,6 +30,7 @@ import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.Procedure
+import org.opencypher.v9_0.util.PlannerUnsupportedNotification
 
 import scala.collection.JavaConverters._
 

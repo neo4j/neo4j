@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-import org.neo4j.cypher.internal.util.v3_5.{CypherException, TaskCloser}
+import org.opencypher.v9_0.util.{CypherException, TaskCloser}
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.values.AnyValue
 

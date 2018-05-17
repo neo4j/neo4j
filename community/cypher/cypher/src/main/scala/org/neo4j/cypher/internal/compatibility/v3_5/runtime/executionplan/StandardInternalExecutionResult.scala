@@ -25,7 +25,7 @@ import java.util
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.{MapBasedRow, RuntimeTextValueConverter}
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.util.v3_5.{Eagerly, TaskCloser}
+import org.opencypher.v9_0.util.{Eagerly, TaskCloser}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.result.QueryResult

@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_5.Rewriter
+import org.opencypher.v9_0.util.Rewriter
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_5.AstRewritingMonitor
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.CNFNormalizer
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.frontend.phases.{CNFNormalizer, Monitors}
+import org.opencypher.v9_0.rewriting.AstRewritingMonitor
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
 

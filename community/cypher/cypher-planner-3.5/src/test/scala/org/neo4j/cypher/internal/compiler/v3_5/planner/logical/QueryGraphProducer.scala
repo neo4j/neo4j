@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.util.v3_5.inSequence
+import org.opencypher.v9_0.util.inSequence
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters._
-import org.neo4j.cypher.internal.frontend.v3_5.ast.{Query, Statement}
-import org.neo4j.cypher.internal.frontend.v3_5.phases.LateAstRewriting
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.{SemanticCheckResult, SemanticChecker, SemanticTable}
+import org.opencypher.v9_0.rewriting.rewriters._
+import org.opencypher.v9_0.ast.{Query, Statement}
+import org.opencypher.v9_0.frontend.phases.{CNFNormalizer, LateAstRewriting, Namespacer, rewriteEqualityToInPredicate}
+import org.opencypher.v9_0.ast.semantics.{SemanticCheckResult, SemanticChecker, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
 import org.scalatest.mock.MockitoSugar

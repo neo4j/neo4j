@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.util.v3_5.InternalException
+import org.opencypher.v9_0.util.InternalException
 import org.neo4j.cypher.internal.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.spi.MethodStructure
 

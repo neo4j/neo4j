@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.util.v3_5.InputPosition
-import org.neo4j.cypher.internal.util.v3_5.attribution.{IdGen, SequentialIdGen}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions.True
+import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.util.attribution.{IdGen, SequentialIdGen}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.expressions.True
 
 import scala.collection.mutable.ArrayBuffer
 

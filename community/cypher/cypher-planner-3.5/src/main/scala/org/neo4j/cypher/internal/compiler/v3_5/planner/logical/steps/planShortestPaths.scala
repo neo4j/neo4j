@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.expandSolverStep
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.frontend.v3_5.notification.ExhaustiveShortestPathForbiddenNotification
+import org.opencypher.v9_0.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.ir.v3_5.{Predicate, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.util.v3_5.{ExhaustiveShortestPathForbiddenException, FreshIdNameGenerator, InternalException}
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.functions.{Length, Nodes}
+import org.opencypher.v9_0.util.{ExhaustiveShortestPathForbiddenException, ExhaustiveShortestPathForbiddenNotification, FreshIdNameGenerator, InternalException}
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.expressions.functions.{Length, Nodes}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
 
 case object planShortestPaths {

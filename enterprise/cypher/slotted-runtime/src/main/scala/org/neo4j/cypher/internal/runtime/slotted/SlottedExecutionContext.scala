@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
-import org.neo4j.cypher.internal.util.v3_5.AssertionUtils._
-import org.neo4j.cypher.internal.util.v3_5.InternalException
-import org.neo4j.cypher.internal.util.v3_5.symbols.{CTNode, CTRelationship}
+import org.opencypher.v9_0.util.AssertionUtils._
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.util.symbols.{CTNode, CTRelationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._

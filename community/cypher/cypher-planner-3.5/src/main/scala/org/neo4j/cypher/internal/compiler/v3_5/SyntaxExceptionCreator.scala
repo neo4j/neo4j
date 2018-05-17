@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5
 
-import org.neo4j.cypher.internal.util.v3_5.{CypherException, InputPosition, SyntaxException}
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticErrorDef
+import org.opencypher.v9_0.util.{CypherException, InputPosition, SyntaxException}
+import org.opencypher.v9_0.ast.semantics.SemanticErrorDef
 
 class SyntaxExceptionCreator(queryText: String, preParserOffset: Option[InputPosition]) extends ((String, InputPosition) => CypherException) {
   override def apply(message: String, position: InputPosition): CypherException = {

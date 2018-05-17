@@ -42,6 +42,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.{frontend => v3_5}
 
 import scala.collection.mutable
 import scala.util.Try
@@ -74,7 +75,7 @@ trait Compatibility {
                                          Some(helpers.as3_1(preParsedQuery.offset)), tracer))
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContext,
-                        tracer: frontend.v3_5.phases.CompilationPhaseTracer):
+                        tracer: v3_5.phases.CompilationPhaseTracer):
       (ExecutionPlan, Map[String, Any], Seq[String]) =
         exceptionHandler.runSafely {
           val tc = TransactionalContextWrapperV3_1(transactionalContext)

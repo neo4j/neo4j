@@ -36,8 +36,8 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.neo4j.cypher.internal.util.v3_5.CypherTypeException;
-import org.neo4j.cypher.internal.util.v3_5.IncomparableValuesException;
+import org.opencypher.v9_0.util.CypherTypeException;
+import org.opencypher.v9_0.util.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;

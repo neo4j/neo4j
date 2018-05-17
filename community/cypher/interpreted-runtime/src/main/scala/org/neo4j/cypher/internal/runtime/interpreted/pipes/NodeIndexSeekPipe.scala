@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
-import org.neo4j.cypher.internal.v3_5.expressions.{LabelToken, PropertyKeyToken}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference}
 

@@ -24,7 +24,7 @@ import java.util
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.MapBasedRow
-import org.neo4j.cypher.internal.util.v3_5.Eagerly.immutableMapValues
+import org.opencypher.v9_0.util.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription

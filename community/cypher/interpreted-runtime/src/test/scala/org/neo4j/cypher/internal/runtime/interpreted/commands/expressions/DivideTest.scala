@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
-import org.neo4j.cypher.internal.util.v3_5.ArithmeticException
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.ArithmeticException
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.{NumberValue}
 
 class DivideTest extends CypherFunSuite {

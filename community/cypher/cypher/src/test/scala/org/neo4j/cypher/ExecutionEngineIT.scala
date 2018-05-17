@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_5.spi.CostBasedPlannerName
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService, Result}
+import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService}
 import org.neo4j.test.TestGraphDatabaseFactory
-
-import scala.collection.immutable.Map
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 

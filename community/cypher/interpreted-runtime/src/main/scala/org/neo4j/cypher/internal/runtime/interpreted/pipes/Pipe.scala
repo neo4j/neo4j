@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.util.v3_5.Unchangeable
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
+import org.opencypher.v9_0.util.Unchangeable
+import org.opencypher.v9_0.util.attribution.Id
 
 /**
   * Pipe is a central part of Cypher. Most pipes are decorators - they

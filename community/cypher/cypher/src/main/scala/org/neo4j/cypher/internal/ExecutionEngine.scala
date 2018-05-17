@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.{CypherCacheMonitor, LFUCache}
-import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer
+import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, ValueConversion}
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent

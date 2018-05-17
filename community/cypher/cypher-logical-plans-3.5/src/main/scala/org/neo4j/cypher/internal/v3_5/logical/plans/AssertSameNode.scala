@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
+import org.opencypher.v9_0.util.attribution.IdGen
 
 /**
   * For every row in left, assert that all rows in right produce the same value

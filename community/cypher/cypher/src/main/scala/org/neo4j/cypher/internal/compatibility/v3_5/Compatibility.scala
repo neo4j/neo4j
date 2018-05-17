@@ -33,16 +33,16 @@ import org.neo4j.cypher.internal.compiler.v3_5
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.frontend.v3_5.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_5.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_5.phases._
+import org.opencypher.v9_0.ast.Statement
+import org.opencypher.v9_0.frontend.phases._
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.v3_5.expressions.Parameter
+import org.opencypher.v9_0.util.attribution.SequentialIdGen
+import org.opencypher.v9_0.expressions.Parameter
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 
 import scala.util.Try
 

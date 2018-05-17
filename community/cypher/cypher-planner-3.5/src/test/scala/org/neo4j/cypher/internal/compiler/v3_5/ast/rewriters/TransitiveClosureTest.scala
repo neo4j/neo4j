@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.{AstRewritingTestSupport, LogicalPlanConstructionTestSupport}
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_5.ast.Query
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.{CNFNormalizer, transitiveClosure}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.ast.Query
+import org.opencypher.v9_0.frontend.phases.{CNFNormalizer, transitiveClosure}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
 

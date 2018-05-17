@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.util.v3_5.{CypherTypeException, LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
+import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.opencypher.v9_0.util.{CypherTypeException, LabelId, PropertyKeyId}
+import org.opencypher.v9_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
 import org.neo4j.values.storable.Values.stringValue

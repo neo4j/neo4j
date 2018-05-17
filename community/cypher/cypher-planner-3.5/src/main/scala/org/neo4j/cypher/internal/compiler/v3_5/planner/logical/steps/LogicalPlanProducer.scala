@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.compiler.v3_5.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.frontend.v3_5.ast
-import org.neo4j.cypher.internal.frontend.v3_5.ast._
+import org.opencypher.v9_0.ast
+import org.opencypher.v9_0.ast._
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.util.v3_5.attribution.{Attributes, IdGen}
-import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
-import org.neo4j.cypher.internal.util.v3_5.{ExhaustiveShortestPathForbiddenException, InternalException}
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
+import org.opencypher.v9_0.util.attribution.IdGen
+import org.opencypher.v9_0.util.{ExhaustiveShortestPathForbiddenException, InternalException}
+import org.opencypher.v9_0.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 
 /*

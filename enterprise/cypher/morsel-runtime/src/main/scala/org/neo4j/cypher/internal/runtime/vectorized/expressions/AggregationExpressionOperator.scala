@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized.MorselExecutionContext
-import org.neo4j.cypher.internal.util.v3_5.SyntaxException
-import org.neo4j.cypher.internal.util.v3_5.symbols.CypherType
+import org.opencypher.v9_0.util.SyntaxException
+import org.opencypher.v9_0.util.symbols.CypherType
 import org.neo4j.values.AnyValue
 
 abstract class AggregationExpressionOperator  extends Expression {

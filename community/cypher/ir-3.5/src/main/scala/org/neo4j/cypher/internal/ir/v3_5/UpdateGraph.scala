@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.ir.v3_5
 
-import org.neo4j.cypher.internal.util.v3_5.InternalException
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
-import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.functions.Labels
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.expressions._
+
+import org.opencypher.v9_0.expressions.functions.Labels
+
 
 import scala.annotation.tailrec
 

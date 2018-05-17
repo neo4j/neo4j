@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-import org.neo4j.cypher.internal.util.v3_5.InternalException
-import org.neo4j.cypher.internal.util.v3_5.symbols.CypherType
+import org.opencypher.v9_0.util.InternalException
+import org.opencypher.v9_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue

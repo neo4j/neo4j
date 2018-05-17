@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeBui
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.util.v3_5.InvalidArgumentException
+import org.opencypher.v9_0.util.InvalidArgumentException
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
