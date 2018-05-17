@@ -32,8 +32,8 @@ object SlottedExpressionConverters extends ExpressionConverter {
         Some(runtimeExpression.NodeFromSlot(offset))
       case runtimeAst.RelationshipFromSlot(offset, _) =>
         Some(runtimeExpression.RelationshipFromSlot(offset))
-      case runtimeAst.ReferenceFromSlot(offset) =>
-        Some(runtimeExpression.ReferenceFromSlot(offset))
+      case runtimeAst.ReferenceFromSlot(offset, name) =>
+        Some(runtimeExpression.ReferenceFromSlot(offset, name))
       case runtimeAst.NodeProperty(offset, token, _) =>
         Some(runtimeExpression.NodeProperty(offset, token))
       case runtimeAst.RelationshipProperty(offset, token, _) =>
