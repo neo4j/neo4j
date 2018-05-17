@@ -61,6 +61,7 @@ Feature "UnwindAcceptance": Scenario "Nested unwind with strings"
 Feature "UnwindAcceptance": Scenario "Nested unwind with mixed types"
 Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with empty db"
 Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with hits"
+Feature "PatternPredicates": Scenario "Undirected NOOP path predicate 1"
 
 Feature "TemporalSelectAcceptance": Scenario "Should select date"
 Feature "TemporalSelectAcceptance": Scenario "Should select local time"

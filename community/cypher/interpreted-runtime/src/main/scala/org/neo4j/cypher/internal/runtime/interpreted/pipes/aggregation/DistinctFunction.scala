@@ -26,21 +26,12 @@ import org.neo4j.values.AnyValue
 
 class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
   private val seen = scala.collection.mutable.Set[AnyValue]()
-  private var seenNull = false
 
   override def apply(ctx: ExecutionContext, state: QueryState) {
     val data = value(ctx, state)
-
-    if (data == null) {
-      if (!seenNull) {
-        seenNull = true
-        inner(ctx, state)
-      }
-    } else {
-      if (!seen.contains(data)) {
-        seen += data
-        inner(ctx, state)
-      }
+    if (!seen.contains(data)) {
+      seen += data
+      inner(ctx, state)
     }
   }
 
