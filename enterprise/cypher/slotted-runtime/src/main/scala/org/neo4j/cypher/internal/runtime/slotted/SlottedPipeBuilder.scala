@@ -22,25 +22,25 @@ package org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast.{NodeFromSlot, RelationshipFromSlot}
-import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, InterpretedPipeBuilder}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{KeyTokenResolver, expressions => commandExpressions}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{DropResultPipe, ColumnOrder => _, _}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, InterpretedPipeBuilder}
 import org.neo4j.cypher.internal.runtime.slotted.helpers.SlottedPipeBuilderUtils
 import org.neo4j.cypher.internal.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.{expressions => slottedExpressions}
+import org.neo4j.cypher.internal.v3_5.logical.plans
+import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.expressions.{Equals, SignedDecimalIntegerLiteral}
 import org.opencypher.v9_0.util.AssertionUtils._
 import org.opencypher.v9_0.util.InternalException
 import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.expressions.{Equals, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.v3_5.logical.plans
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.{expressions => frontEndAst}
 
 class SlottedPipeBuilder(fallback: PipeBuilder,
@@ -217,16 +217,33 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         EagerAggregationWithoutGroupingSlottedPipe(source, slots, aggregation)(id)
 
       case Aggregation(_, groupingExpressions, aggregationExpression) =>
-        val grouping = groupingExpressions.map {
-          case (key, expression) =>
-            slots(key) -> convertExpressions(expression)
-        }
         val aggregation = aggregationExpression.map {
           case (key, expression) =>
             slots.getReferenceOffsetFor(key) -> convertExpressions(expression)
               .asInstanceOf[AggregationExpression]
         }
-        EagerAggregationSlottedPipe(source, slots, grouping, aggregation)(id)
+
+        val groupingColumnsIncoming: Array[Int] = groupingExpressions.values.collect {
+          case NodeFromSlot(offset, _) => offset
+          case RelationshipFromSlot(offset, _) => offset
+        }.toArray
+
+        val groupingColumnsOutgoing: Array[Int] = groupingExpressions.keys.collect {
+          case x if slots(x).isLongSlot => slots(x).offset
+        }.toArray
+
+        if (groupingColumnsIncoming.length == groupingExpressions.size &&
+          groupingColumnsIncoming.length == groupingColumnsOutgoing.length) {
+          // If we are able to use primitive for all incoming and outgoing grouping columns, we can use the more effective
+          // Primitive pipe that leverages that the fact that grouping can be done a single array of longs
+          EagerAggregationSlottedPrimitivePipe(source, slots, groupingColumnsIncoming, groupingColumnsOutgoing, aggregation)(id)
+        } else {
+          val grouping = groupingExpressions.map {
+            case (key, expression) =>
+              slots(key) -> convertExpressions(expression)
+          }
+          EagerAggregationSlottedPipe(source, slots, grouping, aggregation)(id)
+        }
 
       case Distinct(_, groupingExpressions) =>
         chooseDistinctPipe(groupingExpressions, slots, source, id)
