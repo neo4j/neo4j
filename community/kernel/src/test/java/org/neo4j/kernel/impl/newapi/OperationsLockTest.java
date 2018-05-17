@@ -581,9 +581,7 @@ public class OperationsLockTest
         long nodeId = 1L;
         int labelId = 1;
         when( nodeCursor.next() ).thenReturn( true );
-        LabelSet labels = mock( LabelSet.class );
-        when( labels.contains( labelId ) ).thenReturn( true );
-        when( nodeCursor.labels() ).thenReturn( labels );
+        when( nodeCursor.hasLabel( labelId ) ).thenReturn( true );
 
         // when
         operations.nodeRemoveLabel( nodeId, labelId );
