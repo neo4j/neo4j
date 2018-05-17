@@ -101,6 +101,8 @@ Matching with complex composite pattern predicate
 Handling pattern predicates without matches
 Handling pattern predicates
 Matching named path with variable length pattern and pattern predicates
+Undirected NOOP path predicate 1
+Undirected NOOP path predicate 2
 In-query call to procedure that takes no arguments
 Calling the same procedure twice using the same outputs in each call
 In-query call to VOID procedure that takes no arguments

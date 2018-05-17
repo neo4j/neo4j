@@ -51,3 +51,6 @@ Explanation of   in-query procedure call
 Pattern expression inside list comprehension
 Get node degree via length of pattern expression
 Get node degree via length of pattern expression that specifies a relationship type
+
+// PatternPredicate.feature
+Undirected NOOP path predicate 1

@@ -1,2 +1,5 @@
 Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
   In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
+
+// PatternPredicate.feature
+Undirected NOOP path predicate 1
