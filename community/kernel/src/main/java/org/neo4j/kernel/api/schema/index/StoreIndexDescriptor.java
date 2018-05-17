@@ -19,15 +19,20 @@
  */
 package org.neo4j.kernel.api.schema.index;
 
-import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 
 /**
- * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
+ * Descripbes an index which is committed to the database.
+ *
+ * Adds an index id, a name, and optionally a owning constraint id to the general IndexDescriptor.
+ *
+ * Can be upgraded to a {@link CapableIndexDescriptor} by adding {@link IndexCapability} to this index,
+ * using {@link StoreIndexDescriptor#withoutCapabilities()} or {@link StoreIndexDescriptor#withCapabilities(IndexProviderMap)}
  */
 public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
 {
@@ -35,7 +40,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
     private final Long owningConstraintId;
     private final String name;
 
-    // Copy-constructor used by sub-classes.
+    // ** Copy-constructor used by sub-classes.
     protected StoreIndexDescriptor( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
@@ -44,7 +49,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
         this.name = indexDescriptor.name;
     }
 
-    // General purpose constructors.
+    // ** General purpose constructors.
     StoreIndexDescriptor( IndexDescriptor descriptor, long id )
     {
         this( descriptor, id, null );
@@ -62,13 +67,15 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
             throw new IllegalArgumentException( "null provider descriptor prohibited" );
         }
 
+        if ( owningConstraintId != null )
+        {
+            assertValidId( owningConstraintId, "owning constraint id" );
+        }
+
         this.owningConstraintId = owningConstraintId;
     }
 
-    public boolean canSupportUniqueConstraint()
-    {
-        return type() == IndexDescriptor.Type.UNIQUE;
-    }
+    // ** Owning constraint
 
     /**
      * Return the owning constraints of this index.
@@ -77,7 +84,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
      * creates the unique index, and then waits for the index to become fully populated and online before creating
      * the actual constraint. During unique index population the owning constraint will be null.
      *
-     * See ConstraintIndexCreator.createUniquenessConstraintIndex().
+     * See {@link ConstraintIndexCreator}.
      *
      * @return the id of the owning constraint, or null if this has not been set yet.
      * @throws IllegalStateException if this IndexRule cannot support uniqueness constraints (ei. the index is not
@@ -92,11 +99,22 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
         return owningConstraintId;
     }
 
+    public boolean canSupportUniqueConstraint()
+    {
+        return type() == IndexDescriptor.Type.UNIQUE;
+    }
+
     public boolean isIndexWithoutOwningConstraint()
     {
         return canSupportUniqueConstraint() && getOwningConstraint() == null;
     }
 
+    /**
+     * Create a {@link StoreIndexDescriptor} with the given owning constraint id.
+     *
+     * @param constraintId a id >= 0, or null if no owning constraint exists.
+     * @return a new StoreIndexDescriptor with modified owning constraint.
+     */
     public StoreIndexDescriptor withOwningConstraint( Long constraintId )
     {
         if ( !canSupportUniqueConstraint() )
@@ -105,6 +123,32 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
         }
         return new StoreIndexDescriptor( this, id, constraintId );
     }
+
+    // ** Upgrade to capable
+
+    /**
+     * Create a {@link CapableIndexDescriptor} from this index descriptor, with no listed capabilities.
+     *
+     * @return a CapableIndexDescriptor.
+     */
+    public CapableIndexDescriptor withoutCapabilities()
+    {
+        return new CapableIndexDescriptor( this, IndexCapability.NO_CAPABILITY );
+    }
+
+    /**
+     * Create a {@link CapableIndexDescriptor} from this index descriptor, with the capabilities that correspond
+     * to this indexes index provider, according to the given {@link IndexProviderMap}.
+     *
+     * @return a CapableIndexDescriptor.
+     */
+    public CapableIndexDescriptor withCapabilities( IndexProviderMap indexProviderMap )
+    {
+        IndexCapability capability = indexProviderMap.lookup( providerDescriptor ).getCapability();
+        return new CapableIndexDescriptor( this, capability );
+    }
+
+    // ** Misc
 
     @Override
     public String toString()
@@ -116,7 +160,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
         }
 
         return "IndexDescriptor[id=" + id + ", descriptor=" + this.userDescription( idTokenNameLookup ) +
-               ", provider=" + this.providerDescriptor() + ownerString + "]";
+                ", provider=" + this.providerDescriptor() + ownerString + "]";
     }
 
     @Override
@@ -129,16 +173,5 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
     public String getName()
     {
         return name;
-    }
-
-    public CapableIndexDescriptor withoutCapabilities()
-    {
-        return new CapableIndexDescriptor( this, IndexCapability.NO_CAPABILITY );
-    }
-
-    public CapableIndexDescriptor withCapabilities( IndexProviderMap indexProviderMap )
-    {
-        IndexCapability capability = indexProviderMap.lookup( providerDescriptor ).getCapability();
-        return new CapableIndexDescriptor( this, capability );
     }
 }

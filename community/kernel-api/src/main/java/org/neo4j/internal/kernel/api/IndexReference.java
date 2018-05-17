@@ -35,6 +35,41 @@ import static java.lang.String.format;
 public interface IndexReference extends IndexCapability
 {
     /**
+     * Returns true if this index only allows one value per key.
+     */
+    boolean isUnique();
+
+    /**
+     * Returns the labelId associated with this index.
+     */
+    int label();
+
+    /**
+     * Returns the propertyKeyIds associated with this index.
+     */
+    int[] properties();
+
+    /**
+     * Returns the key (or name) of the index provider that backs this index.
+     */
+    String providerKey();
+
+    /**
+     * Returns the version of the index provider that backs this index.
+     */
+    String providerVersion();
+
+    /**
+     * @param tokenNameLookup used for looking up names for token ids.
+     * @return a user friendly description of what this index indexes.
+     */
+    default String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        String type = isUnique() ? "UNIQUE" : "GENERAL";
+        return format( "Index( %s, %s )",  type, SchemaUtil.niceProperties( tokenNameLookup, properties() ) );
+    }
+
+    /**
      * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
      * hot path.
      *
@@ -48,26 +83,6 @@ public interface IndexReference extends IndexCapability
                 Iterators.filter( i -> !i.isUnique(), materialized.iterator() ),
                 Iterators.filter( IndexReference::isUnique, materialized.iterator() ) );
 
-    }
-
-    boolean isUnique();
-
-    int label();
-
-    int[] properties();
-
-    String providerKey();
-
-    String providerVersion();
-
-    /**
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
-     */
-    default String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        String type = isUnique() ? "UNIQUE" : "GENERAL";
-        return format( "Index( %s, %s )",  type, SchemaUtil.niceProperties( tokenNameLookup, properties() ) );
     }
 
     IndexReference NO_INDEX = new IndexReference()

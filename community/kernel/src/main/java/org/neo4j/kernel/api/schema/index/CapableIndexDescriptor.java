@@ -24,6 +24,9 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.values.storable.ValueCategory;
 
+/**
+ * A committed index with specified capabilities.
+ */
 public class CapableIndexDescriptor extends StoreIndexDescriptor
 {
     private final IndexCapability indexCapability;

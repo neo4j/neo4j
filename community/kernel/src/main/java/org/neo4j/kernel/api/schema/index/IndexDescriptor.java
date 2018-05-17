@@ -37,6 +37,10 @@ import static java.lang.String.format;
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
+ *
+ * An IndexDescriptor might represent an index that has not yet been committed, and therefore carries and optional
+ * user-supplied name. On commit the descriptor is upgraded to a {@link StoreIndexDescriptor} using
+ * {@link IndexDescriptor#withId(long)} or {@link IndexDescriptor#withIds(long, long)}.
  */
 public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
 {
@@ -125,6 +129,8 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     }
 
     /**
+     * Returns a user friendly description of what this index indexes.
+     *
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
      */
@@ -156,12 +162,26 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         return userDescription( SchemaUtil.idTokenNameLookup );
     }
 
+    /**
+     * Create a StoreIndexDescriptor, which represent the commit version of this index.
+     *
+     * @param id the index id of the committed index
+     * @return a StoreIndexDescriptor
+     */
     public StoreIndexDescriptor withId( long id )
     {
         assertValidId( id, "id" );
         return new StoreIndexDescriptor( this, id );
     }
 
+    /**
+     * Create a StoreIndexDescriptor, which represent the commit version of this index, that is owned
+     * by a uniqueness constraint.
+     *
+     * @param id id of the committed index
+     * @param owningConstraintId id of the uniqueness constraint owning this index
+     * @return a StoreIndexDescriptor
+     */
     public StoreIndexDescriptor withIds( long id, long owningConstraintId )
     {
         assertValidId( id, "id" );
@@ -169,11 +189,11 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         return new StoreIndexDescriptor( this, id, owningConstraintId );
     }
 
-    private void assertValidId( long id, String idName )
+    void assertValidId( long id, String idName )
     {
         if ( id < 0 )
         {
-            throw new IllegalArgumentException( "A StoreIndexDescriptor " + idName + " must be positive, got " + id );
+            throw new IllegalArgumentException( "A " + getClass().getSimpleName() + " " + idName + " must be positive, got " + id );
         }
     }
 
