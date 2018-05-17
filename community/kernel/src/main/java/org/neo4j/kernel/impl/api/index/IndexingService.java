@@ -248,7 +248,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         // do it at one point after recovery... i.e. here
         indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "refresh", IndexProxy::refresh ) );
 
-        final MutableLongObjectMap<RebuildingIndexDescriptor> rebuildingDescriptors = new LongObjectHashMap<>();
+        final MutableLongObjectMap<StoreIndexDescriptor> rebuildingDescriptors = new LongObjectHashMap<>();
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
@@ -268,8 +268,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     break;
                 case POPULATING:
                     // Remember for rebuilding
-                    rebuildingDescriptors.put( indexId,
-                            new RebuildingIndexDescriptor( descriptor ) );
+                    rebuildingDescriptors.put( indexId, descriptor );
                     break;
                 case FAILED:
                     // Don't do anything, the user needs to drop the index and re-create
@@ -289,7 +288,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexPopulationJob populationJob = newIndexPopulationJob();
                 rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
                         {
-                            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor.getIndexDescriptor(),
+                            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor,
                                     false, // never pass through a tentative online state during recovery
                                     monitor,
                                     populationJob );
@@ -310,7 +309,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         // This is why we now go and wait for those indexes to be fully populated.
         rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
                 {
-                    if ( descriptor.getIndexDescriptor().type() != IndexDescriptor.Type.UNIQUE )
+                    if ( descriptor.type() != IndexDescriptor.Type.UNIQUE )
                     {
                         // It's not a uniqueness constraint, so don't wait for it to be rebuilt
                         return;
@@ -327,7 +326,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                                 "What? This index was seen during recovery just now, why isn't it available now?", e );
                     }
 
-                    monitor.awaitingPopulationOfRecoveredIndex( descriptor.getIndexDescriptor() );
+                    monitor.awaitingPopulationOfRecoveredIndex( descriptor );
                     awaitOnline( proxy );
                 } );
 
