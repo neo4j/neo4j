@@ -78,13 +78,13 @@ public class MetricsReportingBoltConnection extends DefaultBoltConnection
     }
 
     @Override
-    public boolean processNextBatch( int batchCount )
+    public boolean processNextBatch( int batchCount, boolean exitIfNoJobsAvailable )
     {
         metricsMonitor.connectionActivated();
 
         try
         {
-            boolean continueProcessing = super.processNextBatch( batchCount );
+            boolean continueProcessing = super.processNextBatch( batchCount, exitIfNoJobsAvailable );
 
             if ( !continueProcessing )
             {
