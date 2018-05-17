@@ -50,4 +50,6 @@ public interface MemoryAllocator
      * @throws OutOfMemoryError if the requested memory could not be allocated.
      */
     long allocateAligned( long bytes, long alignment );
+
+    void freeMemory();
 }

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 
+import org.neo4j.io.mem.GrabAllocator;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -95,7 +96,19 @@ class PageList
         this.swappers = swappers;
         this.victimPageAddress = victimPageAddress;
         long bytes = ((long) pageCount) * META_DATA_BYTES_PER_PAGE;
+
+        long bytesToFree = GrabAllocator.leakedBytesCounter.get();
+        long currentThreadID = Thread.currentThread().getId();
+        if ( bytesToFree > 0 )
+        {
+            System.out.println( currentThreadID + ":have " + bytesToFree + " bytes to free, but open new page cache already." );
+        }
+        else
+        {
+            System.out.println( currentThreadID + ":no bytes kept. Good to allocate." );
+        }
         this.baseAddress = memoryAllocator.allocateAligned( bytes, Long.BYTES );
+
         this.bufferAlignment = bufferAlignment;
         clearMemory( baseAddress, pageCount );
     }
@@ -534,5 +547,10 @@ class PageList
         sb.append( ", swapperId = " ).append( getSwapperId( pageRef ) );
         sb.append( ", usageCounter = " ).append( getUsageCounter( pageRef ) );
         sb.append( " ] " ).append( OffHeapPageLock.toString( offLock( pageRef ) ) );
+    }
+
+    public void close()
+    {
+        memoryAllocator.freeMemory();
     }
 }
