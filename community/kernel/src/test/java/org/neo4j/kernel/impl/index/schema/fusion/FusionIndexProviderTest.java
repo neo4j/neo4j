@@ -205,8 +205,7 @@ public class FusionIndexProviderTest
             }
 
             // then
-            assertThat( fusionIndexProvider.getPopulationFailure( AN_INDEX ),
-                    containsString( failure ) );
+            assertThat( fusionIndexProvider.getPopulationFailure( AN_INDEX ), containsString( failure ) );
         }
     }
 

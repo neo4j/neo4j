@@ -28,8 +28,7 @@ public class TimeNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSchema
     @Override
     NativeSchemaIndexPopulator<ZonedTimeSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        TemporalIndexFiles.FileLayout<ZonedTimeSchemaKey> fileLayout =
-                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_TIME );
+        TemporalIndexFiles.FileLayout<ZonedTimeSchemaKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_TIME );
         return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
     }
 

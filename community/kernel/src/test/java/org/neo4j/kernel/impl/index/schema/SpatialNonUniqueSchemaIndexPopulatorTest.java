@@ -40,8 +40,7 @@ public class SpatialNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSch
     NativeSchemaIndexPopulator<SpatialSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
         fileLayout = new SpatialIndexFiles.SpatialFileLayout( crs, settings, super.getIndexFile() );
-        return new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig,
-                new StandardConfiguration() );
+        return new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig, new StandardConfiguration() );
     }
 
     @Override

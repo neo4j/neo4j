@@ -307,8 +307,7 @@ class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index )
-            throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         StoreIndexDescriptor storeIndexDescriptor = getStoreIndexDescriptor( index );
         if ( storeIndexDescriptor == null )

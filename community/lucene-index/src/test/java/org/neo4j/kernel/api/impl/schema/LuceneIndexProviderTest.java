@@ -78,8 +78,7 @@ public class LuceneIndexProviderTest
                 new DirectoryFactory.InMemoryDirectoryFactory(), fs, graphDbDir );
         expectedException.expect( UnsupportedOperationException.class );
 
-        readOnlyIndexProvider.getPopulator( descriptor, new IndexSamplingConfig(
-                readOnlyConfig ) );
+        readOnlyIndexProvider.getPopulator( descriptor, new IndexSamplingConfig( readOnlyConfig ) );
     }
 
     @Test

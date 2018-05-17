@@ -190,8 +190,7 @@ public class SchemaCache
         private final Map<Class<?>,Object> dependantState;
         private final MutableIntObjectMap<List<CapableIndexDescriptor>> indexByProperty;
 
-        SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules,
-                          IndexProviderMap indexProviderMap )
+        SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules, IndexProviderMap indexProviderMap )
         {
             this.constraintSemantics = constraintSemantics;
             this.indexProviderMap = indexProviderMap;

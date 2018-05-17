@@ -822,14 +822,10 @@ public class MultipleOpenCursorsTest
 
         abstract void doCreateIndex( DatabaseRule db );
 
-        NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor,
-                IndexQuery... indexQueries )
-
-                throws KernelException
+        NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, IndexQuery... indexQueries ) throws KernelException
         {
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
-            ktx.dataRead().nodeIndexSeek( indexDescriptor,
-                                          cursor, IndexOrder.NONE, indexQueries );
+            ktx.dataRead().nodeIndexSeek( indexDescriptor, cursor, IndexOrder.NONE, indexQueries );
             return cursor;
         }
     }

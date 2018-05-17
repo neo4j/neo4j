@@ -173,8 +173,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    private boolean indexStillExists( SchemaRead schemaRead, SchemaDescriptor descriptor,
-            IndexReference index )
+    private boolean indexStillExists( SchemaRead schemaRead, SchemaDescriptor descriptor, IndexReference index )
     {
         IndexReference existingIndex = schemaRead.index( descriptor.keyId(), descriptor.getPropertyIds() );
         return existingIndex != IndexReference.NO_INDEX && existingIndex.equals( index );

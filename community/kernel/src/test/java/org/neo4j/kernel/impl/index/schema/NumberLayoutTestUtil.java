@@ -26,13 +26,10 @@ import java.util.Set;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
-
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,NativeSchemaValue>
 {

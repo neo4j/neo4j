@@ -39,8 +39,7 @@ public class TimeUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAccessor
     @Override
     protected LayoutTestUtil<ZonedTimeSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil<>(
-                new TimeLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+        return new UniqueLayoutTestUtil<>( new TimeLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
     }
 
 }

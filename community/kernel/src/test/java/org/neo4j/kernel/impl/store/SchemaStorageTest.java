@@ -363,23 +363,20 @@ public class SchemaStorageTest
         return forSchema( forLabel( labelId( label ), propId( propertyKey ) ), PROVIDER_DESCRIPTOR ).withId( ruleId );
     }
 
-    private StoreIndexDescriptor makeIndexRuleForConstraint( long ruleId, String label, String propertyKey,
-                                                             long constraintId )
+    private StoreIndexDescriptor makeIndexRuleForConstraint( long ruleId, String label, String propertyKey, long constraintId )
     {
         return uniqueForSchema( forLabel( labelId( label ), propId( propertyKey ) ), PROVIDER_DESCRIPTOR ).withIds( ruleId, constraintId );
     }
 
     private ConstraintRule getUniquePropertyConstraintRule( long id, String label, String property )
     {
-        return ConstraintRule.constraintRule( id,
-                ConstraintDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) ), 0L );
+        return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) ), 0L );
     }
 
     private ConstraintRule getRelationshipPropertyExistenceConstraintRule( long id, String type,
             String property )
     {
-        return ConstraintRule.constraintRule( id,
-                ConstraintDescriptorFactory.existsForRelType( typeId( type ), propId( property ) ) );
+        return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForRelType( typeId( type ), propId( property ) ) );
     }
 
     private static int labelId( String labelName )

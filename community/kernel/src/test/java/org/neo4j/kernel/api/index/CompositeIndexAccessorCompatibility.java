@@ -43,8 +43,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    public CompositeIndexAccessorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    public CompositeIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }

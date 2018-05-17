@@ -151,13 +151,11 @@ public class SimpleIndexReaderTest
 
     private SimpleIndexReader getNonUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, TestIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
-                                      taskCoordinator );
+        return new SimpleIndexReader( partitionSearcher, TestIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig, taskCoordinator );
     }
 
     private SimpleIndexReader getUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, TestIndexDescriptorFactory.uniqueForLabel( 0, 0 ),
-                                      samplingConfig, taskCoordinator );
+        return new SimpleIndexReader( partitionSearcher, TestIndexDescriptorFactory.uniqueForLabel( 0, 0 ), samplingConfig, taskCoordinator );
     }
 }

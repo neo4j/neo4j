@@ -206,8 +206,8 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         for ( int round = 0; round < rounds; round++ )
         {
             // generate a batch of updates (add, change, remove)
-            IndexEntryUpdate<IndexDescriptor>[] batch = generateRandomUpdates( expectedData, newDataGenerator,
-                                                                               random.nextInt( 5, 20 ), (float) round / rounds * 2 );
+            IndexEntryUpdate<IndexDescriptor>[] batch =
+                    generateRandomUpdates( expectedData, newDataGenerator, random.nextInt( 5, 20 ), (float) round / rounds * 2 );
             // apply to tree
             processAll( batch );
             // apply to expectedData

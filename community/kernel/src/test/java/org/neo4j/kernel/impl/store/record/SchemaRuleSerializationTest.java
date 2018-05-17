@@ -51,8 +51,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
     StoreIndexDescriptor indexCompositeRegular = forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID );
 
-    StoreIndexDescriptor indexCompositeUnique =
-            uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID );
+    StoreIndexDescriptor indexCompositeUnique = uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID );
 
     StoreIndexDescriptor indexBigComposite = forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ).withId( RULE_ID );
 
@@ -431,8 +430,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
-        StoreIndexDescriptor
-                deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+        StoreIndexDescriptor deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
@@ -453,8 +451,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
-        StoreIndexDescriptor
-                deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+        StoreIndexDescriptor deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );

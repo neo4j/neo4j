@@ -28,15 +28,13 @@ public class TimeUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexP
     @Override
     NativeSchemaIndexPopulator<ZonedTimeSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        TemporalIndexFiles.FileLayout<ZonedTimeSchemaKey> fileLayout =
-                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_TIME );
+        TemporalIndexFiles.FileLayout<ZonedTimeSchemaKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_TIME );
         return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override
     protected LayoutTestUtil<ZonedTimeSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil<>(
-                new TimeLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+        return new UniqueLayoutTestUtil<>( new TimeLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
     }
 }

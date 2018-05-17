@@ -63,8 +63,7 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
-    public SimpleIndexPopulatorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    public SimpleIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }

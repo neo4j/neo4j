@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -54,7 +55,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -200,8 +200,7 @@ public class IndexingServiceIntegrationTest
         int indexLabel7 = labelTokenHolder.getIdByName( indexLabelPrefix + 7 );
         int indexProperty7 = propertyKeyTokenHolder.getIdByName( indexPropertyPrefix + 7 );
 
-        IndexProxy index = indexingService.getIndexProxy( TestIndexDescriptorFactory
-                .forLabel( indexLabel7, indexProperty7).schema() );
+        IndexProxy index = indexingService.getIndexProxy( TestIndexDescriptorFactory.forLabel( indexLabel7, indexProperty7 ).schema() );
 
         index.drop();
 

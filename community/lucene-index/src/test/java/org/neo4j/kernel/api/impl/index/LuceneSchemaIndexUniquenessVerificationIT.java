@@ -65,8 +65,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
 {
     private static final int DOCS_PER_PARTITION = ThreadLocalRandom.current().nextInt( 10, 100 );
     private static final int PROPERTY_KEY_ID = 42;
-    private static final IndexDescriptor descriptor = TestIndexDescriptorFactory
-            .uniqueForLabel( 0, PROPERTY_KEY_ID );
+    private static final IndexDescriptor descriptor = TestIndexDescriptorFactory.uniqueForLabel( 0, PROPERTY_KEY_ID );
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();

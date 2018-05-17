@@ -122,9 +122,9 @@ public class FusionIndexReaderTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexReader = new FusionIndexReader( fusionVersion.slotSelector(), new LazyInstanceSelector<>( readers, throwingFactory() ),
-                TestIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
-    }
+        fusionIndexReader = new FusionIndexReader(  fusionVersion.slotSelector(), new LazyInstanceSelector<>( readers, throwingFactory() ),
+                TestIndexDescriptorFactory
+                .forLabel( LABEL_KEY, PROP_KEY ) );}
 
     private IntFunction<IndexReader> throwingFactory()
     {

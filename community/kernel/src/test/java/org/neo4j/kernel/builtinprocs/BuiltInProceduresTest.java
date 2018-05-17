@@ -414,8 +414,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexReference index =
-                IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        IndexReference index = IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         indexes.add( index );
     }
 
@@ -424,8 +423,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexReference index =
-                IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        IndexReference index = IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }

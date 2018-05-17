@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -129,8 +129,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     private final List<Token> propertyKeys;
 
     private DumpCountsStore( PrintStream out, Map<Long,IndexDescriptor> indexes, List<Token> labels,
-                             List<RelationshipTypeToken> relationshipTypes,
-                             List<Token> propertyKeys )
+                             List<RelationshipTypeToken> relationshipTypes, List<Token> propertyKeys )
     {
         this.out = out;
         this.indexes = indexes;

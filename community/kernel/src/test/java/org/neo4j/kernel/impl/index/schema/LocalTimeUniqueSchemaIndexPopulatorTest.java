@@ -36,7 +36,6 @@ public class LocalTimeUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaI
     @Override
     protected LayoutTestUtil<LocalTimeSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new UniqueLayoutTestUtil<>(
-                new LocalTimeLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+        return new UniqueLayoutTestUtil<>( new LocalTimeLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
     }
 }

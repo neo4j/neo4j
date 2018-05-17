@@ -34,6 +34,42 @@ import static java.lang.String.format;
  */
 public interface IndexReference extends IndexCapability
 {
+    /**
+     * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
+     * hot path.
+     *
+     * @param indexes Indexes to sort
+     * @return sorted indexes
+     */
+    static Iterator<IndexReference> sortByType( Iterator<IndexReference> indexes )
+    {
+        List<IndexReference> materialized = Iterators.asList( indexes );
+        return Iterators.concat(
+                Iterators.filter( i -> !i.isUnique(), materialized.iterator() ),
+                Iterators.filter( IndexReference::isUnique, materialized.iterator() ) );
+
+    }
+
+    boolean isUnique();
+
+    int label();
+
+    int[] properties();
+
+    String providerKey();
+
+    String providerVersion();
+
+    /**
+     * @param tokenNameLookup used for looking up names for token ids.
+     * @return a user friendly description of what this index indexes.
+     */
+    default String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        String type = isUnique() ? "UNIQUE" : "GENERAL";
+        return format( "Index( %s, %s )",  type, SchemaUtil.niceProperties( tokenNameLookup, properties() ) );
+    }
+
     IndexReference NO_INDEX = new IndexReference()
     {
         @Override
@@ -78,40 +114,4 @@ public interface IndexReference extends IndexCapability
             return null;
         }
     };
-
-    /**
-     * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
-     * hot path.
-     *
-     * @param indexes Indexes to sort
-     * @return sorted indexes
-     */
-    static Iterator<IndexReference> sortByType( Iterator<IndexReference> indexes )
-    {
-        List<IndexReference> materialized = Iterators.asList( indexes );
-        return Iterators.concat(
-                Iterators.filter( i -> !i.isUnique(), materialized.iterator() ),
-                Iterators.filter( IndexReference::isUnique, materialized.iterator() ) );
-
-    }
-
-    boolean isUnique();
-
-    int label();
-
-    int[] properties();
-
-    String providerKey();
-
-    String providerVersion();
-
-    /**
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
-     */
-    default String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        String type = isUnique() ? "UNIQUE" : "GENERAL";
-        return format( "Index( %s, %s )",  type, SchemaUtil.niceProperties( tokenNameLookup, properties() ) );
-    }
 }

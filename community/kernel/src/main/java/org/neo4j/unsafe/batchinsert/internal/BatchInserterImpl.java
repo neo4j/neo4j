@@ -469,10 +469,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private void createIndex( int labelId, int[] propertyKeyIds )
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
-        StoreIndexDescriptor schemaRule =
-                IndexDescriptorFactory
-                .forSchema( schema, Optional.empty(), indexProviderMap.getDefaultProvider().getProviderDescriptor() )
-                .withId( schemaStore.nextId() );
+        IndexProvider.Descriptor providerDescriptor = indexProviderMap.getDefaultProvider().getProviderDescriptor();
+        StoreIndexDescriptor schemaRule = IndexDescriptorFactory.forSchema( schema, Optional.empty(), providerDescriptor ).withId( schemaStore.nextId() );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
         {
@@ -609,18 +607,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         long indexId = schemaStore.nextId();
         long constraintRuleId = schemaStore.nextId();
 
-        StoreIndexDescriptor storeIndexDescriptor =
-                IndexDescriptorFactory.uniqueForSchema(
-                        schema,
-                        this.indexProviderMap.getDefaultProvider().getProviderDescriptor()
-                ).withIds( indexId, constraintRuleId );
+        IndexProvider.Descriptor providerDescriptor = this.indexProviderMap.getDefaultProvider().getProviderDescriptor();
+        StoreIndexDescriptor storeIndexDescriptor = IndexDescriptorFactory.uniqueForSchema( schema, providerDescriptor ).withIds( indexId, constraintRuleId );
 
-        ConstraintRule constraintRule =
-                ConstraintRule.constraintRule(
-                        constraintRuleId,
-                        constraintDescriptor,
-                        indexId
-                );
+        ConstraintRule constraintRule = ConstraintRule.constraintRule( constraintRuleId, constraintDescriptor, indexId );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( constraintRule ) )
         {
