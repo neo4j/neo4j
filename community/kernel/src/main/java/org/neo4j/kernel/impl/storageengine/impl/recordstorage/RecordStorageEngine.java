@@ -154,7 +154,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IndexStoreView indexStoreView;
     private final ExplicitIndexProviderLookup explicitIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
-    private final Supplier<StorageStatement> storeStatementSupplier;
     private final IdController idController;
     private final int denseNodeThreshold;
     private final int recordIdBatchSize;
@@ -220,7 +219,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
             this.indexProviderMap = indexProviderMap;
-            indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, this.indexProviderMap,
+            indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap,
                     indexStoreView, tokenNameLookup,
                     Iterators.asList( schemaStorage.indexesGetAll() ), logProvider,
                     indexingServiceMonitor, schemaState );
@@ -229,11 +228,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState,
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
-            storeStatementSupplier = storeStatementSupplier( neoStores );
+            Supplier<StorageStatement> storeStatementSupplier = storeStatementSupplier( neoStores );
             storeLayer = new StorageLayer(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                    schemaStorage, neoStores, indexingService,
-                    storeStatementSupplier, schemaCache, indexProviderMap );
+                    schemaStorage, neoStores, indexingService, storeStatementSupplier, schemaCache );
 
             explicitIndexApplierLookup = new ExplicitIndexApplierLookup.Direct( explicitIndexProviderLookup );
 

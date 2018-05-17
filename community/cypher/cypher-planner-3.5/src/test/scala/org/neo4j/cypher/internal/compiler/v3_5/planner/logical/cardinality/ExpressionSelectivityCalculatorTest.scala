@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_5._
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
+import org.neo4j.cypher.internal.util.v3_5._
+import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions._
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {

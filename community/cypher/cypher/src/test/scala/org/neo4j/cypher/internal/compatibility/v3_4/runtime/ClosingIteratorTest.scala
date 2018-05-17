@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_5.{CypherException, TaskCloser}
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.{CypherException, TaskCloser}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.intValue
 

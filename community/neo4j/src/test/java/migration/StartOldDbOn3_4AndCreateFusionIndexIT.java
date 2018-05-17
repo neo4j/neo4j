@@ -47,7 +47,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -150,7 +150,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
             verifyAfterAdditionalUpdate( db, LABEL_FUSION_20 );
 
             // and finally
-            verifyExpectedProvider( db, LABEL_LUCENE_10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR );
+            verifyExpectedProvider( db, LABEL_LUCENE_10, LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR );
             verifyExpectedProvider( db, LABEL_FUSION_20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
         }
         finally
@@ -215,7 +215,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
             verifyAfterAdditionalUpdate( db, LABEL_FUSION_20 );
 
             // and finally
-            verifyExpectedProvider( db, LABEL_LUCENE_10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR );
+            verifyExpectedProvider( db, LABEL_LUCENE_10, LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR );
             verifyExpectedProvider( db, LABEL_FUSION_10, NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR );
             verifyExpectedProvider( db, LABEL_FUSION_20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
         }

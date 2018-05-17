@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, QueryExpression}
 import org.neo4j.cypher.internal.v3_5.expressions.{Expression, LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, QueryExpression}
 
 object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   protected def constructPlan(idName: String,

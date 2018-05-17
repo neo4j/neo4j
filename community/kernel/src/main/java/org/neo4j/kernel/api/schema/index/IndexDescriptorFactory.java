@@ -23,8 +23,10 @@ import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.MULTI_TOKEN;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class IndexDescriptorFactory
@@ -43,6 +45,18 @@ public class IndexDescriptorFactory
                                              IndexProvider.Descriptor providerDescriptor )
     {
         return new IndexDescriptor( schema, GENERAL, name, providerDescriptor );
+    }
+
+    public static IndexDescriptor forSchema( MultiTokenSchemaDescriptor schema )
+    {
+        return new IndexDescriptor( schema, MULTI_TOKEN, Optional.empty(), IndexProvider.UNDECIDED );
+    }
+
+    public static IndexDescriptor forSchema( MultiTokenSchemaDescriptor schema,
+                                             Optional<String> name,
+                                             IndexProvider.Descriptor providerDescriptor )
+    {
+        return new IndexDescriptor( schema, MULTI_TOKEN, name, providerDescriptor );
     }
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema,

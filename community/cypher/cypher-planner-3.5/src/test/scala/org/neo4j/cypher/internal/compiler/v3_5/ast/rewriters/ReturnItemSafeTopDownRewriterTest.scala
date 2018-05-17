@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_5.Rewriter
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.ReturnItemSafeTopDownRewriter
+import org.neo4j.cypher.internal.util.v3_5.Rewriter
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions.{Equals, Variable}
 
 class ReturnItemSafeTopDownRewriterTest extends CypherFunSuite with AstConstructionTestSupport {

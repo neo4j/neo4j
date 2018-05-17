@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_5.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_5.Cardinality
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions.Equals
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class CartesianProductsOrValueJoinsTest
   extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {

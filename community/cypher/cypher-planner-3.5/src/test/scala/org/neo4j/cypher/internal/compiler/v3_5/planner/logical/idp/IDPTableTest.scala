@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 import scala.collection.immutable.BitSet
 

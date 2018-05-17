@@ -67,6 +67,12 @@ public interface StoreReadLayer
     Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId );
 
     /**
+     * @param name name of the index to find
+     * @return {@link IndexDescriptor} associated with the given {@code name}.
+     */
+    CapableIndexDescriptor indexGetForName( String name );
+
+    /**
      * @return all {@link CapableIndexDescriptor} in storage.
      */
     Iterator<CapableIndexDescriptor> indexesGetAll();

@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CandidateGenerat
 import org.neo4j.cypher.internal.compiler.v3_5.planner.unsolvedPreds
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_5.expressions.{HasLabels, Variable}
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 case object selectHasLabelWithJoin extends CandidateGenerator[LogicalPlan] {
 

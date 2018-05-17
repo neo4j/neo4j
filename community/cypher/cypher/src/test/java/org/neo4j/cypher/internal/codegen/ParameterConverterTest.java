@@ -46,14 +46,14 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.LongArray;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
@@ -74,11 +74,11 @@ import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 public class ParameterConverterTest
 {

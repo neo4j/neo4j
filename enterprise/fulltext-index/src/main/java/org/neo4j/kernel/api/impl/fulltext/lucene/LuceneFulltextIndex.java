@@ -46,7 +46,7 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     {
         super( storage, partitionFactory, descriptor );
         this.analyzer = analyzer;
-        this.identifier = descriptor.identifier();
+        this.identifier = descriptor.getName();
         this.type = descriptor.schema().entityType();
         this.properties = descriptor.propertyNames();
     }

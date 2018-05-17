@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.util.v3_5.attribution.SameId
-import org.neo4j.cypher.internal.v3_5.logical.plans.Selection
 import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v3_5.logical.plans.Selection
 
 case object fuseSelections extends Rewriter {
 

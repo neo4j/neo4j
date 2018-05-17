@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -31,15 +31,16 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.IndexMigrator;
+import org.neo4j.util.VisibleForTesting;
 
-public abstract class AbstractLuceneIndexProvider<DESCRIPTOR extends IndexDescriptor> extends IndexProvider<DESCRIPTOR>
+public abstract class AbstractLuceneIndexProvider extends IndexProvider
 {
-    protected final IndexStorageFactory indexStorageFactory;
+    private final IndexStorageFactory indexStorageFactory;
     protected final Config config;
     protected final OperationalMode operationalMode;
     protected final FileSystemAbstraction fileSystem;
@@ -66,22 +67,28 @@ public abstract class AbstractLuceneIndexProvider<DESCRIPTOR extends IndexDescri
     }
 
     @Override
-    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
     {
-        String failure = getIndexStorage( indexId ).getStoredIndexFailure();
+        String failure = getIndexStorage( descriptor.getId() ).getStoredIndexFailure();
         if ( failure == null )
         {
-            throw new IllegalStateException( "Index " + indexId + " isn't failed" );
+            throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
         }
         return failure;
     }
 
-    protected PartitionedIndexStorage getIndexStorage( long indexId )
+    @Override
+    public IndexCapability getCapability()
     {
-        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
+        return IndexCapability.NO_CAPABILITY;
     }
 
-    protected boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor ) throws IOException
+    protected PartitionedIndexStorage getIndexStorage( long indexId )
+    {
+        return indexStorageFactory.indexStorageOf( indexId );
+    }
+
+    protected boolean indexIsOnline( PartitionedIndexStorage indexStorage, StoreIndexDescriptor descriptor ) throws IOException
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config ).withIndexStorage( indexStorage ).build() )
         {
@@ -97,6 +104,7 @@ public abstract class AbstractLuceneIndexProvider<DESCRIPTOR extends IndexDescri
     /**
      * Visible <b>only</b> for testing.
      */
+    @VisibleForTesting
     protected IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory )
     {
         return new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );

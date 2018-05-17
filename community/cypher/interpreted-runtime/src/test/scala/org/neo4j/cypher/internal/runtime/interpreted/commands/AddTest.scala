@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import java.nio.charset.StandardCharsets
 
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Add, Literal, ParameterExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue

@@ -28,9 +28,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -48,19 +48,16 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.storageengine.api.EntityType;
 
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.NON_SCHEMA;
-
-class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDescriptor> implements FulltextAdapter
+class FulltextIndexProvider extends AbstractLuceneIndexProvider implements FulltextAdapter
 {
 
     private final FileSystemAbstraction fileSystem;
@@ -92,48 +89,19 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDes
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
+    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
-        try
-        {
-            if ( type == NON_SCHEMA )
-            {
-                return new FulltextIndexDescriptor( schema, name, propertyKeyTokenHolder, metadata );
-            }
-            throw new UnsupportedOperationException( String.format( "This provider does not support indexes of type %s", type ) );
-        }
-        catch ( TokenNotFoundException e )
-        {
-            // This should only ever happen when called via org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider.indexDescriptorFor(java.lang.String, org.neo4j.storageengine.api.EntityType, java.lang.String[], java.lang.String...)
-            throw new RuntimeException( e );
-        }
-    }
-
-    @Override
-    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
-    {
-        return IndexCapability.NO_CAPABILITY;
-    }
-
-    @Override
-    public boolean compatible( IndexDescriptor indexDescriptor )
-    {
-        return indexDescriptor instanceof FulltextIndexDescriptor;
-    }
-
-    @Override
-    public InternalIndexState getInitialState( long indexId, FulltextIndexDescriptor descriptor )
-    {
-        PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         String failure = indexStorage.getStoredIndexFailure();
         if ( failure != null )
         {
             return InternalIndexState.FAILED;
         }
-        if ( !descriptor.analyzer().equals( analyzerClassName ) )
-        {
-            return InternalIndexState.POPULATING;
-        }
+        //TODO METADAT/ANALYZER
+//        if ( !descriptor.analyzer().equals( analyzerClassName ) )
+//        {
+//            return InternalIndexState.POPULATING;
+//        }
         try
         {
             return indexIsOnline( indexStorage, descriptor ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
@@ -145,45 +113,42 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDes
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        FulltextIndex fulltextIndex = FulltextIndexBuilder.create( descriptor, config, analyzer )
-                .withFileSystem( fileSystem )
-                .withOperationalMode( operationalMode )
-                .withIndexStorage( getIndexStorage( indexId ) )
+        FulltextIndexDescriptor fulltextIndexDescriptor = new FulltextIndexDescriptor( descriptor, propertyKeyTokenHolder, analyzerClassName );
+        FulltextIndex fulltextIndex = FulltextIndexBuilder.create( fulltextIndexDescriptor, config, analyzer ).withFileSystem( fileSystem ).withOperationalMode(
+                operationalMode ).withIndexStorage( getIndexStorage( descriptor.getId() ) )
                 .withWriterConfig( () -> IndexWriterConfigs.population( analyzer ) )
                 .build();
         if ( fulltextIndex.isReadOnly() )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        return new FulltextLuceneIndexPopulator( descriptor, fulltextIndex );
+        return new FulltextLuceneIndexPopulator( fulltextIndexDescriptor, fulltextIndex );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        FulltextIndex fulltextIndex = FulltextIndexBuilder.create( descriptor, config, analyzer )
-                .withFileSystem( fileSystem )
-                .withOperationalMode( operationalMode )
-                .withIndexStorage( getIndexStorage( indexId ) )
-                .withWriterConfig( () -> IndexWriterConfigs.standard( analyzer ) )
-                .build();
+        FulltextIndexDescriptor fulltextIndexDescriptor = new FulltextIndexDescriptor( descriptor, propertyKeyTokenHolder, analyzerClassName );
+        FulltextIndex fulltextIndex = FulltextIndexBuilder.create( fulltextIndexDescriptor, config, analyzer ).withFileSystem( fileSystem ).withOperationalMode(
+                operationalMode ).withIndexStorage( getIndexStorage( descriptor.getId() ) ).withWriterConfig(
+                () -> IndexWriterConfigs.standard( analyzer ) ).build();
         fulltextIndex.open();
 
-        FulltextIndexAccessor fulltextIndexAccessor = new FulltextIndexAccessor( fulltextIndex, descriptor );
-        accessorsByName.put( descriptor.identifier(), fulltextIndexAccessor );
+        FulltextIndexAccessor fulltextIndexAccessor = new FulltextIndexAccessor( fulltextIndex, fulltextIndexDescriptor );
+        accessorsByName.put( descriptor.getName(), fulltextIndexAccessor );
         return fulltextIndexAccessor;
     }
 
     @Override
-    public Stream<String> propertyKeyStrings( IndexDescriptor descriptor )
+    public Stream<String> propertyKeyStrings( IndexReference index )
     {
-        return Arrays.stream( descriptor.schema().getPropertyIds() ).mapToObj( id -> propertyKeyTokenHolder.getTokenByIdOrNull( id ).name() );
+        return Arrays.stream( index.schema().getPropertyIds() ).mapToObj( id -> propertyKeyTokenHolder.getTokenByIdOrNull( id ).name() );
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties ) throws InvalidArgumentsException
+    public MultiTokenSchemaDescriptor schemaFor( EntityType type, String[] entityTokens, String... properties ) throws InvalidArgumentsException
     {
         if ( Arrays.stream( properties ).anyMatch( prop -> prop.equals( FulltextAdapter.FIELD_ENTITY_ID ) ) )
         {
@@ -201,7 +166,9 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDes
         int[] propertyIds = Arrays.stream( properties ).mapToInt( propertyKeyTokenHolder::getOrCreateId ).toArray();
         try
         {
-            return indexDescriptorFor( SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds ), NON_SCHEMA, name, analyzerClassName );
+
+            return SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds );
+
         }
         catch ( RuntimeException e )
         {

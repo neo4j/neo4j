@@ -148,11 +148,6 @@ public class BuiltInProcedures
                     throw new ProcedureException( Status.Schema.IndexNotFound, e,
                             "No index on ", index.userDescription( tokens ) );
                 }
-                catch ( LabelNotFoundKernelException e )
-                {
-                    throw new ProcedureException( Status.General.InvalidArguments, e,
-                            "Label not found " );
-                }
             }
             return result.stream();
         }

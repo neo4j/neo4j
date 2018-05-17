@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.MutableIntIterator;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -26,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
@@ -602,14 +603,14 @@ public class EntityUpdatesTest
         }
         return ( nodeId1, type, propertyIds, sink ) ->
         {
-            PrimitiveIntIterator iterator = propertyIds.iterator();
+            MutableIntIterator iterator = propertyIds.intIterator();
             while ( iterator.hasNext() )
             {
                 int propertyId = iterator.next();
                 if ( propertyMap.containsKey( propertyId ) )
                 {
                     sink.onProperty( propertyId, propertyMap.get( propertyId ) );
-                    propertyIds.remove( propertyId );
+                    iterator.remove();
                 }
             }
         };

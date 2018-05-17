@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
 
 /**
   * ForeachApply is a side-effect type apply, which operates on a list value. Each left row is used to compute a

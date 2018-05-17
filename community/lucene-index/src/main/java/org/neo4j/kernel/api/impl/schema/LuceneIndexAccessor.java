@@ -32,34 +32,8 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
-public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader,SchemaIndex,IndexDescriptor>
+public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader,SchemaIndex>
 {
-    private final LuceneIndexWriter writer;
-    private final SchemaIndex luceneIndex;
-    private final SchemaIndexDescriptor descriptor;
-
-    public LuceneIndexAccessor( SchemaIndex luceneIndex, SchemaIndexDescriptor descriptor )
-    {
-        this.luceneIndex = luceneIndex;
-        this.descriptor = descriptor;
-        this.writer = luceneIndex.isReadOnly() ? null : luceneIndex.getIndexWriter();
-    }
-
-    @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
-    {
-        if ( luceneIndex.isReadOnly() )
-        {
-            throw new UnsupportedOperationException( "Can't create updater for read only index." );
-        }
-        return new LuceneIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
-    }
-
-    @Override
-    public void drop() throws IOException
-    {
-        luceneIndex.drop();
-    }
 
     public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor )
     {

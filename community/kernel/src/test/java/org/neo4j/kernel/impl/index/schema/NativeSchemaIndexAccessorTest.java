@@ -734,7 +734,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
 
     private IndexProgressor.NodeValueClient filterClient( final NodeValueIterator iter, final IndexQuery.ExactPredicate filter )
     {
-        return new IndexProgressor.NodeValueClient<SchemaIndexDescriptor>()
+        return new IndexProgressor.NodeValueClient()
         {
             @Override
             public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )

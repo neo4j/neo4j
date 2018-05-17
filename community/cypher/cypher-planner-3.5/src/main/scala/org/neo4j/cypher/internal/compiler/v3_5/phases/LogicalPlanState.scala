@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.phases
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.util.v3_5.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_5.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_5.phases.{BaseState, Condition}
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.{SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_5.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.util.v3_5.InputPosition
 import org.neo4j.cypher.internal.util.v3_5.symbols.CypherType
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 

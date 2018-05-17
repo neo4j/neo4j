@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.notification.IndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{AsDynamicPropertyNonScannable, AsStringRangeNonSeekable, LogicalPlan}
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{AsDynamicPropertyNonScannable, AsStringRangeNonSeekable, LogicalPlan}
 
 object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 

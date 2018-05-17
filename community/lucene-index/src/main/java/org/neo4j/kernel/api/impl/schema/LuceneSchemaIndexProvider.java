@@ -22,9 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexProvider;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -35,17 +33,15 @@ import org.neo4j.kernel.api.impl.schema.populator.UniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
-public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider<SchemaIndexDescriptor>
+public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider
 {
     static final int PRIORITY = 1;
 
@@ -64,34 +60,9 @@ public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider<Schem
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
+    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
-        if ( type == GENERAL )
-        {
-            return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
-        }
-        else if ( type == UNIQUE )
-        {
-            return SchemaIndexDescriptorFactory.uniqueForLabelBySchema( schema );
-        }
-        throw new UnsupportedOperationException( String.format( "This provider does not support indexes of type %s", type ) );    }
-
-    @Override
-    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
-    {
-        return IndexCapability.NO_CAPABILITY;
-    }
-
-    @Override
-    public boolean compatible( IndexDescriptor indexDescriptor )
-    {
-        return indexDescriptor instanceof SchemaIndexDescriptor;
-    }
-
-    @Override
-    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
-    {
-        PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         String failure = indexStorage.getStoredIndexFailure();
         if ( failure != null )
         {
@@ -103,7 +74,7 @@ public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider<Schem
         }
         catch ( IOException e )
         {
-            monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
+            monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
             return InternalIndexState.POPULATING;
         }
     }
@@ -112,12 +83,12 @@ public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider<Schem
     public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
-                                        .withFileSystem( fileSystem )
-                                        .withOperationalMode( operationalMode )
-                                        .withSamplingConfig( samplingConfig )
-                                        .withIndexStorage( getIndexStorage( descriptor.getId() ) )
-                                        .withWriterConfig( IndexWriterConfigs::population )
-                                        .build();
+                .withFileSystem( fileSystem )
+                .withOperationalMode( operationalMode )
+                .withSamplingConfig( samplingConfig )
+                .withIndexStorage( getIndexStorage( descriptor.getId() ) )
+                .withWriterConfig( IndexWriterConfigs::population )
+                .build();
         if ( luceneIndex.isReadOnly() )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
@@ -136,10 +107,10 @@ public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider<Schem
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
-                                            .withOperationalMode( operationalMode )
-                                            .withSamplingConfig( samplingConfig )
-                                            .withIndexStorage( getIndexStorage( descriptor.getId() ) )
-                                            .build();
+                .withOperationalMode( operationalMode )
+                .withSamplingConfig( samplingConfig )
+                .withIndexStorage( getIndexStorage( descriptor.getId() ) )
+                .build();
         luceneIndex.open();
         return new LuceneIndexAccessor( luceneIndex, descriptor );
     }

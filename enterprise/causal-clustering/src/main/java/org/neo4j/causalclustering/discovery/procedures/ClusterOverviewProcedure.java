@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.util.Collections.emptyMap;
 import static java.util.Comparator.comparing;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;

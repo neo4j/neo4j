@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Null}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{LiteralRegularExpression, RegularExpression}
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 
 class RegularExpressionPredicateTest extends CypherFunSuite {

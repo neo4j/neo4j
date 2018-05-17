@@ -29,7 +29,6 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService
 import org.neo4j.causalclustering.identity.BoundState;
 import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
-import org.neo4j.kernel.impl.util.DebugUtil;
 import org.neo4j.kernel.lifecycle.SafeLifecycle;
 import org.neo4j.scheduler.JobScheduler;
 

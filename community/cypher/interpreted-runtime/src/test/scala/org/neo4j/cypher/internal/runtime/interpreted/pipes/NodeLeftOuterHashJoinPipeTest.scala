@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper, TestableIterator}
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper, TestableIterator}
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy

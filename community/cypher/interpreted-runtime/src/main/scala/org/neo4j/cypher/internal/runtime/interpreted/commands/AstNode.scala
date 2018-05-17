@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
 
 import scala.reflect.ClassTag
 

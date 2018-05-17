@@ -39,11 +39,11 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.configuration.Config;
 
-import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_ALL_DATABASES;
+import static org.neo4j.causalclustering.routing.Util.extractBoltAddress;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.ROUTERS;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.TTL;
+import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_ALL_DATABASES;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.causalclustering.routing.Util.extractBoltAddress;
 
 public class GetRoutersForAllDatabasesProcedure implements CallableProcedure
 {

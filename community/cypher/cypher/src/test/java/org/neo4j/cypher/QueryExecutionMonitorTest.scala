@@ -22,9 +22,9 @@ package org.neo4j.cypher
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.kernel.GraphDatabaseQueryService

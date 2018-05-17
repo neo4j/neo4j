@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.helpers.collection.PrefetchingIterator
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable

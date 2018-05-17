@@ -23,11 +23,13 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -52,20 +54,22 @@ public abstract class PropertyAwareEntityStoreScan<RECORD extends PrimitiveRecor
     private boolean continueScanning;
     private long count;
     private long totalCount;
+    private final IntPredicate propertyKeyIdFilter;
     private final PropertyStore propertyStore;
     private final LockService locks;
     private final RECORD record;
 
-    protected PropertyAwareEntityStoreScan( RecordStore<RECORD> store, LockService locks, PropertyStore propertyStore )
+    protected PropertyAwareEntityStoreScan( RecordStore<RECORD> store, LockService locks, PropertyStore propertyStore, IntPredicate propertyKeyIdFilter )
     {
         this.store = store;
         this.propertyStore = propertyStore;
         this.locks = locks;
         this.record = store.newRecord();
         this.totalCount = store.getHighId();
+        this.propertyKeyIdFilter = propertyKeyIdFilter;
     }
 
-    protected static boolean containsAnyEntityToken( int[] entityTokenFilter, long... entityTokens )
+    static boolean containsAnyEntityToken( int[] entityTokenFilter, long... entityTokens )
     {
         if ( Arrays.equals( entityTokenFilter, ANY_ENTITY_TOKEN ) )
         {
@@ -79,6 +83,27 @@ public abstract class PropertyAwareEntityStoreScan<RECORD extends PrimitiveRecor
             }
         }
         return false;
+    }
+
+    boolean hasRelevantProperty( RECORD record, EntityUpdates.Builder updates )
+    {
+        boolean hasRelevantProperty = false;
+
+        for ( PropertyBlock property : properties( record ) )
+        {
+            int propertyKeyId = property.getKeyIndexId();
+            if ( propertyKeyIdFilter.test( propertyKeyId ) )
+            {
+                // This relationship has a property of interest to us
+                Value value = valueOf( property );
+                // No need to validate values before passing them to the updater since the index implementation
+                // is allowed to fail in which ever way it wants to. The result of failure will be the same as
+                // a failed validation, i.e. population FAILED.
+                updates.added( propertyKeyId, value );
+                hasRelevantProperty = true;
+            }
+        }
+        return hasRelevantProperty;
     }
 
     @Override

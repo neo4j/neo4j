@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast
 
-import org.neo4j.cypher.internal.util.v3_5.ASTNode
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.v3_5.functions._
 import org.neo4j.cypher.internal.frontend.v3_5.parser.CypherParser
+import org.neo4j.cypher.internal.util.v3_5.ASTNode
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.functions._
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}

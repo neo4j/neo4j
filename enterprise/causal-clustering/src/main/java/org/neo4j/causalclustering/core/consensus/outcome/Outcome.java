@@ -26,12 +26,12 @@ import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.Set;
 
-import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
-import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerStates;
+import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.Message;
 
 import static java.util.Collections.emptySet;
 

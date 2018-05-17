@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.v3_5.{CypherTypeException, InvalidArgumentException}
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap}
+import org.neo4j.cypher.internal.util.v3_5.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DurationValue, PointValue, TemporalValue, Values}
 import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}

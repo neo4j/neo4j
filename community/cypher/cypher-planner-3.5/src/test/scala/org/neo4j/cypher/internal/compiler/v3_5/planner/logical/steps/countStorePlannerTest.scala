@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, QueryGraphProducer}
 import org.neo4j.cypher.internal.frontend.v3_5.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.ir.v3_5.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, PlannerQuery}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions.{FunctionInvocation, FunctionName, Variable}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
 import org.scalatest.matchers.{MatchResult, Matcher}

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
-import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_5.phases.{BaseContext, VisitorPhase}

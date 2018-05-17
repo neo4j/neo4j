@@ -28,18 +28,15 @@ import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.cypher.InvalidSemanticsException;
-import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.values.virtual.MapValue;
-
-import static org.neo4j.function.ThrowingAction.noop;
 
 public class TransactionStateMachine implements StatementProcessor
 {

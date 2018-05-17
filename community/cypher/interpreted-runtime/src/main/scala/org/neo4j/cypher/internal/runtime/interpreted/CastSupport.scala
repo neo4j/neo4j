@@ -28,8 +28,6 @@ import org.neo4j.values.storable.{ArrayValue, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, AnyValueWriter}
 
-import org.neo4j.kernel.internal.Version
-
 import scala.reflect.ClassTag
 
 object CastSupport {

@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.common;
 
-import scala.AnyVal;
-
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;

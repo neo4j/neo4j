@@ -26,23 +26,21 @@ import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.values.storable.Value;
 
 public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<RelationshipRecord,FAILURE>
 {
     private final int[] relationshipTypeIds;
-    private final IntPredicate propertyKeyIdFilter;
     private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
 
     public RelationshipStoreScan( RelationshipStore relationshipStore, LockService locks, PropertyStore propertyStore,
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter )
     {
-        super( relationshipStore, locks, propertyStore );
+        super( relationshipStore, locks, propertyStore, propertyKeyIdFilter );
         this.relationshipTypeIds = relationshipTypeIds;
-        this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
     }
 
@@ -55,22 +53,8 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
         {
             // Notify the property update visitor
             EntityUpdates.Builder updates = EntityUpdates.forEntity( record.getId(), new long[]{reltype} );
-            boolean hasRelevantProperty = false;
 
-            for ( PropertyBlock property : properties( record ) )
-            {
-                int propertyKeyId = property.getKeyIndexId();
-                if ( propertyKeyIdFilter.test( propertyKeyId ) )
-                {
-                    // This relationship has a property of interest to us
-                    Value value = valueOf( property );
-                    Validators.INDEX_VALUE_VALIDATOR.validate( value );
-                    updates.added( propertyKeyId, value );
-                    hasRelevantProperty = true;
-                }
-            }
-
-            if ( hasRelevantProperty )
+            if ( hasRelevantProperty( record, updates ) )
             {
                 propertyUpdatesVisitor.visit( updates.build() );
             }

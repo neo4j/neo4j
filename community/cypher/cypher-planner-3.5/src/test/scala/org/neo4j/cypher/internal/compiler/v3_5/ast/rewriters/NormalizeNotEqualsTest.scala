@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
+import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.util.v3_5.DummyPosition
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.v3_5.expressions._
 
 class NormalizeNotEqualsTest extends CypherFunSuite {

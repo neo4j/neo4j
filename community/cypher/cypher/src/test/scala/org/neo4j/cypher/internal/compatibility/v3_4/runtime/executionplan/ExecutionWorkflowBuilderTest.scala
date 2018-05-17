@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{EagerResultIterator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_5.phases.{InternalNotificationLogger, devNullLogger}
 import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.logical.plans.Argument
 import org.neo4j.values.virtual.MapValue

@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.causalclustering.routing.RoutingResult;
 import org.neo4j.causalclustering.routing.Endpoint;
+import org.neo4j.causalclustering.routing.RoutingResult;
 
 /**
  * Simple struct containing the the result of multi-cluster routing procedure execution.

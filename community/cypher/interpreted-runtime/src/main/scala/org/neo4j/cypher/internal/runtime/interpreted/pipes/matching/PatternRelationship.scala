@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.graphdb.Path
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.JavaConverters._
 

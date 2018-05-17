@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v3_5.RegularQueryProjection
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions.SignedDecimalIntegerLiteral
 
 class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {

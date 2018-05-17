@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v2_3.{PlannerName, planDescription => planDescriptionv2_3, _}
 import org.neo4j.cypher.internal.frontend.v2_3
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
-import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InternalInputPosition, SemanticDirection => SemanticDirection2_3, notification => notification_2_3}
+import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InternalInputPosition, SemanticDirection => SemanticDirection2_3}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{Children, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren, Argument => Argument3_4, InternalPlanDescription => InternalPlanDescription3_4}

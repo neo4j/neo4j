@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.spi.v3_1
 
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes
-import org.neo4j.internal.kernel.api.{IndexReference => KernelIndexReference}
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor
+import org.neo4j.internal.kernel.api.{IndexReference => KernelIndexReference}
 import org.neo4j.kernel.api.schema.constaints.{ConstraintDescriptorFactory, NodeExistenceConstraintDescriptor, RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor => KernelUniquenessConstraint}
 
 trait SchemaDescriptorTranslation {

@@ -67,12 +67,10 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -117,6 +115,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -808,7 +807,7 @@ public class BatchInsertTest
             NeoStores neoStores = graphdb.getDependencyResolver()
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             SchemaStore store = neoStores.getSchemaStore();
-            SchemaStorage storage = new SchemaStorage( store, IndexProviderMap.EMPTY );
+            SchemaStorage storage = new SchemaStorage( store );
             List<Long> inUse = new ArrayList<>();
             DynamicRecord record = store.nextRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
@@ -936,7 +935,6 @@ public class BatchInsertTest
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexProvider provider = mock( InMemoryIndexProvider.class );
 
-        when( provider.indexDescriptorFor( any(SchemaDescriptor.class), any(IndexDescriptor.Type.class ), anyString(), anyString() ) ).thenCallRealMethod();
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
@@ -972,7 +970,6 @@ public class BatchInsertTest
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexProvider provider = mock( InMemoryIndexProvider.class );
 
-        when( provider.indexDescriptorFor( any(SchemaDescriptor.class), any(IndexDescriptor.Type.class ), anyString(), anyString() ) ).thenCallRealMethod();
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
@@ -1487,7 +1484,6 @@ public class BatchInsertTest
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexProvider provider = mock( InMemoryIndexProvider.class );
 
-        when( provider.indexDescriptorFor( any(SchemaDescriptor.class), any(IndexDescriptor.Type.class ), anyString(), anyString() ) ).thenCallRealMethod();
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );

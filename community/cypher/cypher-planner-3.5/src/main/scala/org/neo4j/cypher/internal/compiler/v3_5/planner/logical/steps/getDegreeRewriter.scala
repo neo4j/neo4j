@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_5.helpers.calculateUsingGetDegree
+import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.functions
 import org.neo4j.cypher.internal.v3_5.logical.plans.NestedPlanExpression

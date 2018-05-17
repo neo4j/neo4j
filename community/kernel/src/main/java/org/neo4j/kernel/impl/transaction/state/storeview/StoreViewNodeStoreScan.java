@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
@@ -31,8 +29,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -53,7 +49,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter )
     {
-        super( nodeStore, locks, propertyStore );
+        super( nodeStore, locks, propertyStore, propertyKeyIdFilter );
         this.nodeStore = nodeStore;
         this.labelUpdateVisitor = labelUpdateVisitor;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
@@ -85,22 +81,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
             EntityUpdates.Builder updates = EntityUpdates.forEntity( node.getId(), labels );
             boolean hasRelevantProperty = false;
 
-            for ( PropertyBlock property : properties( node ) )
-            {
-                int propertyKeyId = property.getKeyIndexId();
-                if ( propertyKeyIdFilter.test( propertyKeyId ) )
-                {
-                    // This node has a property of interest to us
-                    Value value = valueOf( property );
-                    // No need to validate values before passing them to the updater since the index implementation
-                    // is allowed to fail in which ever way it wants to. The result of failure will be the same as
-                    // a failed validation, i.e. population FAILED.
-                    updates.added( propertyKeyId, value );
-                    hasRelevantProperty = true;
-                }
-            }
-
-            if ( hasRelevantProperty )
+            if ( hasRelevantProperty(node, updates) )
             {
                 propertyUpdatesVisitor.visit( updates.build() );
             }

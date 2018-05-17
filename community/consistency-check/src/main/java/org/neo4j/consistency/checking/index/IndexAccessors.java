@@ -49,7 +49,7 @@ public class IndexAccessors implements Closeable
                            RecordStore<DynamicRecord> schemaStore,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        Iterator<StoreIndexDescriptor> indexes = new SchemaStorage( schemaStore, providers ).indexesGetAll();
+        Iterator<StoreIndexDescriptor> indexes = new SchemaStorage( schemaStore ).indexesGetAll();
         for (; ; )
         {
             try
@@ -60,7 +60,7 @@ public class IndexAccessors implements Closeable
                     // - populating indexes will be rebuilt on next startup
                     // - failed indexes have to be dropped by the user anyways
                     StoreIndexDescriptor indexDescriptor = indexes.next();
-                    if ( indexDescriptor.isIndexWithoutOwningConstraint(providers) )
+                    if ( indexDescriptor.isIndexWithoutOwningConstraint() )
                     {
                         notOnlineIndexRules.add( indexDescriptor );
                     }

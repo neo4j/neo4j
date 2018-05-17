@@ -24,7 +24,6 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;

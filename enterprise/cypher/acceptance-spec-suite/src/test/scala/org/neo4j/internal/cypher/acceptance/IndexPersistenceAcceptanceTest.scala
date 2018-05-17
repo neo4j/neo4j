@@ -25,11 +25,10 @@ import java.time.ZoneOffset
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.io.fs.FileUtils
-import org.neo4j.kernel.configuration.Settings
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings
 import org.neo4j.values.storable._
 
-import scala.collection.{Map, immutable}
+import scala.collection.Map
 
 class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
 

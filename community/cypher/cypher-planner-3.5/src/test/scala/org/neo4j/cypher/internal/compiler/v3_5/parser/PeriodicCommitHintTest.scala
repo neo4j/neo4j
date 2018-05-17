@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.parser
 
-import org.neo4j.cypher.internal.util.v3_5.DummyPosition
 import org.neo4j.cypher.internal.frontend.v3_5.ast
 import org.neo4j.cypher.internal.frontend.v3_5.parser.{ParserTest, Query}
+import org.neo4j.cypher.internal.util.v3_5.DummyPosition
 import org.neo4j.cypher.internal.v3_5.expressions.SignedDecimalIntegerLiteral
 import org.parboiled.scala._
 

@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.impl.fulltext.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 class ReadOnlyFulltextIndex extends ReadOnlyAbstractDatabaseIndex<LuceneFulltextIndex,FulltextIndexReader> implements FulltextIndex
 {

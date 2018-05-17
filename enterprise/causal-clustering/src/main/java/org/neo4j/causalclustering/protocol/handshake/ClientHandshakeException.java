@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.protocol.handshake;
 
 import java.util.List;
 import java.util.Optional;
-
 import javax.annotation.Nullable;
 
 import org.neo4j.causalclustering.protocol.Protocol;

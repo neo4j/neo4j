@@ -23,7 +23,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;

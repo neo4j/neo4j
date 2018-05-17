@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -87,13 +88,13 @@ public class OnlineIndexUpdates implements IndexUpdates
             LongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipId, LongObjectMap<NodeCommand> nodeCommands,
             LongObjectMap<RelationshipCommand> relationshipCommands )
     {
-        PrimitiveLongIterator nodeIds = allKeys( nodeCommands, propCommandsByNodeId ).iterator();
+        LongIterator nodeIds = allKeys( nodeCommands, propCommandsByNodeId ).longIterator();
         while ( nodeIds.hasNext() )
         {
             long nodeId = nodeIds.next();
             gatherUpdatesFor( nodeId, nodeCommands.get( nodeId ), propCommandsByNodeId.get( nodeId ) );
         }
-        PrimitiveLongIterator relationshipIds = allKeys( relationshipCommands, propertyCommandsByRelationshipId ).iterator();
+        LongIterator relationshipIds = allKeys( relationshipCommands, propertyCommandsByRelationshipId ).longIterator();
         while ( relationshipIds.hasNext() )
         {
             long relationshipId = relationshipIds.next();

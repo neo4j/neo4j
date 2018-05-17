@@ -53,7 +53,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -74,7 +74,7 @@ public class LuceneSchemaIndexCorruptionTest
         long faultyIndexId = 1;
         CorruptIndexException error = new CorruptIndexException( "It's broken.", "" );
 
-        LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
+        LuceneSchemaIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
         StoreIndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).withId( faultyIndexId );
@@ -92,7 +92,7 @@ public class LuceneSchemaIndexCorruptionTest
         long faultyIndexId = 1;
         FileNotFoundException error = new FileNotFoundException( "/some/path/somewhere" );
 
-        LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
+        LuceneSchemaIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
         StoreIndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).withId( faultyIndexId );
@@ -110,7 +110,7 @@ public class LuceneSchemaIndexCorruptionTest
         long faultyIndexId = 1;
         EOFException error = new EOFException( "/some/path/somewhere" );
 
-        LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
+        LuceneSchemaIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
         StoreIndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).withId( faultyIndexId );
@@ -121,12 +121,12 @@ public class LuceneSchemaIndexCorruptionTest
         logProvider.assertAtLeastOnce( loggedException( error ) );
     }
 
-    private LuceneIndexProvider newFaultyIndexProvider( long faultyIndexId, Exception error )
+    private LuceneSchemaIndexProvider newFaultyIndexProvider( long faultyIndexId, Exception error )
     {
         DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
         File indexRootFolder = testDirectory.graphDbDir();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
-        return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( indexRootFolder ), monitor,
+        return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( indexRootFolder ), monitor,
                 Config.defaults(), OperationalMode.single )
         {
             @Override

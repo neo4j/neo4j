@@ -62,10 +62,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.DATABASE;
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
-import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
-import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_DATABASE;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_ALL_DATABASES;
+import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_DATABASE;
+import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
+import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )

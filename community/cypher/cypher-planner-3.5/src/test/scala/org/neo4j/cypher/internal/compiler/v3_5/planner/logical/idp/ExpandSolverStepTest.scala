@@ -19,20 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphSolver}
-import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.frontend.v3_5.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Expand, ExpandAll, ExpandInto, LogicalPlan}
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.neo4j.cypher.internal.util.v3_5.Cardinality
-import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection

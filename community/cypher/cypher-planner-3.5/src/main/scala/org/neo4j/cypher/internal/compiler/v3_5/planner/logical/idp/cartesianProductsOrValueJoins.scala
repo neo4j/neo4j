@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexLeafPlan, LogicalPlan}
 
 trait JoinDisconnectedQueryGraphComponents {

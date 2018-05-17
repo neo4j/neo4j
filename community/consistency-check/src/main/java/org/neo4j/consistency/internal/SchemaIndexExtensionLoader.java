@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -51,7 +50,7 @@ public class SchemaIndexExtensionLoader
 {
     public static IndexProviderMap loadIndexProviders( KernelExtensions extensions )
     {
-        AllByPrioritySelectionStrategy<IndexProvider<?>> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
         IndexProvider defaultIndexProvider =
                 extensions.resolveDependency( IndexProvider.class, indexProviderSelection );
         return new DefaultIndexProviderMap( defaultIndexProvider,

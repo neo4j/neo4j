@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.util.v3_5.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, exceptionHandler, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK, RUNTIME_UNSUPPORTED, START_DEPRECATED, START_UNAVAILABLE_FALLBACK}
+import org.neo4j.graphdb.impl.notification.NotificationCode._
 import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.message
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Config

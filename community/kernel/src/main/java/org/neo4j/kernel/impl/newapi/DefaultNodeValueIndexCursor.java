@@ -46,7 +46,7 @@ import static org.neo4j.collection.PrimitiveLongResourceCollections.emptyIterato
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
-        implements NodeValueIndexCursor, NodeValueClient<SchemaIndexDescriptor>
+        implements NodeValueIndexCursor, NodeValueClient
 {
     private Read read;
     private Resource resource;

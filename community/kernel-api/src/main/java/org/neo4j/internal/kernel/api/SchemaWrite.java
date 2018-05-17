@@ -38,7 +38,7 @@ public interface SchemaWrite
      * @param descriptor description of the index
      * @return the newly created index
      */
-    IndexReference indexCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+    IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
 
     /**
      * Create index from schema descriptor

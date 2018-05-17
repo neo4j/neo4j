@@ -37,7 +37,7 @@ import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.{of => DONT_USE_OMG, _}
+import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable._
 
 /**

@@ -792,7 +792,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             diff.add( descriptor );
         }
         changed();
-        return descriptor;
     }
 
     @Override

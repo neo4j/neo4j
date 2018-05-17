@@ -255,7 +255,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
     {
         try ( SchemaStore store = neoStores.getSchemaStore() )
         {
-            final SchemaStorage storage = new SchemaStorage( store, IndexProviderMap.EMPTY );
+            final SchemaStorage storage = new SchemaStorage( store );
             new DumpStore<DynamicRecord,SchemaStore>( System.out )
             {
                 @Override

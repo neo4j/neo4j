@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.conditions
 
-import org.neo4j.cypher.internal.util.v3_5.ASTNode
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.ast.conditions.noUnnamedPatternElementsInMatch
+import org.neo4j.cypher.internal.util.v3_5.ASTNode
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions._
 

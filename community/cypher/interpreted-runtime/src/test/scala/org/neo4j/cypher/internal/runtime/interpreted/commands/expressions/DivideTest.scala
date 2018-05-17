@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_5.ArithmeticException
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.{NumberValue}
+import org.neo4j.values.storable.NumberValue
 
 class DivideTest extends CypherFunSuite {
   test("should_throw_arithmetic_exception_for_divide_by_zero") {

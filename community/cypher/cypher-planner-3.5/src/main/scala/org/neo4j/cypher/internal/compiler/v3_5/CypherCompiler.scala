@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_5
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.util.v3_5.InputPosition
 import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilerContext, _}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.debug.DebugPrinter
@@ -32,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_5.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_5.phases._
 import org.neo4j.cypher.internal.ir.v3_5.UnionQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlannerNameFor}
+import org.neo4j.cypher.internal.util.v3_5.InputPosition
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,

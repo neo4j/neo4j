@@ -24,8 +24,8 @@ import java.time.{ZoneId, ZoneOffset}
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.values.storable._
 import org.neo4j.values.utils.TemporalUtil
-import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.Gen
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.prop.PropertyChecks
 

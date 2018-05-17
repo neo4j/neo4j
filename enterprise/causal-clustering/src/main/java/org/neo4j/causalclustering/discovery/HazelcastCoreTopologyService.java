@@ -19,15 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
@@ -39,6 +30,15 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;

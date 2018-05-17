@@ -45,7 +45,7 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     protected final Optional<String> userSuppliedName;
     protected final IndexProvider.Descriptor providerDescriptor;
 
-    IndexDescriptor( IndexDescriptor indexDescriptor )
+    protected IndexDescriptor( IndexDescriptor indexDescriptor )
     {
         schema = indexDescriptor.schema;
         type = indexDescriptor.type;
@@ -56,8 +56,8 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     public enum Type
     {
         GENERAL,
-        UNIQUE
-
+        UNIQUE,
+        MULTI_TOKEN
     }
     public enum Filter implements Predicate<IndexDescriptor>
     {

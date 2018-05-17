@@ -33,7 +33,6 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
-import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;

@@ -24,11 +24,11 @@ import java.util
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.MapBasedRow
-import org.neo4j.cypher.internal.util.v3_5.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{RuntimeVersion, Version}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.RuntimeVersion
+import org.neo4j.cypher.internal.util.v3_5.Eagerly.immutableMapValues
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor

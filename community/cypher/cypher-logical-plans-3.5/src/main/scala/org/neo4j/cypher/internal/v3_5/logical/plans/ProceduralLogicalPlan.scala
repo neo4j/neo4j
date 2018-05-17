@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.util.v3_5.symbols.CypherType
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
+import org.neo4j.cypher.internal.util.v3_5.symbols.CypherType
 import org.neo4j.cypher.internal.v3_5.expressions._
 
 abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {

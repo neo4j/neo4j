@@ -23,13 +23,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexWriterConfig;
 
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 
 public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextIndexBuilder>
@@ -82,9 +81,7 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
         }
         else
         {
-            Boolean archiveFailed = getConfig( GraphDatabaseSettings.archive_failed_index );
-            PartitionedIndexStorage storage = storageBuilder.archivingFailed( archiveFailed ).build();
-            return new WritableFulltextIndex( storage, new WritableIndexPartitionFactory( writerConfigFactory ), analyzer, descriptor );
+            return new WritableFulltextIndex( storageBuilder.build(), new WritableIndexPartitionFactory( writerConfigFactory ), analyzer, descriptor );
         }
     }
 }

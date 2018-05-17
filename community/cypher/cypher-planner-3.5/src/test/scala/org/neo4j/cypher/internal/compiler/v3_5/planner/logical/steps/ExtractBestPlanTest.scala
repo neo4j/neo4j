@@ -21,17 +21,17 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_5.{HintException, IndexHintException, InternalException, JoinHintException}
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.frontend.v3_5.phases.RecordingNotificationLogger
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, VarPatternLength, _}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor, PlanContext}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.{HintException, IndexHintException, InternalException, JoinHintException}
 import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, PatternExpression, PropertyKeyName, SemanticDirection}
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

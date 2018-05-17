@@ -27,8 +27,8 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.causalclustering.helper.SuspendableLifecycleStateTestHelpers.SuspendedState;
 import org.neo4j.causalclustering.helper.SuspendableLifecycleStateTestHelpers.LifeCycleState;
+import org.neo4j.causalclustering.helper.SuspendableLifecycleStateTestHelpers.SuspendedState;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.junit.Assert.assertEquals;

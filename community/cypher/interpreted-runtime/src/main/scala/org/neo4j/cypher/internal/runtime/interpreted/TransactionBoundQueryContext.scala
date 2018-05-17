@@ -24,7 +24,6 @@ import java.util.function.Predicate
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.collection.{PrimitiveLongResourceIterator, RawIterator}
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
@@ -53,7 +52,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
-import org.neo4j.kernel.impl.api.store.{RelationshipIterator}
+import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext

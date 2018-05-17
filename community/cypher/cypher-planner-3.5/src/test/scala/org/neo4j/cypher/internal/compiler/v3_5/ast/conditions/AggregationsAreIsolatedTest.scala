@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.conditions
 
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_5.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_5.ast.conditions.aggregationsAreIsolated
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions._
 
 class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTestSupport {

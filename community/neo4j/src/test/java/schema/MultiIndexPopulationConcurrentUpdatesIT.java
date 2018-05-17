@@ -63,7 +63,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
@@ -81,7 +81,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
@@ -393,7 +392,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private List<StoreIndexDescriptor> getIndexRules( NeoStores neoStores )
     {
-        return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore(), IndexProviderMap.EMPTY ).indexesGetAll() );
+        return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() );
     }
 
     private Map<String, Integer> getLabelIdsByName( String... names )

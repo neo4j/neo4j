@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, _}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_5.{Cardinality, Cost}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_5.expressions.{Expression, FunctionInvocation, LabelName, Parameter}
 import org.neo4j.cypher.internal.v3_5.functions.{Rand, Timestamp}
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 import scala.language.implicitConversions
 

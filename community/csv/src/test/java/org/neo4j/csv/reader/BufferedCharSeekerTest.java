@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Random;
 
 import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;

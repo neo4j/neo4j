@@ -63,7 +63,7 @@ public class DropBrokenUniquenessConstraintIT
         RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         SchemaStore schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
         SchemaRule indexRule = single( filter( rule -> rule instanceof StoreIndexDescriptor,
-                new SchemaStorage( schemaStore, db.getDependencyResolver().resolveDependency( IndexProviderMap.class ) ).loadAllSchemaRules() ) );
+                new SchemaStorage( schemaStore ).loadAllSchemaRules() ) );
         setSchemaRecordNotInUse( schemaStore, indexRule.getId() );
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();

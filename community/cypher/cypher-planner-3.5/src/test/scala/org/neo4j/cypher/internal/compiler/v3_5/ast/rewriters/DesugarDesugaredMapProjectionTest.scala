@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, inSequence}
 import org.neo4j.cypher.internal.compiler.v3_5.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_5.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.frontend.v3_5.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.{desugarMapProjection, normalizeReturnClauses, normalizeWithClauses, recordScopes}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticState
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.{Rewriter, inSequence}
 
 class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
 

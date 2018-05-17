@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 public class FulltextLuceneIndexPopulator extends LuceneIndexPopulator<FulltextIndex>

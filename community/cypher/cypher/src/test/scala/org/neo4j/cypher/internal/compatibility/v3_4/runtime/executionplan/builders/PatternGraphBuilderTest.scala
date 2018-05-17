@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.builders
 
-import org.neo4j.cypher.internal.runtime.interpreted.commands.RelatedTo
 import org.neo4j.cypher.internal.runtime.interpreted.PatternGraphBuilder
+import org.neo4j.cypher.internal.runtime.interpreted.commands.RelatedTo
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
 import org.neo4j.cypher.internal.util.v3_5.symbols._
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite

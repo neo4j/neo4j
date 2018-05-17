@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_5.Cardinality
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_5.expressions.Variable
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 case class LogicalPlanningContext(planContext: PlanContext,
                                   logicalPlanProducer: LogicalPlanProducer,

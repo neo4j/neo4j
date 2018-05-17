@@ -95,9 +95,9 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public EntityUpdates nodeAsUpdates( long nodeId )
+    public EntityUpdates entityAsUpdates( long entityId )
     {
-        return neoStoreIndexStoreView.nodeAsUpdates( nodeId );
+        return neoStoreIndexStoreView.entityAsUpdates( entityId );
     }
 
     @Override
@@ -149,8 +149,8 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void loadProperties( long nodeId, MutableIntSet propertyIds, PropertyLoadSink sink )
+    public void loadProperties( long entityId, EntityType type, MutableIntSet propertyIds, PropertyLoadSink sink )
     {
-        neoStoreIndexStoreView.loadProperties( nodeId, type, propertyIds, sink );
+        neoStoreIndexStoreView.loadProperties( entityId, type, propertyIds, sink );
     }
 }

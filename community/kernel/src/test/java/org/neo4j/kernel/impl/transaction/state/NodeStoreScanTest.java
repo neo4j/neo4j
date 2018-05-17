@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.impl.block.factory.primitive.IntPredicates;
 import org.junit.Test;
 
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -65,7 +67,7 @@ public class NodeStoreScanTest
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
 
         final PropertyAwareEntityStoreScan<NodeRecord,RuntimeException> scan =
-                new PropertyAwareEntityStoreScan<NodeRecord,RuntimeException>( nodeStore, locks, propertyStore )
+                new PropertyAwareEntityStoreScan<NodeRecord,RuntimeException>( nodeStore, locks, propertyStore, IntPredicates.alwaysTrue() )
             {
             private int read;
 

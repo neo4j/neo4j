@@ -68,14 +68,14 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
             Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor );
 
     /**
-     * Produces {@link EntityUpdates} objects from reading node {@code nodeId}, its labels and properties
+     * Produces {@link EntityUpdates} objects from reading node {@code entityId}, its labels and properties
      * and puts those updates into node updates container.
      *
-     * @param nodeId id of node to load.
+     * @param entityId id of entity to load.
      * @return node updates container
      */
     //TODO This seems to only be used in tests
-    EntityUpdates nodeAsUpdates( long nodeId );
+    EntityUpdates entityAsUpdates( long entityId );
 
     DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output );
 
@@ -150,7 +150,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         }
 
         @Override
-        public EntityUpdates nodeAsUpdates( long nodeId )
+        public EntityUpdates entityAsUpdates( long entityId )
         {
             return null;
         }

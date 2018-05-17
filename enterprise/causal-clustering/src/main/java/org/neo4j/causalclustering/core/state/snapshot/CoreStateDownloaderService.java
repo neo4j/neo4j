@@ -26,10 +26,10 @@ import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.downloadSnapshot;

@@ -26,8 +26,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.neo4j.causalclustering.core.replication.Replicator;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.state.TxState;

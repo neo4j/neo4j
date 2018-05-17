@@ -24,19 +24,20 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.EntityType;
 
 public interface FulltextAdapter
 {
     String FIELD_ENTITY_ID = "__lucene__fulltext__addon__internal__id__";
 
-    Stream<String> propertyKeyStrings( IndexDescriptor descriptor );
+    Stream<String> propertyKeyStrings( IndexReference descriptor );
 
-    IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties ) throws InvalidArgumentsException;
+    MultiTokenSchemaDescriptor schemaFor( EntityType type, String[] entityTokens, String... properties ) throws InvalidArgumentsException;
 
     ScoreEntityIterator query( String indexName, String queryString ) throws IOException, IndexNotFoundKernelException, ParseException;
 }

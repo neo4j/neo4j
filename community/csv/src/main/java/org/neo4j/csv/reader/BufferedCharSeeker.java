@@ -22,14 +22,11 @@ package org.neo4j.csv.reader;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
 
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.values.storable.CSVHeaderInformation;
 
-import static java.lang.Character.isWhitespace;
 import static java.lang.String.format;
-
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 
 /**

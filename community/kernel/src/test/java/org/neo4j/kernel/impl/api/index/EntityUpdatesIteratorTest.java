@@ -53,8 +53,8 @@ public class EntityUpdatesIteratorTest
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
         EntityUpdates entityUpdates1 = EntityUpdates.forEntity( 1 ).build();
         EntityUpdates entityUpdates2 = EntityUpdates.forEntity( 2 ).build();
-        when( storeView.nodeAsUpdates( 1 ) ).thenReturn( entityUpdates1 );
-        when( storeView.nodeAsUpdates( 2 ) ).thenReturn( entityUpdates2 );
+        when( storeView.entityAsUpdates( 1 ) ).thenReturn( entityUpdates1 );
+        when( storeView.entityAsUpdates( 2 ) ).thenReturn( entityUpdates2 );
 
         LongIterator nodeIdIterator = PrimitiveLongCollections.iterator( 1, 2 );
         NodeUpdatesIterator nodeUpdatesIterator = new NodeUpdatesIterator( storeView, nodeIdIterator );
@@ -63,8 +63,8 @@ public class EntityUpdatesIteratorTest
         assertSame( entityUpdates2, nodeUpdatesIterator.next() );
         assertFalse( nodeUpdatesIterator.hasNext() );
 
-        verify( storeView ).nodeAsUpdates( 1 );
-        verify( storeView ).nodeAsUpdates( 2 );
+        verify( storeView ).entityAsUpdates( 1 );
+        verify( storeView ).entityAsUpdates( 2 );
     }
 
     @Test
@@ -73,8 +73,8 @@ public class EntityUpdatesIteratorTest
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
         EntityUpdates entityUpdates1 = EntityUpdates.forEntity( 1 ).build();
         EntityUpdates entityUpdates2 = EntityUpdates.forEntity( 2 ).build();
-        when( storeView.nodeAsUpdates( 1 ) ).thenReturn( entityUpdates1 );
-        when( storeView.nodeAsUpdates( 2 ) ).thenReturn( entityUpdates2 );
+        when( storeView.entityAsUpdates( 1 ) ).thenReturn( entityUpdates1 );
+        when( storeView.entityAsUpdates( 2 ) ).thenReturn( entityUpdates2 );
 
         Deque<EntityUpdates> updates = new ArrayDeque<>( Arrays.asList( entityUpdates1, entityUpdates2 ) );
 
@@ -87,7 +87,7 @@ public class EntityUpdatesIteratorTest
             assertSame( updates.pop(), entityUpdates );
         }
 
-        verify( storeView ).nodeAsUpdates( 1 );
-        verify( storeView ).nodeAsUpdates( 2 );
+        verify( storeView ).entityAsUpdates( 1 );
+        verify( storeView ).entityAsUpdates( 2 );
     }
 }

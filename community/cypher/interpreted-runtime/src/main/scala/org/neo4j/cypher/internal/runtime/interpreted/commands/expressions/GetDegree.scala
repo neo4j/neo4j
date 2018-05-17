@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values

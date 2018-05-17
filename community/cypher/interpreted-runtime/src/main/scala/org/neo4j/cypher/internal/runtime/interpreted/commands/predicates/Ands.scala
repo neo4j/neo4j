@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.internal.util.v3_5.NonEmptyList
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.v3_5.NonEmptyList
 
 case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
   override def shouldExitWhen = false

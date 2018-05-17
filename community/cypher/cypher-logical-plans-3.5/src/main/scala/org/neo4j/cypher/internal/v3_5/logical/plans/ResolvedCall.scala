@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.util.v3_5.{InputPosition, SyntaxException}
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_5._
-import org.neo4j.cypher.internal.v3_5.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.{SemanticError, SemanticExpressionCheck, SemanticState}
 import org.neo4j.cypher.internal.util.v3_5.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.util.v3_5.{InputPosition, SyntaxException}
+import org.neo4j.cypher.internal.v3_5.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_5.expressions._
 
 object ResolvedCall {
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {

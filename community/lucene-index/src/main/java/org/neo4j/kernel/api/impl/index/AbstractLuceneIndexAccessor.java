@@ -30,6 +30,7 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -37,18 +38,19 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
-public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, INDEX extends DatabaseIndex<READER>, DESCRIPTOR extends IndexDescriptor>
+public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, INDEX extends DatabaseIndex<READER>>
         implements IndexAccessor
 {
     protected final LuceneIndexWriter writer;
     protected final INDEX luceneIndex;
-    protected final DESCRIPTOR descriptor;
+    protected final IndexDescriptor descriptor;
 
-    protected AbstractLuceneIndexAccessor( INDEX luceneIndex, DESCRIPTOR descriptor )
+    protected AbstractLuceneIndexAccessor( INDEX luceneIndex, IndexDescriptor descriptor )
     {
         this.writer = luceneIndex.isReadOnly() ? null : luceneIndex.getIndexWriter();
         this.luceneIndex = luceneIndex;

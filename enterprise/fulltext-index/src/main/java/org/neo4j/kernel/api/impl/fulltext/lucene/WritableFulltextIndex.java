@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.impl.fulltext.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 class WritableFulltextIndex extends WritableAbstractDatabaseIndex<LuceneFulltextIndex,FulltextIndexReader> implements FulltextIndex
 {

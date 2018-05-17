@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.vectorized.expressions
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.functions.AggregatingFunction
 import org.neo4j.cypher.internal.v3_5.{functions, expressions => ast}

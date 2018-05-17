@@ -510,6 +510,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   private def executeAndEnsureError(query: String, expected: Seq[String], params: (String,Any)*) {
     import org.neo4j.cypher.internal.frontend.v3_5.helpers.StringHelper._
+
     import scala.collection.JavaConverters._
 
     val expectedErrorString = expected.map(e => s"'$e'").mkString(" or ")

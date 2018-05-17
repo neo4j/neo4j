@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers
 
-import org.neo4j.cypher.internal.util.v3_5.DummyPosition
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.simpleExpressionEvaluator.isNonDeterministic
+import org.neo4j.cypher.internal.util.v3_5.DummyPosition
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions.{FunctionInvocation, FunctionName}
 

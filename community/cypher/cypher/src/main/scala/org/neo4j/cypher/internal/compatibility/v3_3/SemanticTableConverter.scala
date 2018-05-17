@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticTable => SemanticTableV3_3, ast => astV3_3}
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3}
-import org.neo4j.cypher.internal.frontend.v3_5.{ast => astv3_5}
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.{ExpressionTypeInfo, SemanticTable => SemanticTablev3_5}
-import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3, v3_5 => frontendv3_5}
-import org.neo4j.cypher.internal.v3_5.{expressions => expressionsv3_5}
-import org.neo4j.cypher.internal.util.{v3_5 => utilv3_5}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticTable => SemanticTableV3_3, ast => astV3_3}
+import org.neo4j.cypher.internal.frontend.v3_5.semantics.{ExpressionTypeInfo, SemanticTable => SemanticTablev3_5}
+import org.neo4j.cypher.internal.frontend.v3_5.{ast => astv3_5}
+import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3, v3_5 => frontendv3_5}
+import org.neo4j.cypher.internal.util.{v3_5 => utilv3_5}
 import org.neo4j.cypher.internal.v3_5.expressions.{Expression => Expressionv3_5}
+import org.neo4j.cypher.internal.v3_5.{expressions => expressionsv3_5}
 
 import scala.collection.mutable
 

@@ -23,21 +23,20 @@ import org.neo4j.cypher.CypherVersion.v3_3
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState => LogicalPlanStateV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3, UpdateStrategy => UpdateStrategyV3_3}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherCompilerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
 import org.neo4j.cypher.internal.compiler.{v3_5 => compilerv3_5}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer => CompilationPhaseTracer3_3}
-import org.neo4j.cypher.internal.frontend.v3_3.{phases => phasesV3_3}
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, PlannerName => PlannerNameV3_3, ast => astV3_3, notification => nfV3_3}
-import org.neo4j.cypher.internal.frontend.v3_5.{PlannerName, ast => astv3_5, notification => nfv3_5}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, PlannerName => PlannerNameV3_3, ast => astV3_3, notification => nfV3_3, phases => phasesV3_3}
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.{CompilationPhase => v3_5Phase}
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.{SemanticTable => SemanticTablev3_5}
+import org.neo4j.cypher.internal.frontend.v3_5.{PlannerName, ast => astv3_5, notification => nfv3_5}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_5 => irv3_5}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{DPPlannerName, IDPPlannerName, PlannerNameWithVersion, ProcedurePlannerName}
 import org.neo4j.cypher.internal.util.v3_5.attribution.{Attributes, Id}
 import org.neo4j.cypher.internal.util.v3_5.{Cardinality, InputPosition}

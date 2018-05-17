@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.phases
 
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.ast.conditions.{StatementCondition, containsNoNodesOfType}
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_5.phases.{BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.neo4j.cypher.internal.v3_5.logical.plans.{ResolvedCall, ResolvedFunctionInvocation}
+import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_5.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.v3_5.logical.plans.{ResolvedCall, ResolvedFunctionInvocation}
 
 // Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
 case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, BaseState] {

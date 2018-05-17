@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.conditions
 
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_5.{ASTNode, DummyPosition}
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.ast.conditions.orderByOnlyOnVariables
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.{ASTNode, DummyPosition}
 import org.neo4j.cypher.internal.v3_5.expressions.{Expression, UnsignedDecimalIntegerLiteral}
 
 class OrderByOnlyOnVariablesTest extends CypherFunSuite with AstConstructionTestSupport {

@@ -32,7 +32,7 @@ import org.neo4j.values.storable.Value;
  * A {@link IndexProgressor} + {@link IndexProgressor.NodeValueClient} combo presented as a {@link LongIterator}.
  */
 public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
-        implements IndexProgressor.NodeValueClient<SchemaIndexDescriptor>, PrimitiveLongResourceIterator
+        implements IndexProgressor.NodeValueClient, PrimitiveLongResourceIterator
 {
     private boolean closed;
     private IndexProgressor progressor;

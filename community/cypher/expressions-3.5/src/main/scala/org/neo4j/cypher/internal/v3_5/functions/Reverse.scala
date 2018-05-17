@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.functions
 
-import org.neo4j.cypher.internal.v3_5.expressions.{TypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.neo4j.cypher.internal.v3_5.expressions.{TypeSignature, TypeSignatures}
 
 case object Reverse extends Function with TypeSignatures {
   def name = "reverse"

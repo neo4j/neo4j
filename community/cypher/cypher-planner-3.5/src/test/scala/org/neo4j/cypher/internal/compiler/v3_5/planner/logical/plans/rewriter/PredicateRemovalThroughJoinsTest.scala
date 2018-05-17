@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_5.Cardinality
 import org.neo4j.cypher.internal.util.v3_5.attribution.Attributes
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions.{Equals, Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{NodeHashJoin, Selection}
 

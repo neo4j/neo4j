@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.runtime.interpreted.PatternGraphBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.MatchingContext
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, PatternGraphBuilder}
 import org.neo4j.cypher.internal.util.v3_5.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.util.v3_5.symbols._
 import org.neo4j.values.AnyValue

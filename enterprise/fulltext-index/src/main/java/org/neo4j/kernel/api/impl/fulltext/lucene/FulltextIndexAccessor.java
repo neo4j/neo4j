@@ -31,11 +31,14 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure.newTermForChangeOrRemove;
 
-public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader,FulltextIndex,FulltextIndexDescriptor>
+public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader,FulltextIndex>
 {
+    private final FulltextIndexDescriptor descriptor;
+
     public FulltextIndexAccessor( FulltextIndex luceneIndex, FulltextIndexDescriptor descriptor )
     {
         super( luceneIndex, descriptor );
+        this.descriptor = descriptor;
     }
 
     @Override

@@ -56,7 +56,6 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -248,8 +247,7 @@ public class AllStoreHolder extends Read
     @Override
     IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
     {
-        return fresh ? statement.getFreshIndexReader( (IndexDescriptor) index ) :
-               statement.getIndexReader( (IndexDescriptor) index );
+        return fresh ? statement.getFreshIndexReader( (IndexDescriptor) index ) : statement.getIndexReader( (IndexDescriptor) index );
     }
 
     @Override
@@ -283,12 +281,11 @@ public class AllStoreHolder extends Read
     public boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
     {
         ktx.assertOpen();
-        return explicitIndexTxState().checkIndexExistence( IndexEntityType.Node, indexName, customConfiguration  );
+        return explicitIndexTxState().checkIndexExistence( IndexEntityType.Node, indexName, customConfiguration );
     }
 
     @Override
-    public Map<String,String> nodeExplicitIndexGetConfiguration( String indexName )
-            throws ExplicitIndexNotFoundKernelException
+    public Map<String,String> nodeExplicitIndexGetConfiguration( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         return explicitIndexStore.getNodeIndexConfiguration( indexName );
@@ -305,12 +302,11 @@ public class AllStoreHolder extends Read
     public boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
     {
         ktx.assertOpen();
-        return explicitIndexTxState().checkIndexExistence( IndexEntityType.Relationship, indexName, customConfiguration  );
+        return explicitIndexTxState().checkIndexExistence( IndexEntityType.Relationship, indexName, customConfiguration );
     }
 
     @Override
-    public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName )
-            throws ExplicitIndexNotFoundKernelException
+    public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         return explicitIndexStore.getRelationshipIndexConfiguration( indexName );
@@ -348,8 +344,7 @@ public class AllStoreHolder extends Read
             }
             else
             {
-                Iterator<IndexDescriptor> fromTxState =
-                        filter( SchemaDescriptor.equalTo( descriptor ), diffSets.getAdded().iterator() );
+                Iterator<IndexDescriptor> fromTxState = filter( SchemaDescriptor.equalTo( descriptor ), diffSets.getAdded().iterator() );
                 if ( fromTxState.hasNext() )
                 {
                     return fromTxState.next();
@@ -365,14 +360,6 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public IndexReference indexReferenceUnchecked( int label, int... properties )
-    {
-        return IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( label, properties ),
-                                                 Optional.empty(),
-                                                 IndexProvider.UNDECIDED );
-    }
-
-    @Override
     public Iterator<IndexReference> indexesGetForLabel( int labelId )
     {
         sharedOptimisticLock( ResourceTypes.LABEL, labelId );
@@ -383,7 +370,25 @@ public class AllStoreHolder extends Read
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
         }
-        return (Iterator)iterator;
+        return (Iterator) iterator;
+    }
+
+    @Override
+    public IndexReference indexGetForName( String name )
+    {
+        ktx.assertOpen();
+
+        // This is only used for querying, and thus is is "fine" (at least for now) that it is not tx-state aware
+
+        IndexDescriptor index = storeReadLayer.indexGetForName( name );
+        //TODO locking
+        return index;
+    }
+
+    @Override
+    public IndexReference indexReferenceUnchecked( int label, int... properties )
+    {
+        return IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( label, properties ), Optional.empty(), IndexProvider.UNDECIDED );
     }
 
     @Override
@@ -495,7 +500,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public long nodesGetCount( )
+    public long nodesGetCount()
     {
         ktx.assertOpen();
         long base = storeReadLayer.nodesGetCount();
@@ -503,7 +508,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public long relationshipsGetCount( )
+    public long relationshipsGetCount()
     {
         ktx.assertOpen();
         long base = storeReadLayer.relationshipsGetCount();
@@ -511,25 +516,20 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target )
-            throws IndexNotFoundKernelException
+    public Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target ) throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
-        return storeReadLayer.indexUpdatesAndSize(
-                SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
-
+        return storeReadLayer.indexUpdatesAndSize( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
     }
 
     @Override
-    public Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
-            throws IndexNotFoundKernelException
+    public Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target ) throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
-        return storeReadLayer.indexSample(
-                SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
+        return storeReadLayer.indexSample( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
     }
 
-    IndexReference indexGetCapability( IndexDescriptor schemaIndexDescriptor )
+    IndexReference indexGetCapability( IndexDescriptor indexDescriptor )
     {
         try
         {
@@ -568,8 +568,7 @@ public class AllStoreHolder extends Read
         if ( ktx.hasTxStateWithChanges() )
         {
             indexes = filter(
-                    SchemaDescriptor.equalTo( descriptor ),
-                    ktx.txState().indexDiffSetsByLabel( descriptor.keyId() ).apply( indexes ) );
+                    SchemaDescriptor.equalTo( descriptor ), ktx.txState().indexDiffSetsByLabel( descriptor.keyId() ).apply( indexes ) );
         }
         return singleOrNull( indexes );
     }

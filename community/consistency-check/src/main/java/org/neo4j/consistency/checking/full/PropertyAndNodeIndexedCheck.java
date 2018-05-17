@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.full;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
@@ -40,8 +41,8 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -92,7 +93,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             RecordAccess records,
             Collection<PropertyRecord> propertyRecs )
     {
-        PrimitiveLongSet labels = NodeLabelReader.getListOfLabels( record, records, engine );
+        LongSet labels = NodeLabelReader.getListOfLabels( record, records, engine );
         IntObjectMap<PropertyBlock> nodePropertyMap = null;
         for ( StoreIndexDescriptor indexRule : indexes.onlineRules() )
         {

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.parser
 
+import org.neo4j.cypher.internal.frontend.v3_5.parser.{Expressions, ParserTest}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.v3_5.{expressions => ast}
-import org.neo4j.cypher.internal.frontend.v3_5.parser.{Expressions, ParserTest}
 import org.parboiled.scala._
 
 class MapLiteralTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {

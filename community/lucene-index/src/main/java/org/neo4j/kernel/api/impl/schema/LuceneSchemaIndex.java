@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.storageengine.api.schema.AbstractIndexReader;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
@@ -48,7 +47,6 @@ import org.neo4j.values.storable.Value;
 class LuceneSchemaIndex extends AbstractLuceneIndex<IndexReader>
 {
 
-    private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );

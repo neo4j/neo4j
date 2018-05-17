@@ -24,8 +24,8 @@ import org.neo4j.values.storable.CRSCalculator.GeographicCalculator.EARTH_RADIUS
 import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
 import org.scalactic.{Equality, TolerantNumerics}
 import org.scalatest.matchers.{MatchResult, Matcher}
-import collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 
 class DistanceFunctionTest extends CypherFunSuite {

@@ -21,26 +21,36 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import org.junit.Test;
 
+import java.util.Optional;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.storageengine.api.EntityType.NODE;
 import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
 
 public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 {
+
+    private static final String NODE_INDEX_NAME = "nodes";
+
     @Test
     public void shouldFindNodeWithString() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
         long firstID;
         long secondID;
         try ( Transaction tx = db.beginTx() )
@@ -54,23 +64,24 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "hello", firstID );
-            assertQueryFindsIds( "nodes", "zebra", secondID );
-            assertQueryFindsIds( "nodes", "zedonk", secondID );
-            assertQueryFindsIds( "nodes", "cross", secondID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "hello", firstID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "zebra", secondID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "zedonk", secondID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "cross", secondID );
         }
     }
 
     @Test
     public void shouldFindNodeWithNumber() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         long firstID;
         long secondID;
@@ -84,21 +95,22 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "1", firstID );
-            assertQueryFindsIds( "nodes", "234", secondID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "1", firstID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "234", secondID );
         }
     }
 
     @Test
     public void shouldFindNodeWithBoolean() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         long firstID;
         long secondID;
@@ -112,21 +124,22 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "true", firstID );
-            assertQueryFindsIds( "nodes", "false", secondID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "true", firstID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "false", secondID );
         }
     }
 
     @Test
     public void shouldFindNodeWithArrays() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         long firstID;
         long secondID;
@@ -142,22 +155,23 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "live", firstID );
-            assertQueryFindsIds( "nodes", "27", secondID );
-            assertQueryFindsIds( "nodes", "1 2", secondID, thirdID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "live", firstID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "27", secondID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "1 2", secondID, thirdID );
         }
     }
 
     @Test
     public void shouldRepresentPropertyChanges() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         long firstID;
         long secondID;
@@ -179,26 +193,27 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsNothing( "nodes", "hello" );
-            assertQueryFindsNothing( "nodes", "zebra" );
-            assertQueryFindsNothing( "nodes", "zedonk" );
-            assertQueryFindsNothing( "nodes", "cross" );
-            assertQueryFindsIds( "nodes", "finally", firstID );
-            assertQueryFindsIds( "nodes", "farmer", secondID );
-            assertQueryFindsIds( "nodes", "potato", firstID, secondID );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "hello" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "zebra" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "zedonk" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "cross" );
+            assertQueryFindsIds( NODE_INDEX_NAME, "finally", firstID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "farmer", secondID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "potato", firstID, secondID );
         }
     }
 
     @Test
     public void shouldNotFindRemovedNodes() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         long firstID;
         long secondID;
@@ -221,23 +236,24 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsNothing( "nodes", "hello" );
-            assertQueryFindsNothing( "nodes", "zebra" );
-            assertQueryFindsNothing( "nodes", "zedonk" );
-            assertQueryFindsNothing( "nodes", "cross" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "hello" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "zebra" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "zedonk" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "cross" );
         }
     }
 
     @Test
     public void shouldNotFindRemovedProperties() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], "prop", "prop2" );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], "prop", "prop2" );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
         long firstID;
         long secondID;
         long thirdID;
@@ -273,23 +289,24 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "hello", secondID );
-            assertQueryFindsNothing( "nodes", "zebra" );
-            assertQueryFindsNothing( "nodes", "zedonk" );
-            assertQueryFindsNothing( "nodes", "cross" );
+            assertQueryFindsIds( NODE_INDEX_NAME, "hello", secondID );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "zebra" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "zedonk" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "cross" );
         }
     }
 
     @Test
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         long firstID;
         try ( Transaction tx = db.beginTx() )
@@ -306,21 +323,22 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "hello", firstID );
-            assertQueryFindsNothing( "nodes", "zebra" );
+            assertQueryFindsIds( NODE_INDEX_NAME, "hello", firstID );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "zebra" );
         }
     }
 
     @Test
     public void shouldSearchAcrossMultipleProperties() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], "prop", "prop2" );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], "prop", "prop2" );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         long firstID;
         long secondID;
@@ -340,20 +358,21 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "tomtar Karl", firstID, secondID, thirdID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "tomtar Karl", firstID, secondID, thirdID );
         }
     }
 
     @Test
     public void shouldOrderResultsBasedOnRelevance() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], "first", "last" );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], "first", "last" );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
         long firstID;
         long secondID;
         long thirdID;
@@ -378,23 +397,25 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIdsInOrder( "nodes", "Tom Hanks", fourthID, thirdID, firstID, secondID );
+            assertQueryFindsIdsInOrder( NODE_INDEX_NAME, "Tom Hanks", fourthID, thirdID, firstID, secondID );
         }
     }
 
     @Test
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        IndexDescriptor nodes = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        IndexDescriptor rels = fulltextAdapter.indexDescriptorFor( "rels", RELATIONSHIP, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        SchemaDescriptor nodes = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+        SchemaDescriptor rels = fulltextAdapter.schemaFor( RELATIONSHIP, new String[0], PROP );
+        IndexReference nodesIndex;
+        IndexReference relsIndex;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( nodes );
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( rels );
-            transaction.success();
+            nodesIndex = tx.schemaWrite().indexCreate( nodes );
+            relsIndex = tx.schemaWrite().indexCreate( rels );
+            tx.success();
         }
-        await( nodes );
-        await( rels );
+        await( nodesIndex );
+        await( relsIndex );
         long firstNodeID;
         long secondNodeID;
         long firstRelID;
@@ -412,9 +433,9 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "hello", firstNodeID );
-            assertQueryFindsIds( "nodes", "zebra", secondNodeID );
-            assertQueryFindsNothing( "nodes", "different" );
+            assertQueryFindsIds( NODE_INDEX_NAME, "hello", firstNodeID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "zebra", secondNodeID );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "different" );
 
             assertQueryFindsIds( "rels", "hello", firstRelID );
             assertQueryFindsNothing( "rels", "zebra" );
@@ -425,16 +446,18 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotReturnNonMatches() throws Exception
     {
-        IndexDescriptor nodes = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        IndexDescriptor rels = fulltextAdapter.indexDescriptorFor( "rels", RELATIONSHIP, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        SchemaDescriptor nodes = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+        SchemaDescriptor rels = fulltextAdapter.schemaFor( RELATIONSHIP, new String[0], PROP );
+        IndexReference nodesIndex;
+        IndexReference relsIndex;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( nodes );
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( rels );
-            transaction.success();
+            nodesIndex = tx.schemaWrite().indexCreate( nodes );
+            relsIndex = tx.schemaWrite().indexCreate( rels );
+            tx.success();
         }
-        await( nodes );
-        await( rels );
+        await( nodesIndex );
+        await( relsIndex );
         try ( Transaction tx = db.beginTx() )
         {
             long firstNode = createNodeIndexableByPropertyValue( "Hello. Hello again." );
@@ -449,7 +472,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsNothing( "nodes", "zebra" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "zebra" );
             assertQueryFindsNothing( "rels", "zebra" );
         }
     }
@@ -477,22 +500,24 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             tx.success();
         }
 
-        IndexDescriptor nodes = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        IndexDescriptor rels = fulltextAdapter.indexDescriptorFor( "rels", RELATIONSHIP, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        SchemaDescriptor nodes = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+        SchemaDescriptor rels = fulltextAdapter.schemaFor( RELATIONSHIP, new String[0], PROP );
+        IndexReference nodesIndex;
+        IndexReference relsIndex;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( nodes );
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( rels );
-            transaction.success();
+            nodesIndex = tx.schemaWrite().indexCreate( nodes );
+            relsIndex = tx.schemaWrite().indexCreate( rels );
+            tx.success();
         }
-        await( nodes );
-        await( rels );
+        await( nodesIndex );
+        await( relsIndex );
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "hello", firstNodeID );
-            assertQueryFindsIds( "nodes", "string", secondNodeID );
-            assertQueryFindsNothing( "nodes", "goodbye" );
-            assertQueryFindsNothing( "nodes", "different" );
+            assertQueryFindsIds( NODE_INDEX_NAME, "hello", firstNodeID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "string", secondNodeID );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "goodbye" );
+            assertQueryFindsNothing( NODE_INDEX_NAME, "different" );
 
             assertQueryFindsNothing( "rels", "hello" );
             assertQueryFindsNothing( "rels", "string" );
@@ -508,13 +533,14 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToUpdateAndQueryAfterIndexChange() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         long firstID;
         long secondID;
@@ -533,17 +559,17 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "thing zebra", firstID, thirdID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "thing zebra", firstID, thirdID );
         }
 
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().indexDrop( descriptor );
-            descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], "prop2" );
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], "prop2" );
+            tx.schemaWrite().indexDrop( index );
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -556,20 +582,21 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "thing zebra", firstID, secondID, fourthID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "thing zebra", firstID, secondID, fourthID );
         }
     }
 
     @Test
     public void shouldBeAbleToDropAndReaddIndex() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
+        IndexReference index;
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         long firstID;
         long secondID;
@@ -582,21 +609,21 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             tx.success();
         }
 
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().indexDrop( descriptor );
-            transaction.success();
+            tx.schemaWrite().indexDrop( index );
+            tx.success();
         }
-        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        try ( KernelTransactionImplementation tx = (KernelTransactionImplementation) db.beginTx() )
         {
-            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
-            transaction.success();
+            index = tx.schemaWrite().indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NODE_INDEX_NAME ) );
+            tx.success();
         }
-        await( descriptor );
+        await( index );
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIds( "nodes", "thing zebra", firstID, secondID );
+            assertQueryFindsIds( NODE_INDEX_NAME, "thing zebra", firstID, secondID );
         }
     }
 }

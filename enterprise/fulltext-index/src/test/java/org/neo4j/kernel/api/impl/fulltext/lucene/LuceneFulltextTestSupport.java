@@ -36,12 +36,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -86,7 +86,7 @@ public class LuceneFulltextTestSupport
 
     private FulltextAdapter getAccessor()
     {
-        return (FulltextAdapter) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
+        return (FulltextAdapter) db.resolveDependency( IndexProviderMap.class ).lookup( FulltextIndexProviderFactory.DESCRIPTOR );
     }
 
     long createNodeIndexableByPropertyValue( Object propertyValue )
@@ -181,16 +181,18 @@ public class LuceneFulltextTestSupport
         }
     }
 
-    void await( IndexDescriptor fulltextIndexDescriptor ) throws IndexNotFoundKernelException
+    void await( IndexReference descriptor ) throws IndexNotFoundKernelException
     {
-        //TODO change this once you can use normal index await with multi-token indexes
-        try ( Transaction ignore = db.beginTx(); Statement stmt = db.statement() )
+        try ( Transaction tx = db.beginTx() )
         {
-            //noinspection StatementWithEmptyBody
-            while ( stmt.readOperations().indexGetState( fulltextIndexDescriptor ) != InternalIndexState.ONLINE )
+            while (( (KernelTransactionImplementation)tx).schemaRead().indexGetState( descriptor ) != InternalIndexState.ONLINE )
             {
-                continue;
+                Thread.sleep( 100 );
             }
+        }
+        catch ( InterruptedException e )
+        {
+            e.printStackTrace();
         }
     }
 }

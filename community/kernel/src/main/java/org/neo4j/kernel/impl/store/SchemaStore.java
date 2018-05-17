@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.io.pagecache.PageCache;
@@ -42,7 +43,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static java.util.Collections.singleton;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
-public class SchemaStore extends AbstractDynamicStore
+public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>
 {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
@@ -77,7 +78,18 @@ public class SchemaStore extends AbstractDynamicStore
         return records;
     }
 
-    static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer, IndexProviderMap indexProviderMap )
+    public Iterator<SchemaRule> loadAllSchemaRules()
+    {
+        return new SchemaStorage( this ).loadAllSchemaRules();
+    }
+
+    @Override
+    public Iterator<SchemaRule> iterator()
+    {
+        return loadAllSchemaRules();
+    }
+
+    static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer )
             throws MalformedSchemaRuleException
     {
         ByteBuffer scratchBuffer = concatData( records, buffer );

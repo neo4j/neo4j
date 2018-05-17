@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{ManySeekableArgs, PrefixRange, SingleSeekableArg}
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{ManySeekableArgs, PrefixRange, SingleSeekableArg}
 
 class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 

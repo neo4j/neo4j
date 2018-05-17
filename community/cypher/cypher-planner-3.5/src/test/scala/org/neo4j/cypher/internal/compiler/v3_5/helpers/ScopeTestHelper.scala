@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.helpers
 
-import org.neo4j.cypher.internal.util.v3_5.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.{Scope, Symbol, SymbolUse}
+import org.neo4j.cypher.internal.util.v3_5.InputPosition
 import org.neo4j.cypher.internal.util.v3_5.symbols._
 
 object ScopeTestHelper {

@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.values
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 
 /*
 KeyTokens are things with name and id. KeyTokens makes it possible to look up the id

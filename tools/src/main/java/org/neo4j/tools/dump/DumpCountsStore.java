@@ -34,9 +34,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -49,15 +49,13 @@ import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
+import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
 
 /**
  * Tool that will dump content of count store content into a simple string representation for further analysis.
@@ -90,7 +88,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
                         pages, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
                 NeoStores neoStores = factory.openAllNeoStores();
-                SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore(), IndexProviderMap.EMPTY );
+                SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
                 neoStores.getCounts().accept( new DumpCountsStore( out, neoStores, schemaStorage ) );
             }
             else
@@ -165,18 +163,6 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
                     count );
     }
 
-    private static Map<Long,IndexDescriptor> getAllIndexesFrom( SchemaStorage storage )
-    {
-        HashMap<Long,IndexDescriptor> indexes = new HashMap<>();
-        Iterator<IndexRule> indexRules = storage.indexesGetAll();
-        while ( indexRules.hasNext() )
-        {
-            IndexRule rule = indexRules.next();
-            indexes.put( rule.getId(), rule.getIndexDescriptor( IndexProviderMap.EMPTY ) );
-        }
-        return indexes;
-    }
-
     @Override
     public void visitIndexStatistics( long indexId, long updates, long size )
     {
@@ -202,9 +188,9 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     private String labels( int[] ids )
     {
-        if ( id == StatementConstants.ANY_LABEL )
+        if ( ids.length == 1 )
         {
-            if ( ids[0] == ReadOperations.ANY_LABEL )
+            if ( ids[0] == StatementConstants.ANY_LABEL )
             {
                 return "";
             }

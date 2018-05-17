@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast
 
-import org.neo4j.cypher.internal.util.v3_5.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.{SemanticCheckResult, SemanticCheckableExpression}
 import org.neo4j.cypher.internal.frontend.v3_5.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_5.semantics.{SemanticCheckResult, SemanticCheckableExpression}
+import org.neo4j.cypher.internal.util.v3_5.InputPosition
 import org.neo4j.cypher.internal.v3_5.expressions.{Expression => ASTExpression}
 
 trait RuntimeExpression extends ASTExpression with SemanticCheckableExpression {

@@ -23,11 +23,9 @@ import io.netty.channel.ChannelInboundHandler;
 
 import java.util.Collection;
 import java.util.Optional;
-import java.util.function.Function;
 
 import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerHandler;
-import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;

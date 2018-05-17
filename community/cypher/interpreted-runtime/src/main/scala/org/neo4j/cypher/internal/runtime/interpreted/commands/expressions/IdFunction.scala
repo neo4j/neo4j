@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) {
 

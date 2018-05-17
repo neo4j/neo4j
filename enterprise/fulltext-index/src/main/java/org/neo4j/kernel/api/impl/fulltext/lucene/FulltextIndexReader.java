@@ -21,8 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -57,13 +56,13 @@ public abstract class FulltextIndexReader implements IndexReader
     @Override
     public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        return PrimitiveLongResourceCollections.emptyIterator();
+        throw new IndexNotApplicableKernelException( "Fulltext indexes does not support IndexQuery queries" );
     }
 
     @Override
     public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, IndexQuery... query ) throws IndexNotApplicableKernelException
     {
-        // Do nothing, the fulltext index does not support normal index queries.
+        throw new IndexNotApplicableKernelException( "Fulltext indexes does not support IndexQuery queries" );
     }
 
     @Override

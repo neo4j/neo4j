@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, CypherTestSupport}
 
 trait TxCountsTrackingTestSupport extends CypherTestSupport {
   self: CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport =>

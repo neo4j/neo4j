@@ -24,42 +24,38 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
 
-public class FulltextIndexDescriptor extends IndexDescriptor
+public class FulltextIndexDescriptor extends StoreIndexDescriptor
 {
     private final Set<String> propertyNames;
-    private final String identifier;
     private final String analyzer;
 
-    FulltextIndexDescriptor( SchemaDescriptor schema, String name, PropertyKeyTokenHolder propertyKeyTokenHolder, String analyzer )
-            throws TokenNotFoundException
+    @Override
+    public IndexDescriptor.Type type()
     {
-        super( schema, Type.NON_SCHEMA );
+        return IndexDescriptor.Type.MULTI_TOKEN;
+    }
+
+    FulltextIndexDescriptor( StoreIndexDescriptor descriptor, PropertyKeyTokenHolder propertyKeyTokenHolder, String analyzer )
+    {
+        super( descriptor );
         this.analyzer = analyzer;
         Set<String> names = new HashSet<>();
-        this.identifier = name;
         for ( int propertyId : schema.getPropertyIds() )
         {
-            names.add( propertyKeyTokenHolder.getTokenById( propertyId ).name() );
+            names.add( propertyKeyTokenHolder.getTokenByIdOrNull( propertyId ).name() );
         }
         propertyNames = Collections.unmodifiableSet( names );
     }
 
-    @Override
-    public String metadata()
-    {
-        return analyzer();
-    }
-
-    @Override
-    public String identifier()
-    {
-        return identifier;
-    }
+//    @Override
+//    public String metadata()
+//    {
+//        return analyzer();
+//    }
 
     public Collection<String> propertyNames()
     {

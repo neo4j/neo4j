@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -38,9 +37,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -50,8 +47,6 @@ import org.neo4j.values.storable.ValueCategory;
 
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
@@ -65,7 +60,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.instance
  * This {@link IndexProvider index provider} act as one logical index but is backed by four physical
  * indexes, the number, spatial, temporal native indexes, and the general purpose lucene index.
  */
-public class FusionIndexProvider extends IndexProvider<SchemaIndexDescriptor>
+public class FusionIndexProvider extends IndexProvider
 {
     interface Selector
     {
@@ -90,6 +85,7 @@ public class FusionIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     private final DropAction dropAction;
 
     public FusionIndexProvider(
+            // good to be strict with specific providers here since this is dev facing
             IndexProvider stringProvider,
             IndexProvider numberProvider,
             IndexProvider spatialProvider,
@@ -118,20 +114,6 @@ public class FusionIndexProvider extends IndexProvider<SchemaIndexDescriptor>
         providers[SPATIAL] = spatialProvider;
         providers[TEMPORAL] = temporalProvider;
         providers[LUCENE] = luceneProvider;
-    }
-
-    @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
-    {
-        if ( type == GENERAL )
-        {
-            return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
-        }
-        else if ( type == UNIQUE )
-        {
-            return SchemaIndexDescriptorFactory.uniqueForLabelBySchema( schema );
-        }
-        throw new UnsupportedOperationException( String.format( "This provider does not support indexes of type %s", type ) );
     }
 
     @Override
@@ -217,12 +199,6 @@ public class FusionIndexProvider extends IndexProvider<SchemaIndexDescriptor>
                 return super.orderCapability( valueCategories );
             }
         };
-    }
-
-    @Override
-    public boolean compatible( IndexDescriptor indexDescriptor )
-    {
-        return Stream.of( providers ).allMatch( p -> p.compatible( indexDescriptor ) );
     }
 
     @Override

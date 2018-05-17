@@ -44,7 +44,7 @@ class NodeUpdatesIterator implements Iterator<EntityUpdates>
             while ( nodeIdIterator.hasNext() )
             {
                 long nodeId = nodeIdIterator.next();
-                EntityUpdates updates = storeView.nodeAsUpdates( nodeId );
+                EntityUpdates updates = storeView.entityAsUpdates( nodeId );
                 if ( updates != null )
                 {
                     nextUpdate = updates;

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 abstract class IdSeekIterator[T]
   extends Iterator[ExecutionContext] with NumericHelper {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.routing.multi_cluster.procedure;
 
-
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -29,9 +28,9 @@ import java.util.stream.Collectors;
 import org.neo4j.causalclustering.routing.Endpoint;
 import org.neo4j.causalclustering.routing.Role;
 import org.neo4j.causalclustering.routing.multi_cluster.MultiClusterRoutingResult;
-import static org.neo4j.causalclustering.routing.procedure.RoutingResultFormatHelper.parseEndpoints;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.causalclustering.routing.procedure.RoutingResultFormatHelper.parseEndpoints;
 
 /**
  * The result format of {@link GetRoutersForDatabaseProcedure} and

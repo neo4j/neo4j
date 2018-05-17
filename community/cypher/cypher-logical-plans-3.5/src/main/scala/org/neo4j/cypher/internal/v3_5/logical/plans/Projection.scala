@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
 
 /**
   * For each source row, produce the source row augmented with 'expressions'. For entry in

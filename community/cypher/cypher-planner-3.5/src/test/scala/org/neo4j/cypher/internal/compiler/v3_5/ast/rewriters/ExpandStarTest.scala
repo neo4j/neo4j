@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_5.inSequence
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.{expandStar, normalizeGraphReturnItems, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.{SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.util.v3_5.inSequence
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 
 class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 

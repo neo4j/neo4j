@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_5.ParameterWrongTypeException
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
+import org.neo4j.cypher.internal.util.v3_5.ParameterWrongTypeException
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Relationship, RelationshipType}
 import org.neo4j.values.storable.Values.stringValue

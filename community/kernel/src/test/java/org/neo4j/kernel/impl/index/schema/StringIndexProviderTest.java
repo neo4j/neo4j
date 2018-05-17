@@ -25,26 +25,22 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider.Monitor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 public class StringIndexProviderTest extends NativeIndexProviderTest
 {
     @Override
-    IndexProvider<SchemaIndexDescriptor> newProvider( PageCache pageCache, FileSystemAbstraction fs,
-                                                      IndexDirectoryStructure.Factory dir,
-                                                      IndexProvider.Monitor monitor,
-                                                      RecoveryCleanupWorkCollector collector )
+    IndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
+                               Monitor monitor, RecoveryCleanupWorkCollector collector )
     {
         return new StringIndexProvider( pageCache, fs, dir, monitor, collector, false );
     }
 
     @Override
-    IndexProvider<SchemaIndexDescriptor> newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs,
-                                                              IndexDirectoryStructure.Factory dir,
-                                                              IndexProvider.Monitor monitor,
-                                                              RecoveryCleanupWorkCollector collector )
+    IndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
+                                       Monitor monitor, RecoveryCleanupWorkCollector collector )
     {
         return new StringIndexProvider( pageCache, fs, dir, monitor, collector, true );
     }

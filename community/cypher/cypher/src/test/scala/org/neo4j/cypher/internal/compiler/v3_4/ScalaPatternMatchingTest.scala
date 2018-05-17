@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_5
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.RelatedTo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.PatternMatchingBuilder

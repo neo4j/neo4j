@@ -20,20 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_5.{Cost, RelTypeId, symbols}
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.{Cost, RelTypeId, symbols}
 import org.neo4j.cypher.internal.v3_5.expressions._
-
-import scala.collection.mutable
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 

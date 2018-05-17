@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;

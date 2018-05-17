@@ -31,17 +31,10 @@ import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_5.{DummyPosition, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_5.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.v3_5.{expressions => ast}
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_5.{InputPosition, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_5.expressions.PropertyKeyName
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   private val pos = DummyPosition(0)

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.rewriters
 
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_5.ast.{Return, ReturnItem, With}
+import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_5.expressions.{Expression, Variable}
 
 case object reattachAliasedExpressions extends Rewriter {

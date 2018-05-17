@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 
 class HasLabelTests extends CypherFunSuite {

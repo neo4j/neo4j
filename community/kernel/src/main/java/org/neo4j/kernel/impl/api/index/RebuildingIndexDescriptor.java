@@ -30,11 +30,11 @@ public class RebuildingIndexDescriptor
 
     RebuildingIndexDescriptor( StoreIndexDescriptor schemaIndexDescriptor )
     {
-        this.indexDescriptor = indexDescriptor;
+        this.schemaIndexDescriptor = schemaIndexDescriptor;
     }
 
     public StoreIndexDescriptor getIndexDescriptor()
     {
-        return indexDescriptor;
+        return schemaIndexDescriptor;
     }
 }

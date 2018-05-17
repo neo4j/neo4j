@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{LengthFunction, Variable}
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils

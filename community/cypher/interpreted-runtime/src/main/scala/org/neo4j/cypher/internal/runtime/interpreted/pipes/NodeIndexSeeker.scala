@@ -29,7 +29,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.NodeValue
 
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 /**
   * Mixin trait with functionality for executing logical index queries.

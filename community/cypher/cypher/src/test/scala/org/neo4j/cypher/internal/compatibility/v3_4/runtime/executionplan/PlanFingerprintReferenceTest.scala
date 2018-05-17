@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 import java.util.concurrent.TimeUnit.{MILLISECONDS, SECONDS}
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_5.{NeedsReplan, FineToReuse, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.compiler.v3_5.{FineToReuse, NeedsReplan, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, GraphStatisticsSnapshot, NodesWithLabelCardinality}
 import org.neo4j.cypher.internal.util.v3_5.LabelId
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite

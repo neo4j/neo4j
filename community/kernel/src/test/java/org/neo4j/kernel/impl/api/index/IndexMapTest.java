@@ -31,11 +31,14 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
+import static org.neo4j.storageengine.api.EntityType.NODE;
+import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
 
 public class IndexMapTest
 {
@@ -55,21 +58,20 @@ public class IndexMapTest
     public void setup()
     {
         MutableLongObjectMap<IndexProxy> map = new LongObjectHashMap<>();
-        map.put( 1L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema3_4 ).withId( 1 ).withoutCapabilities() ) );
-        map.put( 2L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema5_6_7 ).withId( 2 ).withoutCapabilities() ) );
-        map.put( 3L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema5_8 ).withId( 3 ).withoutCapabilities() ) );
-        map.put( 4L, new TestIndexProxy( node35_8 ) );
-        map.put( 5L, new TestIndexProxy( rel35_8 ) );
-        map.put( 6L, new TestIndexProxy( anynode_8 ) );
-        map.put( 7L, new TestIndexProxy( anyrel_8 ) );
+        map.put( 1L, new TestIndexProxy( forSchema( schema3_4 ).withId( 1 ).withoutCapabilities() ) );
+        map.put( 2L, new TestIndexProxy( forSchema( schema5_6_7 ).withId( 2 ).withoutCapabilities() ) );
+        map.put( 3L, new TestIndexProxy( forSchema( schema5_8 ).withId( 3 ).withoutCapabilities() ) );
+        map.put( 4L, new TestIndexProxy( forSchema( node35_8 ).withId( 4 ).withoutCapabilities() ) );
+        map.put( 5L, new TestIndexProxy( forSchema( rel35_8 ).withId( 5 ).withoutCapabilities() ) );
+        map.put( 6L, new TestIndexProxy( forSchema( anynode_8 ).withId( 6 ).withoutCapabilities() ) );
+        map.put( 7L, new TestIndexProxy( forSchema( anyrel_8 ).withId( 7 ).withoutCapabilities() ) );
         indexMap = new IndexMap( map );
     }
 
     @Test
     public void shouldGetRelatedIndexForLabel()
     {
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), NODE ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( schema3_4, node35_8, anynode_8 ) );
     }
 
@@ -84,8 +86,7 @@ public class IndexMapTest
     @Test
     public void shouldGetRelatedIndexesForLabel()
     {
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 5 ), entityTokens( 3, 4 ), IntSets.immutable.empty(), NODE ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 5 ), entityTokens( 3, 4 ), IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( schema5_6_7, schema5_8, anynode_8, node35_8 ) );
     }
 
@@ -112,12 +113,10 @@ public class IndexMapTest
     @Test
     public void shouldHandleUnrelated()
     {
-        assertThat(
-                indexMap.getRelatedIndexes( noEntityToken, noEntityToken, IntSets.immutable.empty(), NODE ),
+        assertThat( indexMap.getRelatedIndexes( noEntityToken, noEntityToken, IntSets.immutable.empty(), NODE ),
                 emptyIterableOf( SchemaDescriptor.class ) );
 
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 2 ), noEntityToken, IntSets.immutable.empty(), NODE ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 2 ), noEntityToken, IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( anynode_8 ) );
 
         assertThat(
@@ -132,48 +131,40 @@ public class IndexMapTest
     @Test
     public void shouldGetMultillabelForAnyOfTheLabels()
     {
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, emptySet(), NODE ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( schema3_4, node35_8, anynode_8 ) );
 
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, emptySet(), NODE ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( schema5_8, schema5_6_7, node35_8, anynode_8 ) );
     }
 
     @Test
     public void shouldOnlyGetRelIndexesForRelUpdates()
     {
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, emptySet(), RELATIONSHIP ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), RELATIONSHIP ),
                 containsInAnyOrder( rel35_8, anyrel_8 ) );
 
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, emptySet(), RELATIONSHIP ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, IntSets.immutable.empty(), RELATIONSHIP ),
                 containsInAnyOrder( rel35_8, anyrel_8 ) );
     }
 
     @Test
     public void shouldGetAnynodeForAnyNodetype()
     {
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 1 ), noEntityToken, emptySet(), NODE ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 1 ), noEntityToken, IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( anynode_8 ) );
 
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 13 ), noEntityToken, emptySet(), NODE ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 13 ), noEntityToken, IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( anynode_8 ) );
     }
 
     @Test
     public void shouldGetAnyrelForAnyReltype()
     {
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 1 ), noEntityToken, emptySet(), RELATIONSHIP ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 1 ), noEntityToken, IntSets.immutable.empty(), RELATIONSHIP ),
                 containsInAnyOrder( anyrel_8 ) );
 
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 13 ), noEntityToken, emptySet(), RELATIONSHIP ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 13 ), noEntityToken, IntSets.immutable.empty(), RELATIONSHIP ),
                 containsInAnyOrder( anyrel_8 ) );
     }
 
@@ -197,19 +188,15 @@ public class IndexMapTest
     public void removalsShouldOnlyRemoveCorrectProxy()
     {
         indexMap.removeIndexProxy( 4 );
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, emptySet(), NODE ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( schema3_4, anynode_8 ) );
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, emptySet(), RELATIONSHIP ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), RELATIONSHIP ),
                 containsInAnyOrder( rel35_8, anyrel_8 ) );
 
         indexMap.removeIndexProxy( 7 );
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, emptySet(), NODE ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( schema5_8, schema5_6_7, anynode_8 ) );
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, emptySet(), RELATIONSHIP ),
+        assertThat( indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, IntSets.immutable.empty(), RELATIONSHIP ),
                 containsInAnyOrder( rel35_8 ) );
 
     }

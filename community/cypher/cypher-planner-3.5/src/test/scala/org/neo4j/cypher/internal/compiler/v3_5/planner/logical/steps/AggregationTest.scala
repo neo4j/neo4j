@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Aggregation, LogicalPlan, Projection}
 import org.neo4j.cypher.internal.ir.v3_5.AggregatingQueryProjection
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Aggregation, LogicalPlan, Projection}
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))

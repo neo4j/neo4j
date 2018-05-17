@@ -19,13 +19,12 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.consistency.checking.CheckerEngine;
@@ -51,10 +50,10 @@ public class NodeLabelReader
     {
     }
 
-    public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> PrimitiveLongSet getListOfLabels(
+    public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> LongSet getListOfLabels(
             NodeRecord nodeRecord, RecordAccess records, CheckerEngine<RECORD, REPORT> engine )
     {
-        final PrimitiveLongSet labels = Primitive.longSet();
+        final MutableLongSet labels = new LongHashSet();
 
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( nodeRecord );
         if ( nodeLabels instanceof DynamicNodeLabels )
@@ -118,15 +117,15 @@ public class NodeLabelReader
         return InlineNodeLabels.get( nodeRecord );
     }
 
-    public static PrimitiveLongSet getListOfLabels( long labelField )
+    public static LongSet getListOfLabels( long labelField )
     {
-        final PrimitiveLongSet labels = Primitive.longSet();
+        final MutableLongSet labels = new LongHashSet();
         copyToSet( InlineNodeLabels.parseInlined(labelField), labels );
 
         return labels;
     }
 
-    private static void copyToSet( long[] array, PrimitiveLongSet set )
+    private static void copyToSet( long[] array, MutableLongSet set )
     {
         for ( long labelId : array )
         {

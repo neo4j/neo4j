@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import javax.naming.NamingException;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;

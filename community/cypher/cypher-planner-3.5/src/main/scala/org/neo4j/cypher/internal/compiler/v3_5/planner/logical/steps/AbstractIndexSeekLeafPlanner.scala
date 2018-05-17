@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_5.LabelId
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpressions {
 

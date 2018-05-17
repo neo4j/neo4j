@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.StandardInternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ProcedureRuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.StandardInternalExecutionResult
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor

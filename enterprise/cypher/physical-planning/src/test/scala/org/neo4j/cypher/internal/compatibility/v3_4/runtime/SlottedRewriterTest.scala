@@ -23,10 +23,9 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.ast._
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.neo4j.cypher.internal.util.v3_5.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_5.NonEmptyList
+import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_5.symbols._
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions._

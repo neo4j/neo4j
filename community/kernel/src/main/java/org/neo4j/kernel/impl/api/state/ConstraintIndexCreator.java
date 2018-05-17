@@ -90,8 +90,8 @@ public class ConstraintIndexCreator
      * and this tx committed, which will create the uniqueness constraint</li>
      * </ol>
      */
-    public long createUniquenessConstraintIndex( KernelTransactionImplementation transaction,
-            LabelSchemaDescriptor descriptor , Optional<String> provider ) throws TransactionFailureException, CreateConstraintFailureException,
+    public long createUniquenessConstraintIndex( KernelTransactionImplementation transaction, SchemaDescriptor descriptor, Optional<String> provider )
+            throws TransactionFailureException, CreateConstraintFailureException,
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
@@ -257,7 +257,7 @@ public class ConstraintIndexCreator
         return indexProxy.getDescriptor();
     }
 
-    public IndexDescriptor createConstraintIndex( final LabelSchemaDescriptor schema, Optional<String> provider )
+    public IndexDescriptor createConstraintIndex( final SchemaDescriptor schema, Optional<String> provider )
     {
         try ( Session session = kernelSupplier.get().beginSession( AUTH_DISABLED );
               Transaction transaction = session.beginTransaction( Transaction.Type.implicit ) )

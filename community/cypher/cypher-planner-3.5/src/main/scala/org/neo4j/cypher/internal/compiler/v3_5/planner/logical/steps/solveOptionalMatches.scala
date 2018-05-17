@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.frontend.v3_5.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}

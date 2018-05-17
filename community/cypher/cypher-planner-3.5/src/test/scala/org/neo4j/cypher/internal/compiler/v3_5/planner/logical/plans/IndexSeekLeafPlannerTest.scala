@@ -23,11 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.frontend.v3_5.ast._
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_5.{Predicate, QueryGraph, Selections}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, NodeIndexSeek, NodeUniqueIndexSeek, SingleQueryExpression}
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CompositeQueryExpression, NodeIndexSeek, NodeUniqueIndexSeek, SingleQueryExpression}
 
 import scala.language.reflectiveCalls
 

@@ -65,7 +65,7 @@ public abstract class NativeIndexProviderTest
     private static final int indexId = 1;
     private static final int labelId = 1;
     private static final int propId = 1;
-    private IndexProvider<SchemaIndexDescriptor> provider;
+    private IndexProvider provider;
     private final AssertableLogProvider logging = new AssertableLogProvider();
     private final IndexProvider.Monitor monitor = new LoggingMonitor( logging.getLog( "test" ) );
 
@@ -333,18 +333,18 @@ public abstract class NativeIndexProviderTest
 
     protected abstract Value someValue();
 
-    abstract IndexProvider<SchemaIndexDescriptor> newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-            IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );
+    abstract IndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
+                                        IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );
 
-    abstract IndexProvider<SchemaIndexDescriptor> newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-            IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );
+    abstract IndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
+                                                IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );
 
-    private IndexProvider<SchemaIndexDescriptor> newProvider()
+    private IndexProvider newProvider()
     {
         return newProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE );
     }
 
-    private IndexProvider<SchemaIndexDescriptor> newReadOnlyProvider()
+    private IndexProvider newReadOnlyProvider()
     {
         return newReadOnlyProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE );
     }

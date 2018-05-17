@@ -19,8 +19,8 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class IndexRecord extends AbstractBaseRecord
 {

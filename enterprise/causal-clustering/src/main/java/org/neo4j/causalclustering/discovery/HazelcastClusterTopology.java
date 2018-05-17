@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IMap;

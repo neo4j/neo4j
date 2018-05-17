@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_5.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
 import org.neo4j.cypher.internal.util.v3_5.LabelId
 import org.neo4j.cypher.internal.util.v3_5.symbols._
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite

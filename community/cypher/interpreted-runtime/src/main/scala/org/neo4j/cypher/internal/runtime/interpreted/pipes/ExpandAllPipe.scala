@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 case class ExpandAllPipe(source: Pipe,
                          fromName: String,

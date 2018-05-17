@@ -25,8 +25,8 @@ import java.math.RoundingMode
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.Selections
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics._
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.util.v3_5.{Cardinality, LabelId, Selectivity}
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans.PrefixRange

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
-import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor => IndexDescriptorV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics => GraphStatisticsV3_3, InstrumentedGraphStatistics => InstrumentedGraphStatisticsV3_3, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotV3_3}
+import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor => IndexDescriptorV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId => LabelIdV3_3, PropertyKeyId => PropertyKeyIdV3_3, RelTypeId => RelTypeIdV3_3}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3, Selectivity => SelectivityV3_3}
 import org.neo4j.cypher.internal.planner.v3_5.spi._

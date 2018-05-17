@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.util.v3_5.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.{ContextCreator, CypherCompilerCo
 import org.neo4j.cypher.internal.frontend.v3_5.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.util.v3_5.attribution.IdGen
+import org.neo4j.cypher.internal.util.v3_5.{CypherException, InputPosition}
 
 class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
                               override val tracer: CompilationPhaseTracer,

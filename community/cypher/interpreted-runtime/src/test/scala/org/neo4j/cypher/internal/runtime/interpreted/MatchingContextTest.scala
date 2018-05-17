@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Predicate}
@@ -30,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.MatchingCont
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
 import org.neo4j.cypher.internal.util.v3_5.symbols._
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 
 import scala.collection.Map

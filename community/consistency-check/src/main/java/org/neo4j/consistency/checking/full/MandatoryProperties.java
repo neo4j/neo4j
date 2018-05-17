@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -51,10 +50,10 @@ public class MandatoryProperties
     private final MutableIntObjectMap<int[]> relationships = new IntObjectHashMap<>();
     private final StoreAccess storeAccess;
 
-    public MandatoryProperties( StoreAccess storeAccess, IndexProviderMap indexes )
+    public MandatoryProperties( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
-        SchemaStorage schemaStorage = new SchemaStorage( storeAccess.getSchemaStore(), indexes );
+        SchemaStorage schemaStorage = new SchemaStorage( storeAccess.getSchemaStore() );
         for ( ConstraintRule rule : constraintsIgnoringMalformed( schemaStorage ) )
         {
             if ( rule.getConstraintDescriptor().enforcesPropertyExistence() )

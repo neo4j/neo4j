@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
+import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
 import org.neo4j.cypher.internal.util.v3_5.UnNamedNameGenerator
 import org.neo4j.cypher.internal.util.v3_5.symbols._

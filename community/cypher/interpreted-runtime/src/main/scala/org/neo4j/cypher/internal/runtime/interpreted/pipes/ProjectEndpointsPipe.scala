@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ListSupport}
 import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 import org.neo4j.values.virtual.VirtualValues.reverse
-import org.neo4j.values.virtual.{RelationshipReference, RelationshipValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipReference, RelationshipValue}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ExecutionContext, IsList, IsMap}
 import org.neo4j.cypher.internal.util.v3_5.{CypherTypeException, NonEmptyList}
 import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
-import org.neo4j.values.virtual.{VirtualRelationshipValue, VirtualNodeValue}
+import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}
 
 import scala.util.{Failure, Success, Try}
 

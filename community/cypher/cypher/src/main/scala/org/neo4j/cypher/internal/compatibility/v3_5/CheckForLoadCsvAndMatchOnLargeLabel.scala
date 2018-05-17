@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5
 
 import org.neo4j.cypher.internal.frontend.v3_5.notification.{InternalNotification, LargeLabelWithLoadCsvNotification}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.neo4j.cypher.internal.util.v3_5.{Cardinality, LabelId, NameId}
+import org.neo4j.cypher.internal.util.v3_5.{Cardinality, LabelId}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LoadCSV, LogicalPlan, NodeByLabelScan}
 
 case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,

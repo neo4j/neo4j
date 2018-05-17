@@ -35,7 +35,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
     private final Long owningConstraintId;
     private final String name;
 
-    StoreIndexDescriptor( StoreIndexDescriptor indexDescriptor )
+    protected StoreIndexDescriptor( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
         this.id = indexDescriptor.id;

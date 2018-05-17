@@ -42,6 +42,7 @@ import org.neo4j.consistency.store.synthetic.LabelScanIndex;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
@@ -97,7 +97,7 @@ public class ConsistencyCheckTasks
         List<ConsistencyCheckerTask> tasks = new ArrayList<>();
         if ( checkGraph )
         {
-            MandatoryProperties mandatoryProperties = new MandatoryProperties( nativeStores, indexes );
+            MandatoryProperties mandatoryProperties = new MandatoryProperties( nativeStores );
             StoreProcessor processor =
                     multiPass.processor( CheckStage.Stage1_NS_PropsLabels, PROPERTIES );
             tasks.add( create( CheckStage.Stage1_NS_PropsLabels.name(), nativeStores.getNodeStore(),
@@ -157,7 +157,7 @@ public class ConsistencyCheckTasks
         // PASS 1: Dynamic record chains
         tasks.add( create( "SchemaStore", nativeStores.getSchemaStore(), ROUND_ROBIN ) );
         // PASS 2: Rule integrity and obligation build up
-        final SchemaRecordCheck schemaCheck = new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore(), indexes ), this.indexes );
+        final SchemaRecordCheck schemaCheck = new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore() ), this.indexes );
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_rules", statistics, numberOfThreads,
                 nativeStores.getSchemaStore(), nativeStores, "check_rules",
                 schemaCheck, multiPartBuilder, cacheAccess, defaultProcessor, ROUND_ROBIN ) );

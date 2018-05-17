@@ -40,7 +40,6 @@ import org.neo4j.graphdb._
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo

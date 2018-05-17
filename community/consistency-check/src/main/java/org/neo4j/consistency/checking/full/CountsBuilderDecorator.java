@@ -19,17 +19,14 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollection;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
@@ -229,11 +226,11 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                     CacheAccess.Client client = records.cacheAccess().client();
                     client.putToCacheSingle( record.getId(), SLOT_IN_USE, 1 );
                     client.putToCacheSingle( record.getId(), SLOT_LABEL_FIELD, record.getLabelField() );
-                    final PrimitiveLongSet labels = labelsFor( nodeStore, engine, records, record.getId() );
+                    final LongSet labels = labelsFor( nodeStore, engine, records, record.getId() );
                     synchronized ( counts )
                     {
                         counts.addToValue( nodeKey( WILDCARD ), 1 );
-                        for ( PrimitiveLongIterator it = labels.iterator(); it.hasNext(); )
+                        for ( LongIterator it = labels.longIterator(); it.hasNext(); )
                         {
                             long label = it.next();
                             counts.addToValue( nodeKey( (int) label ), 1 );
@@ -280,8 +277,8 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                 if ( record.inUse() )
                 {
                     CacheAccess.Client cacheAccess = records.cacheAccess().client();
-                    PrimitiveLongSet firstNodeLabels;
-                    PrimitiveLongSet secondNodeLabels;
+                    LongSet firstNodeLabels;
+                    LongSet secondNodeLabels;
                     long firstLabelsField = cacheAccess.getFromCache( record.getFirstNode(), SLOT_LABEL_FIELD );
                     if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( firstLabelsField ) )
                     {
@@ -307,7 +304,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                         counts.addToValue( relationshipKey( WILDCARD, type, WILDCARD ), 1 );
                         if ( firstNodeLabels != null )
                         {
-                            for ( PrimitiveLongIterator it = firstNodeLabels.iterator(); it.hasNext(); )
+                            for ( LongIterator it = firstNodeLabels.longIterator(); it.hasNext(); )
                             {
                                 long firstLabel = it.next();
                                 counts.addToValue( relationshipKey( (int) firstLabel, WILDCARD, WILDCARD ), 1 );
@@ -316,7 +313,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                         }
                         if ( secondNodeLabels != null )
                         {
-                            for ( PrimitiveLongIterator it = secondNodeLabels.iterator(); it.hasNext(); )
+                            for ( LongIterator it = secondNodeLabels.longIterator(); it.hasNext(); )
                             {
                                 long secondLabel = it.next();
                                 counts.addToValue( relationshipKey( WILDCARD, WILDCARD, (int) secondLabel ), 1 );
@@ -325,10 +322,10 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                         }
                         if ( COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
                         {
-                            for ( PrimitiveLongIterator it = firstNodeLabels.iterator(); it.hasNext(); )
+                            for ( LongIterator it = firstNodeLabels.longIterator(); it.hasNext(); )
                             {
                                 long firstLabel = it.next();
-                                for ( PrimitiveLongIterator itt = secondNodeLabels.iterator(); itt.hasNext(); )
+                                for ( LongIterator itt = secondNodeLabels.longIterator(); itt.hasNext(); )
                                 {
                                     long secondLabel = itt.next();
                                     counts.addToValue( relationshipKey( (int) firstLabel, WILDCARD, (int) secondLabel ), 1 );
@@ -367,7 +364,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         }
     }
 
-    private static PrimitiveLongSet labelsFor( RecordStore<NodeRecord> nodeStore,
+    private static LongSet labelsFor( RecordStore<NodeRecord> nodeStore,
                                         CheckerEngine<? extends AbstractBaseRecord,? extends ConsistencyReport> engine,
                                         RecordAccess recordAccess,
                                         long nodeId )

@@ -68,7 +68,6 @@ import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -77,6 +76,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -448,7 +448,7 @@ public class FullCheckIntegrationTest
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<StoreIndexDescriptor> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore(), storeAccess.indexes() ).indexesGetAll();
+        Iterator<StoreIndexDescriptor> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore() ).indexesGetAll();
         while ( rules.hasNext() )
         {
             StoreIndexDescriptor rule = rules.next();
@@ -556,7 +556,7 @@ public class FullCheckIntegrationTest
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
-        Iterator<StoreIndexDescriptor> indexDescriptorIterator = new SchemaStorage( storeAccess.nativeStores().getSchemaStore(), storeAccess.indexes() ).indexesGetAll();
+        Iterator<StoreIndexDescriptor> indexDescriptorIterator = new SchemaStorage( storeAccess.nativeStores().getSchemaStore() ).indexesGetAll();
         NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, storeAccess.nativeStores().getRawNeoStores() );
         while ( indexDescriptorIterator.hasNext() )
         {
@@ -567,7 +567,7 @@ public class FullCheckIntegrationTest
             {
                 for ( long nodeId : indexedNodes )
                 {
-                    EntityUpdates updates = storeView.nodeAsUpdates( nodeId );
+                    EntityUpdates updates = storeView.entityAsUpdates( nodeId );
                     for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( indexDescriptor ) ) )
                     {
                         updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, update.values() ) );
@@ -592,7 +592,7 @@ public class FullCheckIntegrationTest
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
-        Iterator<StoreIndexDescriptor> indexRuleIterator = new SchemaStorage( storeAccess.nativeStores().getSchemaStore(), storeAccess.indexes() ).indexesGetAll();
+        Iterator<StoreIndexDescriptor> indexRuleIterator = new SchemaStorage( storeAccess.nativeStores().getSchemaStore() ).indexesGetAll();
         while ( indexRuleIterator.hasNext() )
         {
             StoreIndexDescriptor indexRule = indexRuleIterator.next();

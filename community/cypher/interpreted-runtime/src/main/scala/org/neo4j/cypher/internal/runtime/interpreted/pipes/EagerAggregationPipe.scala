@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MutableMaps}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MutableMaps}
 import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{ListValue, MapValue, VirtualValues}

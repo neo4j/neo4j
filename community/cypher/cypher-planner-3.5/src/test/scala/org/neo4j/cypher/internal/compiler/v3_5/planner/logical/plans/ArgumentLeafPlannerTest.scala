@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.argumentLeafPlanner
 import org.neo4j.cypher.internal.ir.v3_5.QueryGraph
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.expressions.PatternExpression
 import org.neo4j.cypher.internal.v3_5.logical.plans.Argument

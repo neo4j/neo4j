@@ -30,7 +30,7 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.JavaConverters._
 
