@@ -512,6 +512,11 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "This feature available in Neo4j Enterprise Edition." )
     public static final Setting<Boolean> pagecache_warmup_enabled = setting( "unsupported.dbms.memory.pagecache.warmup.enable", BOOLEAN, FALSE );
 
+    @Internal
+    @Description( "This enables an experimental parallel flushing feature for the check-pointer. " +
+                  "When enabled, and when the IOPS limiter is disabled, the check point process will flush the files in parallel." )
+    public static final Setting<Boolean> checkpoint_flush_parallel = setting( "unsupported.dbms.checkpoint.flush.parallel", BOOLEAN, FALSE );
+
     /**
      * Block size properties values depends from selected record format.
      * We can't figured out record format until it will be selected by corresponding edition.

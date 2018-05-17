@@ -37,7 +37,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.NeoStoresDiagnostics;
 import org.neo4j.kernel.configuration.Config;
@@ -246,7 +246,17 @@ public class NeoStores implements AutoCloseable
             {
                 counts.rotate( getMetaDataStore().getLastCommittedTransactionId() );
             }
-            pageCache.flushAndForce( limiter );
+            if ( !limiter.isLimited()
+                 && config.get( GraphDatabaseSettings.checkpoint_flush_parallel )
+                 && pageCache instanceof MuninnPageCache )
+            {
+                MuninnPageCache cache = (MuninnPageCache) pageCache;
+                cache.experimentalFlushAndForceParallelUnsynchronised();
+            }
+            else
+            {
+                pageCache.flushAndForce( limiter );
+            }
         }
         catch ( IOException e )
         {

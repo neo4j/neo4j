@@ -125,6 +125,12 @@ public class ConfigurableIOLimiter implements IOLimiter
         disableCountUpdater.getAndDecrement( this );
     }
 
+    @Override
+    public boolean isLimited()
+    {
+        return disabledCount == 0;
+    }
+
     private long currentTimeMillis()
     {
         return System.currentTimeMillis();
