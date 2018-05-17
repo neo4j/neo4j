@@ -21,6 +21,8 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.neo4j.configuration.Description;
@@ -45,6 +47,7 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
+import org.neo4j.values.storable.DateTimeValue;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -201,7 +204,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<String> cypher_runtime = setting(
             "unsupported.cypher.runtime",
-            options( "INTERPRETED", "COMPILED", "SLOTTED" , "MORSEL", DEFAULT ), DEFAULT );
+        optionsIgnoreCase( "INTERPRETED", "COMPILED", "SLOTTED" , "MORSEL", DEFAULT ), DEFAULT );
 
     @Description( "Enable tracing of compilation in cypher." )
     @Internal
@@ -284,6 +287,18 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<String> cypher_replan_algorithm = setting( "unsupported.cypher.replan_algorithm",
             options( "inverse", "exponential", "none", DEFAULT ), DEFAULT );
+
+    @Description( "Enable using minimum cardinality estimates in the Cypher cost planner, so that cardinality " +
+                  "estimates for logical plan operators are not allowed to go below certain thresholds even when " +
+                  "the statistics give smaller numbers. " +
+                  "This is especially useful for large import queries that write nodes and relationships " +
+                  "into an empty or small database, where the generated query plan needs to be able to scale " +
+                  "beyond the initial statistics. Otherwise, when this is disabled, the statistics on an empty " +
+                  "or tiny database may lead the cost planner to for example pick a scan over an index seek, even " +
+                  "when an index exists, because of a lower estimated cost." )
+    @Internal
+    public static final Setting<Boolean> cypher_plan_with_minimum_cardinality_estimates =
+            setting( "unsupported.cypher.plan_with_minimum_cardinality_estimates", BOOLEAN, TRUE );
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
@@ -370,7 +385,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
             options( Level.class ), "INFO" );
 
-    @Description( "Database timezone." )
+    @Description( "Database timezone. Among other things, this setting influences which timezone the logs and monitoring procedures use." )
     public static final Setting<LogTimeZone> db_timezone =
             setting( "dbms.db.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
 
@@ -379,6 +394,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     @ReplacedBy( "dbms.db.timezone" )
     public static final Setting<LogTimeZone> log_timezone =
             setting( "dbms.logs.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
+
+    @Description( "Database timezone for temporal functions. All Time and DateTime values that are created without " +
+            "an explicit timezone will use this configured default timezone." )
+    public static final Setting<ZoneId> db_temporal_timezone =
+            setting( "db.temporal.timezone", DateTimeValue::parseZoneOffsetOrZoneName, ZoneOffset.UTC.toString() );
 
     @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
     @Internal
@@ -516,23 +536,38 @@ public class GraphDatabaseSettings implements LoadableConfig
         NATIVE10( "lucene+native-1.0" ),
         LUCENE10( "lucene-1.0" );
 
-        private final String param;
+        private final String providerName;
 
-        SchemaIndex( String param )
+        SchemaIndex( String providerName )
         {
-            this.param = param;
+            this.providerName = providerName;
         }
 
-        public String param()
+        public String providerName()
         {
-            return param;
+            return providerName;
         }
     }
 
-    @Description( "Index provider to use when creating new indexes." )
-    public static final Setting<String> default_schema_provider =
+    @Description( "Index provider to use for newly created schema indexes. " +
+            "An index provider may store different value types in separate physical indexes. " +
+            "lucene-1.0: Store spatial and temporal value types in native indexes, remaining value types in a Lucene index. " +
+            "lucene+native-1.0: Store numbers in a native index and remaining value types like lucene-1.0. " +
+            "This improves read and write performance for non-composite indexed numbers. " +
+            "lucene+native-2.0: Store strings in a native index and remaining value types like lucene+native-1.0. " +
+            "This improves write performance for non-composite indexed strings. " +
+            "This version of the native string index has a value limit of 4047B, such that byte-representation " +
+            "of a string to index cannot be larger than that limit, or the transaction trying to index such a value will fail. " +
+            "This version of the native string index also has reduced performance for CONTAINS and ENDS WITH queries, " +
+            "due to resorting to index scan+filter internally. " +
+            "Native indexes generally has these benefits over Lucene:\n" +
+            "- Faster writes\n" +
+            "- Less garbage and heap presence\n" +
+            "- Less CPU resources per operation\n" +
+            "- Controllable memory usage, due to being bound by the page cache" )
+            public static final Setting<String> default_schema_provider =
             setting( "dbms.index.default_schema_provider",
-                    optionsIgnoreCase( SchemaIndex.NATIVE20.param(), SchemaIndex.NATIVE10.param(), SchemaIndex.LUCENE10.param() ),
+                    optionsIgnoreCase( SchemaIndex.NATIVE20.providerName(), SchemaIndex.NATIVE10.providerName(), SchemaIndex.LUCENE10.providerName() ),
                     null );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )
@@ -602,9 +637,17 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Internal
     @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
-                  "warmup after a restart, reducing the mean time to performance." )
+                  "warmup after a restart, reducing the mean time to performance. " +
+                  "This feature available in Neo4j Enterprise Edition." )
     public static final Setting<Duration> pagecache_warmup_profiling_interval =
             setting( "unsupported.dbms.memory.pagecache.warmup.profile.interval", DURATION, "1m" );
+
+    @Internal
+    @Description( "Page cache can be configured to perform usage sampling of loaded pages that can be used to construct active load profile. " +
+            "According to that profile pages can be reloaded on the restart, replication, etc. " +
+            "This setting allows disabling that behavior. " +
+            "This feature available in Neo4j Enterprise Edition." )
+    public static final Setting<Boolean> pagecache_warmup_enabled = setting( "unsupported.dbms.memory.pagecache.warmup.enable", BOOLEAN, TRUE );
 
     /**
      * Block size properties values depends from selected record format.
@@ -823,31 +866,49 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> bolt_log_filename = derivedSetting( "unsupported.dbms.logs.bolt.path",
             GraphDatabaseSettings.logs_directory, logsDir -> new File( logsDir, "bolt.log" ), PATH );
 
-    @Description( "Whether to apply network level write throttling" )
+    @Description( "Whether to apply network level outbound network buffer based throttling" )
     @Internal
-    public static final Setting<Boolean> bolt_write_throttle = setting( "unsupported.dbms.bolt.write_throttle", BOOLEAN, TRUE );
+    public static final Setting<Boolean> bolt_outbound_buffer_throttle = setting( "unsupported.dbms.bolt.outbound_buffer_throttle", BOOLEAN, TRUE );
 
-    @Description( "When the size (in bytes) of write buffers, used by bolt's network layer, " +
-            "grows beyond this value bolt channel will advertise itself as unwritable and bolt worker " +
-            "threads will block until it becomes writable again." )
+    @Description( "When the size (in bytes) of outbound network buffers, used by bolt's network layer, " +
+            "grows beyond this value bolt channel will advertise itself as unwritable and will block " +
+            "related processing thread until it becomes writable again." )
     @Internal
-    public static final Setting<Integer> bolt_write_buffer_high_water_mark =
-            buildSetting( "unsupported.dbms.bolt.write_throttle.high_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 512 ) ) ).constraint(
+    public static final Setting<Integer> bolt_outbound_buffer_throttle_high_water_mark =
+            buildSetting( "unsupported.dbms.bolt.outbound_buffer_throttle.high_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 512 ) ) ).constraint(
                     range( (int) ByteUnit.kibiBytes( 64 ), Integer.MAX_VALUE ) ).build();
 
-    @Description( "When the size (in bytes) of write buffers, previously advertised as unwritable, " +
-            "gets below this value bolt channel will re-advertise itself as writable and blocked bolt worker " + "threads will resume execution." )
+    @Description( "When the size (in bytes) of outbound network buffers, previously advertised as unwritable, " +
+            "gets below this value bolt channel will re-advertise itself as writable and blocked processing " +
+            "thread will resume execution." )
     @Internal
-    public static final Setting<Integer> bolt_write_buffer_low_water_mark =
-            buildSetting( "unsupported.dbms.bolt.write_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
+    public static final Setting<Integer> bolt_outbound_buffer_throttle_low_water_mark =
+            buildSetting( "unsupported.dbms.bolt.outbound_buffer_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
                     range( (int) ByteUnit.kibiBytes( 16 ), Integer.MAX_VALUE ) ).build();
 
-    @Description( "When the total time write throttle lock is held exceeds this value, the corresponding bolt channel will be aborted. Setting "
-            + " this to 0 will disable this behaviour." )
+    @Description( "When the total time outbound network buffer based throttle lock is held exceeds this value, " +
+            "the corresponding bolt channel will be aborted. Setting " +
+            "this to 0 will disable this behaviour." )
     @Internal
-    public static final Setting<Duration> bolt_write_throttle_max_duration =
-            buildSetting( "unsupported.dbms.bolt.write_throttle.max_duration", DURATION, "15m" ).constraint(
+    public static final Setting<Duration> bolt_outbound_buffer_throttle_max_duration =
+            buildSetting( "unsupported.dbms.bolt.outbound_buffer_throttle.max_duration", DURATION, "15m" ).constraint(
                     min( Duration.ofSeconds( 30 ) ) ).build();
+
+    @Description( "When the number of queued inbound messages grows beyond this value, reading from underlying " +
+            "channel will be paused (no more inbound messages will be available) until queued number of " +
+            "messages drops below the configured low watermark value." )
+    @Internal
+    public static final Setting<Integer> bolt_inbound_message_throttle_high_water_mark =
+            buildSetting( "unsupported.dbms.bolt.inbound_message_throttle.high_watermark", INTEGER, String.valueOf( 300 ) ).constraint(
+                    range( 1, Integer.MAX_VALUE ) ).build();
+
+    @Description( "When the number of queued inbound messages, previously reached configured high watermark value, " +
+            "drops below this value, reading from underlying channel will be enabled and any pending messages " +
+            "will start queuing again." )
+    @Internal
+    public static final Setting<Integer> bolt_inbound_message_throttle_low_water_mark =
+            buildSetting( "unsupported.dbms.bolt.inbound_message_throttle.low_watermark", INTEGER, String.valueOf( 100 ) ).constraint(
+                    range( 1, Integer.MAX_VALUE ) ).build();
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal

@@ -27,73 +27,79 @@ import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 
 public class DefaultIndexProviderMap implements IndexProviderMap
 {
-    private final IndexProvider<SchemaIndexDescriptor> defaultIndexProvider;
+    private final IndexProvider defaultIndexProvider;
     private final Map<IndexProvider.Descriptor,IndexProvider> indexProviders = new HashMap<>();
+    private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();
 
-    public DefaultIndexProviderMap( IndexProvider<SchemaIndexDescriptor> defaultIndexProvider )
+    public DefaultIndexProviderMap( IndexProvider defaultIndexProvider )
     {
         this( defaultIndexProvider, Collections.emptyList() );
     }
 
-    public DefaultIndexProviderMap( IndexProvider<SchemaIndexDescriptor> defaultIndexProvider, Iterable<IndexProvider<?>> additionalIndexProviders )
+    public DefaultIndexProviderMap( IndexProvider defaultIndexProvider,
+            Iterable<IndexProvider> additionalIndexProviders )
     {
         this.defaultIndexProvider = defaultIndexProvider;
-        indexProviders.put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
+        put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
         for ( IndexProvider provider : additionalIndexProviders )
         {
             Descriptor providerDescriptor = provider.getProviderDescriptor();
             Objects.requireNonNull( providerDescriptor );
-            IndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
+            IndexProvider existing = put( providerDescriptor, provider );
             if ( existing != null )
             {
-                throw new IllegalArgumentException(
-                        "Tried to load multiple index providers with the same provider descriptor " + providerDescriptor + ". First loaded " + existing +
-                                " then " + provider );
+                throw new IllegalArgumentException( "Tried to load multiple schema index providers with the same provider descriptor " +
+                        providerDescriptor + ". First loaded " + existing + " then " + provider );
             }
         }
     }
 
+    private IndexProvider put( Descriptor providerDescriptor, IndexProvider provider )
+    {
+        IndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
+        indexProvidersByName.put( providerDescriptor.name(), provider );
+        return existing;
+    }
+
     @Override
-    public IndexProvider<SchemaIndexDescriptor> getDefaultProvider()
+    public IndexProvider getDefaultProvider()
     {
         return defaultIndexProvider;
     }
 
     @Override
-    public IndexProvider getProviderFor( IndexDescriptor descriptor )
+    public IndexProvider lookup( IndexProvider.Descriptor providerDescriptor )
     {
-        if ( defaultIndexProvider.compatible( descriptor ) )
-        {
-            return defaultIndexProvider;
-        }
-        for ( IndexProvider indexProvider : indexProviders.values() )
-        {
-            if ( indexProvider.compatible( descriptor ) )
-            {
-                return indexProvider;
-            }
-        }
-        return IndexProvider.EMPTY;
-    }
-
-    @Override
-    public IndexProvider get( IndexProvider.Descriptor descriptor )
-    {
-        IndexProvider provider = indexProviders.get( descriptor );
+        IndexProvider provider = indexProviders.get( providerDescriptor );
         if ( provider != null )
         {
             return provider;
         }
 
-        throw new IllegalArgumentException(
-                "Tried to get index provider for an existing index with provider " + descriptor + " whereas available providers in this session being " +
-                        indexProviders + ", and default being " + defaultIndexProvider );
+        throw notFound( providerDescriptor );
+    }
+
+    @Override
+    public IndexProvider lookup( String providerDescriptorName ) throws IndexProviderNotFoundException
+    {
+        IndexProvider provider = indexProvidersByName.get( providerDescriptorName );
+        if ( provider != null )
+        {
+            return provider;
+        }
+
+        throw notFound( providerDescriptorName );
+    }
+
+    private IllegalArgumentException notFound( Object key )
+    {
+        return new IllegalArgumentException( "Tried to get index provider for an existing index with provider " + key +
+                " whereas available providers in this session being " + indexProviders + ", and default being " + defaultIndexProvider );
     }
 
     @Override

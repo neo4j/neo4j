@@ -47,7 +47,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
@@ -92,7 +91,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             KernelTransaction transaction = safeAcquireTransaction();
             try ( Statement ignore = transaction.acquireStatement() )
             {
-                RelationshipScanCursor relationships = transaction.relationshipCursor();
+                RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
                 transaction.dataRead().singleRelationship( id, relationships );
                 //at this point we don't care if it is there or not just load what we got
                 relationships.next();
@@ -229,8 +228,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         List<String> keys = new ArrayList<>();
         try
         {
-            RelationshipScanCursor relationships = transaction.relationshipCursor();
-            PropertyCursor properties = transaction.propertyCursor();
+            RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
+            PropertyCursor properties = transaction.ambientPropertyCursor();
             singleRelationship( transaction, relationships );
             TokenRead token = transaction.tokenRead();
             relationships.properties( properties );
@@ -275,8 +274,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             propertyIds[i] = token.propertyKey( key );
         }
 
-        RelationshipScanCursor relationships = transaction.relationshipCursor();
-        PropertyCursor propertyCursor = transaction.propertyCursor();
+        RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
+        PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
         singleRelationship( transaction, relationships );
         relationships.properties( propertyCursor );
         int propertiesToFind = itemsToReturn;
@@ -306,8 +305,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
 
         try
         {
-            RelationshipScanCursor relationships = transaction.relationshipCursor();
-            PropertyCursor propertyCursor = transaction.propertyCursor();
+            RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
+            PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
             TokenRead token = transaction.tokenRead();
             singleRelationship( transaction, relationships );
             relationships.properties( propertyCursor );
@@ -333,13 +332,13 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         }
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
 
-        RelationshipScanCursor relationships = transaction.relationshipCursor();
-        PropertyCursor properties = transaction.propertyCursor();
+        RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
+        PropertyCursor properties = transaction.ambientPropertyCursor();
         singleRelationship( transaction, relationships );
         relationships.properties( properties );
         while ( properties.next() )
@@ -365,10 +364,10 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
         KernelTransaction transaction = safeAcquireTransaction();
-        RelationshipScanCursor relationships = transaction.relationshipCursor();
-        PropertyCursor properties = transaction.propertyCursor();
+        RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
+        PropertyCursor properties = transaction.ambientPropertyCursor();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return defaultValue;
         }
@@ -395,13 +394,13 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
 
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return false;
         }
 
-        RelationshipScanCursor relationships = transaction.relationshipCursor();
-        PropertyCursor properties = transaction.propertyCursor();
+        RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
+        PropertyCursor properties = transaction.ambientPropertyCursor();
         singleRelationship( transaction, relationships );
         relationships.properties( properties );
         while ( properties.next() )

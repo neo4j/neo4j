@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.v3_5.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.internal.kernel.api._
 
 class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
@@ -31,10 +31,10 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
                             propertyKey: PropertyKeyToken,
                             valueExpr: Expression) extends Operator {
 
-  private var reference: IndexReference = CapableIndexReference.NO_INDEX
+  private var reference: IndexReference = IndexReference.NO_INDEX
 
   private def reference(context: QueryContext): IndexReference = {
-    if (reference == CapableIndexReference.NO_INDEX) {
+    if (reference == IndexReference.NO_INDEX) {
       reference = context.indexReference(label.nameId.id, propertyKey.nameId.id)
     }
     reference

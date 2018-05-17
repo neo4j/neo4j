@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,8 +37,6 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -57,11 +58,11 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.fs.FileUtils.relativePath;
 
@@ -89,7 +90,7 @@ public class CatchupServerIT
     private DefaultFileSystemAbstraction fsa = fileSystemRule.get();
 
     @Before
-    public void startDb()
+    public void startDb() throws Throwable
     {
         temporaryDirectory = testDirectory.directory();
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fsa ).newEmbeddedDatabase( testDirectory.graphDbDir() );
@@ -105,7 +106,7 @@ public class CatchupServerIT
     }
 
     @After
-    public void stopDb() throws IOException
+    public void stopDb() throws Throwable
     {
         pageCache.flushAndForce();
         if ( graphDb != null )
@@ -147,7 +148,8 @@ public class CatchupServerIT
         assertTransactionIdMatches( prepareStoreCopyResponse.lastTransactionId() );
 
         //and
-        assertIndexIdsMatch( prepareStoreCopyResponse.getIndexIds(), neoStoreDataSource );
+        assertTrue( "Expected an empty set of ids. Found size " + prepareStoreCopyResponse.getIndexIds().size(),
+                prepareStoreCopyResponse.getIndexIds().isEmpty() );
     }
 
     @Test
@@ -202,7 +204,7 @@ public class CatchupServerIT
         SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchupClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
 
         // and
-        PrimitiveLongIterator indexIds = getExpectedIndexIds( neoStoreDataSource ).iterator();
+        LongIterator indexIds = getExpectedIndexIds( neoStoreDataSource ).longIterator();
 
         // when
         while ( indexIds.hasNext() )
@@ -276,13 +278,7 @@ public class CatchupServerIT
         assertThat( givenFile, containsInAnyOrder( expectedStoreFiles.toArray( new String[givenFile.size()] ) ) );
     }
 
-    private void assertIndexIdsMatch( PrimitiveLongSet indexIds, NeoStoreDataSource neoStoreDataSource )
-    {
-        PrimitiveLongSet expectedIndexIds = getExpectedIndexIds( neoStoreDataSource );
-        assertThat( expectedIndexIds, equalTo( indexIds ) );
-    }
-
-    private PrimitiveLongSet getExpectedIndexIds( NeoStoreDataSource neoStoreDataSource )
+    private LongSet getExpectedIndexIds( NeoStoreDataSource neoStoreDataSource )
     {
         return neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().getIndexIds();
     }
@@ -300,8 +296,9 @@ public class CatchupServerIT
 
     private List<String> getExpectedStoreFiles( NeoStoreDataSource neoStoreDataSource ) throws IOException
     {
-        try ( Stream<StoreFileMetadata> stream = neoStoreDataSource.getNeoStoreFileListing().builder()
-                .excludeLogFiles().excludeExplicitIndexStoreFiles().excludeSchemaIndexStoreFiles().build().stream() )
+        NeoStoreFileListing.StoreFileListingBuilder builder = neoStoreDataSource.getNeoStoreFileListing().builder();
+        builder.excludeLogFiles().excludeExplicitIndexStoreFiles().excludeSchemaIndexStoreFiles().excludeAdditionalProviders();
+        try ( Stream<StoreFileMetadata> stream = builder.build().stream() )
         {
             return stream.filter( isCountFile().negate() ).map( sfm -> sfm.file().getName() ).collect( toList() );
         }

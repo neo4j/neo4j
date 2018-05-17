@@ -58,9 +58,9 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
         config.enabledBoltConnectors().forEach( connector ->
         {
             BoltScheduler boltScheduler =
-                    new ExecutorBoltScheduler( connector.key(), executorFactory, scheduler, logService, config.get( connector.thread_pool_core_size ),
+                    new ExecutorBoltScheduler( connector.key(), executorFactory, scheduler, logService, config.get( connector.thread_pool_min_size ),
                             config.get( connector.thread_pool_max_size ), config.get( connector.thread_pool_keep_alive ),
-                            config.get( connector.thread_pool_queue_size ), forkJoinThreadPool );
+                            config.get( connector.unsupported_thread_pool_queue_size ), forkJoinThreadPool );
             boltScheduler.start();
             boltSchedulers.put( connector.key(), boltScheduler );
         } );

@@ -20,7 +20,6 @@
 package org.neo4j.values.storable;
 
 import java.time.Clock;
-import java.time.DateTimeException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -33,7 +32,6 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.TemporalUnit;
-import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,6 +39,8 @@ import java.util.regex.Pattern;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -62,27 +62,27 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
 
     public static DateValue date( int year, int month, int day )
     {
-        return new DateValue( LocalDate.of( year, month, day ) );
+        return new DateValue( assertValidArgument( () -> LocalDate.of( year, month, day ) ) );
     }
 
     public static DateValue weekDate( int year, int week, int dayOfWeek )
     {
-        return new DateValue( localWeekDate( year, week, dayOfWeek ) );
+        return new DateValue( assertValidArgument( () -> localWeekDate( year, week, dayOfWeek ) ) );
     }
 
     public static DateValue quarterDate( int year, int quarter, int dayOfQuarter )
     {
-        return new DateValue( localQuarterDate( year, quarter, dayOfQuarter ) );
+        return new DateValue( assertValidArgument( () -> localQuarterDate( year, quarter, dayOfQuarter ) ) );
     }
 
     public static DateValue ordinalDate( int year, int dayOfYear )
     {
-        return new DateValue( LocalDate.ofYearDay( year, dayOfYear ) );
+        return new DateValue( assertValidArgument( () -> LocalDate.ofYearDay( year, dayOfYear ) ) );
     }
 
     public static DateValue epochDate( long epochDay )
     {
-        return new DateValue( LocalDate.ofEpochDay( epochDay ) );
+        return new DateValue( assertValidArgument( () -> LocalDate.ofEpochDay( epochDay ) ) );
     }
 
     public static DateValue parse( CharSequence text )
@@ -103,6 +103,11 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     public static DateValue now( Clock clock, String timezone )
     {
         return now( clock.withZone( parseZoneName( timezone ) ) );
+    }
+
+    public static DateValue now( Clock clock, Supplier<ZoneId> defaultZone )
+    {
+        return now( clock.withZone( defaultZone.get() ) );
     }
 
     public static DateValue build( MapValue map, Supplier<ZoneId> defaultZone )
@@ -174,7 +179,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         }
         else
         {
-            throw new UnsupportedTemporalTypeException( "Unit too small for truncation: " + unit );
+            throw new UnsupportedTemporalUnitException( "Unit too small for truncation: " + unit );
         }
     }
 
@@ -212,31 +217,31 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     @Override
     LocalTime getLocalTimePart()
     {
-        throw new IllegalArgumentException( String.format( "Cannot get the time of: %s", this ) );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the time of: %s", this ) );
     }
 
     @Override
     OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
     {
-        throw new IllegalArgumentException( String.format( "Cannot get the time of: %s", this ) );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the time of: %s", this ) );
     }
 
     @Override
     ZoneId getZoneId( Supplier<ZoneId> defaultZone )
     {
-        throw new UnsupportedTemporalTypeException( String.format( "Cannot get the time zone of: %s", this ) );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the time zone of: %s", this ) );
     }
 
     @Override
     ZoneId getZoneId()
     {
-        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the timezone of: %s", this ) );
     }
 
     @Override
     ZoneOffset getZoneOffset()
     {
-        throw new UnsupportedTemporalTypeException( "Cannot get the offset of" + this );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the offset of: %s", this ) );
     }
 
     @Override
@@ -260,13 +265,13 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        writer.writeDate( value.toEpochDay() );
+        writer.writeDate( value );
     }
 
     @Override
     public String prettyPrint()
     {
-        return value.format( DateTimeFormatter.ISO_DATE );
+        return assertPrintable( () -> value.format( DateTimeFormatter.ISO_DATE ) );
     }
 
     @Override
@@ -290,13 +295,13 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     @Override
     public DateValue add( DurationValue duration )
     {
-        return replacement( value.plusMonths( duration.totalMonths() ).plusDays( duration.totalDays() ) );
+        return replacement( assertValidArithmetic( () -> value.plusMonths( duration.totalMonths() ).plusDays( duration.totalDays() ) ) );
     }
 
     @Override
     public DateValue sub( DurationValue duration )
     {
-        return replacement( value.minusMonths( duration.totalMonths() ).minusDays( duration.totalDays() ) );
+        return replacement( assertValidArithmetic( () -> value.minusMonths( duration.totalMonths() ).minusDays( duration.totalDays() ) ) );
     }
 
     @Override
@@ -409,24 +414,24 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         String month = matcher.group( MONTH );
         if ( month != null )
         {
-            return LocalDate.of( year, parseInt( month ), optInt( matcher.group( DAY ) ) );
+            return assertParsable(  () -> LocalDate.of( year, parseInt( month ), optInt( matcher.group( DAY ) ) ) );
         }
         String week = matcher.group( WEEK );
         if ( week != null )
         {
-            return localWeekDate( year, parseInt( week ), optInt( matcher.group( DOW ) ) );
+            return assertParsable( () -> localWeekDate( year, parseInt( week ), optInt( matcher.group( DOW ) ) ) );
         }
         String quarter = matcher.group( QUARTER );
         if ( quarter != null )
         {
-            return localQuarterDate( year, parseInt( quarter ), optInt( matcher.group( DOQ ) ) );
+            return assertParsable( () -> localQuarterDate( year, parseInt( quarter ), optInt( matcher.group( DOQ ) ) ) );
         }
         String doy = matcher.group( DOY );
         if ( doy != null )
         {
-            return LocalDate.ofYearDay( year, parseInt( doy ) );
+            return assertParsable( () -> LocalDate.ofYearDay( year, parseInt( doy ) ) );
         }
-        return LocalDate.of( year, 1, 1 );
+        return assertParsable( () -> LocalDate.of( year, 1, 1 ) );
     }
 
     private static DateValue parse( Matcher matcher )
@@ -447,7 +452,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         // week 53 of years that don't have 53 weeks, so we have to guard for this:
         if ( week == 53 && withWeek.get( IsoFields.WEEK_BASED_YEAR ) != year )
         {
-            throw new DateTimeException( String.format( "Year %d does not contain %d weeks.", year, week ) );
+            throw new InvalidValuesArgumentException( String.format( "Year %d does not contain %d weeks.", year, week ) );
         }
         return withWeek.with( ChronoField.DAY_OF_WEEK, dayOfWeek );
     }
@@ -457,13 +462,13 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         // special handling for the range of Q1 and Q2, since they are shorter than Q3 and Q4
         if ( quarter == 2 && dayOfQuarter == 92 )
         {
-            throw new DateTimeException( "Quarter 2 only has 91 days." );
+            throw new InvalidValuesArgumentException( "Quarter 2 only has 91 days." );
         }
         // instantiate the yearDate now, because we use it to know if it is a leap year
         LocalDate yearDate = LocalDate.ofYearDay( year, dayOfQuarter ); // guess on the day
         if ( quarter == 1 && dayOfQuarter > 90 && (!yearDate.isLeapYear() || dayOfQuarter == 92) )
         {
-            throw new DateTimeException( String.format(
+            throw new InvalidValuesArgumentException( String.format(
                     "Quarter 1 of %d only has %d days.", year, yearDate.isLeapYear() ? 91 : 90 ) );
         }
         return yearDate
@@ -511,7 +516,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
                 TemporalValue v = (TemporalValue) temporal;
                 return v.getDatePart();
             }
-            throw new IllegalArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
+            throw new InvalidValuesArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
         }
 
         @Override

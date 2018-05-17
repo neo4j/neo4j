@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.codegen;
 
 import org.junit.Test;
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.setStaticField;
+import org.neo4j.cypher.internal.runtime.compiled.codegen.setStaticField;
 
 import static org.junit.Assert.assertEquals;
 

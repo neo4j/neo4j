@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.PrimitiveIntCollections;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.Exceptions;
@@ -93,7 +93,23 @@ public abstract class FusionIndexBase<T>
     @SafeVarargs
     public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T... subjects ) throws E
     {
-        forAll( consumer, Arrays.asList( subjects ) );
+        // Duplicate this method for array to avoid creating a purely internal list to shove that in to the other method.
+        E exception = null;
+        for ( T subject : subjects )
+        {
+            try
+            {
+                consumer.accept( subject );
+            }
+            catch ( Exception e )
+            {
+                exception = Exceptions.chain( exception, (E) e );
+            }
+        }
+        if ( exception != null )
+        {
+            throw exception;
+        }
     }
 
     /**

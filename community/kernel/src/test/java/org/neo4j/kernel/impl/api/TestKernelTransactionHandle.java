@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -83,9 +83,9 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
-    public SecurityContext securityContext()
+    public AuthSubject subject()
     {
-        return tx.securityContext();
+        return tx.subjectOrAnonymous();
     }
 
     @Override

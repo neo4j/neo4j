@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.Resource;
@@ -65,7 +65,7 @@ public class NeoStoreFileListing
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
         this.neoStoreFileIndexListing = new NeoStoreFileIndexListing( labelScanStore, indexingService, explicitIndexProviders );
-        this.additionalProviders = new CopyOnWriteArrayList<>();
+        this.additionalProviders = new CopyOnWriteArraySet<>();
     }
 
     public StoreFileListingBuilder builder()

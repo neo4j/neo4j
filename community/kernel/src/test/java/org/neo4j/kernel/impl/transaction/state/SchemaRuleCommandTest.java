@@ -28,7 +28,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -43,8 +43,9 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.transaction.command.BaseCommandReader;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
@@ -91,8 +92,7 @@ public class SchemaRuleCommandTest
             new IndexBatchTransactionApplier( indexes, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), neoStores.getRelationshipStore(),
                     new PropertyPhysicalToLogicalConverter( propertyStore ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
-    private final IndexRule rule =
-            IndexRule.forIndex( id, SchemaIndexDescriptorFactory.forLabel( labelId, propertyKey ) ).withProvider( PROVIDER_DESCRIPTOR ).build();
+    private final StoreIndexDescriptor rule = TestIndexDescriptorFactory.forLabel( labelId, propertyKey ).withId( id );
 
     @Test
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception
@@ -225,7 +225,7 @@ public class SchemaRuleCommandTest
     private SchemaRecord serialize( SchemaRule rule, long id, boolean inUse, boolean created )
     {
         DynamicRecord record = new DynamicRecord( id );
-        record.setData( rule.serialize() );
+        record.setData( SchemaRuleSerialization.serialize( rule ) );
         if ( created )
         {
             record.setCreated();

@@ -22,27 +22,61 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
+/**
+ * Contains mapping from {@link IndexProvider.Descriptor} or provider name to {@link IndexProvider}.
+ */
 public interface IndexProviderMap
 {
+    /**
+     * Looks up and returns the {@link IndexProvider} for the given {@link IndexProvider.Descriptor}.
+     *
+     * @param providerDescriptor the descriptor identifying the {@link IndexProvider}.
+     * @return the {@link IndexProvider} with the given {@link IndexProvider.Descriptor}.
+     * @throws IndexProviderNotFoundException if no such {@link IndexProvider} was found.
+     */
+    IndexProvider lookup( IndexProvider.Descriptor providerDescriptor ) throws IndexProviderNotFoundException;
+
+    /**
+     * Looks up and returns the {@link IndexProvider} for the given index provider name. The name is what
+     * an {@link IndexProvider.Descriptor#name()} call would return.
+     *
+     * @param providerDescriptorName the descriptor name identifying the {@link IndexProvider}.
+     * @return the {@link IndexProvider} with the given name.
+     * @throws IndexProviderNotFoundException if no such {@link IndexProvider} was found.
+     */
+    IndexProvider lookup( String providerDescriptorName ) throws IndexProviderNotFoundException;
+
+    /**
+     * There's always a default {@link IndexProvider}, this method returns it.
+     *
+     * @return the default index provider for this instance.
+     */
+    IndexProvider getDefaultProvider();
+
+    /**
+     * Visits all the {@link IndexProvider} with the visitor.
+     *
+     * @param visitor {@link Consumer} visiting all the {@link IndexProvider index providers} in this map.
+     */
+    void accept( Consumer<IndexProvider> visitor );
+
     IndexProviderMap EMPTY = new IndexProviderMap()
     {
         @Override
-        public IndexProvider get( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException
+        public IndexProvider lookup( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException
         {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public IndexProvider<SchemaIndexDescriptor> getDefaultProvider()
+        public IndexProvider lookup( String providerDescriptorName ) throws IndexProviderNotFoundException
         {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public IndexProvider getProviderFor( IndexDescriptor descriptor )
+        public IndexProvider getDefaultProvider()
         {
             return IndexProvider.EMPTY;
         }
@@ -50,15 +84,7 @@ public interface IndexProviderMap
         @Override
         public void accept( Consumer<IndexProvider> visitor )
         {
-            //Sure
+            // yey!
         }
     };
-
-    IndexProvider get( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
-
-    IndexProvider<SchemaIndexDescriptor> getDefaultProvider();
-
-    IndexProvider getProviderFor( IndexDescriptor descriptor );
-
-    void accept( Consumer<IndexProvider> visitor );
 }

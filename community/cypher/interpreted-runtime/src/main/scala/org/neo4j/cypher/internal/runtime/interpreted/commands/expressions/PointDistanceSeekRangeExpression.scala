@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.v3_4.logical.plans.PointDistanceRange
+import org.neo4j.cypher.internal.util.v3_5.InternalException
+import org.neo4j.cypher.internal.v3_5.logical.plans.PointDistanceRange
 import org.neo4j.values.AnyValue
 
 case class PointDistanceSeekRangeExpression(range: PointDistanceRange[Expression])

@@ -90,12 +90,6 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
         }
 
         @Override
-        public boolean shouldRetry()
-        {
-            return false;
-        }
-
-        @Override
         public void close()
         {
 

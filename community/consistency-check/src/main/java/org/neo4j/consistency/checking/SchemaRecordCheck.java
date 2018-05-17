@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -109,9 +109,9 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                 return;
             }
 
-            if ( rule instanceof IndexRule )
+            if ( rule instanceof StoreIndexDescriptor )
             {
-                strategy.checkIndexRule( (IndexRule)rule, record, records, engine );
+                strategy.checkIndexRule( (StoreIndexDescriptor)rule, record, records, engine );
             }
             else if ( rule instanceof ConstraintRule )
             {
@@ -119,15 +119,15 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
             }
             else
             {
-                engine.report().unsupportedSchemaRuleKind( null ); // this really cant happen... right?
+                engine.report().unsupportedSchemaRuleKind( null );
             }
         }
     }
 
     private interface CheckStrategy
     {
-        void checkIndexRule( IndexRule rule, DynamicRecord record, RecordAccess records,
-                CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine );
+        void checkIndexRule( StoreIndexDescriptor rule, DynamicRecord record, RecordAccess records,
+                             CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine );
 
         void checkConstraintRule( ConstraintRule rule, DynamicRecord record,
                 RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine );
@@ -140,8 +140,8 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     private class RulesCheckStrategy implements CheckStrategy
     {
         @Override
-        public void checkIndexRule( IndexRule rule, DynamicRecord record, RecordAccess records,
-                CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
+        public void checkIndexRule( StoreIndexDescriptor rule, DynamicRecord record, RecordAccess records,
+                                    CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
             checkSchema( rule, record, records, engine );
 
@@ -178,8 +178,8 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     private class ObligationsCheckStrategy implements CheckStrategy
     {
         @Override
-        public void checkIndexRule( IndexRule rule, DynamicRecord record, RecordAccess records,
-                CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
+        public void checkIndexRule( StoreIndexDescriptor rule, DynamicRecord record, RecordAccess records,
+                                    CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
             if ( rule.canSupportUniqueConstraint() )
             {

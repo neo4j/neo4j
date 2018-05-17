@@ -25,14 +25,15 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
+class NumberSchemaIndexReader<VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<NumberSchemaKey,VALUE>
 {
-    NumberSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor )
+    NumberSchemaIndexReader( GBPTree<NumberSchemaKey,VALUE> tree, Layout<NumberSchemaKey,VALUE> layout,
+            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
     }
@@ -49,7 +50,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
     }
 
     @Override
-    boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( NumberSchemaKey treeKeyFrom, NumberSchemaKey treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -64,7 +65,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
             break;
         case range:
-            RangePredicate rangePredicate = (RangePredicate) predicate;
+            RangePredicate<?> rangePredicate = (RangePredicate<?>) predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             break;
@@ -74,7 +75,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         return false;
     }
 
-    private void initToForRange( RangePredicate rangePredicate, KEY treeKeyTo )
+    private void initToForRange( RangePredicate<?> rangePredicate, NumberSchemaKey treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
@@ -88,7 +89,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         }
     }
 
-    private void initFromForRange( RangePredicate rangePredicate, KEY treeKeyFrom )
+    private void initFromForRange( RangePredicate<?> rangePredicate, NumberSchemaKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )

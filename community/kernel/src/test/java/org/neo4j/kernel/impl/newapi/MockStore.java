@@ -19,21 +19,24 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -57,6 +60,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -97,7 +101,7 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index )
+    IndexReader indexReader( IndexReference index, boolean fresh )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -228,11 +232,22 @@ public class MockStore extends Read implements TestRule
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long nodesGetCount()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long relationshipsGetCount()
     {
         throw new UnsupportedOperationException();
     }
@@ -408,6 +423,25 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<String,String> nodeExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String[] nodeExplicitIndexesGetAll()
     {
         throw new UnsupportedOperationException();
@@ -415,6 +449,13 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public String[] relationshipExplicitIndexesGetAll()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
     {
         throw new UnsupportedOperationException();
     }
@@ -473,8 +514,8 @@ public class MockStore extends Read implements TestRule
         }
     }
 
-    private PrimitiveLongObjectMap<Node> nodes;
-    private PrimitiveLongObjectMap<Property> properties;
+    private MutableLongObjectMap<Node> nodes;
+    private MutableLongObjectMap<Property> properties;
 
     @Override
     public Statement apply( Statement base, Description description )
@@ -485,18 +526,15 @@ public class MockStore extends Read implements TestRule
             public void evaluate() throws Throwable
             {
 
-                try ( PrimitiveLongObjectMap<Node> nodes = Primitive.longObjectMap();
-                      PrimitiveLongObjectMap<Property> properties = Primitive.longObjectMap() )
-                {
-                    MockStore.this.nodes = nodes;
-                    MockStore.this.properties = properties;
-                    base.evaluate();
-                }
-                finally
-                {
-                    MockStore.this.nodes = null;
-                    MockStore.this.properties = null;
-                }
+                MutableLongObjectMap<Node> nodes = new LongObjectHashMap<>();
+                MutableLongObjectMap<Property> properties = new LongObjectHashMap<>();
+
+                MockStore.this.nodes = nodes;
+                MockStore.this.properties = properties;
+                base.evaluate();
+
+                MockStore.this.nodes = null;
+                MockStore.this.properties = null;
             }
         };
     }
@@ -504,7 +542,7 @@ public class MockStore extends Read implements TestRule
     private static <R extends AbstractBaseRecord, S extends Record<R>> void initialize(
             R record,
             long reference,
-            PrimitiveLongObjectMap<S> store )
+            LongObjectMap<S> store )
     {
         record.setId( reference );
         S node = store.get( reference );
@@ -590,7 +628,13 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public CapableIndexReference index( int label, int... properties )
+    public IndexReference index( int label, int... properties )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public IndexReference indexReferenceUnchecked( int label, int... properties )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -640,6 +684,26 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

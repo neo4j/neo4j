@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -28,15 +29,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 public class PartitionedIndexReaderTest
 {
 
-    private IndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forLabel( 0, 1 );
+    private IndexDescriptor schemaIndexDescriptor = TestIndexDescriptorFactory.forLabel( 0, 1 );
     @Mock
     private IndexSamplingConfig samplingConfig;
     @Mock
@@ -91,7 +91,7 @@ public class PartitionedIndexReaderTest
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
+        LongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -100,13 +100,12 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        IndexQuery.RangePredicate query = IndexQuery.range( 1, 1, true, 2, true );
+        IndexQuery.RangePredicate<?> query = IndexQuery.range( 1, 1, true, 2, true );
         when( indexReader1.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 1 ) );
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
 
-        PrimitiveLongSet results =
-                PrimitiveLongCollections.asSet( indexReader.query( query ) );
+        LongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -115,13 +114,12 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        IndexQuery.RangePredicate query = IndexQuery.range( 1, "a", false, "b", true );
+        IndexQuery.RangePredicate<?> query = IndexQuery.range( 1, "a", false, "b", true );
         when( indexReader1.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 1 ) );
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
 
-        PrimitiveLongSet results =
-                PrimitiveLongCollections.asSet( indexReader.query( query ) );
+        LongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -134,7 +132,7 @@ public class PartitionedIndexReaderTest
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
+        LongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -147,7 +145,7 @@ public class PartitionedIndexReaderTest
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
+        LongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -174,7 +172,7 @@ public class PartitionedIndexReaderTest
         assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex() );
     }
 
-    private void verifyResult( PrimitiveLongSet results )
+    private void verifyResult( LongSet results )
     {
         assertEquals(3, results.size());
         assertTrue( results.contains( 1 ) );
@@ -184,7 +182,7 @@ public class PartitionedIndexReaderTest
 
     private PartitionedIndexReader createPartitionedReaderFromReaders()
     {
-        return new PartitionedIndexReader( indexDescriptor, getPartitionReaders() );
+        return new PartitionedIndexReader( schemaIndexDescriptor, getPartitionReaders() );
     }
 
     private List<SimpleIndexReader> getPartitionReaders()
@@ -194,7 +192,7 @@ public class PartitionedIndexReaderTest
 
     private PartitionedIndexReader createPartitionedReader()
     {
-        return new PartitionedIndexReader( getPartitionSearchers(), indexDescriptor, samplingConfig, taskCoordinator );
+        return new PartitionedIndexReader( getPartitionSearchers(), schemaIndexDescriptor, samplingConfig, taskCoordinator );
     }
 
     private List<PartitionSearcher> getPartitionSearchers()

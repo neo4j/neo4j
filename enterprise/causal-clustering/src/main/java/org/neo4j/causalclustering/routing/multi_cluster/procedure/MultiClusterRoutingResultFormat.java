@@ -34,8 +34,8 @@ import static org.neo4j.causalclustering.routing.procedure.RoutingResultFormatHe
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
- * The result format of {@link GetSubClusterRoutersProcedure} and
- * {@link GetSuperClusterRoutersProcedure} procedures.
+ * The result format of {@link GetRoutersForDatabaseProcedure} and
+ * {@link GetRoutersForAllDatabasesProcedure} procedures.
  */
 public class MultiClusterRoutingResultFormat
 {

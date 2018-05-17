@@ -83,6 +83,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 LabelSet labels = node.labels();
                 assertEquals( 1, labels.numberOfLabels() );
                 assertEquals( labelId, labels.label( 0 ) );
+                assertTrue( node.hasLabel( labelId ) );
+                assertFalse( node.hasLabel( labelId + 1 ) );
                 assertFalse( "should only find one node", node.next() );
             }
             tx.success();
@@ -100,10 +102,11 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     public void shouldSeeLabelChangesInTransaction() throws Exception
     {
         long nodeId;
-        int toRetain, toDelete, toAdd;
+        int toRetain, toDelete, toAdd, toRegret;
         final String toRetainName = "ToRetain";
         final String toDeleteName = "ToDelete";
         final String toAddName = "ToAdd";
+        final String toRegretName = "ToRegret";
 
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -128,12 +131,20 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.dataWrite().nodeAddLabel( nodeId, toAdd );
             tx.dataWrite().nodeRemoveLabel( nodeId, toDelete );
 
+            toRegret = tx.token().labelGetOrCreateForName( toRegretName );
+            tx.dataWrite().nodeAddLabel( nodeId, toRegret );
+            tx.dataWrite().nodeRemoveLabel( nodeId, toRegret );
+
             try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
 
                 assertLabels( node.labels(), toRetain, toAdd );
+                assertTrue( node.hasLabel( toAdd ) );
+                assertTrue( node.hasLabel( toRetain ) );
+                assertFalse( node.hasLabel( toDelete ) );
+                assertFalse( node.hasLabel( toRegret ) );
                 assertFalse( "should only find one node", node.next() );
             }
             tx.success();

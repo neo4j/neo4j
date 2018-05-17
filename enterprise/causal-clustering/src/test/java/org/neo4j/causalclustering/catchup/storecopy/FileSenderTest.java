@@ -72,7 +72,7 @@ public class FileSenderTest
         // given
         File emptyFile = testDirectory.file( "emptyFile" );
         fs.create( emptyFile ).close();
-        FileSender fileSender = new FileSender( new StoreResource( emptyFile, null, 16, pageCache, fs ) );
+        FileSender fileSender = new FileSender( new StoreResource( emptyFile, null, 16, fs ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -94,7 +94,7 @@ public class FileSenderTest
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, pageCache, fs ) );
+        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, fs ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -117,7 +117,7 @@ public class FileSenderTest
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, pageCache, fs ) );
+        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, fs ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -140,7 +140,7 @@ public class FileSenderTest
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }
 
-        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, pageCache, fs ) );
+        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, fs ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );
@@ -157,7 +157,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, pageCache, fs ) );
+        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, fs ) );
 
         // when
         byte[] bytes = writeRandomBytes( writer, 1024 );
@@ -175,7 +175,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, pageCache, fs ) );
+        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, fs ) );
 
         // when
         byte[] chunkA = writeRandomBytes( writer, MAX_SIZE );
@@ -200,7 +200,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, pageCache, fs ) );
+        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, fs ) );
 
         // when
         byte[] chunkA = writeRandomBytes( writer, MAX_SIZE );
@@ -224,7 +224,7 @@ public class FileSenderTest
         // given
         File file = testDirectory.file( "file" );
         StoreChannel writer = fs.create( file );
-        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, pageCache, fs ) );
+        FileSender fileSender = new FileSender( new StoreResource( file, null, 16, fs ) );
 
         // when
         byte[] chunkA = writeRandomBytes( writer, MAX_SIZE );
@@ -267,7 +267,7 @@ public class FileSenderTest
 
         Adversary adversary = new RandomAdversary( 0.9, 0.0, 0.0 );
         AdversarialFileSystemAbstraction afs = new AdversarialFileSystemAbstraction( adversary, fs );
-        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, pageCache, afs ) );
+        FileSender fileSender = new FileSender( new StoreResource( smallFile, null, 16, afs ) );
 
         // when + then
         assertFalse( fileSender.isEndOfInput() );

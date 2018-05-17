@@ -34,6 +34,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -47,21 +48,16 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
-import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
-import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
-import org.neo4j.kernel.impl.api.LockingStatementOperations;
 import org.neo4j.kernel.impl.api.SchemaState;
-import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
-import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
@@ -419,7 +415,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         LogVersionUpgradeChecker.check( tailScanner, config );
 
         // Upgrade the store before we begin
-        RecordFormats formats = selectStoreFormats( config, storeDir, pageCache, logService );
+        RecordFormats formats = selectStoreFormats( config, storeDir, fs, pageCache, logService );
         upgradeStore( formats, tailScanner );
 
         // Build all modules and their services
@@ -544,11 +540,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         databaseHealth.healed();
     }
 
-    private static RecordFormats selectStoreFormats( Config config, File storeDir, PageCache pageCache,
+    private static RecordFormats selectStoreFormats( Config config, File storeDir, FileSystemAbstraction fs, PageCache pageCache,
             LogService logService )
     {
         LogProvider logging = logService.getInternalLogProvider();
-        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, storeDir, pageCache, logging );
+        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, storeDir, fs, pageCache, logging );
         new RecordFormatPropertyConfigurator( formats, config ).configure();
         return formats;
     }
@@ -670,7 +666,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned
          * from within an existing transaction. It smells, and we should look over alternatives when time permits.
          */
-        Supplier<InwardKernel> kernelProvider = () -> kernelModule.kernelAPI();
+        Supplier<Kernel> kernelProvider = () -> kernelModule.kernelAPI();
 
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService,
                 propertyAccessor );
@@ -679,8 +675,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 indexConfigStore, kernelProvider, explicitIndexProviderLookup );
 
         StatementOperationParts statementOperationParts = dependencies.satisfyDependency(
-                buildStatementOperations( storeLayer, autoIndexing,
-                        constraintIndexCreator, databaseSchemaState, explicitIndexStore, cpuClockRef,
+                buildStatementOperations(
+                        cpuClockRef,
                         heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
@@ -691,11 +687,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
                 cpuClockRef, heapAllocationRef, accessCapability, DefaultCursors::new, autoIndexing,
                 explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                databaseSchemaState ) );
+                databaseSchemaState, indexingService ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
-        final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
+        final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
                 config, storageEngine );
 
         kernel.registerTransactionHook( transactionEventHandlers );
@@ -863,43 +859,13 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return dependencies;
     }
 
-    private StatementOperationParts buildStatementOperations( StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
-            ConstraintIndexCreator constraintIndexCreator, DatabaseSchemaState databaseSchemaState,
-            ExplicitIndexStore explicitIndexStore, AtomicReference<CpuClock> cpuClockRef,
+    private StatementOperationParts buildStatementOperations( AtomicReference<CpuClock> cpuClockRef,
             AtomicReference<HeapAllocation> heapAllocationRef )
     {
-        // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
-        // To it we add:
-        // + Transaction state handling
-        StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeReadLayer,
-                autoIndexing, constraintIndexCreator, explicitIndexStore );
-
         QueryRegistrationOperations queryRegistrationOperations =
                 new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef );
 
-        StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
-                stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
-                new SchemaStateConcern( databaseSchemaState ), null, stateHandlingContext, stateHandlingContext,
-                stateHandlingContext, queryRegistrationOperations );
-        // + Constraints
-        ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
-                new ConstraintEnforcingEntityOperations( constraintSemantics, parts.entityWriteOperations(),
-                        parts.entityReadOperations(),
-                        parts.schemaWriteOperations(), parts.schemaReadOperations() );
-        // + Data integrity
-        DataIntegrityValidatingStatementOperations dataIntegrityContext =
-                new DataIntegrityValidatingStatementOperations(
-                        parts.keyWriteOperations(), parts.schemaReadOperations(), constraintEnforcingEntityOperations );
-        parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
-                constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null, null, null );
-        // + Locking
-        LockingStatementOperations lockingContext = new LockingStatementOperations( parts.entityReadOperations(),
-                parts.entityWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations(),
-                parts.schemaStateOperations() );
-        parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
-                lockingContext, null, null, null, null );
-
-        return parts;
+        return new StatementOperationParts( queryRegistrationOperations );
     }
 
     @Override

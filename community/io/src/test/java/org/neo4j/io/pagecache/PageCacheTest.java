@@ -30,11 +30,9 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
@@ -51,8 +49,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.adversaries.RandomAdversary;
-import org.neo4j.adversaries.pagecache.AdversarialPagedFile;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.config.Configuration;
@@ -373,7 +369,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void writesFlushedFromPageFileMustBeObservableEvenWhenRacingWithEviction() throws IOException
     {
-        PageCache cache = getPageCache( fs, 20, PageCacheTracer.NULL,
+        getPageCache( fs, 20, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
 
         long startPageId = 0;
@@ -381,7 +377,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         int iterations = 500;
         int shortsPerPage = pageCachePageSize / 2;
 
-        try ( PagedFile pagedFile = cache.map( file( "a" ), pageCachePageSize ) )
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageCachePageSize ) )
         {
             for ( int i = 1; i <= iterations; i++ )
             {
@@ -418,6 +414,112 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void flushAndForceMustNotLockPageCacheForWholeDuration() throws Exception
+    {
+        maxPages = 5000;
+        configureStandardPageCache();
+        PageCache pageCache = this.pageCache;
+        this.pageCache = null; // `null` out to prevent `tearDown` from getting stuck if test fails.
+        File a = existingFile( "a" );
+        File b = existingFile( "b" );
+        try ( PagedFile pfA = pageCache.map( a, filePageSize ) )
+        {
+            // Dirty a bunch of pages.
+            try ( PageCursor cursor = pfA.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                for ( int i = 0; i < maxPages; i++ )
+                {
+                    assertTrue( cursor.next() );
+                }
+            }
+
+            BinaryLatch limiterStartLatch = new BinaryLatch();
+            BinaryLatch limiterBlockLatch = new BinaryLatch();
+            Future<?> flusher = executor.submit( () ->
+            {
+                pageCache.flushAndForce( ( stamp, ios, flushable ) ->
+                {
+                    limiterStartLatch.release();
+                    limiterBlockLatch.await();
+                    return 0;
+                } );
+                return null;
+            } );
+
+            limiterStartLatch.await(); // Flusher is now stuck inside flushAndForce.
+
+            // We should be able to map and close paged files.
+            pageCache.map( b, filePageSize ).close();
+            // We should be able to get and list existing mappings.
+            pageCache.listExistingMappings();
+            pageCache.getExistingMapping( a ).ifPresent( pf ->
+            {
+                try
+                {
+                    pf.close();
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+            } );
+
+            limiterBlockLatch.release();
+            flusher.get();
+        }
+    }
+
+    @Test
+    public void flushAndForceMustTolerateAsynchronousFileUnmapping() throws Exception
+    {
+        configureStandardPageCache();
+        PageCache pageCache = this.pageCache;
+        this.pageCache = null; // `null` out to prevent `tearDown` from getting stuck if test fails.
+        File a = existingFile( "a" );
+        File b = existingFile( "b" );
+        File c = existingFile( "c" );
+
+        BinaryLatch limiterStartLatch = new BinaryLatch();
+        BinaryLatch limiterBlockLatch = new BinaryLatch();
+        Future<?> flusher;
+
+        try ( PagedFile pfA = pageCache.map( a, filePageSize );
+              PagedFile pfB = pageCache.map( b, filePageSize );
+              PagedFile pfC = pageCache.map( c, filePageSize ) )
+        {
+            // Dirty a bunch of pages.
+            try ( PageCursor cursor = pfA.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            try ( PageCursor cursor = pfB.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            try ( PageCursor cursor = pfC.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            flusher = executor.submit( () ->
+            {
+                pageCache.flushAndForce( ( stamp, ios, flushable ) ->
+                {
+                    limiterStartLatch.release();
+                    limiterBlockLatch.await();
+                    return 0;
+                } );
+                return null;
+            } );
+
+            limiterStartLatch.await(); // Flusher is now stuck inside flushAndForce.
+        } // We should be able to unmap all the files.
+        // And then when the flusher resumes again, it should not throw any exceptions from the asynchronously
+        // closed files.
+        limiterBlockLatch.release();
+        flusher.get(); // This must not throw.
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void writesFlushedFromPageCacheMustBeExternallyObservable() throws IOException
     {
         configureStandardPageCache();
@@ -437,7 +539,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         verifyRecordsInFile( file, recordCount );
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void writesToPagesMustNotBleedIntoAdjacentPages() throws IOException
     {
         configureStandardPageCache();
@@ -4118,9 +4220,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
                 EmptyVersionContextSupplier.EMPTY );
               PagedFile pf = cache.map( file, filePageSize, DELETE_ON_CLOSE );
-              WritableByteChannel channel = pf.openWritableByteChannel() )
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
-            generateFileWithRecords( channel, recordCount, recordSize );
+            writeRecords( cursor );
+            assertTrue( cursor.next() );
         }
         assertThat( flushCounter.get(), lessThan( recordCount / recordsPerFilePage ) );
     }
@@ -4135,11 +4238,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
                 EmptyVersionContextSupplier.EMPTY );
               PagedFile pf = cache.map( file, filePageSize );
-              WritableByteChannel channel = pf.openWritableByteChannel() )
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
-            generateFileWithRecords( channel, recordCount, recordSize );
+            writeRecords( cursor );
+            assertTrue( cursor.next() );
         }
-        assertThat( flushCounter.get(), is( recordCount / recordsPerFilePage ) );
+        assertThat( flushCounter.get(), is( 1 ) );
     }
 
     private SingleFilePageSwapperFactory flushCountingPageSwapperFactory( AtomicInteger flushCounter )
@@ -4177,15 +4281,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         File file = file( "a" );
-        int records = maxPages * recordsPerFilePage;
         int iterations = 50;
         for ( int i = 0; i < iterations; i++ )
         {
             ensureExists( file );
             try ( PagedFile pf = pageCache.map( file, filePageSize, DELETE_ON_CLOSE );
-                  WritableByteChannel channel = pf.openWritableByteChannel() )
+                  PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
-                generateFileWithRecords( channel, records, recordSize );
+                writeRecords( cursor );
+                assertTrue( cursor.next() );
             }
         }
     }
@@ -5539,118 +5643,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             linkedReader.setCursorException( "boo" );
             reader.clearCursorException();
             reader.checkAndClearCursorException();
-        }
-    }
-
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void readableByteChannelMustBeOpenUntilClosed() throws Exception
-    {
-        configureStandardPageCache();
-        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
-        {
-            ReadableByteChannel channel;
-            try ( ReadableByteChannel ch = pf.openReadableByteChannel() )
-            {
-                assertTrue( ch.isOpen() );
-                channel = ch;
-            }
-            assertFalse( channel.isOpen() );
-        }
-    }
-
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void readableByteChannelMustReadAllBytesInFile() throws Exception
-    {
-        configureStandardPageCache();
-        File file = file( "a" );
-        generateFileWithRecords( file, recordCount, recordSize );
-        try ( PagedFile pf = pageCache.map( file, filePageSize );
-              ReadableByteChannel channel = pf.openReadableByteChannel() )
-        {
-            verifyRecordsInFile( channel, recordCount );
-        }
-    }
-
-    @RepeatRule.Repeat( times = 5 )
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void readableByteChannelMustReadAllBytesInFileConsistently() throws Exception
-    {
-        configureStandardPageCache();
-        File file = file( "a" );
-        generateFileWithRecords( file, recordCount, recordSize );
-        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
-        {
-            RandomAdversary adversary = new RandomAdversary( 0.9, 0, 0 );
-            AdversarialPagedFile apf = new AdversarialPagedFile( pf, adversary );
-            try ( ReadableByteChannel channel = apf.openReadableByteChannel() )
-            {
-                verifyRecordsInFile( channel, recordCount );
-            }
-        }
-    }
-
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void readingFromClosedReadableByteChannelMustThrow() throws Exception
-    {
-        File file = file( "a" );
-        generateFileWithRecords( file, recordCount, recordSize );
-        configureStandardPageCache();
-        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
-        {
-            ReadableByteChannel channel = pf.openReadableByteChannel();
-            channel.close();
-            expectedException.expect( ClosedChannelException.class );
-            channel.read( ByteBuffer.allocate( recordSize ) );
-            fail( "That read should have thrown" );
-        }
-    }
-
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void writableByteChannelMustBeOpenUntilClosed() throws Exception
-    {
-        configureStandardPageCache();
-        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
-        {
-            WritableByteChannel channel;
-            try ( WritableByteChannel ch = pf.openWritableByteChannel() )
-            {
-                assertTrue( ch.isOpen() );
-                channel = ch;
-            }
-            assertFalse( channel.isOpen() );
-        }
-    }
-
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void writableByteChannelMustWriteAllBytesInFile() throws Exception
-    {
-        File file = file( "a" );
-        configureStandardPageCache();
-        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
-        {
-            try ( WritableByteChannel channel = pf.openWritableByteChannel() )
-            {
-                generateFileWithRecords( channel, recordCount, recordSize );
-            }
-            try ( ReadableByteChannel channel = pf.openReadableByteChannel() )
-            {
-                verifyRecordsInFile( channel, recordCount );
-            }
-        }
-    }
-
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void writingToClosedWritableByteChannelMustThrow() throws Exception
-    {
-        File file = file( "a" );
-        configureStandardPageCache();
-        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
-        {
-            WritableByteChannel channel = pf.openWritableByteChannel();
-            channel.close();
-            expectedException.expect( ClosedChannelException.class );
-            channel.write( ByteBuffer.allocate( recordSize ) );
-            fail( "That read should have thrown" );
         }
     }
 

@@ -20,6 +20,8 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.Closeable;
 import java.io.File;
@@ -32,8 +34,6 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -143,8 +143,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             }
 
             @Override
-            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
-                    long durationMillis )
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
             {   // no-op
             }
 
@@ -345,7 +344,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * in the header. At the very least {@link Layout#identifier()} will be matched.
      * <p>
      * On start, tree can be in a clean or dirty state. If dirty, it will
-     * {@link #createCleanupJob(boolean)} and clean crashed pointers as part of constructor. Tree is only clean if
+     * {@link #createCleanupJob(RecoveryCleanupWorkCollector, boolean)} and clean crashed pointers as part of constructor. Tree is only clean if
      * since last time it was opened it was {@link #close() closed} without any non-checkpointed changes present.
      * Correct usage pattern of the GBPTree is:
      *
@@ -450,8 +449,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             clean = false;
             bumpUnstableGeneration();
             forceState();
-            cleaning = createCleanupJob( dirtyOnStartup );
-            recoveryCleanupWorkCollector.add( cleaning );
+            cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup );
             success = true;
         }
         catch ( Throwable t )
@@ -976,7 +974,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * Bump unstable generation, increasing the gap between stable and unstable generation. All pointers and tree nodes
      * with generation in this gap are considered to be 'crashed' and will be cleaned up by {@link CleanupJob}
-     * created in {@link #createCleanupJob(boolean)}.
+     * created in {@link #createCleanupJob(RecoveryCleanupWorkCollector, boolean)}.
      */
     private void bumpUnstableGeneration()
     {
@@ -999,7 +997,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * Called on start if tree was not clean.
      */
-    private CleanupJob createCleanupJob( boolean needsCleaning )
+    private CleanupJob createCleanupJob( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean needsCleaning )
     {
         if ( !needsCleaning )
         {
@@ -1017,12 +1015,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
             CrashGenerationCleaner crashGenerationCleaner =
                     new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
                             stableGeneration, unstableGeneration, monitor );
-            return new GBPTreeCleanupJob( crashGenerationCleaner, lock );
+            GBPTreeCleanupJob cleanupJob = new GBPTreeCleanupJob( crashGenerationCleaner, lock );
+            recoveryCleanupWorkCollector.add( cleanupJob );
+            return cleanupJob;
         }
     }
 
     @SuppressWarnings( "unused" )
-    void printTree() throws IOException
+    public void printTree() throws IOException
     {
         printTree( false, false, false, false );
     }
@@ -1046,6 +1046,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 .printTree( cursor, writer.cursor, System.out, printValues, printPosition, printState, printHeader );
         }
     }
+
+    // Utility method
+    public void printState() throws IOException
+    {
+        try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            TreePrinter.printTreeState( cursor, System.out );
+        }
+    }
+
     // Utility method
     /**
      * Print node with given id to System.out, if node with id exists.
@@ -1069,7 +1079,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     // Utility method
-    boolean consistencyCheck() throws IOException
+    public boolean consistencyCheck() throws IOException
     {
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
@@ -1081,10 +1091,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
             boolean check = consistencyChecker.check( cursor, rootGeneration );
             root.goTo( cursor );
 
-            PrimitiveLongSet freelistIds = Primitive.longSet();
+            final MutableLongSet freelistIds = new LongHashSet();
             freeList.visitFreelistPageIds( freelistIds::add );
             freeList.visitUnacquiredIds( freelistIds::add, unstableGeneration );
-            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.iterator() );
+            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.longIterator() );
 
             return check && checkSpace;
         }

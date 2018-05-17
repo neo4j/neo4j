@@ -80,9 +80,8 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     public RawIterator<Object[],ProcedureException> apply(
             Context ctx, Object[] input, ResourceTracker resourceTracker )
     {
-        Map<MemberId,RoleInfo> roleMap = emptyMap();
+        Map<MemberId,RoleInfo> roleMap = topologyService.allCoreRoles();
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
-        roleMap = topologyService.allCoreRoles();
 
         CoreTopology coreTopology = topologyService.allCoreServers();
         Set<MemberId> coreMembers = coreTopology.members().keySet();

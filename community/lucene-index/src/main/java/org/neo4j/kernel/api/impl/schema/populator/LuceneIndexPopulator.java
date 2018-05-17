@@ -54,7 +54,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         luceneIndex.drop();
     }

@@ -71,7 +71,8 @@ public class TxPullRequestHandlerTest
         // given
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
         when( logicalTransactionStore.getTransactions( 14L ) ).thenReturn( txCursor( cursor( tx( 14 ), tx( 15 ) ) ) );
-        when( context.writeAndFlush( any() ) ).thenReturn( mock( ChannelFuture.class ) );
+        ChannelFuture channelFuture = mock( ChannelFuture.class );
+        when( context.writeAndFlush( any() ) ).thenReturn( channelFuture );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );

@@ -24,7 +24,7 @@ import java.io.{File, PrintWriter}
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
@@ -33,7 +33,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.ProcedureOrSchema
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1, V3_4}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1, v3_5}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.NeoStoreDataSource
@@ -292,7 +292,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode()
     val query = "match (pA) where id(pA) = {a} return pA"
 
-    executeWith(Configs.All + Configs.Morsel, query, params = Map("a" -> "Andres")) should be (empty)
+    executeWith(Configs.Interpreted + Configs.Morsel, query, params = Map("a" -> "Andres")) should be (empty)
   }
 
   test("shouldBeAbleToTakeParamsFromParsedStuff") {
@@ -325,7 +325,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   test("shouldComplainWhenMissingParams") {
     createNode()
-    failWithError(Configs.AbsolutelyAll, "match (pA) where id(pA) = {a} return pA", List("Expected a parameter named a", "Expected parameter(s): a"))
+    failWithError(Configs.AbsolutelyAll - Configs.Compiled, "match (pA) where id(pA) = {a} return pA", List("Expected a parameter named a", "Expected parameter(s): a"))
   }
 
   test("shouldSupportMultipleRegexes") {
@@ -723,7 +723,7 @@ order by a.COL1""".format(a, b))
     val labelName = "Person"
     val propertyKeys = Seq("name")
 
-    val testconfiguration = TestConfiguration(Versions(V3_1, V3_4, Versions.Default), Planners.Default, Runtimes(ProcedureOrSchema, Runtimes.Default)) + Configs.Rule2_3
+    val testconfiguration = TestConfiguration(Versions(V3_1, v3_5, Versions.Default), Planners.Default, Runtimes(ProcedureOrSchema, Runtimes.Default)) + Configs.Rule2_3
     // WHEN
     executeWith(testconfiguration, s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 
@@ -895,7 +895,7 @@ order by a.COL1""".format(a, b))
   }
 
   test("merge should not support map parameters for defining properties") {
-    failWithError(Configs.AbsolutelyAll, "MERGE (n:User {merge_map})", List("Parameter maps cannot be used in MERGE patterns"), params = ("merge_map", Map("email" -> "test")) )
+    failWithError(Configs.AbsolutelyAll, "MERGE (n:User {merge_map})", List("Parameter maps cannot be used in MERGE patterns"), params = Map("merge_map" -> Map("email" -> "test")))
   }
 
   test("should return null on all comparisons against null") {

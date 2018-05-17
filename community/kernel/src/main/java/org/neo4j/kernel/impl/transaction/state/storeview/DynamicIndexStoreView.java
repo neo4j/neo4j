@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -149,7 +149,7 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void loadProperties( long nodeId, EntityType type, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
+    public void loadProperties( long nodeId, MutableIntSet propertyIds, PropertyLoadSink sink )
     {
         neoStoreIndexStoreView.loadProperties( nodeId, type, propertyIds, sink );
     }

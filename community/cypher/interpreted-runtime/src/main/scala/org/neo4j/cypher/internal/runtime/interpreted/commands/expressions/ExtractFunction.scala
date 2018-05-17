@@ -32,9 +32,15 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): ListValue = {
     val list = makeTraversable(value)
     val innerContext = m.createClone()
-    VirtualValues.transform(list, new java.util.function.Function[AnyValue, AnyValue]() {
-      override def apply(v1: AnyValue): AnyValue = expression(innerContext.set(id, v1), state)
-    })
+    val extracted = new Array[AnyValue](list.size())
+    val values = list.iterator()
+    var i = 0
+    while (values.hasNext) {
+      val value = values.next()
+      extracted(i) = expression(innerContext.set(id, value), state)
+      i += 1
+    }
+    VirtualValues.list(extracted:_*)
   }
 
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))

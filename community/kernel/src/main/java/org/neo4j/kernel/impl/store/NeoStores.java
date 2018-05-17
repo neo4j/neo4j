@@ -230,7 +230,7 @@ public class NeoStores implements AutoCloseable
     private boolean isCompatibleFormats( RecordFormats storeFormat )
     {
         return FormatFamily.isSameFamily( recordFormats, storeFormat ) &&
-               recordFormats.hasSameCapabilities( storeFormat, CapabilityType.FORMAT ) &&
+               recordFormats.hasCompatibleCapabilities( storeFormat, CapabilityType.FORMAT ) &&
                recordFormats.generation() >= storeFormat.generation();
     }
 
@@ -516,7 +516,7 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    public void rebuildCountStoreIfNeeded() throws IOException
+    public void startCountStore() throws IOException
     {
         // TODO: move this to LifeCycle
         getCounts().start();

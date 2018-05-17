@@ -19,7 +19,7 @@
  */
 package org.neo4j.codegen.source;
 
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.Deque;
 import java.util.LinkedList;
@@ -454,7 +454,9 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     public void box( Expression expression )
     {
         //For source code we rely on autoboxing
+        append( "(/*box*/ " );
         expression.accept( this );
+        append( ")" );
     }
 
     @Override

@@ -20,17 +20,9 @@
 
 package org.neo4j.util;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-import static java.lang.annotation.ElementType.METHOD;
-
 /**
  * Annotation to indicate that program element exists, or has visibility wider than necessary, only for testing purposes.
  */
-@Retention( RetentionPolicy.CLASS )
-@Target( METHOD )
 public @interface VisibleForTesting
 {
 }

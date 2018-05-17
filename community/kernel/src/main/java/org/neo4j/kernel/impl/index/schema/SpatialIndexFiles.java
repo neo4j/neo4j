@@ -56,7 +56,7 @@ class SpatialIndexFiles
         return existing;
     }
 
-    <T, E extends Exception> void loadExistingIndexes( SpatialIndexCache<T,E> indexCache ) throws E
+    <T> void loadExistingIndexes( SpatialIndexCache<T> indexCache ) throws IOException
     {
         for ( SpatialFileLayout fileLayout : existing() )
         {
@@ -96,7 +96,7 @@ class SpatialIndexFiles
         private final CoordinateReferenceSystem crs;
         Layout<SpatialSchemaKey,NativeSchemaValue> layout;
 
-        private SpatialFileLayout( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings, File indexDirectory )
+        SpatialFileLayout( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings, File indexDirectory )
         {
             this.crs = crs;
             this.settings = settings;
@@ -107,7 +107,11 @@ class SpatialIndexFiles
 
         public void readHeader( PageCache pageCache ) throws IOException
         {
-            GBPTree.readHeader( pageCache, indexFile, settings.headerReader() );
+            GBPTree.readHeader( pageCache, indexFile, settings.headerReader( NativeSchemaIndexHeaderReader::readFailureMessage ) );
+            if ( settings.isFailed() )
+            {
+                throw new IOException( settings.getFailureMessage() );
+            }
             this.layout = new SpatialLayout( crs, settings.curve() );
         }
     }

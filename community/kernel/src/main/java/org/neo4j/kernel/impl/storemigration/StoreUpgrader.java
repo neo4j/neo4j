@@ -22,13 +22,11 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -121,7 +119,7 @@ public class StoreUpgrader
         {
             migrateStore( storeDirectory, migrationDirectory, migrationStateFile );
         }
-        else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, storeDirectory, pageCache, logProvider ) )
+        else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, storeDirectory, fileSystem, pageCache, logProvider ) )
         {
             throw new UpgradeNotAllowedByConfigurationException();
         }
@@ -239,17 +237,6 @@ public class StoreUpgrader
             if ( fileSystem.fileExists( migrationDirectory ) )
             {
                 fileSystem.deleteRecursively( migrationDirectory );
-            }
-            // We use the file system from the page cache here to make sure that the migration directory is clean
-            // even if we are using a block device.
-            try
-            {
-                pageCache.getCachedFileSystem().streamFilesRecursive( migrationDirectory )
-                        .forEach( FileHandle.HANDLE_DELETE );
-            }
-            catch ( NoSuchFileException e )
-            {
-                // This means that we had no files to clean, this is fine.
             }
         }
         catch ( IOException | UncheckedIOException e )

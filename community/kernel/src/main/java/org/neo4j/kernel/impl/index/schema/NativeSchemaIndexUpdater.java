@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
-class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
         implements IndexUpdater
 {
     private final KEY treeKey;
@@ -76,7 +76,7 @@ class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends Native
         }
     }
 
-    static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processUpdate( KEY treeKey, VALUE treeValue,
+    static <KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> void processUpdate( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
@@ -96,7 +96,7 @@ class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends Native
         }
     }
 
-    private static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processRemove( KEY treeKey,
+    private static <KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> void processRemove( KEY treeKey,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer ) throws IOException
     {
         // todo Do we need to verify that we actually removed something at all?
@@ -105,7 +105,7 @@ class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends Native
         writer.remove( treeKey );
     }
 
-    private static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processChange( KEY treeKey, VALUE treeValue,
+    private static <KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> void processChange( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
@@ -121,7 +121,7 @@ class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends Native
         conflictDetectingValueMerger.checkConflict( update.values() );
     }
 
-    static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processAdd( KEY treeKey, VALUE treeValue,
+    static <KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> void processAdd( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException

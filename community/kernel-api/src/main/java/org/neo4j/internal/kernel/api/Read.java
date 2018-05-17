@@ -30,6 +30,8 @@ public interface Read
     int ANY_RELATIONSHIP_TYPE = -1;
 
     /**
+     * Seek all nodes matching the provided index query in an index.
+     *
      * @param index {@link IndexReference} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
      * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
@@ -45,13 +47,17 @@ public interface Read
      * Note that this is a very special method and should be use with caution. It has special locking semantics in
      * order to facilitate unique creation of nodes. If a node is found; a shared lock for the index entry will be
      * held whereas if no node is found we will hold onto an exclusive lock until the close of the transaction.
-     *  @param index {@link IndexReference} referencing index to query.
-     * {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
+     *
+     * @param index {@link IndexReference} referencing index to query.
+     *              {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
      * @param predicates Combination of {@link IndexQuery.ExactPredicate index queries} to run against referenced index.
      */
-    long nodeUniqueIndexSeek( IndexReference index, IndexQuery.ExactPredicate... predicates )
+    long lockingNodeUniqueIndexSeek( IndexReference index, IndexQuery.ExactPredicate... predicates )
             throws KernelException;
+
     /**
+     * Scan all values in an index.
+     *
      * @param index {@link IndexReference} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
      * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
@@ -75,6 +81,11 @@ public interface Read
 
     Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
 
+    /**
+     * Return all nodes in the graph.
+     *
+     * @param cursor Cursor to initialize for scanning.
+     */
     void allNodesScan( NodeCursor cursor );
 
     Scan<NodeCursor> allNodesScan();
@@ -215,6 +226,20 @@ public interface Read
      * @return the number of matching relationships in the graph.
      */
     long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
+
+    /**
+     * Count of the total number of nodes in the database including changes in the current transaction.
+     *
+     * @return the total number of nodes in the database
+     */
+    long nodesGetCount( );
+
+    /**
+     * Count of the total number of relationships in the database including changes in the current transaction.
+     *
+     * @return the total number of relationships in the database
+     */
+    long relationshipsGetCount( );
 
     /**
      * @param reference

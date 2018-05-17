@@ -25,13 +25,15 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+
 import static org.mockito.Mockito.verify;
 
 @RunWith( MockitoJUnitRunner.class )
 public class PopulatingIndexProxyTest
 {
     @Mock
-    private IndexMeta indexMeta;
+    private CapableIndexDescriptor capableIndexDescriptor;
     @Mock
     private IndexPopulationJob indexPopulationJob;
     @Mock
@@ -41,7 +43,7 @@ public class PopulatingIndexProxyTest
     @Before
     public void setUp()
     {
-        populatingIndexProxy = new PopulatingIndexProxy( indexMeta, indexPopulationJob, indexPopulation );
+        populatingIndexProxy = new PopulatingIndexProxy( capableIndexDescriptor, indexPopulationJob, indexPopulation );
     }
 
     @Test

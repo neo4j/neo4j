@@ -34,7 +34,6 @@ import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
-import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
@@ -117,7 +116,7 @@ public class BackupDelegatorTest
 
     @Test
     public void retrieveStoreDelegatesToStoreCopyService()
-            throws StoreCopyFailedException, StreamingTransactionsFailedException, CatchupAddressResolutionException
+            throws StoreCopyFailedException, CatchupAddressResolutionException
     {
         // given
         StoreId storeId = new StoreId( 92, 5, 7, 32 );

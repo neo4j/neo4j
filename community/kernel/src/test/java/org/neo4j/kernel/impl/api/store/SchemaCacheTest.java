@@ -32,11 +32,11 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.Race;
 
@@ -49,7 +49,6 @@ import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.ConstraintRule.constraintRule;
 
 public class SchemaCacheTest
@@ -64,10 +63,10 @@ public class SchemaCacheTest
     {
         // GIVEN
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules.iterator(), IndexProviderMap.EMPTY );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules, IndexProviderMap.EMPTY );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
+        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexDescriptors() ) );
         assertEquals( asSet( witch, robot ), Iterables.asSet( cache.constraintRules() ) );
     }
 
@@ -75,17 +74,17 @@ public class SchemaCacheTest
     public void addRemoveIndexes()
     {
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules.iterator(), IndexProviderMap.EMPTY );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules, IndexProviderMap.EMPTY );
 
-        IndexRule rule1 = newIndexRule( 10, 11, 12 );
-        IndexRule rule2 = newIndexRule( 13, 14, 15 );
+        StoreIndexDescriptor rule1 = newIndexRule( 10, 11, 12 );
+        StoreIndexDescriptor rule2 = newIndexRule( 13, 14, 15 );
         cache.addSchemaRule( rule1 );
         cache.addSchemaRule( rule2 );
 
         cache.removeSchemaRule( hans.getId() );
         cache.removeSchemaRule( witch.getId() );
 
-        assertEquals( asSet( gretel, rule1, rule2 ), Iterables.asSet( cache.indexRules() ) );
+        assertEquals( asSet( gretel, rule1, rule2 ), Iterables.asSet( cache.indexDescriptors() ) );
         assertEquals( asSet( robot ), Iterables.asSet( cache.constraintRules() ) );
     }
 
@@ -102,7 +101,7 @@ public class SchemaCacheTest
         cache.addSchemaRule( robot );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
+        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexDescriptors() ) );
         assertEquals( asSet( witch, robot ), Iterables.asSet( cache.constraintRules() ) );
     }
 
@@ -215,10 +214,10 @@ public class SchemaCacheTest
         SchemaCache schemaCache = newSchemaCache();
 
         // When
-        IndexDescriptor indexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
+        IndexDescriptor schemaIndexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
 
         // Then
-        assertNull( indexDescriptor );
+        assertNull( schemaIndexDescriptor );
     }
 
     @Test
@@ -298,7 +297,7 @@ public class SchemaCacheTest
         }
         race.go();
 
-        assertEquals( indexNumber, Iterables.count( cache.indexRules() ) );
+        assertEquals( indexNumber, Iterables.count( cache.indexDescriptors() ) );
         for ( int labelId = 0; labelId < indexNumber; labelId++ )
         {
             assertEquals( 1, Iterators.count( cache.indexDescriptorsForLabel( labelId ) ) );
@@ -327,7 +326,7 @@ public class SchemaCacheTest
         }
         race.go();
 
-        assertEquals( indexNumber - numberOfDeletions, Iterables.count( cache.indexRules() ) );
+        assertEquals( indexNumber - numberOfDeletions, Iterables.count( cache.indexDescriptors() ) );
         for ( int labelId = numberOfDeletions; labelId < indexNumber; labelId++ )
         {
             assertEquals( 1, Iterators.count( cache.indexDescriptorsForLabel( labelId ) ) );
@@ -338,9 +337,9 @@ public class SchemaCacheTest
         }
     }
 
-    private IndexRule newIndexRule( long id, int label, int propertyKey )
+    private StoreIndexDescriptor newIndexRule( long id, int label, int propertyKey )
     {
-        return IndexRule.forIndex( id, SchemaIndexDescriptorFactory.forLabel( label, propertyKey ) ).withProvider( PROVIDER_DESCRIPTOR ).build();
+        return TestIndexDescriptorFactory.forLabel( label, propertyKey ).withId( id );
     }
 
     private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )
@@ -360,8 +359,9 @@ public class SchemaCacheTest
 
     private static SchemaCache newSchemaCache( SchemaRule... rules )
     {
-        return new SchemaCache( new ConstraintSemantics(), (rules == null || rules.length == 0) ? Collections.emptyIterator()
-                                                                                                : Arrays.asList( rules ).iterator(), IndexProviderMap.EMPTY );
+        return new SchemaCache( new ConstraintSemantics(), (rules == null || rules.length == 0)
+                                                           ? Collections.emptyList() : Arrays.asList( rules ),
+                                IndexProviderMap.EMPTY );
     }
 
     private static class ConstraintSemantics extends StandardConstraintSemantics

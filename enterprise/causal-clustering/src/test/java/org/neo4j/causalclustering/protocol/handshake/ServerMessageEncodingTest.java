@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.protocol.handshake;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -36,6 +35,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @RunWith( Parameterized.class )
@@ -81,7 +81,7 @@ public class ServerMessageEncodingTest
         List<Object> output = encodeDecode( message );
 
         //then
-        Assert.assertThat( output, hasSize( 1 ) );
-        Assert.assertThat( output.get( 0 ), equalTo( message ) );
+        assertThat( output, hasSize( 1 ) );
+        assertThat( output.get( 0 ), equalTo( message ) );
     }
 }

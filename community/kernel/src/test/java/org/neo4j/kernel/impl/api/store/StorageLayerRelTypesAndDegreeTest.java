@@ -54,7 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.mapToSet;
+import static org.neo4j.collection.PrimitiveIntCollections.mapToSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.api.store.TestRelType.IN;
 import static org.neo4j.kernel.impl.api.store.TestRelType.LOOP;
@@ -377,7 +377,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
 
     private Set<TestRelType> relTypes( StoreSingleNodeCursor cursor )
     {
-        return mapToSet( disk.relationshipTypes( disk.newStatement(), cursor.get() ).iterator(), this::relTypeForId );
+        return mapToSet( disk.relationshipTypes( disk.newStatement(), cursor.get() ).intIterator(), this::relTypeForId );
     }
 
     private void testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType... typesToDelete )

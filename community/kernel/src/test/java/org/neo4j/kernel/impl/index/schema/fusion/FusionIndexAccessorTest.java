@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,9 +36,10 @@ import java.util.Set;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
@@ -45,6 +47,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -65,12 +68,13 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.veri
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @RunWith( Parameterized.class )
 public class FusionIndexAccessorTest
 {
     private FusionIndexAccessor fusionIndexAccessor;
-    private final long indexId = 10;
+    private final long indexId = 0;
     private final DropAction dropAction = mock( DropAction.class );
     private IndexAccessor[] accessors;
     private IndexAccessor[] aliveAccessors;
@@ -127,7 +131,7 @@ public class FusionIndexAccessorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexAccessor = new FusionIndexAccessor( accessors, fusionVersion.selector(), indexId, mock( SchemaIndexDescriptor.class ), dropAction );
+        fusionIndexAccessor = new FusionIndexAccessor( accessors, fusionVersion.selector(), mock( StoreIndexDescriptor.class ), dropAction );
     }
 
     private void resetMocks()
@@ -451,6 +455,47 @@ public class FusionIndexAccessorTest
         // then
         BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
         assertThat( fusionAllEntriesReader.maxCount(), is( lastId ) );
+    }
+
+    @Test
+    public void shouldFailValueValidationIfAnyPartFail()
+    {
+        // given
+        IllegalArgumentException failure = new IllegalArgumentException( "failing" );
+        for ( int i = 0; i < aliveAccessors.length; i++ )
+        {
+            for ( int j = 0; j < aliveAccessors.length; j++ )
+            {
+                if ( i == j )
+                {
+                    doThrow( failure ).when( aliveAccessors[i] ).validateBeforeCommit( ArgumentMatchers.any( Value[].class ) );
+                }
+                else
+                {
+                    doAnswer( invocation -> null ).when( aliveAccessors[i] ).validateBeforeCommit( any( Value[].class ) );
+                }
+            }
+
+            // when
+            try
+            {
+                fusionIndexAccessor.validateBeforeCommit( new Value[] {stringValue( "something" )} );
+            }
+            catch ( IllegalArgumentException e )
+            {
+                // then
+                assertSame( failure, e );
+            }
+        }
+    }
+
+    @Test
+    public void shouldSucceedValueValidationIfAllSucceed()
+    {
+        // when
+        fusionIndexAccessor.validateBeforeCommit( new Value[] {stringValue( "test value" )} );
+
+        // then no exception was thrown
     }
 
     static void assertResultContainsAll( Set<Long> result, List<Long> expectedEntries )

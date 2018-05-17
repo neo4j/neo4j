@@ -55,7 +55,7 @@ public class MessageProcessingHandlerTest
 
         BoltConnection connection = mock( BoltConnection.class );
         MessageProcessingHandler handler =
-                new MessageProcessingHandler( msgHandler, mock( Runnable.class ), connection, mock( Log.class ) );
+                new MessageProcessingHandler( msgHandler, connection, mock( Log.class ) );
 
         // When
         handler.onFinish();
@@ -138,7 +138,7 @@ public class MessageProcessingHandlerTest
                 newResponseHandlerMock( error.isFatal(), errorDuringWrite );
 
         MessageProcessingHandler handler =
-                new MessageProcessingHandler( responseHandler, mock( Runnable.class ), mock( BoltConnection.class ),
+                new MessageProcessingHandler( responseHandler, mock( BoltConnection.class ),
                         logProvider.getLog( "Test" ) );
 
         handler.markFailed( error );

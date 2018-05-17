@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -57,8 +58,7 @@ public class PropertyLoader
         return receiver;
     }
 
-    public <RECEIVER extends PropertyReceiver> RECEIVER nodeLoadProperties( NodeRecord node,
-            PrimitiveLongObjectMap<PropertyRecord> propertiesById, RECEIVER receiver )
+    public <RECEIVER extends PropertyReceiver> RECEIVER nodeLoadProperties( NodeRecord node, LongObjectMap<PropertyRecord> propertiesById, RECEIVER receiver )
     {
         return loadProperties( node.getNextProp(), propertiesById, receiver );
     }
@@ -80,8 +80,7 @@ public class PropertyLoader
         return receivePropertyChain( receiver, chain );
     }
 
-    private <RECEIVER extends PropertyReceiver> RECEIVER loadProperties( long nextProp,
-            PrimitiveLongObjectMap<PropertyRecord> propertiesById, RECEIVER receiver )
+    private <RECEIVER extends PropertyReceiver> RECEIVER loadProperties( long nextProp, LongObjectMap<PropertyRecord> propertiesById, RECEIVER receiver )
     {
         Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp, propertiesById );
         return receivePropertyChain( receiver, chain );

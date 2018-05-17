@@ -22,31 +22,27 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistryOperations;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
-import java.util.function.Supplier;
-
 public class Neo4jTransactionalContext implements TransactionalContext
 {
     private final GraphDatabaseQueryService graph;
-    private final Supplier<Statement> statementSupplier;
     private final Guard guard;
     private final ThreadToStatementContextBridge txBridge;
     private final PropertyContainerLocker locker;
@@ -61,6 +57,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
      * Field can be read from a different thread in {@link #terminate()}.
      */
     private volatile InternalTransaction transaction;
+    private KernelTransaction kernelTransaction;
     private Statement statement;
     private boolean isOpen = true;
 
@@ -68,19 +65,17 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private long pageMisses;
 
     public Neo4jTransactionalContext(
-        GraphDatabaseQueryService graph,
-        Supplier<Statement> statementSupplier,
-        Guard guard,
-        ThreadToStatementContextBridge txBridge,
-        PropertyContainerLocker locker,
-        InternalTransaction initialTransaction,
-        Statement initialStatement,
-        ExecutingQuery executingQuery,
-        Kernel kernel
+            GraphDatabaseQueryService graph,
+            Guard guard,
+            ThreadToStatementContextBridge txBridge,
+            PropertyContainerLocker locker,
+            InternalTransaction initialTransaction,
+            Statement intitialStatement,
+            ExecutingQuery executingQuery,
+            Kernel kernel
     )
     {
         this.graph = graph;
-        this.statementSupplier = statementSupplier;
         this.guard = guard;
         this.txBridge = txBridge;
         this.locker = locker;
@@ -89,8 +84,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.executingQuery = executingQuery;
 
         this.transaction = initialTransaction;
-        this.statement = initialStatement;
-
+        this.kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
+        this.statement = intitialStatement;
         this.kernel = kernel;
     }
 
@@ -98,12 +93,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public ExecutingQuery executingQuery()
     {
         return executingQuery;
-    }
-
-    @Override
-    public ReadOperations readOperations()
-    {
-        return statement.readOperations();
     }
 
     @Override
@@ -115,7 +104,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public KernelTransaction kernelTransaction()
     {
-        return txBridge.getKernelTransactionBoundToThisThread( true );
+        return kernelTransaction;
     }
 
     @Override
@@ -147,6 +136,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
             finally
             {
                 statement = null;
+                kernelTransaction = null;
                 transaction = null;
                 isOpen = false;
             }
@@ -190,9 +180,9 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         // (2) Create, bind, register, and unbind new transaction
         transaction = graph.beginTransaction( transactionType, securityContext );
-        statement = txBridge.get();
+        kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
+        statement = kernelTransaction.acquireStatement();
         statement.queryRegistration().registerExecutingQuery( executingQuery );
-        KernelTransaction kernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
         txBridge.unbindTransactionFromCurrentThread();
 
         // (3) Rebind old transaction just to commit and close it (and unregister as a side effect of that)
@@ -208,7 +198,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         {
             // Corner case: The old transaction might have been terminated by the user. Now we also need to
             // terminate the new transaction.
-            txBridge.bindTransactionToCurrentThread( kernelTx );
+            txBridge.bindTransactionToCurrentThread( kernelTransaction );
             transaction.failure();
             transaction.close();
             txBridge.unbindTransactionFromCurrentThread();
@@ -217,7 +207,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         // (4) Unbind the now closed old transaction and rebind the new transaction for continued execution
         txBridge.unbindTransactionFromCurrentThread();
-        txBridge.bindTransactionToCurrentThread( kernelTx );
+        txBridge.bindTransactionToCurrentThread( kernelTransaction );
     }
 
     @Override
@@ -227,7 +217,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         // to either a schema data or a schema statement, so that the locks are "handed over".
         statement.queryRegistration().unregisterExecutingQuery( executingQuery );
         statement.close();
-        statement = statementSupplier.get();
+        statement = txBridge.get();
         statement.queryRegistration().registerExecutingQuery( executingQuery );
     }
 
@@ -245,7 +235,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         if ( !isOpen )
         {
             transaction = graph.beginTransaction( transactionType, securityContext );
-            statement = statementSupplier.get();
+            kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
+            statement = kernelTransaction.acquireStatement();
             statement.queryRegistration().registerExecutingQuery( executingQuery );
             isOpen = true;
         }
@@ -255,8 +246,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public TransactionalContext beginInNewThread()
     {
         InternalTransaction newTx = graph.beginTransaction( transactionType, securityContext );
-        return new Neo4jTransactionalContext( graph, statementSupplier, guard, txBridge, locker, newTx,
-                statementSupplier.get(), executingQuery, kernel );
+        return new Neo4jTransactionalContext( graph, guard, txBridge, locker, newTx, txBridge.get(),
+                executingQuery, kernel );
     }
 
     private void checkNotTerminated()
@@ -292,19 +283,19 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public void check()
     {
-        guard.check( (KernelStatement) statement );
+        guard.check( kernelTransaction() );
     }
 
     @Override
     public TxStateHolder stateView()
     {
-        return (KernelStatement) statement;
+        return (KernelTransactionImplementation) kernelTransaction();
     }
 
     @Override
     public Lock acquireWriteLock( PropertyContainer p )
     {
-        return locker.exclusiveLock( statement, p );
+        return locker.exclusiveLock( kernelTransaction(), p );
     }
 
     @Override
@@ -330,52 +321,55 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public StatisticProvider kernelStatisticProvider()
     {
-        return new TransactionalContextStatisticProvider( statement.executionStatisticsOperations().getPageCursorTracer() );
+        return new TransactionalContextStatisticProvider( kernelTransaction().executionStatistics() );
     }
 
     private void collectTransactionExecutionStatistic()
     {
-        PageCursorTracer pageCursorTracer = statement.executionStatisticsOperations().getPageCursorTracer();
-        pageHits += pageCursorTracer.hits();
-        pageMisses += pageCursorTracer.faults();
+        ExecutionStatistics stats = kernelTransaction().executionStatistics();
+        pageHits += stats.pageHits();
+        pageMisses += stats.pageFaults();
     }
 
-    public Neo4jTransactionalContext copyFrom( GraphDatabaseQueryService graph, Supplier<Statement> statementSupplier, Guard guard,
-            ThreadToStatementContextBridge txBridge, PropertyContainerLocker locker, InternalTransaction initialTransaction, Statement initialStatement,
+    public Neo4jTransactionalContext copyFrom( GraphDatabaseQueryService graph,
+            Guard guard,
+            ThreadToStatementContextBridge txBridge, PropertyContainerLocker locker,
+            InternalTransaction initialTransaction,
+            Statement initialStatement,
             ExecutingQuery executingQuery )
     {
-        return new Neo4jTransactionalContext( graph, statementSupplier, guard, txBridge, locker, initialTransaction, initialStatement, executingQuery, kernel );
+        return new Neo4jTransactionalContext( graph, guard, txBridge, locker, initialTransaction,
+                initialStatement, executingQuery, kernel );
     }
 
     interface Creator
     {
         Neo4jTransactionalContext create(
-            Supplier<Statement> statementSupplier,
-            InternalTransaction tx,
-            Statement initialStatement,
-            ExecutingQuery executingQuery
+                InternalTransaction tx,
+                Statement initialStatement,
+                ExecutingQuery executingQuery
         );
     }
 
     private class TransactionalContextStatisticProvider implements StatisticProvider
     {
-        private final PageCursorTracer pageCursorTracer;
+        private final ExecutionStatistics executionStatistics;
 
-        private TransactionalContextStatisticProvider( PageCursorTracer pageCursorTracer )
+        private TransactionalContextStatisticProvider( ExecutionStatistics executionStatistics )
         {
-            this.pageCursorTracer = pageCursorTracer;
+            this.executionStatistics = executionStatistics;
         }
 
         @Override
         public long getPageCacheHits()
         {
-            return pageCursorTracer.hits() + pageHits;
+            return executionStatistics.pageHits() + pageHits;
         }
 
         @Override
         public long getPageCacheMisses()
         {
-            return pageCursorTracer.faults() + pageMisses;
+            return executionStatistics.pageFaults() + pageMisses;
         }
     }
 }

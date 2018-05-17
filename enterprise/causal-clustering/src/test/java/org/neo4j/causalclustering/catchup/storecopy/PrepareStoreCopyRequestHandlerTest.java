@@ -22,6 +22,8 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,8 +35,6 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
@@ -54,7 +54,7 @@ public class PrepareStoreCopyRequestHandlerTest
 
     private static final CheckPointer checkPointer = mock( CheckPointer.class );
     private static final NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
-    private final CatchupServerProtocol catchupServerProtocol = new CatchupServerProtocol();
+    private CatchupServerProtocol catchupServerProtocol;
     private final PrepareStoreCopyFiles prepareStoreCopyFiles = mock( PrepareStoreCopyFiles.class );
 
     @Before
@@ -67,6 +67,8 @@ public class PrepareStoreCopyRequestHandlerTest
 
     private PrepareStoreCopyRequestHandler createHandler( StoreCopyCheckPointMutex storeCopyCheckPointMutex )
     {
+        catchupServerProtocol = new CatchupServerProtocol();
+        catchupServerProtocol.expect( CatchupServerProtocol.State.PREPARE_STORE_COPY );
         Supplier<CheckPointer> checkPointerSupplier = () -> checkPointer;
         Supplier<NeoStoreDataSource> dataSourceSupplier = () -> neoStoreDataSource;
         when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
@@ -99,8 +101,7 @@ public class PrepareStoreCopyRequestHandlerTest
     public void shouldGetSuccessfulResponseFromPrepareStoreCopyRequest() throws Exception
     {
         // given storeId matches
-        PrimitiveLongSet indexIds = Primitive.longSet();
-        indexIds.add( 1 );
+        LongSet indexIds = LongSets.immutable.of( 1 );
         File[] files = new File[]{new File( "file" )};
         long lastCheckpoint = 1;
 
@@ -130,8 +131,7 @@ public class PrepareStoreCopyRequestHandlerTest
         PrepareStoreCopyRequestHandler subjectHandler = createHandler( new StoreCopyCheckPointMutex( lock ) );
 
         // and
-        PrimitiveLongSet indexIds = Primitive.longSet();
-        indexIds.add( 42 );
+        LongSet indexIds = LongSets.immutable.of( 42 );
         File[] files = new File[]{new File( "file" )};
         long lastCheckpoint = 1;
         configureProvidedStoreCopyFiles( new StoreResource[0], files, indexIds, lastCheckpoint );
@@ -149,11 +149,11 @@ public class PrepareStoreCopyRequestHandlerTest
         assertEquals( 0, lock.getReadLockCount() );
     }
 
-    private void configureProvidedStoreCopyFiles( StoreResource[] atomicFiles, File[] files, PrimitiveLongSet indexIds, long lastCommitedTx )
+    private void configureProvidedStoreCopyFiles( StoreResource[] atomicFiles, File[] files, LongSet indexIds, long lastCommitedTx )
             throws IOException
     {
         when( prepareStoreCopyFiles.getAtomicFilesSnapshot() ).thenReturn( atomicFiles );
-        when( prepareStoreCopyFiles.getIndexIds() ).thenReturn( indexIds );
+        when( prepareStoreCopyFiles.getNonAtomicIndexIds() ).thenReturn( indexIds );
         when( prepareStoreCopyFiles.listReplayableFiles() ).thenReturn( files );
         when( checkPointer.lastCheckPointedTransactionId() ).thenReturn( lastCommitedTx );
     }

@@ -47,8 +47,11 @@ abstract class IdSeekIterator[T]
 
   private def computeNextEntity(): T = {
     while (entityIds.hasNext) {
-      val id = asLongEntityId(entityIds.next())
-      val maybeEntity = operations.getByIdIfExists(id.longValue())
+      val maybeEntity = for {
+        id <- asLongEntityId(entityIds.next())
+        entity <- operations.getByIdIfExists(id)
+      } yield entity
+
       if(maybeEntity.isDefined) return maybeEntity.get
     }
     null.asInstanceOf[T]

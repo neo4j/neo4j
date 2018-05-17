@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.util.function.BiConsumer
 
-import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
+import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, PathWrappingPathValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, MapValue}
@@ -36,14 +36,16 @@ object valueHelper {
     case d: IntegralValue => d.longValue()
 
     case m: MapValue => {
-      var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
+      val map: mutable.Map[String, Any] = mutable.Map[String, Any]()
       m.foreach(new BiConsumer[String, AnyValue] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, fromValue(u))
       })
       map.toMap
     }
     case n: NodeProxyWrappingNodeValue => n.nodeProxy()
-    case n: RelationshipProxyWrappingValue => n.relationshipProxy()
+    case r: RelationshipProxyWrappingValue => r.relationshipProxy()
+    case p: PathWrappingPathValue => p.path()
+    case a: ByteArray => a.asObjectCopy()
     case a: ListValue => Vector(a.asArray().map(fromValue): _*)
     case Values.NO_VALUE => null
   }

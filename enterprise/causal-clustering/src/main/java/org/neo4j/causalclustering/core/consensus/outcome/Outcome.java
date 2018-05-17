@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.Set;
 
 import org.neo4j.causalclustering.messaging.Message;
@@ -72,7 +73,7 @@ public class Outcome implements Message, ConsensusOutcome
     private FollowerStates<MemberId> followerStates;
     private Collection<ShipCommand> shipCommands = new ArrayList<>();
     private boolean electedLeader;
-    private boolean steppingDown;
+    private OptionalLong steppingDownInTerm;
     private Set<MemberId> heartbeatResponses;
 
     public Outcome( Role currentRole, ReadableRaftState ctx )
@@ -103,6 +104,7 @@ public class Outcome implements Message, ConsensusOutcome
         this.shipCommands.addAll( shipCommands );
         this.commitIndex = commitIndex;
         this.isPreElection = isPreElection;
+        this.steppingDownInTerm = OptionalLong.empty();
     }
 
     private void defaults( Role currentRole, ReadableRaftState ctx )
@@ -119,6 +121,7 @@ public class Outcome implements Message, ConsensusOutcome
         needsFreshSnapshot = false;
 
         isPreElection = (currentRole == Role.FOLLOWER) && ctx.isPreElection();
+        steppingDownInTerm = OptionalLong.empty();
         preVotesForMe = isPreElection ? new HashSet<>( ctx.preVotesForMe() ) : emptySet();
         votesForMe = (currentRole == Role.CANDIDATE) ? new HashSet<>( ctx.votesForMe() ) : emptySet();
         heartbeatResponses = (currentRole == Role.LEADER) ? new HashSet<>( ctx.heartbeatResponses() ) : emptySet();
@@ -196,14 +199,14 @@ public class Outcome implements Message, ConsensusOutcome
 
     public void electedLeader()
     {
-        assert !steppingDown;
+        assert !isSteppingDown();
         this.electedLeader = true;
     }
 
-    public void steppingDown()
+    public void steppingDown( long stepDownTerm )
     {
         assert !electedLeader;
-        this.steppingDown = true;
+        steppingDownInTerm = OptionalLong.of( stepDownTerm );
     }
 
     @Override
@@ -226,7 +229,7 @@ public class Outcome implements Message, ConsensusOutcome
                ", followerStates=" + followerStates +
                ", shipCommands=" + shipCommands +
                ", electedLeader=" + electedLeader +
-               ", steppingDown=" + steppingDown +
+               ", steppingDownInTerm=" + steppingDownInTerm +
                '}';
     }
 
@@ -303,7 +306,12 @@ public class Outcome implements Message, ConsensusOutcome
 
     public boolean isSteppingDown()
     {
-        return steppingDown;
+        return steppingDownInTerm.isPresent();
+    }
+
+    public OptionalLong stepDownTerm()
+    {
+        return steppingDownInTerm;
     }
 
     @Override
@@ -362,12 +370,12 @@ public class Outcome implements Message, ConsensusOutcome
         return term == outcome.term && leaderCommit == outcome.leaderCommit && commitIndex == outcome.commitIndex &&
                 renewElectionTimeout == outcome.renewElectionTimeout && needsFreshSnapshot == outcome.needsFreshSnapshot &&
                 isPreElection == outcome.isPreElection && lastLogIndexBeforeWeBecameLeader == outcome.lastLogIndexBeforeWeBecameLeader &&
-                electedLeader == outcome.electedLeader && steppingDown == outcome.steppingDown && nextRole == outcome.nextRole &&
-                Objects.equals( leader, outcome.leader ) && Objects.equals( logCommands, outcome.logCommands ) &&
-                Objects.equals( outgoingMessages, outcome.outgoingMessages ) && Objects.equals( votedFor, outcome.votedFor ) &&
-                Objects.equals( preVotesForMe, outcome.preVotesForMe ) && Objects.equals( votesForMe, outcome.votesForMe ) &&
-                Objects.equals( followerStates, outcome.followerStates ) && Objects.equals( shipCommands, outcome.shipCommands ) &&
-                Objects.equals( heartbeatResponses, outcome.heartbeatResponses );
+                electedLeader == outcome.electedLeader && nextRole == outcome.nextRole &&
+                Objects.equals( steppingDownInTerm, outcome.steppingDownInTerm ) && Objects.equals( leader, outcome.leader ) &&
+                Objects.equals( logCommands, outcome.logCommands ) && Objects.equals( outgoingMessages, outcome.outgoingMessages ) &&
+                Objects.equals( votedFor, outcome.votedFor ) && Objects.equals( preVotesForMe, outcome.preVotesForMe ) &&
+                Objects.equals( votesForMe, outcome.votesForMe ) && Objects.equals( followerStates, outcome.followerStates ) &&
+                Objects.equals( shipCommands, outcome.shipCommands ) && Objects.equals( heartbeatResponses, outcome.heartbeatResponses );
     }
 
     @Override
@@ -375,6 +383,6 @@ public class Outcome implements Message, ConsensusOutcome
     {
         return Objects.hash( nextRole, term, leader, leaderCommit, logCommands, outgoingMessages, commitIndex, votedFor, renewElectionTimeout,
                 needsFreshSnapshot, isPreElection, preVotesForMe, votesForMe, lastLogIndexBeforeWeBecameLeader, followerStates, shipCommands, electedLeader,
-                steppingDown, heartbeatResponses );
+                steppingDownInTerm, heartbeatResponses );
     }
 }

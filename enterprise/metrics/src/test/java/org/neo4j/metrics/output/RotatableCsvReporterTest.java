@@ -49,7 +49,8 @@ public class RotatableCsvReporterTest
     @Test
     public void stopAllWritersOnStop() throws IOException
     {
-        when( fileOutputStreamSupplier.get() ).thenReturn( mock( OutputStream.class ) );
+        OutputStream outputStream = mock( OutputStream.class );
+        when( fileOutputStreamSupplier.get() ).thenReturn( outputStream );
         RotatableCsvReporter reporter =
                 new RotatableCsvReporter( mock( MetricRegistry.class ), Locale.US, TimeUnit.SECONDS, TimeUnit.SECONDS,
                         Clock.defaultClock(), testDirectory.directory(),

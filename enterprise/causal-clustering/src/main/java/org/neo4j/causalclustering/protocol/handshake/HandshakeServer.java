@@ -200,7 +200,7 @@ public class HandshakeServer implements ServerMessageHandler
     private void decline( String message )
     {
         channel.dispose();
-        protocolStackFuture.completeExceptionally( new ServerHandshakeException( message ) );
+        protocolStackFuture.completeExceptionally( new ServerHandshakeException( message, protocolStackBuilder ) );
     }
 
     CompletableFuture<ProtocolStack> protocolStackFuture()

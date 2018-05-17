@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import org.neo4j.collection.RawIterator;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -63,7 +63,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listAllLabels() throws Throwable
     {
         // Given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
         int labelId = transaction.tokenWrite().labelGetOrCreateForName( "MyLabel" );
         transaction.dataWrite().nodeAddLabel( nodeId, labelId );
@@ -98,7 +98,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listRelationshipTypes() throws Throwable
     {
         // Given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "MyRelType" );
         long startNodeId = transaction.dataWrite().nodeCreate();
         long endNodeId = transaction.dataWrite().nodeCreate();
@@ -304,7 +304,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listAllIndexes() throws Throwable
     {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        Transaction transaction = newTransaction( AUTH_DISABLED );
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
@@ -316,9 +316,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         //let indexes come online
-        try ( Transaction tx = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline(20, SECONDS );
+            db.schema().awaitIndexesOnline( 2, MINUTES );
             tx.success();
         }
 

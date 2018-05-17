@@ -54,6 +54,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.values.AnyValue;
@@ -65,7 +66,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 
 @SuppressWarnings( "unchecked" )
 public class MessageMatchers
@@ -295,7 +295,7 @@ public class MessageMatchers
     {
         RecordingByteChannel rawData = new RecordingByteChannel();
         Neo4jPack.Packer packer = neo4jPack.newPacker( new BufferedChannelOutput( rawData ) );
-        BoltRequestMessageWriter writer = new BoltRequestMessageWriter( packer, NO_BOUNDARY_HOOK );
+        BoltRequestMessageWriter writer = new BoltRequestMessageWriter( packer );
 
         for ( RequestMessage message : messages )
         {
@@ -309,9 +309,9 @@ public class MessageMatchers
     public static byte[] serialize( Neo4jPack neo4jPack, ResponseMessage... messages ) throws IOException
     {
         RecordingByteChannel rawData = new RecordingByteChannel();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( new BufferedChannelOutput( rawData ) );
-        BoltResponseMessageWriter writer = new BoltResponseMessageWriter( packer, NO_BOUNDARY_HOOK,
-                NullBoltMessageLogger.getInstance() );
+        BufferedChannelOutput output = new BufferedChannelOutput( rawData );
+        BoltResponseMessageWriter writer = new BoltResponseMessageWriter( neo4jPack, output,
+                NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
 
         for ( ResponseMessage message : messages )
         {

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -31,14 +32,15 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.LoggingMonitor;
@@ -116,6 +118,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
@@ -202,13 +205,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
-            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyIterator(), indexProviderMap );
-            schemaStorage = new SchemaStorage( neoStores.getSchemaStore(), indexProviderMap );
+            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList(), indexProviderMap );
+            schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
             Boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.single;
             monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
-            labelScanStore = new NativeLabelScanStore( pageCache, storeDir, new FullLabelStream( neoStoreIndexStoreView ),
+            labelScanStore = new NativeLabelScanStore( pageCache, storeDir, fs, new FullLabelStream( neoStoreIndexStoreView ),
                     readOnly, monitors, recoveryCleanupWorkCollector );
 
             // We need to load the property tokens here, since we need them before we load the indexes.
@@ -262,6 +265,16 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreReadLayer storeReadLayer()
     {
         return storeLayer;
+    }
+
+    @Override
+    public IndexProvider.Descriptor indexProviderForOrDefault( Optional<String> providerName )
+    {
+        if ( providerName.isPresent() )
+        {
+            return indexProviderMap.lookup( providerName.get() ).getProviderDescriptor();
+        }
+        return indexProviderMap.getDefaultProvider().getProviderDescriptor();
     }
 
     @Override
@@ -424,7 +437,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         labelTokenHolder.setInitialTokens(
                 neoStores.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
-        neoStores.rebuildCountStoreIfNeeded(); // TODO: move this to counts store lifecycle
+        neoStores.startCountStore(); // TODO: move this to counts store lifecycle
         loadSchemaCache();
         indexingService.start();
         labelScanStore.start();
@@ -535,6 +548,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
      * are important tests which asserts details about the neo stores that are very important to test,
      * but to convert all those tests might be a bigger piece of work.
      */
+    @VisibleForTesting
     public NeoStores testAccessNeoStores()
     {
         return neoStores;

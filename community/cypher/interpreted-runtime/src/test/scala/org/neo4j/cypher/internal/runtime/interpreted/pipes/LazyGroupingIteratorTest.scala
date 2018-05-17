@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.collection.primitive.{PrimitiveLongIterable, PrimitiveLongSet}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.eclipse.collections.api.LongIterable
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 
 class LazyGroupingIteratorTest extends CypherFunSuite {
 
@@ -88,9 +89,9 @@ class LazyGroupingIteratorTest extends CypherFunSuite {
   }
 
   class LazyGroupingRowIterator(rows: Row*) extends LazyGroupingIterator[Row](rows.iterator) {
-    var state: PrimitiveLongSet = null
+    var state: LongHashSet = null
 
-    override def setState(state: PrimitiveLongSet) = {
+    override def setState(state: LongHashSet) = {
       this.state = state
     }
 
@@ -99,9 +100,9 @@ class LazyGroupingIteratorTest extends CypherFunSuite {
     override def getKey(row: Row) = row.key
   }
 
-  def asScalaSet(in: PrimitiveLongIterable): Set[Long] = {
+  def asScalaSet(in: LongIterable): Set[Long] = {
     val builder = Set.newBuilder[Long]
-    val iter = in.iterator()
+    val iter = in.longIterator()
     while (iter.hasNext) {
       builder += iter.next()
     }

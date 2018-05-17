@@ -32,9 +32,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.NamedFunction;
@@ -52,13 +53,14 @@ public class RelationshipCountsTest
     public final DatabaseRule db = new ImpermanentDatabaseRule();
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
-    private Supplier<Statement> statementSupplier;
+    private Supplier<KernelTransaction> ktxSupplier;
 
     @Before
     public void exposeGuts()
     {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class );
+        ktxSupplier = () -> db.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( true );
     }
 
     @Test
@@ -395,20 +397,21 @@ public class RelationshipCountsTest
      */
     private long countsForRelationship( Label start, RelationshipType type, Label end )
     {
-        try ( Statement statement = statementSupplier.get() )
+        KernelTransaction ktx = ktxSupplier.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            ReadOperations read = statement.readOperations();
+            TokenRead tokenRead = ktx.tokenRead();
             int startId;
             int typeId;
             int endId;
             // start
             if ( start == null )
             {
-                startId = ReadOperations.ANY_LABEL;
+                startId = Read.ANY_LABEL;
             }
             else
             {
-                if ( KeyReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
+                if ( TokenRead.NO_TOKEN == (startId = tokenRead.nodeLabel( start.name() )) )
                 {
                     return 0;
                 }
@@ -416,11 +419,11 @@ public class RelationshipCountsTest
             // type
             if ( type == null )
             {
-                typeId = ReadOperations.ANY_RELATIONSHIP_TYPE;
+                typeId = Read.ANY_RELATIONSHIP_TYPE;
             }
             else
             {
-                if ( KeyReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
+                if ( TokenRead.NO_TOKEN == (typeId = tokenRead.relationshipType( type.name() )) )
                 {
                     return 0;
                 }
@@ -428,16 +431,16 @@ public class RelationshipCountsTest
             // end
             if ( end == null )
             {
-                endId = ReadOperations.ANY_LABEL;
+                endId = Read.ANY_LABEL;
             }
             else
             {
-                if ( KeyReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
+                if ( TokenRead.NO_TOKEN == (endId = tokenRead.nodeLabel( end.name() )) )
                 {
                     return 0;
                 }
             }
-            return read.countsForRelationship( startId, typeId, endId );
+            return ktx.dataRead().countsForRelationship( startId, typeId, endId );
         }
     }
 }

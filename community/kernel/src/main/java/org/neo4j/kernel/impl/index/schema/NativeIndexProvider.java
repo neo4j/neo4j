@@ -27,21 +27,15 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 /**
  * Base class for native indexes on top of {@link GBPTree}.
@@ -49,8 +43,7 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
  * @param <KEY> type of {@link NativeSchemaKey}
  * @param <VALUE> type of {@link NativeSchemaValue}
  */
-abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue>
-        extends IndexProvider<SchemaIndexDescriptor>
+abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extends NativeSchemaValue> extends IndexProvider
 {
     protected final PageCache pageCache;
     protected final FileSystemAbstraction fs;
@@ -69,65 +62,42 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
         this.readOnly = readOnly;
     }
 
-    abstract Layout<KEY,VALUE> layout( SchemaIndexDescriptor descriptor );
+    abstract Layout<KEY,VALUE> layout( StoreIndexDescriptor descriptor );
 
     @Override
-    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
 
-        File storeFile = nativeIndexFileFromIndexId( indexId );
-        return newIndexPopulator( storeFile, layout( descriptor ), descriptor, indexId, samplingConfig );
+        File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
+        return newIndexPopulator( storeFile, layout( descriptor ), descriptor, samplingConfig );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY, VALUE> layout,
-                                                         SchemaIndexDescriptor descriptor, long indexId,
-                                                         IndexSamplingConfig samplingConfig );
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig );
 
     @Override
-    public IndexAccessor getOnlineAccessor(
-            long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        File storeFile = nativeIndexFileFromIndexId( indexId );
-        return newIndexAccessor( storeFile, layout( descriptor ), descriptor, indexId, samplingConfig );
+        File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
+        return newIndexAccessor( storeFile, layout( descriptor ), descriptor, samplingConfig );
     }
 
-    @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
-    {
-        if ( type == GENERAL )
-        {
-            return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
-        }
-        else if ( type == UNIQUE )
-        {
-            return SchemaIndexDescriptorFactory.uniqueForLabelBySchema( schema );
-        }
-        throw new UnsupportedOperationException( String.format( "This provider does not support indexes of type %s", type ) );
-    }
+    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig ) throws IOException;
 
     @Override
-    public boolean compatible( IndexDescriptor indexDescriptor )
-    {
-        return indexDescriptor instanceof SchemaIndexDescriptor;
-    }
-
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout,
-                                                       SchemaIndexDescriptor descriptor, long indexId,
-                                                       IndexSamplingConfig samplingConfig ) throws IOException;
-
-    @Override
-    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
     {
         try
         {
-            String failureMessage = NativeSchemaIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( indexId ) );
+            String failureMessage = NativeSchemaIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( descriptor.getId() ) );
             if ( failureMessage == null )
             {
-                throw new IllegalStateException( "Index " + indexId + " isn't failed" );
+                throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
             }
             return failureMessage;
         }
@@ -138,15 +108,15 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
         try
         {
-            return NativeSchemaIndexes.readState( pageCache, nativeIndexFileFromIndexId( indexId ) );
+            return NativeSchemaIndexes.readState( pageCache, nativeIndexFileFromIndexId( descriptor.getId() ) );
         }
         catch ( MetadataMismatchException | IOException e )
         {
-            monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
+            monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
             return InternalIndexState.POPULATING;
         }
     }

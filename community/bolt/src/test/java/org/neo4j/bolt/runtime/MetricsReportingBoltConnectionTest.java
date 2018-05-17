@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.util.UUID;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
-import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Job;
@@ -173,7 +173,7 @@ public class MetricsReportingBoltConnectionTest
         BoltChannel channel = mock( BoltChannel.class );
         when( channel.id() ).thenReturn( UUID.randomUUID().toString() );
 
-        return new MetricsReportingBoltConnection( channel, mock( BoltStateMachine.class ), NullLogService.getInstance(),
+        return new MetricsReportingBoltConnection( channel, mock( PackOutput.class ), mock( BoltStateMachine.class ), NullLogService.getInstance(),
                 mock( BoltConnectionLifetimeListener.class ), mock( BoltConnectionQueueMonitor.class ), metricsMonitor, Clocks.systemClock() );
     }
 }

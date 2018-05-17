@@ -608,7 +608,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                                                                         statement + "' } ] }" ) );
             assertThat( response.status(), equalTo( 200 ) );
             return response;
-
         } );
 
         // terminate

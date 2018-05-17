@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
@@ -39,6 +40,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -47,10 +49,10 @@ import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.state.machines.id.IdGenerationException;
 import org.neo4j.causalclustering.core.state.machines.locks.LeaderOnlyLockManager;
+import org.neo4j.causalclustering.helper.ErrorHandler;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
@@ -89,6 +91,8 @@ public class Cluster
 
     private Map<Integer,CoreClusterMember> coreMembers = new ConcurrentHashMap<>();
     private Map<Integer,ReadReplica> readReplicas = new ConcurrentHashMap<>();
+    private int highestCoreServerId;
+    private int highestReplicaServerId;
 
     public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
             DiscoveryServiceFactory discoveryServiceFactory,
@@ -158,6 +162,18 @@ public class Cluster
         return addCoreMemberWithId( memberId, coreParams, instanceCoreParams, recordFormat );
     }
 
+    public CoreClusterMember newCoreMember()
+    {
+        int newCoreServerId = ++highestCoreServerId;
+        return addCoreMemberWithId( newCoreServerId );
+    }
+
+    public ReadReplica newReadReplica()
+    {
+        int newReplicaServerId = ++highestReplicaServerId;
+        return addReadReplicaWithId( newReplicaServerId );
+    }
+
     private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams,
             Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
@@ -211,21 +227,31 @@ public class Cluster
     {
         try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown cluster" ) )
         {
-            shutdownCoreMembers( errorHandler );
+            shutdownCoreMembers( coreMembers(), errorHandler );
             shutdownReadReplicas( errorHandler );
         }
     }
 
-    private void shutdownCoreMembers( ErrorHandler errorHandler )
+    private void shutdownCoreMembers( Collection<CoreClusterMember> members, ErrorHandler errorHandler )
     {
-        shutdownMembers( coreMembers(), errorHandler );
+        shutdownMembers( members, errorHandler );
     }
 
     public void shutdownCoreMembers()
     {
+        shutdownCoreMembers( coreMembers() );
+    }
+
+    public void shutdownCoreMember( CoreClusterMember member )
+    {
+        shutdownCoreMembers( Collections.singleton( member ) );
+    }
+
+    public void shutdownCoreMembers( Collection<CoreClusterMember> members )
+    {
         try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown core members" ) )
         {
-            shutdownCoreMembers( errorHandler );
+            shutdownCoreMembers( members, errorHandler );
         }
     }
 
@@ -327,31 +353,53 @@ public class Cluster
         }
     }
 
-    public CoreClusterMember getDbWithRole( Role role )
+    public CoreClusterMember getMemberWithRole( Role role )
     {
-        return getDbWithAnyRole( role );
+        return getMemberWithAnyRole( role );
     }
 
-    public CoreClusterMember getDbWithRole( String dbName, Role role )
+    public List<CoreClusterMember> getAllMembersWithRole( Role role )
     {
-        return getDbWithAnyRole( dbName, role );
+        return getAllMembersWithAnyRole( role );
     }
 
-    public CoreClusterMember getDbWithAnyRole( Role... roles )
+    public CoreClusterMember getMemberWithRole( String dbName, Role role )
+    {
+        return getMemberWithAnyRole( dbName, role );
+    }
+
+    public List<CoreClusterMember> getAllMembersWithRole( String dbName, Role role )
+    {
+        return getAllMembersWithAnyRole( dbName, role );
+    }
+
+    public CoreClusterMember getMemberWithAnyRole( Role... roles )
     {
         String dbName = CausalClusteringSettings.database.getDefaultValue();
-        return getDbWithAnyRole( dbName, roles );
+        return getMemberWithAnyRole( dbName, roles );
     }
 
-    public CoreClusterMember getDbWithAnyRole( String dbName, Role... roles )
+    public List<CoreClusterMember> getAllMembersWithAnyRole( Role... roles )
+    {
+        String dbName = CausalClusteringSettings.database.getDefaultValue();
+        return getAllMembersWithAnyRole( dbName, roles );
+    }
+
+    public CoreClusterMember getMemberWithAnyRole( String dbName, Role... roles )
+    {
+        return getAllMembersWithAnyRole( dbName, roles ).stream().findFirst().orElse( null );
+    }
+
+    public List<CoreClusterMember> getAllMembersWithAnyRole( String dbName, Role... roles )
     {
         ensureDBName( dbName );
         Set<Role> roleSet = Arrays.stream( roles ).collect( toSet() );
 
-        Optional<CoreClusterMember> firstAppropriate = coreMembers.values().stream().filter( m ->
-            m.database() != null && m.dbName().equals( dbName ) &&  roleSet.contains( m.database().getRole() ) ).findFirst();
-
-        return firstAppropriate.orElse( null );
+        return coreMembers.values().stream()
+                .filter( m -> m.database() != null )
+                .filter( m -> m.dbName().equals( dbName ) )
+                .filter( m -> roleSet.contains( m.database().getRole() ) )
+                .collect( Collectors.toList() );
     }
 
     public CoreClusterMember awaitLeader() throws TimeoutException
@@ -376,12 +424,12 @@ public class Cluster
 
     public CoreClusterMember awaitCoreMemberWithRole( Role role, long timeout, TimeUnit timeUnit ) throws TimeoutException
     {
-        return await( () -> getDbWithRole( role ), notNull(), timeout, timeUnit );
+        return await( () -> getMemberWithRole( role ), notNull(), timeout, timeUnit );
     }
 
     public CoreClusterMember awaitCoreMemberWithRole( String dbName, Role role, long timeout, TimeUnit timeUnit ) throws TimeoutException
     {
-        return await( () -> getDbWithRole( dbName, role ), notNull(), timeout, timeUnit );
+        return await( () -> getMemberWithRole( dbName, role ), notNull(), timeout, timeUnit );
     }
 
     public int numberOfCoreMembersReportedByTopology()
@@ -436,8 +484,6 @@ public class Cluster
             {
                 if ( isTransientFailure( e ) )
                 {
-                    // this is not the best, but it helps in debugging
-                    e.printStackTrace();
                     return null;
                 }
                 else
@@ -474,8 +520,8 @@ public class Cluster
     private boolean isLockExpired( Throwable e )
     {
         return e instanceof TransactionFailureException &&
-               e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
-               ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
+               e.getCause() instanceof org.neo4j.internal.kernel.api.exceptions.TransactionFailureException &&
+               ((org.neo4j.internal.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
                LockSessionExpired;
     }
 
@@ -505,6 +551,7 @@ public class Cluster
             );
             coreMembers.put( i, coreClusterMember );
         }
+        highestCoreServerId = noOfCoreMembers - 1;
     }
 
     protected CoreClusterMember createCoreClusterMember( int serverId,
@@ -572,7 +619,16 @@ public class Cluster
 
     public void startCoreMembers() throws InterruptedException, ExecutionException
     {
-        Collection<CoreClusterMember> members = coreMembers.values();
+        startCoreMembers( coreMembers.values() );
+    }
+
+    public void startCoreMember( CoreClusterMember member ) throws InterruptedException, ExecutionException
+    {
+        startCoreMembers( Collections.singleton( member ) );
+    }
+
+    public void startCoreMembers( Collection<CoreClusterMember> members ) throws InterruptedException, ExecutionException
+    {
         List<Future<CoreGraphDatabase>> futures = invokeAll( "cluster-starter", members, cm ->
         {
             cm.start();
@@ -617,6 +673,7 @@ public class Cluster
 
             readReplicas.put( i, readReplica );
         }
+        highestReplicaServerId = noOfReadReplicas - 1;
     }
 
     private void shutdownReadReplicas( ErrorHandler errorHandler )
@@ -702,5 +759,41 @@ public class Cluster
         }
 
         throw new RuntimeException( "Could not find a member for bolt address " + advertisedSocketAddress );
+    }
+
+    public Optional<ClusterMember> randomMember( boolean mustBeStarted )
+    {
+        Stream<ClusterMember> members = Stream.concat( coreMembers().stream(), readReplicas().stream() );
+
+        if ( mustBeStarted )
+        {
+            members = members.filter( m -> !m.isShutdown() );
+        }
+
+        List<ClusterMember> eligible = members.collect( Collectors.toList() );
+        return random( eligible );
+    }
+
+    public Optional<CoreClusterMember> randomCoreMember( boolean mustBeStarted )
+    {
+        Stream<CoreClusterMember> members = coreMembers().stream();
+
+        if ( mustBeStarted )
+        {
+            members = members.filter( m -> !m.isShutdown() );
+        }
+
+        List<CoreClusterMember> eligible = members.collect( Collectors.toList() );
+        return random( eligible );
+    }
+
+    private static <T> Optional<T> random( List<T> list )
+    {
+        if ( list.size() == 0 )
+        {
+            return Optional.empty();
+        }
+        int ordinal = ThreadLocalRandom.current().nextInt( list.size() );
+        return Optional.of( list.get( ordinal ) );
     }
 }

@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -37,7 +38,7 @@ import static java.lang.String.format;
 import static java.util.Collections.newSetFromMap;
 
 /**
- * Super class of readable diffsets where use of {@link PrimitiveLongIterator} can be parameterized
+ * Super class of readable diffsets where use of {@link LongIterator} can be parameterized
  * to a specific subclass instead.
  */
 abstract class SuperDiffSets<T> implements SuperReadableDiffSets<T>
@@ -156,9 +157,9 @@ abstract class SuperDiffSets<T> implements SuperReadableDiffSets<T>
     }
 
     @Override
-    public Iterator<T> apply( Iterator<T> source )
+    public Iterator<T> apply( Iterator<? extends T> source )
     {
-        Iterator<T> result = source;
+        Iterator<T> result = (Iterator)source;
         if ( ( removedElements != null && !removedElements.isEmpty() ) ||
              ( addedElements != null && !addedElements.isEmpty() ) )
         {

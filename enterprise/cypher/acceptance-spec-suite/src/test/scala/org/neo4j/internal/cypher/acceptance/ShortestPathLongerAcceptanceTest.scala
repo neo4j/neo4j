@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.Rows
-import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_5.InternalException
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -299,7 +299,8 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
          |WHERE ANY(n in nodes(p) WHERE n:$topRight) AND ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN nodes(p) AS nodes ORDER BY length(p) ASC LIMIT 1""".stripMargin
     val startOne = System.currentTimeMillis()
-    evaluateShortestPathResults(executeUsingCostPlannerOnly(query), startOne, dim * 4 - 3, row(0) ++ row(dMax))
+    evaluateShortestPathResults(executeUsingCostPlannerOnly(query), startOne, dim * 4 - 3,
+      Set(topLeft, topRight, bottomLeft, bottomRight).map(x => nodesByName(x.replaceAll("CELL", ""))))
   }
 
   test("Exhaustive shortest path from first to last node via middle") {

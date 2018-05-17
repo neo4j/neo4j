@@ -19,13 +19,14 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 
 /**
  * {@link SuperReadableDiffSets} with added method for filtering added items.
@@ -92,9 +93,9 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T>
         }
 
         @Override
-        public Iterator<T> apply( Iterator<T> source )
+        public Iterator<T> apply( Iterator<? extends T> source )
         {
-            return source;
+            return (Iterator)source;
         }
 
         @Override
@@ -104,7 +105,7 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T>
         }
 
         @Override
-        public PrimitiveLongIterator augment( PrimitiveLongIterator source )
+        public LongIterator augment( LongIterator source )
         {
             return source;
         }

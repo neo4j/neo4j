@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -41,13 +41,13 @@ class KernelSession implements Session
     }
 
     @Override
-    public Transaction beginTransaction() throws KernelException
+    public Transaction beginTransaction() throws TransactionFailureException
     {
         return beginTransaction( Transaction.Type.explicit );
     }
 
     @Override
-    public Transaction beginTransaction( KernelTransaction.Type type ) throws KernelException
+    public Transaction beginTransaction( KernelTransaction.Type type ) throws TransactionFailureException
     {
         return kernel.newTransaction( type, loginContext );
     }

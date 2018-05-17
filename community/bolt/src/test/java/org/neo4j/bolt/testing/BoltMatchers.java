@@ -95,6 +95,29 @@ public class BoltMatchers
         };
     }
 
+    public static Matcher<RecordedBoltResponse> containsRecord( final Object... values )
+    {
+        return new BaseMatcher<RecordedBoltResponse>()
+        {
+            private AnyValue[] anyValues = Arrays.stream( values ).map( ValueUtils::of ).toArray( AnyValue[]::new );
+
+            @Override
+            public boolean matches( final Object item )
+            {
+
+                final RecordedBoltResponse response = (RecordedBoltResponse) item;
+                QueryResult.Record[] records = response.records();
+                return records.length > 0 && Arrays.equals( records[0].fields(), anyValues );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( format( "with record %s", values ) );
+            }
+        };
+    }
+
     public static Matcher<RecordedBoltResponse> succeededWithRecord( final Object... values )
     {
         return new BaseMatcher<RecordedBoltResponse>()

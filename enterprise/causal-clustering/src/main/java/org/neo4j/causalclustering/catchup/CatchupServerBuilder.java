@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.catchup;
 import io.netty.channel.ChannelInboundHandler;
 
 import java.util.Collection;
-import java.util.function.Function;
 
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
@@ -47,7 +46,7 @@ import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCa
 
 public class CatchupServerBuilder
 {
-    private final Function<CatchupServerProtocol,CatchupServerHandler> handlerFactory;
+    private final CatchupServerHandler catchupServerHandler;
     private LogProvider debugLogProvider = NullLogProvider.getInstance();
     private LogProvider userLogProvider = NullLogProvider.getInstance();
     private NettyPipelineBuilderFactory pipelineBuilder = new NettyPipelineBuilderFactory( VOID_WRAPPER );
@@ -57,9 +56,9 @@ public class CatchupServerBuilder
     private ListenSocketAddress listenAddress;
     private String serverName = "catchup-server";
 
-    public CatchupServerBuilder( Function<CatchupServerProtocol,CatchupServerHandler> handlerFactory )
+    public CatchupServerBuilder( CatchupServerHandler catchupServerHandler )
     {
-        this.handlerFactory = handlerFactory;
+        this.catchupServerHandler = catchupServerHandler;
     }
 
     public CatchupServerBuilder catchupProtocols( ApplicationSupportedProtocols catchupProtocols )
@@ -116,7 +115,7 @@ public class CatchupServerBuilder
         ModifierProtocolRepository modifierProtocolRepository = new ModifierProtocolRepository( ModifierProtocols.values(), modifierProtocols );
 
         CatchupProtocolServerInstaller.Factory catchupProtocolServerInstaller = new CatchupProtocolServerInstaller.Factory( pipelineBuilder, debugLogProvider,
-                handlerFactory );
+                catchupServerHandler );
 
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository = new ProtocolInstallerRepository<>(
                 singletonList( catchupProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );

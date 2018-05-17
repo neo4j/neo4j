@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -50,7 +51,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.test.rule.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
@@ -92,17 +97,23 @@ public class AbstractKeyValueStoreTest
 
     @Test
     @Resources.Life( STARTED )
+    @SuppressWarnings( "unchecked" )
     public void retryLookupOnConcurrentStoreStateChange() throws IOException
     {
-        Store testStore = resourceManager.managed( createTestStore( TimeUnit.DAYS.toMillis( 2 ) ) );
-        ConcurrentMapState<String> newState = new ConcurrentMapState<>( testStore.state, mock( File.class ), EmptyVersionContextSupplier.EMPTY );
-        testStore.put( "test", "value" );
+        Store store = resourceManager.managed( new Store() );
 
-        CountingErroneousReader countingErroneousReader = new CountingErroneousReader( testStore, newState );
+        ProgressiveState<String> workingState = stateWithLookup( () -> true );
+        ProgressiveState<String> staleState = stateWithLookup( () -> {
+            setState( store, workingState );
+            throw new FileIsNotMappedException( new File( "/files/was/rotated/concurrently/during/lookup" ) ); } );
 
-        assertEquals( "New state contains stored value", "value", testStore.lookup( "test", countingErroneousReader ) );
-        assertEquals( "Should have 2 invocations: first throws exception, second re-read value.", 2,
-                countingErroneousReader.getInvocationCounter() );
+        setState( store, staleState );
+
+        assertEquals( "New state contains stored value", "value", store.lookup( "test", stringReader( "value" ) ) );
+
+        // Should have 2 invocations: first throws exception, second re-read value.
+        verify( staleState, times( 1 ) ).lookup( any(), any() );
+        verify( workingState, times( 1 ) ).lookup( any(), any() );
     }
 
     @Test
@@ -552,35 +563,35 @@ public class AbstractKeyValueStoreTest
         void write( WritableBuffer key, WritableBuffer value );
     }
 
-    private static class CountingErroneousReader extends AbstractKeyValueStore.Reader<String>
+    private AbstractKeyValueStore.Reader<String> stringReader( String value )
     {
-        private final Store testStore;
-        private final ProgressiveState<String> newStoreState;
-        private int invocationCounter;
-
-        CountingErroneousReader( Store testStore, ProgressiveState<String> newStoreState )
+        return new AbstractKeyValueStore.Reader<String>()
         {
-            this.testStore = testStore;
-            this.newStoreState = newStoreState;
-            invocationCounter = 0;
-        }
-
-        @Override
-        protected String parseValue( ReadableBuffer value )
-        {
-            invocationCounter++;
-            if ( invocationCounter == 1 )
+            @Override
+            protected String parseValue( ReadableBuffer buffer )
             {
-                testStore.state = newStoreState;
-                throw new IllegalStateException( "Exception during state rotation." );
+                return value;
             }
-            return testStore.readKey( value );
-        }
+        };
+    }
 
-        int getInvocationCounter()
-        {
-            return invocationCounter;
-        }
+    private ProgressiveState<String> stateWithLookup( ThrowingSupplier<Boolean, IOException> valueSupplier )
+            throws IOException
+    {
+        ProgressiveState<String> state = mock( ProgressiveState.class );
+        when( state.lookup( any(), any() ) ).thenAnswer( invocation -> {
+            boolean wasFound = valueSupplier.get();
+            invocation.<ValueLookup<String>>getArgument( 1 ).value( null );
+            return wasFound;
+        } );
+        return state;
+    }
+
+    private void setState( Store store, ProgressiveState<String> workingState )
+            throws IOException
+    {
+        store.state.close();
+        store.state = workingState;
     }
 
     @Rotation( Rotation.Strategy.INCREMENTING )

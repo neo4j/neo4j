@@ -25,9 +25,9 @@ import java.nio.file.Files
 import java.util.Collections.emptyMap
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.frontend.v3_5.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.v3_4.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.v3_5.logical.plans.NodeIndexSeek
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.config.Configuration
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -493,7 +493,7 @@ class LoadCsvAcceptanceTest
     try {
       intercept[QueryExecutionException] {
         db.execute(s"LOAD CSV FROM 'file:///../foo.csv' AS line RETURN line[0] AS field", emptyMap()).asScala.size
-      }.getMessage should endWith(" file URL points outside configured import directory")
+      }.getMessage should endWith(" file URL points outside configured import directory").or(include("Couldn't load the external resource at"))
     } finally {
       db.shutdown()
     }

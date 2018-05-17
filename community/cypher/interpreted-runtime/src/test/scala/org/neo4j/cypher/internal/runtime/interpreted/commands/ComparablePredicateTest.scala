@@ -19,16 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.interpreted.{CypherOrdering, ExecutionContext}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.Values
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class ComparablePredicateTest extends CypherFunSuite {
 
-  private val numericalValues: Seq[Any] = Seq[Number](
+  private val numericalValues: Seq[AnyRef] = Seq[Number](
     Double.NegativeInfinity,
     Double.MinValue,
     Long.MinValue,
@@ -114,7 +116,7 @@ class ComparablePredicateTest extends CypherFunSuite {
         buildResult(actual.isEmpty, "null", actual)
       else {
         assert(actual.isDefined, s"$left $operator $right")
-        val expected = CypherOrdering.DEFAULT.compare(left, right)
+        val expected = AnyValues.COMPARATOR.compare(Values.of(left), Values.of(right))
         val result = operator match {
           case "<" => (expected < 0) == actual.get
           case "<=" => (expected <= 0) == actual.get

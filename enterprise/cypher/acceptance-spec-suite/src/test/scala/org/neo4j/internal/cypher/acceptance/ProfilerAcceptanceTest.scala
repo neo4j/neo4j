@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
-import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.neo4j.cypher.internal.frontend.v3_5.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, InternalExecutionResult}
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.util.v3_5.symbols._
+import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.cypher.{ExecutionEngineFunSuite, ProfilerStatisticsNotReadyException, TxCounts}
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
@@ -594,8 +594,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         val a2 = createLabeledNode("Artist")
         val c = createLabeledNode("Concert")
         val v = createLabeledNode("Venue")
-        relate(corp, a1, "SIGNED_WITH")
-        relate(corp, a2, "SIGNED_WITH")
+        relate(a1, corp, "SIGNED_WITH")
+        relate(a2, corp, "SIGNED_WITH")
         relate(a1, c, "PERFORMED_AT")
         relate(a2, c, "PERFORMED_AT")
         relate(c, v, "IN")
@@ -609,6 +609,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
         //when
         val result = innerExecuteDeprecated(query, Map.empty)
+
+        result.toSet should be(Set(
+          Map("a1" -> a1, "a2" -> a2, "v" -> v),
+          Map("a1" -> a1, "a2" -> a1, "v" -> v),
+          Map("a1" -> a2, "a2" -> a1, "v" -> v),
+          Map("a1" -> a2, "a2" -> a2, "v" -> v)))
 
         //then
         assertDbHits(2)(result)("NodeByLabelScan")

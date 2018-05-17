@@ -19,10 +19,12 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -30,7 +32,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.GraphState;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -104,13 +106,13 @@ public interface ReadableTransactionState
 
     boolean nodeModifiedInThisTx( long nodeId );
 
-    PrimitiveIntSet nodeRelationshipTypes( long nodeId );
+    IntSet nodeRelationshipTypes( long nodeId );
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction );
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );
 
-    PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
+    LongIterator augmentNodesGetAll( LongIterator committed );
 
     RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed );
 
@@ -125,11 +127,9 @@ public interface ReadableTransactionState
 
     ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    ReadableDiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema );
-
     ReadableDiffSets<IndexDescriptor> indexChanges();
 
-    Iterable<SchemaIndexDescriptor> constraintIndexesCreatedInTx();
+    Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
 
     ReadableDiffSets<ConstraintDescriptor> constraintsChanges();
 
@@ -143,7 +143,7 @@ public interface ReadableTransactionState
 
     PrimitiveLongReadableDiffSets indexUpdatesForScan( IndexDescriptor index );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( SchemaIndexDescriptor index, IndexQuery query );
+    PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( IndexDescriptor index, IndexQuery query );
 
     PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
 
@@ -168,7 +168,7 @@ public interface ReadableTransactionState
             PropertyContainerState propertyContainerState,
             int propertyKeyId );
 
-    PrimitiveIntSet augmentLabels( PrimitiveIntSet cursor, NodeState nodeState );
+    MutableIntSet augmentLabels( MutableIntSet cursor, NodeState nodeState );
 
     Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
 

@@ -35,4 +35,10 @@ public class SmallBurst implements ClusterLoad
     {
         // do nothing
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName();
+    }
 }

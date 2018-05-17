@@ -30,35 +30,37 @@ import java.util.List;
 import org.neo4j.causalclustering.catchup.RequestMessageType;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.causalclustering.messaging.StoreCopyRequest;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class GetIndexFilesRequest implements CatchUpRequest
+public class GetIndexFilesRequest implements StoreCopyRequest
 {
     private final StoreId expectedStoreId;
     private final long indexId;
-    private final long lastTransactionId;
+    private final long requiredTransactionId;
 
-    public GetIndexFilesRequest( StoreId expectedStoreId, long indexId, long lastTransactionId )
+    public GetIndexFilesRequest( StoreId expectedStoreId, long indexId, long requiredTransactionId )
     {
         this.expectedStoreId = expectedStoreId;
         this.indexId = indexId;
-        this.lastTransactionId = lastTransactionId;
+        this.requiredTransactionId = requiredTransactionId;
     }
 
+    @Override
     public StoreId expectedStoreId()
     {
         return expectedStoreId;
     }
 
+    @Override
     public long requiredTransactionId()
     {
-        return lastTransactionId;
+        return requiredTransactionId;
     }
 
     public long indexId()
@@ -109,5 +111,12 @@ public class GetIndexFilesRequest implements CatchUpRequest
             GetIndexFilesRequest getIndexFilesRequest = new IndexSnapshotRequestMarshall().unmarshal0( new NetworkReadableClosableChannelNetty4( in ) );
             out.add( getIndexFilesRequest );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "GetIndexFilesRequest{" + "expectedStoreId=" + expectedStoreId + ", indexId=" + indexId + ", requiredTransactionId=" + requiredTransactionId +
+                '}';
     }
 }

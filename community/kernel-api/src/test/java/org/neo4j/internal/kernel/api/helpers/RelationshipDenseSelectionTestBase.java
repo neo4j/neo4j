@@ -33,32 +33,32 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
         extends RelationshipSelectionTestBase
 {
 
-    private TestRelationshipChain outA = new TestRelationshipChain();
+    private TestRelationshipChain outA = new TestRelationshipChain( 42L );
 
-    private TestRelationshipChain inA = new TestRelationshipChain()
+    private TestRelationshipChain inA = new TestRelationshipChain( 42L )
             .incoming( 0, 1, typeA )
             .incoming( 0, 2, typeA );
 
-    private TestRelationshipChain loopA = new TestRelationshipChain()
+    private TestRelationshipChain loopA = new TestRelationshipChain( 42L )
             .loop( 0, typeA );
 
-    private TestRelationshipChain outB = new TestRelationshipChain()
+    private TestRelationshipChain outB = new TestRelationshipChain( 42L )
             .outgoing( 0, 10, typeB );
 
-    private TestRelationshipChain inB = new TestRelationshipChain();
+    private TestRelationshipChain inB = new TestRelationshipChain( 42L );
 
-    private TestRelationshipChain loopB = new TestRelationshipChain()
+    private TestRelationshipChain loopB = new TestRelationshipChain( 42L )
             .loop( 0, typeB )
             .loop( 0, typeB );
 
-    private TestRelationshipChain outC = new TestRelationshipChain()
+    private TestRelationshipChain outC = new TestRelationshipChain( 42L )
             .outgoing( 0, 20, typeC )
             .outgoing( 0, 21, typeC );
 
-    private TestRelationshipChain inC = new TestRelationshipChain()
+    private TestRelationshipChain inC = new TestRelationshipChain( 42L )
             .incoming( 0, 22, typeC );
 
-    private TestRelationshipChain loopC = new TestRelationshipChain();
+    private TestRelationshipChain loopC = new TestRelationshipChain( 42L );
 
     private List<TestRelationshipChain> store = new ArrayList<>();
 

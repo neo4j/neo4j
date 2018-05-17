@@ -19,10 +19,13 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.eclipse.collections.api.stack.primitive.IntStack;
+import org.eclipse.collections.api.stack.primitive.MutableIntStack;
+import org.eclipse.collections.impl.stack.mutable.primitive.IntArrayStack;
+
 import java.util.Arrays;
 import java.util.StringJoiner;
 
-import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
@@ -63,6 +66,8 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  */
 public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 {
+    public static final int MAX_KEY_SIZE = DynamicSizeUtil.MAX_TWO_BYTE_KEY_SIZE;
+
     static final byte FORMAT_IDENTIFIER = 3;
     static final byte FORMAT_VERSION = 0;
 
@@ -88,8 +93,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private static final int LEAST_NUMBER_OF_ENTRIES_PER_PAGE = 2;
     private static final int MINIMUM_ENTRY_SIZE_CAP = Long.SIZE;
     private final int keyValueSizeCap;
-    private final PrimitiveIntStack deadKeysOffset = new PrimitiveIntStack();
-    private final PrimitiveIntStack aliveKeysOffset = new PrimitiveIntStack();
+    private final MutableIntStack deadKeysOffset = new IntArrayStack();
+    private final MutableIntStack aliveKeysOffset = new IntArrayStack();
     private final int maxKeyCount = pageSize / (bytesKeyOffset() + SIZE_KEY_SIZE + SIZE_VALUE_SIZE);
     private final int[] oldOffset = new int[maxKeyCount];
     private final int[] newOffset = new int[maxKeyCount];
@@ -469,25 +474,25 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int deadRangeOffset; // Everything between this point and aliveRangeOffset is dead space
 
         // Rightmost alive keys does not need to move
-        while ( deadKeysOffset.peek() < aliveKeysOffset.peek() )
+        while ( peek( deadKeysOffset ) < peek( aliveKeysOffset ) )
         {
-            aliveRangeOffset = aliveKeysOffset.poll();
+            aliveRangeOffset = poll( aliveKeysOffset );
         }
 
         do
         {
             // Locate next range of dead keys
             deadRangeOffset = aliveRangeOffset;
-            while ( aliveKeysOffset.peek() < deadKeysOffset.peek() )
+            while ( peek( aliveKeysOffset ) < peek( deadKeysOffset ) )
             {
-                deadRangeOffset = deadKeysOffset.poll();
+                deadRangeOffset = poll( deadKeysOffset );
             }
 
             // Locate next range of alive keys
             int moveOffset = deadRangeOffset;
-            while ( deadKeysOffset.peek() < aliveKeysOffset.peek() )
+            while ( peek( deadKeysOffset ) < peek( aliveKeysOffset ) )
             {
-                int moveKey = aliveKeysOffset.poll();
+                int moveKey = poll( aliveKeysOffset );
                 oldOffset[oldOffsetCursor++] = moveKey;
                 moveOffset = moveKey;
             }
@@ -547,6 +552,16 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         // Update dead space
         setDeadSpace( cursor, 0 );
+    }
+
+    private static int peek( IntStack stack )
+    {
+        return stack.isEmpty() ? -1 : stack.peek();
+    }
+
+    private static int poll( MutableIntStack stack )
+    {
+        return stack.isEmpty() ? -1 : stack.pop();
     }
 
     @Override
@@ -853,7 +868,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return allocOffset - endOfOffsetArray;
     }
 
-    private void recordDeadAndAliveLeaf( PageCursor cursor, PrimitiveIntStack deadKeysOffset, PrimitiveIntStack aliveKeysOffset )
+    private void recordDeadAndAliveLeaf( PageCursor cursor, MutableIntStack deadKeysOffset, MutableIntStack aliveKeysOffset )
     {
         int currentOffset = getAllocOffset( cursor );
         while ( currentOffset < pageSize )
@@ -876,7 +891,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
     }
 
-    private void recordDeadAndAliveInternal( PageCursor cursor, PrimitiveIntStack deadKeysOffset, PrimitiveIntStack aliveKeysOffset )
+    private void recordDeadAndAliveInternal( PageCursor cursor, MutableIntStack deadKeysOffset, MutableIntStack aliveKeysOffset )
     {
         int currentOffset = getAllocOffset( cursor );
         while ( currentOffset < pageSize )

@@ -19,18 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.{IndexDescriptor => CypherIndexDescriptor}
-import org.neo4j.internal.kernel.api.schema.{LabelSchemaDescriptor, SchemaDescriptor}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor => CypherIndexDescriptor}
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
 
 trait IndexDescriptorCompatibility {
-  def cypherToKernel(index: CypherIndexDescriptor): KernelIndexDescriptor =
-    SchemaIndexDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
-
   def kernelToCypher(index: KernelIndexDescriptor): CypherIndexDescriptor =
-  //TODO we use a zero index here as to not bleed multi-token descriptors into cypher. At least for now.
-    CypherIndexDescriptor(index.schema().getEntityTokenIds.head, index.schema().getPropertyIds)
+    CypherIndexDescriptor(index.schema().keyId, index.schema().getPropertyIds)
 
   def cypherToKernelSchema(index: CypherIndexDescriptor): LabelSchemaDescriptor =
     SchemaDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
@@ -38,7 +34,7 @@ trait IndexDescriptorCompatibility {
   def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =
       SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds.toArray:_*)
 
-  def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext, labelName: String, propertyKeys: Seq[String]): SchemaDescriptor = {
+  def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
     val labelId: Int = tc.getLabelId(labelName)
     val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
     toLabelSchemaDescriptor(labelId, propertyKeyIds)

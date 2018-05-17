@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -29,7 +30,7 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -39,7 +40,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -97,7 +98,7 @@ public class LogTruncationTest
         permutations.put( Command.SchemaRuleCommand.class, new Command[] { new Command.SchemaRuleCommand(
                 singletonList( dynamicRecord( 1L, false, true, -1L, 1, "hello".getBytes() ) ),
                 singletonList( dynamicRecord( 1L, true, true, -1L, 1, "hello".getBytes() ) ),
-                IndexRule.forIndex( 1, SchemaIndexDescriptorFactory.forLabel( 3, 4 ) ).withProvider( new IndexProvider.Descriptor( "1", "2" ) ).build() )} );
+                TestIndexDescriptorFactory.forLabel( 3, 4 ).withId( 1 ) ) } );
         permutations
                 .put( Command.RelationshipTypeTokenCommand.class,
                         new Command[] { new Command.RelationshipTypeTokenCommand(
@@ -131,8 +132,8 @@ public class LogTruncationTest
         permutations.put( RemoveCommand.class, new Command[] { removeCommand } );
 
         IndexDefineCommand indexDefineCommand = new IndexDefineCommand();
-        indexDefineCommand.init( MapUtil.genericMap(
-                "string1", 45, "key1", 2 ), MapUtil.genericMap( "string", 2 ) );
+        indexDefineCommand.init( ObjectIntHashMap.newWithKeysValues(
+                "string1", 45, "key1", 2 ), ObjectIntHashMap.newWithKeysValues( "string", 2 ) );
         permutations.put( IndexDefineCommand.class, new Command[] { indexDefineCommand } );
 
         // Counts commands

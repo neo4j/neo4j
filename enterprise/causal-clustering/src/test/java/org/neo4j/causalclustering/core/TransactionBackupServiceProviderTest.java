@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.core;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -29,6 +28,8 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+
+import static org.junit.Assert.assertEquals;
 
 public class TransactionBackupServiceProviderTest
 {
@@ -45,7 +46,7 @@ public class TransactionBackupServiceProviderTest
         config.augment( OnlineBackupSettings.online_backup_server, "127.0.0.1:6362-6372" );
 
         // then
-        Assert.assertEquals( new ListenSocketAddress( "127.0.0.1", 6362 ), subject.backupAddressForTxProtocol( config ) );
+        assertEquals( new ListenSocketAddress( "127.0.0.1", 6362 ), subject.backupAddressForTxProtocol( config ) );
     }
 
     @Test
@@ -66,7 +67,7 @@ public class TransactionBackupServiceProviderTest
             ListenSocketAddress resolvedAddress = subject.backupAddressForTxProtocol( config );
 
             // then
-            Assert.assertEquals( new ListenSocketAddress( "127.0.0.1", DEFAULT.getPort() ), resolvedAddress );
+            assertEquals( new ListenSocketAddress( "127.0.0.1", DEFAULT.getPort() ), resolvedAddress );
         }
     }
 }

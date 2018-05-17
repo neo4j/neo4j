@@ -22,7 +22,10 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,10 +37,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -46,31 +47,31 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
 
-class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator, IOException> implements IndexPopulator
+class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator> implements IndexPopulator
 {
-    private final IndexSamplerWrapper sampler;
-
-    SpatialIndexPopulator( long indexId,
-            SchemaIndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig,
-            SpatialIndexFiles spatialIndexFiles,
-            PageCache pageCache,
-            FileSystemAbstraction fs,
-            IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
+    SpatialIndexPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpatialIndexFiles spatialIndexFiles, PageCache pageCache,
+                           FileSystemAbstraction fs, IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
     {
-        super( new PartFactory( pageCache, fs, spatialIndexFiles, indexId, descriptor, monitor, samplingConfig, configuration ) );
-        this.sampler = new IndexSamplerWrapper( descriptor, samplingConfig );
+        super( new PartFactory( pageCache, fs, spatialIndexFiles, descriptor, monitor, samplingConfig, configuration ) );
     }
 
     @Override
     public synchronized void create() throws IOException
     {
         forAll( NativeSchemaIndexPopulator::clear, this );
+
+        // We must make sure to have at least one subindex:
+        // to be able to persist failure and to have the right state in the beginning
+        if ( !this.iterator().hasNext() )
+        {
+            select( CoordinateReferenceSystem.WGS84 );
+        }
     }
 
     @Override
-    public synchronized void drop() throws IOException
+    public synchronized void drop()
     {
         forAll( NativeSchemaIndexPopulator::drop, this );
     }
@@ -78,14 +79,17 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException, IndexEntryConflictException
     {
+        Map<CoordinateReferenceSystem,List<IndexEntryUpdate<?>>> batchMap = new HashMap<>();
         for ( IndexEntryUpdate<?> update : updates )
         {
             PointValue point = (PointValue) update.values()[0];
-            select( point.getCoordinateReferenceSystem() ).batchUpdate( update );
+            List<IndexEntryUpdate<?>> batch = batchMap.computeIfAbsent( point.getCoordinateReferenceSystem(), k -> new ArrayList<>() );
+            batch.add( update );
         }
-        for ( PartPopulator part : this )
+        for ( Map.Entry<CoordinateReferenceSystem,List<IndexEntryUpdate<?>>> entry : batchMap.entrySet() )
         {
-            part.applyUpdateBatch();
+            PartPopulator partPopulator = select( entry.getKey() );
+            partPopulator.add( entry.getValue() );
         }
     }
 
@@ -105,6 +109,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
+        closeInstantiateCloseLock();
         for ( NativeSchemaIndexPopulator part : this )
         {
             part.close( populationCompletedSuccessfully );
@@ -123,105 +128,37 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        sampler.includeSample( update.values() );
+        Value[] values = update.values();
+        assert values.length == 1;
+        uncheckedSelect( ((PointValue) values[0]).getCoordinateReferenceSystem() ).includeSample( update );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        return sampler.sampleResult();
-    }
-
-    private static class IndexSamplerWrapper
-    {
-        private final DefaultNonUniqueIndexSampler generalSampler;
-        private final UniqueIndexSampler uniqueSampler;
-
-        IndexSamplerWrapper( SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
-        {
-            switch ( descriptor.type() )
-            {
-            case GENERAL:
-                generalSampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
-                uniqueSampler = null;
-                break;
-            case UNIQUE:
-                generalSampler = null;
-                uniqueSampler = new UniqueIndexSampler();
-                break;
-            default:
-                throw new UnsupportedOperationException( "Unexpected index type " + descriptor.type() );
-            }
-        }
-
-        void includeSample( Value[] values )
-        {
-            if ( uniqueSampler != null )
-            {
-                uniqueSampler.increment( 1 );
-            }
-            else
-            {
-                generalSampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) values ) );
-            }
-        }
-
-        IndexSample sampleResult()
-        {
-            if ( uniqueSampler != null )
-            {
-                return uniqueSampler.result();
-            }
-            else
-            {
-                return generalSampler.result();
-            }
-        }
+        IndexSample[] indexSamples = StreamSupport.stream( this.spliterator(), false )
+                .map( PartPopulator::sampleResult )
+                .toArray( IndexSample[]::new );
+        return combineSamples( indexSamples );
     }
 
     static class PartPopulator extends NativeSchemaIndexPopulator<SpatialSchemaKey, NativeSchemaValue>
     {
         private final SpaceFillingCurveConfiguration configuration;
         private final SpaceFillingCurveSettings settings;
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
-        PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
-                IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig,
-                SpaceFillingCurveConfiguration configuration )
+        PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, IndexProvider.Monitor monitor,
+                       StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration configuration )
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
+            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, samplingConfig );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
-        }
-
-        void batchUpdate( IndexEntryUpdate<?> update )
-        {
-            updates.add( update );
-        }
-
-        void applyUpdateBatch() throws IOException, IndexEntryConflictException
-        {
-            List<IndexEntryUpdate<?>> batch = updates;
-            updates = new ArrayList<>();
-            add( batch );
         }
 
         @Override
         IndexReader newReader()
         {
             return new SpatialIndexPartReader<>( tree, layout, samplingConfig, descriptor, configuration );
-        }
-
-        @Override
-        public void includeSample( IndexEntryUpdate<?> update )
-        {
-            throw new UnsupportedOperationException( "please to not get here!" );
-        }
-
-        @Override
-        public IndexSample sampleResult()
-        {
-            throw new UnsupportedOperationException( "this sampling code needs a rewrite." );
         }
 
         @Override
@@ -237,25 +174,22 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         }
     }
 
-    static class PartFactory implements Factory<PartPopulator, IOException>
+    static class PartFactory implements Factory<PartPopulator>
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
         private final SpatialIndexFiles spatialIndexFiles;
-        private final long indexId;
-        private final SchemaIndexDescriptor descriptor;
+        private final StoreIndexDescriptor descriptor;
         private final IndexProvider.Monitor monitor;
         private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration configuration;
 
-        PartFactory( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles spatialIndexFiles, long indexId,
-                SchemaIndexDescriptor descriptor, IndexProvider.Monitor monitor, IndexSamplingConfig samplingConfig,
-                SpaceFillingCurveConfiguration configuration )
+        PartFactory( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles spatialIndexFiles, StoreIndexDescriptor descriptor,
+                IndexProvider.Monitor monitor, IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration configuration )
         {
             this.pageCache = pageCache;
             this.fs = fs;
             this.spatialIndexFiles = spatialIndexFiles;
-            this.indexId = indexId;
             this.descriptor = descriptor;
             this.monitor = monitor;
             this.samplingConfig = samplingConfig;
@@ -270,7 +204,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
 
         private PartPopulator create( SpatialIndexFiles.SpatialFileLayout fileLayout ) throws IOException
         {
-            PartPopulator populator = new PartPopulator( pageCache, fs, fileLayout, monitor, descriptor, indexId, samplingConfig, configuration );
+            PartPopulator populator = new PartPopulator( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig, configuration );
             populator.create();
             return populator;
         }

@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -51,6 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
+import static org.neo4j.backup.impl.SelectedBackupProtocol.ANY;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 
@@ -209,9 +211,7 @@ public class OnlineBackupContextBuilderTest
 
         // and
         Path homeDirConfigFile = homeDir.resolve( "neo4j.conf" );
-        Files.write( homeDirConfigFile, asList(
-                "causal_clustering.minimum_core_cluster_size_at_startup=5",
-                "causal_clustering.raft_in_queue_max_batch=21" ) );
+        Files.write( homeDirConfigFile, asList( "causal_clustering.minimum_core_cluster_size_at_startup=5", "causal_clustering.raft_in_queue_max_batch=21" ) );
 
         // when
         OnlineBackupContextBuilder handler = new OnlineBackupContextBuilder( homeDir, configDir );
@@ -226,9 +226,7 @@ public class OnlineBackupContextBuilderTest
     public void prioritiseAdditionalOverConfigDir() throws Exception
     {
         // given
-        Files.write( configFile, asList(
-                "causal_clustering.minimum_core_cluster_size_at_startup=4",
-                "causal_clustering.raft_in_queue_max_batch=21" ) );
+        Files.write( configFile, asList( "causal_clustering.minimum_core_cluster_size_at_startup=4", "causal_clustering.raft_in_queue_max_batch=21" ) );
 
         // and
         Path additionalConf = homeDir.resolve( "additional-neo4j.conf" );
@@ -267,7 +265,7 @@ public class OnlineBackupContextBuilderTest
 
         // when
         OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
-        OnlineBackupContext context = builder.createContext( requiredAnd("--additional-config=" + additionalConf ) );
+        OnlineBackupContext context = builder.createContext( requiredAnd( "--additional-config=" + additionalConf ) );
 
         // then
         assertThat( context.getConfig().get( pagecache_memory ), is( "8m" ) );
@@ -278,7 +276,7 @@ public class OnlineBackupContextBuilderTest
     {
         // when
         OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
-        OnlineBackupContext context = builder.createContext( requiredAnd("--pagecache=42m" ) );
+        OnlineBackupContext context = builder.createContext( requiredAnd( "--pagecache=42m" ) );
 
         // then
         assertThat( context.getConfig().get( pagecache_memory ), is( "42m" ) );
@@ -295,6 +293,39 @@ public class OnlineBackupContextBuilderTest
         OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
         OnlineBackupContext context = builder.createContext( "--backup-dir=" + backupDir, "--name=" + name );
         assertThat( context.getConfig().get( logical_logs_location ).getAbsolutePath(), is( backupPath.toString() ) );
+    }
+
+    @Test
+    public void defaultProtocolIsAny() throws CommandFailed, IncorrectUsage
+    {
+        // given
+        OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
+
+        // when context resolved without proto override value
+        OnlineBackupContext context = builder.createContext( requiredAnd() );
+
+        // then
+        assertEquals( ANY, context.getRequiredArguments().getSelectedBackupProtocol() );
+    }
+
+    @Test
+    public void overrideWithLegacy() throws CommandFailed, IncorrectUsage
+    {
+        // with
+        List<String> input = Arrays.asList( "common", "catchup" );
+        List<SelectedBackupProtocol> expected = Arrays.asList( SelectedBackupProtocol.COMMON, SelectedBackupProtocol.CATCHUP );
+
+        for ( int useCase = 0; useCase < input.size(); useCase++ )
+        {
+            // given
+            OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
+
+            // when
+            OnlineBackupContext context = builder.createContext( requiredAnd( "--protocol=" + input.get( useCase ) ) );
+
+            // then
+            assertEquals( expected.get( useCase ), context.getRequiredArguments().getSelectedBackupProtocol() );
+        }
     }
 
     private String[] requiredAnd( String... additionalArgs )

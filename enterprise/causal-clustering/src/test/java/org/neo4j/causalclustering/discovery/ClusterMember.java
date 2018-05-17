@@ -19,6 +19,9 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.io.File;
+
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -28,6 +31,8 @@ public interface ClusterMember<T extends GraphDatabaseAPI>
     void start();
 
     void shutdown();
+
+    boolean isShutdown();
 
     T database();
 
@@ -50,4 +55,13 @@ public interface ClusterMember<T extends GraphDatabaseAPI>
     ThreadGroup threadGroup();
 
     Monitors monitors();
+
+    File storeDir();
+
+    File homeDir();
+
+    default void updateConfig( Setting<?> setting, String value )
+    {
+        config().augment( setting, value );
+    }
 }

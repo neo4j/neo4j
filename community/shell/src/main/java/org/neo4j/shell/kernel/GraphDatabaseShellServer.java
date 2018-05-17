@@ -28,8 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -133,9 +133,9 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         }
     }
 
-    public Statement getStatement()
+    public TokenRead getTokenRead()
     {
-        return getThreadToStatementContextBridge().get();
+        return getThreadToStatementContextBridge().getKernelTransactionBoundToThisThread( true ).tokenRead();
     }
 
     private ThreadToStatementContextBridge getThreadToStatementContextBridge()

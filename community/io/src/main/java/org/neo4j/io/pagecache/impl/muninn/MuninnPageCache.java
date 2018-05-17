@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -34,8 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -453,7 +452,7 @@ public class MuninnPageCache implements PageCache
     @Override
     public synchronized List<PagedFile> listExistingMappings() throws IOException
     {
-        assertHealthy();
+        assertNotClosed();
         ensureThreadsInitialised();
 
         List<PagedFile> list = new ArrayList<>();
@@ -573,30 +572,43 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized void flushAndForce( IOLimiter limiter ) throws IOException
+    public void flushAndForce( IOLimiter limiter ) throws IOException
     {
         if ( limiter == null )
         {
             throw new IllegalArgumentException( "IOLimiter cannot be null" );
         }
         assertNotClosed();
-        flushAllPages( limiter );
+        List<PagedFile> files = listExistingMappings();
+        flushAllPages( files, limiter );
         clearEvictorException();
     }
 
-    private void flushAllPages( IOLimiter limiter ) throws IOException
+    private void flushAllPages( List<PagedFile> files, IOLimiter limiter ) throws IOException
     {
         try ( MajorFlushEvent cacheFlush = pageCacheTracer.beginCacheFlush() )
         {
-            FileMapping fileMapping = mappedFiles;
-            while ( fileMapping != null )
+            for ( PagedFile file : files )
             {
-                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( fileMapping.pagedFile.swapper ) )
+                MuninnPagedFile muninnPagedFile = (MuninnPagedFile) file;
+                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper ) )
                 {
                     FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
-                    fileMapping.pagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
+                    muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
                 }
-                fileMapping = fileMapping.next;
+                catch ( ClosedChannelException e )
+                {
+                    if ( muninnPagedFile.getRefCount() > 0 )
+                    {
+                        // The file is not supposed to be closed, since we have a positive ref-count, yet we got a
+                        // ClosedChannelException anyway? It's an odd situation, so let's tell the outside world about
+                        // this failure.
+                        throw e;
+                    }
+                    // Otherwise: The file was closed while we were trying to flush it. Since unmapping implies a flush
+                    // anyway, we can safely assume that this is not a problem. The file was flushed, and it doesn't
+                    // really matter how that happened. We'll ignore this exception.
+                }
             }
             syncDevice();
         }
@@ -687,22 +699,9 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public FileSystemAbstraction getCachedFileSystem()
-    {
-        return swapperFactory.getFileSystemAbstraction();
-    }
-
-    @Override
     public void reportEvents()
     {
         pageCursorTracerSupplier.get().reportEvents();
-    }
-
-    @Override
-    public boolean fileSystemSupportsFileOperations()
-    {
-        // Default filesystem supports direct file access.
-        return getCachedFileSystem() instanceof DefaultFileSystemAbstraction;
     }
 
     int getPageCacheId()
@@ -945,10 +944,10 @@ public class MuninnPageCache implements PageCache
             {
                 try
                 {
+                    pageCountToEvict--;
                     if ( pages.tryEvict( pageRef, evictionRunEvent ) )
                     {
                         clearEvictorException();
-                        pageCountToEvict--;
                         addFreePageToFreelist( pageRef );
                     }
                 }
@@ -1026,7 +1025,7 @@ public class MuninnPageCache implements PageCache
                 for ( int i = 0; i < pageCount; i++ )
                 {
                     long pageRef = pages.deref( i );
-                    while ( swapperIds.test( pages.getSwapperId( pageRef ) ) )
+                    while ( swapperIds.contains( pages.getSwapperId( pageRef ) ) )
                     {
                         if ( pages.tryEvict( pageRef, evictions ) )
                         {

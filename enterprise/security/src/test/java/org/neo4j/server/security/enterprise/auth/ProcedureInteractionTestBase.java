@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 
@@ -475,7 +474,7 @@ public abstract class ProcedureInteractionTestBase<S>
     {
         List<Object> results = getObjectsAsList( r, key );
         assertEquals( Arrays.asList( items ).size(), results.size() );
-        Assert.assertThat( results, containsInAnyOrder( Arrays.stream( items ).map( this::valueOf ).toArray()
+        assertThat( results, containsInAnyOrder( Arrays.stream( items ).map( this::valueOf ).toArray()
         ) );
     }
 
@@ -583,7 +582,7 @@ public abstract class ProcedureInteractionTestBase<S>
                         neo.getLocalGraph().getDependencyResolver()
                 ).stream()
                         .filter( tx -> !tx.terminationReason().isPresent() )
-                        .map( tx -> tx.securityContext().subject().username() )
+                        .map( tx -> tx.subject().username() )
         ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
     }
 

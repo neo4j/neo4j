@@ -49,14 +49,12 @@ class MessageProcessingHandler implements BoltResponseHandler
     protected final BoltResponseMessageHandler<IOException> handler;
 
     private Neo4jError error;
-    private final Runnable onFinish;
     private boolean ignored;
 
-    MessageProcessingHandler( BoltResponseMessageHandler<IOException> handler, Runnable onFinish, BoltConnection connection,
+    MessageProcessingHandler( BoltResponseMessageHandler<IOException> handler, BoltConnection connection,
             Log logger )
     {
         this.handler = handler;
-        this.onFinish = onFinish;
         this.connection = connection;
         this.log = logger;
     }
@@ -114,7 +112,6 @@ class MessageProcessingHandler implements BoltResponseHandler
         }
         finally
         {
-            onFinish.run();
             clearState();
         }
     }

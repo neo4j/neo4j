@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.StringCacheMonitor
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -62,15 +62,14 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         cacheListener.clear()
 
         graph.inTx {
-          val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-          statement.readOperations().schemaStateFlush()
-          statement.close()
+          val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getKernelTransactionBoundToThisThread(true)
+          statement.schemaRead().schemaStateFlush()
         }
 
         graph.execute(firstQuery).resultAsString()
         graph.execute(secondQuery).resultAsString()
 
-        val actual = cacheListener.trace
+        val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
         val expected = List(
           s"cacheFlushDetected",
           s"cacheMiss: CYPHER 3.4 $query",

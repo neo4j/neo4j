@@ -27,9 +27,16 @@ import org.neo4j.helpers.Args;
 
 public class Database extends OptionalNamedArg
 {
+    public static final String ARG_DATABASE = "database";
+
     public Database()
     {
-        super( "database", "name", "graph.db", "Name of database." );
+        this( "Name of database." );
+    }
+
+    public Database( String description )
+    {
+        super( ARG_DATABASE, "name", "graph.db", description );
     }
 
     private static String validate( String dbName )

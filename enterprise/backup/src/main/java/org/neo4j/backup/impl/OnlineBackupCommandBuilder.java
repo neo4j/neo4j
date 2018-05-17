@@ -30,7 +30,6 @@ import java.io.Writer;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -40,6 +39,8 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.ParameterisedOutsideWorld;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+
+import static java.lang.String.format;
 
 /**
  * This class encapsulates the information needed to perform an online backup against a running Neo4j instance
@@ -54,13 +55,21 @@ public class OnlineBackupCommandBuilder
     private Boolean fallbackToFull;
     private Long timeout;
     private Boolean checkConsistency;
-    private File  consistencyReportLocation;
+    private File consistencyReportLocation;
     private Config additionalConfig;
+    private SelectedBackupProtocol selectedBackupProtocol;
     private Boolean consistencyCheckGraph;
     private Boolean consistencyCheckIndexes;
     private Boolean consistencyCheckLabel;
     private Boolean consistencyCheckOwners;
     private OutputStream output;
+    private Optional<String[]> rawArgs = Optional.empty();
+
+    public OnlineBackupCommandBuilder withRawArgs( String... args )
+    {
+        rawArgs = Optional.of( args );
+        return this;
+    }
 
     public OnlineBackupCommandBuilder withHost( String host )
     {
@@ -134,53 +143,37 @@ public class OnlineBackupCommandBuilder
         return this;
     }
 
-    /**
-     * Perform a backup with the parameters set using the builder
-     * @param targetLocation target location of backup (NOTE: uses the parent directory as well)
-     * @return true if backup was successful
-     */
-    public boolean backup( String targetLocation ) throws CommandFailed, IncorrectUsage
+    public OnlineBackupCommandBuilder withSelectedBackupStrategy( SelectedBackupProtocol selectedBackupStrategy )
     {
-        return backup( relativeFileFromString( targetLocation ) );
+        this.selectedBackupProtocol = selectedBackupStrategy;
+        return this;
     }
 
-    /**
-     * Perform a backup with the parameters set using the builder
-     * @param targetLocation target location of backup (NOTE: uses the parent directory as well)
-     * @return true if backup was successful
-     */
-    public boolean backup( File targetLocation ) throws CommandFailed, IncorrectUsage
+    public boolean backup( File neo4jHome, String backupName ) throws CommandFailed, IncorrectUsage
     {
+        File targetLocation = new File( neo4jHome, backupName );
         String[] args;
-        try
+        if ( rawArgs.isPresent() )
         {
-            args = resolveArgs( targetLocation );
+            args = rawArgs.get();
         }
-        catch ( IOException e )
+        else
         {
-            throw new CommandFailed( "Failed to resolve arguments", e );
+            try
+            {
+                args = resolveArgs( targetLocation );
+            }
+            catch ( IOException e )
+            {
+                throw new CommandFailed( "Failed to resolve arguments", e );
+            }
         }
         new OnlineBackupCommandProvider()
-                .create( neo4jHomeFromTarget( targetLocation ),
-                        configDirFromTarget( targetLocation ),
+                .create( neo4jHome.toPath(),
+                        configDirFromTarget( neo4jHome.toPath() ),
                         resolveOutsideWorld() )
                 .execute( args );
         return true;
-    }
-
-    private File relativeFileFromString( String targetLocation )
-    {
-        return new File( "." ).toPath().resolve( targetLocation ).toFile();
-    }
-
-    /**
-     * This is a helper method when debugging tests where in some cases the file is a relative string
-     * @param targetLocation relative backup location as a string
-     * @return the arguments that would be passed to the backup command
-     */
-    public String[] resolveArgs( String targetLocation ) throws IOException
-    {
-        return resolveArgs( relativeFileFromString( targetLocation ) );
     }
 
     public String[] resolveArgs( File targetLocation ) throws IOException
@@ -190,6 +183,7 @@ public class OnlineBackupCommandBuilder
                 argBackupLocation( targetLocation ),
                 argFrom(),
                 argFallbackToFull(),
+                argSelectedProtocol(),
                 argTimeout(),
                 argCheckConsistency(),
                 argReportDir(),
@@ -222,7 +216,7 @@ public class OnlineBackupCommandBuilder
         String address = String.join( ":",
                 Optional.ofNullable( host ).orElse( "" ),
                 Optional.ofNullable( port ).map( port -> Integer.toString( port ) ).orElse( "" ) );
-        return String.format( "--from=%s", address );
+        return format( "--from=%s", address );
     }
 
     /**
@@ -236,7 +230,7 @@ public class OnlineBackupCommandBuilder
                 .map( f -> targetLocation.getParentFile() )
                 .orElseThrow( wrongArguments( "No target location specified" ) )
                 .toString();
-        return String.format( "--backup-dir=%s", location );
+        return format( "--backup-dir=%s", location );
     }
 
     private String argBackupName( File targetLocation )
@@ -244,7 +238,7 @@ public class OnlineBackupCommandBuilder
         String backupName = Optional.ofNullable( targetLocation )
                 .map( File::getName )
                 .orElseThrow( wrongArguments( "No target location specified" ) );
-        return String.format( "--name=%s", backupName );
+        return format( "--name=%s", backupName );
     }
 
     private static Supplier<IllegalArgumentException> wrongArguments( String message )
@@ -255,42 +249,50 @@ public class OnlineBackupCommandBuilder
     private String argFallbackToFull()
     {
         return Optional.ofNullable( fallbackToFull )
-                .map( flag -> String.format( "--fallback-to-full=%s", flag ) )
+                .map( flag -> format( "--fallback-to-full=%s", flag ) )
+                .orElse( "" );
+    }
+
+    private String argSelectedProtocol()
+    {
+        return Optional.ofNullable( selectedBackupProtocol )
+                .map( SelectedBackupProtocol::getName )
+                .map( argValue -> format( "--%s=%s", OnlineBackupContextBuilder.ARG_NAME_PROTO_OVERRIDE, argValue ) )
                 .orElse( "" );
     }
 
     private String argTimeout()
     {
         return Optional.ofNullable( this.timeout )
-                .map( value -> String.format("--timeout=%dms", value) )
+                .map( value -> format("--timeout=%dms", value) )
                 .orElse( "" );
     }
 
     private String argCcOwners()
     {
         return Optional.ofNullable( this.consistencyCheckOwners )
-                .map( value -> String.format( "--check-consistency=%b", this.consistencyCheckOwners ) )
+                .map( value -> format( "--check-consistency=%b", this.consistencyCheckOwners ) )
                 .orElse( "" );
     }
 
     private String argCcLabel()
     {
         return Optional.ofNullable( this.consistencyCheckLabel )
-                .map( value -> String.format( "--cc-label-scan-store=%b", this.consistencyCheckLabel ) )
+                .map( value -> format( "--cc-label-scan-store=%b", this.consistencyCheckLabel ) )
                 .orElse( "" );
     }
 
     private String argCcIndexes()
     {
         return Optional.ofNullable( this.consistencyCheckIndexes )
-                .map( value -> String.format( "--cc-indexes=%b", this.consistencyCheckIndexes ) )
+                .map( value -> format( "--cc-indexes=%b", this.consistencyCheckIndexes ) )
                 .orElse( "" );
     }
 
     private String argCcGraph()
     {
         return Optional.ofNullable( this.consistencyCheckGraph )
-                .map( value -> String.format( "--cc-graph=%b", this.consistencyCheckGraph ) )
+                .map( value -> format( "--cc-graph=%b", this.consistencyCheckGraph ) )
                 .orElse( "" );
     }
 
@@ -300,10 +302,10 @@ public class OnlineBackupCommandBuilder
         {
             return "";
         }
-        File configFile = neo4jHomeFromTarget( backupTarget ).resolve( "../additional_neo4j.conf" ).toFile();
+        File configFile = backupTarget.toPath().resolve( "../additional_neo4j.conf" ).toFile();
         writeConfigToFile( additionalConfig, configFile );
 
-        return String.format( "--additional-config=%s", configFile );
+        return format( "--additional-config=%s", configFile );
     }
 
     private void writeConfigToFile( Config config, File file ) throws IOException
@@ -312,7 +314,7 @@ public class OnlineBackupCommandBuilder
         {
             for ( Map.Entry<String,String> entry : config.getRaw().entrySet() )
             {
-                fileWriter.write( String.format( "%s=%s\n", entry.getKey(), entry.getValue() ) );
+                fileWriter.write( format( "%s=%s\n", entry.getKey(), entry.getValue() ) );
             }
         }
     }
@@ -320,14 +322,14 @@ public class OnlineBackupCommandBuilder
     private String argReportDir()
     {
         return Optional.ofNullable( this.consistencyReportLocation )
-                .map( value -> String.format( "--cc-report-dir=%s", value ))
+                .map( value -> format( "--cc-report-dir=%s", value ))
                 .orElse( "" );
     }
 
     private String argCheckConsistency()
     {
         return Optional.ofNullable( this.checkConsistency )
-                .map( value -> String.format( "--check-consistency=%s", value ) )
+                .map( value -> format( "--check-consistency=%s", value ) )
                 .orElse( "" );
     }
 
@@ -343,18 +345,8 @@ public class OnlineBackupCommandBuilder
                 .toArray( String[]::new );
     }
 
-    private static <E> Predicate<E> not( Predicate<E> predicate )
+    private static Path configDirFromTarget( Path neo4jHome )
     {
-        return item -> !predicate.test( item );
-    }
-
-    private static Path neo4jHomeFromTarget( File target )
-    {
-        return target.toPath();
-    }
-
-    private static Path configDirFromTarget( File target )
-    {
-        return neo4jHomeFromTarget( target ).resolve( "config" );
+        return neo4jHome.resolve( "conf" );
     }
 }

@@ -63,8 +63,8 @@ public class NativeLuceneFusionIndexProviderFactory20 extends
         FileSystemAbstraction fs = dependencies.fileSystem();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( FusionIndexProvider.class );
         Monitors monitors = dependencies.monitors();
-        monitors.addMonitorListener( new LoggingMonitor( log ), KEY );
-        IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, KEY );
+        monitors.addMonitorListener( new LoggingMonitor( log ), DESCRIPTOR.toString() );
+        IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, DESCRIPTOR.toString() );
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
@@ -77,6 +77,7 @@ public class NativeLuceneFusionIndexProviderFactory20 extends
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );
+        boolean archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
 
         StringIndexProvider string =
                 IndexProviderFactoryUtil.stringProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
@@ -90,12 +91,12 @@ public class NativeLuceneFusionIndexProviderFactory20 extends
 
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         int priority = PRIORITY;
-        if ( GraphDatabaseSettings.SchemaIndex.NATIVE20.param().equals( defaultSchemaProvider ) )
+        if ( GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName().equals( defaultSchemaProvider ) )
         {
             priority = 100;
         }
         return new FusionIndexProvider( string, number, spatial, temporal, lucene, new FusionSelector20(),
-                DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
+                DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs, archiveFailedIndex );
     }
 
     public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )

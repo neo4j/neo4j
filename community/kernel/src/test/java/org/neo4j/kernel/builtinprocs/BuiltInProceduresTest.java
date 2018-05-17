@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.Read;
@@ -46,7 +47,6 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
@@ -56,12 +56,12 @@ import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
@@ -81,24 +81,25 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class BuiltInProceduresTest
 {
-    private final List<IndexDescriptor> indexes = new LinkedList<>();
-    private final List<IndexDescriptor> uniqueIndexes = new LinkedList<>();
+    private final List<IndexReference> indexes = new LinkedList<>();
+    private final List<IndexReference> uniqueIndexes = new LinkedList<>();
     private final List<ConstraintDescriptor> constraints = new LinkedList<>();
     private final Map<Integer,String> labels = new HashMap<>();
     private final Map<Integer,String> propKeys = new HashMap<>();
     private final Map<Integer,String> relTypes = new HashMap<>();
 
     private final Read read = mock( Read.class );
-    private final ReadOperations readOperations = mock( ReadOperations.class );
     private final TokenRead tokens = mock( TokenRead.class );
     private final SchemaRead schemaRead = mock( SchemaRead.class );
     private final Statement statement = mock( Statement.class );
     private final KernelTransaction tx = mock( KernelTransaction.class );
     private final DependencyResolver resolver = mock( DependencyResolver.class );
     private final GraphDatabaseAPI graphDatabaseAPI = mock( GraphDatabaseAPI.class );
+    private final Log log = mock( Log.class );
 
     private final Procedures procs = new Procedures();
     private final ResourceTracker resourceTracker = new StubResourceManager();
@@ -414,7 +415,8 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( labelId, propId );
+        IndexReference index =
+                IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         indexes.add( index );
     }
 
@@ -423,7 +425,8 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propId );
+        IndexReference index =
+                IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propId ), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }
@@ -482,6 +485,7 @@ public class BuiltInProceduresTest
         procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( GRAPHDATABASEAPI ), false );
         procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
 
+        procs.registerComponent( Log.class, ctx -> ctx.get( LOG), false );
         procs.registerType( Node.class, NTNode );
         procs.registerType( Relationship.class, NTRelationship );
         procs.registerType( Path.class, NTPath );
@@ -494,15 +498,33 @@ public class BuiltInProceduresTest
         when( tx.tokenRead() ).thenReturn( tokens );
         when( tx.dataRead() ).thenReturn( read );
         when( tx.schemaRead() ).thenReturn( schemaRead );
-        when( statement.readOperations() ).thenReturn( readOperations );
 
         when( tokens.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
         when( tokens.labelsGetAllTokens() ).thenAnswer( asTokens( labels ) );
         when( tokens.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
-        when( readOperations.indexesGetAll() ).thenAnswer(
+        when( schemaRead.indexesGetAll() ).thenAnswer(
                 i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
+        when( schemaRead.index( anyInt(), anyInt() )).thenAnswer(
+                (Answer<IndexReference>) invocationOnMock -> {
+                    int label = invocationOnMock.getArgument( 0 );
+                    int prop = invocationOnMock.getArgument( 1 );
+                    for ( IndexReference index : indexes )
+                    {
+                        if ( index.label() == label && prop == index.properties()[0] )
+                        {
+                            return index;
+                        }
+                    }
+                    for ( IndexReference index : uniqueIndexes )
+                    {
+                        if ( index.label() == label && prop == index.properties()[0] )
+                        {
+                            return index;
+                        }
+                    }
+                    throw new AssertionError(  );
+                } );
         when( schemaRead.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
-        when( readOperations.proceduresGetAll() ).thenReturn( procs.getAllProcedures() );
 
         when( tokens.propertyKeyName( anyInt() ) )
                 .thenAnswer( invocation -> propKeys.get( invocation.getArgument( 0 ) ) );
@@ -518,9 +540,7 @@ public class BuiltInProceduresTest
         when( schemaRead.constraintsGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
         when( read.countsForNode( anyInt() ) ).thenReturn( 1L );
         when( read.countsForRelationship( anyInt(), anyInt(), anyInt() ) ).thenReturn( 1L );
-        when( readOperations.indexGetState( any( SchemaIndexDescriptor.class ) ) ).thenReturn( InternalIndexState.ONLINE );
-        when( readOperations.indexGetProviderDescriptor( any( SchemaIndexDescriptor.class ) ) )
-                .thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( InternalIndexState.ONLINE );
     }
 
     private Answer<Iterator<NamedToken>> asTokens( Map<Integer,String> tokens )
@@ -537,6 +557,7 @@ public class BuiltInProceduresTest
         ctx.put( DEPENDENCY_RESOLVER, resolver );
         ctx.put( GRAPHDATABASEAPI, graphDatabaseAPI );
         ctx.put( SECURITY_CONTEXT, SecurityContext.AUTH_DISABLED );
+        ctx.put( LOG, log );
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
         return Iterators.asList( procs.callProcedure(
@@ -548,4 +569,7 @@ public class BuiltInProceduresTest
 
     private static final Key<GraphDatabaseAPI> GRAPHDATABASEAPI =
             Key.key( "GraphDatabaseAPI", GraphDatabaseAPI.class );
+
+    private static final Key<Log> LOG =
+            Key.key( "Log", Log.class );
 }

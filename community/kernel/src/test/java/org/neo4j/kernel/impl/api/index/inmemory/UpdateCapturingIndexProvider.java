@@ -27,21 +27,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
-public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescriptor>
+public class UpdateCapturingIndexProvider extends IndexProvider
 {
-    private final IndexProvider<SchemaIndexDescriptor> actual;
+    private final IndexProvider actual;
     private final Map<Long,UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();
     private final Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates;
 
@@ -53,47 +51,35 @@ public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescr
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        return actual.indexDescriptorFor( schema, type , name, "" );
+        return actual.getPopulator( descriptor, samplingConfig );
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
-    {
-        return actual.getPopulator( indexId, descriptor, samplingConfig );
-    }
-
-    @Override
-    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
             throws IOException
     {
-        IndexAccessor actualAccessor = actual.getOnlineAccessor( indexId, descriptor, samplingConfig );
-        return indexes.computeIfAbsent( indexId, id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
+        IndexAccessor actualAccessor = actual.getOnlineAccessor( descriptor, samplingConfig );
+        return indexes.computeIfAbsent( descriptor.getId(), id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
     }
 
     @Override
-    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
     {
-        return actual.getPopulationFailure( indexId, descriptor );
+        return actual.getPopulationFailure( descriptor );
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
-        return actual.getInitialState( indexId, descriptor );
+        return actual.getInitialState( descriptor );
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    public IndexCapability getCapability()
     {
-        return actual.getCapability( indexDescriptor );
-    }
-
-    @Override
-    public boolean compatible( IndexDescriptor indexDescriptor )
-    {
-        return indexDescriptor instanceof SchemaIndexDescriptor;
+        return actual.getCapability();
     }
 
     @Override

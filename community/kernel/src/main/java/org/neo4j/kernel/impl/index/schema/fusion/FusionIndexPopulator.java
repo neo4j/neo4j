@@ -38,22 +38,25 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
 {
     private final long indexId;
     private final DropAction dropAction;
+    private final boolean archiveFailedIndex;
 
-    FusionIndexPopulator( IndexPopulator[] populators, Selector selector, long indexId, DropAction dropAction )
+    FusionIndexPopulator( IndexPopulator[] populators, Selector selector, long indexId, DropAction dropAction, boolean archiveFailedIndex )
     {
         super( populators, selector );
         this.indexId = indexId;
         this.dropAction = dropAction;
+        this.archiveFailedIndex = archiveFailedIndex;
     }
 
     @Override
     public void create() throws IOException
     {
+        dropAction.drop( indexId, archiveFailedIndex );
         forAll( IndexPopulator::create, instances );
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         forAll( IndexPopulator::drop, instances );
         dropAction.drop( indexId );

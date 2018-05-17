@@ -50,8 +50,8 @@ public class ConcurrentTransactionAccessTest
                 new TransactionHandleRegistry( mock( Clock.class), 0, NullLogProvider.getInstance() );
         TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
-        when(kernel.newTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), anyLong() ) )
-                .thenReturn( mock(TransitionalTxManagementKernelTransaction.class) );
+        TransitionalTxManagementKernelTransaction kernelTransaction = mock( TransitionalTxManagementKernelTransaction.class );
+        when(kernel.newTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), anyLong() ) ).thenReturn( kernelTransaction );
         TransactionFacade actions = new TransactionFacade( kernel, null, queryService, registry, NullLogProvider.getInstance() );
 
         final TransactionHandle transactionHandle =

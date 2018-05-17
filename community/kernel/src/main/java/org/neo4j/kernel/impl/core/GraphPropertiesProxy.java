@@ -38,7 +38,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -69,12 +68,12 @@ public class GraphPropertiesProxy implements GraphProperties
 
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return false;
         }
 
-        PropertyCursor properties = transaction.propertyCursor();
+        PropertyCursor properties = transaction.ambientPropertyCursor();
         transaction.dataRead().graphProperties( properties );
         while ( properties.next() )
         {
@@ -95,12 +94,12 @@ public class GraphPropertiesProxy implements GraphProperties
         }
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
 
-        PropertyCursor properties = transaction.propertyCursor();
+        PropertyCursor properties = transaction.ambientPropertyCursor();
         transaction.dataRead().graphProperties( properties );
 
         while ( properties.next() )
@@ -126,9 +125,9 @@ public class GraphPropertiesProxy implements GraphProperties
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
         KernelTransaction transaction = safeAcquireTransaction();
-        PropertyCursor properties = transaction.propertyCursor();
+        PropertyCursor properties = transaction.ambientPropertyCursor();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return defaultValue;
         }
@@ -198,7 +197,7 @@ public class GraphPropertiesProxy implements GraphProperties
         List<String> keys = new ArrayList<>();
         try
         {
-            PropertyCursor properties = transaction.propertyCursor();
+            PropertyCursor properties = transaction.ambientPropertyCursor();
             TokenRead token = transaction.tokenRead();
             transaction.dataRead().graphProperties( properties );
             while ( properties.next() )
@@ -242,7 +241,7 @@ public class GraphPropertiesProxy implements GraphProperties
             propertyIds[i] = token.propertyKey( key );
         }
 
-        PropertyCursor propertyCursor = transaction.propertyCursor();
+        PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
         transaction.dataRead().graphProperties( propertyCursor );
         int propertiesToFind = itemsToReturn;
         while ( propertiesToFind > 0 && propertyCursor.next() )
@@ -271,7 +270,7 @@ public class GraphPropertiesProxy implements GraphProperties
 
         try
         {
-            PropertyCursor propertyCursor = transaction.propertyCursor();
+            PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
             TokenRead token = transaction.tokenRead();
             transaction.dataRead().graphProperties( propertyCursor );
             while ( propertyCursor.next() )

@@ -19,10 +19,45 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Optional;
+
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * A transaction with the graph database.
+ *
+ * Access to the graph is performed via sub-interfaces like {@link org.neo4j.internal.kernel.api.Read}.
+ * Changes made within a transaction are immediately visible to all operations within it, but are only
+ * visible to other transactions after the successful commit of the transaction.
+ *
+ * Typical usage:
+ * <pre>
+ * try ( Transaction transaction = session.beginTransaction() )
+ * {
+ *      ...
+ *      transaction.success();
+ * }
+ * catch ( SomeException e )
+ * {
+ *      ...
+ * }
+ * </pre>
+ *
+ * Typical usage of failure if failure isn't controlled with exceptions:
+ * <pre>
+ * try ( Transaction transaction = session.beginTransaction() )
+ * {
+ *      ...
+ *      if ( ... some condition )
+ *      {
+ *          transaction.failure();
+ *      }
+ *
+ *      transaction.success();
+ * }
+ * </pre>
  */
 public interface Transaction extends AutoCloseable
 {
@@ -127,4 +162,52 @@ public interface Transaction extends AutoCloseable
      * @return Returns procedure operations
      */
     Procedures procedures();
+
+    /**
+     * @return statistics about the execution
+     */
+    ExecutionStatistics executionStatistics();
+
+    /**
+     * Closes this transaction, committing its changes if {@link #success()} has been called and neither
+     * {@link #failure()} nor {@link #markForTermination(Status)} has been called.
+     * Otherwise its changes will be rolled back.
+     *
+     * @return id of the committed transaction or {@link #ROLLBACK} if transaction was rolled back or
+     * {@link #READ_ONLY} if transaction was read-only.
+     */
+    long closeTransaction() throws TransactionFailureException;
+
+    /**
+     * Closes this transaction, committing its changes if {@link #success()} has been called and neither
+     * {@link #failure()} nor {@link #markForTermination(Status)} has been called.
+     * Otherwise its changes will be rolled back.
+     */
+    @Override
+    default void close() throws TransactionFailureException
+    {
+        closeTransaction();
+    }
+
+    /**
+     * @return {@code true} if the transaction is still open, i.e. if {@link #close()} hasn't been called yet.
+     */
+    boolean isOpen();
+
+    /**
+     * @return {@link Status} if {@link #markForTermination(Status)} has been invoked, otherwise empty optional.
+     */
+    Optional<Status> getReasonIfTerminated();
+
+    /**
+     * @return true if transaction was terminated, otherwise false
+     */
+    boolean isTerminated();
+
+    /**
+     * Marks this transaction for termination, such that it cannot commit successfully and will try to be
+     * terminated by having other methods throw a specific termination exception, as to sooner reach the assumed
+     * point where {@link #close()} will be invoked.
+     */
+    void markForTermination( Status reason );
 }

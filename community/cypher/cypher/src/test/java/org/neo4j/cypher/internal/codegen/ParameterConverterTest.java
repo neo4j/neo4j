@@ -54,6 +54,7 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -143,7 +144,7 @@ public class ParameterConverterTest
         nodeValue.writeTo( converter );
 
         // Then
-        assertThat( converter.value(), equalTo( new NodeIdWrapperImpl( 42L ) ) );
+        assertThat( converter.value(), equalTo( VirtualValues.node( 42L ) ) );
     }
 
     @Test
@@ -157,7 +158,7 @@ public class ParameterConverterTest
         relValue.writeTo( converter );
 
         // Then
-        assertThat( converter.value(), equalTo( new RelationshipIdWrapperImpl( 1L ) ) );
+        assertThat( converter.value(), equalTo( VirtualValues.relationship( 1L ) ) );
     }
 
     @Test

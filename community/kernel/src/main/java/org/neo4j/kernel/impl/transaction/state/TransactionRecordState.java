@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Comparator;
 
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -619,10 +619,10 @@ public class TransactionRecordState implements RecordState
         parseLabelsField( nodeRecord ).remove( labelId, nodeStore );
     }
 
-    public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )
+    public void setConstraintIndexOwner( StoreIndexDescriptor storeIndex, long constraintId )
     {
-        IndexRule updatedIndexRule = indexRule.withOwningConstraint( constraintId );
-        changeSchemaRule( indexRule, updatedIndexRule );
+        StoreIndexDescriptor updatedStoreIndex = storeIndex.withOwningConstraint( constraintId );
+        changeSchemaRule( storeIndex, updatedStoreIndex );
     }
 
     public interface PropertyReceiver<P extends StorageProperty>

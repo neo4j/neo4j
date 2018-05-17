@@ -27,5 +27,5 @@ package org.neo4j.values.storable;
  */
 public interface CSVHeaderInformation
 {
-    void assign( String key, String value );
+    void assign( String key, Object value );
 }

@@ -27,7 +27,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -39,13 +38,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 public class FlippableIndexProxy implements IndexProxy
 {
@@ -71,7 +70,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public void start() throws IOException
+    public void start()
     {
         lock.readLock().lock();
         try
@@ -102,7 +101,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         lock.readLock().lock();
         try
@@ -214,40 +213,12 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public CapableIndexDescriptor getDescriptor()
     {
         lock.readLock().lock();
         try
         {
             return delegate.getDescriptor();
-        }
-        finally
-        {
-            lock.readLock().unlock();
-        }
-    }
-
-    @Override
-    public SchemaDescriptor schema()
-    {
-        lock.readLock().lock();
-        try
-        {
-            return delegate.schema();
-        }
-        finally
-        {
-            lock.readLock().unlock();
-        }
-    }
-
-    @Override
-    public IndexProvider.Descriptor getProviderDescriptor()
-    {
-        lock.readLock().lock();
-        try
-        {
-            return delegate.getProviderDescriptor();
         }
         finally
         {
@@ -262,20 +233,6 @@ public class FlippableIndexProxy implements IndexProxy
         try
         {
             return delegate.getState();
-        }
-        finally
-        {
-            lock.readLock().unlock();
-        }
-    }
-
-    @Override
-    public IndexCapability getIndexCapability()
-    {
-        lock.readLock().lock();
-        try
-        {
-            return delegate.getIndexCapability();
         }
         finally
         {
@@ -355,12 +312,12 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public long getIndexId()
+    public void validateBeforeCommit( Value[] tuple )
     {
         lock.readLock().lock();
         try
         {
-            return delegate.getIndexId();
+            delegate.validateBeforeCommit( tuple );
         }
         finally
         {

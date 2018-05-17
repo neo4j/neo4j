@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.set.primitive.IntSet;
+
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.LabelSet;
+
+import static org.neo4j.collection.PrimitiveIntCollections.asLongArray;
 
 public class Labels implements LabelSet
 {
@@ -56,16 +58,9 @@ public class Labels implements LabelSet
         return new Labels( tokens );
     }
 
-    static Labels from( PrimitiveIntSet set )
+    static Labels from( IntSet set )
     {
-        long[] labelArray = new long[set.size()];
-        int index = 0;
-        PrimitiveIntIterator iterator = set.iterator();
-        while ( iterator.hasNext() )
-        {
-            labelArray[index++] = iterator.next();
-        }
-        return new Labels( labelArray );
+        return new Labels( asLongArray( set ) );
     }
 
     @Override
@@ -88,6 +83,7 @@ public class Labels implements LabelSet
         //label sizes (≤100 labels)
         for ( long label : labels )
         {
+            assert (int) label == label : "value too big to be represented as and int";
             if ( label == labelToken )
             {
                 return true;

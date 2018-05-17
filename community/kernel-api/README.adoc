@@ -1,21 +1,38 @@
-These are Tobias's API proposals for how the Cypher Runtime should interact with the underlying storage system.
+= The Kernel API =
 
-* link:src/main/java/org/neo4j/impl/kernel/api/Read.java[Read Operations] is where the focus of this proposal lies.
-* link:src/main/java/org/neo4j/impl/kernel/api/Write.java[Write Operations] are mentioned, but only as an incomplete thought experiment on how they fit in.
-  In particular it is interesting to consider how and when writes become visible to reads (within the same transaction).
+The Kernel API governs all interactions with the Neo4j kernel, and is used primarily by the
+Cypher runtime, and the Core API.
+
+== Usage
+
+The entry point of this interface is the link:src/main/java/org/neo4j/impl/kernel/api/Kernel.java[Kernel]. Through
+here we can begin a link:src/main/java/org/neo4j/impl/kernel/api/Session.java[Session], which in turn allows us
+to begin link:src/main/java/org/neo4j/impl/kernel/api/Transaction.java[Transactions]. Once in a transaction, we
+can directly get access to all the primary capabilities of the Kernel:
+
+* link:src/main/java/org/neo4j/impl/kernel/api/Read.java[dataRead()] enables all data read operations.
+* link:src/main/java/org/neo4j/impl/kernel/api/Write.java[dataWrite()] enables all data write operations.
+* link:src/main/java/org/neo4j/impl/kernel/api/TokenRead.java[tokenRead()] & link:src/main/java/org/neo4j/impl/kernel/api/TokenWrite.java[tokenWrite()]
+  allow mapping between String and integral representations of property key, node label and relationship type.
+* and so on...
+
+== Reading using Cursors
+
+All read operations use special cursors, which allow for very low object allocation rates in the hot paths.
+
 * link:src/main/java/org/neo4j/impl/kernel/api/NodeCursor.java[NodeCursor], link:src/main/java/org/neo4j/impl/kernel/api/RelationshipScanCursor.java[RelationshipScanCursor] and link:src/main/java/org/neo4j/impl/kernel/api/RelationshipTraversalCursor.java[RelationshipTraversalCursor] are the main entry points for accessing nodes and relationships respectively.
   These types are used directly with the store for scan operations. +
   For accessing the relationships of a node, we first have to find the relationships of the types we are interested in via an link:src/main/java/org/neo4j/impl/kernel/api/RelationshipGroupCursor.java[RelationshipGroupCursor]. +
-  For index lookup operations we get the link:src/main/java/org/neo4j/impl/kernel/api/NodeCursor.java[NodeCursor] via:
-* link:src/main/java/org/neo4j/impl/kernel/api/NodeIndexCursor.java[NodeValueIndexCursor] and link:src/main/java/org/neo4j/impl/kernel/api/NodeIndexCursor.java[NodeLabelIndexCursor] (and their shared base link:src/main/java/org/neo4j/impl/kernel/api/NodeIndexCursor.java[NodeIndexCursor]).
+* link:src/main/java/org/neo4j/impl/kernel/api/NodeIndexCursor.java[NodeValueIndexCursor] and link:src/main/java/org/neo4j/impl/kernel/api/NodeIndexCursor.java[NodeLabelIndexCursor] (and their shared base link:src/main/java/org/neo4j/impl/kernel/api/NodeIndexCursor.java[NodeIndexCursor]) are used for index lookups.
   This differentiation allows access to data available within the index which makes it possible to defer and sometimes avoid accessing the node store.
-* link:src/main/java/org/neo4j/impl/kernel/api/PropertyCursor.java[PropertyCursor] is used for accessing properties for both nodes and relationships.
-* Property values (and other types of values used in the runtime) are represented by the link:src/main/java/org/neo4j/impl/kernel/api/Value.java[Value class], but for common predicates link:src/main/java/org/neo4j/impl/kernel/api/PropertyCursor.java[PropertyCursor] provides direct methods for performing these without de-serialization.
-* "Manual Indexes" are accessed through link:src/main/java/org/neo4j/impl/kernel/api/NodeManualIndexCursor.java[NodeManualIndexCursor] and link:src/main/java/org/neo4j/impl/kernel/api/RelationshipManualIndexCursor.java[RelationshipManualIndexCursor].
-  The shared base class link:src/main/java/org/neo4j/impl/kernel/api/ManualIndexCursor.java[ManualIndexCursor] defines access to the lucene information that leaks through from these search structures out via the "Core API".
-* Parallel scans are initialized through a (thread safe) link:src/main/java/org/neo4j/impl/kernel/api/Scan.java[Scan initializer].
+* link:src/main/java/org/neo4j/impl/kernel/api/PropertyCursor.java[PropertyCursor] is used for accessing properties for both nodes and relationships. Property values (and other types of values used in the runtime) are represented by the link:src/main/java/org/neo4j/impl/kernel/api/Value.java[Value] class, but for common predicates link:src/main/java/org/neo4j/impl/kernel/api/PropertyCursor.java[PropertyCursor] provides direct methods for performing these without de-serialization.
+* "Explicit Indexes" are accessed through link:src/main/java/org/neo4j/impl/kernel/api/NodeExplicitIndexCursor.java[NodeExplicitIndexCursor] and link:src/main/java/org/neo4j/impl/kernel/api/RelationshipExplicitIndexCursor.java[RelationshipExplicitIndexCursor].
+  The shared base class link:src/main/java/org/neo4j/impl/kernel/api/ExplicitIndexCursor.java[ExplicitIndexCursor] defines access to the lucene information that leaks through from these search structures out via the "Core API".
+* NOT IMPLEMENTED YET: Parallel scans are initialized through a (thread safe) link:src/main/java/org/neo4j/impl/kernel/api/Scan.java[Scan initializer].
   The usage of these is to initialize one cursor per thread.
   Each thread-local cursor will then proceed through ranges of underlying data elements automatically - no re-initialization is required.
+
+== Design notes:
 
 In general the design approach for the cursors have been to expose all information that the underlying representation contains directly through the cursor.
 The idea being that the cursors exposed to the runtime should be implemented as "views" or "projections" directly on top of the page data, providing the interpretation of the raw bytes stored.
@@ -23,7 +40,7 @@ The exposure of data does not go all the way though, but tries to strike a balan
 As a thought experiment, I have tried define the API in such a way that it should be possible to vary the implementation along these axis:
 
 * Relationships could be independent records as today, or de-normalized and grouped by type for each node devoid of independent id.
-* Properties could be stored in a separate property store, or stored in-lined in the node-store.
+* Properties could be stored in a separate property store, or stored in-lined in the node store.
 
 For the most part all access of different stores is made explicit by the use of a different cursor type.
 With one exception: link:src/main/java/org/neo4j/impl/kernel/api/LabelSet.java[labels of a node].

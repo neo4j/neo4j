@@ -28,23 +28,23 @@ import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.storecopy.DatabaseShutdownException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.core.consensus.schedule.Timer;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService.TimerName;
 import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.helper.Suspendable;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -86,7 +86,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     private final LocalDatabase localDatabase;
     private final Log log;
-    private final Lifecycle startStopOnStoreCopy;
+    private final Suspendable enableDisableOnStoreCopy;
     private final StoreCopyProcess storeCopyProcess;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final CatchUpClient catchUpClient;
@@ -103,14 +103,15 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private CompletableFuture<Boolean> upToDateFuture; // we are up-to-date when we are successfully pulling
     private volatile long latestTxIdOfUpStream;
 
-    public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy, CatchUpClient catchUpClient,
-            UpstreamDatabaseStrategySelector selectionStrategy, TimerService timerService, long txPullIntervalMillis, BatchingTxApplier applier,
-            Monitors monitors, StoreCopyProcess storeCopyProcess, Supplier<DatabaseHealth> databaseHealthSupplier, TopologyService topologyService )
+    public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase, Suspendable enableDisableOnSoreCopy, CatchUpClient catchUpClient,
+                                  UpstreamDatabaseStrategySelector selectionStrategy, TimerService timerService, long txPullIntervalMillis,
+                                  BatchingTxApplier applier, Monitors monitors, StoreCopyProcess storeCopyProcess,
+                                  Supplier<DatabaseHealth> databaseHealthSupplier, TopologyService topologyService )
 
     {
         this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
-        this.startStopOnStoreCopy = startStopOnStoreCopy;
+        this.enableDisableOnStoreCopy = enableDisableOnSoreCopy;
         this.catchUpClient = catchUpClient;
         this.selectionStrategyPipeline = selectionStrategy;
         this.timerService = timerService;
@@ -303,27 +304,16 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     private void copyStore()
     {
-        MemberId upstream;
-        try
-        {
-            upstream = selectionStrategyPipeline.bestUpstreamDatabase();
-        }
-        catch ( UpstreamDatabaseSelectionException e )
-        {
-            log.warn( "Could not find upstream database from which to copy store", e );
-            return;
-        }
-
         StoreId localStoreId = localDatabase.storeId();
-        downloadDatabase( upstream, localStoreId );
+        downloadDatabase( localStoreId );
     }
 
-    private void downloadDatabase( MemberId upstream, StoreId localStoreId )
+    private void downloadDatabase( StoreId localStoreId )
     {
         try
         {
             localDatabase.stopForStoreCopy();
-            startStopOnStoreCopy.stop();
+            enableDisableOnStoreCopy.disable();
         }
         catch ( Throwable throwable )
         {
@@ -332,19 +322,25 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
         try
         {
-            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new TopologyLookupException( upstream ) );
-            storeCopyProcess.replaceWithStoreFrom( CatchupAddressProvider.fromSingleAddress( fromAddress ), localStoreId );
+            CatchupAddressProvider.UpstreamStrategyBoundAddressProvider upstreamStrategyBoundAddressProvider =
+                    new CatchupAddressProvider.UpstreamStrategyBoundAddressProvider( topologyService, selectionStrategyPipeline );
+            storeCopyProcess.replaceWithStoreFrom( upstreamStrategyBoundAddressProvider, localStoreId );
         }
-        catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException | TopologyLookupException e )
+        catch ( IOException | StoreCopyFailedException e )
         {
-            log.warn( format( "Error copying store from: %s. Will retry shortly.", upstream ) );
+            log.warn( "Error copying store. Will retry shortly.", e );
+            return;
+        }
+        catch ( DatabaseShutdownException e )
+        {
+            log.warn( "Store copy aborted due to shutdown.", e );
             return;
         }
 
         try
         {
             localDatabase.start();
-            startStopOnStoreCopy.start();
+            enableDisableOnStoreCopy.enable();
         }
         catch ( Throwable throwable )
         {

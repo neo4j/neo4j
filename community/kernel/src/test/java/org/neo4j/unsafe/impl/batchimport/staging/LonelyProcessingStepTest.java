@@ -19,52 +19,52 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class LonelyProcessingStepTest
 {
     @ClassRule
     public static SuppressOutput mute = SuppressOutput.suppressAll();
 
-    @Test
-    public void issuePanicBeforeCompletionOnError()
+    @Test( timeout = 10_000 )
+    public void issuePanicBeforeCompletionOnError() throws InterruptedException
     {
         List<Step<?>> stepsPipeline = new ArrayList<>();
-        BinaryLatch endOfUpstreamLatch = new BinaryLatch();
-        FaultyLonelyProcessingStepTest faultyStep =
-                new FaultyLonelyProcessingStepTest( stepsPipeline, endOfUpstreamLatch );
+        FaultyLonelyProcessingStepTest faultyStep = new FaultyLonelyProcessingStepTest( stepsPipeline );
         stepsPipeline.add( faultyStep );
 
         faultyStep.receive( 1, null );
 
-        endOfUpstreamLatch.await();
+        while ( !faultyStep.isCompleted() )
+        {
+            Thread.sleep( 10 );
+        }
 
-        Assert.assertTrue( "On upstream end step should be already on panic in case of exception",
+        assertTrue( "On upstream end step should be already on panic in case of exception",
                 faultyStep.isPanicOnEndUpstream() );
-        Assert.assertTrue( faultyStep.isPanic() );
-        Assert.assertFalse( faultyStep.stillWorking() );
-        Assert.assertTrue( faultyStep.isCompleted() );
+        assertTrue( faultyStep.isPanic() );
+        assertFalse( faultyStep.stillWorking() );
+        assertTrue( faultyStep.isCompleted() );
     }
 
     private class FaultyLonelyProcessingStepTest extends LonelyProcessingStep
     {
-        private final BinaryLatch endOfUpstreamLatch;
         private volatile boolean panicOnEndUpstream;
 
-        FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine, BinaryLatch endOfUpstreamLatch )
+        FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine )
         {
             super( new StageExecution( "Faulty", null, Configuration.DEFAULT, pipeLine, 0 ),
                     "Faulty", Configuration.DEFAULT );
-            this.endOfUpstreamLatch = endOfUpstreamLatch;
         }
 
         @Override
@@ -78,10 +78,9 @@ public class LonelyProcessingStepTest
         {
             panicOnEndUpstream = isPanic();
             super.endOfUpstream();
-            endOfUpstreamLatch.release();
         }
 
-        public boolean isPanicOnEndUpstream()
+        private boolean isPanicOnEndUpstream()
         {
             return panicOnEndUpstream;
         }

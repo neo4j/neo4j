@@ -36,11 +36,11 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -54,6 +54,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public abstract class NativeIndexProviderTest
 {
@@ -85,7 +87,7 @@ public abstract class NativeIndexProviderTest
         try
         {
             // when
-            provider.getPopulator( indexId, descriptor(), samplingConfig() );
+            provider.getPopulator( descriptor(), samplingConfig() );
             fail( "Should have failed" );
         }
         catch ( UnsupportedOperationException e )
@@ -104,8 +106,8 @@ public abstract class NativeIndexProviderTest
         provider = newProvider();
 
         // when
-        SchemaIndexDescriptor descriptor = descriptorUnique();
-        try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() );
+        StoreIndexDescriptor descriptor = descriptorUnique();
+        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig() );
               IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             Value value = someValue();
@@ -124,7 +126,7 @@ public abstract class NativeIndexProviderTest
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
+        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
         populator.create();
         populator.close( true );
 
@@ -134,7 +136,7 @@ public abstract class NativeIndexProviderTest
         // then
         try
         {
-            provider.getPopulationFailure( indexId, descriptor() );
+            provider.getPopulationFailure( descriptor() );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -151,12 +153,12 @@ public abstract class NativeIndexProviderTest
         provider = newProvider();
 
         int nonFailedIndexId = NativeIndexProviderTest.indexId;
-        IndexPopulator nonFailedPopulator = provider.getPopulator( nonFailedIndexId, descriptor(), samplingConfig() );
+        IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor( nonFailedIndexId ), samplingConfig() );
         nonFailedPopulator.create();
         nonFailedPopulator.close( true );
 
         int failedIndexId = 2;
-        IndexPopulator failedPopulator = provider.getPopulator( failedIndexId, descriptor(), samplingConfig() );
+        IndexPopulator failedPopulator = provider.getPopulator( descriptor( failedIndexId ), samplingConfig() );
         failedPopulator.create();
 
         // when
@@ -166,7 +168,7 @@ public abstract class NativeIndexProviderTest
         // then
         try
         {
-            provider.getPopulationFailure( nonFailedIndexId, descriptor() );
+            provider.getPopulationFailure( descriptor( nonFailedIndexId ) );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -181,7 +183,7 @@ public abstract class NativeIndexProviderTest
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
+        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
         populator.create();
 
         // when
@@ -190,7 +192,7 @@ public abstract class NativeIndexProviderTest
         populator.close( false );
 
         // then
-        String populationFailure = provider.getPopulationFailure( indexId, descriptor() );
+        String populationFailure = provider.getPopulationFailure( descriptor() );
         assertThat( populationFailure, is( failureMessage ) );
     }
 
@@ -202,11 +204,11 @@ public abstract class NativeIndexProviderTest
         int first = 1;
         int second = 2;
         int third = 3;
-        IndexPopulator firstPopulator = provider.getPopulator( first, descriptor(), samplingConfig() );
+        IndexPopulator firstPopulator = provider.getPopulator( descriptor( first ), samplingConfig() );
         firstPopulator.create();
-        IndexPopulator secondPopulator = provider.getPopulator( second, descriptor(), samplingConfig() );
+        IndexPopulator secondPopulator = provider.getPopulator( descriptor( second ), samplingConfig() );
         secondPopulator.create();
-        IndexPopulator thirdPopulator = provider.getPopulator( third, descriptor(), samplingConfig() );
+        IndexPopulator thirdPopulator = provider.getPopulator( descriptor( third ), samplingConfig() );
         thirdPopulator.create();
 
         // when
@@ -219,11 +221,11 @@ public abstract class NativeIndexProviderTest
         thirdPopulator.close( false );
 
         // then
-        assertThat( provider.getPopulationFailure( first, descriptor() ), is( firstFailure ) );
-        assertThat( provider.getPopulationFailure( third, descriptor() ), is( thirdFailure ) );
+        assertThat( provider.getPopulationFailure( descriptor( first ) ), is( firstFailure ) );
+        assertThat( provider.getPopulationFailure( descriptor( third ) ), is( thirdFailure ) );
         try
         {
-            provider.getPopulationFailure( second, descriptor() );
+            provider.getPopulationFailure( descriptor( second ) );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -237,7 +239,7 @@ public abstract class NativeIndexProviderTest
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
+        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
         populator.create();
 
         // when
@@ -247,7 +249,7 @@ public abstract class NativeIndexProviderTest
 
         // then
         provider = newProvider();
-        String populationFailure = provider.getPopulationFailure( indexId, descriptor() );
+        String populationFailure = provider.getPopulationFailure( descriptor() );
         assertThat( populationFailure, is( failureMessage ) );
     }
 
@@ -255,17 +257,25 @@ public abstract class NativeIndexProviderTest
     // pattern: open populator, markAsFailed, close populator, getInitialState, getPopulationFailure
 
     @Test
-    public void shouldReportInitialStateAsPopulatingIfIndexDoesntExist()
+    public void shouldReportCorrectInitialStateIfIndexDoesntExist()
     {
         // given
         provider = newProvider();
 
         // when
-        InternalIndexState state = provider.getInitialState( indexId, descriptor() );
+        InternalIndexState state = provider.getInitialState( descriptor() );
 
         // then
-        assertEquals( InternalIndexState.POPULATING, state );
-        logging.assertContainsLogCallContaining( "Failed to open index" );
+        InternalIndexState expected = expectedStateOnNonExistingSubIndex();
+        assertEquals( expected, state );
+        if ( InternalIndexState.POPULATING == expected )
+        {
+            logging.assertContainsLogCallContaining( "Failed to open index" );
+        }
+        else
+        {
+            logging.assertNoLogCallContaining( "Failed to open index" );
+        }
     }
 
     @Test
@@ -273,11 +283,11 @@ public abstract class NativeIndexProviderTest
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
+        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
         populator.create();
 
         // when
-        InternalIndexState state = provider.getInitialState( indexId, descriptor() );
+        InternalIndexState state = provider.getInitialState( descriptor() );
 
         // then
         assertEquals( InternalIndexState.POPULATING, state );
@@ -289,13 +299,13 @@ public abstract class NativeIndexProviderTest
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
+        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
         populator.create();
         populator.markAsFailed( "Just some failure" );
         populator.close( false );
 
         // when
-        InternalIndexState state = provider.getInitialState( indexId, descriptor() );
+        InternalIndexState state = provider.getInitialState( descriptor() );
 
         // then
         assertEquals( InternalIndexState.FAILED, state );
@@ -306,18 +316,20 @@ public abstract class NativeIndexProviderTest
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
+        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
         populator.create();
         populator.close( true );
 
         // when
-        InternalIndexState state = provider.getInitialState( indexId, descriptor() );
+        InternalIndexState state = provider.getInitialState( descriptor() );
 
         // then
         assertEquals( InternalIndexState.ONLINE, state );
     }
 
     /* storeMigrationParticipant */
+
+    protected abstract InternalIndexState expectedStateOnNonExistingSubIndex();
 
     protected abstract Value someValue();
 
@@ -342,14 +354,19 @@ public abstract class NativeIndexProviderTest
         return new IndexSamplingConfig( Config.defaults() );
     }
 
-    private SchemaIndexDescriptor descriptor()
+    private StoreIndexDescriptor descriptor()
     {
-        return SchemaIndexDescriptorFactory.forLabel( labelId, propId );
+        return IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
     }
 
-    private SchemaIndexDescriptor descriptorUnique()
+    private StoreIndexDescriptor descriptor( long indexId )
     {
-        return SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propId );
+        return IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
+    }
+
+    private StoreIndexDescriptor descriptorUnique()
+    {
+        return IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
     }
 
     private PageCache pageCache()

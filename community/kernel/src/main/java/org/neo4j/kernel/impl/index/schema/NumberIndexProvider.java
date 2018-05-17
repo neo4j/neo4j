@@ -32,12 +32,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
@@ -45,18 +43,18 @@ import org.neo4j.values.storable.ValueGroup;
 public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,NativeSchemaValue>
 {
     public static final String KEY = "native";
-    public static final IndexProvider.Descriptor NATIVE_PROVIDER_DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
+    public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
     static final IndexCapability CAPABILITY = new NumberIndexCapability();
 
     public NumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
-            IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean readOnly )
+                                IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                                boolean readOnly )
     {
         super( NATIVE_PROVIDER_DESCRIPTOR, 0, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
     @Override
-    Layout<NumberSchemaKey,NativeSchemaValue> layout( SchemaIndexDescriptor descriptor )
+    Layout<NumberSchemaKey,NativeSchemaValue> layout( StoreIndexDescriptor descriptor )
     {
         // split like this due to legacy reasons, there are old stores out there with these different identifiers
         switch ( descriptor.type() )
@@ -71,24 +69,22 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout,
-                                                SchemaIndexDescriptor descriptor, long indexId,
-                                                IndexSamplingConfig samplingConfig )
+    protected IndexPopulator newIndexPopulator( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig )
     {
-        return new NumberSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, indexId, samplingConfig );
+        return new NumberSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout,
-                                              SchemaIndexDescriptor descriptor, long indexId,
-                                              IndexSamplingConfig samplingConfig ) throws IOException
+    protected IndexAccessor newIndexAccessor( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new NumberSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
-                indexId, samplingConfig );
+                samplingConfig );
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability()
     {
         return CAPABILITY;
     }
@@ -102,41 +98,33 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
      */
     private static class NumberIndexCapability implements IndexCapability
     {
-        private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
-        private static final IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
-
         @Override
-        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
-            if ( support( valueGroups ) )
+            if ( support( valueCategories ) )
             {
-                return SUPPORTED_ORDER;
+                return ORDER_ASC;
             }
-            return EMPTY_ORDER;
+            return ORDER_NONE;
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
-            if ( support( valueGroups ) )
+            if ( support( valueCategories ) )
             {
                 return IndexValueCapability.YES;
             }
-            if ( singleWildcard( valueGroups ) )
+            if ( singleWildcard( valueCategories ) )
             {
                 return IndexValueCapability.PARTIAL;
             }
             return IndexValueCapability.NO;
         }
 
-        private boolean singleWildcard( ValueGroup[] valueGroups )
+        private boolean support( ValueCategory[] valueCategories )
         {
-            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN;
-        }
-
-        private boolean support( ValueGroup[] valueGroups )
-        {
-            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.NUMBER;
+            return valueCategories.length == 1 && valueCategories[0] == ValueCategory.NUMBER;
         }
     }
 }

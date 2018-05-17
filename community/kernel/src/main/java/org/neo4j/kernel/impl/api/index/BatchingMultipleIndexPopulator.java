@@ -107,12 +107,12 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     @Override
-    protected void populateFromQueue( long currentlyIndexedNodeId )
+    protected void populateFromUpdateQueue( long currentlyIndexedNodeId )
     {
         log.debug( "Populating from queue." + EOL + this );
         flushAll();
         awaitCompletion();
-        super.populateFromQueue( currentlyIndexedNodeId );
+        super.populateFromUpdateQueue( currentlyIndexedNodeId );
         log.debug( "Drained queue and all batched updates." + EOL + this );
     }
 
@@ -125,7 +125,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
                 .collect( joining( ", ", "[", "]" ) );
 
         return "BatchingMultipleIndexPopulator{activeTasks=" + activeTasks + ", executor=" + executor + ", " +
-               "batchedUpdates = " + updatesString + ", queuedUpdates = " + queue.size() + "}";
+               "batchedUpdates = " + updatesString + ", queuedUpdates = " + updatesQueue.size() + "}";
     }
 
     /**

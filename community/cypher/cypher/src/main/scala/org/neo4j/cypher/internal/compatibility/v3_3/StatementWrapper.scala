@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_4
 import org.neo4j.cypher.internal.frontend.v3_3.{ast => astV3_3}
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, ast => astV3_4}
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_5.{SemanticCheck, ast => astv3_5}
+import org.neo4j.cypher.internal.util.v3_5.InputPosition
 
-case class StatementWrapper(statement: astV3_3.Statement) extends astV3_4.Statement {
+case class StatementWrapper(statement: astV3_3.Statement) extends astv3_5.Statement {
   override def semanticCheck: SemanticCheck = ???
 
   override lazy val returnColumns: List[String] = statement.returnColumns

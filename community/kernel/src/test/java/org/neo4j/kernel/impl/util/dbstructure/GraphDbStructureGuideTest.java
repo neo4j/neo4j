@@ -30,12 +30,14 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -44,8 +46,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
+import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 
 public class GraphDbStructureGuideTest
 {
@@ -60,13 +62,12 @@ public class GraphDbStructureGuideTest
         int personLabelId;
         int partyLabelId;
         int animalLabelId;
-        try ( Statement statement = statement() )
-        {
-            ReadOperations readOperations = statement.readOperations();
-            personLabelId = readOperations.labelGetForName( "Person" );
-            partyLabelId = readOperations.labelGetForName( "Party" );
-            animalLabelId = readOperations.labelGetForName( "Animal" );
-        }
+
+        KernelTransaction ktx = ktx();
+        TokenRead tokenRead = ktx.tokenRead();
+        personLabelId = tokenRead.nodeLabel( "Person" );
+        partyLabelId = tokenRead.nodeLabel( "Party" );
+        animalLabelId = tokenRead.nodeLabel( "Animal" );
 
         // WHEN
         accept( visitor );
@@ -108,13 +109,12 @@ public class GraphDbStructureGuideTest
         int knowsId;
         int lovesId;
         int fawnsAtId;
-        try ( Statement statement = statement() )
-        {
-            ReadOperations readOperations = statement.readOperations();
-            knowsId = readOperations.relationshipTypeGetForName( "KNOWS" );
-            lovesId = readOperations.relationshipTypeGetForName( "LOVES" );
-            fawnsAtId = readOperations.relationshipTypeGetForName( "FAWNS_AT" );
-        }
+        KernelTransaction ktx = ktx();
+
+        TokenRead tokenRead = ktx.tokenRead();
+        knowsId = tokenRead.relationshipType( "KNOWS" );
+        lovesId = tokenRead.relationshipType( "LOVES" );
+        fawnsAtId = tokenRead.relationshipType( "FAWNS_AT" );
 
         // WHEN
         accept( visitor );
@@ -134,13 +134,13 @@ public class GraphDbStructureGuideTest
 
         commitAndReOpen();
 
-        SchemaIndexDescriptor descriptor = createSchemaIndex( labelId, pkId );
+        IndexReference reference = createSchemaIndex( labelId, pkId );
 
         // WHEN
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d, 0L );
+        verify( visitor ).visitIndex( (IndexDescriptor) reference, ":Person(name)", 1.0d, 0L );
     }
 
     @Test
@@ -152,15 +152,15 @@ public class GraphDbStructureGuideTest
 
         commitAndReOpen();
 
-        UniquenessConstraintDescriptor constraint = createUniqueConstraint( labelId, pkId );
-        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.uniqueForLabel( labelId, pkId );
+        ConstraintDescriptor constraint = createUniqueConstraint( labelId, pkId );
+        IndexDescriptor descriptor = TestIndexDescriptorFactory.uniqueForLabel( labelId, pkId );
 
         // WHEN
         accept( visitor );
 
         // THEN
         verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d, 0L );
-        verify( visitor ).visitUniqueConstraint( constraint, "CONSTRAINT ON ( person:Person ) ASSERT person.name IS " +
+        verify( visitor ).visitUniqueConstraint( (UniquenessConstraintDescriptor) constraint, "CONSTRAINT ON ( person:Person ) ASSERT person.name IS " +
                 "UNIQUE" );
     }
 
@@ -230,27 +230,25 @@ public class GraphDbStructureGuideTest
 
     private void createRel( long startId, int relTypeId, long endId ) throws Exception
     {
-        try ( Statement statement = statement() )
-        {
-            statement.dataWriteOperations().relationshipCreate( relTypeId, startId, endId );
-        }
+        KernelTransaction ktx = ktx();
+
+        ktx.dataWrite().relationshipCreate( startId, relTypeId, endId );
+}
+
+    private IndexReference createSchemaIndex( int labelId, int pkId ) throws Exception
+    {
+        KernelTransaction ktx = ktx();
+
+        return ktx.schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( labelId, pkId ) );
+
     }
 
-    private SchemaIndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
+    private ConstraintDescriptor createUniqueConstraint( int labelId, int pkId ) throws Exception
     {
-        try ( Statement statement = statement() )
-        {
-            return statement.schemaWriteOperations().indexCreate( SchemaDescriptorFactory.forLabel( labelId, pkId ) );
-        }
-    }
+        KernelTransaction ktx = ktx();
 
-    private UniquenessConstraintDescriptor createUniqueConstraint( int labelId, int pkId ) throws Exception
-    {
-        try ( Statement statement = statement() )
-        {
-            return statement.schemaWriteOperations()
-                    .uniquePropertyConstraintCreate( SchemaDescriptorFactory.forLabel( labelId, pkId ) );
-        }
+        return ktx.schemaWrite()
+                .uniquePropertyConstraintCreate( SchemaDescriptorFactory.forLabel( labelId, pkId ) );
     }
 
     private int createLabeledNodes( String labelName, int amount ) throws Exception
@@ -265,36 +263,30 @@ public class GraphDbStructureGuideTest
 
     private long createLabeledNode( int labelId ) throws Exception
     {
-        try ( Statement statement = statement() )
-        {
-            long nodeId = statement.dataWriteOperations().nodeCreate();
-            statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
-            return nodeId;
-        }
+        KernelTransaction ktx = ktx();
+
+        long nodeId = ktx.dataWrite().nodeCreate();
+        ktx.dataWrite().nodeAddLabel( nodeId, labelId );
+        return nodeId;
     }
 
     private int createLabel( String name ) throws Exception
     {
-        try ( Statement statement = statement() )
-        {
-            return statement.tokenWriteOperations().labelGetOrCreateForName( name );
-        }
+        KernelTransaction ktx = ktx();
+        return ktx.tokenWrite().labelGetOrCreateForName( name );
     }
 
     private int createPropertyKey( String name ) throws Exception
     {
-        try ( Statement statement = statement() )
-        {
-            return statement.tokenWriteOperations().propertyKeyGetOrCreateForName( name );
-        }
+        KernelTransaction ktx = ktx();
+        return ktx.tokenWrite().propertyKeyGetOrCreateForName( name );
     }
 
     private int createRelTypeId( String name ) throws Exception
     {
-        try ( Statement statement = statement() )
-        {
-            return statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( name );
-        }
+        KernelTransaction ktx = ktx();
+
+        return ktx.tokenWrite().relationshipTypeGetOrCreateForName( name );
     }
 
     @Rule
@@ -319,15 +311,14 @@ public class GraphDbStructureGuideTest
     {
         if ( bridge.hasTransaction() )
         {
-            statement().close();
             tx.failure();
             tx.close();
         }
     }
 
-    private Statement statement()
+    KernelTransaction ktx()
     {
-        return bridge.get();
+        return bridge.getKernelTransactionBoundToThisThread( true );
     }
 
     public void commitAndReOpen()
@@ -357,7 +348,6 @@ public class GraphDbStructureGuideTest
     {
         try
         {
-            statement().close();
             tx.success();
         }
         finally

@@ -117,8 +117,8 @@ public class HighAvailabilitySlavesTest
                 new ClusterMember( INSTANCE_ID ).availableAs( SLAVE, HA_URI, StoreId.DEFAULT ) ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
-        when( slaveFactory.newSlave( any( LifeSupport.class ), any( ClusterMember.class ), any( String.class ),
-                any( Integer.class ) ) ).thenReturn( mock( Slave.class ) );
+        Slave slave = mock( Slave.class );
+        when( slaveFactory.newSlave( any( LifeSupport.class ), any( ClusterMember.class ), any( String.class ), any( Integer.class ) ) ).thenReturn( slave );
 
         HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory,
                 new HostnamePort( null, 0 ) );
@@ -141,8 +141,10 @@ public class HighAvailabilitySlavesTest
                 new ClusterMember( INSTANCE_ID ).availableAs( SLAVE, HA_URI, StoreId.DEFAULT ) ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
-        when( slaveFactory.newSlave( any( LifeSupport.class ), any( ClusterMember.class ), any( String.class ),
-                any( Integer.class ) ) ).thenReturn( mock( Slave.class ), mock( Slave.class ) );
+        Slave slave1 = mock( Slave.class );
+        Slave slave2 = mock( Slave.class );
+        when( slaveFactory.newSlave( any( LifeSupport.class ), any( ClusterMember.class ), any( String.class ), any( Integer.class ) ) )
+                .thenReturn( slave1, slave2 );
 
         HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory, new
                 HostnamePort( "localhost", 0 ) );
@@ -152,14 +154,14 @@ public class HighAvailabilitySlavesTest
         verify( cluster ).addClusterListener( listener.capture() );
 
         // when
-        Slave slave1 = slaves.getSlaves().iterator().next();
+        Slave actualSlave1 = slaves.getSlaves().iterator().next();
 
         listener.getValue().elected( ClusterConfiguration.COORDINATOR, INSTANCE_ID, CLUSTER_URI );
 
-        Slave slave2 = slaves.getSlaves().iterator().next();
+        Slave actualSlave2 = slaves.getSlaves().iterator().next();
 
         // then
-        assertThat( slave2, not( sameInstance( slave1 ) ) );
+        assertThat( actualSlave2, not( sameInstance( actualSlave1 ) ) );
     }
 
     @Test

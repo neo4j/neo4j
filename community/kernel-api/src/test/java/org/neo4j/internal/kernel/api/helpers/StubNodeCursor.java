@@ -95,6 +95,12 @@ public class StubNodeCursor implements NodeCursor
     }
 
     @Override
+    public boolean hasLabel( int label )
+    {
+        return labels().contains( label );
+    }
+
+    @Override
     public boolean hasProperties()
     {
         return (offset >= 0 && offset < nodes.size()) && !nodes.get( offset ).properties.isEmpty();
@@ -109,7 +115,7 @@ public class StubNodeCursor implements NodeCursor
     @Override
     public void allRelationships( RelationshipTraversalCursor relationships )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        ((StubRelationshipCursor) relationships).rewind();
     }
 
     @Override
@@ -154,12 +160,6 @@ public class StubNodeCursor implements NodeCursor
     public boolean next()
     {
         return ++offset < nodes.size();
-    }
-
-    @Override
-    public boolean shouldRetry()
-    {
-        return false;
     }
 
     @Override

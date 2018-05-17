@@ -35,8 +35,10 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -50,24 +52,27 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.KeyReadTokenNameLookup;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -108,7 +113,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
  * as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
-public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, AssertOpen
+public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics
 {
     /*
      * IMPORTANT:
@@ -127,7 +132,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHooks hooks;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final StatementOperationParts statementOperations;
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
     private final Pool<KernelTransactionImplementation> pool;
@@ -193,9 +197,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
-            SchemaState schemaState )
+            SchemaState schemaState, IndexingService indexingService )
     {
-        this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -212,7 +215,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.versionContextSupplier = versionContextSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
-                procedures, accessCapability, lockTracer, statementOperations, this.clocks,
+                lockTracer, statementOperations, this.clocks,
                 versionContextSupplier );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
@@ -223,7 +226,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
+                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, indexingService ),
                         storageStatement,
                         this, new KernelToken( storeLayer, this ), cursors, autoIndexing, constraintIndexCreator,
                         constraintSemantics );
@@ -366,7 +369,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public SecurityContext securityContext()
     {
+        if ( securityContext == null )
+        {
+            throw new NotInTransactionException();
+        }
         return securityContext;
+    }
+
+    public AuthSubject subjectOrAnonymous()
+    {
+        return securityContext == null ? AuthSubject.ANONYMOUS : securityContext.subject();
     }
 
     public void setMetaData( Map<String, Object> data )
@@ -385,6 +397,24 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertTransactionOpen();
         currentStatement.acquire();
         return currentStatement;
+    }
+
+    @Override
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+    {
+        return operations.indexUniqueCreate( schema, provider );
+    }
+
+    @Override
+    public long pageHits()
+    {
+        return cursorTracerSupplier.get().hits();
+    }
+
+    @Override
+    public long pageFaults()
+    {
+        return cursorTracerSupplier.get().faults();
     }
 
     ExecutingQueryList executingQueries()
@@ -407,7 +437,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( SchemaIndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
                 // TODO logically, which statement should this operation be performed on?
                 constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
@@ -483,6 +513,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( reason != null )
         {
             throw new TransactionTerminatedException( reason );
+        }
+        if ( closed )
+        {
+            throw new NotInTransactionException( "The transaction has been closed." );
         }
     }
 
@@ -657,7 +691,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         catch ( ConstraintValidationException | CreateConstraintFailureException e )
         {
             throw new ConstraintViolationTransactionFailureException(
-                    e.getUserMessage( new KeyReadTokenNameLookup( statementOperations.keyReadOperations() ) ), e );
+                    e.getUserMessage( new SilentTokenNameLookup( tokenRead() ) ), e );
         }
         finally
         {
@@ -812,6 +846,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public StatementLocks statementLocks()
     {
+        assertOpen();
         return statementLocks;
     }
 
@@ -825,6 +860,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public org.neo4j.internal.kernel.api.Procedures procedures()
     {
         return operations.procedures();
+    }
+
+    @Override
+    public ExecutionStatistics executionStatistics()
+    {
+        return this;
     }
 
     public LockTracer lockTracer()
@@ -1015,6 +1056,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return statistics;
     }
 
+    public IndexProvider.Descriptor indexProviderForOrDefault( Optional<String> provider )
+    {
+        return storageEngine.indexProviderForOrDefault( provider );
+    }
+
     public static class Statistics
     {
         private volatile long cpuTimeNanosWhenQueryStarted;
@@ -1139,19 +1185,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public NodeCursor nodeCursor()
+    public NodeCursor ambientNodeCursor()
     {
         return operations.nodeCursor();
     }
 
     @Override
-    public RelationshipScanCursor relationshipCursor()
+    public RelationshipScanCursor ambientRelationshipCursor()
     {
         return operations.relationshipCursor();
     }
 
     @Override
-    public PropertyCursor propertyCursor()
+    public PropertyCursor ambientPropertyCursor()
     {
         return operations.propertyCursor();
     }

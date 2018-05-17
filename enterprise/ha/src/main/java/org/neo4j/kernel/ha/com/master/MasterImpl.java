@@ -33,7 +33,7 @@ import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
@@ -74,7 +74,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         StoreId storeId();
 
         long applyPreparedTransaction( TransactionRepresentation preparedTransaction )
-                throws org.neo4j.kernel.api.exceptions.TransactionFailureException;
+                throws TransactionFailureException;
 
         Integer createRelationshipType( String name );
 
@@ -156,7 +156,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     @Override
     public Response<Long> commit( RequestContext context, TransactionRepresentation preparedTransaction )
-            throws org.neo4j.kernel.api.exceptions.TransactionFailureException
+            throws TransactionFailureException
     {
         assertCorrectEpoch( context );
 
@@ -199,7 +199,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     private Response<Long> commit0( RequestContext context, TransactionRepresentation preparedTransaction )
-            throws org.neo4j.kernel.api.exceptions.TransactionFailureException
+            throws TransactionFailureException
     {
         long txId = spi.applyPreparedTransaction( preparedTransaction );
         return spi.packTransactionObligationResponse( context, txId );

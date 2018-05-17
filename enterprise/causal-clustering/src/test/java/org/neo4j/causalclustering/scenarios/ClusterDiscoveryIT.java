@@ -30,12 +30,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -123,16 +123,15 @@ public class ClusterDiscoveryIT
     private List<Map<String,Object>> getMembers( GraphDatabaseFacade db ) throws TransactionFailureException,
             ProcedureException
     {
-        InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
-        KernelTransaction transaction = kernel.newTransaction( Type.implicit, AnonymousContext.read() );
-        try ( Statement statement = transaction.acquireStatement() )
+        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+        try ( Session session = kernel.beginSession( AnonymousContext.read() );
+              Transaction tx = session.beginTransaction( Type.implicit ) )
         {
             // when
-            List<Object[]> currentMembers = asList( statement.procedureCallOperations()
-                    .procedureCallRead( procedureName( GET_SERVERS_V1.fullyQualifiedProcedureName() ),
-                            new Object[0] ) );
+            List<Object[]> currentMembers =
+                    asList( tx.procedures().procedureCallRead( procedureName( GET_SERVERS_V1.fullyQualifiedProcedureName() ), new Object[0] ) );
 
-            return (List<Map<String, Object>>) currentMembers.get( 0 )[1];
+            return (List<Map<String,Object>>) currentMembers.get( 0 )[1];
         }
     }
 }

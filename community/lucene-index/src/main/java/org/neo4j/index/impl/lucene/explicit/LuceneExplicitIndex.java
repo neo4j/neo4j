@@ -28,6 +28,11 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,9 +43,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -52,11 +54,10 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
+import org.neo4j.kernel.impl.api.ExplicitIndexValueValidator;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.spi.explicitindex.IndexCommandFactory;
 
-import static org.neo4j.collection.primitive.Primitive.longSet;
 import static org.neo4j.index.impl.lucene.explicit.EntityId.IdData;
 import static org.neo4j.index.impl.lucene.explicit.EntityId.LongCostume;
 import static org.neo4j.index.impl.lucene.explicit.EntityId.RelationshipData;
@@ -141,7 +142,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
 
     private static void assertValidValue( Object value )
     {
-        Validators.EXPLICIT_INDEX_VALUE_VALIDATOR.validate( value );
+        ExplicitIndexValueValidator.INSTANCE.validate( value );
     }
 
     /**
@@ -273,7 +274,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
             try
             {
                 // Gather all added ids from fulltextTransactionStateSearcher and simpleTransactionStateIds.
-                PrimitiveLongSet idsModifiedInTransactionState = gatherIdsModifiedInTransactionState(
+                final LongSet idsModifiedInTransactionState = gatherIdsModifiedInTransactionState(
                         simpleTransactionStateIds, fulltextTransactionStateSearcher, query );
 
                 // Do the combined search from store and fulltext tx state
@@ -296,13 +297,13 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
         return idIterator;
     }
 
-    private PrimitiveLongSet gatherIdsModifiedInTransactionState( List<EntityId> simpleTransactionStateIds,
+    private LongSet gatherIdsModifiedInTransactionState( List<EntityId> simpleTransactionStateIds,
             IndexSearcher fulltextTransactionStateSearcher, Query query ) throws IOException
     {
         // If there's no state them don't bother gathering it
         if ( simpleTransactionStateIds.isEmpty() && fulltextTransactionStateSearcher == null )
         {
-            return PrimitiveLongCollections.emptySet();
+            return LongSets.immutable.empty();
         }
         // There's potentially some state
         DocValuesCollector docValuesCollector = null;
@@ -315,11 +316,11 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
             // Nah, no state
             if ( simpleTransactionStateIds.isEmpty() && fulltextSize == 0 )
             {
-                return PrimitiveLongCollections.emptySet();
+                return LongSets.immutable.empty();
             }
         }
 
-        PrimitiveLongSet set = longSet( simpleTransactionStateIds.size() + fulltextSize );
+        final MutableLongSet set = new LongHashSet( simpleTransactionStateIds.size() + fulltextSize );
 
         // Add from simple tx state
         for ( EntityId id : simpleTransactionStateIds )
@@ -330,7 +331,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
         if ( docValuesCollector != null )
         {
             // Add from fulltext tx state
-            PrimitiveLongIterator valuesIterator = docValuesCollector.getValuesIterator( LuceneExplicitIndex.KEY_DOC_ID );
+            final LongIterator valuesIterator = docValuesCollector.getValuesIterator( LuceneExplicitIndex.KEY_DOC_ID );
             while ( valuesIterator.hasNext() )
             {
                 set.add( valuesIterator.next() );
@@ -376,7 +377,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
         // This is getting quite low-level though
         DocValuesCollector collector = new DocValuesCollector( false );
         additionsSearcher.search( query, collector );
-        PrimitiveLongIterator valuesIterator = collector.getValuesIterator( KEY_DOC_ID );
+        final LongIterator valuesIterator = collector.getValuesIterator( KEY_DOC_ID );
         LongCostume id = new LongCostume();
         while ( valuesIterator.hasNext() )
         {

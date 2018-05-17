@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
@@ -78,13 +79,13 @@ public abstract class EditionModule
     private static final boolean safeIdBuffering = FeatureToggles.flag(
             EditionModule.class, "safeIdBuffering", true );
 
-    void registerProcedures( Procedures procedures ) throws KernelException
+    void registerProcedures( Procedures procedures, ProcedureConfig procedureConfig ) throws KernelException
     {
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.TokenProcedures.class );
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures.class );
         procedures.registerBuiltInFunctions( org.neo4j.kernel.builtinprocs.BuiltInFunctions.class );
-        registerTemporalFunctions( procedures );
+        registerTemporalFunctions( procedures, procedureConfig );
 
         registerEditionSpecificProcedures( procedures );
     }

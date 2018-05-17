@@ -30,14 +30,14 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
@@ -45,14 +45,13 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptySet;
@@ -63,7 +62,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
-import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.fromDescriptor;
 
 public class UniquenessConstraintCreationIT
         extends AbstractConstraintCreationIT<ConstraintDescriptor,LabelSchemaDescriptor>
@@ -124,7 +122,7 @@ public class UniquenessConstraintCreationIT
     @Override
     LabelSchemaDescriptor makeDescriptor( int typeId, int propertyKeyId )
     {
-        uniqueIndex = SchemaIndexDescriptorFactory.uniqueForLabel( typeId, propertyKeyId );
+        uniqueIndex = TestIndexDescriptorFactory.uniqueForLabel( typeId, propertyKeyId );
         return SchemaDescriptorFactory.forLabel( typeId, propertyKeyId );
     }
 
@@ -132,7 +130,7 @@ public class UniquenessConstraintCreationIT
     public void shouldAbortConstraintCreationWhenDuplicatesExist() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         // name is not unique for Foo in the existing data
 
         int foo = transaction.tokenWrite().labelGetOrCreateForName( "Foo" );
@@ -181,8 +179,8 @@ public class UniquenessConstraintCreationIT
         commit();
 
         // then
-        KernelTransaction transaction = newTransaction();
-        assertEquals( asSet( fromDescriptor( uniqueIndex ) ), asSet( transaction.schemaRead().indexesGetAll() ) );
+        Transaction transaction = newTransaction();
+        assertEquals( asSet( uniqueIndex ), asSet( transaction.schemaRead().indexesGetAll() ) );
         commit();
     }
 
@@ -190,9 +188,9 @@ public class UniquenessConstraintCreationIT
     public void shouldDropCreatedConstraintIndexWhenRollingBackConstraintCreation() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
+        Transaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
         transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor );
-        assertEquals( asSet( fromDescriptor( uniqueIndex ) ), asSet( transaction.schemaRead().indexesGetAll() ) );
+        assertEquals( asSet( uniqueIndex ), asSet( transaction.schemaRead().indexesGetAll() ) );
 
         // when
         rollback();
@@ -232,7 +230,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         {
-            KernelTransaction transaction = newTransaction();
+            Transaction transaction = newTransaction();
 
             Iterator<ConstraintDescriptor> constraints = transaction.schemaRead().constraintsGetForSchema( descriptor );
 
@@ -250,8 +248,9 @@ public class UniquenessConstraintCreationIT
         commit();
 
         // then
-        SchemaStorage schema = new SchemaStorage( neoStores().getSchemaStore(), IndexProviderMap.EMPTY );
-        IndexRule indexRule = schema.indexGetForSchema( SchemaIndexDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );
+        SchemaStorage schema = new SchemaStorage( neoStores().getSchemaStore() );
+        StoreIndexDescriptor indexRule = schema.indexGetForSchema( TestIndexDescriptorFactory
+                .uniqueForLabel( typeId, propertyKeyId ) );
         ConstraintRule constraintRule = schema.constraintsGetSingle(
                 ConstraintDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );
         assertEquals( constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
@@ -267,10 +266,10 @@ public class UniquenessConstraintCreationIT
     public void shouldDropConstraintIndexWhenDroppingConstraint() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
+        Transaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
         ConstraintDescriptor constraint =
                 transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor );
-        assertEquals( asSet( fromDescriptor( uniqueIndex ) ), asSet( transaction.schemaRead().indexesGetAll() ) );
+        assertEquals( asSet( uniqueIndex ), asSet( transaction.schemaRead().indexesGetAll() ) );
         commit();
 
         // when
@@ -287,7 +286,7 @@ public class UniquenessConstraintCreationIT
     private String userMessage( ConstraintValidationException cause )
             throws TransactionFailureException
     {
-        try ( KernelTransaction tx = newTransaction() )
+        try ( Transaction tx = newTransaction() )
         {
             TokenNameLookup lookup = new SilentTokenNameLookup( tx.tokenRead() );
             return cause.getUserMessage( lookup );

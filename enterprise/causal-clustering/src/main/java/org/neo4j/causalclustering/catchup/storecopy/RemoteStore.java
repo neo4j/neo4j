@@ -21,17 +21,19 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Supplier;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.CatchupAddressResolutionException;
 import org.neo4j.causalclustering.catchup.CatchupResult;
-import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -50,7 +52,6 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
  */
 public class RemoteStore
 {
-    private static final Supplier<TerminationCondition> DEFAULT_TERMINATION_CONDITIONS = () -> new MaximumTotalRetries( 10, 10 );
     private final Log log;
     private final Config config;
     private final Monitors monitors;
@@ -119,24 +120,25 @@ public class RemoteStore
     }
 
     public void copy( CatchupAddressProvider addressProvider, StoreId expectedStoreId, File destDir )
-            throws StoreCopyFailedException, StreamingTransactionsFailedException
+            throws StoreCopyFailedException
     {
         try
         {
             long lastFlushedTxId;
-            StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( destDir, fs, pageCache, monitors );
-            lastFlushedTxId = storeCopyClient.copyStoreFiles( addressProvider, expectedStoreId, streamToDiskProvider, DEFAULT_TERMINATION_CONDITIONS );
+            StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( destDir, fs, monitors );
+            lastFlushedTxId = storeCopyClient.copyStoreFiles( addressProvider, expectedStoreId, streamToDiskProvider,
+                        () -> new MaximumTotalTime( config.get( CausalClusteringSettings.store_copy_max_retry_time_per_request ).getSeconds(),
+                                TimeUnit.SECONDS ), destDir );
 
             log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
 
             // Even for cluster store copy, we still write the transaction logs into the store directory itself
             // because the destination directory is temporary. We will copy them to the correct place later.
-            boolean keepTxLogsInStoreDir = true;
-            CatchupResult catchupResult =
-                    pullTransactions( addressProvider.primary(), expectedStoreId, destDir, lastFlushedTxId, true, keepTxLogsInStoreDir );
+            CatchupResult catchupResult = pullTransactions( addressProvider.primary(), expectedStoreId, destDir,
+                    lastFlushedTxId, true, true );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
-                throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
+                throw new StoreCopyFailedException( "Failed to pull transactions: " + catchupResult );
             }
         }
         catch ( CatchupAddressResolutionException | IOException e )
@@ -149,13 +151,14 @@ public class RemoteStore
             boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir )
             throws IOException, StoreCopyFailedException
     {
+        StoreCopyClientMonitor storeCopyClientMonitor =
+                monitors.newMonitor( StoreCopyClientMonitor.class );
+        storeCopyClientMonitor.startReceivingTransactions( fromTxId );
+        long previousTxId = fromTxId - 1;
         try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, config,
                 logProvider, fromTxId, asPartOfStoreCopy, keepTxLogsInStoreDir ) )
         {
             log.info( "Pulling transactions from %s starting with txId: %d", from, fromTxId );
-
-            long previousTxId = fromTxId - 1;
-
             CatchupResult lastStatus;
             do
             {
@@ -170,6 +173,10 @@ public class RemoteStore
         catch ( CatchUpClientException e )
         {
             throw new StoreCopyFailedException( e );
+        }
+        finally
+        {
+            storeCopyClientMonitor.finishReceivingTransactions( previousTxId );
         }
     }
 

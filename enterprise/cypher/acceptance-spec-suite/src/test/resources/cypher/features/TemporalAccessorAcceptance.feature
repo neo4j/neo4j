@@ -22,9 +22,14 @@ Feature: TemporalAccessorAcceptance
 
   Scenario: Should provide accessors for date
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: date({year:1984, month:10, day:11}) })
+      """
     When executing query:
       """
-      WITH date({year:1984, month:10, day:11}) as d
+      MATCH (v:Val)
+      WITH v.prop as d
       RETURN d.year, d.quarter, d.month, d.week, d.weekYear, d.day, d.ordinalDay, d.weekDay, d.dayOfQuarter
       """
     Then the result should be, in order:
@@ -34,9 +39,14 @@ Feature: TemporalAccessorAcceptance
 
   Scenario: Should provide accessors for date in last weekYear
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: date({year:1984, month:01, day:01}) })
+      """
     When executing query:
       """
-      WITH date({year:1984, month:01, day:01}) as d
+      MATCH (v:Val)
+      WITH v.prop as d
       RETURN d.year, d.weekYear, d.week, d.weekDay
       """
     Then the result should be, in order:
@@ -46,9 +56,14 @@ Feature: TemporalAccessorAcceptance
 
   Scenario: Should provide accessors for local time
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: localtime({hour:12, minute:31, second:14, nanosecond: 645876123}) })
+      """
     When executing query:
       """
-      WITH localtime({hour:12, minute:31, second:14, nanosecond: 645876123}) as d
+      MATCH (v:Val)
+      WITH v.prop as d
       RETURN d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond
       """
     Then the result should be, in order:
@@ -58,21 +73,31 @@ Feature: TemporalAccessorAcceptance
 
   Scenario: Should provide accessors for time
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone:'+01:00'}) })
+      """
     When executing query:
       """
-      WITH time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone:'+01:00'}) as d
-      RETURN d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond, d.timezone, d.offset, d.offsetMinutes
+      MATCH (v:Val)
+      WITH v.prop as d
+      RETURN d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond, d.timezone, d.offset, d.offsetMinutes, d.offsetSeconds
       """
     Then the result should be, in order:
-      | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond | d.timezone | d.offset | d.offsetMinutes |
-      | 12     | 31       | 14       | 645           | 645876        | 645876123    | '+01:00'   | '+01:00' | 60              |
+      | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond | d.timezone | d.offset | d.offsetMinutes | d.offsetSeconds |
+      | 12     | 31       | 14       | 645           | 645876        | 645876123    | '+01:00'   | '+01:00' | 60              | 3600            |
     And no side effects
 
   Scenario: Should provide accessors for local date time
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: localdatetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}) })
+      """
     When executing query:
       """
-      WITH localdatetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}) as d
+      MATCH (v:Val)
+      WITH v.prop as d
       RETURN d.year, d.quarter, d.month, d.week, d.weekYear, d.day, d.ordinalDay, d.weekDay, d.dayOfQuarter,
              d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond
       """
@@ -83,23 +108,33 @@ Feature: TemporalAccessorAcceptance
 
   Scenario: Should provide accessors for date time
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: datetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone:'Europe/Stockholm'}) })
+      """
     When executing query:
       """
-      WITH datetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone:'Europe/Stockholm'}) as d
+      MATCH (v:Val)
+      WITH v.prop as d
       RETURN d.year, d.quarter, d.month, d.week, d.weekYear, d.day, d.ordinalDay, d.weekDay, d.dayOfQuarter,
              d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond,
-             d.timezone, d.offset, d.offsetMinutes, d.epochSeconds, d.epochMillis
+             d.timezone, d.offset, d.offsetMinutes, d.offsetSeconds, d.epochSeconds, d.epochMillis
       """
     Then the result should be, in order:
-      | d.year | d.quarter | d.month | d.week | d.weekYear | d.day | d.ordinalDay | d.weekDay | d.dayOfQuarter | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond | d.timezone         | d.offset | d.offsetMinutes | d.epochSeconds | d.epochMillis |
-      | 1984   | 4         | 11      | 45     | 1984       | 11    | 316          | 7         | 42             | 12     | 31       | 14       | 645           | 645876        | 645876123    | 'Europe/Stockholm' | '+01:00' | 60              | 469020674      | 469020674645 |
+      | d.year | d.quarter | d.month | d.week | d.weekYear | d.day | d.ordinalDay | d.weekDay | d.dayOfQuarter | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond | d.timezone         | d.offset | d.offsetMinutes | d.offsetSeconds | d.epochSeconds | d.epochMillis |
+      | 1984   | 4         | 11      | 45     | 1984       | 11    | 316          | 7         | 42             | 12     | 31       | 14       | 645           | 645876        | 645876123    | 'Europe/Stockholm' | '+01:00' | 60              | 3600            | 469020674      | 469020674645  |
     And no side effects
 
   Scenario: Should provide accessors for duration
     Given an empty graph
+    And having executed:
+      """
+      CREATE (:Val {prop: duration({years: 1, months:1, days: 1, hours:1, minutes: 1, seconds: 1, nanoseconds: 111111111}) })
+      """
     When executing query:
       """
-      WITH duration({years: 1, months:1, days: 1, hours:1, minutes: 1, seconds: 1, nanoseconds: 111111111}) as d
+      MATCH (v:Val)
+      WITH v.prop as d
       RETURN d.years, d.months, d.days,
              d.hours, d.minutes, d.seconds, d.milliseconds, d.microseconds, d.nanoseconds,
              d.monthsOfYear, d.minutesOfHour, d.secondsOfMinute, d.millisecondsOfSecond, d.microsecondsOfSecond, d.nanosecondsOfSecond

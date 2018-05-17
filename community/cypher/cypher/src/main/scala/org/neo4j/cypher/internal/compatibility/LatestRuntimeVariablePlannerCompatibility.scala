@@ -24,23 +24,23 @@ import java.time.Clock
 import org.neo4j.cypher._
 import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_4}
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4, _}
-import org.neo4j.cypher.internal.compatibility.v3_4.{ExceptionTranslatingQueryContext, WrappedMonitors => WrappedMonitorsV3_4}
-import org.neo4j.cypher.internal.compiler.v3_4._
-import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.QueryGraphSolver
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp._
-import org.neo4j.cypher.internal.frontend.v3_4.phases._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_5}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeContext => CommunityRuntimeContextv3_5, _}
+import org.neo4j.cypher.internal.compatibility.v3_5.{ExceptionTranslatingQueryContext, WrappedMonitors => WrappedMonitorsv3_5}
+import org.neo4j.cypher.internal.compiler.v3_5._
+import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilationContains, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.QueryGraphSolver
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp._
+import org.neo4j.cypher.internal.frontend.v3_5.phases._
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, NormalMode, ProfileMode}
-import org.neo4j.cypher.internal.util.v3_4.InputPosition
-import org.neo4j.cypher.internal.v3_4.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
+import org.neo4j.cypher.internal.util.v3_5.InputPosition
+import org.neo4j.cypher.internal.v3_5.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.{ExplicitIndexUsage, PlannerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
@@ -50,9 +50,9 @@ import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
 
-abstract class LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4 <: CommunityRuntimeContextV3_4,
+abstract class LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4 <: CommunityRuntimeContextv3_5,
 T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState],
-STATEMENT <: AnyRef](configV3_4: CypherCompilerConfiguration,
+STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
                      clock: Clock,
                      kernelMonitors: KernelMonitors,
                      log: Log,
@@ -60,11 +60,11 @@ STATEMENT <: AnyRef](configV3_4: CypherCompilerConfiguration,
                      runtime: CypherRuntime,
                      updateStrategy: CypherUpdateStrategy,
                      runtimeBuilder: RuntimeBuilder[T],
-                     contextCreatorV3_4: ContextCreator[CONTEXT3_4]) {
+                     contextCreatorv3_5: ContextCreator[CONTEXT3_4]) {
 
   // abstract stuff
   protected val cacheMonitor: AstCacheMonitor[STATEMENT]
-  protected val maybePlannerNameV3_4: Option[CostBasedPlannerName]
+  protected val maybePlannerNamev3_5: Option[CostBasedPlannerName]
   protected val runSafelyDuringPlanning: RunSafely
   protected val runSafelyDuringRuntime: RunSafely
 
@@ -73,16 +73,16 @@ STATEMENT <: AnyRef](configV3_4: CypherCompilerConfiguration,
 
   // concrete stuff
   protected val logger: InfoLogger = new StringInfoLogger(log)
-  protected val monitorsV3_4: Monitors = WrappedMonitorsV3_4(kernelMonitors)
+  protected val monitorsv3_5: Monitors = WrappedMonitorsv3_5(kernelMonitors)
 
-  protected lazy val cacheAccessor: MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4] = new MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_4](cacheMonitor)
+  protected lazy val cacheAccessor: MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_5] = new MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_5](cacheMonitor)
 
-  protected def planCacheFactory(): LFUCache[STATEMENT, ExecutionPlan_v3_4] = new LFUCache[STATEMENT, ExecutionPlan_v3_4](configV3_4.queryCacheSize)
+  protected def planCacheFactory(): LFUCache[STATEMENT, ExecutionPlan_v3_5] = new LFUCache[STATEMENT, ExecutionPlan_v3_5](configv3_5.queryCacheSize)
 
-  protected def queryGraphSolverV3_4: QueryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(
-    maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default),
-    monitorsV3_4,
-    configV3_4)
+  protected def queryGraphSolverv3_5: QueryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(
+    maybePlannerNamev3_5.getOrElse(CostBasedPlannerName.default),
+    monitorsv3_5,
+    configv3_5)
 
   protected def createExecPlan: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState] = {
     ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
@@ -94,7 +94,7 @@ STATEMENT <: AnyRef](configV3_4: CypherCompilerConfiguration,
           case CypherRuntime.morsel => Some(MorselRuntimeName)
           case CypherRuntime.compiled => Some(CompiledRuntimeName)
         }
-        runtimeBuilder.create(maybeRuntimeName, configV3_4.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan_v3_4])
+        runtimeBuilder.create(maybeRuntimeName, configv3_5.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan_v3_5])
       }
   }
 
@@ -104,7 +104,7 @@ STATEMENT <: AnyRef](configV3_4: CypherCompilerConfiguration,
     }
   }
 
-  protected class ExecutionPlanWrapper(inner: ExecutionPlan_v3_4, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offset: InputPosition)
+  protected class ExecutionPlanWrapper(inner: ExecutionPlan_v3_5, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offset: InputPosition)
     extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
@@ -181,7 +181,7 @@ trait CypherCacheHitMonitor[T] {
 }
 
 trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor[E]
-trait AstCacheMonitor[STATEMENT <: AnyRef] extends CypherCacheMonitor[STATEMENT, CacheAccessor[STATEMENT, ExecutionPlan_v3_4]]
+trait AstCacheMonitor[STATEMENT <: AnyRef] extends CypherCacheMonitor[STATEMENT, CacheAccessor[STATEMENT, ExecutionPlan_v3_5]]
 
 trait InfoLogger {
   def info(message: String)

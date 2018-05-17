@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 public class ResampleOutdatedIndexesProcedureTest
 {
     private final IndexingService indexingService = mock( IndexingService.class );
-    private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( null ), indexingService );
+    private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction(  ), indexingService );
 
     @Test
     public void shouldTriggerResampling()

@@ -21,15 +21,20 @@ package org.neo4j.bolt.v1.transport.integration;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
@@ -40,6 +45,7 @@ import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -51,10 +57,12 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
@@ -251,30 +259,57 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     public void shouldFailDifferentlyIfTooManyFailedAuthAttempts() throws Exception
     {
         // Given
-        final long timeout = System.currentTimeMillis() + 30_000;
-        final FailureMsgMatcher failureMatcher = new FailureMsgMatcher();
+        final long timeout = System.currentTimeMillis() + 60_000;
+        FailureMessage failureMessage = null;
 
         // When
-        while ( System.currentTimeMillis() < timeout && !failureMatcher.gotSpecialMessage() )
+        while ( failureMessage == null )
         {
-            // Done in a loop because we're racing with the clock to get enough failed requests in 5 seconds
-            connection.connect( address )
-                    .send( util.defaultAcceptedVersions() )
-                    .send( util.chunk(
-                            InitMessage.init( "TestClient/1.1",
-                                    map( "principal", "neo4j", "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN",
-                                            "scheme", "basic" ) ) ) );
+            if ( System.currentTimeMillis() > timeout )
+            {
+                fail( "Timed out waiting for the authentication failure to occur." );
+            }
 
-            assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
-            assertThat( connection, util.eventuallyReceives( failureMatcher ) );
+            ExecutorService executor = Executors.newFixedThreadPool( 10 );
 
-            assertThat( connection, eventuallyDisconnects() );
-            reconnect();
+            // Fire up some parallel connections that all send wrong authentication tokens
+            List<CompletableFuture<FailureMessage>> futures = new ArrayList<>();
+            for ( int i = 0; i < 10; i++ )
+            {
+                futures.add( CompletableFuture.supplyAsync( this::collectAuthFailureOnFailedAuth, executor ) );
+            }
+
+            try
+            {
+                // Wait for all tasks to complete
+                CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) ).get( 30, SECONDS );
+
+                // We want at least one of the futures to fail with our expected code
+                for ( int i = 0; i < futures.size(); i++ )
+                {
+                    FailureMessage recordedMessage = futures.get( i ).get();
+
+                    if ( recordedMessage != null )
+                    {
+                        failureMessage = recordedMessage;
+
+                        break;
+                    }
+                }
+            }
+            catch ( TimeoutException ex )
+            {
+                // if jobs did not complete, let's try again
+                // do nothing
+            }
+            finally
+            {
+                executor.shutdown();
+            }
         }
 
-        // Then
-        assertThat( failureMatcher.specialMessage.status(), equalTo( Status.Security.AuthenticationRateLimit ) );
-        assertThat( failureMatcher.specialMessage.message(),
+        assertThat( failureMessage.status(), equalTo( Status.Security.AuthenticationRateLimit ) );
+        assertThat( failureMessage.message(),
                 containsString( "The client has provided incorrect authentication details too many times in a row." ) );
     }
 
@@ -513,7 +548,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         @Override
         protected boolean matchesSafely( ResponseMessage t )
         {
-            Assert.assertThat( t, instanceOf( FailureMessage.class ) );
+            assertThat( t, instanceOf( FailureMessage.class ) );
             FailureMessage msg = (FailureMessage) t;
             if ( !msg.status().equals( Status.Security.Unauthorized ) ||
                  !msg.message().contains( "The client is unauthorized due to authentication failure." ) )
@@ -532,5 +567,44 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     private MapValue singletonMap( String key, Object value )
     {
         return VirtualValues.map( Collections.singletonMap( key, ValueUtils.of( value ) ) );
+    }
+
+    private FailureMessage collectAuthFailureOnFailedAuth()
+    {
+        FailureMsgMatcher failureRecorder = new FailureMsgMatcher();
+
+        TransportConnection connection = null;
+        try
+        {
+            connection = newConnection();
+
+            connection.connect( address ).send( util.defaultAcceptedVersions() ).send( util.chunk(
+                    InitMessage.init( "TestClient/1.1",
+                            map( "principal", "neo4j", "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN", "scheme", "basic" ) ) ) );
+
+            assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+            assertThat( connection, util.eventuallyReceives( failureRecorder ) );
+            assertThat( connection, eventuallyDisconnects() );
+        }
+        catch ( Exception ex )
+        {
+            throw new RuntimeException( ex );
+        }
+        finally
+        {
+            if ( connection != null )
+            {
+                try
+                {
+                    connection.disconnect();
+                }
+                catch ( IOException ex )
+                {
+                    throw new RuntimeException( ex );
+                }
+            }
+        }
+
+        return failureRecorder.specialMessage;
     }
 }

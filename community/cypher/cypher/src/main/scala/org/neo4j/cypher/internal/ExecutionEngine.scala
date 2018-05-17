@@ -23,8 +23,8 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v3_4.prettifier.Prettifier
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.compiler.v3_5.prettifier.Prettifier
+import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper, ValueConversion}
 import org.neo4j.cypher.internal.runtime.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, isGraphKernelResultValue}
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.configuration.Config
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
+import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, ResultBuffer, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
@@ -106,6 +106,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
+    // TODO: Should we use ValueUtils.asMapValue here like in GraphDatabaseFacade
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
    execute(query, ValueConversion.asValues(scalaParams), context)
   }
@@ -116,6 +117,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       checkParameters(queryParamNames, mapParams, preparedPlanExecution.extractedParams)
     }
     preparedPlanExecution.execute(wrappedContext, mapParams)
+  }
+
+  def execute(query: String,
+              mapParams: MapValue,
+              context: TransactionalContext,
+              resultBuffer: ResultBuffer
+             ): QueryExecution = {
+    ???
   }
 
   protected def parseQuery(queryText: String): ParsedQuery =
@@ -252,7 +261,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     }
 
     def allLabels: Seq[Long] = {
-      tc.statement.readOperations().labelsGetAllTokens().asScala.map(t => t.id().toLong).toSeq
+      tc.kernelTransaction.tokenRead().labelsGetAllTokens().asScala.map(t => t.id().toLong).toSeq
     }
 
     version match {
@@ -309,8 +318,12 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       queryService, GraphDatabaseSettings.csv_legacy_quote_escaping,
       GraphDatabaseSettings.csv_legacy_quote_escaping.getDefaultValue.toBoolean
     )
+    val planWithMinimumCardinalityEstimates = optGraphSetting[java.lang.Boolean](
+      queryService, GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates,
+      GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates.getDefaultValue.toBoolean
+    )
 
-    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_4) || (version != CypherVersion.v3_3)) &&
+    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_5) || (version != CypherVersion.v3_3)) &&
       (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"
@@ -321,7 +334,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     val compatibilityCache = new CompatibilityCache(compatibilityFactory)
     new CompilerEngineDelegator(queryService, kernelMonitors, version, planner, runtime,
       useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, errorIfShortestPathFallbackUsedAtRuntime,
-      errorIfShortestPathHasCommonNodesAtRuntime, legacyCsvQuoteEscaping, logProvider, compatibilityCache)
+      errorIfShortestPathHasCommonNodesAtRuntime, legacyCsvQuoteEscaping, planWithMinimumCardinalityEstimates,
+      logProvider, compatibilityCache)
   }
 
   private def getPlanCacheSize: Int =

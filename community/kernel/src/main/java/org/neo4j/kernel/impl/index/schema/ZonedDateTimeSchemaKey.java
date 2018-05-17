@@ -31,10 +31,12 @@ import static java.lang.String.format;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link DateTimeValue}.
- *
- * With these keys the DateTimeValues are sorted by UTC time, and then by time zone. Time zones are sorted so that
- * DateTimeValues with zoneOffset come first (sorted by the zoneOffset), followed by DateTimeValues with zoneIds,
- * sorted by zoneNumber.
+ * <p>
+ * With these keys the DateTimeValues are sorted
+ * 1. by epochSecond
+ * 2. by nanos
+ * 3. by effective Offset west-to-east
+ * 4. non-named TimeZones before named TimeZones. Named Timezones alphabetically.
  */
 class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
 {
@@ -47,14 +49,14 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
     long epochSecondUTC;
     int nanoOfSecond;
     short zoneId;
-    int zoneOffsetMinutes;
+    int zoneOffsetSeconds;
 
     @Override
     public Value asValue()
     {
         return TimeZones.validZoneId( zoneId ) ?
             DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneId.of( TimeZones.map( zoneId ) ) ) :
-            DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneOffset.ofTotalSeconds( zoneOffsetMinutes * 60 ) );
+            DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneOffset.ofTotalSeconds( zoneOffsetSeconds ) );
     }
 
     @Override
@@ -63,7 +65,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
         epochSecondUTC = Long.MIN_VALUE;
         nanoOfSecond = Integer.MIN_VALUE;
         zoneId = Short.MIN_VALUE;
-        zoneOffsetMinutes = Integer.MIN_VALUE;
+        zoneOffsetSeconds = Integer.MIN_VALUE;
     }
 
     @Override
@@ -72,7 +74,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
         epochSecondUTC = Long.MAX_VALUE;
         nanoOfSecond = Integer.MAX_VALUE;
         zoneId = Short.MAX_VALUE;
-        zoneOffsetMinutes = Integer.MAX_VALUE;
+        zoneOffsetSeconds = Integer.MAX_VALUE;
     }
 
     @Override
@@ -82,7 +84,10 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
         if ( compare == 0 )
         {
             compare = Integer.compare( nanoOfSecond, other.nanoOfSecond );
-            if ( compare == 0 && hasValidTimeZone() && other.hasValidTimeZone() )
+            if ( compare == 0 &&
+                    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
+                    TimeZones.validZoneOffset( zoneOffsetSeconds ) &&
+                    TimeZones.validZoneOffset( other.zoneOffsetSeconds ) )
             {
                 // In the rare case of comparing the same instant in different time zones, we settle for
                 // mapping to values and comparing using the general values comparator.
@@ -96,7 +101,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
     public String toString()
     {
         return format( "value=%s,entityId=%d,epochSecond=%d,nanoOfSecond=%d,zoneId=%d,zoneOffset=%d",
-                asValue(), getEntityId(), epochSecondUTC, nanoOfSecond, zoneId, zoneOffsetMinutes * 60 );
+                asValue(), getEntityId(), epochSecondUTC, nanoOfSecond, zoneId, zoneOffsetSeconds );
     }
 
     @Override
@@ -104,7 +109,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
     {
         this.epochSecondUTC = epochSecondUTC;
         this.nanoOfSecond = nano;
-        this.zoneOffsetMinutes = offsetSeconds / 60;
+        this.zoneOffsetSeconds = offsetSeconds;
         this.zoneId = -1;
     }
 
@@ -114,7 +119,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
         this.epochSecondUTC = epochSecondUTC;
         this.nanoOfSecond = nano;
         this.zoneId = TimeZones.map( zoneId );
-        this.zoneOffsetMinutes = 0;
+        this.zoneOffsetSeconds = 0;
     }
 
     @Override
@@ -126,11 +131,5 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
                     "Key layout does only support DateTimeValue, tried to create key from " + value );
         }
         return value;
-    }
-
-    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
-    private boolean hasValidTimeZone()
-    {
-        return TimeZones.validZoneId( zoneId ) || TimeZones.validZoneOffset( zoneOffsetMinutes * 60 );
     }
 }

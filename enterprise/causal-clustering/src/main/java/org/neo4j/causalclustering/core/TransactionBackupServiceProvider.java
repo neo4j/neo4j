@@ -21,10 +21,18 @@ package org.neo4j.causalclustering.core;
 
 import io.netty.channel.ChannelInboundHandler;
 
+import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Function;
 
-import org.neo4j.causalclustering.net.ChildInitializer;
+import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
+import org.neo4j.causalclustering.catchup.CatchupServerHandler;
+import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.net.Server;
+import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.logging.LogProvider;
@@ -34,16 +42,24 @@ public class TransactionBackupServiceProvider
     private final LogProvider logProvider;
     private final LogProvider userLogProvider;
     private final TransactionBackupServiceAddressResolver transactionBackupServiceAddressResolver;
-    private final ChildInitializer childInitializer;
     private final ChannelInboundHandler parentHandler;
+    private final ApplicationSupportedProtocols catchupProtocols;
+    private final Collection<ModifierSupportedProtocols> supportedModifierProtocols;
+    private final NettyPipelineBuilderFactory serverPipelineBuilderFactory;
+    private final CatchupServerHandler catchupServerHandler;
 
-    public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, ChildInitializer childInitializer,
+    public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, ApplicationSupportedProtocols catchupProtocols,
+            Collection<ModifierSupportedProtocols> supportedModifierProtocols, NettyPipelineBuilderFactory serverPipelineBuilderFactory,
+            CatchupServerHandler catchupServerHandler,
             ChannelInboundHandler parentHandler )
     {
         this.logProvider = logProvider;
         this.userLogProvider = userLogProvider;
-        this.childInitializer = childInitializer;
         this.parentHandler = parentHandler;
+        this.catchupProtocols = catchupProtocols;
+        this.supportedModifierProtocols = supportedModifierProtocols;
+        this.serverPipelineBuilderFactory = serverPipelineBuilderFactory;
+        this.catchupServerHandler = catchupServerHandler;
         this.transactionBackupServiceAddressResolver = new TransactionBackupServiceAddressResolver();
     }
 
@@ -51,8 +67,18 @@ public class TransactionBackupServiceProvider
     {
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            return Optional.of( new Server( childInitializer, parentHandler, logProvider, userLogProvider,
-                            transactionBackupServiceAddressResolver.backupAddressForTxProtocol( config ), "backup-server" ) );
+            ListenSocketAddress backupAddress = transactionBackupServiceAddressResolver.backupAddressForTxProtocol( config );
+            logProvider.getLog( TransactionBackupServiceProvider.class ).info( "Binding backup service on address %s", backupAddress );
+            return Optional.of( new CatchupServerBuilder( catchupServerHandler )
+                    .serverHandler( parentHandler )
+                    .catchupProtocols( catchupProtocols )
+                    .modifierProtocols( supportedModifierProtocols )
+                    .pipelineBuilder( serverPipelineBuilderFactory )
+                    .userLogProvider( userLogProvider )
+                    .debugLogProvider( logProvider )
+                    .listenAddress( backupAddress )
+                    .serverName( "backup-server" )
+                    .build());
         }
         else
         {

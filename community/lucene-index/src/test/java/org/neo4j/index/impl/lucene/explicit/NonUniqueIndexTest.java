@@ -26,7 +26,7 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -41,7 +41,6 @@ import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -65,6 +64,8 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
 public class NonUniqueIndexTest
 {
@@ -165,8 +166,8 @@ public class NonUniqueIndexTest
         OperationalMode operationalMode = OperationalMode.single;
         IndexProvider indexProvider = selectIndexProvider( pageCache, storeDir, fs, monitor, config, operationalMode );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
-                SchemaIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor(
+                forSchema( forLabel( 0, 0 ), indexProvider.getProviderDescriptor() ).withId( indexId ), samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
             return PrimitiveLongCollections.asList( reader.query( IndexQuery.exact( 1, value ) ) );
@@ -178,12 +179,12 @@ public class NonUniqueIndexTest
     {
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
-        if ( LUCENE10.param().equals( defaultSchemaProvider ) )
+        if ( LUCENE10.providerName().equals( defaultSchemaProvider ) )
         {
             return LuceneSchemaIndexProviderFactory
                     .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
         }
-        else if ( NATIVE10.param().equals( defaultSchemaProvider ) )
+        else if ( NATIVE10.providerName().equals( defaultSchemaProvider ) )
         {
             return NativeLuceneFusionIndexProviderFactory10
                     .create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );

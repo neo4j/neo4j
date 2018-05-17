@@ -19,52 +19,15 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ExecutionStatisticsOperations;
-import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.TokenWriteOperations;
 
 public class StubStatement extends StubResourceManager implements Statement
 {
-    private final ReadOperations readOperations;
-
-    StubStatement( ReadOperations readOperations )
-    {
-        this.readOperations = readOperations;
-    }
 
     @Override
     public void close()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public ReadOperations readOperations()
-    {
-        return readOperations;
-    }
-
-    @Override
-    public TokenWriteOperations tokenWriteOperations()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public DataWriteOperations dataWriteOperations()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public SchemaWriteOperations schemaWriteOperations()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -75,15 +38,4 @@ public class StubStatement extends StubResourceManager implements Statement
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    @Override
-    public ProcedureCallOperations procedureCallOperations()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public ExecutionStatisticsOperations executionStatisticsOperations()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
 }

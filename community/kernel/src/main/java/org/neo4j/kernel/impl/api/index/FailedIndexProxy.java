@@ -26,8 +26,10 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
@@ -38,14 +40,14 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     private final IndexCountsRemover indexCountsRemover;
     private final Log log;
 
-    FailedIndexProxy( IndexMeta indexMeta,
+    FailedIndexProxy( CapableIndexDescriptor capableIndexDescriptor,
             String indexUserDescription,
             IndexPopulator populator,
             IndexPopulationFailure populationFailure,
             IndexCountsRemover indexCountsRemover,
             LogProvider logProvider )
     {
-        super( indexMeta, populationFailure );
+        super( capableIndexDescriptor, populationFailure );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
         this.indexCountsRemover = indexCountsRemover;
@@ -53,7 +55,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         indexCountsRemover.remove();
         String message = "FailedIndexProxy#drop index on " + indexUserDescription + " dropped due to:\n" +
@@ -71,7 +73,12 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException
     {
-        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexUserDescription );
+        throw failureCause();
+    }
+
+    private IndexPopulationFailedKernelException failureCause()
+    {
+        return getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexUserDescription );
     }
 
     @Override
@@ -83,7 +90,12 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public void validate() throws IndexPopulationFailedKernelException
     {
-        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexUserDescription );
+        throw failureCause();
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
     }
 
     @Override

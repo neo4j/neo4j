@@ -183,4 +183,43 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
 
     result.toList should equal(List(Map("count(a)" -> 1)))
   }
+
+  test("grouping and ordering with multiple different types that can all be represented by primitives") {
+    val node1 = createNode(Map("prop" -> 1))
+    val node2 = createNode(Map("prop" -> 2))
+    val r1 = relate(node1, node2)
+
+    val query = "MATCH (a)-[r]-(b) RETURN a, r, b, count(a) ORDER BY a, r, b"
+    val result = executeWith(Configs.All - Configs.OldAndRule, query) // Neo4j version <= 3.1 cannot order by nodes
+    result.toList should equal(List(
+      Map("a" -> node1, "r" -> r1, "b" -> node2, "count(a)" -> 1),
+      Map("a" -> node2, "r" -> r1, "b" -> node1, "count(a)" -> 1)
+    ))
+  }
+
+  test("grouping and ordering with multiple different types with mixed representations") {
+    val node1 = createNode(Map("prop" -> "alice"))
+    val node2 = createNode(Map("prop" -> "bob"))
+    val r1 = relate(node1, node2)
+
+    val query = "MATCH (a)-[r]-(b) RETURN a, r, b, a.prop as s, count(a) ORDER BY a, r, b, s"
+    val result = executeWith(Configs.All - Configs.OldAndRule, query) // Neo4j version <= 3.1 cannot order by nodes
+    result.toList should equal(List(
+      Map("a" -> node1, "r" -> r1, "b" -> node2, "s" -> "alice", "count(a)" -> 1),
+      Map("a" -> node2, "r" -> r1, "b" -> node1, "s" -> "bob", "count(a)" -> 1)
+    ))
+  }
+
+  test("grouping and ordering with multiple different Value types") {
+    val node1 = createNode(Map("prop" -> "alice"))
+    val node2 = createNode(Map("prop" -> "bob"))
+    val r1 = relate(node1, node2)
+
+    val query = "MATCH (a)-[r]-(b) RETURN a.prop, b.prop, count(a) ORDER BY a.prop, b.prop"
+    val result = executeWith(Configs.All, query) // Neo4j version <= 3.1 cannot order by nodes
+    result.toList should equal(List(
+      Map("a.prop" -> "alice", "b.prop" -> "bob", "count(a)" -> 1),
+      Map("a.prop" -> "bob", "b.prop" -> "alice", "count(a)" -> 1)
+    ))
+  }
 }

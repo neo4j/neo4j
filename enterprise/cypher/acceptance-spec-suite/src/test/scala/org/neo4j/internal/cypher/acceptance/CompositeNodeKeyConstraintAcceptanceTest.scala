@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.time.{LocalDate, LocalDateTime}
+
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
+import org.neo4j.cypher.internal.frontend.v3_5.helpers.StringHelper._
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
@@ -277,5 +279,32 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // Then
     graph.execute("MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines).hasNext shouldBe false
+  }
+
+  test("Should handle temporal with node key constraint") {
+      // When
+      graph.execute("CREATE CONSTRAINT ON (n:User) ASSERT (n.birthday) IS NODE KEY")
+
+      // Then
+      createLabeledNode(Map("birthday" -> LocalDate.of(1991, 10, 18)), "User")
+      createLabeledNode(Map("birthday" -> LocalDateTime.of(1991, 10, 18, 0, 0, 0, 0)), "User")
+      createLabeledNode(Map("birthday" -> "1991-10-18"), "User")
+      a[ConstraintViolationException] should be thrownBy {
+        createLabeledNode(Map("birthday" -> LocalDate.of(1991, 10, 18)), "User")
+      }
+  }
+
+  test("Should handle temporal with composite node key constraint") {
+    // When
+    graph.execute("CREATE CONSTRAINT ON (n:User) ASSERT (n.name, n.birthday) IS NODE KEY")
+
+    // Then
+    createLabeledNode(Map("name" -> "Neo", "birthday" -> LocalDate.of(1991, 10, 18)), "User")
+    createLabeledNode(Map("name" -> "Neo", "birthday" -> LocalDateTime.of(1991, 10, 18, 0, 0, 0, 0)), "User")
+    createLabeledNode(Map("name" -> "Neo", "birthday" -> "1991-10-18"), "User")
+    createLabeledNode(Map("name" -> "Neolina", "birthday" -> "1991-10-18"), "User")
+    a[ConstraintViolationException] should be thrownBy {
+      createLabeledNode(Map("name" -> "Neo", "birthday" -> LocalDate.of(1991, 10, 18)), "User")
+    }
   }
 }

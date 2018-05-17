@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -34,28 +33,24 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
 
+import static java.util.Arrays.stream;
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
-    private final long indexId;
-    private final SchemaIndexDescriptor descriptor;
+    private final StoreIndexDescriptor descriptor;
     private final DropAction dropAction;
 
-    FusionIndexAccessor( IndexAccessor[] accessors,
-            Selector selector,
-            long indexId,
-            SchemaIndexDescriptor descriptor,
-            DropAction dropAction )
+    FusionIndexAccessor( IndexAccessor[] accessors, Selector selector, StoreIndexDescriptor descriptor, DropAction dropAction )
     {
         super( accessors, selector );
-        this.indexId = indexId;
         this.descriptor = descriptor;
         this.dropAction = dropAction;
     }
@@ -64,7 +59,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     public void drop() throws IOException
     {
         forAll( IndexAccessor::drop, instances );
-        dropAction.drop( indexId );
+        dropAction.drop( descriptor.getId() );
     }
 
     @Override
@@ -164,6 +159,12 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public boolean isDirty()
     {
-        return Arrays.stream( instances ).anyMatch( IndexAccessor::isDirty );
+        return stream( instances ).anyMatch( IndexAccessor::isDirty );
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        selector.select( instances, tuple ).validateBeforeCommit( tuple );
     }
 }

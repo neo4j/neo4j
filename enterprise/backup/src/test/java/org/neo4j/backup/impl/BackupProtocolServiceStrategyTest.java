@@ -29,6 +29,7 @@ import org.neo4j.com.ComException;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,7 +61,7 @@ public class BackupProtocolServiceStrategyTest
     {
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArgs );
         when( addressResolver.resolveCorrectHAAddress( any(), any() ) ).thenReturn( hostnamePort );
-        subject = new HaBackupStrategy( backupProtocolService, addressResolver, 0 );
+        subject = new HaBackupStrategy( backupProtocolService, addressResolver, NullLogProvider.getInstance(), 0 );
     }
 
     @Test

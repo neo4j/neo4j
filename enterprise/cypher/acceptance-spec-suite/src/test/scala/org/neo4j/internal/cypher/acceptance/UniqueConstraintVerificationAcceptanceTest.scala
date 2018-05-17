@@ -18,19 +18,18 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.internal.cypher.acceptance
+import java.time.{LocalDate, LocalDateTime}
 
-import org.neo4j.cypher.internal.compiler.v3_4.helpers.ListSupport
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.graphdb.{ConstraintViolationException, Label}
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.impl.api.OperationsFacade
 
 import scala.collection.JavaConverters._
 
 class UniqueConstraintVerificationAcceptanceTest
-  extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with ListSupport {
+  extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
-  test("should_add_constraint_with_no_existing_data") {
+  test("should add constraint with no existing data") {
     //GIVEN
 
     //WHEN
@@ -38,17 +37,13 @@ class UniqueConstraintVerificationAcceptanceTest
 
     //THEN
     graph.inTx {
-      context: OperationsFacade =>
-        val prop = context.propertyKeyGetForName("propertyKey")
-        val label = context.labelGetForName("Label")
-
-        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
-
-        constraints should have size 1
+      val constraints = graph.schema().getConstraints(Label.label("Label")).asScala
+      constraints should have size 1
+      constraints.head.getPropertyKeys.asScala.toList should equal(List("propertyKey"))
     }
   }
 
-  test("should_add_constraint_when_existing_data_is_unique") {
+  test("should add constraint when existing data is unique") {
     // GIVEN
     execute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
 
@@ -57,17 +52,13 @@ class UniqueConstraintVerificationAcceptanceTest
 
     // THEN
     graph.inTx {
-      context: OperationsFacade =>
-        val prop = context.propertyKeyGetForName("name")
-        val label = context.labelGetForName("Person")
-
-        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
-
-        constraints should have size 1
+      val constraints = graph.schema().getConstraints(Label.label("Person")).asScala
+      constraints should have size 1
+      constraints.head.getPropertyKeys.asScala.toList should equal(List("name"))
     }
   }
 
-  test("should_add_constraint_using_recreated_unique_data") {
+  test("should add constraint using recreated unique data") {
     // GIVEN
     execute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
     execute("match (n:Person) delete n")
@@ -78,17 +69,13 @@ class UniqueConstraintVerificationAcceptanceTest
 
     // THEN
     graph.inTx {
-      context: OperationsFacade =>
-        val prop = context.propertyKeyGetForName("name")
-        val label = context.labelGetForName("Person")
-
-        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
-
-        constraints should have size 1
+      val constraints = graph.schema().getConstraints(Label.label("Person")).asScala
+      constraints should have size 1
+      constraints.head.getPropertyKeys.asScala.toList should equal(List("name"))
     }
   }
 
-  test("should_drop_constraint") {
+  test("should drop constraint") {
     //GIVEN
     execute("create constraint on (node:Label) assert node.propertyKey is unique")
 
@@ -97,17 +84,12 @@ class UniqueConstraintVerificationAcceptanceTest
 
     //THEN
     graph.inTx {
-      context: OperationsFacade =>
-        val prop = context.propertyKeyGetForName("propertyKey")
-        val label = context.labelGetForName("Label")
-
-        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
-
-        constraints shouldBe empty
+      val constraints = graph.schema().getConstraints(Label.label("Label")).asScala
+      constraints shouldBe empty
     }
   }
 
-  test("should_fail_to_add_constraint_when_existing_data_conflicts") {
+  test("should fail to add constraint when existing data conflicts") {
     // GIVEN
     execute("create (a:Person{id:1}), (b:Person{id:1})")
 
@@ -120,19 +102,27 @@ class UniqueConstraintVerificationAcceptanceTest
     }
     // THEN
     catch
-    {
-      case ex: CypherExecutionException =>
-        assert(ex.getCause.isInstanceOf[CreateConstraintFailureException])
-    }
+      {
+        case ex: CypherExecutionException =>
+          assert(ex.getCause.isInstanceOf[CreateConstraintFailureException])
+      }
 
     graph.inTx {
-      context: OperationsFacade =>
-        val prop = context.propertyKeyGetForName("id")
-        val label = context.labelGetForName("Person")
+      val constraints = graph.schema().getConstraints(Label.label("Person")).asScala
+      constraints shouldBe empty
+    }
+  }
 
-        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
+  test("Should handle temporal with unique constraint") {
+    // When
+    graph.execute("CREATE CONSTRAINT ON (n:User) ASSERT (n.birthday) IS UNIQUE")
 
-        constraints shouldBe empty
+    // Then
+    createLabeledNode(Map("birthday" -> LocalDate.of(1991, 10, 18)), "User")
+    createLabeledNode(Map("birthday" -> LocalDateTime.of(1991, 10, 18, 0, 0, 0, 0)), "User")
+    createLabeledNode(Map("birthday" -> "1991-10-18"), "User")
+    a[ConstraintViolationException] should be thrownBy {
+      createLabeledNode(Map("birthday" -> LocalDate.of(1991, 10, 18)), "User")
     }
   }
 }

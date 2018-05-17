@@ -19,48 +19,30 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.NodeItem;
 
-import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -74,421 +56,19 @@ public class KernelIT extends KernelIntegrationTest
         // 1: Start your transactions through the Beans API
         Transaction transaction = db.beginTx();
 
-        // 2: Get a hold of a KernelAPI statement context for the *current* transaction this way:
-        Statement statement = statementContextSupplier.get();
+        // 2: Get a hold of a KernelAPI transaction this way:
+        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
 
         // 3: Now you can interact through both the statement context and the kernel API to manipulate the
         //    same transaction.
         Node node = db.createNode();
 
-        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
+        int labelId = ktx.tokenWrite().labelGetOrCreateForName( "labello" );
+        ktx.dataWrite().nodeAddLabel( node.getId(), labelId );
 
-        // 4: Close the StatementContext
-        statement.close();
-
-        // 5: Commit through the beans API
+        // 4: Commit through the beans API
         transaction.success();
         transaction.close();
-    }
-
-    @Test
-    public void mixingBeansApiWithKernelAPIForNestedTransaction() throws Exception
-    {
-        // GIVEN
-        Transaction outerTx = db.beginTx();
-        Statement statement = statementContextSupplier.get();
-
-        // WHEN
-        Node node = db.createNode();
-        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-        statement.close();
-        outerTx.close();
-    }
-
-    @Test
-    public void changesInTransactionContextShouldBeRolledBackWhenTxIsRolledBack() throws Exception
-    {
-        // GIVEN
-        Node node;
-        int labelId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Statement statement = statementContextSupplier.get();
-
-            // WHEN
-            node = db.createNode();
-            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
-            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-            statement.close();
-        }
-
-        // THEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            try ( Statement statement = statementContextSupplier.get() )
-            {
-                statement.readOperations().nodeHasLabel( node.getId(), labelId );
-                fail( "should have thrown exception" );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                // Yay!
-            }
-        }
-    }
-
-    @Test
-    public void shouldNotBeAbleToCommitIfFailedTransactionContext() throws Exception
-    {
-        // WHEN
-        Node node = null;
-        int labelId = -1;
-        TransactionFailureException expectedException = null;
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Statement statement = statementContextSupplier.get();
-            node = db.createNode();
-            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "labello" );
-            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-            statement.close();
-            transaction.failure();
-            transaction.success();
-        }
-        catch ( TransactionFailureException e )
-        {
-            expectedException = e;
-        }
-        finally
-        {
-            Assert.assertNotNull( "Should have failed", expectedException );
-        }
-
-        // THEN
-        try ( Transaction tx = db.beginTx();
-              Statement statement = statementContextSupplier.get() )
-        {
-            try
-            {
-                statement.readOperations().nodeHasLabel( node.getId(), labelId );
-                fail( "should have thrown exception" );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                // Yay!
-            }
-        }
-    }
-
-    @Test
-    public void transactionStateShouldRemovePreviouslyAddedLabel() throws Exception
-    {
-        Transaction tx = db.beginTx();
-
-        int labelId1;
-        int labelId2;
-        Node node = db.createNode();
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            // WHEN
-            labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
-            labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello2" );
-            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
-            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
-            statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
-        }
-        tx.success();
-        tx.close();
-
-        // THEN
-        tx = db.beginTx();
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1} ),
-                    PrimitiveIntCollections.asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
-        }
-        tx.close();
-    }
-
-    @Test
-    public void transactionStateShouldReflectRemovingAddedLabelImmediately() throws Exception
-    {
-        Transaction tx = db.beginTx();
-        Statement statement = statementContextSupplier.get();
-
-        // WHEN
-        Node node = db.createNode();
-        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
-        int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello2" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
-        statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
-
-        // THEN
-        assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
-        assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1} ),
-                PrimitiveIntCollections.asSet(  statement.readOperations().nodeGetLabels( node.getId() ) ) );
-
-        statement.close();
-        tx.success();
-        tx.close();
-    }
-
-    @Test
-    public void transactionStateShouldReflectRemovingLabelImmediately() throws Exception
-    {
-        // GIVEN
-
-        Transaction tx = db.beginTx();
-        Statement statement = statementContextSupplier.get();
-        Node node = db.createNode();
-        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
-        int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello2" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId2 );
-        statement.close();
-        tx.success();
-        tx.close();
-
-        tx = db.beginTx();
-        statement = statementContextSupplier.get();
-
-        // WHEN
-        statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
-
-        // THEN
-        PrimitiveIntSet labels = PrimitiveIntCollections.asSet(
-                statement.readOperations().nodeGetLabels( node.getId() ) );
-        assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
-        assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1} ), labels );
-        statement.close();
-        tx.success();
-        tx.close();
-    }
-
-    @Test
-    public void labelShouldBeRemovedAfterCommit() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Statement statement = statementContextSupplier.get();
-        Node node = db.createNode();
-        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "labello1" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId1 );
-        statement.close();
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        statement = statementContextSupplier.get();
-        statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId1 );
-        statement.close();
-        tx.success();
-        tx.close();
-
-        // THEN
-        tx = db.beginTx();
-        statement = statementContextSupplier.get();
-        Set<Integer> labels = PrimitiveIntCollections.toSet(
-                statement.readOperations().nodeGetLabels( node.getId() ) );
-
-        statement.close();
-        tx.success();
-        tx.close();
-
-        assertThat( labels, equalTo( Collections.<Integer>emptySet() ) );
-    }
-
-    @Test
-    public void addingNewLabelToNodeShouldRespondTrue() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        int labelId;
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
-            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-        }
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        boolean added;
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            added = statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-        }
-        tx.close();
-
-        // THEN
-        assertFalse( "Shouldn't have been added now", added );
-    }
-
-    @Test
-    public void addingExistingLabelToNodeShouldRespondFalse() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        int labelId;
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
-        }
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        boolean added;
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            added = statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-        }
-        tx.close();
-
-        // THEN
-        assertTrue( "Should have been added now", added );
-    }
-
-    @Test
-    public void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        int labelId;
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
-            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-        }
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        boolean removed;
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            removed = statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId );
-        }
-
-        // THEN
-        assertTrue( "Should have been removed now", removed );
-        tx.close();
-    }
-
-    @Test
-    public void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        int labelId;
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "mylabel" );
-        }
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        boolean removed;
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            removed = statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId );
-        }
-
-        // THEN
-        assertFalse( "Shouldn't have been removed now", removed );
-        tx.close();
-    }
-
-    @Test
-    public void deletingNodeWithLabelsShouldHaveThoseLabelRemovalsReflectedInTransaction() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Label label = label( "labello" );
-        Node node = db.createNode( label );
-        tx.success();
-        tx.close();
-
-        tx = db.beginTx();
-        Statement statement = statementContextSupplier.get();
-
-        // WHEN
-        statement.dataWriteOperations().nodeDelete( node.getId() );
-
-        // Then
-        int labelId = statement.readOperations().labelGetForName( label.name() );
-        try
-        {
-            statement.readOperations().nodeGetLabels( node.getId() );
-            fail();
-        }
-        catch ( EntityNotFoundException e )
-        {
-            // Ok
-        }
-
-        try
-        {
-            statement.readOperations().nodeHasLabel( node.getId(), labelId );
-            fail();
-        }
-        catch ( EntityNotFoundException e )
-        {
-            // Ok
-        }
-
-        Set<Long> nodes = PrimitiveLongCollections.toSet( statement.readOperations().nodesGetForLabel( labelId ) );
-
-        statement.close();
-
-        tx.success();
-        tx.close();
-
-        assertEquals( emptySet(), nodes );
-    }
-
-    @Test
-    public void deletingNodeWithLabelsShouldHaveRemovalReflectedInLabelScans()
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Label label = label( "labello" );
-        Node node = db.createNode( label );
-        tx.success();
-        tx.close();
-
-        // AND GIVEN I DELETE IT
-        tx = db.beginTx();
-        node.delete();
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        Set<Long> nodeSet;
-        try ( Statement statement = statementContextSupplier.get() )
-        {
-            int labelId = statement.readOperations().labelGetForName( label.name() );
-            PrimitiveLongIterator nodes = statement.readOperations().nodesGetForLabel( labelId );
-            nodeSet = PrimitiveLongCollections.toSet( nodes );
-        }
-        tx.success();
-        tx.close();
-
-        // THEN
-        assertThat( nodeSet, equalTo( Collections.<Long>emptySet() ) );
     }
 
     @Test
@@ -533,7 +113,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN schema state should be immediately updated (this works because the schema cache is updated during
         // transaction apply, while the schema lock is held).
-        assertFalse( schemaStateContains("my key") );
+        assertFalse( schemaStateContains( "my key" ) );
     }
 
     @Test
@@ -541,11 +121,8 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            statement.dataWriteOperations().nodeCreate();
-        }
+        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
+        tx.dataWrite().nodeCreate();
         tx.success();
 
         long previousCommittedTxId = lastCommittedTxId( db );
@@ -559,11 +136,8 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            statement.dataWriteOperations().nodeCreate();
-        }
+        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
+        tx.dataWrite().nodeCreate();
         tx.failure();
 
         assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
@@ -575,11 +149,8 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            statement.dataWriteOperations().nodeCreate();
-        }
+        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
+        tx.dataWrite().nodeCreate();
         tx.markForTermination( Status.Transaction.Terminated );
 
         assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
@@ -591,11 +162,8 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            statement.dataWriteOperations().nodeCreate();
-        }
+        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
+        tx.dataWrite().nodeCreate();
         tx.failure();
         tx.markForTermination( Status.Transaction.Terminated );
 
@@ -608,10 +176,11 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-        try ( Statement statement = tx.acquireStatement();
-              Cursor<NodeItem> cursor = statement.readOperations().nodeCursorById( 1 ) )
+        org.neo4j.internal.kernel.api.Transaction tx = newTransaction();
+        try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
         {
+            tx.dataRead().singleNode( 1, node );
+            node.next();
         }
         tx.success();
 
@@ -637,22 +206,23 @@ public class KernelIT extends KernelIntegrationTest
         return txIdStore.getLastCommittedTransactionId();
     }
 
-    private IndexReference createIndex( KernelTransaction transaction )
+    private IndexReference createIndex( org.neo4j.internal.kernel.api.Transaction transaction )
             throws SchemaKernelException, InvalidTransactionTypeKernelException
     {
         TokenWrite tokenWrite = transaction.tokenWrite();
         SchemaWrite schemaWrite = transaction.schemaWrite();
         LabelSchemaDescriptor schemaDescriptor = forLabel( tokenWrite.labelGetOrCreateForName( "hello" ),
-                        tokenWrite.propertyKeyGetOrCreateForName( "hepp" ) );
+                tokenWrite.propertyKeyGetOrCreateForName( "hepp" ) );
         return schemaWrite.indexCreate( schemaDescriptor );
     }
 
     private String getOrCreateSchemaState( String key, final String maybeSetThisState )
     {
-        try ( Transaction tx = db.beginTx();
-              Statement statement = statementContextSupplier.get() )
+        try ( Transaction tx = db.beginTx() )
         {
-            String state = statement.readOperations().schemaStateGetOrCreate( key, s -> maybeSetThisState );
+            KernelTransaction ktx =
+                    statementContextSupplier.getKernelTransactionBoundToThisThread( true );
+            String state = ktx.schemaRead().schemaStateGetOrCreate( key, s -> maybeSetThisState );
             tx.success();
             return state;
         }
@@ -660,11 +230,11 @@ public class KernelIT extends KernelIntegrationTest
 
     private boolean schemaStateContains( String key )
     {
-        try ( Transaction tx = db.beginTx();
-              Statement statement = statementContextSupplier.get() )
+        try ( Transaction tx = db.beginTx() )
         {
+            KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
             final AtomicBoolean result = new AtomicBoolean( true );
-            statement.readOperations().schemaStateGetOrCreate( key, s ->
+            ktx.schemaRead().schemaStateGetOrCreate( key, s ->
             {
                 result.set( false );
                 return null;

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.util.v3_4.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.util.v3_4.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.util.v3_5.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.util.v3_5.{CypherException => InternalCypherException}
+import org.neo4j.values.utils._
 
 object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
@@ -91,6 +92,18 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
         case e: InternalCypherException =>
           f(e)
           throw e.mapToPublic(exceptionHandler)
+
+        case e: ValuesException =>
+          f(e)
+          throw mapToCypher(e)
+
+        // ValueMath do not wrap java.lang.ArithmeticExceptions, so we map it to public here
+        // (This will also catch if we happened to produce arithmetic exceptions internally (as a runtime bug and not as the result of the query),
+        //  which is not optimal but hopefully rare)
+        case e: java.lang.ArithmeticException =>
+          f(e)
+          throw exceptionHandler.arithmeticException(e.getMessage, e)
+
         case e: Throwable =>
           f(e)
           throw e
@@ -100,5 +113,23 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   trait RunSafely {
     def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default): T
+  }
+
+  def mapToCypher(exception: ValuesException): CypherException = {
+    exception match {
+      case e: UnsupportedTemporalUnitException =>
+        exceptionHandler.cypherTypeException(e.getMessage, e)
+      case e: InvalidValuesArgumentException =>
+        exceptionHandler.invalidArgumentException(e.getMessage, e)
+      case e: TemporalArithmeticException =>
+        exceptionHandler.arithmeticException(e.getMessage, e)
+      case e: TemporalParseException =>
+        if (e.getParsedData == null) {
+          exceptionHandler.syntaxException(e.getMessage, "", None, e)
+        }
+        else {
+          exceptionHandler.syntaxException(e.getMessage, e.getParsedData, Option(e.getErrorIndex), e)
+        }
+    }
   }
 }

@@ -38,4 +38,10 @@ public class NodeValueIndexCursorInMemoryTest extends AbstractNodeValueIndexCurs
     {
         return "1.0";
     }
+
+    @Override
+    protected boolean spatialRangeSupport()
+    {
+        return false;
+    }
 }

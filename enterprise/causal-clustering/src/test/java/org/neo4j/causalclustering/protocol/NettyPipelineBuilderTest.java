@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.protocol;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
@@ -31,15 +32,21 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
+import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class NettyPipelineBuilderTest
@@ -69,7 +76,8 @@ public class NettyPipelineBuilderTest
         channel.writeOneInbound( new Object() );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( equalTo( "Exception in inbound" ), equalTo( ex ) ) );
+        logProvider.assertExactly( inLog( getClass() ).error( startsWith( "Exception in inbound" ), equalTo( ex ) ) );
+        assertFalse( channel.isOpen() );
     }
 
     @Test
@@ -83,7 +91,9 @@ public class NettyPipelineBuilderTest
         channel.writeOneInbound( msg );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( equalTo( "Unhandled inbound message: " + msg ) ) );
+        logProvider.assertExactly( inLog( getClass() )
+                .error( equalTo( "Unhandled inbound message: %s for channel: %s" ), equalTo( msg ), any( Channel.class ) ) );
+        assertFalse( channel.isOpen() );
     }
 
     @Test
@@ -97,7 +107,9 @@ public class NettyPipelineBuilderTest
         channel.writeAndFlush( msg );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( equalTo( "Unhandled outbound message: " + msg ) ) );
+        logProvider.assertExactly( inLog( getClass() )
+                .error( equalTo( "Unhandled outbound message: %s for channel: %s" ), equalTo( msg ), any( Channel.class )  ) );
+        assertFalse( channel.isOpen() );
     }
 
     @Test
@@ -117,7 +129,8 @@ public class NettyPipelineBuilderTest
         channel.writeAndFlush( new Object() );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( equalTo( "Exception in outbound" ), equalTo( ex ) ) );
+        logProvider.assertExactly( inLog( getClass() ).error( startsWith( "Exception in outbound" ), equalTo( ex ) ) );
+        assertFalse( channel.isOpen() );
     }
 
     @Test
@@ -137,7 +150,8 @@ public class NettyPipelineBuilderTest
         channel.writeAndFlush( new Object(), channel.voidPromise() );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( equalTo( "Exception in outbound" ), equalTo( ex ) ) );
+        logProvider.assertExactly( inLog( getClass() ).error( startsWith( "Exception in outbound" ), equalTo( ex ) ) );
+        assertFalse( channel.isOpen() );
     }
 
     @Test
@@ -196,7 +210,8 @@ public class NettyPipelineBuilderTest
 
         assertEquals( 3, getHandlers( channel.pipeline() ).size() ); // head/tail error handlers also counted
         assertThat( channel.pipeline().names(),
-                hasItems( "error_handler_head", NettyPipelineBuilder.MESSAGE_GATE_NAME, "error_handler_tail" ) );
+                hasItems( NettyPipelineBuilder.ERROR_HANDLER_HEAD, NettyPipelineBuilder.MESSAGE_GATE_NAME,
+                        NettyPipelineBuilder.ERROR_HANDLER_TAIL ) );
 
         // when
         ServerNettyPipelineBuilder builderB = NettyPipelineBuilder.server( channel.pipeline(), log );
@@ -206,7 +221,36 @@ public class NettyPipelineBuilderTest
         // then
         assertEquals( 4, getHandlers( channel.pipeline() ).size() ); // head/tail error handlers also counted
         assertThat( channel.pipeline().names(),
-                hasItems( "error_handler_head", "my_handler", NettyPipelineBuilder.MESSAGE_GATE_NAME, "error_handler_tail" ) );
+                hasItems( NettyPipelineBuilder.ERROR_HANDLER_HEAD, "my_handler", NettyPipelineBuilder.MESSAGE_GATE_NAME,
+                        NettyPipelineBuilder.ERROR_HANDLER_TAIL ) );
+    }
+
+    @Test
+    public void shouldInvokeCloseHandlerOnClose() throws InterruptedException
+    {
+        Semaphore semaphore = new Semaphore( 0 );
+        NettyPipelineBuilder.server( channel.pipeline(), log ).onClose( semaphore::release ).install();
+
+        // when
+        channel.close();
+
+        // then
+        assertTrue( semaphore.tryAcquire( 1, TimeUnit.MINUTES ) );
+        assertFalse( channel.isOpen() );
+    }
+
+    @Test
+    public void shouldInvokeCloseHandlerOnPeerDisconnect() throws InterruptedException
+    {
+        Semaphore semaphore = new Semaphore( 0 );
+        NettyPipelineBuilder.server( channel.pipeline(), log ).onClose( semaphore::release ).install();
+
+        // when
+        channel.disconnect();
+
+        // then
+        assertTrue( semaphore.tryAcquire( 1, TimeUnit.MINUTES ) );
+        assertFalse( channel.isOpen() );
     }
 
     private List<ChannelHandler> getHandlers( ChannelPipeline pipeline )

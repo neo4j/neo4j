@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.PrimitiveIntCollections;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Numbers;
 import org.neo4j.kernel.api.StatementConstants;
@@ -107,7 +108,7 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     }
 
     @Override
-    public PrimitiveIntSet labels()
+    public MutableIntSet labels()
     {
         ensureLabels();
         return PrimitiveIntCollections.asSet( labels, Numbers::safeCastLongToInt );

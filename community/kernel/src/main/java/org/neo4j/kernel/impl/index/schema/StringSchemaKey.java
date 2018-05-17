@@ -27,7 +27,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.neo4j.values.storable.UTF8StringValue.codePointByteArrayCompare;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link String},
@@ -39,13 +38,16 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
 
     private boolean ignoreLength;
 
-    // TODO something better or?
-    // TODO this is UTF-8 bytes for now
+    // UTF-8 bytes, grows on demand. Actual length is dictated by bytesLength field.
     byte[] bytes;
+    int bytesLength;
+    // Set to true when the internal byte[] have been handed out to an UTF8Value, so that the next call to setBytesLength
+    // will be forced to allocate a new array. The byte[] isn't cleared with null since this key still logically contains those bytes.
+    private boolean bytesDereferenced;
 
     int size()
     {
-        return ENTITY_ID_SIZE + bytes.length;
+        return ENTITY_ID_SIZE + bytesLength;
     }
 
     @Override
@@ -60,9 +62,23 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
     }
 
     @Override
+    void initialize( long entityId )
+    {
+        super.initialize( entityId );
+        ignoreLength = false;
+    }
+
+    @Override
     public Value asValue()
     {
-        return bytes == null ? Values.NO_VALUE : Values.utf8Value( bytes );
+        if ( bytes == null )
+        {
+            return Values.NO_VALUE;
+        }
+
+        // Dereference our bytes so that we won't overwrite it on next read
+        bytesDereferenced = true;
+        return Values.utf8Value( bytes, 0, bytesLength );
     }
 
     @Override
@@ -80,15 +96,15 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
     void initAsPrefixLow( String prefix )
     {
         writeString( prefix );
-        setEntityId( Long.MIN_VALUE );
-        setCompareId( DEFAULT_COMPARE_ID );
+        initialize( Long.MIN_VALUE );
+        // Don't set ignoreLength = true here since the "low" a.k.a. left side of the range should care about length.
+        // This will make the prefix lower than those that matches the prefix (their length is >= that of the prefix)
     }
 
     void initAsPrefixHigh( String prefix )
     {
         writeString( prefix );
-        setEntityId( Long.MAX_VALUE );
-        setCompareId( DEFAULT_COMPARE_ID );
+        initialize( Long.MAX_VALUE );
         ignoreLength = true;
     }
 
@@ -107,7 +123,6 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
     @Override
     int compareValueTo( StringSchemaKey other )
     {
-        // TODO cover all cases of bytes == null and special tie breaker and document
         if ( bytes != other.bytes )
         {
             if ( bytes == null )
@@ -124,56 +139,79 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
             return 0;
         }
 
-        try
-        {
-            // TODO change to not throw
-            return codePointByteArrayCompare( bytes, other.bytes, ignoreLength || other.ignoreLength );
-        }
-        catch ( Exception e )
-        {
-            // We can not throw here because we will visit this method inside a pageCursor.shouldRetry() block.
-            // Just return a comparison that at least will be commutative.
-            return byteArrayCompare( bytes, other.bytes );
-        }
+        return unsignedByteArrayCompare( bytes, bytesLength, other.bytes, other.bytesLength, ignoreLength | other.ignoreLength );
     }
 
-    private static int byteArrayCompare( byte[] a, byte[] b )
+    private static int unsignedByteArrayCompare( byte[] a, int aLength, byte[] b, int bLength, boolean ignoreLength )
     {
         assert a != null && b != null : "Null arrays not supported.";
 
-        if ( a == b )
+        if ( a == b && aLength == bLength )
         {
             return 0;
         }
 
-        int length = Math.min( a.length, b.length );
+        int length = Math.min( aLength, bLength );
         for ( int i = 0; i < length; i++ )
         {
-            int compare = Byte.compare( a[i], b[i] );
+            int compare = Short.compare( (short) (a[i] & 0xFF), (short) (b[i] & 0xFF) );
             if ( compare != 0 )
             {
                 return compare;
             }
         }
 
-        return Integer.compare( a.length, b.length );
+        return ignoreLength ? 0 : Integer.compare( aLength, bLength );
     }
 
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,bytes=%s", asValue(), getEntityId(), Arrays.toString( bytes ) );
+        return format( "value=%s,entityId=%d,bytes=%s",
+                asValue(),
+                getEntityId(),
+                bytes == null ? "null" : Arrays.toString( Arrays.copyOf( bytes, bytesLength ) ) );
     }
 
     @Override
     public void writeString( String value )
     {
         bytes = UTF8.encode( value );
+        bytesLength = bytes.length;
+        bytesDereferenced = false;
     }
 
     @Override
     public void writeString( char value )
     {
         writeString( String.valueOf( value ) );
+    }
+
+    void copyFrom( StringSchemaKey key )
+    {
+        setBytesLength( key.bytesLength );
+        System.arraycopy( key.bytes, 0, bytes, 0, key.bytesLength );
+        setEntityId( key.getEntityId() );
+        setCompareId( key.getCompareId() );
+    }
+
+    /**
+     * Ensures that the internal byte[] is long enough, or longer than the given {@code length}.
+     * Also sets the internal {@code bytesLength} field to the given {@code length} so that interactions with the byte[]
+     * from this point on will use that for length, instead of the length of the byte[].
+     *
+     * @param length minimum length that the internal byte[] needs to be.
+     */
+    void setBytesLength( int length )
+    {
+        if ( bytesDereferenced || bytes == null || bytes.length < length )
+        {
+            bytesDereferenced = false;
+
+            // allocate a bit more than required so that there's a higher chance that this byte[] instance
+            // can be used for more keys than just this one
+            bytes = new byte[length + length / 2];
+        }
+        bytesLength = length;
     }
 }

@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.runtime
 
 import java.net.URL
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescriptor, KernelStatisticProvider, TokenContext}
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
+import org.eclipse.collections.api.iterator.LongIterator
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor, KernelStatisticProvider, TokenContext}
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
@@ -108,13 +108,13 @@ trait QueryContext extends TokenContext {
 
   def indexScan(index: IndexReference): Iterator[NodeValue]
 
-  def indexScanPrimitive(index: IndexReference): PrimitiveLongIterator
+  def indexScanPrimitive(index: IndexReference): LongIterator
 
   def lockingUniqueIndexSeek(index: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue]
 
   def getNodesByLabel(id: Int): Iterator[NodeValue]
 
-  def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator
+  def getNodesByLabelPrimitive(id: Int): LongIterator
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
@@ -228,13 +228,11 @@ trait Operations[T] {
 
   def all: Iterator[T]
 
-  def allPrimitive: PrimitiveLongIterator
+  def allPrimitive: LongIterator
 
   def acquireExclusiveLock(obj: Long): Unit
 
   def releaseExclusiveLock(obj: Long): Unit
-
-  def exists(id: Long): Boolean
 
   def getByIdIfExists(id: Long): Option[T]
 }

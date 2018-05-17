@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.schema;
 import java.util.function.IntConsumer;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.storageengine.api.EntityType;
 
 public class SchemaDescriptorFactory
@@ -49,7 +49,7 @@ public class SchemaDescriptorFactory
     {
         for ( int propertyId : propertyIds )
         {
-            if ( KeyReadOperations.NO_SUCH_PROPERTY_KEY == propertyId )
+            if ( StatementConstants.NO_SUCH_PROPERTY_KEY == propertyId )
             {
                 throw new IllegalArgumentException(
                         "Index schema descriptor can't be created for non existent property." );
@@ -59,7 +59,7 @@ public class SchemaDescriptorFactory
 
     private static void validateRelationshipTypeLabelId( int relType )
     {
-        if ( KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE == relType )
+        if ( StatementConstants.NO_SUCH_RELATIONSHIP_TYPE == relType )
         {
             throw new IllegalArgumentException(
                     "Index schema descriptor can't be created for non existent relationship type." );
@@ -68,7 +68,7 @@ public class SchemaDescriptorFactory
 
     private static void validateLabelId( int labelId )
     {
-        if ( KeyReadOperations.NO_SUCH_LABEL == labelId )
+        if ( StatementConstants.NO_SUCH_LABEL == labelId )
         {
             throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
         }

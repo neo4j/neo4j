@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.collection.primitive.{PrimitiveIntIterator, PrimitiveLongIterator}
+import org.eclipse.collections.api.iterator.{IntIterator, LongIterator}
 
 object JavaConversionSupport {
 
-  def asScala(iterator: PrimitiveIntIterator): Iterator[Int] = new Iterator[Int] {
+  def asScala(iterator: IntIterator): Iterator[Int] = new Iterator[Int] {
     def hasNext = iterator.hasNext
     def next() = iterator.next()
   }
 
-  def asScalaENFXSafe(iterator: PrimitiveIntIterator): Iterator[Int] = makeENFXSafe(iterator.hasNext, iterator.next)(Some(_))
+  def asScalaENFXSafe(iterator: IntIterator): Iterator[Int] = makeENFXSafe(iterator.hasNext, iterator.next)(Some(_))
 
   // Same as mapToScala, but handles concurrency exceptions by swallowing exceptions
-  def mapToScalaENFXSafe[T](iterator: PrimitiveLongIterator)(f: Long => Option[T]): Iterator[T] = makeENFXSafe(iterator.hasNext, iterator.next)(f)
+  def mapToScalaENFXSafe[T](iterator: LongIterator)(f: Long => Option[T]): Iterator[T] = makeENFXSafe(iterator.hasNext, iterator.next)(f)
 
   private def makeENFXSafe[S,T](hasMore: () => Boolean, more: () => S)(f: S => Option[T]): Iterator[T] = new Iterator[T] {
     private var _next: Option[T] = fetchNext()

@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.runtime.planDescription
 
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.PlanDescriptionArgumentSerializer.serialize
-import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.util.v3_4.symbols.{CTBoolean, CTList, CTNode, CTString}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.DummyPosition
-import org.neo4j.cypher.internal.v3_4.expressions.{DummyExpression, SemanticDirection, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NestedPlanExpression}
-import org.neo4j.cypher.internal.v3_4.logical.plans
+import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.v3_5.symbols.{CTBoolean, CTList, CTNode, CTString}
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.DummyPosition
+import org.neo4j.cypher.internal.v3_5.expressions.{DummyExpression, SemanticDirection, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NestedPlanExpression}
+import org.neo4j.cypher.internal.v3_5.logical.plans
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   private val pos = DummyPosition(0)

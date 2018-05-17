@@ -105,7 +105,7 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
      * {@inheritDoc}
      */
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         commitCloseLock.lock();
         try

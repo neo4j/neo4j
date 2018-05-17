@@ -339,7 +339,7 @@ public class IdContainer
 
     private static byte[] getBufferBytes( ByteBuffer buffer )
     {
-        byte[] bytes = new byte[buffer.position()];
+        byte[] bytes = new byte[buffer.limit()];
         buffer.get( bytes );
         return bytes;
     }

@@ -27,6 +27,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
@@ -43,9 +44,11 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupCoreIT
@@ -75,7 +78,7 @@ public class BackupCoreIT
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of( createSomeData( cluster ) );
             String[] args = backupArguments( backupAddress( cluster ), backupsDir, "" + db.serverId() );
-            assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( clusterRule.clusterDirectory(), args ) );
+            assertEventually( () -> runBackupToolFromOtherJvmToGetExitCode( clusterRule.clusterDirectory(), args ), equalTo( 0 ), 5, TimeUnit.SECONDS );
 
             // Add some new data
             DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );
@@ -99,7 +102,7 @@ public class BackupCoreIT
 
     static String backupAddress( Cluster cluster )
     {
-        return cluster.getDbWithRole( Role.LEADER ).settingValue( "causal_clustering.transaction_listen_address" );
+        return cluster.getMemberWithRole( Role.LEADER ).settingValue( "causal_clustering.transaction_listen_address" );
     }
 
     static String[] backupArguments( String from, File backupsDir, String name )
@@ -108,6 +111,7 @@ public class BackupCoreIT
         args.add( "--from=" + from );
         args.add( "--cc-report-dir=" + backupsDir );
         args.add( "--backup-dir=" + backupsDir );
+        args.add( "--protocol=catchup" );
         args.add( "--name=" + name );
         return args.toArray( new String[args.size()] );
     }

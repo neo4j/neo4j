@@ -19,9 +19,9 @@
  */
 package org.neo4j.backup.impl;
 
-import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.com.storecopy.FileMoveProvider;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -65,18 +65,21 @@ class BackupStrategyCoordinatorFactory
             BackupDelegator backupDelegator, PageCache pageCache )
     {
         FileSystemAbstraction fs = outsideWorld.fileSystem();
-        BackupCopyService copyService = new BackupCopyService( fs, pageCache, new FileMoveProvider( pageCache, fs ) );
+        BackupCopyService copyService = new BackupCopyService( fs, pageCache, new FileMoveProvider( fs ) );
         ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.textual( outsideWorld.errorStream() );
         BackupRecoveryService recoveryService = new BackupRecoveryService();
         long timeout = onlineBackupContext.getRequiredArguments().getTimeout();
         Config config = onlineBackupContext.getConfig();
 
-        BackupStrategy ccStrategy = new CausalClusteringBackupStrategy( backupDelegator, addressResolver );
-        BackupStrategy haStrategy = new HaBackupStrategy( backupProtocolService, addressResolver, timeout );
+        StoreFiles storeFiles = new StoreFiles( fs, pageCache );
+        BackupStrategy ccStrategy = new CausalClusteringBackupStrategy( backupDelegator, addressResolver, logProvider, storeFiles );
+        BackupStrategy haStrategy = new HaBackupStrategy( backupProtocolService, addressResolver, logProvider, timeout );
 
-        List<BackupStrategyWrapper> strategies = Arrays.asList(
-                wrap( ccStrategy, copyService, pageCache, config, recoveryService ),
-                wrap( haStrategy, copyService, pageCache, config, recoveryService ) );
+        BackupStrategyWrapper ccStrategyWrapper = wrap( ccStrategy, copyService, pageCache, config, recoveryService );
+        BackupStrategyWrapper haStrategyWrapper = wrap( haStrategy, copyService, pageCache, config, recoveryService );
+        StrategyResolverService strategyResolverService = new StrategyResolverService( haStrategyWrapper, ccStrategyWrapper );
+        List<BackupStrategyWrapper> strategies =
+                strategyResolverService.getStrategies( onlineBackupContext.getRequiredArguments().getSelectedBackupProtocol() );
 
         return new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, strategies );
     }

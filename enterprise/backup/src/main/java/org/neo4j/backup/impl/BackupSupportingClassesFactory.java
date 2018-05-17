@@ -19,19 +19,15 @@
  */
 package org.neo4j.backup.impl;
 
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
-
 import java.io.OutputStream;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.function.Function;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
-import org.neo4j.causalclustering.catchup.CatchUpResponseHandler;
-import org.neo4j.causalclustering.catchup.CatchupProtocolClientInstaller;
+import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
@@ -40,25 +36,18 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.SupportedProtocolCreator;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
-import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
+import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
-import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols;
-import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
-import org.neo4j.causalclustering.protocol.ProtocolInstaller;
-import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
-import org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
-import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
-import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
+import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
-
-import static java.util.Collections.singletonList;
 
 /**
  * The dependencies for the backup strategies require a valid configuration for initialisation.
@@ -67,14 +56,13 @@ import static java.util.Collections.singletonList;
  */
 public class BackupSupportingClassesFactory
 {
-    private static final long INACTIVITY_TIMEOUT_MILLIS = 60 * 1000;
-
     protected final LogProvider logProvider;
     protected final Clock clock;
     protected final Monitors monitors;
     protected final FileSystemAbstraction fileSystemAbstraction;
     protected final TransactionLogCatchUpFactory transactionLogCatchUpFactory;
     protected final OutputStream logDestination;
+    protected final OutsideWorld outsideWorld;
 
     protected BackupSupportingClassesFactory( BackupModule backupModule )
     {
@@ -84,6 +72,7 @@ public class BackupSupportingClassesFactory
         this.fileSystemAbstraction = backupModule.getFileSystemAbstraction();
         this.transactionLogCatchUpFactory = backupModule.getTransactionLogCatchUpFactory();
         this.logDestination = backupModule.getOutsideWorld().outStream();
+        this.outsideWorld = backupModule.getOutsideWorld();
     }
 
     /**
@@ -95,6 +84,7 @@ public class BackupSupportingClassesFactory
      */
     BackupSupportingClasses createSupportingClasses( Config config )
     {
+        monitors.addMonitorListener( new BackupOutputMonitor( outsideWorld ) );
         PageCache pageCache = createPageCache( fileSystemAbstraction, config );
         return new BackupSupportingClasses(
                 backupDelegatorFromConfig( pageCache, config ),
@@ -110,9 +100,11 @@ public class BackupSupportingClassesFactory
 
     private BackupDelegator backupDelegatorFromConfig( PageCache pageCache, Config config )
     {
-        CatchUpClient catchUpClient = new CatchUpClient( logProvider, clock, INACTIVITY_TIMEOUT_MILLIS, channelInitializer( config ) );
+        CatchUpClient catchUpClient = catchUpClient( config );
         TxPullClient txPullClient = new TxPullClient( catchUpClient, monitors );
-        StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, logProvider );
+        ExponentialBackoffStrategy backOffStrategy =
+                new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
+        StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, monitors, logProvider, backOffStrategy );
 
         RemoteStore remoteStore = new RemoteStore(
                 logProvider, fileSystemAbstraction, pageCache, storeCopyClient,
@@ -124,29 +116,20 @@ public class BackupSupportingClassesFactory
 
     protected PipelineWrapper createPipelineWrapper( Config config )
     {
-        return new VoidPipelineWrapperFactory().forServer( config, null, logProvider );
+        return new VoidPipelineWrapperFactory().forClient( config, null, logProvider, OnlineBackupSettings.ssl_policy );
     }
 
-    private Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer( Config config )
+    private CatchUpClient catchUpClient( Config config )
     {
         SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config, logProvider );
         ApplicationSupportedProtocols supportedCatchupProtocols = supportedProtocolCreator.createSupportedCatchupProtocol();
         Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
-
-        ApplicationProtocolRepository applicationProtocolRepository = new ApplicationProtocolRepository( ApplicationProtocols.values(),
-                supportedCatchupProtocols );
-        ModifierProtocolRepository modifierProtocolRepository = new ModifierProtocolRepository( ModifierProtocols.values(), supportedModifierProtocols );
-
         NettyPipelineBuilderFactory clientPipelineBuilderFactory = new NettyPipelineBuilderFactory( createPipelineWrapper( config ) );
-
-        return handler -> {
-            ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository = new ProtocolInstallerRepository<>(
-                    singletonList( new CatchupProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider, handler ) ),
-                    ModifierProtocolInstaller.allClientInstallers );
-            Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
-            return new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository, protocolInstallerRepository,
-                    clientPipelineBuilderFactory, handshakeTimeout , logProvider );
-        };
+        Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
+        long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
+        return new CatchupClientBuilder( supportedCatchupProtocols, supportedModifierProtocols, clientPipelineBuilderFactory, handshakeTimeout,
+                inactivityTimeoutMillis, logProvider, clock )
+                .build();
     }
 
     private static BackupDelegator backupDelegator(

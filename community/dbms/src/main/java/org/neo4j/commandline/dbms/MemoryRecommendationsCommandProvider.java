@@ -75,6 +75,6 @@ public class MemoryRecommendationsCommandProvider extends AdminCommand.Provider
     @Override
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
-        return new MemoryRecommendationsCommand( outsideWorld );
+        return new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
     }
 }

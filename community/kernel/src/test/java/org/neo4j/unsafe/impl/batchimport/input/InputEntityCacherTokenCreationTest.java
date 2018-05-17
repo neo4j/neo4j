@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.RandomValues;
 
 import static java.lang.Math.abs;
 import static org.mockito.Mockito.mock;
@@ -109,7 +109,7 @@ public class InputEntityCacherTokenCreationTest
         {
             for ( int i = 0; i < iterations; i++ )
             {
-                generateRelationship( getRandoms(), visitor );
+                generateRelationship( getRandomValues(), visitor );
             }
         }
     }
@@ -123,7 +123,7 @@ public class InputEntityCacherTokenCreationTest
         {
             for ( int i = 0; i < iterations; i++ )
             {
-                generateNode( getRandoms(), visitor );
+                generateNode( getRandomValues(), visitor );
             }
         }
     }
@@ -135,7 +135,7 @@ public class InputEntityCacherTokenCreationTest
         try ( InputNodeCacheWriter cacher = getNodeCacher( recordFormats );
               InputEntityVisitor visitor = cacher.wrap( new InputEntity() ) )
         {
-            Randoms randoms = getRandoms();
+            RandomValues randoms = getRandomValues();
             for ( int i = 0; i < iterations; i++ )
             {
                 generateNode( randoms, visitor, false );
@@ -150,7 +150,7 @@ public class InputEntityCacherTokenCreationTest
         try ( InputNodeCacheWriter cacher = getNodeCacher( recordFormats );
               InputEntityVisitor visitor = cacher.wrap( new InputEntity() ) )
         {
-            Randoms randoms = getRandoms();
+            RandomValues randoms = getRandomValues();
             for ( int i = 0; i < iterations; i++ )
             {
                 generateNode( randoms, visitor );
@@ -165,7 +165,7 @@ public class InputEntityCacherTokenCreationTest
                                          "tokens is not supported." );
     }
 
-    private void generateRelationship( Randoms randoms, InputEntityVisitor relationship ) throws IOException
+    private void generateRelationship( RandomValues randoms, InputEntityVisitor relationship ) throws IOException
     {
         generateProperties( randoms, relationship );
         relationship.startId( randomId( randoms ), generateGroup() );
@@ -174,12 +174,12 @@ public class InputEntityCacherTokenCreationTest
         relationship.endOfEntity();
     }
 
-    private void generateNode( Randoms random, InputEntityVisitor node ) throws IOException
+    private void generateNode( RandomValues random, InputEntityVisitor node ) throws IOException
     {
         generateNode( random, node, true );
     }
 
-    private void generateNode( Randoms random, InputEntityVisitor node, boolean propertiesAndLabels ) throws IOException
+    private void generateNode( RandomValues random, InputEntityVisitor node, boolean propertiesAndLabels ) throws IOException
     {
         node.id( randomId( random ), generateGroup() );
         if ( propertiesAndLabels )
@@ -210,20 +210,20 @@ public class InputEntityCacherTokenCreationTest
         return uniqueIdGenerator.getAndIncrement() + "";
     }
 
-    private void generateProperties( Randoms random, InputEntityVisitor entity )
+    private void generateProperties( RandomValues random, InputEntityVisitor entity )
     {
         int length = 1;
         for ( int i = 0; i < length; i++ )
         {
             String key = getUniqueString();
-            String value = random.propertyValue() + "";
+            String value = random.nextValue().asObject() + "";
             entity.property( key, value );
         }
     }
 
-    private Object randomId( Randoms random )
+    private Object randomId( RandomValues random )
     {
-        return abs( random.random().nextLong() );
+        return abs( random.nextLong() );
     }
 
     private RecordFormats mockRecordFormats( long maxPropertyKeyId, long maxLabelId, long maxRelationshipTypeId,
@@ -248,9 +248,9 @@ public class InputEntityCacherTokenCreationTest
         return recordFormat;
     }
 
-    private Randoms getRandoms()
+    private RandomValues getRandomValues()
     {
-        return new Randoms( randomRule.random(), Randoms.DEFAULT );
+        return randomRule.randomValues();
     }
 
     private InputNodeCacheWriter getNodeCacher( RecordFormats recordFormats )

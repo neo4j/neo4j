@@ -39,7 +39,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 
 public class StoreLogService extends AbstractLogService implements Lifecycle
 {
@@ -170,7 +170,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         FormattedLogProvider internalLogProvider;
         if ( internalLogRotationThreshold == 0 )
         {
-            OutputStream outputStream = createOrOpenAsOuputStream( fileSystem, internalLog, true );
+            OutputStream outputStream = createOrOpenAsOutputStream( fileSystem, internalLog, true );
             internalLogProvider = internalLogBuilder.toOutputStream( outputStream );
             rotationListener.accept( internalLogProvider );
             this.closeable = outputStream;

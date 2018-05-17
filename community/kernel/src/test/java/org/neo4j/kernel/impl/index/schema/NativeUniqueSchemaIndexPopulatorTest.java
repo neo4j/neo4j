@@ -27,7 +27,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static java.util.Arrays.asList;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue>
+public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSchemaKey<KEY>,VALUE extends NativeSchemaValue>
         extends NativeSchemaIndexPopulatorTest<KEY,VALUE>
 {
     @Test
@@ -43,7 +43,7 @@ public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSch
     {
         // given
         populator.create();
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
         try
@@ -66,11 +66,11 @@ public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSch
     {
         // given
         populator.create();
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
 
         // when
-        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             updater.process( update );
         }
@@ -95,11 +95,11 @@ public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSch
     {
         // GIVEN
         populator.create();
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // WHEN
         populator.add( asList( updates ) );
-        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             populator.includeSample( update );
         }

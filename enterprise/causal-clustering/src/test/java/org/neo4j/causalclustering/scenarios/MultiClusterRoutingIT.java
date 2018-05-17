@@ -64,8 +64,8 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.DATABASE;
 import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
 import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
-import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_SUB_CLUSTER_ROUTERS;
-import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_SUPER_CLUSTER_ROUTERS;
+import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_DATABASE;
+import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_ALL_DATABASES;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )
@@ -133,10 +133,10 @@ public class MultiClusterRoutingIT
     public void superCallShouldReturnAllRouters()
     {
         List<CoreGraphDatabase> dbs = dbNames.stream()
-                .map( n -> cluster.getDbWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() ).collect( Collectors.toList() );
+                .map( n -> cluster.getMemberWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() ).collect( Collectors.toList() );
 
         Stream<Optional<MultiClusterRoutingResult>> optResults = dbs.stream()
-                .map( db -> callProcedure( db, GET_SUPER_CLUSTER_ROUTERS, Collections.emptyMap() ) );
+                .map( db -> callProcedure( db, GET_ROUTERS_FOR_ALL_DATABASES, Collections.emptyMap() ) );
 
         List<MultiClusterRoutingResult> results = optResults.filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() );
         assertEquals("There should be a result for each database against which the procedure is executed.",  dbNames.size(), results.size() );
@@ -153,11 +153,11 @@ public class MultiClusterRoutingIT
     public void subCallShouldReturnLocalRouters()
     {
         String dbName = getFirstDbName( dbNames );
-        Stream<CoreGraphDatabase> members = dbNames.stream().map( n -> cluster.getDbWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() );
+        Stream<CoreGraphDatabase> members = dbNames.stream().map( n -> cluster.getMemberWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() );
 
         Map<String,Object> params = new HashMap<>();
         params.put( DATABASE.parameterName(), dbName );
-        Stream<Optional<MultiClusterRoutingResult>> optResults = members.map( db -> callProcedure( db, GET_SUB_CLUSTER_ROUTERS, params ) );
+        Stream<Optional<MultiClusterRoutingResult>> optResults = members.map( db -> callProcedure( db, GET_ROUTERS_FOR_DATABASE, params ) );
         List<MultiClusterRoutingResult> results = optResults.filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() );
 
         boolean consistentResults = results.stream().distinct().count() == 1;
@@ -176,16 +176,16 @@ public class MultiClusterRoutingIT
     public void procedureCallsShouldReflectMembershipChanges() throws Exception
     {
         String dbName = getFirstDbName( dbNames );
-        CoreClusterMember follower = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER );
+        CoreClusterMember follower = cluster.getMemberWithAnyRole( dbName, Role.FOLLOWER );
         int followerId = follower.serverId();
 
         cluster.removeCoreMemberWithServerId( followerId );
 
-        CoreGraphDatabase db = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER, Role.LEADER ).database();
+        CoreGraphDatabase db = cluster.getMemberWithAnyRole( dbName, Role.FOLLOWER, Role.LEADER ).database();
 
         Function<CoreGraphDatabase, Set<Endpoint>> getResult = database ->
         {
-            Optional<MultiClusterRoutingResult> optResult = callProcedure( database, GET_SUPER_CLUSTER_ROUTERS, Collections.emptyMap() );
+            Optional<MultiClusterRoutingResult> optResult = callProcedure( database, GET_ROUTERS_FOR_ALL_DATABASES, Collections.emptyMap() );
 
             return optResult.map( r ->
                     r.routers().values().stream()

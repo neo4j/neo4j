@@ -23,7 +23,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import static org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
@@ -48,23 +47,19 @@ public class FusionSelector00 implements FusionIndexProvider.Selector
     {
         if ( values.length > 1 )
         {
-            // Multiple values must be handled by lucene
             return LUCENE;
         }
 
         Value singleValue = values[0];
-        if ( Values.isGeometryValue( singleValue ) )
+        switch ( singleValue.valueGroup().category() )
         {
-            // It's a geometry, the spatial index can handle this
+        case GEOMETRY:
             return SPATIAL;
-        }
-
-        if ( Values.isTemporalValue( singleValue ) )
-        {
+        case TEMPORAL:
             return TEMPORAL;
+        default:
+            return LUCENE;
         }
-
-        return LUCENE;
     }
 
     @Override
@@ -74,34 +69,18 @@ public class FusionSelector00 implements FusionIndexProvider.Selector
         {
             return instances[LUCENE];
         }
+
         IndexQuery predicate = predicates[0];
-
-        if ( predicate instanceof ExactPredicate )
+        switch ( predicate.valueGroup().category() )
         {
-            ExactPredicate exactPredicate = (ExactPredicate) predicate;
-            return select( instances, exactPredicate.value() );
-        }
-
-        if ( predicate instanceof RangePredicate )
-        {
-            switch ( predicate.valueGroup() )
-            {
-            case GEOMETRY:
-                return instances[SPATIAL];
-            case DATE:
-            case LOCAL_DATE_TIME:
-            case ZONED_DATE_TIME:
-            case LOCAL_TIME:
-            case ZONED_TIME:
-            case DURATION:
-                return instances[TEMPORAL];
-            default: // fall through
-            }
-        }
-        if ( predicate instanceof ExistsPredicate )
-        {
+        case GEOMETRY:
+            return instances[SPATIAL];
+        case TEMPORAL:
+            return instances[TEMPORAL];
+        case UNKNOWN:
             return null;
+        default:
+            return instances[LUCENE];
         }
-        return instances[LUCENE];
     }
 }

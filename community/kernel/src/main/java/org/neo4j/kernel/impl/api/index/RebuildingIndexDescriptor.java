@@ -19,31 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 /**
  * Small class for holding a bunch of information about an index that we need to rebuild during recovery.
  */
 public class RebuildingIndexDescriptor
 {
-    private final IndexDescriptor indexDescriptor;
-    private final Descriptor providerDescriptor;
+    private final StoreIndexDescriptor schemaIndexDescriptor;
 
-    RebuildingIndexDescriptor( IndexDescriptor indexDescriptor, IndexProvider.Descriptor providerDescriptor )
+    RebuildingIndexDescriptor( StoreIndexDescriptor schemaIndexDescriptor )
     {
         this.indexDescriptor = indexDescriptor;
-        this.providerDescriptor = providerDescriptor;
     }
 
-    public IndexDescriptor getIndexDescriptor()
+    public StoreIndexDescriptor getIndexDescriptor()
     {
         return indexDescriptor;
-    }
-
-    public Descriptor getProviderDescriptor()
-    {
-        return providerDescriptor;
     }
 }

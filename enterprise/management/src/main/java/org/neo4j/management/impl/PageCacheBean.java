@@ -99,6 +99,12 @@ public final class PageCacheBean extends ManagementBeanProvider
         }
 
         @Override
+        public double getHitRatio()
+        {
+            return pageCacheCounters.hitRatio();
+        }
+
+        @Override
         public long getEvictionExceptions()
         {
             return pageCacheCounters.evictionExceptions();

@@ -20,13 +20,10 @@
 package org.neo4j.kernel.impl.util;
 
 import java.lang.reflect.Array;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -54,7 +51,6 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
-import static java.time.ZoneOffset.UTC;
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
 /**
@@ -301,26 +297,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
             @Override
             public String toString()
             {
-                try
-                {
-                    return Paths.defaultPathToString( this );
-                }
-                catch ( NotInTransactionException | DatabaseShutdownException e )
-                {
-                    // We don't keep the rel-name lookup if the database is shut down. Source ID and target ID also requires
-                    // database access in a transaction. However, failing on toString would be uncomfortably evil, so we fall
-                    // back to noting the relationship type id.
-                }
-                StringBuilder sb = new StringBuilder();
-                for ( Relationship rel : this.relationships() )
-                {
-                    if ( sb.length() == 0 )
-                    {
-                        sb.append( "(?)" );
-                    }
-                    sb.append( "-[?," ).append( rel.getId() ).append( "]-(?)" );
-                }
-                return sb.toString();
+                return Paths.defaultPathToStringWithNotInTransactionFallback( this );
             }
         } );
     }
@@ -417,40 +394,33 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeDate( long epochDay ) throws RuntimeException
+    public void writeDate( LocalDate localDate ) throws RuntimeException
     {
-        writeValue( LocalDate.ofEpochDay( epochDay ) );
+        writeValue( localDate );
     }
 
     @Override
-    public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+    public void writeLocalTime( LocalTime localTime ) throws RuntimeException
     {
-        writeValue( LocalTime.ofNanoOfDay( nanoOfDay ) );
+        writeValue( localTime );
     }
 
     @Override
-    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+    public void writeTime( OffsetTime offsetTime ) throws RuntimeException
     {
-        writeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ),
-                                          ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        writeValue( offsetTime );
     }
 
     @Override
-    public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+    public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
     {
-        writeValue( LocalDateTime.ofInstant( Instant.ofEpochSecond(epochSecond, nano), UTC ) );
+        writeValue( localDateTime );
     }
 
     @Override
-    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+    public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
     {
-        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
-    }
-
-    @Override
-    public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
-    {
-        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneId.of( zoneId ) ) );
+        writeValue( zonedDateTime );
     }
 
     private interface Writer

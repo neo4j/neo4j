@@ -24,30 +24,60 @@ import java.util.List;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+import org.neo4j.values.storable.ValueCategory;
 
 import static java.lang.String.format;
 
 /**
- * Reference to a specific index. This reference is valid until the schema of the database changes (that is a
- * create/drop of an index or constraint occurs).
+ * Reference to a specific index together with it's capabilities. This reference is valid until the schema of the database changes
+ * (that is a create/drop of an index or constraint occurs).
  */
-public interface IndexReference
+public interface IndexReference extends IndexCapability
 {
-    boolean isUnique();
-
-    int label();
-
-    int[] properties();
-
-    /**
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
-     */
-    default String userDescription( TokenNameLookup tokenNameLookup )
+    IndexReference NO_INDEX = new IndexReference()
     {
-        String type = isUnique() ? "UNIQUE" : "GENERAL";
-        return format( "Index( %s, %s )",  type, SchemaUtil.niceProperties( tokenNameLookup, properties() ) );
-    }
+        @Override
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+        {
+            return NO_CAPABILITY.orderCapability( valueCategories );
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+        {
+            return NO_CAPABILITY.valueCapability( valueCategories );
+        }
+
+        @Override
+        public boolean isUnique()
+        {
+            return false;
+        }
+
+        @Override
+        public int label()
+        {
+            return Token.NO_TOKEN;
+        }
+
+        @Override
+        public int[] properties()
+        {
+            return new int[0];
+        }
+
+        @Override
+        public String providerKey()
+        {
+            return null;
+        }
+
+        @Override
+        public String providerVersion()
+        {
+            return null;
+        }
+    };
 
     /**
      * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
@@ -63,5 +93,25 @@ public interface IndexReference
                 Iterators.filter( i -> !i.isUnique(), materialized.iterator() ),
                 Iterators.filter( IndexReference::isUnique, materialized.iterator() ) );
 
+    }
+
+    boolean isUnique();
+
+    int label();
+
+    int[] properties();
+
+    String providerKey();
+
+    String providerVersion();
+
+    /**
+     * @param tokenNameLookup used for looking up names for token ids.
+     * @return a user friendly description of what this index indexes.
+     */
+    default String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        String type = isUnique() ? "UNIQUE" : "GENERAL";
+        return format( "Index( %s, %s )",  type, SchemaUtil.niceProperties( tokenNameLookup, properties() ) );
     }
 }

@@ -27,25 +27,30 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Visitable;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterators.loop;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.internal.kernel.api.IndexReference.sortByType;
+import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
+import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 
 public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 {
@@ -66,23 +71,19 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = bridge.get() )
-            {
-                showStructure( statement, visitor );
-            }
+            showStructure( bridge.getKernelTransactionBoundToThisThread( true ), visitor );
             tx.success();
         }
     }
 
-    private void showStructure( Statement statement, DbStructureVisitor visitor )
+    private void showStructure( KernelTransaction ktx, DbStructureVisitor visitor )
     {
-        ReadOperations read = statement.readOperations();
 
         try
         {
-            showTokens( visitor, read );
-            showSchema( visitor, read );
-            showStatistics( visitor, read );
+            showTokens( visitor, ktx );
+            showSchema( visitor, ktx );
+            showStatistics( visitor, ktx );
         }
         catch ( KernelException e )
         {
@@ -91,63 +92,65 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showTokens( DbStructureVisitor visitor, ReadOperations read )
+    private void showTokens( DbStructureVisitor visitor, KernelTransaction ktx )
     {
-        showLabels( read, visitor );
-        showPropertyKeys( read, visitor );
-        showRelTypes( read, visitor );
+        showLabels( ktx, visitor );
+        showPropertyKeys( ktx, visitor );
+        showRelTypes( ktx, visitor );
     }
 
-    private void showLabels( ReadOperations read, DbStructureVisitor visitor )
+    private void showLabels( KernelTransaction ktx, DbStructureVisitor visitor )
     {
         for ( Label label : db.getAllLabels() )
         {
-            int labelId = read.labelGetForName( label.name() );
+            int labelId = ktx.tokenRead().nodeLabel( label.name() );
             visitor.visitLabel( labelId, label.name() );
         }
     }
 
-    private void showPropertyKeys( ReadOperations read, DbStructureVisitor visitor )
+    private void showPropertyKeys( KernelTransaction ktx, DbStructureVisitor visitor )
     {
         for ( String propertyKeyName : db.getAllPropertyKeys() )
         {
-            int propertyKeyId = read.propertyKeyGetForName( propertyKeyName );
+            int propertyKeyId = ktx.tokenRead().propertyKey( propertyKeyName );
             visitor.visitPropertyKey( propertyKeyId, propertyKeyName );
         }
     }
 
-    private void showRelTypes( ReadOperations read, DbStructureVisitor visitor )
+    private void showRelTypes( KernelTransaction ktx, DbStructureVisitor visitor )
     {
         for ( RelationshipType relType : db.getAllRelationshipTypes() )
         {
-            int relTypeId = read.relationshipTypeGetForName( relType.name() );
+            int relTypeId = ktx.tokenRead().relationshipType( relType.name() );
             visitor.visitRelationshipType( relTypeId, relType.name() );
         }
     }
 
-    private void showSchema( DbStructureVisitor visitor, ReadOperations read ) throws IndexNotFoundKernelException
+    private void showSchema( DbStructureVisitor visitor, KernelTransaction ktx ) throws IndexNotFoundKernelException
     {
-        TokenNameLookup nameLookup = new StatementTokenNameLookup( read );
+        TokenNameLookup nameLookup = new SilentTokenNameLookup( ktx.tokenRead() );
 
-        showIndices( visitor, read, nameLookup );
-        showUniqueConstraints( visitor, read, nameLookup );
+        showIndices( visitor, ktx, nameLookup );
+        showUniqueConstraints( visitor, ktx, nameLookup );
     }
 
-    private void showIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup )
+    private void showIndices( DbStructureVisitor visitor, KernelTransaction ktx, TokenNameLookup nameLookup )
             throws IndexNotFoundKernelException
     {
-        for ( IndexDescriptor descriptor : loop( SchemaIndexDescriptor.sortByType( read.indexesGetAll() ) ) )
+        SchemaRead schemaRead = ktx.schemaRead();
+        for ( IndexReference reference : loop( sortByType( schemaRead.indexesGetAll() ) ) )
         {
-            String userDescription = descriptor.schema().userDescription( nameLookup );
-            double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
-            long size = read.indexSize( descriptor );
-            visitor.visitIndex( descriptor, userDescription, uniqueValuesPercentage, size );
+            String userDescription = SchemaDescriptorFactory.forLabel( reference.label(), reference.properties() )
+                    .userDescription( nameLookup );
+            double uniqueValuesPercentage = schemaRead.indexUniqueValuesSelectivity( reference );
+            long size = schemaRead.indexSize( reference );
+            visitor.visitIndex( (IndexDescriptor) reference, userDescription, uniqueValuesPercentage, size );
         }
     }
 
-    private void showUniqueConstraints( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup )
+    private void showUniqueConstraints( DbStructureVisitor visitor, KernelTransaction ktx, TokenNameLookup nameLookup )
     {
-        Iterator<ConstraintDescriptor> constraints = read.constraintsGetAll();
+        Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetAll();
         while ( constraints.hasNext() )
         {
             ConstraintDescriptor constraint = constraints.next();
@@ -175,78 +178,80 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showStatistics( DbStructureVisitor visitor, ReadOperations read )
+    private void showStatistics( DbStructureVisitor visitor, KernelTransaction ktx )
     {
-        showNodeCounts( read, visitor );
-        showRelCounts( read, visitor );
+        showNodeCounts( ktx, visitor );
+        showRelCounts( ktx, visitor );
     }
 
-    private void showNodeCounts( ReadOperations read, DbStructureVisitor visitor )
+    private void showNodeCounts( KernelTransaction ktx, DbStructureVisitor visitor )
     {
+        Read read = ktx.dataRead();
         visitor.visitAllNodesCount( read.countsForNode( ANY_LABEL ) );
         for ( Label label : db.getAllLabels() )
         {
-            int labelId = read.labelGetForName( label.name() );
+            int labelId = ktx.tokenRead().nodeLabel( label.name() );
             visitor.visitNodeCount( labelId, label.name(), read.countsForNode( labelId ) );
         }
     }
-    private void showRelCounts( ReadOperations read, DbStructureVisitor visitor )
+    private void showRelCounts( KernelTransaction ktx, DbStructureVisitor visitor )
     {
         // all wildcards
-        noSide( read, visitor, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
+        noSide( ktx, visitor, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
 
+        TokenRead tokenRead = ktx.tokenRead();
         // one label only
         for ( Label label : db.getAllLabels() )
         {
-            int labelId = read.labelGetForName( label.name() );
+            int labelId = tokenRead.nodeLabel( label.name() );
 
-            leftSide( read, visitor, label, labelId, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
-            rightSide( read, visitor, label, labelId, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
+            leftSide( ktx, visitor, label, labelId, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
+            rightSide( ktx, visitor, label, labelId, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
         }
 
         // fixed rel type
         for ( RelationshipType relType : db.getAllRelationshipTypes() )
         {
-            int relTypeId = read.relationshipTypeGetForName( relType.name() );
-            noSide( read, visitor, relType, relTypeId );
+            int relTypeId = tokenRead.relationshipType( relType.name() );
+            noSide( ktx, visitor, relType, relTypeId );
 
             for ( Label label : db.getAllLabels() )
             {
-                int labelId = read.labelGetForName( label.name() );
+                int labelId = tokenRead.nodeLabel( label.name() );
 
                 // wildcard on right
-                leftSide( read, visitor, label, labelId, relType, relTypeId );
+                leftSide( ktx, visitor, label, labelId, relType, relTypeId );
 
                 // wildcard on left
-                rightSide( read, visitor, label, labelId, relType, relTypeId );
+                rightSide( ktx, visitor, label, labelId, relType, relTypeId );
             }
         }
     }
 
-    private void noSide( ReadOperations read, DbStructureVisitor visitor, RelationshipType relType, int relTypeId )
+    private void noSide( KernelTransaction ktx, DbStructureVisitor visitor, RelationshipType relType, int relTypeId )
     {
         String userDescription = format("MATCH ()-[%s]->() RETURN count(*)", colon( relType.name() ));
-        long amount = read.countsForRelationship( ANY_LABEL, relTypeId, ANY_LABEL );
+        long amount = ktx.dataRead().countsForRelationship( ANY_LABEL, relTypeId, ANY_LABEL );
 
         visitor.visitRelCount( ANY_LABEL, relTypeId, ANY_LABEL, userDescription, amount );
     }
 
-    private void leftSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId,
+    private void leftSide( KernelTransaction ktx, DbStructureVisitor visitor, Label label, int labelId,
             RelationshipType relType, int relTypeId )
     {
         String userDescription =
                 format( "MATCH (%s)-[%s]->() RETURN count(*)", colon( label.name() ), colon( relType.name() ) );
-        long amount = read.countsForRelationship( labelId, relTypeId, ANY_LABEL );
+        long amount = ktx.dataRead().countsForRelationship( labelId, relTypeId, ANY_LABEL );
 
         visitor.visitRelCount( labelId, relTypeId, ANY_LABEL, userDescription, amount );
     }
 
-    private void rightSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId,
+    private void rightSide( KernelTransaction ktx, DbStructureVisitor visitor, Label label, int labelId,
             RelationshipType relType, int relTypeId )
     {
         String userDescription =
                 format( "MATCH ()-[%s]->(%s) RETURN count(*)", colon( relType.name() ), colon( label.name() ) );
-        long amount = read.countsForRelationship( ANY_LABEL, relTypeId, labelId );
+        long amount = ktx.dataRead().countsForRelationship( ANY_LABEL, relTypeId, labelId );
 
         visitor.visitRelCount( ANY_LABEL, relTypeId, labelId, userDescription, amount );
     }

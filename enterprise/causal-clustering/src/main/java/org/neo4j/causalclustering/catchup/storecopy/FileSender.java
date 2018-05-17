@@ -58,7 +58,11 @@ class FileSender implements ChunkedInput<FileChunk>
     @Override
     public void close() throws Exception
     {
-        resource.close();
+        if ( channel != null )
+        {
+            channel.close();
+            channel = null;
+        }
     }
 
     @Override

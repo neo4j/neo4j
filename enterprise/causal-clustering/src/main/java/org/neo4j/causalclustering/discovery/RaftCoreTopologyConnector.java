@@ -64,6 +64,12 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     }
 
     @Override
+    public void onLeaderStepDown( long stepDownTerm )
+    {
+        coreTopologyService.handleStepDown( stepDownTerm, dbName );
+    }
+
+    @Override
     public String dbName()
     {
         return this.dbName;

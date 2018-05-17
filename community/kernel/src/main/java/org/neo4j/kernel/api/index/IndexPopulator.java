@@ -24,7 +24,7 @@ import java.util.Collection;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -43,10 +43,8 @@ public interface IndexPopulator
 
     /**
      * Closes and deletes this index.
-     *
-     * @throws IOException on I/O error.
      */
-    void drop() throws IOException;
+    void drop();
 
     /**
      * Called when initially populating an index over existing data. Guaranteed to be
@@ -110,19 +108,19 @@ public interface IndexPopulator
      * Close this populator and releases any resources related to it.
      * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
-     * {@link IndexProvider#getInitialState(long, IndexDescriptor)} also returns {@link InternalIndexState#ONLINE}.
+     * {@link IndexProvider#getInitialState(StoreIndexDescriptor)} also returns {@link InternalIndexState#ONLINE}.
      *
      * @param populationCompletedSuccessfully {@code true} if the index population was successful, where the index should
      * be marked as {@link InternalIndexState#ONLINE}, otherwise {@code false} where index should be marked as
      * {@link InternalIndexState#FAILED} and the failure, previously handed to this populator using {@link #markAsFailed(String)}
-     * should be stored and made available for later requests from {@link IndexProvider#getPopulationFailure(long, IndexDescriptor)}.
+     * should be stored and made available for later requests from {@link IndexProvider#getPopulationFailure(StoreIndexDescriptor)}.
      * @throws IOException on I/O error.
      */
     void close( boolean populationCompletedSuccessfully ) throws IOException;
 
     /**
      * Called then a population failed. The failure string should be stored for future retrieval by
-     * {@link IndexProvider#getPopulationFailure(long, IndexDescriptor)}. Called before {@link #close(boolean)}
+     * {@link IndexProvider#getPopulationFailure(StoreIndexDescriptor)}. Called before {@link #close(boolean)}
      * if there was a failure during population.
      *
      * @param failure the description of the failure.

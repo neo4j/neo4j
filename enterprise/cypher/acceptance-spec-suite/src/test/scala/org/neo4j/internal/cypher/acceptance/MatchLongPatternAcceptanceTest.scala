@@ -23,7 +23,7 @@ import java.io.File
 import java.util
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.IDPSolverMonitor
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.IDPSolverMonitor
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.{CommunityCompatibilityFactory, ExecutionEngine}
@@ -71,7 +71,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
     // GIVEN
     graph.shutdown()
     val numberOfPatternRelationships = 13
-    val iterationDurationThresholds = Seq(1000, 500, 100, 10)
+    val iterationDurationThresholds = Seq(1000, 500, 10)
 
     // WHEN
     val idpInnerIterations = determineIDPLoopSizes(numberOfPatternRelationships,
@@ -79,7 +79,9 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
     // THEN
     iterationDurationThresholds.slice(0, iterationDurationThresholds.size - 1).foreach { (duration) =>
-      idpInnerIterations(duration) should be < idpInnerIterations(iterationDurationThresholds.last)
+      withClue(s"For duration threshold at $duration: ") {
+        idpInnerIterations(duration) should be < idpInnerIterations(iterationDurationThresholds.last)
+      }
     }
   }
 

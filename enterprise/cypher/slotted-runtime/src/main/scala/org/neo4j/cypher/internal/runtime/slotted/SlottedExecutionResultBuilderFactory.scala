@@ -19,18 +19,22 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{BaseExecutionResultBuilderFactory, ExecutionResultBuilder, PipeInfo}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PhysicalPlanningAttributes.SlotConfigurations
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{ClosingQueryResultRecordIterator, ResultIterator}
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{BaseExecutionResultBuilderFactory, ExecutionResultBuilder, PipeInfo}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
 
-class SlottedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
+class SlottedExecutionResultBuilderFactory(pipe: Pipe,
+                                           readOnly: Boolean,
                                            columns: List[String],
                                            logicalPlan: LogicalPlan,
                                            pipelines: SlotConfigurations)
-  extends BaseExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan) {
+  extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan) {
 
   override def create(): ExecutionResultBuilder =
     new SlottedExecutionWorkflowBuilder()
@@ -39,6 +43,12 @@ class SlottedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     override protected def createQueryState(params: MapValue) = {
       new SlottedQueryState(queryContext, externalResource, params, pipeDecorator,
         triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+    }
+
+    override def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): ResultIterator = {
+      val closingIterator = new ClosingQueryResultRecordIterator(results, taskCloser, exceptionDecorator)
+      val resultIterator = if (!readOnly) closingIterator.toEager else closingIterator
+      resultIterator
     }
   }
 }

@@ -27,7 +27,7 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 import static java.lang.String.format;
 
@@ -37,8 +37,8 @@ class CapabilityValidator
     {
         if ( indexOrder != IndexOrder.NONE )
         {
-            ValueGroup valueGroup = predicates[0].valueGroup();
-            IndexOrder[] orderCapability = capability.orderCapability( valueGroup );
+            ValueCategory valueCategory = predicates[0].valueGroup().category();
+            IndexOrder[] orderCapability = capability.orderCapability( valueCategory );
             if ( !ArrayUtil.contains( orderCapability, indexOrder ) )
             {
                 orderCapability = ArrayUtils.add( orderCapability, IndexOrder.NONE );

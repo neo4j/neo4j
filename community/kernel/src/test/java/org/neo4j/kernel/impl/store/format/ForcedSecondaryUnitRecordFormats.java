@@ -150,9 +150,9 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     }
 
     @Override
-    public boolean hasSameCapabilities( RecordFormats other, CapabilityType type )
+    public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
     {
-        return BaseRecordFormats.hasSameCapabilities( this, other, type );
+        return BaseRecordFormats.hasCompatibleCapabilities( this, other, type );
     }
 
     @Override

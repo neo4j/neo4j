@@ -23,13 +23,15 @@ import java.io.File;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
 {
-    RecoveringIndexProxy( IndexMeta indexMeta )
+    RecoveringIndexProxy( CapableIndexDescriptor capableIndexDescriptor )
     {
-        super( indexMeta, null );
+        super( capableIndexDescriptor, null );
     }
 
     @Override
@@ -54,6 +56,12 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     public void validate()
     {
         throw unsupportedOperation( "Cannot validate recovering index." );
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        throw unsupportedOperation( "Unexpected call for validating value while recovering." );
     }
 
     @Override

@@ -50,4 +50,58 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
     result.toList should equal(List(Map("y" -> 1, "y3" -> 3), Map("y" -> 1, "y3" -> 4), Map("y" -> 2, "y3" -> 3), Map("y" -> 2, "y3" -> 4)))
   }
 
+  test("should unwind nodes") {
+    val n = createNode("prop" -> 42)
+
+    val query = "UNWIND $nodes AS n WITH n WHERE n.prop = 42 RETURN n"
+    val result = executeWith(Configs.All - Configs.Version2_3, query, params = Map("nodes" -> List(n)))
+
+    result.toList should equal(List(Map("n" -> n)))
+  }
+
+  test("should unwind nodes from literal list") {
+    val n = createNode("prop" -> 42)
+
+    val query = "UNWIND [$node] AS n WITH n WHERE n.prop = 42 RETURN n"
+    val result = executeWith(Configs.All - Configs.Version2_3, query, params = Map("node" -> n))
+
+    result.toList should equal(List(Map("n" -> n)))
+  }
+
+  test("should unwind relationships") {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a, b, "prop" -> 42)
+
+    val query = "UNWIND $relationships AS r WITH r WHERE r.prop = 42 RETURN r"
+    val result = executeWith(Configs.All - Configs.Version2_3, query, params = Map("relationships" -> List(r)))
+
+    result.toList should equal(List(Map("r" -> r)))
+  }
+
+  test("should unwind relationships from literal list") {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a, b, "prop" -> 42)
+
+    val query = "UNWIND [$relationship] AS r WITH r WHERE r.prop = 42 RETURN r"
+    val result = executeWith(Configs.All - Configs.Version2_3, query, params = Map("relationship" -> r))
+
+    result.toList should equal(List(Map("r" -> r)))
+  }
+
+  test("should be able to use long values for LIMIT in interpreted runtime") {
+    val a = createNode()
+    val b = createNode()
+
+    val limit: Long = Int.MaxValue + 1l
+    // If we would use Ints for storing the limit, then we would end up with "limit 0"
+    // thus, if we actually return the two nodes, then it proves that we used a long
+    val query = "MATCH (n) RETURN n LIMIT " + limit
+    val worksCorrectlyInConfig = Configs.Version3_4 + Configs.Version3_3 - Configs.AllRulePlanners
+    // the query will work in all configs, but only have the correct result in those specified configs
+    // Also: It Will work on 3.2 once 3.2.12 is out AND on 3.3 once 3.3.6 is out
+    val result = executeWith(Configs.All, query, Configs.All - worksCorrectlyInConfig)
+    result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
+  }
 }

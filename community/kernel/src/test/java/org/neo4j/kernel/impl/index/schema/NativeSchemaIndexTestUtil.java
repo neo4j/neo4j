@@ -38,12 +38,12 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
@@ -54,21 +54,21 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue>
+public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey<KEY>,VALUE extends NativeSchemaValue>
 {
     static final long NON_EXISTENT_ENTITY_ID = 1_000_000_000;
 
-    final FileSystemRule fs = new DefaultFileSystemRule();
+    final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
     protected final RandomRule random = new RandomRule();
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
-    SchemaIndexDescriptor schemaIndexDescriptor;
+    StoreIndexDescriptor indexDescriptor;
     LayoutTestUtil<KEY,VALUE> layoutUtil;
     Layout<KEY,VALUE> layout;
-    File indexFile;
+    private File indexFile;
     PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
     long indexId = 1;
@@ -77,10 +77,15 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
     public void setup()
     {
         layoutUtil = createLayoutTestUtil();
-        schemaIndexDescriptor = layoutUtil.indexDescriptor();
+        indexDescriptor = layoutUtil.indexDescriptor();
         layout = layoutUtil.createLayout();
         indexFile = directory.file( "index" );
         pageCache = pageCacheRule.getPageCache( fs );
+    }
+
+    public File getIndexFile()
+    {
+        return indexFile;
     }
 
     abstract LayoutTestUtil<KEY,VALUE> createLayoutTestUtil();
@@ -90,7 +95,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
         layoutUtil.copyValue( value, intoValue );
     }
 
-    void verifyUpdates( IndexEntryUpdate<SchemaIndexDescriptor>[] updates )
+    void verifyUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
             throws IOException
     {
         Hit<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
@@ -121,7 +126,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
 
     GBPTree<KEY,VALUE> getTree() throws IOException
     {
-        return new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
+        return new GBPTree<>( pageCache, getIndexFile(), layout, 0, GBPTree.NO_MONITOR,
                 NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 
@@ -158,14 +163,14 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
         VALUE intoValue = layout.newValue();
         layout.copyKey( from.key(), intoKey );
         copyValue( from.value(), intoValue );
-        return new SimpleHit( intoKey, intoValue );
+        return new SimpleHit<>( intoKey, intoValue );
     }
 
-    private Hit<KEY,VALUE>[] convertToHits( IndexEntryUpdate<SchemaIndexDescriptor>[] updates,
+    private Hit<KEY,VALUE>[] convertToHits( IndexEntryUpdate<IndexDescriptor>[] updates,
             Layout<KEY,VALUE> layout )
     {
         List<Hit<KEY,VALUE>> hits = new ArrayList<>( updates.length );
-        for ( IndexEntryUpdate<SchemaIndexDescriptor> u : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> u : updates )
         {
             KEY key = layout.newKey();
             key.from( u.getEntityId(), u.values() );
@@ -178,16 +183,16 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
 
     private Hit<KEY,VALUE> hit( final KEY key, final VALUE value )
     {
-        return new SimpleHit( key, value );
+        return new SimpleHit<>( key, value );
     }
 
     void assertFilePresent()
     {
-        assertTrue( fs.fileExists( indexFile ) );
+        assertTrue( fs.fileExists( getIndexFile() ) );
     }
 
     void assertFileNotPresent()
     {
-        assertFalse( fs.fileExists( indexFile ) );
+        assertFalse( fs.fileExists( getIndexFile() ) );
     }
 }

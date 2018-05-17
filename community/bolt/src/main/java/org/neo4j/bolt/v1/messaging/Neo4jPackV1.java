@@ -20,17 +20,21 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.collection.primitive.PrimitiveLongIntKeyValueArray;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -53,12 +57,19 @@ import static org.neo4j.values.storable.Values.byteArray;
  */
 public class Neo4jPackV1 implements Neo4jPack
 {
-    public static final int VERSION = 1;
+    public static final long VERSION = 1;
 
     public static final byte NODE = 'N';
+    public static final int NODE_SIZE = 3;
+
     public static final byte RELATIONSHIP = 'R';
+    public static final int RELATIONSHIP_SIZE = 5;
+
     public static final byte UNBOUND_RELATIONSHIP = 'r';
+    public static final int UNBOUND_RELATIONSHIP_SIZE = 3;
+
     public static final byte PATH = 'P';
+    public static final int PATH_SIZE = 3;
 
     @Override
     public Neo4jPack.Packer newPacker( PackOutput output )
@@ -73,7 +84,7 @@ public class Neo4jPackV1 implements Neo4jPack
     }
 
     @Override
-    public int version()
+    public long version()
     {
         return VERSION;
     }
@@ -86,7 +97,6 @@ public class Neo4jPackV1 implements Neo4jPack
 
     protected static class PackerV1 extends PackStream.Packer implements AnyValueWriter<IOException>, Neo4jPack.Packer
     {
-        private Error error;
         private static final int INITIAL_PATH_CAPACITY = 500;
         private static final int NO_SUCH_ID = -1;
         private final PrimitiveLongIntKeyValueArray nodeIndexes =
@@ -106,18 +116,6 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public IOException consumeError()
-        {
-            if ( error != null )
-            {
-                IOException exception = new BoltIOException( error.status(), error.msg() );
-                error = null;
-                return exception;
-            }
-            return null;
-        }
-
-        @Override
         public void writeNodeReference( long nodeId )
         {
             throw new UnsupportedOperationException( "Cannot write a raw node reference" );
@@ -126,7 +124,7 @@ public class Neo4jPackV1 implements Neo4jPack
         @Override
         public void writeNode( long nodeId, TextArray labels, MapValue properties ) throws IOException
         {
-            packStructHeader( 3, NODE );
+            packStructHeader( NODE_SIZE, NODE );
             pack( nodeId );
             packListHeader( labels.length() );
             for ( int i = 0; i < labels.length(); i++ )
@@ -146,7 +144,7 @@ public class Neo4jPackV1 implements Neo4jPack
         public void writeRelationship( long relationshipId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
                 throws IOException
         {
-            packStructHeader( 5, RELATIONSHIP );
+            packStructHeader( RELATIONSHIP_SIZE, RELATIONSHIP );
             pack( relationshipId );
             pack( startNodeId );
             pack( endNodeId );
@@ -202,7 +200,7 @@ public class Neo4jPackV1 implements Neo4jPack
             // the offset
             // into the
             // node list (zero indexed) and so on.
-            packStructHeader( 3, PATH );
+            packStructHeader( PATH_SIZE, PATH );
 
             writeNodesForPath( nodes );
             writeRelationshipsForPath( relationships );
@@ -290,7 +288,7 @@ public class Neo4jPackV1 implements Neo4jPack
                         //Note that we are not doing relationship.writeTo(this) here since the serialization protocol
                         //requires these to be _unbound relationships_, thus relationships without any start node nor
                         // end node.
-                        packStructHeader( 3, UNBOUND_RELATIONSHIP );
+                        packStructHeader( UNBOUND_RELATIONSHIP_SIZE, UNBOUND_RELATIONSHIP );
                         pack( edge.id() );
                         edge.type().writeTo( this );
                         edge.properties().writeTo( this );
@@ -302,65 +300,43 @@ public class Neo4jPackV1 implements Neo4jPack
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "Point is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" );
         }
 
         @Override
         public void writeDuration( long months, long days, long seconds, int nanos ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "Duration is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "Duration is not yet supported as a return type in Bolt" );
         }
 
         @Override
-        public void writeDate( long epochDay ) throws IOException
+        public void writeDate( LocalDate localDate ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "Date is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "Date is not yet supported as a return type in Bolt" );
         }
 
         @Override
-        public void writeLocalTime( long nanoOfDay ) throws IOException
+        public void writeLocalTime( LocalTime localTime ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "LocalTime is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "LocalTime is not yet supported as a return type in Bolt" );
         }
 
         @Override
-        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
+        public void writeTime( OffsetTime offsetTime ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "Time is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "Time is not yet supported as a return type in Bolt" );
         }
 
         @Override
-        public void writeLocalDateTime( long epochSecond, int nano ) throws IOException
+        public void writeLocalDateTime( LocalDateTime localDateTime ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "LocalDateTime is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "LocalDateTime is not yet supported as a return type in Bolt" );
         }
 
         @Override
-        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IOException
+        public void writeDateTime( ZonedDateTime zonedDateTime ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "DateTime is not yet supported as a return type in Bolt" );
-            packNull();
-        }
-
-        @Override
-        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IOException
-        {
-            error = new Error( Status.Request.Invalid,
-                    "DateTime is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "DateTime is not yet supported as a return type in Bolt" );
         }
 
         @Override
@@ -458,8 +434,6 @@ public class Neo4jPackV1 implements Neo4jPack
 
     protected static class UnpackerV1 extends PackStream.Unpacker implements Neo4jPack.Unpacker
     {
-        private final List<Neo4jError> errors = new ArrayList<>( 2 );
-
         protected UnpackerV1( PackInput input )
         {
             super( input );
@@ -495,9 +469,9 @@ public class Neo4jPackV1 implements Neo4jPack
             }
             case STRUCT:
             {
-                unpackStructHeader();
+                long size = unpackStructHeader();
                 char signature = unpackStructSignature();
-                return unpackStruct( signature );
+                return unpackStruct( signature, size );
             }
             case END_OF_STREAM:
             {
@@ -505,8 +479,7 @@ public class Neo4jPackV1 implements Neo4jPack
                 return null;
             }
             default:
-                throw new BoltIOException( Status.Request.InvalidFormat,
-                        "Unknown value type: " + valType );
+                throw new BoltIOException( Status.Request.InvalidFormat, "Unknown value type: " + valType );
             }
         }
 
@@ -547,30 +520,17 @@ public class Neo4jPackV1 implements Neo4jPack
             }
         }
 
-        protected AnyValue unpackStruct( char signature ) throws IOException
+        protected AnyValue unpackStruct( char signature, long size ) throws IOException
         {
-            switch ( signature )
+            StructType structType = StructType.valueOf( signature );
+            if ( structType == null )
             {
-            case NODE:
-            {
-                throw new BoltIOException( Status.Request.Invalid, "Nodes cannot be unpacked." );
-            }
-            case RELATIONSHIP:
-            {
-                throw new BoltIOException( Status.Request.Invalid, "Relationships cannot be unpacked." );
-            }
-            case UNBOUND_RELATIONSHIP:
-            {
-                throw new BoltIOException( Status.Request.Invalid, "Relationships cannot be unpacked." );
-            }
-            case PATH:
-            {
-                throw new BoltIOException( Status.Request.Invalid, "Paths cannot be unpacked." );
-            }
-            default:
                 throw new BoltIOException( Status.Request.InvalidFormat,
-                        "Unknown struct type: " + Integer.toHexString( signature ) );
+                        String.format( "Struct types of 0x%s are not recognized.", Integer.toHexString( signature ) ) );
             }
+
+            throw new BoltIOException( Status.Statement.TypeError,
+                    String.format( "%s values cannot be unpacked with this version of bolt.", structType.description() ) );
         }
 
         @Override
@@ -602,19 +562,13 @@ public class Neo4jPackV1 implements Neo4jPack
                         val = unpack();
                         if ( map.put( key, val ) != null )
                         {
-                            errors.add(
-                                    Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ) );
+                            throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
                         }
                         break;
                     case NULL:
-                        errors.add( Neo4jError.from( Status.Request.Invalid,
-                                "Value `null` is not supported as key in maps, must be a non-nullable string." ) );
-                        unpackNull();
-                        val = unpack();
-                        map.put( null, val );
-                        break;
+                        throw new BoltIOException( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." );
                     default:
-                        throw new PackStream.PackStreamException( "Bad key type" );
+                        throw new BoltIOException( Status.Request.InvalidFormat, "Bad key type: " + keyType );
                     }
                 }
             }
@@ -623,61 +577,27 @@ public class Neo4jPackV1 implements Neo4jPack
                 map = new HashMap<>( size, 1 );
                 for ( int i = 0; i < size; i++ )
                 {
-                    PackType type = peekNextType();
+                    PackType keyType = peekNextType();
                     String key;
-                    switch ( type )
+                    switch ( keyType )
                     {
                     case NULL:
-                        errors.add( Neo4jError.from( Status.Request.Invalid,
-                                "Value `null` is not supported as key in maps, must be a non-nullable string." ) );
-                        unpackNull();
-                        key = null;
-                        break;
+                        throw new BoltIOException( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." );
                     case STRING:
                         key = unpackString();
                         break;
                     default:
-                        throw new PackStream.PackStreamException( "Bad key type: " + type );
+                        throw new BoltIOException( Status.Request.InvalidFormat, "Bad key type: " + keyType );
                     }
 
                     AnyValue val = unpack();
                     if ( map.put( key, val ) != null )
                     {
-                        errors.add( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ) );
+                        throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
                     }
                 }
             }
             return VirtualValues.map( map );
-        }
-
-        @Override
-        public Neo4jError consumeError()
-        {
-            Neo4jError error = Neo4jError.combine( errors );
-            errors.clear();
-            return error;
-        }
-    }
-
-    private static class Error
-    {
-        private final Status status;
-        private final String msg;
-
-        private Error( Status status, String msg )
-        {
-            this.status = status;
-            this.msg = msg;
-        }
-
-        Status status()
-        {
-            return status;
-        }
-
-        String msg()
-        {
-            return msg;
         }
     }
 }

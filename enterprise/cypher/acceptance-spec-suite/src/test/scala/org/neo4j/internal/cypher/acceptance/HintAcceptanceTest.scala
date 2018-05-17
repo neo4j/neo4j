@@ -85,4 +85,33 @@ class HintAcceptanceTest
         p should useOperators("NodeRightOuterHashJoin")
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + cost3_3))
   }
+
+  test("should do index seek instead of index scan with explicit index seek hint") {
+    graph.createIndex("A", "prop")
+    graph.createIndex("B", "prop")
+
+    graph.inTx {
+      createLabeledNode(Map("prop" -> 42), "A")
+      createLabeledNode(Map("prop" -> 1337), "B")
+    }
+
+    // At the time of writing this test fails with generic index hints:
+    // USING INDEX a:A(prop)
+    // USING INDEX b:B(prop)
+    val query = """EXPLAIN
+                  |LOAD CSV WITH HEADERS FROM 'file:///dummy.csv' AS row
+                  |MATCH (a:A), (b:B)
+                  |USING INDEX SEEK a:A(prop)
+                  |USING INDEX SEEK b:B(prop)
+                  |WHERE a.prop = row.propA AND b.prop = row.propB
+                  |RETURN a.prop, b.prop
+                """.stripMargin
+
+    // TODO: Once 3.2 comes out with this feature added, we should change the following line to not exclude 3.3
+    val cost3_3 = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+    executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1 - cost3_3, query,
+      planComparisonStrategy = ComparePlansWithAssertion((p) => {
+        p should useOperatorTimes("NodeIndexSeek", 2)
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+  }
 }

@@ -27,8 +27,8 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -43,10 +43,8 @@ import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransactionImplementation, StatementOperationParts}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
-import org.neo4j.kernel.impl.factory.CanWrite
 import org.neo4j.kernel.impl.locking.LockTracer
 import org.neo4j.kernel.impl.newapi.DefaultCursors
-import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
 import org.neo4j.storageengine.api.StorageStatement
@@ -71,10 +69,10 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     outerTx = mock[InternalTransaction]
     val kernelTransaction = mock[KernelTransactionImplementation]
     when(kernelTransaction.securityContext()).thenReturn(AUTH_DISABLED)
+    when(kernelTransaction.acquireStatement()).thenReturn(statement)
     val storeStatement = mock[StorageStatement]
     val operations = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
-    statement = new KernelStatement(kernelTransaction, null, storeStatement, new Procedures(), new CanWrite(),
-      LockTracer.NONE, operations, new ClockContext(), EmptyVersionContextSupplier.EMPTY)
+    statement = new KernelStatement(kernelTransaction, null, storeStatement, LockTracer.NONE, operations, new ClockContext(), EmptyVersionContextSupplier.EMPTY)
     statement.initialize(null, PageCursorTracerSupplier.NULL.get())
     statement.acquire()
   }
@@ -93,7 +91,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transaction = mock[KernelTransaction]
     when(transaction.cursors()).thenReturn(new DefaultCursors())
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, null, null, bridge, locker, outerTx, statement, null, null)
+    val tc = new Neo4jTransactionalContext(graph, null, bridge, locker, outerTx, statement,null, null)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -114,9 +112,10 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
+    when(transaction.acquireStatement()).thenReturn(statement)
     when(transaction.cursors()).thenReturn(new DefaultCursors())
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, null, null, bridge, locker, outerTx, statement, null, null)
+    val tc = new Neo4jTransactionalContext(graph, null, bridge, locker, outerTx, statement,null, null)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
@@ -216,9 +215,10 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
+    when(transaction.acquireStatement()).thenReturn(statement)
     when(transaction.cursors()).thenReturn(new DefaultCursors())
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, null, null, bridge, locker, outerTx, statement, null, null)
+    val tc = new Neo4jTransactionalContext(graph, null, bridge, locker, outerTx, statement, null, null)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     val resource1 = mock[AutoCloseable]

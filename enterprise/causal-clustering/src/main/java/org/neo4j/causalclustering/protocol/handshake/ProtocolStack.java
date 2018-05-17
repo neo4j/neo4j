@@ -105,5 +105,11 @@ public class ProtocolStack
         {
             return new ProtocolStack( applicationProtocol, modifierProtocols );
         }
+
+        @Override
+        public String toString()
+        {
+            return "Builder{" + "applicationProtocol=" + applicationProtocol + ", modifierProtocols=" + modifierProtocols + '}';
+        }
     }
 }

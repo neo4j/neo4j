@@ -43,7 +43,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public long nodeUniqueIndexSeek( IndexReference index,
+    public long lockingNodeUniqueIndexSeek( IndexReference index,
             IndexQuery.ExactPredicate... predicates ) throws KernelException
     {
         throw new UnsupportedOperationException();
@@ -123,6 +123,18 @@ public class StubRead implements Read
 
     @Override
     public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long nodesGetCount()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long relationshipsGetCount()
     {
         throw new UnsupportedOperationException();
     }

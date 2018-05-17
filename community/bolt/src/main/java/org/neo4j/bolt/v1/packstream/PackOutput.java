@@ -19,14 +19,35 @@
  */
 package org.neo4j.bolt.v1.packstream;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
  * This is where {@link PackStream} writes its output to.
  */
-public interface PackOutput
+public interface PackOutput extends Closeable
 {
+    /**
+     * Prepare this output to write a message. Later successful message should be signaled by {@link #messageSucceeded()}
+     * and failed message by {@link #messageFailed()};
+     */
+    void beginMessage();
+
+    /**
+     * Finalize previously started message.
+     *
+     * @throws IOException when message can't be written to the network channel.
+     */
+    void messageSucceeded() throws IOException;
+
+    /**
+     * Discard previously started message.
+     *
+     * @throws IOException when message can't be written to the network channel.
+     */
+    void messageFailed() throws IOException;
+
     /** If implementation has been buffering data, it should flush those buffers now. */
     PackOutput flush() throws IOException;
 

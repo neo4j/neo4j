@@ -22,14 +22,17 @@ package org.neo4j.causalclustering.catchup;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
+import java.net.ConnectException;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
@@ -68,26 +71,47 @@ public class CatchUpClient extends LifecycleAdapter
     {
         CompletableFuture<T> future = new CompletableFuture<>();
 
-        CatchUpChannel channel = pool.acquire( upstream );
-
-        future.whenComplete( ( result, e ) ->
+        CatchUpChannel channel = null;
+        try
         {
-            if ( e == null )
-            {
-                pool.release( channel );
-            }
-            else
+            channel = pool.acquire( upstream );
+            channel.setResponseHandler( responseHandler, future );
+            future.whenComplete( new ReleaseOnComplete( channel ) );
+            channel.send( request );
+        }
+        catch ( Exception e )
+        {
+            if ( channel != null )
             {
                 pool.dispose( channel );
             }
-        } );
-
-        channel.setResponseHandler( responseHandler, future );
-        channel.send( request );
-
+            throw new CatchUpClientException( "Failed to send request", e );
+        }
         String operation = format( "Completed exceptionally when executing operation %s on %s ", request, upstream );
-
         return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
+    }
+
+    private class ReleaseOnComplete implements BiConsumer<Object,Throwable>
+    {
+        private CatchUpChannel catchUpChannel;
+
+        ReleaseOnComplete( CatchUpChannel catchUpChannel )
+        {
+            this.catchUpChannel = catchUpChannel;
+        }
+
+        @Override
+        public void accept( Object o, Throwable throwable )
+        {
+            if ( throwable == null )
+            {
+                pool.release( catchUpChannel );
+            }
+            else
+            {
+                pool.dispose( catchUpChannel );
+            }
+        }
     }
 
     private class CatchUpChannel implements CatchUpChannelPool.Channel
@@ -95,18 +119,16 @@ public class CatchUpClient extends LifecycleAdapter
         private final TrackingResponseHandler handler;
         private final AdvertisedSocketAddress destination;
         private Channel nettyChannel;
+        private final Bootstrap bootstrap;
 
         CatchUpChannel( AdvertisedSocketAddress destination )
         {
             this.destination = destination;
             handler = new TrackingResponseHandler( new CatchUpResponseAdaptor(), clock );
-            Bootstrap bootstrap = new Bootstrap()
+            bootstrap = new Bootstrap()
                     .group( eventLoopGroup )
                     .channel( NioSocketChannel.class )
                     .handler( channelInitializer.apply( handler ) );
-
-            ChannelFuture channelFuture = bootstrap.connect( destination.socketAddress() );
-            nettyChannel = channelFuture.awaitUninterruptibly().channel();
         }
 
         void setResponseHandler( CatchUpResponseCallback responseHandler, CompletableFuture<?> requestOutcomeSignal )
@@ -114,8 +136,12 @@ public class CatchUpClient extends LifecycleAdapter
             handler.setResponseHandler( responseHandler, requestOutcomeSignal );
         }
 
-        void send( CatchUpRequest request )
+        void send( CatchUpRequest request ) throws ConnectException
         {
+            if ( !isActive() )
+            {
+                throw new ConnectException( "Channel is not connected" );
+            }
             nettyChannel.write( request.messageType() );
             nettyChannel.writeAndFlush( request );
         }
@@ -132,9 +158,27 @@ public class CatchUpClient extends LifecycleAdapter
         }
 
         @Override
+        public void connect() throws Exception
+        {
+            ChannelFuture channelFuture = bootstrap.connect( destination.socketAddress() );
+            nettyChannel = channelFuture.sync().channel();
+            nettyChannel.closeFuture().addListener( (ChannelFutureListener) future -> handler.onClose() );
+
+        }
+
+        @Override
+        public boolean isActive()
+        {
+            return nettyChannel.isActive();
+        }
+
+        @Override
         public void close()
         {
-            nettyChannel.close();
+            if ( nettyChannel != null )
+            {
+                nettyChannel.close();
+            }
         }
     }
 

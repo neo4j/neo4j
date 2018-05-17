@@ -27,12 +27,39 @@ import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
 public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader,SchemaIndex,IndexDescriptor>
 {
+    private final LuceneIndexWriter writer;
+    private final SchemaIndex luceneIndex;
+    private final SchemaIndexDescriptor descriptor;
+
+    public LuceneIndexAccessor( SchemaIndex luceneIndex, SchemaIndexDescriptor descriptor )
+    {
+        this.luceneIndex = luceneIndex;
+        this.descriptor = descriptor;
+        this.writer = luceneIndex.isReadOnly() ? null : luceneIndex.getIndexWriter();
+    }
+
+    @Override
+    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    {
+        if ( luceneIndex.isReadOnly() )
+        {
+            throw new UnsupportedOperationException( "Can't create updater for read only index." );
+        }
+        return new LuceneIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
+    }
+
+    @Override
+    public void drop() throws IOException
+    {
+        luceneIndex.drop();
+    }
 
     public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor )
     {
@@ -56,6 +83,16 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader
             throws IndexEntryConflictException, IOException
     {
         luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyIds() );
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        // In Lucene all values in a tuple (composite index) will be placed in a separate field, so validate their fields individually.
+        for ( Value value : tuple )
+        {
+            LuceneIndexValueValidator.INSTANCE.validate( value );
+        }
     }
 
     private class LuceneSchemaIndexUpdater extends AbstractLuceneIndexUpdater

@@ -36,14 +36,13 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 
-import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider<SchemaIndexDescriptor>
@@ -110,13 +109,13 @@ public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider<Schem
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                                         .withFileSystem( fileSystem )
                                         .withOperationalMode( operationalMode )
                                         .withSamplingConfig( samplingConfig )
-                                        .withIndexStorage( getIndexStorage( indexId ) )
+                                        .withIndexStorage( getIndexStorage( descriptor.getId() ) )
                                         .withWriterConfig( IndexWriterConfigs::population )
                                         .build();
         if ( luceneIndex.isReadOnly() )
@@ -134,12 +133,12 @@ public class LuceneSchemaIndexProvider extends AbstractLuceneIndexProvider<Schem
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                                             .withOperationalMode( operationalMode )
                                             .withSamplingConfig( samplingConfig )
-                                            .withIndexStorage( getIndexStorage( indexId ) )
+                                            .withIndexStorage( getIndexStorage( descriptor.getId() ) )
                                             .build();
         luceneIndex.open();
         return new LuceneIndexAccessor( luceneIndex, descriptor );

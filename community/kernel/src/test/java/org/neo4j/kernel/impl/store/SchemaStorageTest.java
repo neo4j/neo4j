@@ -39,20 +39,19 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
 import org.neo4j.test.rule.DatabaseRule;
@@ -66,6 +65,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
 
 public class SchemaStorageTest
@@ -86,20 +88,18 @@ public class SchemaStorageTest
     @BeforeClass
     public static void initStorage() throws Exception
     {
-        try ( Transaction transaction = db.beginTx();
-                Statement statement = getStatement() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
-            tokenWriteOperations.propertyKeyGetOrCreateForName( PROP1 );
-            tokenWriteOperations.propertyKeyGetOrCreateForName( PROP2 );
-            tokenWriteOperations.labelGetOrCreateForName( LABEL1 );
-            tokenWriteOperations.labelGetOrCreateForName( LABEL2 );
-            tokenWriteOperations.relationshipTypeGetOrCreateForName( TYPE1 );
+            TokenWrite tokenWrite = getTransaction().tokenWrite();
+            tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
+            tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
+            tokenWrite.labelGetOrCreateForName( LABEL1 );
+            tokenWrite.labelGetOrCreateForName( LABEL2 );
+            tokenWrite.relationshipTypeGetOrCreateForName( TYPE1 );
             transaction.success();
         }
         SchemaStore schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
-        IndexProviderMap indexProviderMap = resolveDependency( IndexProviderMap.class );
-        storage = new SchemaStorage( schemaStore, indexProviderMap );
+        storage = new SchemaStorage( schemaStore );
     }
 
     @Before
@@ -118,7 +118,7 @@ public class SchemaStorageTest
                 index( LABEL2, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
+        StoreIndexDescriptor rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNotNull( rule );
@@ -137,7 +137,7 @@ public class SchemaStorageTest
         createSchema( db -> db.schema().indexFor( Label.label( LABEL1 ) )
           .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create() );
 
-        IndexRule rule = storage.indexGetForSchema( SchemaIndexDescriptorFactory.forLabel(
+        StoreIndexDescriptor rule = storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
                 labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ) );
 
         assertNotNull( rule );
@@ -165,7 +165,7 @@ public class SchemaStorageTest
             indexCreator.create();
         } );
 
-        IndexRule rule = storage.indexGetForSchema( SchemaIndexDescriptorFactory.forLabel(
+        StoreIndexDescriptor rule = storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
                 labelId( LABEL1 ), Arrays.stream( props ).mapToInt( this::propId ).toArray() ) );
 
         assertNotNull( rule );
@@ -185,7 +185,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
+        StoreIndexDescriptor rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNull( rule );
@@ -200,7 +200,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP2 ) );
 
         // When
-        IndexRule rule = storage.indexGetForSchema( uniqueIndexDescriptor( LABEL1, PROP1 ) );
+        StoreIndexDescriptor rule = storage.indexGetForSchema( uniqueIndexDescriptor( LABEL1, PROP1 ) );
 
         // Then
         assertNotNull( rule );
@@ -217,10 +217,10 @@ public class SchemaStorageTest
                 uniquenessConstraint( LABEL2, PROP1 ) );
 
         // When
-        Set<IndexRule> listedRules = asSet( storage.indexesGetAll() );
+        Set<StoreIndexDescriptor> listedRules = asSet( storage.indexesGetAll() );
 
         // Then
-        Set<IndexRule> expectedRules = new HashSet<>();
+        Set<StoreIndexDescriptor> expectedRules = new HashSet<>();
         expectedRules.add( makeIndexRule( 0, LABEL1, PROP1 ) );
         expectedRules.add( makeIndexRule( 1, LABEL1, PROP2 ) );
         expectedRules.add( makeIndexRuleForConstraint( 2, LABEL2, PROP1, 0L ) );
@@ -334,7 +334,7 @@ public class SchemaStorageTest
         return tokenNameLookup;
     }
 
-    private void assertRule( IndexRule rule, String label, String propertyKey, IndexDescriptor.Type type )
+    private void assertRule( StoreIndexDescriptor rule, String label, String propertyKey, IndexDescriptor.Type type )
     {
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
@@ -350,26 +350,23 @@ public class SchemaStorageTest
 
     private IndexDescriptor indexDescriptor( String label, String property )
     {
-        return SchemaIndexDescriptorFactory.forLabel( labelId( label ), propId( property ) );
+        return TestIndexDescriptorFactory.forLabel( labelId( label ), propId( property ) );
     }
 
     private IndexDescriptor uniqueIndexDescriptor( String label, String property )
     {
-        return SchemaIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) );
+        return TestIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) );
     }
 
-    private IndexRule makeIndexRule( long ruleId, String label, String propertyKey )
+    private StoreIndexDescriptor makeIndexRule( long ruleId, String label, String propertyKey )
     {
-        return IndexRule.forIndex( ruleId, SchemaIndexDescriptorFactory.forLabel( labelId( label ), propId( propertyKey ) ) ).withProvider(
-                PROVIDER_DESCRIPTOR ).build();
+        return forSchema( forLabel( labelId( label ), propId( propertyKey ) ), PROVIDER_DESCRIPTOR ).withId( ruleId );
     }
 
-    private IndexRule makeIndexRuleForConstraint( long ruleId, String label, String propertyKey,
-            long constraintId )
+    private StoreIndexDescriptor makeIndexRuleForConstraint( long ruleId, String label, String propertyKey,
+                                                             long constraintId )
     {
-        return IndexRule.forIndex(
-                ruleId, SchemaIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( propertyKey ) ) ).withProvider(
-                PROVIDER_DESCRIPTOR ).withOwingConstraint( constraintId ).build();
+        return uniqueForSchema( forLabel( labelId( label ), propId( propertyKey ) ), PROVIDER_DESCRIPTOR ).withIds( ruleId, constraintId );
     }
 
     private ConstraintRule getUniquePropertyConstraintRule( long id, String label, String property )
@@ -387,34 +384,31 @@ public class SchemaStorageTest
 
     private static int labelId( String labelName )
     {
-        try ( Transaction ignore = db.beginTx();
-              Statement statement = getStatement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().labelGetForName( labelName );
+            return getTransaction().tokenRead().nodeLabel( labelName );
         }
     }
 
     private int propId( String propName )
     {
-        try ( Transaction ignore = db.beginTx();
-              Statement statement = getStatement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().propertyKeyGetForName( propName );
+            return getTransaction().tokenRead().propertyKey( propName );
         }
     }
 
     private static int typeId( String typeName )
     {
-        try ( Transaction ignore = db.beginTx();
-                Statement statement = getStatement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().relationshipTypeGetForName( typeName );
+            return getTransaction().tokenRead().relationshipType( typeName );
         }
     }
 
-    private static Statement getStatement()
+    private static KernelTransaction getTransaction()
     {
-        return resolveDependency( ThreadToStatementContextBridge.class ).get();
+        return resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 
     private static <T> T resolveDependency( Class<T> clazz )

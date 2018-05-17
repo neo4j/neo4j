@@ -24,27 +24,25 @@ import java.io.IOException;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.values.storable.ValueCategory;
 
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
-
-public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
+public class TemporalIndexProvider extends IndexProvider
 {
     public static final String KEY = "temporal";
-    public static final Descriptor TEMPORAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    static final IndexCapability CAPABILITY = new TemporalIndexCapability();
+    private static final Descriptor TEMPORAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
@@ -65,42 +63,27 @@ public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
-    {
-        if ( type == GENERAL )
-        {
-            return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
-        }
-        else if ( type == UNIQUE )
-        {
-            return SchemaIndexDescriptorFactory.uniqueForLabelBySchema( schema );
-        }
-        throw new UnsupportedOperationException( String.format( "This provider does not support indexes of type %s", type ) );    }
-
-    @Override
-    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
-        return new TemporalIndexPopulator( indexId, descriptor, samplingConfig, files, pageCache, fs, monitor );
+        TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
+        return new TemporalIndexPopulator( descriptor, samplingConfig, files, pageCache, fs, monitor );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
-                                            IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
-        return new TemporalIndexAccessor( indexId, descriptor, samplingConfig, pageCache, fs,
-                recoveryCleanupWorkCollector, monitor, files );
+        TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
+        return new TemporalIndexAccessor( descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files );
     }
 
     @Override
-    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
     {
-        TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
+        TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
 
         try
         {
@@ -117,16 +100,17 @@ public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
         {
             throw new RuntimeException( e );
         }
-        throw new IllegalStateException( "Index " + indexId + " isn't failed" );
+        throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
-        TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
+        TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
 
+        final Iterable<TemporalIndexFiles.FileLayout> existing = temporalIndexFiles.existing();
         InternalIndexState state = InternalIndexState.ONLINE;
-        for ( TemporalIndexFiles.FileLayout subIndex : temporalIndexFiles.existing() )
+        for ( TemporalIndexFiles.FileLayout subIndex : existing )
         {
             try
             {
@@ -141,7 +125,7 @@ public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
             }
             catch ( MetadataMismatchException | IOException e )
             {
-                monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
+                monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
                 return InternalIndexState.POPULATING;
             }
         }
@@ -149,15 +133,9 @@ public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    public IndexCapability getCapability()
     {
-        return IndexCapability.NO_CAPABILITY;
-    }
-
-    @Override
-    public boolean compatible( IndexDescriptor indexDescriptor )
-    {
-        return indexDescriptor instanceof SchemaIndexDescriptor;
+        return CAPABILITY;
     }
 
     @Override
@@ -166,5 +144,44 @@ public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
         // Since this native provider is a new one, there's no need for migration on this level.
         // Migration should happen in the combined layer for the time being.
         return StoreMigrationParticipant.NOT_PARTICIPATING;
+    }
+
+    /**
+     * For single property temporal queries capabilities are
+     * Order: ASCENDING
+     * Value: YES (can provide exact value)
+     *
+     * For other queries there is no support
+     */
+    private static class TemporalIndexCapability implements IndexCapability
+    {
+        @Override
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+        {
+            if ( support( valueCategories ) )
+            {
+                return ORDER_ASC;
+            }
+            return ORDER_NONE;
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+        {
+            if ( support( valueCategories ) )
+            {
+                return IndexValueCapability.YES;
+            }
+            if ( singleWildcard( valueCategories ) )
+            {
+                return IndexValueCapability.PARTIAL;
+            }
+            return IndexValueCapability.NO;
+        }
+
+        private boolean support( ValueCategory[] valueCategories )
+        {
+            return valueCategories.length == 1 && valueCategories[0] == ValueCategory.TEMPORAL;
+        }
     }
 }

@@ -24,34 +24,22 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.StoreType;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static org.neo4j.kernel.impl.store.format.RecordFormat.NO_RECORD_SIZE;
 
 public class ToFileStoreWriter implements StoreWriter
 {
     private final File basePath;
     private final FileSystemAbstraction fs;
-    private final StoreCopyClient.Monitor monitor;
-    private final PageCache pageCache;
-    private final List<FileMoveAction> fileMoveActions;
+    private final StoreCopyClientMonitor monitor;
 
     public ToFileStoreWriter( File graphDbStoreDir, FileSystemAbstraction fs,
-            StoreCopyClient.Monitor monitor, PageCache pageCache, List<FileMoveAction> fileMoveActions )
+            StoreCopyClientMonitor storeCopyClientMonitor )
     {
         this.basePath = graphDbStoreDir;
         this.fs = fs;
-        this.monitor = monitor;
-        this.pageCache = pageCache;
-        this.fileMoveActions = fileMoveActions;
+        this.monitor = storeCopyClientMonitor;
     }
 
     @Override
@@ -64,30 +52,18 @@ public class ToFileStoreWriter implements StoreWriter
             File file = new File( basePath, path );
             file.getParentFile().mkdirs();
 
-            String filename = file.getName();
+            String fullFilePath = file.toString();
 
-            monitor.startReceivingStoreFile( file );
+            monitor.startReceivingStoreFile( fullFilePath );
             try
             {
-                // Note that we don't bother checking if the page cache already has a mapping for the given file.
-                // The reason is that we are copying to a temporary store location, and then we'll move the files later.
-                if ( !pageCache.fileSystemSupportsFileOperations() && StoreType.canBeManagedByPageCache( filename ) )
-                {
-                    int filePageSize = filePageSize( requiredElementAlignment );
-                    try ( PagedFile pagedFile = pageCache.map( file, filePageSize, CREATE, WRITE ) )
-                    {
-                        final long written = writeDataThroughPageCache( pagedFile, data, temporaryBuffer, hasData );
-                        addPageCacheMoveAction( file );
-                        return written;
-                    }
-                }
                 // We don't add file move actions for these files. The reason is that we will perform the file moves
                 // *after* we have done recovery on the store, and this may delete some files, and add other files.
                 return writeDataThroughFileSystem( file, data, temporaryBuffer, hasData );
             }
             finally
             {
-                monitor.finishReceivingStoreFile( file );
+                monitor.finishReceivingStoreFile( fullFilePath );
             }
         }
         catch ( Throwable t )
@@ -96,35 +72,10 @@ public class ToFileStoreWriter implements StoreWriter
         }
     }
 
-    // As only the page cache know towards which device (block device or normal file system) it is working, we use
-    // the page cache later on when we want to move the files written through the page cache.
-    private void addPageCacheMoveAction( File file )
-    {
-        fileMoveActions.add( FileMoveAction.copyViaPageCache( file, pageCache ) );
-    }
-
-    private int filePageSize( int alignment )
-    {
-        // We know we are dealing with a record store at this point, so the required alignment is the record size,
-        // and we can use this to do the page size calculation in the same way as the stores would.
-        final int pageCacheSize = pageCache.pageSize();
-        return (alignment == NO_RECORD_SIZE) ? pageCacheSize
-                                              : (pageCacheSize - (pageCacheSize % alignment));
-    }
-
     private long writeDataThroughFileSystem( File file, ReadableByteChannel data, ByteBuffer temporaryBuffer,
             boolean hasData ) throws IOException
     {
         try ( StoreChannel channel = fs.create( file ) )
-        {
-            return writeData( data, temporaryBuffer, hasData, channel );
-        }
-    }
-
-    private long writeDataThroughPageCache( PagedFile pagedFile, ReadableByteChannel data, ByteBuffer temporaryBuffer,
-            boolean hasData ) throws IOException
-    {
-        try ( WritableByteChannel channel = pagedFile.openWritableByteChannel() )
         {
             return writeData( data, temporaryBuffer, hasData, channel );
         }

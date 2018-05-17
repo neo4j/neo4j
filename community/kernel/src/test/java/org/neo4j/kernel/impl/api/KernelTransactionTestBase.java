@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.junit.Before;
 import org.mockito.Mockito;
 
@@ -27,9 +30,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
@@ -110,7 +111,8 @@ public class KernelTransactionTestBase
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
-        when( readLayer.newStatement() ).thenReturn( mock( StoreStatement.class ) );
+        StoreStatement statement = mock( StoreStatement.class );
+        when( readLayer.newStatement() ).thenReturn( statement );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new Command
@@ -166,7 +168,8 @@ public class KernelTransactionTestBase
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                 new CanWrite(), new DefaultCursors(), AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
-                new StandardConstraintSemantics(), mock( SchemaState.class) );
+                new StandardConstraintSemantics(), mock( SchemaState.class),
+                mock( IndexingService.class) );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess
@@ -189,19 +192,19 @@ public class KernelTransactionTestBase
     {
 
         @Override
-        public PrimitiveLongSet newLongSet()
+        public MutableLongSet newLongSet()
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongSet();
         }
 
         @Override
-        public <V> PrimitiveLongObjectMap<V> newLongObjectMap()
+        public <V> MutableLongObjectMap<V> newLongObjectMap()
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongObjectMap();
         }
 
         @Override
-        public <V> PrimitiveIntObjectMap<V> newIntObjectMap()
+        public <V> MutableIntObjectMap<V> newIntObjectMap()
         {
             return OnHeapCollectionsFactory.INSTANCE.newIntObjectMap();
         }

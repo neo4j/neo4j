@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import java.util.{List => JavaList, Map => JavaMap}
 
-import org.neo4j.cypher.internal.util.v3_4.Eagerly.immutableMapValues
+import org.neo4j.cypher.internal.util.v3_5.Eagerly.immutableMapValues
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.values.AnyValue
 
@@ -53,6 +53,17 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
       while (continue && fields.hasNext) {
         row._fields = fields.next()
         continue = visitor.visit(row)
+      }
+    }
+  }
+
+  case class feedQueryResultRecordIteratorToVisitable[EX <: Exception](recordIterator: Iterator[Record]) {
+    def accept(visitor: QueryResultVisitor[EX]) = {
+      var continue = true
+      while (continue && recordIterator.hasNext) {
+        val row = recordIterator.next()
+        continue = visitor.visit(row)
+        row.release()
       }
     }
   }

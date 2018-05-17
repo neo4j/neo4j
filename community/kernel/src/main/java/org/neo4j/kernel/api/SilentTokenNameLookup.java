@@ -28,7 +28,6 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 /**
  * Instances allow looking up ids back to their names.
  *
- * NOTE: this class will replace StatementTokenNameLookup.
  */
 public final class SilentTokenNameLookup implements TokenNameLookup
 {

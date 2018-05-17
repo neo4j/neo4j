@@ -30,7 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.NamedFunction;
@@ -212,6 +212,6 @@ public class NodeCountsTest
 
     private long countsForNode()
     {
-        return kernelTransactionSupplier.get().dataRead().countsForNode( ReadOperations.ANY_LABEL );
+        return kernelTransactionSupplier.get().dataRead().countsForNode( StatementConstants.ANY_LABEL );
     }
 }

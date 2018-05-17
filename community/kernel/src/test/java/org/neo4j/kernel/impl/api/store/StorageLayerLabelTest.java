@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 
@@ -58,7 +58,7 @@ public class StorageLayerLabelTest extends StorageLayerTest
 
         // THEN
         disk.newStatement().acquireSingleNodeCursor( nodeId ).forAll(
-                node -> assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1, labelId2} ), node.labels() ) );
+                node -> assertEquals( IntHashSet.newSetWith( labelId1, labelId2 ), node.labels() ) );
     }
 
     @Test
@@ -95,8 +95,8 @@ public class StorageLayerLabelTest extends StorageLayerTest
         int labelId2 = disk.labelGetForName( label2.name() );
 
         // WHEN
-        PrimitiveLongIterator nodesForLabel1 = disk.nodesGetForLabel( state.getStoreStatement(), labelId1 );
-        PrimitiveLongIterator nodesForLabel2 = disk.nodesGetForLabel( state.getStoreStatement(), labelId2 );
+        LongIterator nodesForLabel1 = disk.nodesGetForLabel( state.getStoreStatement(), labelId1 );
+        LongIterator nodesForLabel2 = disk.nodesGetForLabel( state.getStoreStatement(), labelId2 );
 
         // THEN
         assertEquals( asSet( node1.getId(), node2.getId() ), PrimitiveLongCollections.toSet( nodesForLabel1 ) );

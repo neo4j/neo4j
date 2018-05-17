@@ -74,12 +74,6 @@ public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
     }
 
     @Override
-    public boolean shouldRetry()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
 

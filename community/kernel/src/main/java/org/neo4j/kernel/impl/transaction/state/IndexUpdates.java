@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -40,8 +41,7 @@ public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor
      * @param nodeCommands {@link NodeCommand} by node id.
      * @param relationshipCommandPrimitiveLongObjectMap
      */
-    void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByNodeId, PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
-            PrimitiveLongObjectMap<NodeCommand> nodeCommands, PrimitiveLongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap );
+    void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId, LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId, LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap );
 
     boolean hasUpdates();
 }

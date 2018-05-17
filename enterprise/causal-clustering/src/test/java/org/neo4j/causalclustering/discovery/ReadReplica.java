@@ -46,9 +46,9 @@ import static org.neo4j.helpers.AdvertisedSocketAddress.advertisedAddress;
 import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ReadReplica implements ClusterMember
+@SuppressWarnings( "WeakerAccess" )
+public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
 {
-    protected final Map<String,String> config = stringMap();
     protected final DiscoveryServiceFactory discoveryServiceFactory;
     private final File neo4jHome;
     protected final File storeDir;
@@ -71,6 +71,7 @@ public class ReadReplica implements ClusterMember
                 .collect( joining( "," ) );
         boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
 
+        Map<String,String> config = stringMap();
         config.put( "dbms.mode", "READ_REPLICA" );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialHosts );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
@@ -125,7 +126,7 @@ public class ReadReplica implements ClusterMember
     @Override
     public void start()
     {
-        database = new ReadReplicaGraphDatabase( storeDir, Config.defaults( config ),
+        database = new ReadReplicaGraphDatabase( storeDir, memberConfig,
                 GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory,
                 memberId() );
     }
@@ -135,9 +136,21 @@ public class ReadReplica implements ClusterMember
     {
         if ( database != null )
         {
-            database.shutdown();
-            database = null;
+            try
+            {
+                database.shutdown();
+            }
+            finally
+            {
+                database = null;
+            }
         }
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return database == null;
     }
 
     public CatchupPollingProcess txPollingClient()
@@ -154,13 +167,13 @@ public class ReadReplica implements ClusterMember
     @Override
     public ClientConnectorAddresses clientConnectorAddresses()
     {
-        return ClientConnectorAddresses.extractFromConfig( Config.defaults( this.config ) );
+        return ClientConnectorAddresses.extractFromConfig( memberConfig );
     }
 
     @Override
     public String settingValue( String settingName )
     {
-        return config.get(settingName);
+        return memberConfig.getRaw().get( settingName );
     }
 
     @Override
@@ -175,6 +188,7 @@ public class ReadReplica implements ClusterMember
         return monitors;
     }
 
+    @Override
     public File storeDir()
     {
         return storeDir;
@@ -190,6 +204,7 @@ public class ReadReplica implements ClusterMember
         return String.format( "bolt://%s", boltAdvertisedSocketAddress );
     }
 
+    @Override
     public File homeDir()
     {
         return neo4jHome;
@@ -197,12 +212,12 @@ public class ReadReplica implements ClusterMember
 
     public void setUpstreamDatabaseSelectionStrategy( String key )
     {
-        config.put( CausalClusteringSettings.upstream_selection_strategy.name(), key );
+        updateConfig( CausalClusteringSettings.upstream_selection_strategy, key );
     }
 
     public MemberId memberId()
     {
-        return new MemberId( new UUID( serverId, 0 ) );
+        return new MemberId( new UUID( ((long) serverId) << 32, 0 ) );
     }
 
     public int serverId()

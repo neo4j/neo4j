@@ -21,21 +21,21 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.function.Supplier;
 
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 
 public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
 {
-    public DefaultPropertyTokenCreator( Supplier<InwardKernel> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
+    public DefaultPropertyTokenCreator( Supplier<Kernel> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
     {
         super( kernelSupplier, idGeneratorFactory );
     }
 
     @Override
-    protected int createKey( KernelTransaction transaction, String name ) throws IllegalTokenNameException
+    protected int createKey( Transaction transaction, String name ) throws IllegalTokenNameException
     {
         int id = (int) idGeneratorFactory.get( IdType.PROPERTY_KEY_TOKEN ).nextId();
         transaction.tokenWrite().propertyKeyCreateForName( name, id );

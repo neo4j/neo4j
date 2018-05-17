@@ -56,11 +56,16 @@ public class RecordChangeSetTest
     {
         // GIVEN
         NeoStores mockStore = mock( NeoStores.class );
-        when( mockStore.getNodeStore() ).thenReturn( mock( NodeStore.class ) );
-        when( mockStore.getRelationshipStore() ).thenReturn( mock( RelationshipStore.class ) );
-        when( mockStore.getPropertyStore() ).thenReturn( mock( PropertyStore.class ) );
-        when( mockStore.getSchemaStore() ).thenReturn( mock( SchemaStore.class ) );
-        when( mockStore.getRelationshipGroupStore() ).thenReturn( mock( RelationshipGroupStore.class ) );
+        NodeStore store = mock( NodeStore.class );
+        when( mockStore.getNodeStore() ).thenReturn( store );
+        RelationshipStore relationshipStore = mock( RelationshipStore.class );
+        when( mockStore.getRelationshipStore() ).thenReturn( relationshipStore );
+        PropertyStore propertyStore = mock( PropertyStore.class );
+        when( mockStore.getPropertyStore() ).thenReturn( propertyStore );
+        SchemaStore schemaStore = mock( SchemaStore.class );
+        when( mockStore.getSchemaStore() ).thenReturn( schemaStore );
+        RelationshipGroupStore groupStore = mock( RelationshipGroupStore.class );
+        when( mockStore.getRelationshipGroupStore() ).thenReturn( groupStore );
 
         RecordChangeSet changeSet = new RecordChangeSet( new Loaders( mockStore ) );
 

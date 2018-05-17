@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.0-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
@@ -15,7 +15,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-kernel-api</artifactId>
-  <version>3.4.0-SNAPSHOT</version>
+  <version>3.5.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>Neo4j - Kernel API</name>
@@ -51,11 +51,6 @@ the relevant Commercial Agreement.
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-primitive-collections</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -78,8 +73,12 @@ the relevant Commercial Agreement.
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
+    <dependency>
+        <groupId>org.eclipse.collections</groupId>
+        <artifactId>eclipse-collections</artifactId>
+    </dependency>
 
-    <!-- Test dependencies -->
+      <!-- Test dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-values</artifactId>
@@ -89,8 +88,16 @@ the relevant Commercial Agreement.
     </dependency>
 
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-migrationsupport</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.surefire</groupId>
+      <artifactId>surefire-logger-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>

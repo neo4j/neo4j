@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
+import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
@@ -34,8 +35,9 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
@@ -75,7 +77,26 @@ public class SchemaRuleSerialization
     // PUBLIC
 
     /**
+     * Serialize the provided SchemaRule onto the target buffer
+     *
+     * @param schemaRule the SchemaRule to serialize
+     */
+    public static byte[] serialize( SchemaRule schemaRule )
+    {
+        if ( schemaRule instanceof StoreIndexDescriptor )
+        {
+            return serialize( (StoreIndexDescriptor)schemaRule );
+        }
+        else if ( schemaRule instanceof ConstraintRule )
+        {
+            return serialize( (ConstraintRule)schemaRule );
+        }
+        throw new IllegalStateException( "Unknown schema rule type: " + schemaRule.getClass() );
+    }
+
+    /**
      * Parse a SchemaRule from the provided buffer.
+     *
      * @param id the id to give the returned Schema Rule
      * @param source the buffer to parse from
      * @return a SchemaRule
@@ -172,15 +193,15 @@ public class SchemaRuleSerialization
 
     /**
      * Compute the byte size needed to serialize the provided IndexRule using serialize.
-     * @param indexRule the IndexRule
-     * @return the byte size of indexRule
+     * @param indexDescriptor the StoreIndexDescriptor
+     * @return the byte size of StoreIndexDescriptor
      */
-    public static int lengthOf( IndexRule indexRule )
+    public static int lengthOf( StoreIndexDescriptor indexDescriptor )
     {
         int length = 4; // legacy label or relType id
         length += 1;    // schema rule type
 
-        IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
+        IndexProvider.Descriptor providerDescriptor = indexDescriptor.providerDescriptor();
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() );
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
 
@@ -222,11 +243,11 @@ public class SchemaRuleSerialization
 
     // READ INDEX
 
-    private static IndexRule readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
+    private static StoreIndexDescriptor readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
     {
         IndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
         byte indexRuleType = source.get();
-        String name;
+        Optional<String> name;
         switch ( indexRuleType )
         {
         case GENERAL_INDEX:
@@ -298,21 +319,21 @@ public class SchemaRuleSerialization
         {
         case EXISTS_CONSTRAINT:
             schema = readSchema( source );
-            name = readRuleName( id, ConstraintRule.class, source );
+            name = readRuleName( source ).orElse( null );
             return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForSchema( schema ), name );
 
         case UNIQUE_CONSTRAINT:
             long ownedUniqueIndex = source.getLong();
             schema = readSchema( source );
             UniquenessConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForSchema( schema );
-            name = readRuleName( id, ConstraintRule.class, source );
+            name = readRuleName( source ).orElse( null );
             return ConstraintRule.constraintRule( id, descriptor, ownedUniqueIndex, name );
 
         case UNIQUE_EXISTS_CONSTRAINT:
             long ownedNodeKeyIndex = source.getLong();
             schema = readSchema( source );
             NodeKeyConstraintDescriptor nodeKeyConstraintDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
-            name = readRuleName( id, ConstraintRule.class, source );
+            name = readRuleName( source ).orElse( null );
             return ConstraintRule.constraintRule( id, nodeKeyConstraintDescriptor, ownedNodeKeyIndex, name );
 
         default:
@@ -320,18 +341,14 @@ public class SchemaRuleSerialization
         }
     }
 
-    private static String readRuleName( long id, Class<? extends SchemaRule> type, ByteBuffer source )
+    private static Optional<String> readRuleName( ByteBuffer source )
     {
-        String ruleName = null;
         if ( source.remaining() >= UTF8.MINIMUM_SERIALISED_LENGTH_BYTES )
         {
-            ruleName = UTF8.getDecodedStringFrom( source );
+            String ruleName = UTF8.getDecodedStringFrom( source );
+            return ruleName.isEmpty() ? Optional.empty() : Optional.of( ruleName );
         }
-        if ( ruleName == null || ruleName.isEmpty() )
-        {
-            ruleName = SchemaRule.generateName( id, type );
-        }
-        return ruleName;
+        return Optional.empty();
     }
 
     private static String readMetaData( ByteBuffer source )

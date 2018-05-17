@@ -120,7 +120,7 @@ public class ClusterFormationIT
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit( () ->
         {
-            CoreGraphDatabase leader = cluster.getDbWithRole( Role.LEADER ).database();
+            CoreGraphDatabase leader = cluster.getMemberWithRole( Role.LEADER ).database();
             try ( Transaction tx = leader.beginTx() )
             {
                 leader.createNode();

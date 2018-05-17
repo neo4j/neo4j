@@ -30,14 +30,16 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.net.BindException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.causalclustering.helper.SuspendableLifeCycle;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-public class Server extends LifecycleAdapter
+import static java.lang.String.format;
+
+public class Server extends SuspendableLifeCycle
 {
     private final Log debugLog;
     private final Log userLog;
@@ -52,14 +54,15 @@ public class Server extends LifecycleAdapter
     private Channel channel;
 
     public Server( ChildInitializer childInitializer, LogProvider debugLogProvider, LogProvider userLogProvider, ListenSocketAddress listenAddress,
-            String serverName )
+                   String serverName )
     {
         this( childInitializer, null, debugLogProvider, userLogProvider, listenAddress, serverName );
     }
 
     public Server( ChildInitializer childInitializer, ChannelInboundHandler parentHandler, LogProvider debugLogProvider, LogProvider userLogProvider,
-            ListenSocketAddress listenAddress, String serverName )
+                   ListenSocketAddress listenAddress, String serverName )
     {
+        super( debugLogProvider.getLog( Server.class ) );
         this.childInitializer = childInitializer;
         this.parentHandler = parentHandler;
         this.listenAddress = listenAddress;
@@ -75,7 +78,13 @@ public class Server extends LifecycleAdapter
     }
 
     @Override
-    public synchronized void start()
+    protected void init0()
+    {
+        // do nothing
+    }
+
+    @Override
+    protected void start0()
     {
         if ( channel != null )
         {
@@ -99,6 +108,7 @@ public class Server extends LifecycleAdapter
         try
         {
             channel = bootstrap.bind().syncUninterruptibly().channel();
+            debugLog.info( serverName + ": bound to " + listenAddress );
         }
         catch ( Exception e )
         {
@@ -108,13 +118,13 @@ public class Server extends LifecycleAdapter
                 String message = serverName + ": address is already bound: " + listenAddress;
                 userLog.error( message );
                 debugLog.error( message, e );
-                throw e;
             }
+            throw e;
         }
     }
 
     @Override
-    public synchronized void stop()
+    protected void stop0()
     {
         if ( channel == null )
         {
@@ -140,8 +150,20 @@ public class Server extends LifecycleAdapter
         workerGroup = null;
     }
 
+    @Override
+    protected void shutdown0()
+    {
+        // do nothing
+    }
+
     public ListenSocketAddress address()
     {
         return listenAddress;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Server[%s]", serverName );
     }
 }

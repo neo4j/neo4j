@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -43,7 +44,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -60,15 +60,16 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -86,7 +87,6 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -117,9 +117,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -148,8 +145,8 @@ public class BatchInsertTest
 {
     private final int denseNodeThreshold;
     // This is the assumed internal index descriptor based on knowledge of what ids get assigned
-    private static final SchemaIndexDescriptor internalIndex = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
-    private static final SchemaIndexDescriptor internalUniqueIndex = SchemaIndexDescriptorFactory.uniqueForLabel( 0, 0 );
+    private static final IndexDescriptor internalIndex = TestIndexDescriptorFactory.forLabel( 0, 0 );
+    private static final IndexDescriptor internalUniqueIndex = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
 
     @Parameterized.Parameters
     public static Collection<Integer> data()
@@ -825,17 +822,17 @@ public class BatchInsertTest
             assertEquals( "records in use", 2, inUse.size() );
             SchemaRule rule0 = storage.loadSingleSchemaRule( inUse.get( 0 ) );
             SchemaRule rule1 = storage.loadSingleSchemaRule( inUse.get( 1 ) );
-            IndexRule indexRule;
+            StoreIndexDescriptor indexRule;
             ConstraintRule constraintRule;
-            if ( rule0 instanceof IndexRule )
+            if ( rule0 instanceof StoreIndexDescriptor )
             {
-                indexRule = (IndexRule) rule0;
+                indexRule = (StoreIndexDescriptor) rule0;
                 constraintRule = (ConstraintRule) rule1;
             }
             else
             {
                 constraintRule = (ConstraintRule) rule0;
-                indexRule = (IndexRule) rule1;
+                indexRule = (StoreIndexDescriptor) rule1;
             }
             assertEquals( "index should reference constraint",
                           constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
@@ -941,7 +938,7 @@ public class BatchInsertTest
 
         when( provider.indexDescriptorFor( any(SchemaDescriptor.class), any(IndexDescriptor.Type.class ), anyString(), anyString() ) ).thenCallRealMethod();
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
@@ -957,7 +954,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(),
                 Values.of( "Jakewins" ) ) ) ) );
@@ -977,7 +974,7 @@ public class BatchInsertTest
 
         when( provider.indexDescriptorFor( any(SchemaDescriptor.class), any(IndexDescriptor.Type.class ), anyString(), anyString() ) ).thenCallRealMethod();
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
@@ -993,7 +990,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
@@ -1013,7 +1010,7 @@ public class BatchInsertTest
         IndexProvider provider = spy( new InMemoryIndexProvider(  ));
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        doReturn( populator ).when( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        doReturn( populator ).when( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
@@ -1026,7 +1023,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection(
                 add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
@@ -1444,7 +1441,8 @@ public class BatchInsertTest
 
     private LabelScanStore getLabelScanStore()
     {
-        return new NativeLabelScanStore( pageCacheRule.getPageCache( fileSystemRule.get() ), storeDir.absolutePath(),
+        DefaultFileSystemAbstraction fs = fileSystemRule.get();
+        return new NativeLabelScanStore( pageCacheRule.getPageCache( fs ), storeDir.absolutePath(), fs,
                 FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 
@@ -1458,12 +1456,12 @@ public class BatchInsertTest
         }
     }
 
-    private List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongIterator primitiveLongIterator )
+    private List<Long> extractPrimitiveLongIteratorAsList( LongIterator longIterator )
     {
         List<Long> actualNodeIds = new ArrayList<>();
-        while ( primitiveLongIterator.hasNext() )
+        while ( longIterator.hasNext() )
         {
-            actualNodeIds.add( primitiveLongIterator.next() );
+            actualNodeIds.add( longIterator.next() );
         }
         return actualNodeIds;
     }
@@ -1491,7 +1489,7 @@ public class BatchInsertTest
 
         when( provider.indexDescriptorFor( any(SchemaDescriptor.class), any(IndexDescriptor.Type.class ), anyString(), anyString() ) ).thenCallRealMethod();
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(

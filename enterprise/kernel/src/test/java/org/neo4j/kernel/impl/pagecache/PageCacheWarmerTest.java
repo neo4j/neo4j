@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,12 +31,14 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.OptionalLong;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -44,12 +49,17 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -96,6 +106,52 @@ public class PageCacheWarmerTest
     }
 
     @Test
+    public void doNotReheatAfterStop() throws IOException
+    {
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
+              PagedFile ignore = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+        {
+            PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
+            warmer.stop();
+            assertSame( OptionalLong.empty(), warmer.reheat() );
+        }
+    }
+
+    @Test
+    public void doNoProfileAfterStop() throws IOException
+    {
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
+              PagedFile ignore = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+        {
+            PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
+            warmer.stop();
+            assertSame( OptionalLong.empty(), warmer.profile() );
+        }
+    }
+
+    @Test
+    public void profileAndReheatAfterRestart() throws IOException
+    {
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
+              PagedFile pf = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+        {
+            PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
+            warmer.stop();
+            warmer.start();
+            try ( PageCursor writer = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( writer.next( 1 ) );
+                assertTrue( writer.next( 3 ) );
+            }
+            warmer.profile();
+            assertNotSame( OptionalLong.empty(), warmer.reheat() );
+        }
+    }
+
+    @Test
     public void mustDoNothingWhenReheatingUnprofiledPageCache() throws Exception
     {
 
@@ -122,6 +178,7 @@ public class PageCacheWarmerTest
             }
             pf.flushAndForce();
             PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
             warmer.profile();
         }
 
@@ -131,6 +188,7 @@ public class PageCacheWarmerTest
               PagedFile pf = pageCache.map( file, pageCache.pageSize() ) )
         {
             PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
             warmer.reheat();
 
             pageCache.reportEvents();
@@ -176,6 +234,7 @@ public class PageCacheWarmerTest
               PagedFile pf = pageCache.map( file, pageCache.pageSize() ) )
         {
             PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
             warmer.reheat();
 
             pageCache.reportEvents();
@@ -195,16 +254,110 @@ public class PageCacheWarmerTest
         }
     }
 
+    @SuppressWarnings( "unused" )
+    @Test
+    public void profileMustNotDeleteFilesCurrentlyExposedViaFileListing() throws Exception
+    {
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
+              PagedFile pf = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+        {
+            try ( PageCursor writer = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( writer.next( 1 ) );
+                assertTrue( writer.next( 3 ) );
+            }
+            pf.flushAndForce();
+            PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
+            warmer.profile();
+            warmer.profile();
+            warmer.profile();
+
+            List<StoreFileMetadata> fileListing = new ArrayList<>();
+            try ( Resource firstListing = warmer.addFilesTo( fileListing ) )
+            {
+                warmer.profile();
+                warmer.profile();
+
+                // The files in the file listing cannot be deleted while the listing is in use.
+                assertThat( fileListing.size(), greaterThan( 0 ) );
+                assertFilesExists( fileListing );
+                warmer.profile();
+                try ( Resource secondListing = warmer.addFilesTo( new ArrayList<>() ) )
+                {
+                    warmer.profile();
+                    // This must hold even when there are file listings overlapping in time.
+                    assertFilesExists( fileListing );
+                }
+                warmer.profile();
+                // And continue to hold after other overlapping listing finishes.
+                assertFilesExists( fileListing );
+            }
+            // Once we are done with the file listing, profile should remove those files.
+            warmer.profile();
+            warmer.stop();
+            assertFilesNotExists( fileListing );
+        }
+    }
+
+    @Test
+    public void profilesMustSortByPagedFileAndProfileSequenceId()
+    {
+        File fileAA = new File( "aa" );
+        File fileAB = new File( "ab" );
+        File fileBA = new File( "ba" );
+        Profile aa;
+        Profile ab;
+        Profile ba;
+        List<Profile> sortedProfiles = Arrays.asList(
+                aa = Profile.first( fileAA ),
+                aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(),
+                aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(),
+                aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(),
+                aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(), aa.next(),
+                ab = Profile.first( fileAB ),
+                ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(),
+                ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(),
+                ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(),
+                ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(), ab.next(),
+                ba = Profile.first( fileBA ),
+                ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(),
+                ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(),
+                ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(),
+                ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(), ba.next()
+        );
+        List<Profile> resortedProfiles = new ArrayList<>( sortedProfiles );
+        Collections.shuffle( resortedProfiles );
+        Collections.sort( resortedProfiles );
+        assertThat( resortedProfiles, is( sortedProfiles ) );
+    }
+
+    private void assertFilesExists( List<StoreFileMetadata> fileListing )
+    {
+        for ( StoreFileMetadata fileMetadata : fileListing )
+        {
+            assertTrue( fs.fileExists( fileMetadata.file() ) );
+        }
+    }
+
+    private void assertFilesNotExists( List<StoreFileMetadata> fileListing )
+    {
+        for ( StoreFileMetadata fileMetadata : fileListing )
+        {
+            assertFalse( fs.fileExists( fileMetadata.file() ) );
+        }
+    }
+
     private int[] randomSortedPageIds( int maxPagesInMemory )
     {
-        PrimitiveIntSet setIds = Primitive.intSet();
+        MutableIntSet setIds = new IntHashSet();
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         for ( int i = 0; i < maxPagesInMemory; i++ )
         {
             setIds.add( rng.nextInt( maxPagesInMemory * 7 ) );
         }
         int[] pageIds = new int[setIds.size()];
-        PrimitiveIntIterator itr = setIds.iterator();
+        IntIterator itr = setIds.intIterator();
         int i = 0;
         while ( itr.hasNext() )
         {

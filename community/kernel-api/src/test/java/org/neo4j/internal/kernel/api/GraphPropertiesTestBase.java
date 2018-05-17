@@ -21,6 +21,8 @@ package org.neo4j.internal.kernel.api;
 
 import org.junit.Test;
 
+import org.neo4j.values.storable.Value;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
@@ -173,7 +175,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldNotSeeURemovedGraphPropertyInTransaction() throws Exception
+    public void shouldNotSeeRemovedGraphPropertyInTransaction() throws Exception
     {
         int prop;
         try ( Transaction tx = session.beginTransaction() )
@@ -191,5 +193,27 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
             tx.dataRead().graphProperties( cursor );
             assertFalse( cursor.next() );
         }
+    }
+
+    @Test
+    public void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
+    {
+        // Given
+        int prop;
+        Value theValue = stringValue( "The Value" );
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+            tx.dataWrite().graphSetProperty( prop, theValue );
+            tx.success();
+        }
+
+        // When
+        Transaction tx = session.beginTransaction();
+        assertThat( tx.dataWrite().graphSetProperty( prop, theValue ), equalTo( theValue ) );
+        tx.success();
+
+        assertThat( tx.closeTransaction(), equalTo( Transaction.READ_ONLY ) );
     }
 }

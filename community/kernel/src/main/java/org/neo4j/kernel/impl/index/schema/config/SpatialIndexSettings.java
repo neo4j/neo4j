@@ -19,10 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.neo4j.kernel.configuration.Settings.DOUBLE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
@@ -82,166 +88,45 @@ public class SpatialIndexSettings implements LoadableConfig
     public static final Setting<Integer> space_filling_curve_max_bits = setting(
             "unsupported.dbms.index.spatial.curve.max_bits", INTEGER, "60" );
 
-    // TODO useful descriptions
-    // TODO dynamic list of settings to avoid code duplication
-    @Description( "The minimum x value for the index extents for 2D Cartesian spatial index. " +
-            "The 2D to 1D mapping function divides all 2D space into discrete tiles, and orders these using a space filling curve designed " +
-            "to optimize the requirement that tiles that are close together in this ordered list are also close together in 2D space. " +
-            "This requires that the extents of the 2D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_Cartesian_x_min = setting( "unsupported.dbms.db.spatial.crs.Cartesian.x.min", INTEGER, "-1000000" );
+    public static Setting<Double> makeCRSRangeSetting( CoordinateReferenceSystem crs, int dim, String rangeKey )
+    {
+        double defaultCartesianExtent = 1000000;
+        double[] defaultGeographicExtents = new double[]{180, 90, defaultCartesianExtent};
+        String[] keyFields = new String[]{PREFIX, crs.getName().toLowerCase(), String.valueOf( COORDS[dim] ), rangeKey};
+        double defValue = crs.isGeographic() ? defaultGeographicExtents[dim] : defaultCartesianExtent;
+        defValue = rangeKey.equals( "min" ) ? -1 * defValue : defValue;
+        return setting( String.join( ".", keyFields ), DOUBLE, String.valueOf( defValue ) );
+    }
 
-    @Description( "The maximum x value for the index extents for 2D Cartesian spatial index. " +
-            "The 2D to 1D mapping function divides all 2D space into discrete tiles, and orders these using a space filling curve designed " +
-            "to optimize the requirement that tiles that are close together in this ordered list are also close together in 2D space. " +
-            "This requires that the extents of the 2D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_Cartesian_x_max = setting( "unsupported.dbms.db.spatial.crs.Cartesian.x.max", INTEGER, "1000000" );
+    private static final String PREFIX = "unsupported.dbms.db.spatial.crs";
+    private static final char[] COORDS = new char[]{'x', 'y', 'z'};
 
-    @Description( "The minimum y value for the index extents for 2D Cartesian spatial index. " +
-            "The 2D to 1D mapping function divides all 2D space into discrete tiles, and orders these using a space filling curve designed " +
-            "to optimize the requirement that tiles that are close together in this ordered list are also close together in 2D space. " +
-            "This requires that the extents of the 2D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_Cartesian_y_min = setting( "unsupported.dbms.db.spatial.crs.Cartesian.y.min", INTEGER, "-1000000" );
-
-    @Description( "The maximum y value for the index extents for 2D Cartesian spatial index. " +
-            "The 2D to 1D mapping function divides all 2D space into discrete tiles, and orders these using a space filling curve designed " +
-            "to optimize the requirement that tiles that are close together in this ordered list are also close together in 2D space. " +
-            "This requires that the extents of the 2D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_Cartesian_y_max = setting( "unsupported.dbms.db.spatial.crs.Cartesian.y.max", INTEGER, "1000000" );
-
-    @Description( "The minimum x value for the index extents for 3D Cartesian spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_Cartesian_3D_x_min = setting( "unsupported.dbms.db.spatial.crs.Cartesian-3D.x.min", INTEGER, "-1000000" );
-
-    @Description( "The maximum x value for the index extents for 3D Cartesian spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_Cartesian_3D_x_max = setting( "unsupported.dbms.db.spatial.crs.Cartesian-3D.x.max", INTEGER, "1000000" );
-
-    @Description( "The minimum y value for the index extents for 3D Cartesian spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_Cartesian_3D_y_min = setting( "unsupported.dbms.db.spatial.crs.Cartesian-3D.y.min", INTEGER, "-1000000" );
-
-    @Description( "The maximum y value for the index extents for 3D Cartesian spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_Cartesian_3D_y_max = setting( "unsupported.dbms.db.spatial.crs.Cartesian-3D.y.max", INTEGER, "1000000" );
-
-    @Description( "The minimum z value for the index extents for 3D Cartesian spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_Cartesian_3D_z_min = setting( "unsupported.dbms.db.spatial.crs.Cartesian-3D.z.min", INTEGER, "-1000000" );
-
-    @Description( "The maximum z value for the index extents for 3D Cartesian spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_Cartesian_3D_z_max = setting( "unsupported.dbms.db.spatial.crs.Cartesian-3D.z.max", INTEGER, "1000000" );
-
-    @Description( "The minimum x value for the index extents for 2D WGS-84 (Geographic) spatial index. " +
-            "The 2D to 1D mapping function divides all 2D space into discrete tiles, and orders these using a space filling curve designed " +
-            "to optimize the requirement that tiles that are close together in this ordered list are also close together in 2D space. " +
-            "This requires that the extents of the 2D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_WGS_84_x_min = setting( "unsupported.dbms.db.spatial.crs.WGS-84.x.min", INTEGER, "-180" );
-
-    @Description( "The maximum x value for the index extents for 2D WGS-84 (Geographic) spatial index. " +
-            "The 2D to 1D mapping function divides all 2D space into discrete tiles, and orders these using a space filling curve designed " +
-            "to optimize the requirement that tiles that are close together in this ordered list are also close together in 2D space. " +
-            "This requires that the extents of the 2D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_WGS_84_x_max = setting( "unsupported.dbms.db.spatial.crs.WGS-84.x.max", INTEGER, "180" );
-
-    @Description( "The minimum y value for the index extents for 2D WGS-84 (Geographic) spatial index. " +
-            "The 2D to 1D mapping function divides all 2D space into discrete tiles, and orders these using a space filling curve designed " +
-            "to optimize the requirement that tiles that are close together in this ordered list are also close together in 2D space. " +
-            "This requires that the extents of the 2D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_WGS_84_y_min = setting( "unsupported.dbms.db.spatial.crs.WGS-84.y.min", INTEGER, "-90" );
-
-    @Description( "The maximum y value for the index extents for 2D WGS-84 (Geographic) spatial index. " +
-            "The 2D to 1D mapping function divides all 2D space into discrete tiles, and orders these using a space filling curve designed " +
-            "to optimize the requirement that tiles that are close together in this ordered list are also close together in 2D space. " +
-            "This requires that the extents of the 2D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_WGS_84_y_max = setting( "unsupported.dbms.db.spatial.crs.WGS-84.y.max", INTEGER, "90" );
-
-    @Description( "The minimum x value for the index extents for 3D WGS-84 (Geographic) spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_WGS_84_3D_x_min = setting( "unsupported.dbms.db.spatial.crs.WGS-84-3D.x.min", INTEGER, "-180" );
-
-    @Description( "The maximum x value for the index extents for 3D WGS-84 (Geographic) spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_WGS_84_3D_x_max = setting( "unsupported.dbms.db.spatial.crs.WGS-84-3D.x.max", INTEGER, "180" );
-
-    @Description( "The minimum y value for the index extents for 3D WGS-84 (Geographic) spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_WGS_84_3D_y_min = setting( "unsupported.dbms.db.spatial.crs.WGS-84-3D.y.min", INTEGER, "-90" );
-
-    @Description( "The maximum y value for the index extents for 3D WGS-84 (Geographic) spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_WGS_84_3D_y_max = setting( "unsupported.dbms.db.spatial.crs.WGS-84-3D.y.max", INTEGER, "90" );
-
-    @Description( "The minimum z value for the index extents for 3D WGS-84 (Geographic) spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_WGS_84_3D_z_min = setting( "unsupported.dbms.db.spatial.crs.WGS-84-3D.z.min", INTEGER, "-1000000" );
-
-    @Description( "The maximum z value for the index extents for 3D WGS-84 (Geographic) spatial index. " +
-            "The 3D to 1D mapping function divides all 3D space into discrete blocks, and orders these using a space filling curve designed " +
-            "to optimize the requirement that blocks that are close together in this ordered list are also close together in 3D space. " +
-            "This requires that the extents of the 3D space be known in advance and never changed. If you do change these settings, you " +
-            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings." )
-    @Internal
-    public static final Setting<Integer> spatial_crs_WGS_84_3D_z_max = setting( "unsupported.dbms.db.spatial.crs.WGS-84-3D.z.max", INTEGER, "1000000" );
-
+    @Override
+    public List<ConfigOptions> getConfigOptions()
+    {
+        ArrayList<ConfigOptions> crsSettings = (ArrayList<ConfigOptions>) LoadableConfig.super.getConfigOptions();
+        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
+        {
+            for ( int dim = 0; dim < crs.getDimension(); dim++ )
+            {
+                for ( String rangeName : new String[]{"minimum", "maximum"} )
+                {
+                    String descriptionHeader =
+                            String.format( "The %s %s value for the index extents for %dD %s spatial index", rangeName, COORDS[dim], crs.getDimension(),
+                                    crs.getName().replace( "_3D", "" ) );
+                    String descriptionBody =
+                            "The 2D to 1D mapping function divides all 2D space into discrete tiles, and orders these using a space filling curve designed " +
+                            "to optimize the requirement that tiles that are close together in this ordered list are also close together in 2D space. " +
+                            "This requires that the extents of the 2D space be known in advance and never changed. If you do change these settings, you " +
+                            "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings.";
+                    Setting<Double> setting = makeCRSRangeSetting( crs, dim, rangeName.substring( 0, 3 ) );
+                    ((BaseSetting<Double>) setting).setInternal( true );
+                    ((BaseSetting<Double>) setting).setDescription(
+                            descriptionHeader + ". " + descriptionBody.replaceAll( " 2D ", String.format( " %dD", crs.getDimension() ) ) );
+                    crsSettings.add( new ConfigOptions( setting ) );
+                }
+            }
+        }
+        return crsSettings;
+    }
 }

@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
+
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -128,7 +129,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     private boolean filterStore;
     private int filterType = NO_ID;
 
-    private PrimitiveLongIterator addedRelationships;
+    private LongIterator addedRelationships;
 
     DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group, DefaultCursors pool )
     {
@@ -148,7 +149,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
         this.filterState = FilterState.fromRelationshipDirection( direction );
         this.filterType = type;
         init( read );
-        this.addedRelationships = PrimitiveLongCollections.emptyIterator();
+        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
     /*
@@ -167,7 +168,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
         this.originNodeReference = nodeReference;
         this.next = reference;
         init( read );
-        this.addedRelationships = PrimitiveLongCollections.emptyIterator();
+        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
     /*
@@ -183,7 +184,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
         this.originNodeReference = nodeReference;
         read.relationshipGroups( nodeReference, groupReference, group );
         init( read );
-        this.addedRelationships = PrimitiveLongCollections.emptyIterator();
+        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
     /*
@@ -203,7 +204,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
         this.originNodeReference = nodeReference;
         this.next = reference;
         init( read );
-        this.addedRelationships = PrimitiveLongCollections.emptyIterator();
+        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
     /*
@@ -219,7 +220,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
         this.originNodeReference = nodeReference;
         this.next = NO_ID;
         init( read );
-        this.addedRelationships = PrimitiveLongCollections.emptyIterator();
+        this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
     @Override
@@ -477,12 +478,6 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     private boolean traversingDenseNode()
     {
         return groupState != GroupState.NONE;
-    }
-
-    @Override
-    public boolean shouldRetry()
-    {
-        return false;
     }
 
     @Override

@@ -94,9 +94,7 @@ public final class Values
      *
      * To get Comparability semantics, use .ternaryCompare
      */
-    private static final ValueComparator comp = new ValueComparator( ValueGroup::compareTo );
-    public static final Comparator<Value> COMPARATOR = comp;
-    public static final TernaryComparator<Value> TERNARY_COMPARATOR = comp;
+    public static final ValueComparator COMPARATOR = new ValueComparator( ValueGroup::compareTo );
 
     public static boolean isNumberValue( Object value )
     {
@@ -340,14 +338,14 @@ public final class Values
     public static PointValue minPointValue( PointValue reference )
     {
         double[] coordinates = new double[reference.coordinate().length];
-        Arrays.fill( coordinates, Double.NEGATIVE_INFINITY );
+        Arrays.fill( coordinates, -Double.MAX_VALUE );
         return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
     }
 
     public static PointValue maxPointValue( PointValue reference )
     {
         double[] coordinates = new double[reference.coordinate().length];
-        Arrays.fill( coordinates, Double.POSITIVE_INFINITY);
+        Arrays.fill( coordinates, Double.MAX_VALUE );
         return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
     }
 

@@ -114,7 +114,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         String serverAddress = serviceHostName + ":" + servicePort;
 
         config = new HashMap<>();
-        config.put( UdcSettings.first_delay.name(), "100" );
+        config.put( UdcSettings.first_delay.name(), "1000" );
         config.put( UdcSettings.udc_host.name(), serverAddress );
         config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
 
@@ -475,7 +475,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
 
     private void assertGotPingWithRetry( Map<String,Integer> counts, Condition<Integer> condition ) throws Exception
     {
-        for ( int i = 0; i < 50; i++ )
+        for ( int i = 0; i < 100; i++ )
         {
             Thread.sleep( 200 );
             Collection<Integer> countValues = counts.values();

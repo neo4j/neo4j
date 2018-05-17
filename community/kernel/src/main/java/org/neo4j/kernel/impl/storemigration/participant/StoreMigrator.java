@@ -29,36 +29,22 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Optional;
-import java.util.function.BiConsumer;
-import java.util.function.Predicate;
-import java.util.stream.StreamSupport;
 
-import org.neo4j.io.fs.FileHandle;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
@@ -68,12 +54,10 @@ import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.DirectRecordStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
@@ -83,7 +67,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.logging.NullLogProvider;
@@ -96,6 +79,7 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
+import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
@@ -132,8 +116,6 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
 public class StoreMigrator extends AbstractStoreMigrationParticipant
 {
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
-    public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
-            "Migrating this version is not supported for custom IO configurations.";
 
     private final Config config;
     private final LogService logService;
@@ -154,15 +136,10 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     public void migrate( File storeDir, File migrationDir, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
-        if ( versionToMigrateFrom.equals( StandardV2_3.STORE_VERSION ) )
-        {
-            // These versions are not supported for block devices.
-            CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
-        }
         // Extract information about the last transaction from legacy neostore
         File neoStore = new File( storeDir, DEFAULT_NAME );
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-        TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, storeDir, lastTxId );
+        TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId );
         LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, storeDir, lastTxId );
         // Write the tx checksum to file in migrationDir, because we need it later when moving files into storeDir
         writeLastTxInformation( migrationDir, lastTxInfo );
@@ -209,7 +186,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
     private boolean isDifferentCapabilities( RecordFormats oldFormat, RecordFormats newFormat )
     {
-        return !oldFormat.hasSameCapabilities( newFormat, CapabilityType.FORMAT );
+        return !oldFormat.hasCompatibleCapabilities( newFormat, CapabilityType.FORMAT );
     }
 
     void writeLastTxInformation( File migrationDir, TransactionId txInfo ) throws IOException
@@ -275,7 +252,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         return new File( migrationDir, "lastxlogposition" );
     }
 
-    TransactionId extractTransactionIdInformation( File neoStore, File storeDir, long lastTransactionId )
+    TransactionId extractTransactionIdInformation( File neoStore, long lastTransactionId )
             throws IOException
     {
         long checksum = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
@@ -355,9 +332,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, storeDir );
-                RecordCursors nodeInputCursors = new RecordCursors( legacyStore );
-                RecordCursors relationshipInputCursors = new RecordCursors( legacyStore );
-                OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
+              OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
         {
             Configuration importConfig = new Configuration.Overridden( config )
             {
@@ -375,9 +350,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     fileSystem, pageCache, importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR );
-            InputIterable nodes = replayable( () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors ) );
+            InputIterable nodes = replayable( () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration ) );
             InputIterable relationships = replayable( () ->
-                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors ) );
+                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration ) );
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getStringStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getArrayStore() ) / 2;
@@ -420,20 +395,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             }
             StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null, storesToDeleteFromMigratedDirectory,
                     true, null, StoreFileType.values() );
-            // When migrating on a block device there might be some files only accessible via the file system
-            // provided by the page cache.
-            try
-            {
-                Predicate<FileHandle> fileHandlePredicate = fileHandle -> storesToDeleteFromMigratedDirectory.stream()
-                        .anyMatch( storeFile -> storeFile.fileName( StoreFileType.STORE )
-                                .equals( fileHandle.getFile().getName() ) );
-                pageCache.getCachedFileSystem().streamFilesRecursive( migrationDir ).filter( fileHandlePredicate )
-                        .forEach( FileHandle.HANDLE_DELETE );
-            }
-            catch ( NoSuchFileException e )
-            {
-                // This means that we had no files only present in the page cache, this is fine.
-            }
         }
     }
 
@@ -470,25 +431,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 StoreFile.NODE_LABEL_STORE};
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
-            // We use the page cache for copying the STORE files since these might be on a block device.
-            for ( StoreFile file : storesFilesToMigrate )
-            {
-                File fromPath = new File( storeDir, file.fileName( StoreFileType.STORE ) );
-                File toPath = new File( migrationDir, file.fileName( StoreFileType.STORE ) );
-                try
-                {
-                    copyWithPageCache( fromPath, toPath );
-                }
-                catch ( NoSuchFileException e )
-                {
-                    // It is okay for the file to not be there.
-                }
-            }
-
-            // The ID files are to be kept on the normal file system, hence we use fileOperation to copy them.
             StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Arrays.asList( storesFilesToMigrate ),
-                    true, // OK if it's not there (1.9)
-                    ExistingTargetStrategy.FAIL, StoreFileType.ID);
+                    true, ExistingTargetStrategy.FAIL, StoreFileType.values());
         }
         else
         {
@@ -567,63 +511,27 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 config, progressReporter );
     }
 
-    private InputIterator legacyRelationshipsAsInput( NeoStores legacyStore,
-            boolean requiresPropertyMigration, RecordCursors cursors )
+    private InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
     {
-        RelationshipStore store = legacyStore.getRelationshipStore();
-        final BiConsumer<InputEntityVisitor,RelationshipRecord> propertyDecorator =
-                propertyDecorator( requiresPropertyMigration, cursors );
-        return new StoreScanAsInputIterator<RelationshipRecord>( store )
+        return new StoreScanAsInputIterator<RelationshipRecord>( legacyStore.getRelationshipStore() )
         {
             @Override
-            protected boolean visitRecord( RelationshipRecord record, InputEntityVisitor visitor )
+            public InputChunk newChunk()
             {
-                visitor.startId( record.getFirstNode() );
-                visitor.endId( record.getSecondNode() );
-                visitor.type( record.getType() );
-                propertyDecorator.accept( visitor, record );
-                return true;
+                return new RelationshipRecordChunk( createCursor(), legacyStore, requiresPropertyMigration );
             }
         };
     }
 
-    private InputIterator legacyNodesAsInput( NeoStores legacyStore,
-            boolean requiresPropertyMigration, RecordCursors cursors )
+    private InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
     {
-        NodeStore store = legacyStore.getNodeStore();
-        final BiConsumer<InputEntityVisitor,NodeRecord> propertyDecorator =
-                propertyDecorator( requiresPropertyMigration, cursors );
-
-        return new StoreScanAsInputIterator<NodeRecord>( store )
+        return new StoreScanAsInputIterator<NodeRecord>( legacyStore.getNodeStore() )
         {
             @Override
-            protected boolean visitRecord( NodeRecord record, InputEntityVisitor visitor )
+            public InputChunk newChunk()
             {
-                visitor.id( record.getId() );
-                visitor.labelField( record.getLabelField() );
-                propertyDecorator.accept( visitor, record );
-                return true;
+                return new NodeRecordChunk( createCursor(), legacyStore, requiresPropertyMigration );
             }
-        };
-    }
-
-    private <RECORD extends PrimitiveRecord> BiConsumer<InputEntityVisitor,RECORD> propertyDecorator(
-            boolean requiresPropertyMigration, RecordCursors cursors )
-    {
-        if ( !requiresPropertyMigration )
-        {
-            return ( entity, record ) -> entity.propertyId( record.getNextProp() );
-        }
-
-        final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
-        return ( entity, record ) -> {
-            cursor.init( record.getNextProp(), LockService.NO_LOCK, AssertOpen.ALWAYS_OPEN );
-            while ( cursor.next() )
-            {
-                // add key as int here as to have the importer use the token id
-                entity.property( cursor.propertyKeyId(), cursor.value().asObject() );
-            }
-            cursor.close();
         };
     }
 
@@ -636,31 +544,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 true, // allow to skip non existent source files
                 ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
                 StoreFileType.values() );
-        // Since some of the files might only be accessible through the file system provided by the page cache (i.e.
-        // block devices), we also try to move the files with the page cache.
-        try
-        {
-            Iterable<FileHandle> fileHandles = pageCache.getCachedFileSystem()
-                    .streamFilesRecursive( migrationDir )::iterator;
-            for ( FileHandle fh : fileHandles )
-            {
-                Predicate<StoreFile> predicate =
-                        storeFile -> storeFile.fileName( StoreFileType.STORE ).equals( fh.getFile().getName() );
-                if ( StreamSupport.stream( StoreFile.currentStoreFiles().spliterator(), false ).anyMatch( predicate ) )
-                {
-                    final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( fh.getFile() );
-                    if ( optionalPagedFile.isPresent() )
-                    {
-                        optionalPagedFile.get().close();
-                    }
-                    fh.rename( new File( storeDir, fh.getFile().getName() ), StandardCopyOption.REPLACE_EXISTING );
-                }
-            }
-        }
-        catch ( NoSuchFileException e )
-        {
-            //This means that we had no files only present in the page cache, this is fine.
-        }
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir,
@@ -668,7 +551,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         final File storeDirNeoStore = new File( storeDir, DEFAULT_NAME );
         final File migrationDirNeoStore = new File( migrationDir, DEFAULT_NAME );
-        copyWithPageCache( storeDirNeoStore, migrationDirNeoStore );
+        StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.iterable( StoreFile.NEO_STORE ), true, ExistingTargetStrategy.SKIP,
+                StoreFileType.STORE );
 
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.UPGRADE_TRANSACTION_ID,
                 MetaDataStore.getRecord( pageCache, storeDirNeoStore, Position.LAST_TRANSACTION_ID ) );
@@ -721,24 +605,36 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         return "Kernel StoreMigrator";
     }
 
-    private void copyWithPageCache( File sourceFile, File targetFile ) throws IOException
+    private static class NodeRecordChunk extends StoreScanChunk<NodeRecord>
     {
-        // We use the page cache for copying the neostore since it might be on a block device.
-        int pageSize = pageCache.pageSize();
-        try ( PagedFile fromFile = pageCache.map( sourceFile, pageSize );
-              PagedFile toFile = pageCache.map( targetFile, pageSize, StandardOpenOption.CREATE );
-              PageCursor fromCursor = fromFile.io( 0L, PagedFile.PF_SHARED_READ_LOCK );
-              PageCursor toCursor = toFile.io( 0L, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        NodeRecordChunk( RecordCursor<NodeRecord> recordCursor, NeoStores neoStores, boolean requiresPropertyMigration )
         {
-            while ( fromCursor.next() )
-            {
-                toCursor.next();
-                do
-                {
-                    fromCursor.copyTo( 0, toCursor, 0, pageSize );
-                }
-                while ( fromCursor.shouldRetry() );
-            }
+            super( recordCursor, neoStores, requiresPropertyMigration );
+        }
+
+        @Override
+        protected void visitRecord( NodeRecord record, InputEntityVisitor visitor )
+        {
+            visitor.id( record.getId() );
+            visitor.labelField( record.getLabelField() );
+            visitProperties( record, visitor );
+        }
+    }
+
+    private static class RelationshipRecordChunk extends StoreScanChunk<RelationshipRecord>
+    {
+        RelationshipRecordChunk( RecordCursor<RelationshipRecord> recordCursor, NeoStores neoStore, boolean requiresPropertyMigration )
+        {
+            super( recordCursor, neoStore, requiresPropertyMigration );
+        }
+
+        @Override
+        protected void visitRecord( RelationshipRecord record, InputEntityVisitor visitor )
+        {
+            visitor.startId( record.getFirstNode() );
+            visitor.endId( record.getSecondNode() );
+            visitor.type( record.getType() );
+            visitProperties( record, visitor );
         }
     }
 

@@ -227,12 +227,6 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     }
 
     @Override
-    public boolean shouldRetry()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
         if ( !isClosed() )

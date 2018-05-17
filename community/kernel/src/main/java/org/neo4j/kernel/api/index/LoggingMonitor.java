@@ -20,7 +20,9 @@
 package org.neo4j.kernel.api.index;
 
 import java.util.Map;
+import java.util.StringJoiner;
 
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 
@@ -36,19 +38,18 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
+    public void failedToOpenIndex( StoreIndexDescriptor descriptor, String action, Exception cause )
     {
-        log.error( "Failed to open index:" + indexId + ". " + action, cause );
+        log.error( "Failed to open index:" + descriptor.getId() + ". " + action, cause );
     }
 
     @Override
-    public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
+    public void recoveryCompleted( IndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
     {
-        StringBuilder builder =
-                new StringBuilder(
-                        "Schema index recovery completed: indexId: " + indexId + " descriptor: " + indexDescriptor
-                                .toString() );
-        data.forEach( ( key, value ) -> builder.append( format( " %s: %s", key, value ) ) );
-        log.info( builder.toString() );
+        StringJoiner joiner = new StringJoiner( ", ", "Schema index recovery completed: ", "" );
+        joiner.add( "descriptor=" + schemaIndexDescriptor );
+        joiner.add( "file=" + indexFile );
+        data.forEach( ( key, value ) -> joiner.add( format( "%s=%s", key, value ) ) );
+        log.info( joiner.toString() );
     }
 }

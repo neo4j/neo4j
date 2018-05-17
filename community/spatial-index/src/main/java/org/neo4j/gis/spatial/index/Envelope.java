@@ -23,6 +23,8 @@ import java.util.Arrays;
 
 public class Envelope
 {
+    static final double MAXIMAL_ENVELOPE_SIDE_RATIO = 100_000;
+
     protected final double[] min;
     protected final double[] max;
 
@@ -53,6 +55,31 @@ public class Envelope
     public Envelope( double xmin, double xmax, double ymin, double ymax )
     {
         this( new double[] { xmin, ymin }, new double[] { xmax, ymax } );
+    }
+
+    /**
+     * @return a copy of the envelope where the ratio of smallest to largest side is not more than 1:100
+     */
+    public Envelope withSideRatioNotTooSmall( )
+    {
+        double[] from = Arrays.copyOf( this.min, min.length );
+        double[] to = Arrays.copyOf( this.max, max.length );
+        double highestDiff = -Double.MAX_VALUE;
+        double[] diffs = new double[from.length];
+        for ( int i = 0; i < from.length; i++ )
+        {
+            diffs[i] = to[i] - from[i];
+            highestDiff = Math.max( highestDiff, diffs[i] );
+        }
+        final double mindiff = highestDiff / MAXIMAL_ENVELOPE_SIDE_RATIO;
+        for ( int i = 0; i < from.length; i++ )
+        {
+            if ( diffs[i] < mindiff )
+            {
+                to[i] = from[i] + mindiff;
+            }
+        }
+        return new Envelope( from, to );
     }
 
     public double[] getMin()
@@ -149,6 +176,48 @@ public class Envelope
                 }
             }
         }
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( obj instanceof Envelope )
+        {
+            Envelope other = (Envelope) obj;
+            if ( this.getDimension() != other.getDimension() )
+            {
+                return false;
+            }
+            for ( int i = 0; i < getDimension(); i++ )
+            {
+                if ( this.min[i] != other.getMin( i ) || this.max[i] != other.getMax( i ) )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = 1;
+        for ( double element : min )
+        {
+            long bits = Double.doubleToLongBits( element );
+            result = 31 * result + (int) (bits ^ (bits >>> 32));
+        }
+        for ( double element : max )
+        {
+            long bits = Double.doubleToLongBits( element );
+            result = 31 * result + (int) (bits ^ (bits >>> 32));
+        }
+        return result;
     }
 
     /**

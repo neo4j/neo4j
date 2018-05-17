@@ -21,7 +21,6 @@ package org.neo4j.bolt;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
@@ -29,7 +28,6 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
-import org.neo4j.cypher.internal.frontend.v2_3.ast.functions.Str;
 
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.inOrder;
@@ -43,14 +41,14 @@ public class BoltChannelTest
 {
     private final String connector = "default";
     @Mock
-    private ChannelHandlerContext channelHandlerContext;
+    private Channel channel;
     @Mock
     private BoltMessageLogger messageLogger;
 
     @Test
     public void shouldLogWhenOpened()
     {
-        BoltChannel boltChannel = BoltChannel.open( connector, channelHandlerContext, messageLogger );
+        BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger );
         assertNotNull( boltChannel );
 
         verify( messageLogger ).serverEvent( "OPEN" );
@@ -60,8 +58,7 @@ public class BoltChannelTest
     public void shouldLogWhenClosed()
     {
         Channel channel = channelMock( true );
-        when( channelHandlerContext.channel() ).thenReturn( channel );
-        BoltChannel boltChannel = BoltChannel.open( connector, channelHandlerContext, messageLogger );
+        BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger );
         assertNotNull( boltChannel );
 
         boltChannel.close();
@@ -75,8 +72,7 @@ public class BoltChannelTest
     public void shouldCloseUnderlyingChannelWhenItIsOpen()
     {
         Channel channel = channelMock( true );
-        when( channelHandlerContext.channel() ).thenReturn( channel );
-        BoltChannel boltChannel = BoltChannel.open( connector, channelHandlerContext, messageLogger );
+        BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger );
 
         boltChannel.close();
 
@@ -87,8 +83,7 @@ public class BoltChannelTest
     public void shouldNotCloseUnderlyingChannelWhenItIsClosed()
     {
         Channel channel = channelMock( false );
-        when( channelHandlerContext.channel() ).thenReturn( channel );
-        BoltChannel boltChannel = BoltChannel.open( connector, channelHandlerContext, messageLogger );
+        BoltChannel boltChannel = BoltChannel.open( connector, channel, messageLogger );
 
         boltChannel.close();
 
@@ -99,7 +94,8 @@ public class BoltChannelTest
     {
         Channel channel = mock( Channel.class );
         when( channel.isOpen() ).thenReturn( open );
-        when( channel.close() ).thenReturn( mock( ChannelFuture.class ) );
+        ChannelFuture channelFuture = mock( ChannelFuture.class );
+        when( channel.close() ).thenReturn( channelFuture );
         return channel;
     }
 }

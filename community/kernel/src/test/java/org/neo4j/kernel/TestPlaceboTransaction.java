@@ -26,13 +26,12 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -49,19 +48,18 @@ public class TestPlaceboTransaction
     private Transaction placeboTx;
     private Node resource;
     private KernelTransaction kernelTransaction;
-    private ReadOperations readOps;
+    private Locks locks;
 
     @Before
     public void before()
     {
         ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
-        when( bridge.get() ).thenReturn( mock( Statement.class ) );
-        kernelTransaction = spy( KernelTransaction.class );
         Statement statement = mock( Statement.class );
-        readOps = mock( ReadOperations.class );
-        when( statement.readOperations() ).thenReturn( readOps );
         when( bridge.get() ).thenReturn( statement );
-        placeboTx = new PlaceboTransaction( kernelTransaction, bridge );
+        kernelTransaction = spy( KernelTransaction.class );
+        locks = mock( Locks.class );
+        when(kernelTransaction.locks()).thenReturn( locks );
+        placeboTx = new PlaceboTransaction( kernelTransaction );
         resource = mock( Node.class );
         when( resource.getId() ).thenReturn( 1L );
     }
@@ -118,7 +116,7 @@ public class TestPlaceboTransaction
         placeboTx.acquireReadLock( resource );
 
         // then
-        verify( readOps ).acquireShared( ResourceTypes.NODE, resource.getId() );
+        verify( locks ).acquireSharedNodeLock( resource.getId() );
     }
 
     @Test
@@ -128,7 +126,7 @@ public class TestPlaceboTransaction
         placeboTx.acquireWriteLock( resource );
 
         // then
-        verify( readOps ).acquireExclusive( ResourceTypes.NODE, resource.getId() );
+        verify( locks ).acquireExclusiveNodeLock( resource.getId() );
     }
 
     @Test
@@ -138,7 +136,7 @@ public class TestPlaceboTransaction
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )
                 .thenReturn( Optional.of( Status.Transaction.Interrupted ) );
 
-        PlaceboTransaction tx = new PlaceboTransaction( kernelTransaction, new ThreadToStatementContextBridge() );
+        PlaceboTransaction tx = new PlaceboTransaction( kernelTransaction );
 
         Optional<Status> terminationReason1 = tx.terminationReason();
         Optional<Status> terminationReason2 = tx.terminationReason();

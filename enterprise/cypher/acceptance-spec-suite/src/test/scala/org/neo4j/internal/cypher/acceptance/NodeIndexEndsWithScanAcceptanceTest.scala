@@ -26,7 +26,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
  * If you only want to verify that plans using indexes are actually planned, please use
- * [[org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LeafPlanningIntegrationTest]]
+ * [[org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LeafPlanningIntegrationTest]]
  */
 class NodeIndexEndsWithScanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
   val expectedToSucceed = Configs.Interpreted
@@ -187,6 +187,6 @@ class NodeIndexEndsWithScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val query = "MATCH (l:Location) WHERE l.name ENDS WITH {param} RETURN l"
     val message = List("Expected a string value, but got 42","Expected a string value, but got Long(42)","Expected two strings, but got London and 42")
 
-    failWithError(config, query, message, params = "param" -> 42)
+    failWithError(config, query, message, params = Map("param" -> 42))
   }
 }

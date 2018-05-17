@@ -21,8 +21,11 @@ package org.neo4j.values.storable;
 
 import org.hamcrest.Matchers;
 
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -184,39 +187,33 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeDate( long epochDay ) throws RuntimeException
+    public void writeDate( LocalDate localDate ) throws RuntimeException
     {
-        buffer.add( DateValue.epochDate( epochDay ) );
+        buffer.add( DateValue.date( localDate ) );
     }
 
     @Override
-    public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+    public void writeLocalTime( LocalTime localTime ) throws RuntimeException
     {
-        buffer.add( LocalTimeValue.localTime( nanoOfDay ) );
+        buffer.add( LocalTimeValue.localTime( localTime ) );
     }
 
     @Override
-    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+    public void writeTime( OffsetTime offsetTime ) throws RuntimeException
     {
-        buffer.add( TimeValue.time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        buffer.add( TimeValue.time( offsetTime ) );
     }
 
     @Override
-    public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+    public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
     {
-        buffer.add( LocalDateTimeValue.localDateTime( epochSecond, nano ) );
+        buffer.add( LocalDateTimeValue.localDateTime( localDateTime ) );
     }
 
     @Override
-    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+    public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
     {
-        buffer.add( DateTimeValue.datetime( epochSecondUTC, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
-    }
-
-    @Override
-    public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
-    {
-        buffer.add( DateTimeValue.datetime( epochSecondUTC, nano, ZoneId.of( zoneId ) ) );
+        buffer.add( DateTimeValue.datetime( zonedDateTime ) );
     }
 
     @SuppressWarnings( "WeakerAccess" )

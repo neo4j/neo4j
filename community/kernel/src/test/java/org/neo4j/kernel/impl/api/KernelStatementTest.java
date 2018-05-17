@@ -21,19 +21,13 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.factory.AccessCapability;
-import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.LockTracer;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -42,31 +36,16 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelStatementTest
 {
-    @Test( expected = TransactionTerminatedException.class )
-    public void shouldThrowTerminateExceptionWhenTransactionTerminated()
-    {
-        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.getReasonIfTerminated() ).thenReturn( Optional.of( Status.Transaction.Terminated ) );
-        when( transaction.securityContext() ).thenReturn( AUTH_DISABLED );
-
-        KernelStatement statement = new KernelStatement( transaction, null, mock( StorageStatement.class ), null, new CanWrite(),
-                LockTracer.NONE, mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );
-        statement.acquire();
-
-        statement.readOperations().nodeExists( 0 );
-    }
-
     @Test
     public void shouldReleaseStorageStatementWhenForceClosed()
     {
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );
         KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
-                null, storeStatement, new Procedures(), new CanWrite(), LockTracer.NONE,
+                null, storeStatement, LockTracer.NONE,
                 mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );
         statement.acquire();
 
@@ -90,10 +69,8 @@ public class KernelStatementTest
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );
         StorageStatement storeStatement = mock( StorageStatement.class );
-        AccessCapability accessCapability = mock( AccessCapability.class );
-        Procedures procedures = mock( Procedures.class );
         KernelStatement statement = new KernelStatement( transaction, txStateHolder,
-                storeStatement, procedures, accessCapability, LockTracer.NONE, mock( StatementOperationParts.class ),
+                storeStatement, LockTracer.NONE, mock( StatementOperationParts.class ),
                 new ClockContext(), EmptyVersionContextSupplier.EMPTY );
 
         statement.assertOpen();
@@ -105,8 +82,6 @@ public class KernelStatementTest
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );
         StorageStatement storeStatement = mock( StorageStatement.class );
-        AccessCapability accessCapability = mock( AccessCapability.class );
-        Procedures procedures = mock( Procedures.class );
 
         KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ) );
@@ -114,7 +89,7 @@ public class KernelStatementTest
         when( transaction.executingQueries() ).thenReturn( ExecutingQueryList.EMPTY );
 
         KernelStatement statement = new KernelStatement( transaction, txStateHolder,
-                storeStatement, procedures, accessCapability, LockTracer.NONE, mock( StatementOperationParts.class ),
+                storeStatement, LockTracer.NONE, mock( StatementOperationParts.class ),
                 new ClockContext(), EmptyVersionContextSupplier.EMPTY );
         statement.acquire();
 

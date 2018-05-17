@@ -94,30 +94,32 @@ public class SecurityContext implements LoginContext
     }
 
     /** Allows all operations. */
-    public static final SecurityContext AUTH_DISABLED = authDisabled( AccessMode.Static.FULL );
+    @SuppressWarnings( "StaticInitializerReferencesSubClass" )
+    public static final SecurityContext AUTH_DISABLED = new AuthDisabled( AccessMode.Static.FULL );
 
-    private static SecurityContext authDisabled( AccessMode mode )
+    private static class AuthDisabled extends SecurityContext
     {
-        return new SecurityContext( AuthSubject.AUTH_DISABLED, mode )
+        private AuthDisabled( AccessMode mode )
         {
+            super( AuthSubject.AUTH_DISABLED, mode );
+        }
 
-            @Override
-            public SecurityContext withMode( AccessMode mode )
-            {
-                return authDisabled( mode );
-            }
+        @Override
+        public SecurityContext withMode( AccessMode mode )
+        {
+            return new AuthDisabled( mode );
+        }
 
-            @Override
-            public String description()
-            {
-                return "AUTH_DISABLED with " + mode().name();
-            }
+        @Override
+        public String description()
+        {
+            return "AUTH_DISABLED with " + mode().name();
+        }
 
-            @Override
-            public String toString()
-            {
-                return defaultString( "auth-disabled" );
-            }
-        };
+        @Override
+        public String toString()
+        {
+            return defaultString( "auth-disabled" );
+        }
     }
 }

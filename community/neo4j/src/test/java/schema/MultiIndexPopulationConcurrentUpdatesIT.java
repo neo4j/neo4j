@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -44,10 +44,10 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -62,7 +62,8 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
@@ -80,7 +81,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
@@ -115,7 +116,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @Rule
     public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
-    private IndexRule[] rules;
+    private StoreIndexDescriptor[] rules;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IndexProvider.Descriptor> parameters()
@@ -383,14 +384,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         indexProxy.activate();
     }
 
-    private IndexRule[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
+    private StoreIndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
-        return labelNameIdMap.values().stream().map(
-                index -> IndexRule.forIndex( index, SchemaIndexDescriptorFactory.forLabel( index, propertyId ) ).withProvider( indexDescriptor ).build() )
-                .toArray( IndexRule[]::new );
+        return labelNameIdMap.values().stream()
+                .map( index -> IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ).withId( index ) )
+                .toArray( StoreIndexDescriptor[]::new );
     }
 
-    private List<IndexRule> getIndexRules( NeoStores neoStores )
+    private List<StoreIndexDescriptor> getIndexRules( NeoStores neoStores )
     {
         return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore(), IndexProviderMap.EMPTY ).indexesGetAll() );
     }
@@ -399,12 +400,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
         Map<String,Integer> labelNameIdMap = new HashMap<>();
-        try ( Statement statement = transactionStatementContextBridge.get() )
+        KernelTransaction ktx =
+                transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true );
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
+            TokenRead tokenRead = ktx.tokenRead();
             for ( String name : names )
             {
-                labelNameIdMap.put( name, readOperations.labelGetForName( name ) );
+                labelNameIdMap.put( name, tokenRead.nodeLabel( name ) );
             }
         }
         return labelNameIdMap;
@@ -413,10 +416,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private int getPropertyIdByName( String name )
     {
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
-        try ( Statement statement = transactionStatementContextBridge.get() )
+        KernelTransaction ktx =
+                transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true );
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            return readOperations.propertyKeyGetForName( name );
+            return ktx.tokenRead().propertyKey( name );
         }
     }
 
@@ -657,13 +661,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor =
                     SchemaDescriptorFactory.forLabel( labelIdToDropIndexFor, propertyId );
-            IndexRule rule = findRuleForLabel( descriptor );
+            StoreIndexDescriptor rule = findRuleForLabel( descriptor );
             indexService.dropIndex( rule );
         }
 
-        private IndexRule findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
+        private StoreIndexDescriptor findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
         {
-            for ( IndexRule rule : rules )
+            for ( StoreIndexDescriptor rule : rules )
             {
                 if ( rule.schema().equals( schemaDescriptor ) )
                 {

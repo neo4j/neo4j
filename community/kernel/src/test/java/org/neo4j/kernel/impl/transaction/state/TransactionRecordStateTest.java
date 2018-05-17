@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -32,13 +34,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
@@ -106,7 +106,9 @@ import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.ConstraintRule.constraintRule;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -212,8 +214,7 @@ public class TransactionRecordStateTest
         // -- an index
         long ruleId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        SchemaRule rule =
-                IndexRule.forIndex( ruleId, SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyId ) ).withProvider( PROVIDER_DESCRIPTOR ).build();
+        SchemaRule rule = forSchema( forLabel( labelId, propertyKeyId ), PROVIDER_DESCRIPTOR ).withId( ruleId );
         recordState.createSchemaRule( rule );
         apply( neoStores, recordState );
 
@@ -231,11 +232,11 @@ public class TransactionRecordStateTest
         // THEN
         // -- later recovering that tx, there should be only one update
         assertTrue( extractor.containsAnyEntityOrPropertyUpdate() );
-        PrimitiveLongSet recoveredNodeIds = Primitive.longSet();
-        recoveredNodeIds.addAll( extractor.nodeCommandsById().iterator() );
-        recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().iterator() );
+        MutableLongSet recoveredNodeIds = new LongHashSet();
+        recoveredNodeIds.addAll( extractor.nodeCommandsById().keySet() );
+        recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().keySet() );
         assertEquals( 1, recoveredNodeIds.size() );
-        assertEquals( nodeId, recoveredNodeIds.iterator().next() );
+        assertEquals( nodeId, recoveredNodeIds.longIterator().next() );
     }
 
     @Test

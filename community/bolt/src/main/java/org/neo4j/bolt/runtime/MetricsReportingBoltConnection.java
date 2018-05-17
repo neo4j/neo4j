@@ -22,6 +22,7 @@ package org.neo4j.bolt.runtime;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -31,17 +32,18 @@ public class MetricsReportingBoltConnection extends DefaultBoltConnection
     private final BoltConnectionMetricsMonitor metricsMonitor;
     private final Clock clock;
 
-    public MetricsReportingBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
-            BoltConnectionQueueMonitor queueMonitor, BoltConnectionMetricsMonitor metricsMonitor, Clock clock )
+    MetricsReportingBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService,
+            BoltConnectionLifetimeListener listener, BoltConnectionQueueMonitor queueMonitor, BoltConnectionMetricsMonitor metricsMonitor, Clock clock )
     {
-        this( channel, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE, metricsMonitor, clock );
+        this( channel, output, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE, metricsMonitor, clock );
     }
 
-    public MetricsReportingBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
+    MetricsReportingBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService,
+            BoltConnectionLifetimeListener listener,
             BoltConnectionQueueMonitor queueMonitor, int maxBatchSize, BoltConnectionMetricsMonitor metricsMonitor,
             Clock clock )
     {
-        super( channel, machine, logService, listener, queueMonitor, maxBatchSize );
+        super( channel, output, machine, logService, listener, queueMonitor, maxBatchSize );
         this.metricsMonitor = metricsMonitor;
         this.clock = clock;
     }

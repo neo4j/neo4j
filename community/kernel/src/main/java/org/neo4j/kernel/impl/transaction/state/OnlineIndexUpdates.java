@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -53,7 +54,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * in that case the properties for that node needs to be read from store since the commands in that transaction
  * cannot itself provide enough information.
  *
- * One instance can be {@link IndexUpdates#feed(PrimitiveLongObjectMap, PrimitiveLongObjectMap, PrimitiveLongObjectMap, PrimitiveLongObjectMap) fed} data about
+ * One instance can be {@link #feed(LongObjectMap, LongObjectMap) fed} data about
  * multiple transactions, to be {@link #iterator() accessed} later.
  */
 public class OnlineIndexUpdates implements IndexUpdates
@@ -82,9 +83,9 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByNodeId,
-            PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipId, PrimitiveLongObjectMap<NodeCommand> nodeCommands,
-            PrimitiveLongObjectMap<RelationshipCommand> relationshipCommands )
+    public void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId,
+            LongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipId, LongObjectMap<NodeCommand> nodeCommands,
+            LongObjectMap<RelationshipCommand> relationshipCommands )
     {
         PrimitiveLongIterator nodeIds = allKeys( nodeCommands, propCommandsByNodeId ).iterator();
         while ( nodeIds.hasNext() )
@@ -100,14 +101,14 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
     }
 
-    private PrimitiveLongSet allKeys( PrimitiveLongObjectMap... maps )
+    private LongSet allKeys( LongObjectMap... maps )
     {
-        PrimitiveLongSet union = Primitive.longSet();
-        for ( PrimitiveLongObjectMap map : maps )
+        final MutableLongSet keys = new LongHashSet();
+        for ( LongObjectMap map : maps )
         {
-            union.addAll( map.iterator() );
+            keys.addAll( map.keySet() );
         }
-        return union;
+        return keys;
     }
 
     @Override

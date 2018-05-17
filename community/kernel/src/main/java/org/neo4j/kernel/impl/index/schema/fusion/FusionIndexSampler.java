@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.util.Arrays;
-
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -45,11 +43,17 @@ public class FusionIndexSampler implements IndexSampler
         return combineSamples( samples );
     }
 
-    static IndexSample combineSamples( IndexSample... samples )
+    public static IndexSample combineSamples( IndexSample... samples )
     {
-        return new IndexSample(
-                Arrays.stream( samples ).mapToLong( IndexSample::indexSize ).sum(),
-                Arrays.stream( samples ).mapToLong( IndexSample::uniqueValues ).sum(),
-                Arrays.stream( samples ).mapToLong( IndexSample::sampleSize ).sum() );
+        long indexSize = 0;
+        long uniqueValues = 0;
+        long sampleSize = 0;
+        for ( IndexSample sample : samples )
+        {
+            indexSize += sample.indexSize();
+            uniqueValues += sample.uniqueValues();
+            sampleSize += sample.sampleSize();
+        }
+        return new IndexSample( indexSize, uniqueValues, sampleSize );
     }
 }

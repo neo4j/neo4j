@@ -23,9 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -35,12 +33,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 /**
  * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
@@ -60,9 +58,9 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
  *
  * @see ContractCheckingIndexProxy
  */
-public interface IndexProxy extends SchemaDescriptorSupplier
+public interface IndexProxy
 {
-    void start() throws IOException;
+    void start();
 
     IndexUpdater newUpdater( IndexUpdateMode mode );
 
@@ -70,23 +68,16 @@ public interface IndexProxy extends SchemaDescriptorSupplier
      * Drop index.
      * Must close the context as well.
      */
-    void drop() throws IOException;
+    void drop();
 
     /**
      * Close this index context.
      */
     void close() throws IOException;
 
-    IndexDescriptor getDescriptor();
-
-    @Override
-    SchemaDescriptor schema();
-
-    IndexProvider.Descriptor getProviderDescriptor();
+    CapableIndexDescriptor getDescriptor();
 
     InternalIndexState getState();
-
-    IndexCapability getIndexCapability();
 
     /**
      * @return failure message. Expect a call to it if {@link #getState()} returns {@link InternalIndexState#FAILED}.
@@ -113,7 +104,13 @@ public interface IndexProxy extends SchemaDescriptorSupplier
 
     void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException;
 
-    long getIndexId();
+    /**
+     * Validates a {@link Value} so that it's OK to later apply to the index. This method is designed to be
+     * called before committing a transaction as to prevent exception during applying that transaction.
+     *
+     * @param tuple {@link Value value tuple} to validate.
+     */
+    void validateBeforeCommit( Value[] tuple );
 
     ResourceIterator<File> snapshotFiles() throws IOException;
 

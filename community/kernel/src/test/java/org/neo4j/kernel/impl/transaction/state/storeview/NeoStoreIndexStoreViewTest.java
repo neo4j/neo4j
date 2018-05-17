@@ -36,10 +36,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -248,11 +248,9 @@ public class NeoStoreIndexStoreViewTest
             ThreadToStatementContextBridge bridge =
                     graphDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
-            try ( Statement statement = bridge.get() )
-            {
-                labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
-                propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "name" );
-            }
+            TokenWrite tokenWrite = bridge.getKernelTransactionBoundToThisThread( true ).tokenWrite();
+            labelId = tokenWrite.labelGetOrCreateForName( "Person" );
+            propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "name" );
             tx.success();
         }
     }

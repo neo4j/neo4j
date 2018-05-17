@@ -24,11 +24,11 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
-public abstract class AbstractIndexReader<DESCRIPTOR extends IndexDescriptor> implements IndexReader
+public abstract class AbstractIndexReader implements IndexReader
 {
-    protected final DESCRIPTOR descriptor;
+    protected final IndexDescriptor descriptor;
 
-    protected AbstractIndexReader( DESCRIPTOR descriptor )
+    protected AbstractIndexReader( IndexDescriptor descriptor )
     {
         this.descriptor = descriptor;
     }

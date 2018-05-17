@@ -26,11 +26,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -137,24 +137,24 @@ public class IndexPopulationFlipRaceIT
     private void verifyThatThereAreExactlyOneIndexEntryPerNodeInTheIndexes( int i, Pair<long[],long[]> data )
             throws Exception
     {
-        InwardKernel kernelAPI = db.getDependencyResolver().resolveDependency( InwardKernel.class );
-        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-              Statement statement = tx.acquireStatement() )
+        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+        try ( Session session = kernel.beginSession( AnonymousContext.read() );
+              org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
-            int labelAId = statement.readOperations().labelGetForName( labelA( i ).name() );
-            int keyAId = statement.readOperations().propertyKeyGetForName( keyA( i ) );
-            int labelBId = statement.readOperations().labelGetForName( labelB( i ).name() );
-            int keyBId = statement.readOperations().propertyKeyGetForName( keyB( i ) );
-            SchemaIndexDescriptor indexA = SchemaIndexDescriptorFactory.forLabel( labelAId, keyAId );
-            SchemaIndexDescriptor indexB = SchemaIndexDescriptorFactory.forLabel( labelBId, keyBId );
+            int labelAId = tx.tokenRead().nodeLabel( labelA( i ).name() );
+            int keyAId = tx.tokenRead().propertyKey( keyA( i ) );
+            int labelBId = tx.tokenRead().nodeLabel( labelB( i ).name() );
+            int keyBId = tx.tokenRead().propertyKey( keyB( i ) );
+            IndexReference indexA = TestIndexDescriptorFactory.forLabel( labelAId, keyAId );
+            IndexReference indexB = TestIndexDescriptorFactory.forLabel( labelBId, keyBId );
 
             for ( int j = 0; j < NODES_PER_INDEX; j++ )
             {
                 long nodeAId = data.first()[j];
-                assertEquals( 1, statement.readOperations().nodesCountIndexed(
+                assertEquals( 1, tx.schemaRead().nodesCountIndexed(
                         indexA, nodeAId, Values.of( nodeAId ) ) );
                 long nodeBId = data.other()[j];
-                assertEquals( 1, statement.readOperations().nodesCountIndexed(
+                assertEquals( 1, tx.schemaRead().nodesCountIndexed(
                         indexB, nodeBId, Values.of( nodeBId ) ) );
             }
         }

@@ -44,7 +44,6 @@ import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 
@@ -55,7 +54,7 @@ import static org.neo4j.helpers.AdvertisedSocketAddress.advertisedAddress;
 import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
+public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
 {
     private final File neo4jHome;
     protected final DiscoveryServiceFactory discoveryServiceFactory;
@@ -180,9 +179,21 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     {
         if ( database != null )
         {
-            database.shutdown();
-            database = null;
+            try
+            {
+                database.shutdown();
+            }
+            finally
+            {
+                database = null;
+            }
         }
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return database == null;
     }
 
     @Override
@@ -191,6 +202,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return database;
     }
 
+    @Override
     public File storeDir()
     {
         return storeDir;
@@ -220,6 +232,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         }
     }
 
+    @Override
     public File homeDir()
     {
         return neo4jHome;
@@ -281,9 +294,9 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return raftLogDir;
     }
 
-    public void stopCatchupServer()
+    public void disableCatchupServer() throws Throwable
     {
-        database.stopCatchupServer();
+        database.disableCatchupServer();
     }
 
     int discoveryPort()

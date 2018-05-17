@@ -19,19 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 public class StringNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSchemaIndexPopulatorTest<StringSchemaKey,NativeSchemaValue>
 {
     @Override
-    NativeSchemaIndexPopulator<StringSchemaKey,NativeSchemaValue> createPopulator( PageCache pageCache, FileSystemAbstraction fs,
-            File indexFile, Layout<StringSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
+    NativeSchemaIndexPopulator<StringSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        return new StringSchemaIndexPopulator( pageCache, fs, indexFile, layout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new StringSchemaIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override

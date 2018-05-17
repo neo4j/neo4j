@@ -35,9 +35,9 @@ import java.util.Set;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -59,7 +59,6 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -85,12 +84,13 @@ public class IndexCRUDIT
         Node node = createNode( map( indexProperty, value1, otherProperty, otherValue ), myLabel );
 
         // Then, for now, this should trigger two NodePropertyUpdates
-        try ( Transaction tx = db.beginTx();
-                Statement statement = ctxSupplier.get() )
+        try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
-            int label = readOperations.labelGetForName( myLabel.name() );
+            KernelTransaction ktx =
+                    ctxSupplier.getKernelTransactionBoundToThisThread( true );
+            TokenRead tokenRead = ktx.tokenRead();
+            int propertyKey1 = tokenRead.propertyKey( indexProperty );
+            int label = tokenRead.nodeLabel( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
                     IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value1 ) ) ) ) );
@@ -126,12 +126,13 @@ public class IndexCRUDIT
         }
 
         // THEN
-        try ( Transaction tx = db.beginTx();
-              Statement statement = ctxSupplier.get() )
+        try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
-            int label = readOperations.labelGetForName( myLabel.name() );
+            KernelTransaction ktx =
+                    ctxSupplier.getKernelTransactionBoundToThisThread( true );
+            TokenRead tokenRead = ktx.tokenRead();
+            int propertyKey1 = tokenRead.propertyKey( indexProperty );
+            int label = tokenRead.nodeLabel( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
                     IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value ) ) ) ) );
@@ -176,8 +177,12 @@ public class IndexCRUDIT
     private GatheringIndexWriter newWriter() throws IOException
     {
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        doReturn( writer ).when( mockedIndexProvider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-        doReturn( writer ).when( mockedIndexProvider ).getOnlineAccessor( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        doReturn( writer ).when( mockedIndexProvider).getPopulator(
+                     any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+            doReturn( writer ).
+        when( mockedIndexProvider).getOnlineAccessor(
+                     any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class )
+            );
         return writer;
     }
 

@@ -20,7 +20,6 @@
 package org.neo4j.test;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -44,6 +43,11 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
     public OnDemandJobScheduler( boolean removeJobsAfterExecution )
     {
         this.removeJobsAfterExecution = removeJobsAfterExecution;
+    }
+
+    @Override
+    public void setTopLevelGroupName( String name )
+    {
     }
 
     @Override

@@ -22,25 +22,25 @@ package org.neo4j.cypher
 import java.util
 
 import org.neo4j.collection.RawIterator
-import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.{FieldSignature, Neo4jTypes, ProcedureSignature, QualifiedName}
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION
 import org.neo4j.kernel.api.proc._
-import org.neo4j.kernel.api.{ResourceTracker, Statement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.Mode
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.immutable.Map
+import scala.collection.mutable.ArrayBuffer
 
 class CloseTransactionTest extends CypherFunSuite with GraphIcing {
 
@@ -491,7 +491,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     val emptySignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
     val signature: ProcedureSignature = new ProcedureSignature(
       procedureName, paramSignature, resultSignature, Mode.READ, null, Array.empty,
-      null, null)
+      null, null, false)
 
     def paramSignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
 
@@ -502,22 +502,23 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     override def apply(context: Context,
                        objects: Array[AnyRef],
                        resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
-      val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
-      val readOperations = statement.readOperations
-      val nodes = readOperations.nodesGetAll()
-      val nodesArray = PrimitiveLongCollections.asArray(nodes)
-      statement.close()
+      val ktx = context.get(KERNEL_TRANSACTION)
+      val nodeBuffer = new ArrayBuffer[Long]()
+      val cursor = ktx.cursors().allocateNodeCursor()
+      ktx.dataRead().allNodesScan(cursor)
+      while (cursor.next()) nodeBuffer.append(cursor.nodeReference())
+      cursor.close()
       new RawIterator[Array[AnyRef], ProcedureException] {
         var index = 0
 
         override def next(): Array[AnyRef] = {
-          val value = nodesArray(index)
+          val value = nodeBuffer(index)
           index += 1
           Array(new java.lang.Long(value))
         }
 
         override def hasNext: Boolean = {
-          nodesArray.length < index
+          nodeBuffer.length < index
         }
       }
     }

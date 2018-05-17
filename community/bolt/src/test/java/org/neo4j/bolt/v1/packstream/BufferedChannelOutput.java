@@ -51,6 +51,21 @@ public class BufferedChannelOutput implements PackOutput
     }
 
     @Override
+    public void beginMessage()
+    {
+    }
+
+    @Override
+    public void messageSucceeded() throws IOException
+    {
+    }
+
+    @Override
+    public void messageFailed() throws IOException
+    {
+    }
+
+    @Override
     public BufferedChannelOutput flush() throws IOException
     {
         buffer.flip();
@@ -132,6 +147,17 @@ public class BufferedChannelOutput implements PackOutput
         ensure( 8 );
         buffer.putDouble( value );
         return this;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        buffer.clear();
+
+        if ( channel != null )
+        {
+            channel.close();
+        }
     }
 
     private void ensure( int size ) throws IOException

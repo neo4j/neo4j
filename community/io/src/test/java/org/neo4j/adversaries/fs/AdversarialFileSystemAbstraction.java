@@ -249,10 +249,9 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long lastModifiedTime( File file ) throws IOException
+    public long lastModifiedTime( File file )
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
-                NullPointerException.class );
+        adversary.injectFailure( SecurityException.class, NullPointerException.class );
         return delegate.lastModifiedTime( file );
     }
 

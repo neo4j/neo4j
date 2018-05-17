@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.testing.Jobs;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -56,6 +54,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -93,7 +92,7 @@ public class ExecutorBoltSchedulerTest
     public void initShouldCreateThreadPool() throws Throwable
     {
         ExecutorFactory mockExecutorFactory = mock( ExecutorFactory.class );
-        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
+        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
                         ForkJoinPool.commonPool() );
@@ -101,7 +100,7 @@ public class ExecutorBoltSchedulerTest
         scheduler.start();
 
         verify( jobScheduler ).threadFactory( JobScheduler.Groups.boltWorker );
-        verify( mockExecutorFactory, times( 1 ) ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), any( ThreadFactory.class ) );
+        verify( mockExecutorFactory, times( 1 ) ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), anyBoolean(), any( ThreadFactory.class ) );
     }
 
     @Test
@@ -109,7 +108,7 @@ public class ExecutorBoltSchedulerTest
     {
         ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
         ExecutorFactory mockExecutorFactory = mock( ExecutorFactory.class );
-        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), any() ) ).thenReturn( cachedThreadPool );
+        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( cachedThreadPool );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
                         ForkJoinPool.commonPool() );
@@ -234,7 +233,8 @@ public class ExecutorBoltSchedulerTest
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
         AtomicBoolean exitCondition = new AtomicBoolean();
-        when( connection.processNextBatch() ).thenAnswer( inv -> {
+        when( connection.processNextBatch() ).thenAnswer( inv ->
+        {
             processNextBatchCount.incrementAndGet();
             return awaitExit( exitCondition );
         } );
@@ -258,17 +258,21 @@ public class ExecutorBoltSchedulerTest
     @Test
     public void createdWorkerThreadsShouldContainConnectorName() throws Exception
     {
-        AtomicInteger processNextBatchCount = new AtomicInteger();
+        AtomicInteger executeBatchCompletionCount = new AtomicInteger();
         AtomicReference<Thread> poolThread = new AtomicReference<>();
         AtomicReference<String> poolThreadName = new AtomicReference<>();
 
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
+        when( connection.hasPendingJobs() ).thenAnswer( inv ->
+        {
+            executeBatchCompletionCount.incrementAndGet();
+            return false;
+        } );
         when( connection.processNextBatch() ).thenAnswer( inv ->
         {
             poolThread.set( Thread.currentThread() );
             poolThreadName.set( Thread.currentThread().getName() );
-            processNextBatchCount.incrementAndGet();
             return true;
         } );
 
@@ -276,7 +280,7 @@ public class ExecutorBoltSchedulerTest
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, Jobs.noop() );
 
-        Predicates.await( () -> processNextBatchCount.get() > 0, 1, MINUTES );
+        Predicates.await( () -> executeBatchCompletionCount.get() > 0, 1, MINUTES );
 
         assertThat( poolThread.get().getName(), not( equalTo( poolThreadName.get() ) ) );
         assertThat( poolThread.get().getName(), containsString( String.format( "[%s]", CONNECTOR_KEY ) ) );
@@ -324,5 +328,4 @@ public class ExecutorBoltSchedulerTest
         Predicates.awaitForever( () -> Thread.currentThread().isInterrupted() || exitCondition.get(), 500, MILLISECONDS );
         return true;
     }
-
 }

@@ -21,6 +21,6 @@ package org.neo4j.kernel.impl.pagecache;
 
 public interface PageCacheWarmerMonitor
 {
-    void warmupCompleted( long elapsedMillis, long pagesLoaded );
-    void profileCompleted( long elapsedMillis, long pagesInMemory );
+    void warmupCompleted( long pagesLoaded );
+    void profileCompleted( long pagesInMemory );
 }

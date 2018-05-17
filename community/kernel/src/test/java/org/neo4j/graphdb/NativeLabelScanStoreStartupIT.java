@@ -25,9 +25,10 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -55,33 +56,41 @@ public class NativeLabelScanStoreStartupIT
     private int labelId;
 
     @Test
-    public void scanStoreStartWithoutExistentIndex() throws IOException
+    public void scanStoreStartWithoutExistentIndex() throws Throwable
     {
         LabelScanStore labelScanStore = getLabelScanStore();
+        GroupingRecoveryCleanupWorkCollector workCollector = getGroupingRecoveryCleanupWorkCollector();
         labelScanStore.shutdown();
+        workCollector.shutdown();
 
         deleteLabelScanStoreFiles( dbRule.getStoreDirFile() );
 
+        workCollector.init();
         labelScanStore.init();
+        workCollector.start();
         labelScanStore.start();
 
         checkLabelScanStoreAccessible( labelScanStore );
     }
 
     @Test
-    public void scanStoreRecreateCorruptedIndexOnStartup() throws IOException
+    public void scanStoreRecreateCorruptedIndexOnStartup() throws Throwable
     {
         LabelScanStore labelScanStore = getLabelScanStore();
+        GroupingRecoveryCleanupWorkCollector workCollector = getGroupingRecoveryCleanupWorkCollector();
 
         createTestNode();
         long[] labels = readNodesForLabel( labelScanStore );
         assertEquals( "Label scan store see 1 label for node", 1, labels.length );
         labelScanStore.force( IOLimiter.unlimited() );
         labelScanStore.shutdown();
+        workCollector.shutdown();
 
         corruptLabelScanStoreFiles( dbRule.getStoreDirFile() );
 
+        workCollector.init();
         labelScanStore.init();
+        workCollector.start();
         labelScanStore.start();
 
         long[] rebuildLabels = readNodesForLabel( labelScanStore );
@@ -90,7 +99,17 @@ public class NativeLabelScanStoreStartupIT
 
     private LabelScanStore getLabelScanStore()
     {
-        return dbRule.getDependencyResolver().resolveDependency( LabelScanStore.class );
+        return getDependency( LabelScanStore.class );
+    }
+
+    private GroupingRecoveryCleanupWorkCollector getGroupingRecoveryCleanupWorkCollector()
+    {
+        return dbRule.getDependencyResolver().resolveDependency( GroupingRecoveryCleanupWorkCollector.class );
+    }
+
+    private <T> T getDependency( Class<T> clazz )
+    {
+        return dbRule.getDependencyResolver().resolveDependency( clazz );
     }
 
     private long[] readNodesForLabel( LabelScanStore labelScanStore )
@@ -107,12 +126,10 @@ public class NativeLabelScanStoreStartupIT
         try ( Transaction transaction = dbRule.beginTx() )
         {
             node = dbRule.createNode( LABEL);
-            try ( Statement statement = dbRule.getDependencyResolver()
+             KernelTransaction ktx = dbRule.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class )
-                    .getKernelTransactionBoundToThisThread( true ).acquireStatement() )
-            {
-                labelId = statement.readOperations().labelGetForName( LABEL.name() );
-            }
+                    .getKernelTransactionBoundToThisThread( true );
+                labelId = ktx.tokenRead().nodeLabel( LABEL.name() );
             transaction.success();
         }
         return node;

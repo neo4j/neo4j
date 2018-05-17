@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.queryReduction
 
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.ArithmeticException
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_5.ArithmeticException
 
 import scala.util.{Failure, Success, Try}
 
@@ -69,7 +69,7 @@ class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupp
     val reduced = reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
       tryResults match {
         case Failure(e:ArithmeticException) =>
-          if(e.getMessage == "/ by zero")
+          if(e.getMessage == "/ by zero" || e.getMessage == "divide by zero")
             Reproduced
           else
             NotReproduced
@@ -85,7 +85,7 @@ class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupp
     val reduced = reduceQuery(query, Some(setup), enterprise = true) { (tryResults: Try[InternalExecutionResult]) =>
       tryResults match {
         case Failure(e:ArithmeticException) =>
-          if(e.getMessage == "/ by zero")
+          if(e.getMessage == "/ by zero" || e.getMessage == "divide by zero")
             Reproduced
           else
             NotReproduced

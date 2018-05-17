@@ -22,6 +22,7 @@ package org.neo4j.kernel.builtinprocs;
 import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
@@ -36,26 +37,32 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.ClockContext;
 
 public class StubKernelTransaction implements KernelTransaction
 {
-    private final ReadOperations readOperations;
 
-    StubKernelTransaction( ReadOperations readOperations )
+    StubKernelTransaction( )
     {
-        this.readOperations = readOperations;
     }
 
     @Override
     public Statement acquireStatement()
     {
-        return new StubStatement( readOperations );
+        return new StubStatement( );
+    }
+
+    @Override
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
@@ -155,6 +162,12 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public ExecutionStatistics executionStatistics()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public long closeTransaction()
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -168,6 +181,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public SecurityContext securityContext()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public AuthSubject subjectOrAnonymous()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -251,19 +270,25 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public NodeCursor nodeCursor()
+    public NodeCursor ambientNodeCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public RelationshipScanCursor relationshipCursor()
+    public RelationshipScanCursor ambientRelationshipCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public PropertyCursor propertyCursor()
+    public PropertyCursor ambientPropertyCursor()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void assertOpen()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

@@ -32,7 +32,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalUnit;
-import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -42,6 +41,8 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -69,7 +70,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     public static LocalDateTimeValue localDateTime(
             int year, int month, int day, int hour, int minute, int second, int nanoOfSecond )
     {
-        return new LocalDateTimeValue( LocalDateTime.of( year, month, day, hour, minute, second, nanoOfSecond ) );
+        return new LocalDateTimeValue( assertValidArgument( () -> LocalDateTime.of( year, month, day, hour, minute, second, nanoOfSecond ) ) );
     }
 
     public static LocalDateTimeValue localDateTime( LocalDateTime value )
@@ -79,12 +80,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
 
     public static LocalDateTimeValue localDateTime( long epochSecond, long nano )
     {
-        return new LocalDateTimeValue( ofInstant( ofEpochSecond( epochSecond, nano ), UTC ) );
-    }
-
-    public static LocalDateTimeValue inUTC( DateTimeValue datetime )
-    {
-        return new LocalDateTimeValue( datetime.temporal().withZoneSameInstant( UTC ).toLocalDateTime() );
+        return new LocalDateTimeValue( assertValidArgument( () -> ofInstant( ofEpochSecond( epochSecond, nano ), UTC ) ) );
     }
 
     public static LocalDateTimeValue parse( CharSequence text )
@@ -105,6 +101,11 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     public static LocalDateTimeValue now( Clock clock, String timezone )
     {
         return now( clock.withZone( parseZoneName( timezone ) ) );
+    }
+
+    public static LocalDateTimeValue now( Clock clock, Supplier<ZoneId> defaultZone )
+    {
+        return now( clock.withZone( defaultZone.get() ) );
     }
 
     public static LocalDateTimeValue build( MapValue map, Supplier<ZoneId> defaultZone )
@@ -179,7 +180,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     AnyValue dtField = fields.get( Field.datetime );
                     if ( !(dtField instanceof TemporalValue) )
                     {
-                        throw new IllegalArgumentException( String.format( "Cannot construct local date time from: %s", dtField ) );
+                        throw new InvalidValuesArgumentException( String.format( "Cannot construct local date time from: %s", dtField ) );
                     }
                     TemporalValue dt = (TemporalValue) dtField;
                     result = LocalDateTime.of( dt.getDatePart(), dt.getLocalTimePart() );
@@ -192,7 +193,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                         AnyValue timeField = fields.get( Field.time );
                         if ( !(timeField instanceof TemporalValue) )
                         {
-                            throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
+                            throw new InvalidValuesArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
                         }
                         TemporalValue t = (TemporalValue) timeField;
                         time = t.getLocalTimePart();
@@ -207,7 +208,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                         AnyValue dateField = fields.get( Field.date );
                         if ( !(dateField instanceof TemporalValue) )
                         {
-                            throw new IllegalArgumentException( String.format( "Cannot construct date from: %s", dateField ) );
+                            throw new InvalidValuesArgumentException( String.format( "Cannot construct date from: %s", dateField ) );
                         }
                         TemporalValue t = (TemporalValue) dateField;
                         date = t.getDatePart();
@@ -247,7 +248,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     LocalTime timePart = v.getLocalTimePart();
                     return LocalDateTime.of( datePart, timePart );
                 }
-                throw new IllegalArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
+                throw new InvalidValuesArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
             }
 
             @Override
@@ -263,17 +264,24 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     private final LocalDateTime value;
+    private final long epochSecondsInUTC;
 
     private LocalDateTimeValue( LocalDateTime value )
     {
         this.value = value;
+        this.epochSecondsInUTC = this.value.toEpochSecond(UTC);
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    int unsafeCompareTo( Value other )
     {
-        LocalDateTimeValue other = (LocalDateTimeValue) otherValue;
-        return value.compareTo( other.value );
+        LocalDateTimeValue that = (LocalDateTimeValue) other;
+        int cmp = Long.compare( epochSecondsInUTC, that.epochSecondsInUTC );
+        if ( cmp == 0 )
+        {
+            cmp = value.getNano() - that.value.getNano();
+        }
+        return cmp;
     }
 
     @Override
@@ -297,7 +305,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
     {
-        ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), defaultZone.get() ).getOffset();
+        ZoneOffset currentOffset = assertValidArgument( () -> ZonedDateTime.ofInstant( Instant.now(), defaultZone.get() ) ).getOffset();
         return OffsetTime.of(value.toLocalTime(), currentOffset);
     }
 
@@ -310,13 +318,13 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     ZoneId getZoneId()
     {
-        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the timezone of: %s", this ) );
     }
 
     @Override
     ZoneOffset getZoneOffset()
     {
-        throw new UnsupportedTemporalTypeException( "Cannot get the offset of" + this );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the offset of: %s", this ) );
     }
 
     @Override
@@ -340,13 +348,13 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        writer.writeLocalDateTime( value.toEpochSecond( UTC ), value.getNano() );
+        writer.writeLocalDateTime( value );
     }
 
     @Override
     public String prettyPrint()
     {
-        return value.format( DateTimeFormatter.ISO_LOCAL_DATE_TIME );
+        return assertPrintable( () -> value.format( DateTimeFormatter.ISO_LOCAL_DATE_TIME ) );
     }
 
     @Override
@@ -370,13 +378,13 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     public LocalDateTimeValue add( DurationValue duration )
     {
-        return replacement( value.plus( duration ) );
+        return replacement( assertValidArithmetic( () -> value.plus( duration ) ) );
     }
 
     @Override
     public LocalDateTimeValue sub( DurationValue duration )
     {
-        return replacement( value.minus( duration ) );
+        return replacement( assertValidArithmetic( () -> value.minus( duration ) ) );
     }
 
     @Override

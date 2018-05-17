@@ -19,12 +19,11 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.Iterator;
 import java.util.Objects;
 
 import org.neo4j.graphdb.spatial.CRS;
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
+import org.neo4j.helpers.collection.Iterables;
 
 public class CoordinateReferenceSystem implements CRS
 {
@@ -35,9 +34,9 @@ public class CoordinateReferenceSystem implements CRS
 
     private static final CoordinateReferenceSystem[] TYPES = new CoordinateReferenceSystem[]{Cartesian, Cartesian_3D, WGS84, WGS84_3D};
 
-    public static Iterator<CoordinateReferenceSystem> all()
+    public static Iterable<CoordinateReferenceSystem> all()
     {
-        return Iterators.iterator( TYPES );
+        return Iterables.asIterable( TYPES );
     }
 
     public static CoordinateReferenceSystem get( int tableId, int code )
@@ -50,7 +49,7 @@ public class CoordinateReferenceSystem implements CRS
                 return type;
             }
         }
-        throw new IllegalArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
+        throw new InvalidValuesArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
     }
 
     public static CoordinateReferenceSystem get( CRS crs )
@@ -69,7 +68,7 @@ public class CoordinateReferenceSystem implements CRS
             }
         }
 
-        throw new IllegalArgumentException( "Unknown coordinate reference system: " + name );
+        throw new InvalidValuesArgumentException( "Unknown coordinate reference system: " + name );
     }
 
     public static CoordinateReferenceSystem get( String href )
@@ -81,7 +80,7 @@ public class CoordinateReferenceSystem implements CRS
                 return type;
             }
         }
-        throw new IllegalArgumentException( "Unknown coordinate reference system: " + href );
+        throw new InvalidValuesArgumentException( "Unknown coordinate reference system: " + href );
     }
 
     public static CoordinateReferenceSystem get( int code )
@@ -97,7 +96,7 @@ public class CoordinateReferenceSystem implements CRS
                 }
             }
         }
-        throw new IllegalArgumentException( "Unknown coordinate reference system code: " + code );
+        throw new InvalidValuesArgumentException( "Unknown coordinate reference system code: " + code );
     }
 
     private final String name;

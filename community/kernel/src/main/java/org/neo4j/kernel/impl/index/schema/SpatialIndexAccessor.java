@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -49,12 +49,11 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAccessor, IOException> implements IndexAccessor
+class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAccessor> implements IndexAccessor
 {
-    private final SchemaIndexDescriptor descriptor;
+    private final StoreIndexDescriptor descriptor;
 
-    SpatialIndexAccessor( long indexId,
-                           SchemaIndexDescriptor descriptor,
+    SpatialIndexAccessor( StoreIndexDescriptor descriptor,
                            IndexSamplingConfig samplingConfig,
                            PageCache pageCache,
                            FileSystemAbstraction fs,
@@ -68,7 +67,6 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                 recoveryCleanupWorkCollector,
                                 monitor,
                                 descriptor,
-                                indexId,
                                 samplingConfig,
                                 spatialIndexFiles,
                                 searchConfiguration ) );
@@ -106,6 +104,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     @Override
     public void close() throws IOException
     {
+        closeInstantiateCloseLock();
         forAll( NativeSchemaIndexAccessor::close, this );
     }
 
@@ -182,21 +181,15 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     static class PartAccessor extends NativeSchemaIndexAccessor<SpatialSchemaKey, NativeSchemaValue>
     {
         private final Layout<SpatialSchemaKey,NativeSchemaValue> layout;
-        private final SchemaIndexDescriptor descriptor;
+        private final StoreIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
         private final SpaceFillingCurveConfiguration searchConfiguration;
 
-        PartAccessor( PageCache pageCache,
-                      FileSystemAbstraction fs,
-                      SpatialIndexFiles.SpatialFileLayout fileLayout,
-                      RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                      IndexProvider.Monitor monitor,
-                      SchemaIndexDescriptor descriptor,
-                      long indexId,
-                      IndexSamplingConfig samplingConfig,
-                      SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
+        PartAccessor( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
+                IndexSamplingConfig samplingConfig, SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
             this.samplingConfig = samplingConfig;
@@ -204,20 +197,20 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         }
 
         @Override
-        public SpatialIndexPartReader<SpatialSchemaKey,NativeSchemaValue> newReader()
+        public SpatialIndexPartReader<NativeSchemaValue> newReader()
         {
+            assertOpen();
             return new SpatialIndexPartReader<>( tree, layout, samplingConfig, descriptor, searchConfiguration );
         }
     }
 
-    static class PartFactory implements Factory<PartAccessor, IOException>
+    static class PartFactory implements Factory<PartAccessor>
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
         private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
         private final IndexProvider.Monitor monitor;
-        private final SchemaIndexDescriptor descriptor;
-        private final long indexId;
+        private final StoreIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
         private final SpatialIndexFiles spatialIndexFiles;
         private final SpaceFillingCurveConfiguration searchConfiguration;
@@ -226,8 +219,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                      FileSystemAbstraction fs,
                      RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                      IndexProvider.Monitor monitor,
-                     SchemaIndexDescriptor descriptor,
-                     long indexId,
+                     StoreIndexDescriptor descriptor,
                      IndexSamplingConfig samplingConfig,
                      SpatialIndexFiles spatialIndexFiles,
                      SpaceFillingCurveConfiguration searchConfiguration )
@@ -237,7 +229,6 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
             this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
             this.monitor = monitor;
             this.descriptor = descriptor;
-            this.indexId = indexId;
             this.samplingConfig = samplingConfig;
             this.spatialIndexFiles = spatialIndexFiles;
             this.searchConfiguration = searchConfiguration;
@@ -265,7 +256,6 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                      recoveryCleanupWorkCollector,
                                      monitor,
                                      descriptor,
-                                     indexId,
                                      samplingConfig,
                                      searchConfiguration );
         }
@@ -277,7 +267,6 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                                                                 fileLayout,
                                                                                 monitor,
                                                                                 descriptor,
-                                                                                indexId,
                                                                                 samplingConfig,
                                                                                 searchConfiguration );
             populator.create();

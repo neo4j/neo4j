@@ -19,70 +19,65 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Iterator;
-import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.values.storable.ValueGroup;
+
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.date;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.duration;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.localDateTime;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.localTime;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zonedDateTime;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zonedTime;
 
 /**
  * Cache for lazily creating parts of the temporal index. Each part is created using the factory
  * the first time it is selected in a select() query, or the first time it's explicitly
  * asked for using e.g. date().
- *
+ * <p>
  * Iterating over the cache will return all currently created parts.
  *
  * @param <T> Type of parts
- * @param <E> Type of exception potentially thrown during creation
  */
-class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
+class TemporalIndexCache<T> implements Iterable<T>
 {
-    private final Factory<T, E> factory;
+    private final Factory<T> factory;
 
-    private volatile T date;
-    private volatile T localDateTime;
-    private volatile T zonedDateTime;
-    private volatile T localTime;
-    private volatile T zonedTime;
-    private volatile T duration;
+    enum Offset
+    {
+        date,
+        localDateTime,
+        zonedDateTime,
+        localTime,
+        zonedTime,
+        duration
+    }
 
-    private List<T> parts;
+    private final ConcurrentHashMap<Offset,T> cache = new ConcurrentHashMap<>();
+    private final Lock instantiateCloseLock = new ReentrantLock();
+    // guarded by instantiateCloseLock
+    private boolean closed;
 
-    TemporalIndexCache( Factory<T, E> factory )
+    TemporalIndexCache( Factory<T> factory )
     {
         this.factory = factory;
-        this.parts = new ArrayList<>();
     }
 
     /**
-     * Select the part corresponding to the given ValueGroup. Creates the part if needed,
+     * Select the path corresponding to the given ValueGroup. Creates the path if needed,
      * and rethrows any create time exception as a RuntimeException.
      *
      * @param valueGroup target value group
      * @return selected part
      */
     T uncheckedSelect( ValueGroup valueGroup )
-    {
-        try
-        {
-            return select( valueGroup );
-        }
-        catch ( Exception t )
-        {
-            throw new RuntimeException( t );
-        }
-    }
-
-    /**
-     * Select the part corresponding to the given ValueGroup. Creates the part if needed,
-     * in which case an exception of type E might be thrown.
-     *
-     * @param valueGroup target value group
-     * @return selected part
-     * @throws E exception potentially thrown during creation
-     */
-    T select( ValueGroup valueGroup ) throws E
     {
         switch ( valueGroup )
         {
@@ -110,6 +105,25 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     }
 
     /**
+     * Select the part corresponding to the given ValueGroup. Creates the part if needed,
+     * in which case an exception of type E might be thrown.
+     *
+     * @param valueGroup target value group
+     * @return selected part
+     */
+    T select( ValueGroup valueGroup ) throws IOException
+    {
+        try
+        {
+            return uncheckedSelect( valueGroup );
+        }
+        catch ( UncheckedIOException e )
+        {
+            throw e.getCause();
+        }
+    }
+
+    /**
      * Select the part corresponding to the given ValueGroup, apply function to it and return the result.
      * If the part isn't created yet return orElse.
      *
@@ -119,99 +133,112 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
      * @param <RESULT> type of result
      * @return the result
      */
-    <RESULT> RESULT selectOrElse( ValueGroup valueGroup, Function<T, RESULT> function, RESULT orElse )
+    <RESULT> RESULT selectOrElse( ValueGroup valueGroup, Function<T,RESULT> function, RESULT orElse )
     {
+        T cachedValue;
         switch ( valueGroup )
         {
         case DATE:
-            return date != null ? function.apply( date ) : orElse;
-
+            cachedValue = cache.get( date );
+            break;
         case LOCAL_DATE_TIME:
-            return localDateTime != null ? function.apply( localDateTime ) : orElse;
-
+            cachedValue = cache.get( localDateTime );
+            break;
         case ZONED_DATE_TIME:
-            return zonedDateTime != null ? function.apply( zonedDateTime ) : orElse;
-
+            cachedValue = cache.get( zonedDateTime );
+            break;
         case LOCAL_TIME:
-            return localTime != null ? function.apply( localTime ) : orElse;
-
+            cachedValue = cache.get( localTime );
+            break;
         case ZONED_TIME:
-            return zonedTime != null ? function.apply( zonedTime ) : orElse;
-
+            cachedValue = cache.get( zonedTime );
+            break;
         case DURATION:
-            return duration != null ? function.apply( duration ) : orElse;
-
+            cachedValue = cache.get( duration );
+            break;
         default:
             throw new IllegalStateException( "Unsupported value group " + valueGroup );
         }
+
+        return cachedValue != null ? function.apply( cachedValue ) : orElse;
     }
 
-    T date() throws E
+    private void assertOpen()
     {
-        if ( date == null )
+        if ( closed )
         {
-            date = factory.newDate();
-            addPartToList( date );
+            throw new IllegalStateException( this + " is already closed" );
         }
-        return date;
     }
 
-    T localDateTime() throws E
+    void shutInstantiateCloseLock()
     {
-        if ( localDateTime == null )
-        {
-            localDateTime = factory.newLocalDateTime();
-            addPartToList( localDateTime );
-        }
-        return localDateTime;
+        instantiateCloseLock.lock();
+        closed = true;
+        instantiateCloseLock.unlock();
     }
 
-    T zonedDateTime() throws E
+    private T getOrCreatePart( Offset key, ThrowingSupplier<T,IOException> factory ) throws UncheckedIOException
     {
-        if ( zonedDateTime == null )
+        T existing = cache.get( key );
+        if ( existing != null )
         {
-            zonedDateTime = factory.newZonedDateTime();
-            addPartToList( zonedDateTime );
+            return existing;
         }
-        return zonedDateTime;
+
+        // Instantiate from factory. Do this under lock so that we coordinate with any concurrent call to close.
+        // Concurrent calls to instantiating parts won't contend with each other since there's only
+        // a single writer at a time anyway.
+        instantiateCloseLock.lock();
+        try
+        {
+            assertOpen();
+            return cache.computeIfAbsent( key, k ->
+            {
+                try
+                {
+                    return factory.get();
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+            } );
+        }
+        finally
+        {
+            instantiateCloseLock.unlock();
+        }
     }
 
-    T localTime() throws E
+    private T date() throws UncheckedIOException
     {
-        if ( localTime == null )
-        {
-            localTime = factory.newLocalTime();
-            addPartToList( localTime );
-        }
-        return localTime;
+        return getOrCreatePart( date, factory::newDate );
     }
 
-    T zonedTime() throws E
+    private T localDateTime() throws UncheckedIOException
     {
-        if ( zonedTime == null )
-        {
-            zonedTime = factory.newZonedTime();
-            addPartToList( zonedTime );
-        }
-        return zonedTime;
+        return getOrCreatePart( localDateTime, factory::newLocalDateTime );
     }
 
-    T duration() throws E
+    private T zonedDateTime() throws UncheckedIOException
     {
-        if ( duration == null )
-        {
-            duration = factory.newDuration();
-            addPartToList( duration );
-        }
-        return duration;
+        return getOrCreatePart( zonedDateTime, factory::newZonedDateTime );
     }
 
-    private void addPartToList( T t )
+    private T localTime() throws UncheckedIOException
     {
-        if ( t != null )
-        {
-            parts.add( t );
-        }
+        return getOrCreatePart( localTime, factory::newLocalTime );
+    }
+
+    private T zonedTime() throws UncheckedIOException
+    {
+        return getOrCreatePart( zonedTime, factory::newZonedTime );
+    }
+
+    private T duration() throws UncheckedIOException
+    {
+        return getOrCreatePart( duration, factory::newDuration );
     }
 
     void loadAll()
@@ -234,22 +261,26 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     @Override
     public Iterator<T> iterator()
     {
-        return parts.iterator();
+        return cache.values().iterator();
     }
 
     /**
      * Factory used by the TemporalIndexCache to create parts.
      *
      * @param <T> Type of parts
-     * @param <E> Type of exception potentially thrown during create
      */
-    interface Factory<T, E extends Exception>
+    interface Factory<T>
     {
-        T newDate() throws E;
-        T newLocalDateTime() throws E;
-        T newZonedDateTime() throws E;
-        T newLocalTime() throws E;
-        T newZonedTime() throws E;
-        T newDuration() throws E;
+        T newDate() throws IOException;
+
+        T newLocalDateTime() throws IOException;
+
+        T newZonedDateTime() throws IOException;
+
+        T newLocalTime() throws IOException;
+
+        T newZonedTime() throws IOException;
+
+        T newDuration() throws IOException;
     }
 }

@@ -19,40 +19,46 @@
  */
 package org.neo4j.kernel.api.schema.index;
 
-import java.util.Iterator;
-import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.values.storable.ValueCategory;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.UNIQUE;
 
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
  */
-public abstract class IndexDescriptor implements SchemaDescriptorSupplier
+public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
 {
+    protected final SchemaDescriptor schema;
+    protected final IndexDescriptor.Type type;
+    protected final Optional<String> userSuppliedName;
+    protected final IndexProvider.Descriptor providerDescriptor;
 
-    public String metadata()
+    IndexDescriptor( IndexDescriptor indexDescriptor )
     {
-        return "";
+        schema = indexDescriptor.schema;
+        type = indexDescriptor.type;
+        userSuppliedName =  indexDescriptor.userSuppliedName;
+        providerDescriptor = indexDescriptor.providerDescriptor;
     }
 
     public enum Type
     {
         GENERAL,
-        UNIQUE,
-        NON_SCHEMA
-    }
+        UNIQUE
 
+    }
     public enum Filter implements Predicate<IndexDescriptor>
     {
         GENERAL
@@ -71,14 +77,6 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
                         return index.type == Type.UNIQUE;
                     }
                 },
-        NON_SCHEMA
-                {
-                    @Override
-                    public boolean test( IndexDescriptor index )
-                    {
-                        return index.type == Type.NON_SCHEMA;
-                    }
-                },
         ANY
                 {
                     @Override
@@ -87,20 +85,23 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
                         return true;
                     }
                 }
-    }
 
+    }
     public interface Supplier
     {
-        IndexDescriptor getIndexDescriptor( IndexProviderMap indexProviderMap );
+        IndexDescriptor getIndexDescriptor();
+
     }
 
-    private final SchemaDescriptor schema;
-    private final IndexDescriptor.Type type;
-
-    public IndexDescriptor( SchemaDescriptor schema, Type type )
+    public IndexDescriptor( SchemaDescriptor schema,
+                            Type type,
+                            Optional<String> userSuppliedName,
+                            IndexProvider.Descriptor providerDescriptor )
     {
         this.schema = schema;
         this.type = type;
+        this.userSuppliedName = userSuppliedName;
+        this.providerDescriptor = providerDescriptor;
     }
 
     // METHODS
@@ -116,6 +117,53 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
         return schema;
     }
 
+    @Override
+    public boolean isUnique()
+    {
+        return type == Type.UNIQUE;
+    }
+
+    @Override
+    public int label()
+    {
+        return schema.keyId();
+    }
+
+    @Override
+    public int[] properties()
+    {
+        return schema.getPropertyIds();
+    }
+
+    @Override
+    public String providerKey()
+    {
+        return providerDescriptor.getKey();
+    }
+
+    @Override
+    public String providerVersion()
+    {
+        return providerDescriptor.getVersion();
+    }
+
+    public IndexProvider.Descriptor providerDescriptor()
+    {
+        return providerDescriptor;
+    }
+
+    @Override
+    public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+    {
+        return ORDER_NONE;
+    }
+
+    @Override
+    public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+    {
+        return IndexValueCapability.NO;
+    }
+
     /**
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
@@ -125,32 +173,12 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
         return format( "Index( %s, %s )", type.name(), schema.userDescription( tokenNameLookup ) );
     }
 
-    /**
-     * Checks whether an index descriptor Supplier supplies this index descriptor.
-     *
-     * @param supplier supplier to get a index descriptor from
-     * @return true if the supplied index descriptor equals this index descriptor
-     */
-    public boolean isSame( Supplier supplier, IndexProviderMap indexProviderMap )
-    {
-        return this.equals( supplier.getIndexDescriptor( indexProviderMap ) );
-    }
-
-    /**
-     * Returns the identifier for the index descriptor, or null if not applicable to this index type.
-     * @return the index identifier
-     */
-    public String identifier()
-    {
-        return null;
-    }
-
     @Override
     public boolean equals( Object o )
     {
         if ( o instanceof IndexDescriptor )
         {
-            IndexDescriptor that = (IndexDescriptor) o;
+            IndexDescriptor that = (IndexDescriptor)o;
             return this.type() == that.type() && this.schema().equals( that.schema() );
         }
         return false;
@@ -168,18 +196,14 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
         return userDescription( SchemaUtil.idTokenNameLookup );
     }
 
-    /**
-     * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
-     * hot path.
-     *
-     * @param indexes Indexes to sort
-     * @return sorted indexes
-     */
-    public static Iterator<IndexDescriptor> sortByType( Iterator<? extends IndexDescriptor> indexes )
+    public StoreIndexDescriptor withId( long id )
     {
-        List<? extends IndexDescriptor> materialized = Iterators.asList( indexes );
-        return Iterators.concat(
-                Iterators.filter( GENERAL, materialized.iterator() ),
-                Iterators.filter( UNIQUE, materialized.iterator() ) );
+        return new StoreIndexDescriptor( this, id );
+    }
+
+    public StoreIndexDescriptor withIds( long id, long owningConstraintId )
+    {
+        assert owningConstraintId >= 0;
+        return new StoreIndexDescriptor( this, id, owningConstraintId );
     }
 }

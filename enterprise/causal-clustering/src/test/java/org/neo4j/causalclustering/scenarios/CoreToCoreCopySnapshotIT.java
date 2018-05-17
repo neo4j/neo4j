@@ -49,9 +49,6 @@ import static org.neo4j.causalclustering.discovery.Cluster.dataOnMemberEventuall
 import static org.neo4j.causalclustering.scenarios.SampleData.createData;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-/**
- * Note that this test is extended in the blockdevice repository.
- */
 public class CoreToCoreCopySnapshotIT
 {
     protected static final int NR_CORE_MEMBERS = 3;
@@ -88,7 +85,6 @@ public class CoreToCoreCopySnapshotIT
 
     protected void deleteDirectoryRecursively( File directory, int id ) throws IOException
     {
-        // Extracted so the inheriting test in the block device repository can override it. id is used there.
         FileUtils.deleteRecursively( directory );
     }
 
@@ -135,10 +131,10 @@ public class CoreToCoreCopySnapshotIT
         coreParams.put( raft_log_pruning_frequency.name(), "100ms" );
         coreParams.put( state_machine_flush_window_size.name(), "64" );
         int numberOfTransactions = 100;
-        Timeout timeout = new Timeout( Clocks.systemClock(), 120, SECONDS );
 
         // start the cluster
         Cluster cluster = clusterRule.withSharedCoreParams( coreParams ).startCluster();
+        Timeout timeout = new Timeout( Clocks.systemClock(), 120, SECONDS );
 
         // accumulate some log files
         int firstServerLogFileCount;

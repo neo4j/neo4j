@@ -39,7 +39,6 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -74,7 +73,6 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -228,7 +226,7 @@ public class SchemaImpl implements Schema
         {
 
             SchemaRead schemaRead = transaction.schemaRead();
-            CapableIndexReference reference = getIndexReference( schemaRead, transaction.tokenRead(), index );
+            IndexReference reference = getIndexReference( schemaRead, transaction.tokenRead(), index );
             InternalIndexState indexState = schemaRead.indexGetState( reference );
             switch ( indexState )
             {
@@ -256,7 +254,7 @@ public class SchemaImpl implements Schema
         try ( Statement ignore = transaction.acquireStatement() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            CapableIndexReference descriptor = getIndexReference( schemaRead, transaction.tokenRead(), index );
+            IndexReference descriptor = getIndexReference( schemaRead, transaction.tokenRead(), index );
             PopulationProgress progress = schemaRead.indexGetPopulationProgress( descriptor );
             return new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
         }
@@ -274,7 +272,7 @@ public class SchemaImpl implements Schema
         try ( Statement ignore = transaction.acquireStatement() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            CapableIndexReference descriptor = getIndexReference( schemaRead, transaction.tokenRead(), index );
+            IndexReference descriptor = getIndexReference( schemaRead, transaction.tokenRead(), index );
             return schemaRead.indexGetFailure( descriptor );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
@@ -335,7 +333,7 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private static CapableIndexReference getIndexReference( SchemaRead schemaRead, TokenRead tokenRead,
+    private static IndexReference getIndexReference( SchemaRead schemaRead, TokenRead tokenRead,
             IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
@@ -343,8 +341,8 @@ public class SchemaImpl implements Schema
         int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( tokenRead, index.getPropertyKeys() );
         assertValidLabel( index.getLabel(), labelId );
         assertValidProperties( index.getPropertyKeys(), propertyKeyIds );
-        CapableIndexReference reference = schemaRead.index( labelId, propertyKeyIds );
-        if ( reference == CapableIndexReference.NO_INDEX )
+        IndexReference reference = schemaRead.index( labelId, propertyKeyIds );
+        if ( reference == IndexReference.NO_INDEX )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, forLabel( labelId, propertyKeyIds ) );
         }
@@ -354,7 +352,7 @@ public class SchemaImpl implements Schema
 
     private static void assertValidLabel( Label label, int labelId )
     {
-        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
+        if ( labelId == TokenRead.NO_TOKEN )
         {
             throw new NotFoundException( format( "Label %s not found", label.name() ) );
         }
@@ -364,7 +362,7 @@ public class SchemaImpl implements Schema
     {
         for ( int i = 0; i < propertyIds.length; i++ )
         {
-            if ( propertyIds[i] == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            if ( propertyIds[i] == TokenRead.NO_TOKEN )
             {
                 throw new NotFoundException(
                         format( "Property key %s not found", Iterables.asArray( String.class, properties )[i] ) );
@@ -498,7 +496,7 @@ public class SchemaImpl implements Schema
                 catch ( SchemaRuleNotFoundException | DropIndexFailureException e )
                 {
                     throw new ConstraintViolationException( e.getUserMessage(
-                            new SilentTokenNameLookup( transaction.tokenRead() ) ) );
+                            new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
                 catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {

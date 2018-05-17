@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -32,7 +34,6 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.storageengine.api.CommandsToApply;
 
-import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
 
 /**
@@ -42,10 +43,10 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier
 {
-    private final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
-    private final PrimitiveLongObjectMap<RelationshipCommand> relationshipCommandsById = longObjectMap();
-    private final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();
-    private final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipIds = longObjectMap();
+    private final MutableLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
+    private final MutableLongObjectMap<RelationshipCommand> relationshipCommandsById = longObjectMap();
+    private final MutableLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();
+    private final MutableLongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipIds = longObjectMap();
     private boolean hasUpdates;
 
     @Override
@@ -131,7 +132,7 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         return hasUpdates;
     }
 
-    public PrimitiveLongObjectMap<NodeCommand> nodeCommandsById()
+    public LongObjectMap<NodeCommand> nodeCommandsById()
     {
         return nodeCommandsById;
     }
@@ -141,7 +142,7 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         return relationshipCommandsById;
     }
 
-    public PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds()
+    public LongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds()
     {
         return propertyCommandsByNodeIds;
     }

@@ -62,9 +62,10 @@ public class ImportCommandTest
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        Importer importer = mock( Importer.class );
         when( mockImporterFactory
                 .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
-                .thenReturn( mock( Importer.class ) );
+                .thenReturn( importer );
 
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
         {
@@ -86,9 +87,10 @@ public class ImportCommandTest
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        Importer importer = mock( Importer.class );
         when( mockImporterFactory
                 .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
-                .thenReturn( mock( Importer.class ) );
+                .thenReturn( importer );
 
         ImportCommand importCommand =
                 new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(),
@@ -107,9 +109,10 @@ public class ImportCommandTest
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        Importer importer = mock( Importer.class );
         when( mockImporterFactory
                 .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
-                .thenReturn( mock( Importer.class ) );
+                .thenReturn( importer );
 
         ImportCommand importCommand =
                 new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(),

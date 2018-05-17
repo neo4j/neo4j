@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+
 /**
  * This exception is thrown when committing an updating transaction in a read only database. Can also be thrown when
  * trying to create tokens (like new property names) in a read only database.

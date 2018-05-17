@@ -23,24 +23,20 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
-public class InMemoryIndexProvider extends IndexProvider<SchemaIndexDescriptor>
+public class InMemoryIndexProvider extends IndexProvider
 {
     private final Map<Long, InMemoryIndex> indexes;
 
@@ -61,22 +57,16 @@ public class InMemoryIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
-        InMemoryIndex index = indexes.get( indexId );
+        InMemoryIndex index = indexes.get( descriptor.getId() );
         return index != null ? index.getState() : InternalIndexState.POPULATING;
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability()
     {
         return IndexCapability.NO_CAPABILITY;
-    }
-
-    @Override
-    public boolean compatible( IndexDescriptor indexDescriptor )
-    {
-        return indexDescriptor instanceof SchemaIndexDescriptor;
     }
 
     @Override
@@ -86,50 +76,35 @@ public class InMemoryIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
-    {
-        if ( type == GENERAL )
-        {
-            return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
-        }
-        else if ( type == UNIQUE )
-        {
-            return SchemaIndexDescriptorFactory.uniqueForLabelBySchema( schema );
-        }
-        throw new UnsupportedOperationException( String.format( "This provider does not support indexes of type %s", type ) );
-    }
-
-    @Override
-    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = descriptor.type() == UNIQUE
                 ? new UniqueInMemoryIndex( descriptor ) : new InMemoryIndex( descriptor );
-        indexes.put( indexId, index );
+        indexes.put( descriptor.getId(), index );
         return index.getPopulator();
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
-                                            IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        InMemoryIndex index = indexes.get( indexId );
+        InMemoryIndex index = indexes.get( descriptor.getId() );
         if ( index == null || index.getState() != InternalIndexState.ONLINE )
         {
-            throw new IllegalStateException( "Index " + indexId + " not online yet" );
+            throw new IllegalStateException( "Index " + descriptor.getId() + " not online yet" );
         }
         if ( descriptor.type() == UNIQUE && !(index instanceof UniqueInMemoryIndex) )
         {
             throw new IllegalStateException(
-                    String.format( "The index [%s] was not created as a unique index.", indexId )
+                    String.format( "The index [%s] was not created as a unique index.", descriptor.getId() )
             );
         }
         return index.getOnlineAccessor();
     }
 
     @Override
-    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
     {
-        String failure = indexes.get( indexId ).failure;
+        String failure = indexes.get( descriptor.getId() ).failure;
         if ( failure == null )
         {
             throw new IllegalStateException();

@@ -31,34 +31,32 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
-class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+abstract class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
 {
     final PageCache pageCache;
     final File storeFile;
     final Layout<KEY,VALUE> layout;
-    final GBPTreeFileUtil gbpTreeFileUtil;
-    final SchemaIndexDescriptor descriptor;
-    private final long indexId;
+    final FileSystemAbstraction fileSystem;
+    final IndexDescriptor descriptor;
     private final IndexProvider.Monitor monitor;
 
     protected GBPTree<KEY,VALUE> tree;
 
-    NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-                       IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId )
+    NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+            StoreIndexDescriptor descriptor )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;
         this.layout = layout;
-        this.gbpTreeFileUtil = new GBPTreeFileSystemFileUtil( fs );
+        this.fileSystem = fs;
         this.descriptor = descriptor;
-        this.indexId = indexId;
         this.monitor = monitor;
     }
 
@@ -77,7 +75,7 @@ class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends NativeSchemaV
             @Override
             public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
             {
-                monitor.recoveryCompleted( indexId, descriptor, map(
+                monitor.recoveryCompleted( descriptor, storeFile.getAbsolutePath(), map(
                         "Number of pages visited", numberOfPagesVisited,
                         "Number of cleaned crashed pointers", numberOfCleanedCrashPointers,
                         "Time spent", duration( durationMillis ) ) );
@@ -87,9 +85,7 @@ class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends NativeSchemaV
 
     private void ensureDirectoryExist() throws IOException
     {
-        // This will create the directory on the "normal" file system.
-        // When native index is put on blockdevice, page cache file system should be used instead.
-        gbpTreeFileUtil.mkdirs( storeFile.getParentFile() );
+        fileSystem.mkdirs( storeFile.getParentFile() );
     }
 
     void closeTree() throws IOException
@@ -97,7 +93,7 @@ class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends NativeSchemaV
         tree = closeIfPresent( tree );
     }
 
-    <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
+    private <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
     {
         if ( closeable != null )
         {

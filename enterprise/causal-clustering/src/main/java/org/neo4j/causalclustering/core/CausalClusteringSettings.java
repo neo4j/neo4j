@@ -21,26 +21,25 @@ package org.neo4j.causalclustering.core;
 
 import java.io.File;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
+import org.neo4j.causalclustering.discovery.DnsHostnameResolver;
+import org.neo4j.causalclustering.discovery.DomainNameResolverImpl;
+import org.neo4j.causalclustering.discovery.HostnameResolver;
+import org.neo4j.causalclustering.discovery.NoOpHostnameResolver;
+import org.neo4j.causalclustering.discovery.SrvHostnameResolver;
+import org.neo4j.causalclustering.discovery.SrvRecordResolverImpl;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
-import org.neo4j.graphdb.config.BaseSetting;
-import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.helpers.collection.CollectorsUtil;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;
@@ -64,11 +63,11 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.determineDefaultLookup;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.prefixSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description( "Settings for Causal Clustering" )
@@ -88,7 +87,12 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Boolean> refuse_to_be_leader =
             setting( "causal_clustering.refuse_to_be_leader", BOOLEAN, FALSE );
 
-    @Description( "The name of the database hosted by this server instance" )
+    @Description( "The name of the database being hosted by this server instance. This configuration setting may be safely ignored " +
+            "unless deploying a multicluster. Instances may be allocated to distinct sub-clusters by assigning them distinct database " +
+            "names using this setting. For instance if you had 6 instances you could form 2 sub-clusters by assigning half " +
+            "the database name \"foo\", half the name \"bar\". The setting value must match exactly between members of the same sub-cluster. " +
+            "This setting is a one-off: once an instance is configured with a database name it may not be changed in future without using " +
+            "neo4j-admin unbind." )
     public static final Setting<String> database =
             setting( "causal_clustering.database", STRING, "default" );
 
@@ -133,11 +137,14 @@ public class CausalClusteringSettings implements LoadableConfig
             "setting alone. If you have 5 machines then you can survive failures down to 3 remaining, e.g. with 2 dead members. The three remaining can " +
             "still vote another replacement member in successfully up to a total of 6 (2 of which are still dead) and then after this, one of the " +
             "superfluous dead members will be immediately and automatically voted out (so you are left with 5 members in the consensus group, 1 of which " +
-            "is currently dead). Operationally you can now bring the last machine up by bringing in another replacement or repairing the dead one." )
+            "is currently dead). Operationally you can now bring the last machine up by bringing in another replacement or repairing the dead one. " +
+            "When using multi-clustering (configuring multiple distinct database names across core hosts), this setting is used to define the minimum size " +
+            "of *each* sub-cluster at runtime." )
     public static final Setting<Integer> minimum_core_cluster_size_at_runtime =
             buildSetting( "causal_clustering.minimum_core_cluster_size_at_runtime", INTEGER, "3" ).constraint( min( 2 ) ).build();
 
-    @Description( "Network interface and port for the transaction shipping server to listen on." )
+    @Description( "Network interface and port for the transaction shipping server to listen on. Please note that it is also possible to run the backup " +
+            "client against this port so always limit access to it via the firewall and configure an ssl policy." )
     public static final Setting<ListenSocketAddress> transaction_listen_address =
             listenAddress( "causal_clustering.transaction_listen_address", 6000 );
 
@@ -181,8 +188,23 @@ public class CausalClusteringSettings implements LoadableConfig
 
     public enum DiscoveryType
     {
-        DNS,
-        LIST
+        DNS( ( logProvider, userLogProvider ) -> new DnsHostnameResolver( logProvider, userLogProvider, new DomainNameResolverImpl() ) ),
+
+        LIST( ( logProvider, userLogProvider ) -> new NoOpHostnameResolver() ),
+
+        SRV( ( logProvider, userLogProvider ) -> new SrvHostnameResolver( logProvider, userLogProvider, new SrvRecordResolverImpl() ) );
+
+        private final BiFunction<LogProvider,LogProvider,HostnameResolver> resolverSupplier;
+
+        DiscoveryType( BiFunction<LogProvider,LogProvider,HostnameResolver> resolverSupplier )
+        {
+            this.resolverSupplier = resolverSupplier;
+        }
+
+        public HostnameResolver getHostnameResolver( LogProvider logProvider, LogProvider userLogProvider )
+        {
+            return this.resolverSupplier.apply( logProvider, userLogProvider );
+        }
     }
 
     @Description( "Configure the discovery type used for cluster name resolution" )
@@ -292,6 +314,15 @@ public class CausalClusteringSettings implements LoadableConfig
             "Every message received by the client from the server extends the time out duration." )
     public static final Setting<Duration> catch_up_client_inactivity_timeout =
             setting( "causal_clustering.catch_up_client_inactivity_timeout", DURATION, "20s" );
+
+    @Description( "Maximum retry time per request during store copy. Regular store files and indexes are downloaded in separate requests during store copy." +
+            " This configures the maximum time failed requests are allowed to resend. " )
+    public static final Setting<Duration> store_copy_max_retry_time_per_request =
+            setting( "causal_clustering.store_copy_max_retry_time_per_request", DURATION, "20m" );
+
+    @Description( "Maximum backoff timeout for store copy requests" )
+    @Internal
+    public static final Setting<Duration> store_copy_backoff_max_wait = setting( "causal_clustering.store_copy_backoff_max_wait", DURATION, "5s" );
 
     @Description( "Throttle limit for logging unknown cluster member address" )
     public static final Setting<Duration> unknown_address_logging_throttle =
@@ -438,39 +469,7 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.load_balancing.plugin", STRING, "server_policies" );
 
     @Description( "Time out for protocol negotiation handshake" )
-    public static final Setting<Duration> handshake_timeout =
-            setting( "causal_clustering.handshake_timeout", DURATION, "5000ms" );
-
-    static BaseSetting<String> prefixSetting( final String name, final Function<String, String> parser,
-                                              final String defaultValue )
-    {
-        BiFunction<String, Function<String, String>, String> valueLookup = ( n, settings ) -> settings.apply( n );
-        BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue,
-                valueLookup );
-
-        return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup, Collections.emptyList() )
-        {
-            @Override
-            public Map<String, String> validate( Map<String, String> rawConfig, Consumer<String> warningConsumer )
-                    throws InvalidSettingException
-            {
-                // Validate setting, if present or default value otherwise
-                try
-                {
-                    apply( rawConfig::get );
-                    // only return if it was present though
-
-                    return rawConfig.entrySet().stream()
-                            .filter( entry -> entry.getKey().startsWith( name() ) )
-                            .collect( CollectorsUtil.entriesToMap() );
-                }
-                catch ( RuntimeException e )
-                {
-                    throw new InvalidSettingException( e.getMessage(), e );
-                }
-            }
-        };
-    }
+    public static final Setting<Duration> handshake_timeout = setting( "causal_clustering.handshake_timeout", DURATION, "20s" );
 
     @Description( "The configuration must be valid for the configured plugin and usually exists" +
             "under matching subkeys, e.g. ..config.server_policies.*" +

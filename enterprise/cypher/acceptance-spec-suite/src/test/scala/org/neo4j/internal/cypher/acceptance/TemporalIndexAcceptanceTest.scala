@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.time.{ZoneId, ZoneOffset}
+import java.time._
 
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs, TestConfiguration}
 import org.neo4j.values.storable._
 
 class TemporalIndexAcceptanceTest extends IndexingTestSupport {
@@ -36,6 +36,67 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
     assertSeek(TimeValue.time(101010, ZoneOffset.UTC))
     assertSeek(LocalTimeValue.localTime(12345))
     assertSeek(DurationValue.duration(41, 32, 23, 14))
+  }
+
+  test("should seek for arrays") {
+    createIndex()
+
+    // Length 1
+    assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObjectCopy())))
+    assertSeek(Values.dateTimeArray(Array(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC).asObjectCopy())))
+    assertSeek(Values.localDateTimeArray(Array(LocalDateTimeValue.localDateTime(10000, 100).asObjectCopy())))
+    assertSeek(Values.timeArray(Array(TimeValue.time(101010, ZoneOffset.UTC).asObjectCopy())))
+    assertSeek(Values.localTimeArray(Array(LocalTimeValue.localTime(12345).asObjectCopy())))
+    assertSeek(Values.durationArray(Array(DurationValue.duration(41, 32, 23, 14).asObjectCopy())))
+
+    // Length 2
+    assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObjectCopy(),
+                                      DateValue.epochDate(20000).asObjectCopy())))
+
+    assertSeek(Values.dateTimeArray(Array(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC).asObjectCopy(),
+                                           DateTimeValue.datetime(10000, 200, ZoneOffset.UTC).asObjectCopy())))
+
+    assertSeek(Values.localDateTimeArray(Array(LocalDateTimeValue.localDateTime(10000, 100).asObjectCopy(),
+                                               LocalDateTimeValue.localDateTime(10000, 200).asObjectCopy())))
+
+    assertSeek(Values.timeArray(Array(TimeValue.time(101010, ZoneOffset.UTC).asObjectCopy(),
+                                      TimeValue.time(202020, ZoneOffset.UTC).asObjectCopy())))
+
+    assertSeek(Values.localTimeArray(Array(LocalTimeValue.localTime(12345).asObjectCopy(),
+                                           LocalTimeValue.localTime(23456).asObjectCopy())))
+
+    assertSeek(Values.durationArray(Array(DurationValue.duration(41, 32, 23, 14).asObjectCopy(),
+                                          DurationValue.duration(12, 34, 56, 78).asObjectCopy())))
+  }
+
+  test("should distinguish between duration array and string array") {
+    // Given
+    val durArray = Values.durationArray(Array(DurationValue.duration(0, 0, 1800, 0), DurationValue.duration(0, 1, 0, 0))).asObject()
+    val stringArray = Values.stringArray("PT30M", "P1D").asObject()
+
+    val n1 = createLabeledNode(Map("results" -> durArray), "Runner")
+    createLabeledNode(Map("results" -> stringArray), "Runner")
+
+    // When
+    val query =
+      """
+        |MATCH (n:Runner)
+        |WHERE n.results = [duration('PT30M'), duration('P1D')]
+        |RETURN n
+      """.stripMargin
+
+    val resultNoIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+
+    graph.createIndex("Runner", "results")
+    val resultIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("NodeIndexSeek")
+      }))
+
+    // Then
+    resultNoIndex.toComparableResult should equal(List(Map("n" -> n1)))
+    resultIndex.toComparableResult should equal(resultNoIndex.toComparableResult)
   }
 
   test("should range scan") {

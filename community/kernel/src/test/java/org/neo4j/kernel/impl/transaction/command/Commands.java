@@ -27,11 +27,12 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
@@ -146,12 +148,11 @@ public class Commands
     public static SchemaRuleCommand createIndexRule( IndexProvider.Descriptor provider,
             long id, LabelSchemaDescriptor descriptor )
     {
-        SchemaRule rule = IndexRule.forSchema(
-                id, descriptor ).withProvider( provider ).build();
+        SchemaRule rule = IndexDescriptorFactory.forSchema( descriptor, provider ).withId( id );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );
         record.setCreated();
-        record.setData( rule.serialize() );
+        record.setData( SchemaRuleSerialization.serialize( rule ) );
         return new SchemaRuleCommand( Collections.emptyList(), singletonList( record ), rule );
     }
 

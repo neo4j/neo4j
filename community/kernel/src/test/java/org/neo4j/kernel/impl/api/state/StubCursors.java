@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
@@ -33,7 +35,6 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
@@ -51,7 +52,7 @@ public class StubCursors
         NodeItem[] nodeItems = new NodeItem[nodeIds.length];
         for ( int i = 0; i < nodeIds.length; i++ )
         {
-            nodeItems[i] = new StubNodeItem( nodeIds[i], -1, emptySet() );
+            nodeItems[i] = new StubNodeItem( nodeIds[i], -1, IntSets.mutable.empty() );
         }
         return cursor( nodeItems );
     }
@@ -63,15 +64,15 @@ public class StubCursors
 
     public static Cursor<NodeItem> asNodeCursor( long nodeId, long propertyId )
     {
-        return asNodeCursor( nodeId, propertyId, emptySet() );
+        return asNodeCursor( nodeId, propertyId, IntSets.mutable.empty() );
     }
 
-    public static Cursor<NodeItem> asNodeCursor( long nodeId, PrimitiveIntSet labels )
+    public static Cursor<NodeItem> asNodeCursor( long nodeId, MutableIntSet labels )
     {
         return cursor( new StubNodeItem( nodeId, -1, labels ) );
     }
 
-    public static Cursor<NodeItem> asNodeCursor( long nodeId, long propertyId, PrimitiveIntSet labels )
+    public static Cursor<NodeItem> asNodeCursor( long nodeId, long propertyId, MutableIntSet labels )
     {
         return cursor( new StubNodeItem( nodeId, propertyId, labels ) );
     }
@@ -80,9 +81,9 @@ public class StubCursors
     {
         private final long nodeId;
         private final long propertyId;
-        private final PrimitiveIntSet labels;
+        private final MutableIntSet labels;
 
-        private StubNodeItem( long nodeId, long propertyId, PrimitiveIntSet labels )
+        private StubNodeItem( long nodeId, long propertyId, MutableIntSet labels )
         {
             this.nodeId = nodeId;
             this.propertyId = propertyId;
@@ -126,7 +127,7 @@ public class StubCursors
         }
 
         @Override
-        public PrimitiveIntSet labels()
+        public MutableIntSet labels()
         {
             return labels;
         }
@@ -243,9 +244,9 @@ public class StubCursors
         } );
     }
 
-    public static PrimitiveIntSet labels( final int... labels )
+    public static MutableIntSet labels( final int... labels )
     {
-        return PrimitiveIntCollections.asSet( labels );
+        return IntHashSet.newSetWith( labels );
     }
 
     public static Cursor<PropertyItem> asPropertyCursor( final PropertyKeyValue... properties )

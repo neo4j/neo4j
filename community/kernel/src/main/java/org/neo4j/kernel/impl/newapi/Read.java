@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -36,6 +35,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
@@ -108,9 +108,17 @@ abstract class Read implements TxStateHolder,
             return;
         }
 
-        ((DefaultNodeValueIndexCursor) cursor).setRead( this );
-        IndexProgressor.NodeValueClient target = (DefaultNodeValueIndexCursor) cursor;
-        IndexReader reader = indexReader( index );
+        DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
+        IndexReader reader = indexReader( index, false );
+        cursorImpl.setRead( this, null );
+        IndexProgressor.NodeValueClient target = withFullValuePrecision( cursorImpl, query, reader );
+        reader.query( target, indexOrder, query );
+    }
+
+    private IndexProgressor.NodeValueClient withFullValuePrecision( DefaultNodeValueIndexCursor cursor,
+            IndexQuery[] query, IndexReader reader )
+    {
+        IndexProgressor.NodeValueClient target = cursor;
         if ( !reader.hasFullValuePrecision( query ) )
         {
             IndexQuery[] filters = new IndexQuery[query.length];
@@ -121,7 +129,7 @@ abstract class Read implements TxStateHolder,
                 {
                 case range:
                     ValueGroup valueGroup = q.valueGroup();
-                    if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY ) && !reader.hasFullValuePrecision( q ) )
+                    if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY) && !reader.hasFullValuePrecision( q ) )
                     {
                         filters[j++] = q;
                     }
@@ -147,10 +155,11 @@ abstract class Read implements TxStateHolder,
                         cursors.allocatePropertyCursor(), this, filters );
             }
         }
-        reader.query( target, indexOrder, query );
+        return target;
     }
 
-    public final long nodeUniqueIndexSeek(
+    @Override
+    public final long lockingNodeUniqueIndexSeek(
             IndexReference index,
             IndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
@@ -166,14 +175,14 @@ abstract class Read implements TxStateHolder,
         //First try to find node under a shared lock
         //if not found upgrade to exclusive and try again
         locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
-        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
+        try ( DefaultNodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
         {
-            nodeIndexSeek( index, cursor, IndexOrder.NONE, predicates );
+            nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
             if ( !cursor.next() )
             {
                 locks.releaseShared( INDEX_ENTRY, indexEntryId );
                 locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
-                nodeIndexSeek( index, cursor, IndexOrder.NONE, predicates );
+                nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
                 if ( cursor.next() ) // we found it under the exclusive lock
                 {
                     // downgrade to a shared lock
@@ -184,6 +193,17 @@ abstract class Read implements TxStateHolder,
 
             return cursor.nodeReference();
         }
+    }
+
+    void nodeIndexSeekWithFreshIndexReader(
+            IndexReference index,
+            DefaultNodeValueIndexCursor cursor,
+            IndexQuery.ExactPredicate... query ) throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+    {
+        IndexReader reader = indexReader( index, true );
+        cursor.setRead( this, reader );
+        IndexProgressor.NodeValueClient target = withFullValuePrecision( cursor, query, reader );
+        reader.query( target, IndexOrder.NONE, query );
     }
 
     @Override
@@ -201,8 +221,8 @@ abstract class Read implements TxStateHolder,
 
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
-        ((DefaultNodeValueIndexCursor) cursor).setRead( this );
-        indexReader( index ).query( (DefaultNodeValueIndexCursor) cursor, indexOrder, IndexQuery.exists( firstProperty ) );
+        ((DefaultNodeValueIndexCursor) cursor).setRead( this, null );
+        indexReader( index, false ).query( (DefaultNodeValueIndexCursor) cursor, indexOrder, IndexQuery.exists( firstProperty ) );
     }
 
     private boolean hasForbiddenProperties( IndexReference index )
@@ -431,19 +451,19 @@ abstract class Read implements TxStateHolder,
 
     @Override
     public final void nodeExplicitIndexLookup(
-            NodeExplicitIndexCursor cursor, String index, String key, Value value )
-            throws KernelException
+            NodeExplicitIndexCursor cursor, String index, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (DefaultNodeExplicitIndexCursor) cursor,
-                explicitNodeIndex( index ).get( key, value.asObject() ) );
+                explicitNodeIndex( index ).get( key, value ) );
     }
 
     @Override
     public final void nodeExplicitIndexQuery(
             NodeExplicitIndexCursor cursor, String index, Object query )
-            throws KernelException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
@@ -454,7 +474,7 @@ abstract class Read implements TxStateHolder,
     @Override
     public final void nodeExplicitIndexQuery(
             NodeExplicitIndexCursor cursor, String index, String key, Object query )
-            throws KernelException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
@@ -467,15 +487,15 @@ abstract class Read implements TxStateHolder,
             RelationshipExplicitIndexCursor cursor,
             String index,
             String key,
-            Value value,
+            Object value,
             long source,
-            long target ) throws KernelException
+            long target ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
                 (DefaultRelationshipExplicitIndexCursor) cursor,
-                explicitRelationshipIndex( index ).get( key, value.asObject(), source, target ) );
+                explicitRelationshipIndex( index ).get( key, value, source, target ) );
     }
 
     @Override
@@ -484,7 +504,7 @@ abstract class Read implements TxStateHolder,
             String index,
             Object query,
             long source,
-            long target ) throws KernelException
+            long target ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
@@ -501,7 +521,7 @@ abstract class Read implements TxStateHolder,
             String key,
             Object query,
             long source,
-            long target ) throws KernelException
+            long target ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
@@ -540,16 +560,16 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
     }
 
-    abstract IndexReader indexReader( IndexReference index ) throws IndexNotFoundKernelException;
+    abstract IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException;
 
     abstract LabelScanReader labelScanReader();
 
-    abstract ExplicitIndex explicitNodeIndex( String indexName ) throws KernelException;
+    abstract ExplicitIndex explicitNodeIndex( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
-    abstract ExplicitIndex explicitRelationshipIndex( String indexName ) throws KernelException;
+    abstract ExplicitIndex explicitRelationshipIndex( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
     @Override
-    public abstract CapableIndexReference index( int label, int... properties );
+    public abstract IndexReference index( int label, int... properties );
 
     abstract PageCursor nodePage( long reference );
 

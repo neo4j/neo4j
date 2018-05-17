@@ -48,7 +48,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -60,7 +59,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -434,7 +433,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void drop() throws IOException
+        public void drop()
         {
             delegate.drop();
         }
@@ -495,12 +494,6 @@ public class SchemaIndexHaIT
         private final IndexProvider delegate;
         private final DoubleLatch latch = new DoubleLatch();
 
-        @Override
-        public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, IndexDescriptor.Type type, String name, String metadata )
-        {
-            return delegate.indexDescriptorFor( schema, type, name, metadata );
-        }
-
         ControlledIndexProvider( IndexProvider delegate )
         {
             super( CONTROLLED_PROVIDER_DESCRIPTOR, 100 /*we want it to always win*/, given( delegate.directoryStructure() ) );
@@ -508,36 +501,28 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
-                                            IndexSamplingConfig samplingConfig )
+        public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
         {
-            IndexPopulator populator = delegate.getPopulator( indexId, descriptor, samplingConfig );
+            IndexPopulator populator = delegate.getPopulator( descriptor, samplingConfig );
             return new ControlledIndexPopulator( populator, latch );
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
-                                                IndexSamplingConfig samplingConfig  ) throws IOException
+        public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
         {
-            return delegate.getOnlineAccessor(indexId, descriptor, samplingConfig );
+            return delegate.getOnlineAccessor( descriptor, samplingConfig );
         }
 
         @Override
-        public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
+        public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
         {
-            return delegate.getInitialState( indexId, descriptor );
+            return delegate.getInitialState( descriptor );
         }
 
         @Override
-        public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+        public IndexCapability getCapability()
         {
-            return delegate.getCapability( indexDescriptor );
-        }
-
-        @Override
-        public boolean compatible( IndexDescriptor indexDescriptor )
-        {
-            return delegate.compatible( indexDescriptor );
+            return delegate.getCapability();
         }
 
         @Override
@@ -547,9 +532,9 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+        public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
         {
-            return delegate.getPopulationFailure( indexId, descriptor );
+            return delegate.getPopulationFailure( descriptor );
         }
     }
 

@@ -267,7 +267,8 @@ public class HazelcastClientTest
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenThrow( new IllegalStateException() );
-        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
+        IAtomicReference iAtomicReference = mock( IAtomicReference.class );
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( iAtomicReference );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
@@ -310,7 +311,8 @@ public class HazelcastClientTest
         HazelcastMultiMap hazelcastMultiMap = new HazelcastMultiMap();
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
-        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
+        IAtomicReference iAtomicReference = mock( IAtomicReference.class );
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( iAtomicReference );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( hazelcastMap );
         when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( hazelcastMultiMap );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
@@ -354,7 +356,8 @@ public class HazelcastClientTest
         HazelcastMap hazelcastMap = new HazelcastMap();
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
-        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
+        IAtomicReference iAtomicReference = mock( IAtomicReference.class );
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( iAtomicReference );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( hazelcastMap );
         when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );

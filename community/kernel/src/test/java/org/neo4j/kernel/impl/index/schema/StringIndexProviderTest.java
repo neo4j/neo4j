@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -46,6 +47,12 @@ public class StringIndexProviderTest extends NativeIndexProviderTest
                                                               RecoveryCleanupWorkCollector collector )
     {
         return new StringIndexProvider( pageCache, fs, dir, monitor, collector, true );
+    }
+
+    @Override
+    protected InternalIndexState expectedStateOnNonExistingSubIndex()
+    {
+        return InternalIndexState.POPULATING;
     }
 
     @Override

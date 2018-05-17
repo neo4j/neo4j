@@ -29,7 +29,7 @@ public class NodeValueIndexCursorLuceneTest extends AbstractNodeValueIndexCursor
     public ReadTestSupport newTestSupport()
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, LUCENE10.param() );
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, LUCENE10.providerName() );
         return readTestSupport;
     }
 
@@ -43,5 +43,11 @@ public class NodeValueIndexCursorLuceneTest extends AbstractNodeValueIndexCursor
     protected String providerVersion()
     {
         return "1.0";
+    }
+
+    @Override
+    protected boolean spatialRangeSupport()
+    {
+        return true;
     }
 }

@@ -26,7 +26,6 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,18 +33,19 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -139,25 +139,25 @@ public class SimpleIndexReaderTest
     public void uniqueIndexSamplerForUniqueIndex()
     {
         SimpleIndexReader uniqueSimpleReader = getUniqueSimpleReader();
-        Assert.assertThat( uniqueSimpleReader.createSampler(), instanceOf( UniqueLuceneIndexSampler.class ) );
+        assertThat( uniqueSimpleReader.createSampler(), instanceOf( UniqueLuceneIndexSampler.class ) );
     }
 
     @Test
     public void nonUuniqueIndexSamplerForNonUniqueIndex()
     {
         SimpleIndexReader uniqueSimpleReader = getNonUniqueSimpleReader();
-        Assert.assertThat( uniqueSimpleReader.createSampler(), instanceOf( NonUniqueLuceneIndexSampler.class) );
+        assertThat( uniqueSimpleReader.createSampler(), instanceOf( NonUniqueLuceneIndexSampler.class ) );
     }
 
     private SimpleIndexReader getNonUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, SchemaIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
-                taskCoordinator );
+        return new SimpleIndexReader( partitionSearcher, TestIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
+                                      taskCoordinator );
     }
 
     private SimpleIndexReader getUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, SchemaIndexDescriptorFactory.uniqueForLabel( 0, 0 ),
-                samplingConfig, taskCoordinator );
+        return new SimpleIndexReader( partitionSearcher, TestIndexDescriptorFactory.uniqueForLabel( 0, 0 ),
+                                      samplingConfig, taskCoordinator );
     }
 }

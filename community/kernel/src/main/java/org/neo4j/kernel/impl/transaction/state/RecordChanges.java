@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
@@ -35,7 +36,7 @@ import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
  */
 public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
 {
-    private PrimitiveLongObjectMap<RecordProxy<RECORD,ADDITIONAL>> recordChanges = Primitive.longObjectMap();
+    private MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> recordChanges = new LongObjectHashMap<>();
     private final Loader<RECORD,ADDITIONAL> loader;
     private final IntCounter changeCounter;
 
@@ -102,7 +103,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         else
         {
             // Let's not allow the internal maps to grow too big over time.
-            recordChanges = Primitive.longObjectMap();
+            recordChanges = new LongObjectHashMap<>();
         }
         changeCounter.clear();
     }
@@ -130,7 +131,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
 
     public static class RecordChange<RECORD,ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>
     {
-        private final PrimitiveLongObjectMap<RecordProxy<RECORD,ADDITIONAL>> allChanges;
+        private final MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges;
         private final IntCounter changeCounter;
         private final Loader<RECORD,ADDITIONAL> loader;
 
@@ -142,7 +143,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         private RECORD before;
         private boolean changed;
 
-        public RecordChange( PrimitiveLongObjectMap<RecordProxy<RECORD,ADDITIONAL>> allChanges, IntCounter changeCounter,
+        public RecordChange( MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges, IntCounter changeCounter,
                 long key, RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData )
         {
             this.allChanges = allChanges;

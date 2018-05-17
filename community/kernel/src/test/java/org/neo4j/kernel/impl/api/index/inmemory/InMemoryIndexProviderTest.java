@@ -43,6 +43,6 @@ public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSui
     @Override
     public boolean supportsTemporal()
     {
-        return false;
+        return true;
     }
 }

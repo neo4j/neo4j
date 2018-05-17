@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
-class StubRelationshipCursor implements RelationshipTraversalCursor
+public class StubRelationshipCursor implements RelationshipTraversalCursor
 {
     private final List<TestRelationshipChain> store;
 
@@ -34,7 +34,7 @@ class StubRelationshipCursor implements RelationshipTraversalCursor
     private int chainId;
     private boolean isClosed;
 
-    StubRelationshipCursor( TestRelationshipChain chain )
+    public StubRelationshipCursor( TestRelationshipChain chain )
     {
         this( Collections.singletonList( chain ) );
     }
@@ -148,12 +148,6 @@ class StubRelationshipCursor implements RelationshipTraversalCursor
     {
         offset++;
         return store.get( chainId ).isValidOffset( offset );
-    }
-
-    @Override
-    public boolean shouldRetry()
-    {
-        return false;
     }
 
     @Override

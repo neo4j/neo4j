@@ -26,49 +26,51 @@ import java.util.Set;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
+import static java.util.Arrays.copyOf;
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
-import static org.neo4j.values.storable.UTF8StringValue.codePointByteArrayCompare;
+import static org.neo4j.values.storable.UTF8StringValue.byteArrayCompare;
 
 abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,NativeSchemaValue>
 {
-    StringLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
+    StringLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }
 
     @Override
-    IndexQuery rangeQuery( Object from, boolean fromInclusive, Object to, boolean toInclusive )
+    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
     {
-        return IndexQuery.range( 0, (String) from, fromInclusive, (String) to, toInclusive );
+        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
     }
 
     @Override
     int compareIndexedPropertyValue( StringSchemaKey key1, StringSchemaKey key2 )
     {
-        return codePointByteArrayCompare( key1.bytes, key2.bytes );
+        return byteArrayCompare(
+                copyOf( key1.bytes, key1.bytesLength ),
+                copyOf( key2.bytes, key2.bytesLength ) );
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return generateAddUpdatesFor( STRINGS );
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( STRINGS );
     }
 
     @Override
-    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         Collection<String> duplicates = new ArrayList<>( asList( STRINGS ) );
         duplicates.addAll( asList( STRINGS ) );
@@ -76,16 +78,15 @@ abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,Nativ
     }
 
     @Override
-    protected Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    protected Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
     {
-        String candidate;
+        TextValue candidate;
         do
         {
-            candidate = random.string();
+            candidate = random.nextTextValue();
         }
-        while ( !uniqueCompareValues.add( candidate ) );
-        TextValue result = Values.stringValue( candidate );
-        uniqueValues.add( result );
-        return result;
+        while ( !uniqueCompareValues.add( candidate.stringValue() ) );
+        uniqueValues.add( candidate );
+        return candidate;
     }
 }

@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.net.URI;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,19 +42,22 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
+import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -62,6 +66,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.neo4j.causalclustering.discovery.RoleInfo.FOLLOWER;
 import static org.neo4j.causalclustering.discovery.RoleInfo.LEADER;
 import static org.neo4j.causalclustering.discovery.RoleInfo.READ_REPLICA;
@@ -266,13 +271,48 @@ public class ClusterOverviewIT
         }
     }
 
+    @Test
+    public void shouldDiscoverTimeoutBasedLeaderStepdown() throws Exception
+    {
+        clusterRule.withNumberOfCoreMembers( 3 );
+        clusterRule.withNumberOfReadReplicas( 2 );
+
+        Cluster cluster = clusterRule.startCluster();
+        List<CoreClusterMember> followers = cluster.getAllMembersWithRole( Role.FOLLOWER );
+        CoreClusterMember leader = cluster.getMemberWithRole( Role.LEADER );
+        followers.forEach( CoreClusterMember::shutdown );
+
+        assertEventualOverview( cluster, containsRole( LEADER, 0 ), leader.serverId() );
+    }
+
+    @Test
+    public void shouldDiscoverGreaterTermBasedLeaderStepdown() throws Exception
+    {
+        int originalCoreMembers = 3;
+        clusterRule.withNumberOfCoreMembers( originalCoreMembers );
+
+        Cluster cluster = clusterRule.startCluster();
+        CoreClusterMember leader = cluster.awaitLeader();
+        leader.config().augment( CausalClusteringSettings.refuse_to_be_leader, Settings.TRUE );
+
+        List<MemberInfo> preElectionOverview = clusterOverview( leader.database() );
+
+        CoreClusterMember follower = cluster.getMemberWithRole( Role.FOLLOWER );
+        follower.raft().triggerElection( Clock.systemUTC() );
+
+        assertEventualOverview( cluster, allOf(
+                containsRole( LEADER, 1 ),
+                containsRole( FOLLOWER, originalCoreMembers - 1 ),
+                not( equalTo( preElectionOverview ) ) ), leader.serverId() );
+    }
+
     private void assertEventualOverview( Cluster cluster, Matcher<List<MemberInfo>> expected, int coreServerId )
             throws KernelException, InterruptedException
     {
         Function<List<MemberInfo>, String> printableMemberInfos =
                 memberInfos -> memberInfos.stream().map( MemberInfo::toString ).collect( Collectors.joining( ", " ) );
         assertEventually( memberInfos -> "should have overview from core " + coreServerId + " but view was " + printableMemberInfos.apply( memberInfos ),
-                () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 60, SECONDS );
+                () -> clusterOverview( cluster.getCoreMemberById( coreServerId ).database() ), expected, 90, SECONDS );
     }
 
     @SafeVarargs
@@ -332,24 +372,22 @@ public class ClusterOverviewIT
     private List<MemberInfo> clusterOverview( GraphDatabaseFacade db )
             throws TransactionFailureException, ProcedureException
     {
-        InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
-        KernelTransaction transaction = kernel.newTransaction( Type.implicit, AnonymousContext.read() );
+        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+
         List<MemberInfo> infos = new ArrayList<>();
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( Session session = kernel.beginSession( AnonymousContext.read() ); Transaction tx = session.beginTransaction( Type.implicit ) )
         {
-            RawIterator<Object[],ProcedureException> itr = statement.procedureCallOperations().procedureCallRead(
-                    procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
+            RawIterator<Object[],ProcedureException> itr =
+                    tx.procedures().procedureCallRead( procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
 
             while ( itr.hasNext() )
             {
                 Object[] row = itr.next();
                 List<String> addresses = (List<String>) row[1];
-                infos.add( new MemberInfo( addresses.toArray( new String[addresses.size()] ),
-                        RoleInfo.valueOf( (String) row[2] ) ) );
+                infos.add( new MemberInfo( addresses.toArray( new String[addresses.size()] ), RoleInfo.valueOf( (String) row[2] ) ) );
             }
+            return infos;
         }
-
-        return infos;
     }
 
     private static class MemberInfo

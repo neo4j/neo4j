@@ -21,6 +21,8 @@ package org.neo4j.values.storable;
 
 import org.junit.Test;
 
+import org.neo4j.values.utils.InvalidValuesArgumentException;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
@@ -46,7 +48,7 @@ public class CoordinateReferenceSystemTest
             CoordinateReferenceSystem.get( 42 );
             fail( "Exception expected" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidValuesArgumentException e )
         {
             assertEquals( "Unknown coordinate reference system code: 42", e.getMessage() );
         }
@@ -116,7 +118,7 @@ public class CoordinateReferenceSystemTest
         PointValue malmo = geo( 12.994341, 55.611784, 0.0 );
         PointValue malmoHigh = geo( 12.994341, 55.611784, 1000.0 );
         double expected = 27842.0;
-        double expectedHigh = 27860.0;
+        double expectedHigh = 27862.0;
         assertThat( "3D distance should match", crs.getCalculator().distance( cph, malmo ), closeTo( expected, 0.1 ) );
         assertThat( "3D distance should match", crs.getCalculator().distance( cph, malmoHigh ), closeTo( expectedHigh, 0.2 ) );
         assertThat( "3D distance should match", crs.getCalculator().distance( cphHigh, malmo ), closeTo( expectedHigh, 0.2 ) );

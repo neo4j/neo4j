@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursorTestBase;
 
-public class NodeLabelIndexCursorTest extends NodeLabelIndexCursorTestBase<ReadTestSupport>
+public class NodeLabelIndexCursorTest extends NodeLabelIndexCursorTestBase<WriteTestSupport>
 {
     @Override
-    public ReadTestSupport newTestSupport()
+    public WriteTestSupport newTestSupport()
     {
-        return new ReadTestSupport();
+        return new WriteTestSupport();
     }
 }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,8 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -60,7 +61,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -310,10 +310,10 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
         KernelTransaction transaction = safeAcquireTransaction();
-        NodeCursor nodes = transaction.nodeCursor();
-        PropertyCursor properties = transaction.propertyCursor();
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        PropertyCursor properties = transaction.ambientPropertyCursor();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return defaultValue;
         }
@@ -337,8 +337,8 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         List<String> keys = new ArrayList<>();
         try
         {
-            NodeCursor nodes = transaction.nodeCursor();
-            PropertyCursor properties = transaction.propertyCursor();
+            NodeCursor nodes = transaction.ambientNodeCursor();
+            PropertyCursor properties = transaction.ambientPropertyCursor();
             singleNode( transaction, nodes );
             TokenRead token = transaction.tokenRead();
             nodes.properties( properties );
@@ -383,8 +383,8 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
             propertyIds[i] = token.propertyKey( key );
         }
 
-        NodeCursor nodes = transaction.nodeCursor();
-        PropertyCursor propertyCursor = transaction.propertyCursor();
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
         singleNode( transaction, nodes );
         nodes.properties( propertyCursor );
         int propertiesToFind = itemsToReturn;
@@ -414,8 +414,8 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
 
         try
         {
-            NodeCursor nodes = transaction.nodeCursor();
-            PropertyCursor propertyCursor = transaction.propertyCursor();
+            NodeCursor nodes = transaction.ambientNodeCursor();
+            PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
             TokenRead token = transaction.tokenRead();
             singleNode( transaction, nodes );
             nodes.properties( propertyCursor );
@@ -441,13 +441,13 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         }
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
 
-        NodeCursor nodes = transaction.nodeCursor();
-        PropertyCursor properties = transaction.propertyCursor();
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        PropertyCursor properties = transaction.ambientPropertyCursor();
         singleNode( transaction, nodes );
         nodes.properties( properties );
         while ( properties.next() )
@@ -475,13 +475,13 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
 
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return false;
         }
 
-        NodeCursor nodes = transaction.nodeCursor();
-        PropertyCursor properties = transaction.propertyCursor();
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        PropertyCursor properties = transaction.ambientPropertyCursor();
         singleNode( transaction, nodes );
         nodes.properties( properties );
         while ( properties.next() )
@@ -604,7 +604,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         try ( Statement ignore = transaction.acquireStatement() )
         {
             int labelId = transaction.tokenRead().nodeLabel( label.name() );
-            if ( labelId != KeyReadOperations.NO_SUCH_LABEL )
+            if ( labelId != TokenRead.NO_TOKEN )
             {
                 transaction.dataWrite().nodeRemoveLabel( getId(), labelId );
             }
@@ -623,7 +623,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     public boolean hasLabel( Label label )
     {
         KernelTransaction transaction = safeAcquireTransaction();
-        NodeCursor nodes = transaction.nodeCursor();
+        NodeCursor nodes = transaction.ambientNodeCursor();
         try ( Statement ignore = transaction.acquireStatement() )
         {
             int labelId = transaction.tokenRead().nodeLabel( label.name() );
@@ -632,7 +632,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
                 return false;
             }
             transaction.dataRead().singleNode( nodeId, nodes );
-            return nodes.next() && nodes.labels().contains( labelId );
+            return nodes.next() && nodes.hasLabel( labelId );
         }
     }
 
@@ -640,7 +640,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     public Iterable<Label> getLabels()
     {
         KernelTransaction transaction = safeAcquireTransaction();
-        NodeCursor nodes = transaction.nodeCursor();
+        NodeCursor nodes = transaction.ambientNodeCursor();
         try ( Statement ignore = spi.statement() )
         {
             singleNode( transaction, nodes );
@@ -666,7 +666,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
 
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            NodeCursor nodes = transaction.nodeCursor();
+            NodeCursor nodes = transaction.ambientNodeCursor();
             singleNode( transaction, nodes );
 
             return Nodes.countAll( nodes, transaction.cursors() );
@@ -685,7 +685,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
 
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            NodeCursor nodes = transaction.nodeCursor();
+            NodeCursor nodes = transaction.ambientNodeCursor();
             singleNode( transaction, nodes );
 
             return Nodes.countAll( nodes, transaction.cursors(), typeId );
@@ -698,7 +698,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         KernelTransaction transaction = safeAcquireTransaction();
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            NodeCursor nodes = transaction.nodeCursor();
+            NodeCursor nodes = transaction.ambientNodeCursor();
             singleNode( transaction, nodes );
 
             switch ( direction )
@@ -727,7 +727,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
 
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            NodeCursor nodes = transaction.nodeCursor();
+            NodeCursor nodes = transaction.ambientNodeCursor();
             singleNode( transaction, nodes );
             switch ( direction )
             {
@@ -750,11 +750,11 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         try ( RelationshipTraversalCursor relationships = transaction.cursors().allocateRelationshipTraversalCursor();
               Statement ignore = transaction.acquireStatement() )
         {
-            NodeCursor nodes = transaction.nodeCursor();
+            NodeCursor nodes = transaction.ambientNodeCursor();
             TokenRead tokenRead = transaction.tokenRead();
             singleNode( transaction, nodes );
             nodes.allRelationships( relationships );
-            PrimitiveIntSet seen = Primitive.intSet();
+            final MutableIntSet seen = new IntHashSet();
             List<RelationshipType> types = new ArrayList<>();
             while ( relationships.next() )
             {
@@ -777,7 +777,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     private ResourceIterator<Relationship> getRelationshipSelectionIterator(
             KernelTransaction transaction, Direction direction, int[] typeIds )
     {
-        NodeCursor node = transaction.nodeCursor();
+        NodeCursor node = transaction.ambientNodeCursor();
         transaction.dataRead().singleNode( getId(), node );
         if ( !node.next() )
         {

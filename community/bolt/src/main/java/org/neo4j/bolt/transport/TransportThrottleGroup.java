@@ -65,11 +65,11 @@ public class TransportThrottleGroup
 
     private static TransportThrottle createWriteThrottle( Config config, Clock clock )
     {
-        if ( config.get( GraphDatabaseSettings.bolt_write_throttle ) )
+        if ( config.get( GraphDatabaseSettings.bolt_outbound_buffer_throttle) )
         {
-            return new TransportWriteThrottle( config.get( GraphDatabaseSettings.bolt_write_buffer_low_water_mark ),
-                    config.get( GraphDatabaseSettings.bolt_write_buffer_high_water_mark ), clock,
-                    config.get( GraphDatabaseSettings.bolt_write_throttle_max_duration ) );
+            return new TransportWriteThrottle( config.get( GraphDatabaseSettings.bolt_outbound_buffer_throttle_low_water_mark ),
+                    config.get( GraphDatabaseSettings.bolt_outbound_buffer_throttle_high_water_mark ), clock,
+                    config.get( GraphDatabaseSettings.bolt_outbound_buffer_throttle_max_duration ) );
         }
 
         return NoOpTransportThrottle.INSTANCE;

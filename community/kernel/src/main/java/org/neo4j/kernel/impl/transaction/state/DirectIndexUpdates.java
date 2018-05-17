@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -48,9 +49,7 @@ public class DirectIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByNodeId,
-            PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId, PrimitiveLongObjectMap<NodeCommand> nodeCommands,
-            PrimitiveLongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap )
+    public void feed( LongObjectMap<List<PropertyCommand>> propCommands, LongObjectMap<NodeCommand> nodeCommands )
     {
         throw new UnsupportedOperationException();
     }

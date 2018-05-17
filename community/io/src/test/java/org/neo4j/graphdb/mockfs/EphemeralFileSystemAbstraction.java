@@ -307,8 +307,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                                              + "' (The system cannot find the path specified)" );
         }
 
-        EphemeralFileData data = new EphemeralFileData( clock );
-        Optional.ofNullable( files.put( canonicalFile( fileName ), data ) ).ifPresent( EphemeralFileData::free );
+        EphemeralFileData data = files.computeIfAbsent( canonicalFile( fileName ), key -> new EphemeralFileData( clock ) );
         return new StoreFileChannel(
                 new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) );
     }
@@ -500,7 +499,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
         for ( String pathItem : pathItems )
         {
-            file = file == null ? new File( pathItem ) : new File( file, pathItem );
+            String pathItemName = pathItem + File.separator;
+            file = file == null ? new File( pathItemName ) : new File( file, pathItemName );
         }
         return file;
     }
@@ -665,12 +665,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long lastModifiedTime( File file ) throws IOException
+    public long lastModifiedTime( File file )
     {
         EphemeralFileData data = files.get( canonicalFile( file ) );
         if ( data == null )
         {
-            throw new FileNotFoundException( "File " + file + " not found" );
+            return 0;
         }
         return data.lastModified;
     }

@@ -25,7 +25,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -37,7 +37,7 @@ public class LuceneIndexAccessorTest
     @Mock
     private SchemaIndex schemaIndex;
     @Mock
-    private SchemaIndexDescriptor schemaIndexDescriptor;
+    private IndexDescriptor schemaIndexDescriptor;
     private LuceneIndexAccessor accessor;
 
     @Before

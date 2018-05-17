@@ -40,10 +40,10 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.server.database.Database;
 
@@ -64,11 +64,11 @@ public class GraphDbHelper
 
     public int getNumberOfNodes()
     {
-        InwardKernel kernelAPI = database.getGraph().getDependencyResolver().resolveDependency( InwardKernel.class );
-        try ( KernelTransaction tx = kernelAPI.newTransaction( implicit, AnonymousContext.read() );
-              Statement statement = tx.acquireStatement() )
+        Kernel kernel = database.getGraph().getDependencyResolver().resolveDependency( Kernel.class );
+        try ( Session session = kernel.beginSession( AnonymousContext.read() );
+              org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction( org.neo4j.internal.kernel.api.Transaction.Type.implicit ) )
         {
-            return Math.toIntExact( statement.readOperations().nodesGetCount() );
+            return Math.toIntExact( tx.dataRead().nodesGetCount() );
         }
         catch ( TransactionFailureException e )
         {
@@ -78,11 +78,11 @@ public class GraphDbHelper
 
     public int getNumberOfRelationships()
     {
-        InwardKernel kernelAPI = database.getGraph().getDependencyResolver().resolveDependency( InwardKernel.class );
-        try ( KernelTransaction tx = kernelAPI.newTransaction( implicit, AnonymousContext.read() );
-              Statement statement = tx.acquireStatement() )
+        Kernel kernel = database.getGraph().getDependencyResolver().resolveDependency( Kernel.class );
+        try ( Session session = kernel.beginSession( AnonymousContext.read() );
+              org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction( org.neo4j.internal.kernel.api.Transaction.Type.implicit ) )
         {
-            return Math.toIntExact( statement.readOperations().relationshipsGetCount() );
+            return Math.toIntExact( tx.dataRead().relationshipsGetCount() );
         }
         catch ( TransactionFailureException e )
         {

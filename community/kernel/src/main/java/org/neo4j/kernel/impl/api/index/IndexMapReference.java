@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.values.storable.Value;
 
 public class IndexMapReference implements IndexMapSnapshotProvider
 {
@@ -102,7 +102,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, PrimitiveIntSet properties,
+    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties,
             EntityType entityType )
     {
         return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, properties, entityType );
@@ -111,5 +111,15 @@ public class IndexMapReference implements IndexMapSnapshotProvider
     public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
     {
         return new IndexUpdaterMap( indexMap, mode );
+    }
+
+    public void validateBeforeCommit( SchemaDescriptor index, Value[] tuple )
+    {
+        IndexProxy proxy = indexMap.getIndexProxy( index );
+        if ( proxy != null )
+        {
+            // Do this null-check since from the outside there's a best-effort matching going on between updates and actual indexes backing those.
+            proxy.validateBeforeCommit( tuple );
+        }
     }
 }

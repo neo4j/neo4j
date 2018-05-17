@@ -71,16 +71,17 @@ import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
  */
 public class CountsMigrator extends AbstractStoreMigrationParticipant
 {
-
     private static final Iterable<StoreFile> COUNTS_STORE_FILES = Iterables
             .iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
+
     private final Config config;
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
+    private boolean migrated;
 
     public CountsMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
     {
-        super( "Count rebuilding" );
+        super( "Counts store" );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.config = config;
@@ -110,6 +111,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                 rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, progressMonitor, versionToMigrateFrom,
                         pageCache, NullLogProvider.getInstance() );
             }
+            migrated = true;
         }
     }
 
@@ -117,15 +119,19 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
     public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom,
             String versionToUpgradeTo ) throws IOException
     {
-        // Delete any current count files in the store directory.
-        StoreFile.fileOperation( DELETE, fileSystem, storeDir, null, COUNTS_STORE_FILES, true, null,
-                StoreFileType.values() );
-        // Move the migrated ones into the store directory
-        StoreFile.fileOperation( MOVE, fileSystem, migrationDir, storeDir, COUNTS_STORE_FILES, true,
-                // allow to skip non existent source files
-                ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
-                StoreFileType.values() );
-        // We do not need to move files with the page cache, as the count files always reside on the normal file system.
+
+        if ( migrated )
+        {
+            // Delete any current count files in the store directory.
+            StoreFile.fileOperation( DELETE, fileSystem, storeDir, null, COUNTS_STORE_FILES, true, null,
+                    StoreFileType.values() );
+            // Move the migrated ones into the store directory
+            StoreFile.fileOperation( MOVE, fileSystem, migrationDir, storeDir, COUNTS_STORE_FILES, true,
+                    // allow to skip non existent source files
+                    ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
+                    StoreFileType.values() );
+            // We do not need to move files with the page cache, as the count files always reside on the normal file system.
+        }
     }
 
     @Override

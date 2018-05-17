@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.time._
 import java.time.temporal.TemporalAmount
 
-import org.neo4j.cypher.internal.util.v3_4.Eagerly
-import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_5.Eagerly
+import org.neo4j.cypher.internal.util.v3_5.symbols._
 import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable._
 import org.neo4j.values.storable.Values.byteArray
+import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues.fromArray
 import org.neo4j.values.virtual.{MapValue, VirtualValues}
 
@@ -47,7 +47,10 @@ object ValueConversion {
       case CTString => l => Values.stringValue(l.asInstanceOf[String])
       case CTPath => p => ValueUtils.fromPath(p.asInstanceOf[Path])
       case CTMap => m => ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
-      case ListType(_)  => l => ValueUtils.asListValue(l.asInstanceOf[java.util.Collection[_]])
+      case ListType(_)  => {
+        case a: Array[Byte] => Values.byteArray(a) // procedures can produce byte[] as a valid output type
+        case l => ValueUtils.asListValue(l.asInstanceOf[java.util.Collection[_]])
+      }
       case CTAny => o => ValueUtils.of(o)
       case CTPoint => o => ValueUtils.asPointValue(o.asInstanceOf[Point])
       case CTGeometry => o => ValueUtils.asGeometryValue(o.asInstanceOf[Geometry])
@@ -88,7 +91,7 @@ object ValueConversion {
     case c: java.util.Collection[_] => ValueUtils.asListValue(c)
     case a: Array[_] =>
       a.getClass.getComponentType.getName match {
-      case "byte" => fromArray(byteArray(a.asInstanceOf[Array[Byte]]))
+      case "byte" => byteArray(a.asInstanceOf[Array[Byte]]) // byte[] is supported in procedures and BOLT
       case "short" => fromArray(Values.shortArray(a.asInstanceOf[Array[Short]]))
       case "char" => fromArray(Values.charArray(a.asInstanceOf[Array[Char]]))
       case "int" => fromArray(Values.intArray(a.asInstanceOf[Array[Int]]))

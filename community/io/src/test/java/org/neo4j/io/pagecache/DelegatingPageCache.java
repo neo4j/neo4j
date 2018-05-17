@@ -25,8 +25,6 @@ import java.nio.file.OpenOption;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-
 public class DelegatingPageCache implements PageCache
 {
     private final PageCache delegate;
@@ -73,12 +71,6 @@ public class DelegatingPageCache implements PageCache
     }
 
     @Override
-    public FileSystemAbstraction getCachedFileSystem()
-    {
-        return delegate.getCachedFileSystem();
-    }
-
-    @Override
     public void reportEvents()
     {
         delegate.reportEvents();
@@ -96,9 +88,4 @@ public class DelegatingPageCache implements PageCache
         delegate.flushAndForce();
     }
 
-    @Override
-    public boolean fileSystemSupportsFileOperations()
-    {
-        return delegate.fileSystemSupportsFileOperations();
-    }
 }

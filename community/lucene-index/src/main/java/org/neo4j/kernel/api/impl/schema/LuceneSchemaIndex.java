@@ -48,6 +48,7 @@ import org.neo4j.values.storable.Value;
 class LuceneSchemaIndex extends AbstractLuceneIndex<IndexReader>
 {
 
+    private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
@@ -97,7 +98,8 @@ class LuceneSchemaIndex extends AbstractLuceneIndex<IndexReader>
         }
     }
 
-    public void drop() throws IOException
+    @Override
+    public void drop()
     {
         taskCoordinator.cancel();
         try
@@ -106,7 +108,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex<IndexReader>
         }
         catch ( InterruptedException e )
         {
-            throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
+            throw new RuntimeException( "Interrupted while waiting for concurrent tasks to complete.", e );
         }
         super.drop();
     }

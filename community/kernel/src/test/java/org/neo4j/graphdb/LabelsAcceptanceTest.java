@@ -34,12 +34,14 @@ import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -56,8 +58,6 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
@@ -73,7 +73,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.consume;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -593,18 +592,23 @@ public class LabelsAcceptanceTest
         {
             DependencyResolver resolver = db.getDependencyResolver();
             ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
-            try ( Statement statement = bridge.getTopLevelTransactionBoundToThisThread( true ).acquireStatement() )
+            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true );
+            try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor();
+                  PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor() )
             {
-                try ( Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursorById( node.getId() ) )
+                ktx.dataRead().singleNode( node.getId(), nodes );
+                while ( nodes.next() )
                 {
-                    try ( Cursor<PropertyItem> properties = statement.readOperations()
-                            .nodeGetProperties( nodeCursor.get() ) )
+                    nodes.properties( propertyCursor );
+                    while ( propertyCursor.next() )
                     {
-                        while ( properties.next() )
-                        {
-                            seenProperties.add( properties.get().propertyKeyId() );
-                            consume( nodeCursor.get().labels().iterator(), seenLabels::add );
-                        }
+                        seenProperties.add( propertyCursor.propertyKey() );
+                    }
+
+                    LabelSet labels = nodes.labels();
+                    for ( int i = 0; i < labels.numberOfLabels(); i++ )
+                    {
+                        seenLabels.add( labels.label( i ) );
                     }
                 }
             }

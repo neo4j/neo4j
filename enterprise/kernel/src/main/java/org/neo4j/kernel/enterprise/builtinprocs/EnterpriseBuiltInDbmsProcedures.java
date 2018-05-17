@@ -257,8 +257,9 @@ public class EnterpriseBuiltInDbmsProcedures
         private boolean isAdminProcedure( String procedureName )
         {
             return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName ) ||
-                   name.equals( "dbms.listConfig" ) ||
-                   name.equals( "dbms.setConfigValue" );
+                    name.equals( "dbms.listConfig" ) ||
+                    name.equals( "dbms.setConfigValue" ) ||
+                    name.equals( "dbms.clearQueryCaches" );
         }
     }
 
@@ -309,7 +310,7 @@ public class EnterpriseBuiltInDbmsProcedures
         try
         {
             Set<KernelTransactionHandle> handles = getKernelTransactions().activeTransactions().stream()
-                    .filter( transaction -> isAdminOrSelf( transaction.securityContext().subject().username() ) )
+                    .filter( transaction -> isAdminOrSelf( transaction.subject().username() ) )
                     .collect( toSet() );
 
             Map<KernelTransactionHandle,List<QuerySnapshot>> handleQuerySnapshotsMap = handles.stream()
@@ -474,7 +475,7 @@ public class EnterpriseBuiltInDbmsProcedures
     {
         long terminatedCount = getActiveTransactions( dependencyResolver )
             .stream()
-            .filter( tx -> tx.securityContext().subject().hasUsername( username ) &&
+            .filter( tx -> tx.subject().hasUsername( username ) &&
                             !tx.isUnderlyingTransaction( currentTx ) )
             .map( tx -> tx.markForTermination( Status.Transaction.Terminated ) )
             .filter( marked -> marked )

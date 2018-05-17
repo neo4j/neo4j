@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Optional;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -34,8 +33,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -121,11 +118,10 @@ public class StoreCopyServer
     private final FileSystemAbstraction fileSystem;
     private final File storeDirectory;
     private final Monitor monitor;
-    private final PageCache pageCache;
     private final StoreCopyCheckPointMutex mutex;
 
     public StoreCopyServer( NeoStoreDataSource dataSource, CheckPointer checkPointer, FileSystemAbstraction fileSystem,
-            File storeDirectory, Monitor monitor, PageCache pageCache, StoreCopyCheckPointMutex mutex )
+            File storeDirectory, Monitor monitor, StoreCopyCheckPointMutex mutex )
     {
         this.dataSource = dataSource;
         this.checkPointer = checkPointer;
@@ -133,7 +129,6 @@ public class StoreCopyServer
         this.mutex = mutex;
         this.storeDirectory = getMostCanonicalFile( storeDirectory );
         this.monitor = monitor;
-        this.pageCache = pageCache;
     }
 
     public Monitor monitor()
@@ -175,27 +170,6 @@ public class StoreCopyServer
                     File file = meta.file();
                     boolean isLogFile = meta.isLogFile();
                     int recordSize = meta.recordSize();
-
-                    if ( !pageCache.fileSystemSupportsFileOperations() )
-                    {
-                        // Read from paged file if mapping exists. Otherwise read through file system.
-                        // A file is mapped if it is a store, and we have a running database, which will be the case for
-                        // both online backup, and when we are the master of an HA cluster.
-                        final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
-                        if ( optionalPagedFile.isPresent() )
-                        {
-                            try ( PagedFile pagedFile = optionalPagedFile.get() )
-                            {
-                                long fileSize = pagedFile.fileSize();
-                                try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
-                                {
-                                    doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize,
-                                            storeCopyIdentifier, false );
-                                }
-                                continue;
-                            }
-                        }
-                    }
 
                     try ( ReadableByteChannel fileChannel = fileSystem.open( file, OpenMode.READ ) )
                     {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.v3_4.logical.plans.{CartesianProduct, NodeIndexSeek}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{CartesianProduct, NodeIndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, _}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -61,7 +61,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         | RETURN f
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query,
+    val result = executeWith(Configs.All - Configs.Version2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -81,7 +81,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         | RETURN f
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted, query,
+    val result = executeWith(Configs.All, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -157,7 +157,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         |RETURN n""".stripMargin
 
     // WHEN
-    failWithError(Configs.AbsolutelyAll + Configs.Morsel, query, List("No such index"), params = "foo" -> 42)
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel, query, List("No such index"), params = Map("foo" -> 42))
   }
 
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {
@@ -818,8 +818,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
 
     val result = executeWith(Configs.Interpreted, query, planComparisonStrategy = ComparePlansWithAssertion({ plan =>
       plan should useOperatorTimes("NodeHashJoin", 3)
-      // Fixed in next release of 3.3
-    }, expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3 + Configs.Version3_1 + Configs.Version3_3))
+    }, expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3 + Configs.Version3_1))
 
     result.toList should equal (List(Map("c" -> 4)))
   }

@@ -45,9 +45,9 @@ public abstract class NumberValue extends ScalarValue
 
     public abstract long longValue();
 
-    abstract int compareTo( IntegralValue other );
+    public abstract int compareTo( IntegralValue other );
 
-    abstract int compareTo( FloatingPointValue other );
+    public abstract int compareTo( FloatingPointValue other );
 
     @Override
     int unsafeCompareTo( Value otherValue )

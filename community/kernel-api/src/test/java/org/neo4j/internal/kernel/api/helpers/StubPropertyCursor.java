@@ -47,12 +47,6 @@ public class StubPropertyCursor implements PropertyCursor
     }
 
     @Override
-    public boolean shouldRetry()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
 

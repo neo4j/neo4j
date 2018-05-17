@@ -19,16 +19,17 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -41,8 +42,8 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -63,20 +64,20 @@ public interface StoreReadLayer
      * @param labelId label to list indexes for.
      * @return {@link IndexDescriptor} associated with the given {@code labelId}.
      */
-    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId );
 
     /**
-     * @return all {@link IndexDescriptor} in storage.
+     * @return all {@link CapableIndexDescriptor} in storage.
      */
-    Iterator<IndexDescriptor> indexesGetAll();
+    Iterator<CapableIndexDescriptor> indexesGetAll();
 
     /**
      * Returns all indexes (including unique) related to a property.
      */
-    Iterator<IndexDescriptor> indexesGetRelatedToProperty( int propertyId );
+    Iterator<CapableIndexDescriptor> indexesGetRelatedToProperty( int propertyId );
 
     /**
-     * @param index {@link IndexDescriptor} to get related uniqueness constraint for.
+     * @param index {@link CapableIndexDescriptor} to get related uniqueness constraint for.
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.
      */
@@ -93,7 +94,7 @@ public interface StoreReadLayer
     /**
      * @return iterator with property keys of all stored graph properties.
      */
-    PrimitiveIntIterator graphGetPropertyKeys();
+    IntIterator graphGetPropertyKeys();
 
     /**
      * @param propertyKeyId property key id to get graph property for.
@@ -143,44 +144,27 @@ public interface StoreReadLayer
      * Looks for a stored index by given {@code descriptor}
      *
      * @param descriptor a description of the index.
-     * @return {@link IndexDescriptor} for matching index, or {@code null} if not found.
+     * @return {@link CapableIndexDescriptor} for matching index, or {@code null} if not found.
      */
-    IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
-
-    /**
-     * Looks for a stored index by given index name
-     *
-     * @param name of the index.
-     * @return {@link IndexDescriptor} for matching index, or {@code null} if not found.
-     */
-    IndexDescriptor indexGetForName( String name );
+    CapableIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
 
     /**
      * Returns state of a stored index.
      *
-     * @param descriptor {@link SchemaIndexDescriptor} to get state for.
+     * @param descriptor {@link IndexDescriptor} to get state for.
      * @return {@link InternalIndexState} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Return index provider descriptor of a stored index.
-     *
-     * @param descriptor {@link SchemaIndexDescriptor} to get provider descriptor for.
-     * @return {@link IndexProvider.Descriptor} for index.
-     * @throws IndexNotFoundKernelException if index not found.
-     */
-    IndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
      * Return index reference of a stored index.
      *
-     * @param descriptor {@link SchemaIndexDescriptor} to get provider reference for.
+     * @param descriptor {@link IndexDescriptor} to get provider reference for.
      * @return {@link IndexProvider.Descriptor} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    CapableIndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param descriptor {@link SchemaDescriptor} to get population progress for.
@@ -295,7 +279,7 @@ public interface StoreReadLayer
     /**
      * @return ids of all stored nodes.
      */
-    PrimitiveLongIterator nodesGetAll();
+    LongIterator nodesGetAll();
 
     /**
      * @return ids of all stored relationships. The returned iterator can optionally visit data about
@@ -394,7 +378,7 @@ public interface StoreReadLayer
 
     boolean relationshipExists( long id );
 
-    PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node );
+    IntSet relationshipTypes( StorageStatement statement, NodeItem node );
 
     void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor );
 

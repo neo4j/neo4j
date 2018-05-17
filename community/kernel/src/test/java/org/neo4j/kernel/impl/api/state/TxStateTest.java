@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,8 +46,8 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.storageengine.api.Direction;
@@ -79,9 +80,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.collection.primitive.Primitive.intObjectMap;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
+import static org.neo4j.collection.PrimitiveIntCollections.toList;
+import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
@@ -100,9 +100,9 @@ public class TxStateTest
         return RuleChain.outerRule( new RepeatRule() ).around( random );
     }
 
-    private final SchemaIndexDescriptor indexOn_1_1 = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
-    private final SchemaIndexDescriptor indexOn_1_2 = SchemaIndexDescriptorFactory.forLabel( 1, 2 );
-    private final SchemaIndexDescriptor indexOn_2_1 = SchemaIndexDescriptorFactory.forLabel( 2, 1 );
+    private final IndexDescriptor indexOn_1_1 = TestIndexDescriptorFactory.forLabel( 1, 1 );
+    private final IndexDescriptor indexOn_1_2 = TestIndexDescriptorFactory.forLabel( 1, 2 );
+    private final IndexDescriptor indexOn_2_1 = TestIndexDescriptorFactory.forLabel( 2, 1 );
 
     private CollectionsFactory collectionsFactory;
     private TxState state;
@@ -266,8 +266,8 @@ public class TxStateTest
     public void shouldAddAndGetByLabel()
     {
         // WHEN
-        state.indexRuleDoAdd( indexOn_1_1 );
-        state.indexRuleDoAdd( indexOn_2_1 );
+        state.indexDoAdd( indexOn_1_1 );
+        state.indexDoAdd( indexOn_2_1 );
 
         // THEN
         assertEquals( asSet( indexOn_1_1 ),
@@ -278,7 +278,7 @@ public class TxStateTest
     public void shouldAddAndGetByRuleId()
     {
         // GIVEN
-        state.indexRuleDoAdd( indexOn_1_1 );
+        state.indexDoAdd( indexOn_1_1 );
 
         // THEN
         assertEquals( asSet( indexOn_1_1 ), state.indexChanges().getAdded() );
@@ -1181,7 +1181,7 @@ public class TxStateTest
         state.relationshipDoDelete( relC, relType + 1, startNode, endNode );
 
         // Then
-        assertThat( toList( state.nodeRelationshipTypes( startNode ).iterator() ), equalTo( asList( relType ) ) );
+        assertThat( toList( state.nodeRelationshipTypes( startNode ).intIterator() ), equalTo( asList( relType ) ) );
     }
 
     @Test
@@ -1565,7 +1565,7 @@ public class TxStateTest
     public void useCollectionFactory()
     {
         final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
-        doAnswer( invocation -> intObjectMap() ).when( collectionsFactory ).newIntObjectMap();
+        doAnswer( invocation -> new IntObjectHashMap<>() ).when( collectionsFactory ).newIntObjectMap();
 
         state = new TxState( collectionsFactory );
 
@@ -1738,7 +1738,7 @@ public class TxStateTest
         void withBooleanProperties( Collection<Pair<Long,Boolean>> nodesWithValues );
     }
 
-    private IndexUpdater addNodesToIndex( final SchemaIndexDescriptor descriptor )
+    private IndexUpdater addNodesToIndex( final IndexDescriptor descriptor )
     {
         return new IndexUpdater()
         {

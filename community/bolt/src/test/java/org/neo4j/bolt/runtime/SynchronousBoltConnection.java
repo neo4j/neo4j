@@ -24,19 +24,23 @@ import io.netty.channel.embedded.EmbeddedChannel;
 
 import java.net.SocketAddress;
 
-import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Job;
+import org.neo4j.bolt.v1.transport.ChunkedOutput;
 
 public class SynchronousBoltConnection implements BoltConnection
 {
-    private final Channel channel;
+    private final EmbeddedChannel channel;
+    private final PackOutput output;
     private final BoltStateMachine machine;
 
     public SynchronousBoltConnection( BoltStateMachine machine )
     {
         this.channel = new EmbeddedChannel();
+        this.output = new ChunkedOutput( this.channel, TransportThrottleGroup.NO_THROTTLE );
         this.machine = machine;
     }
 
@@ -62,6 +66,12 @@ public class SynchronousBoltConnection implements BoltConnection
     public Channel channel()
     {
         return channel;
+    }
+
+    @Override
+    public PackOutput output()
+    {
+        return output;
     }
 
     @Override
@@ -110,6 +120,7 @@ public class SynchronousBoltConnection implements BoltConnection
     @Override
     public void stop()
     {
+        channel.finishAndReleaseAll();
         machine.close();
     }
 }

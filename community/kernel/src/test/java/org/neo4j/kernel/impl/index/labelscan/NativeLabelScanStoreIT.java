@@ -43,7 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
+import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
 public class NativeLabelScanStoreIT
@@ -62,8 +62,9 @@ public class NativeLabelScanStoreIT
     @Before
     public void before()
     {
-        PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        store = life.add( new NativeLabelScanStore( pageCache, directory.absolutePath(), FullStoreChangeStream.EMPTY,
+        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        store = life.add( new NativeLabelScanStore( pageCache, directory.absolutePath(), fileSystem, FullStoreChangeStream.EMPTY,
                 false, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE,
                 // a bit of random pageSize
                 Math.min( pageCache.pageSize(), 256 << random.nextInt( 5 ) ) ) );

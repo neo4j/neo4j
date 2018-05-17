@@ -22,8 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 
 import org.neo4j.io.pagecache.IOLimiter;
@@ -33,8 +32,6 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
-import org.neo4j.io.pagecache.impl.PagedReadableByteChannel;
-import org.neo4j.io.pagecache.impl.PagedWritableByteChannel;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
@@ -227,18 +224,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         pageCache.unmap( this );
     }
 
-    @Override
-    public ReadableByteChannel openReadableByteChannel() throws IOException
-    {
-        return new PagedReadableByteChannel( this );
-    }
-
-    @Override
-    public WritableByteChannel openWritableByteChannel() throws IOException
-    {
-        return new PagedWritableByteChannel( this );
-    }
-
     void closeSwapper() throws IOException
     {
         // We don't set closeStackTrace in close(), because the reference count may keep the file open.
@@ -347,7 +332,21 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
     }
 
-    void flushAndForceInternal( FlushEventOpportunity flushOpportunity, boolean forClosing, IOLimiter limiter )
+    void flushAndForceInternal( FlushEventOpportunity flushes, boolean forClosing, IOLimiter limiter )
+            throws IOException
+    {
+        try
+        {
+            doFlushAndForceInternal( flushes, forClosing, limiter );
+        }
+        catch ( ClosedChannelException e )
+        {
+            e.addSuppressed( closeStackTrace );
+            throw e;
+        }
+    }
+
+    private void doFlushAndForceInternal( FlushEventOpportunity flushes, boolean forClosing, IOLimiter limiter )
             throws IOException
     {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
@@ -415,14 +414,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                 }
                 if ( pagesGrabbed > 0 )
                 {
-                    vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushOpportunity, forClosing );
+                    vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushes, forClosing );
                     limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
                     pagesGrabbed = 0;
                 }
             }
             if ( pagesGrabbed > 0 )
             {
-                vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushOpportunity, forClosing );
+                vectoredFlush( pages, bufferAddresses, flushStamps, pagesGrabbed, flushes, forClosing );
                 limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
             }
         }

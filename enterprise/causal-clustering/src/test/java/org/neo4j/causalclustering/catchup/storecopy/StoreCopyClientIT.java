@@ -23,6 +23,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.apache.commons.compress.utils.Charsets;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,13 +34,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
@@ -47,18 +46,15 @@ import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
+import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.net.Server;
-import org.neo4j.collection.primitive.base.Empty;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
@@ -66,11 +62,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 public class StoreCopyClientIT
 {
@@ -88,6 +80,7 @@ public class StoreCopyClientIT
     private FakeFile indexFileA = new FakeFile( "lucene", "Lucene 123" );
     private Server catchupServer;
     private TestCatchupServerHandler serverHandler;
+    private File targetLocation = new File( "copyTargetLocation" );
 
     private static void writeContents( FileSystemAbstraction fileSystemAbstraction, File file, String contents )
     {
@@ -103,9 +96,9 @@ public class StoreCopyClientIT
     }
 
     @Before
-    public void setup()
+    public void setup() throws Throwable
     {
-        serverHandler = new TestCatchupServerHandler( logProvider, new CatchupServerProtocol(), testDirectory, fsa );
+        serverHandler = new TestCatchupServerHandler( logProvider, testDirectory, fsa );
         serverHandler.addFile( fileA );
         serverHandler.addFile( fileB );
         serverHandler.addIndexFile( indexFileA );
@@ -114,16 +107,20 @@ public class StoreCopyClientIT
         writeContents( fsa, relative( indexFileA.getFilename() ), indexFileA.getContent() );
 
         ListenSocketAddress listenAddress = new ListenSocketAddress( "localhost", PortAuthority.allocatePort() );
-        catchupServer = new CatchupServerBuilder( protocol -> serverHandler ).listenAddress( listenAddress ).build();
+        catchupServer = new CatchupServerBuilder( serverHandler ).listenAddress( listenAddress ).build();
         catchupServer.start();
 
         CatchUpClient catchUpClient = new CatchupClientBuilder().build();
         catchUpClient.start();
-        subject = new StoreCopyClient( catchUpClient, logProvider );
+
+        ConstantTimeTimeoutStrategy storeCopyBackoffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );
+
+        Monitors monitors = new Monitors();
+        subject = new StoreCopyClient( catchUpClient, monitors, logProvider, storeCopyBackoffStrategy );
     }
 
     @After
-    public void shutdown()
+    public void shutdown() throws Throwable
     {
         catchupServer.stop();
     }
@@ -136,7 +133,7 @@ public class StoreCopyClientIT
 
         // when catchup is performed for valid transactionId and StoreId
         CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServer.address().getPort() ) );
-        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), storeFileStream, () -> defaultTerminationCondition );
+        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), storeFileStream, () -> defaultTerminationCondition, targetLocation );
 
         // then the catchup is successful
         Set<String> expectedFiles = new HashSet<>( Arrays.asList( fileA.getFilename(), fileB.getFilename(), indexFileA.getFilename() ) );
@@ -157,7 +154,7 @@ public class StoreCopyClientIT
 
         // when catchup is performed for valid transactionId and StoreId
         CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServer.address().getPort() ) );
-        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), clientStoreFileStream, () -> defaultTerminationCondition );
+        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), clientStoreFileStream, () -> defaultTerminationCondition, targetLocation );
 
         // then the catchup is successful
         Set<String> expectedFiles = new HashSet<>( Arrays.asList( fileA.getFilename(), fileB.getFilename(), indexFileA.getFilename() ) );
@@ -175,79 +172,53 @@ public class StoreCopyClientIT
     }
 
     @Test
-    public void reconnectingWorks() throws StoreCopyFailedException, IOException
-    {
-        // given local client has a store
-        InMemoryStoreStreamProvider storeFileStream = new InMemoryStoreStreamProvider();
-
-                // and file B is broken once (after retry it works)
-                fileB.setRemainingNoResponse( 1 );
-
-        // when catchup is performed for valid transactionId and StoreId
-        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServer.address().getPort() ) );
-        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), storeFileStream, () -> defaultTerminationCondition );
-
-        // then the catchup is possible to complete
-        assertEquals( fileContent( relative( fileA.getFilename() ) ), clientFileContents( storeFileStream, fileA.getFilename() ) );
-        assertEquals( fileContent( relative( fileB.getFilename() ) ), clientFileContents( storeFileStream, fileB.getFilename() ) );
-
-        // and verify file was requested more than once
-        assertThat( serverHandler.getRequestCount( fileB.getFilename() ), greaterThan( 1 ) );
-    }
-
-    @Test
     public void shouldNotAppendToFileWhenRetryingWithNewFile() throws Throwable
     {
         // given
         String fileName = "foo";
-        String pageCacheFileName = "bar";
+        String copyFileName = "bar";
         String unfinishedContent = "abcd";
         String finishedContent = "abcdefgh";
         Iterator<String> contents = Iterators.iterator( unfinishedContent, finishedContent );
 
         // and
-        TestCatchupServerHandler halfWayFailingServerhandler = new TestCatchupServerHandler( logProvider, new CatchupServerProtocol(), testDirectory, fsa )
+        TestCatchupServerHandler halfWayFailingServerhandler = new TestCatchupServerHandler( logProvider, testDirectory, fsa )
         {
             @Override
-            public ChannelHandler getStoreFileRequestHandler()
+            public ChannelHandler getStoreFileRequestHandler( CatchupServerProtocol catchupServerProtocol )
             {
                 return new SimpleChannelInboundHandler<GetStoreFileRequest>()
                 {
                     @Override
-                    protected void channelRead0( ChannelHandlerContext ctx, GetStoreFileRequest msg ) throws IOException
+                    protected void channelRead0( ChannelHandlerContext ctx, GetStoreFileRequest msg )
                     {
                         // create the files and write the given content
                         File file = new File( fileName );
+                        File fileCopy = new File( copyFileName );
                         String thisConent = contents.next();
                         writeContents( fsa, file, thisConent );
-                        PageCache pageCache = neverSupportingFileOperationPageCache( StandalonePageCacheFactory.createPageCache( fsa ) );
-                        PagedFile pagedFile =
-                                pageCache.map( new File( pageCacheFileName ), pageCache.pageSize(), StandardOpenOption.CREATE, StandardOpenOption.WRITE );
-                        try ( WritableByteChannel writableByteChannel = pagedFile.openWritableByteChannel() )
-                        {
-                            writableByteChannel.write( ByteBuffer.wrap( thisConent.getBytes( Charsets.UTF_8 ) ) );
-                        }
+                        writeContents( fsa, fileCopy, thisConent );
 
-                        sendFile( ctx, file, pageCache );
-                        sendFile( ctx, pagedFile.file(), pageCache );
+                        sendFile( ctx, file );
+                        sendFile( ctx, fileCopy );
                         StoreCopyFinishedResponse.Status status =
                                 contents.hasNext() ? StoreCopyFinishedResponse.Status.E_UNKNOWN : StoreCopyFinishedResponse.Status.SUCCESS;
                         new StoreFileStreamingProtocol().end( ctx, status );
-                        protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
+                        catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
                     }
 
-                    private void sendFile( ChannelHandlerContext ctx, File file, PageCache pageCache )
+                    private void sendFile( ChannelHandlerContext ctx, File file )
                     {
                         ctx.write( ResponseMessageType.FILE );
                         ctx.write( new FileHeader( file.getName() ) );
-                        ctx.writeAndFlush( new FileSender( new StoreResource( file, file.getName(), 16, pageCache, fsa ) ) ).addListener(
+                        ctx.writeAndFlush( new FileSender( new StoreResource( file, file.getName(), 16, fsa ) ) ).addListener(
                                 future -> fsa.deleteFile( file ) );
                     }
                 };
             }
 
             @Override
-            public ChannelHandler storeListingRequestHandler()
+            public ChannelHandler storeListingRequestHandler( CatchupServerProtocol catchupServerProtocol )
             {
                 return new SimpleChannelInboundHandler<PrepareStoreCopyRequest>()
                 {
@@ -255,14 +226,14 @@ public class StoreCopyClientIT
                     protected void channelRead0( ChannelHandlerContext ctx, PrepareStoreCopyRequest msg )
                     {
                         ctx.write( ResponseMessageType.PREPARE_STORE_COPY_RESPONSE );
-                        ctx.writeAndFlush( PrepareStoreCopyResponse.success( new File[]{new File( fileName )}, new Empty.EmptyPrimitiveLongSet(), 1 ) );
-                        protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
+                        ctx.writeAndFlush( PrepareStoreCopyResponse.success( new File[]{new File( fileName )}, LongSets.immutable.empty(), 1 ) );
+                        catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
                     }
                 };
             }
 
             @Override
-            public ChannelHandler getIndexSnapshotRequestHandler()
+            public ChannelHandler getIndexSnapshotRequestHandler( CatchupServerProtocol catchupServerProtocol )
             {
                 return new SimpleChannelInboundHandler<GetIndexFilesRequest>()
                 {
@@ -281,7 +252,7 @@ public class StoreCopyClientIT
         {
             // when
             ListenSocketAddress listenAddress = new ListenSocketAddress( "localhost", PortAuthority.allocatePort() );
-            halfWayFailingServer = new CatchupServerBuilder( protocol -> halfWayFailingServerhandler ).listenAddress( listenAddress ).build();
+            halfWayFailingServer = new CatchupServerBuilder( halfWayFailingServerhandler ).listenAddress( listenAddress ).build();
             halfWayFailingServer.start();
 
             CatchupAddressProvider addressProvider =
@@ -289,21 +260,21 @@ public class StoreCopyClientIT
 
             StoreId storeId = halfWayFailingServerhandler.getStoreId();
             File storeDir = testDirectory.makeGraphDbDir();
-            PageCache pageCache = StandalonePageCacheFactory.createPageCache( fsa );
-            StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( storeDir, fsa, pageCache, new Monitors() );
+            StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( storeDir, fsa, new Monitors() );
 
             // and
-            subject.copyStoreFiles( addressProvider, storeId, streamToDiskProvider, () -> defaultTerminationCondition );
+            subject.copyStoreFiles( addressProvider, storeId, streamToDiskProvider, () -> defaultTerminationCondition, targetLocation );
 
             // then
             assertEquals( fileContent( new File( storeDir, fileName ) ), finishedContent );
 
             // and
-            PagedFile pagedFile = pageCache.map( new File( storeDir, pageCacheFileName ), pageCache.pageSize(), StandardOpenOption.READ );
+            File fileCopy = new File( storeDir, copyFileName );
+
             ByteBuffer buffer = ByteBuffer.wrap( new byte[finishedContent.length()] );
-            try ( ReadableByteChannel readableByteChannel = pagedFile.openReadableByteChannel() )
+            try ( StoreChannel storeChannel = fsa.create( fileCopy ) )
             {
-                readableByteChannel.read( buffer );
+                storeChannel.read( buffer );
             }
             assertEquals( finishedContent, new String( buffer.array(), Charsets.UTF_8 ) );
         }
@@ -312,13 +283,6 @@ public class StoreCopyClientIT
             halfWayFailingServer.stop();
             halfWayFailingServer.shutdown();
         }
-    }
-
-    private PageCache neverSupportingFileOperationPageCache( PageCache pageCache )
-    {
-        PageCache spy = spy( pageCache );
-        when( spy.fileSystemSupportsFileOperations() ).thenReturn( false );
-        return spy;
     }
 
     private static AdvertisedSocketAddress from( int port )
@@ -353,8 +317,8 @@ public class StoreCopyClientIT
         return stringBuilder.toString();
     }
 
-    private String clientFileContents( InMemoryStoreStreamProvider storeStreamProvider, String filename )
+    private String clientFileContents( InMemoryStoreStreamProvider storeFileStreamsProvider, String filename )
     {
-        return storeStreamProvider.fileStreams().get( filename ).toString();
+        return storeFileStreamsProvider.fileStreams().get( filename ).toString();
     }
 }

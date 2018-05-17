@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
@@ -53,6 +54,7 @@ public class DefaultBoltConnection implements BoltConnection
     private final BoltStateMachine machine;
     private final BoltConnectionLifetimeListener listener;
     private final BoltConnectionQueueMonitor queueMonitor;
+    private final PackOutput output;
 
     private final Log log;
     private final Log userLog;
@@ -64,17 +66,20 @@ public class DefaultBoltConnection implements BoltConnection
     private final AtomicBoolean shouldClose = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
+    public DefaultBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService,
+            BoltConnectionLifetimeListener listener,
             BoltConnectionQueueMonitor queueMonitor )
     {
-        this( channel, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE );
+        this( channel, output, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE );
     }
 
-    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
+    public DefaultBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService,
+            BoltConnectionLifetimeListener listener,
             BoltConnectionQueueMonitor queueMonitor, int maxBatchSize )
     {
         this.id = channel.id();
         this.channel = channel;
+        this.output = output;
         this.machine = machine;
         this.listener = listener;
         this.queueMonitor = queueMonitor;
@@ -109,6 +114,12 @@ public class DefaultBoltConnection implements BoltConnection
     }
 
     @Override
+    public PackOutput output()
+    {
+        return output;
+    }
+
+    @Override
     public boolean hasPendingJobs()
     {
         return !queue.isEmpty();
@@ -140,45 +151,68 @@ public class DefaultBoltConnection implements BoltConnection
             boolean loop = false;
             do
             {
-                if ( !shouldClose.get() )
+                // exit loop if we'll close the connection
+                if ( willClose() )
                 {
-                    if ( waitForMessage || !queue.isEmpty() )
-                    {
-                        queue.drainTo( batch, batchCount );
-                        if ( batch.size() == 0 )
-                        {
-                            while ( true )
-                            {
-                                Job nextJob = queue.poll( 10, SECONDS );
-                                if ( nextJob != null )
-                                {
-                                    batch.add( nextJob );
+                    break;
+                }
 
-                                    break;
-                                }
-                                else
-                                {
-                                    machine.validateTransaction();
-                                }
+                // do we have pending jobs or shall we wait for new jobs to
+                // arrive, which is required only for releasing stickiness
+                // condition to this thread
+                if ( waitForMessage || !queue.isEmpty() )
+                {
+                    queue.drainTo( batch, batchCount );
+                    if ( batch.size() == 0 )
+                    {
+                        // loop until we get a new job, if we cannot then validate
+                        // transaction to check for termination condition. We'll
+                        // break loop if we'll close the connection
+                        while ( !willClose() )
+                        {
+                            Job nextJob = queue.poll( 10, SECONDS );
+                            if ( nextJob != null )
+                            {
+                                batch.add( nextJob );
+
+                                break;
+                            }
+                            else
+                            {
+                                machine.validateTransaction();
                             }
                         }
-                        notifyDrained( batch );
-
-                        while ( batch.size() > 0 )
-                        {
-                            Job current = batch.remove( 0 );
-
-                            current.perform( machine );
-                        }
-
-                        loop = machine.shouldStickOnThread();
-                        waitForMessage = loop;
                     }
+                    notifyDrained( batch );
+
+                    // execute each job that's in the batch
+                    while ( batch.size() > 0 )
+                    {
+                        Job current = batch.remove( 0 );
+
+                        current.perform( machine );
+                    }
+
+                    // do we have any condition that require this connection to
+                    // stick to the current thread (i.e. is there an open statement
+                    // or an open transaction)?
+                    loop = machine.shouldStickOnThread();
+                    waitForMessage = loop;
+                }
+
+                // we processed all pending messages, let's flush underlying channel
+                if ( queue.size() == 0 || maxBatchSize == 1 )
+                {
+                    output.flush();
                 }
             }
             while ( loop );
 
-            assert !machine.hasOpenStatement();
+            // assert only if we'll stay alive
+            if ( !willClose() )
+            {
+                assert !machine.hasOpenStatement();
+            }
         }
         catch ( BoltConnectionAuthFatality ex )
         {
@@ -202,7 +236,7 @@ public class DefaultBoltConnection implements BoltConnection
         }
         finally
         {
-            if ( shouldClose.get() )
+            if ( willClose() )
             {
                 close();
             }
@@ -220,7 +254,7 @@ public class DefaultBoltConnection implements BoltConnection
         {
             error = Neo4jError.from( Status.Request.NoThreadsAvailable, Status.Request.NoThreadsAvailable.code().description() );
             message = String.format( "Unable to schedule bolt session '%s' for execution since there are no available threads to " +
-                    "serve it at the moment. You can retry at a later time or consider increasing max pool / queue size for bolt connector(s).", id() );
+                    "serve it at the moment. You can retry at a later time or consider increasing max thread pool size for bolt connector(s).", id() );
         }
         else
         {
@@ -255,17 +289,31 @@ public class DefaultBoltConnection implements BoltConnection
         }
     }
 
+    private boolean willClose()
+    {
+        return shouldClose.get();
+    }
+
     private void close()
     {
         if ( closed.compareAndSet( false, true ) )
         {
             try
             {
+                output.close();
+            }
+            catch ( Throwable t )
+            {
+                log.error( String.format( "Unable to close pack output of bolt session '%s'.", id() ), t );
+            }
+
+            try
+            {
                 machine.close();
             }
             catch ( Throwable t )
             {
-                log.error( String.format( "Unable to close bolt session '%s'.", id() ), t );
+                log.error( String.format( "Unable to close state machine of bolt session '%s'.", id() ), t );
             }
             finally
             {
@@ -306,7 +354,7 @@ public class DefaultBoltConnection implements BoltConnection
 
     private void notifyDrained( List<Job> jobs )
     {
-        if ( queueMonitor != null )
+        if ( queueMonitor != null && jobs.size() > 0 )
         {
             queueMonitor.drained( this, jobs );
         }

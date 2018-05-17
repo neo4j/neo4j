@@ -19,12 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
-
-import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -40,7 +36,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,IOException> implements IndexReader
+class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>> implements IndexReader
 {
     private final IndexDescriptor descriptor;
 
@@ -90,7 +86,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
             loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
-            for ( NativeSchemaIndexReader reader : this )
+            for ( NativeSchemaIndexReader<?,NativeSchemaValue> reader : this )
             {
                 reader.query( multiProgressor, indexOrder, predicates );
             }
@@ -131,7 +127,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
      * To create TemporalIndexPartReaders on demand, the PartFactory maintains a reference to the parent TemporalIndexAccessor.
      * The creation of a part reader can then be delegated to the correct PartAccessor.
      */
-    static class PartFactory implements TemporalIndexCache.Factory<TemporalIndexPartReader<?>, IOException>
+    static class PartFactory implements TemporalIndexCache.Factory<TemporalIndexPartReader<?>>
     {
         private final TemporalIndexAccessor accessor;
 

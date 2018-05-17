@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
-abstract class SchemaLayout<KEY extends NativeSchemaKey> extends Layout.Adapter<KEY,NativeSchemaValue>
+abstract class SchemaLayout<KEY extends NativeSchemaKey<KEY>> extends Layout.Adapter<KEY,NativeSchemaValue>
 {
     private final long identifier;
     private final int majorVersion;

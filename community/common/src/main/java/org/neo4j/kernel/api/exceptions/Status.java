@@ -108,7 +108,7 @@ public interface Status
                 "The client made a request but did not consume outgoing buffers in a timely fashion." ),
         NoThreadsAvailable( TransientError,  // TODO: see above
                 "There are no available threads to serve this request at the moment. You can retry at a later time " +
-                        "or consider increasing max pool / queue size for bolt connector(s)." );
+                        "or consider increasing max thread pool size for bolt connector(s)." );
         private final Code code;
 
         @Override

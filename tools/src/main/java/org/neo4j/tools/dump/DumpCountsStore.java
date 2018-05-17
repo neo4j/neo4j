@@ -32,7 +32,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
@@ -181,8 +181,16 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     public void visitIndexStatistics( long indexId, long updates, long size )
     {
         IndexDescriptor index = indexes.get( indexId );
-        out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n", labels( index.schema().getEntityTokenIds() ),
-                propertyKeys( index.schema().getPropertyIds() ), updates, size );
+        out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
+                label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
+    }
+
+    @Override
+    public void visitIndexSample( long indexId, long unique, long size )
+    {
+        IndexDescriptor index = indexes.get( indexId );
+        out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
+                label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
     }
 
     @Override
@@ -194,7 +202,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     private String labels( int[] ids )
     {
-        if ( ids.length == 1 )
+        if ( id == StatementConstants.ANY_LABEL )
         {
             if ( ids[0] == ReadOperations.ANY_LABEL )
             {
@@ -229,7 +237,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     private String relationshipType( int id )
     {
-        if ( id == ReadOperations.ANY_RELATIONSHIP_TYPE )
+        if ( id == StatementConstants.ANY_RELATIONSHIP_TYPE )
         {
             return "";
         }
@@ -274,12 +282,16 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         }
     }
 
-    @Override
-    public void visitIndexSample( long indexId, long unique, long size )
+    private static Map<Long,IndexDescriptor> getAllIndexesFrom( SchemaStorage storage )
     {
-        IndexDescriptor index = indexes.get( indexId );
-        out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n", labels( index.schema().getEntityTokenIds() ),
-                propertyKeys( index.schema().getPropertyIds() ), unique, size );
+        HashMap<Long,IndexDescriptor> indexes = new HashMap<>();
+        Iterator<StoreIndexDescriptor> indexRules = storage.indexesGetAll();
+        while ( indexRules.hasNext() )
+        {
+            StoreIndexDescriptor rule = indexRules.next();
+            indexes.put( rule.getId(), rule );
+        }
+        return indexes;
     }
 
     private static class VisitableCountsTracker extends CountsTracker

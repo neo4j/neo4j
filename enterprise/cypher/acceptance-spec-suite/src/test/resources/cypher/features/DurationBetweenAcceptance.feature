@@ -380,3 +380,24 @@ Feature: DurationBetweenAcceptance
       | 'PT-1.6S'     |
       | 'PT1.6S'      |
     And no side effects
+
+  Scenario: Should compute durations with no difference
+    Given an empty graph
+    When executing query:
+    """
+    UNWIND[ duration.inSeconds(localtime(), localtime()),
+            duration.inSeconds(time(), time()),
+            duration.inSeconds(date(), date()),
+            duration.inSeconds(localdatetime(), localdatetime()),
+            duration.inSeconds(datetime(), datetime())
+          ] as d
+    RETURN d
+    """
+    Then the result should be, in order:
+      | d             |
+      | 'PT0S'        |
+      | 'PT0S'        |
+      | 'PT0S'        |
+      | 'PT0S'        |
+      | 'PT0S'        |
+    And no side effects

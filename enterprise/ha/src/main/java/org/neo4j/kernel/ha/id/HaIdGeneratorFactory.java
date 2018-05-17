@@ -161,12 +161,14 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
         private void switchToSlave( Master master )
         {
+            String previousDelegate = delegate.toString();
             long highId = delegate.getHighId();
             // The .id file is open and marked DIRTY
             delegate.delete();
             // The .id file underneath is now gone
             delegate = new SlaveIdGenerator( idType, highId, master, log, requestContextFactory );
-            log.debug( "Instantiated slave delegate " + delegate + " of type " + idType + " with highid " + highId );
+            log.debug( "Instantiated slave delegate " + delegate + " of type " + idType + " with highid " + highId +
+                    " (the previous delegate was " + previousDelegate + ")." );
             state = IdGeneratorState.SLAVE;
         }
 
@@ -174,12 +176,14 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         {
             if ( state == IdGeneratorState.SLAVE )
             {
+                String previousDelegate = delegate.toString();
                 long highId = delegate.getHighId();
                 delegate.delete();
 
                 localFactory.create( fileName, highId, false );
                 delegate = localFactory.open( fileName, grabSize, idType, () -> highId, maxId );
-                log.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId );
+                log.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId +
+                                                   " (the previous delegate was " + previousDelegate + ")."  );
             }
             else
             {

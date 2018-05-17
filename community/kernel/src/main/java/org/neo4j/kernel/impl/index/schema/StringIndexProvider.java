@@ -33,10 +33,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
@@ -55,30 +54,27 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
     }
 
     @Override
-    Layout<StringSchemaKey,NativeSchemaValue> layout( SchemaIndexDescriptor descriptor )
+    Layout<StringSchemaKey,NativeSchemaValue> layout( StoreIndexDescriptor descriptor )
     {
         return new StringLayout();
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout,
-                                                SchemaIndexDescriptor descriptor, long indexId,
-                                                IndexSamplingConfig samplingConfig )
+    protected IndexPopulator newIndexPopulator( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig )
     {
-        return new StringSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, indexId, samplingConfig );
+        return new StringSchemaIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout,
-                                              SchemaIndexDescriptor descriptor, long indexId,
-                                              IndexSamplingConfig samplingConfig ) throws IOException
+    protected IndexAccessor newIndexAccessor( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, StoreIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new StringSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
-                indexId, samplingConfig );
+        return new StringSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    public IndexCapability getCapability()
     {
         return CAPABILITY;
     }
@@ -92,41 +88,33 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
      */
     private static class StringIndexCapability implements IndexCapability
     {
-        private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
-        private static final IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
-
         @Override
-        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
-            if ( support( valueGroups ) )
+            if ( support( valueCategories ) )
             {
-                return SUPPORTED_ORDER;
+                return ORDER_ASC;
             }
-            return EMPTY_ORDER;
+            return ORDER_NONE;
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
-            if ( support( valueGroups ) )
+            if ( support( valueCategories ) )
             {
                 return IndexValueCapability.YES;
             }
-            if ( singleWildcard( valueGroups ) )
+            if ( singleWildcard( valueCategories ) )
             {
                 return IndexValueCapability.PARTIAL;
             }
             return IndexValueCapability.NO;
         }
 
-        private boolean singleWildcard( ValueGroup[] valueGroups )
+        private boolean support( ValueCategory[] valueCategories )
         {
-            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN;
-        }
-
-        private boolean support( ValueGroup[] valueGroups )
-        {
-            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.TEXT;
+            return valueCategories.length == 1 && valueCategories[0] == ValueCategory.TEXT;
         }
     }
 }

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.cypher.internal.util.v3_5.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_5.symbols._
 import org.neo4j.values._
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues
@@ -48,11 +48,9 @@ abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
 
 trait NumericHelper {
 
-  protected def asLongEntityId(a: AnyValue): LongValue = a match {
-    case _ if a.isInstanceOf[FloatValue] =>
-      throw new CypherTypeException("Expected entity id to be an integral value")
-    case _ =>
-      asLong(a)
+  protected def asLongEntityId(a: AnyValue): Option[Long] = a match {
+    case a: IntegralValue => Some(a.longValue())
+    case _ => None
   }
 
   protected def asDouble(a: AnyValue): DoubleValue = Values.doubleValue(asNumber(a).doubleValue())

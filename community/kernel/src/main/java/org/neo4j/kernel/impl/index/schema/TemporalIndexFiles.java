@@ -20,13 +20,14 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.values.storable.ValueGroup;
 
 class TemporalIndexFiles
@@ -39,10 +40,10 @@ class TemporalIndexFiles
     private FileLayout<ZonedTimeSchemaKey> zonedTime;
     private FileLayout<DurationSchemaKey> duration;
 
-    TemporalIndexFiles( IndexDirectoryStructure directoryStructure, long indexId, IndexDescriptor descriptor, FileSystemAbstraction fs )
+    TemporalIndexFiles( IndexDirectoryStructure directoryStructure, StoreIndexDescriptor descriptor, FileSystemAbstraction fs )
     {
         this.fs = fs;
-        File indexDirectory = directoryStructure.directoryForIndex( indexId );
+        File indexDirectory = directoryStructure.directoryForIndex( descriptor.getId() );
         this.date = new FileLayout<>( new File( indexDirectory, "date" ), new DateLayout(), ValueGroup.DATE );
         this.localTime = new FileLayout<>( new File( indexDirectory, "localTime" ), new LocalTimeLayout(), ValueGroup.LOCAL_TIME );
         this.zonedTime = new FileLayout<>( new File( indexDirectory, "zonedTime" ), new ZonedTimeLayout(), ValueGroup.ZONED_TIME );
@@ -63,7 +64,7 @@ class TemporalIndexFiles
         return existing;
     }
 
-    <T,E extends Exception> void loadExistingIndexes( TemporalIndexCache<T,E> indexCache ) throws E
+    <T> void loadExistingIndexes( TemporalIndexCache<T> indexCache ) throws IOException
     {
         for ( FileLayout fileLayout : existing() )
         {
@@ -116,7 +117,7 @@ class TemporalIndexFiles
 
     // .... we will add more explicit accessor methods later
 
-    static class FileLayout<KEY extends NativeSchemaKey>
+    static class FileLayout<KEY extends NativeSchemaKey<KEY>>
     {
         final File indexFile;
         final Layout<KEY,NativeSchemaValue> layout;

@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>3.4.0-SNAPSHOT</version>
+        <version>3.5.0-SNAPSHOT</version>
         <relativePath>../..</relativePath>
     </parent>
 
@@ -18,7 +18,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-lucene-upgrade</artifactId>
-    <version>3.4.0-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
 
     <packaging>jar</packaging>
     <name>Neo4j - Lucene Index Upgrade</name>
@@ -120,8 +120,16 @@
             <version>${lucene5.version}</version>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-migrationsupport</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.surefire</groupId>
+            <artifactId>surefire-logger-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>

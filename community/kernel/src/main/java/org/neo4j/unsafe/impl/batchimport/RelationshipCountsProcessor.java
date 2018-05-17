@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
@@ -103,10 +103,10 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
     {
         for ( int wildcardType = 0; wildcardType <= anyRelationshipType; wildcardType++ )
         {
-            int type = wildcardType == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : wildcardType;
+            int type = wildcardType == anyRelationshipType ? StatementConstants.ANY_RELATIONSHIP_TYPE : wildcardType;
             long count = wildcardCounts.get( wildcardType );
             countsUpdater.incrementRelationshipCount(
-                    ReadOperations.ANY_LABEL, type, ReadOperations.ANY_LABEL, count );
+                    StatementConstants.ANY_LABEL, type, StatementConstants.ANY_LABEL, count );
         }
 
         for ( int labelId = 0; labelId < anyLabel; labelId++ )
@@ -116,10 +116,10 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
 
                 long startCount = labelsCounts.get( arrayIndex( labelId, typeId, START ) );
                 long endCount = labelsCounts.get( arrayIndex( labelId, typeId, END ) );
-                int type = typeId == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : typeId;
+                int type = typeId == anyRelationshipType ? StatementConstants.ANY_RELATIONSHIP_TYPE : typeId;
 
-                countsUpdater.incrementRelationshipCount( labelId, type, ReadOperations.ANY_LABEL, startCount );
-                countsUpdater.incrementRelationshipCount( ReadOperations.ANY_LABEL, type, labelId, endCount );
+                countsUpdater.incrementRelationshipCount( labelId, type, StatementConstants.ANY_LABEL, startCount );
+                countsUpdater.incrementRelationshipCount( StatementConstants.ANY_LABEL, type, labelId, endCount );
             }
         }
     }

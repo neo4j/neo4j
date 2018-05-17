@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.core.state;
 
+import java.io.IOException;
+
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
@@ -63,7 +65,7 @@ public class CoreSnapshotService
         }
     }
 
-    public synchronized void installSnapshot( CoreSnapshot coreSnapshot ) throws Exception
+    public synchronized void installSnapshot( CoreSnapshot coreSnapshot ) throws IOException
     {
         long snapshotPrevIndex = coreSnapshot.prevIndex();
         raftLog.skip( snapshotPrevIndex, coreSnapshot.prevTerm() );

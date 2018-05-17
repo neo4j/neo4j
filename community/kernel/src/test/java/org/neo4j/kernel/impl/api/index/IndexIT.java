@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,7 +32,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
@@ -39,15 +39,15 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -61,7 +61,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.fromDescriptor;
 
 public class IndexIT extends KernelIntegrationTest
 {
@@ -148,7 +147,7 @@ public class IndexIT extends KernelIntegrationTest
         commit();
 
         // WHEN
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        Transaction transaction = newTransaction( AUTH_DISABLED );
         IndexReference addedRule = transaction.schemaWrite()
                                                    .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
         Set<IndexReference> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
@@ -170,7 +169,7 @@ public class IndexIT extends KernelIntegrationTest
         rollback();
 
         // THEN
-        KernelTransaction transaction = newTransaction();
+        Transaction transaction = newTransaction();
         assertEquals( emptySet(), asSet( transaction.schemaRead().indexesGetForLabel( labelId ) ) );
         commit();
     }
@@ -182,15 +181,15 @@ public class IndexIT extends KernelIntegrationTest
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
-        SchemaIndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor );
+        IndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor, Optional.empty() );
         // then
-        KernelTransaction transaction = newTransaction();
+        Transaction transaction = newTransaction();
         assertEquals( emptySet(), asSet( transaction.schemaRead().constraintsGetForLabel( labelId ) ) );
         commit();
 
         // when
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-        schemaWrite.indexDrop( fromDescriptor( constraintIndex ) );
+        schemaWrite.indexDrop( constraintIndex );
         commit();
 
         // then
@@ -263,7 +262,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldListConstraintIndexesInTheBeansAPI() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        Transaction transaction = newTransaction( AUTH_DISABLED );
         transaction.schemaWrite().uniquePropertyConstraintCreate(
                 SchemaDescriptorFactory.forLabel(
                         transaction.tokenWrite().labelGetOrCreateForName( "Label1" ),
@@ -272,7 +271,7 @@ public class IndexIT extends KernelIntegrationTest
         commit();
 
         // when
-        try ( Transaction tx = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes;
             IndexDefinition index;
@@ -307,8 +306,9 @@ public class IndexIT extends KernelIntegrationTest
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
         IndexReference index1 = schemaWrite.indexCreate( descriptor );
-        IndexReference index2 = fromDescriptor(
-                ((IndexBackedConstraintDescriptor) schemaWrite.uniquePropertyConstraintCreate( descriptor2 )).ownedIndexDescriptor()) ;
+        IndexReference index2 =
+                ((IndexBackedConstraintDescriptor) schemaWrite.uniquePropertyConstraintCreate( descriptor2 ))
+                        .ownedIndexDescriptor();
         commit();
 
         // then/when
@@ -322,13 +322,13 @@ public class IndexIT extends KernelIntegrationTest
     {
         return () ->
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
             {
                 db.schema().indexFor( label ).on( propertyKey ).create();
                 transaction.success();
             }
 
-            try ( Transaction transaction = db.beginTx() )
+            try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
                 transaction.success();

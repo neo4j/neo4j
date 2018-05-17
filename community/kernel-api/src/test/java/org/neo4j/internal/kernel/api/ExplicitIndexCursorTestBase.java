@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Transaction;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertFoundRelationships;
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodeCount;
-import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
@@ -52,17 +51,18 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindNodeByLookup() throws Exception
     {
         // given
-        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor();
-              PrimitiveLongSet nodes = Primitive.longSet() )
+        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor() )
         {
+            MutableLongSet nodes = new LongHashSet();
+
             // when
-            indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", stringValue( "this is it" ) );
+            indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", "this is it" );
 
             // then
             assertNodeCount( cursor, 1, nodes );
 
             // when
-            indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", stringValue( "not that" ) );
+            indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", "not that" );
 
             // then
             assertNodeCount( cursor, 0, nodes );
@@ -73,9 +73,10 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindNodeByQuery() throws Exception
     {
         // given
-        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor();
-              PrimitiveLongSet nodes = Primitive.longSet() )
+        try ( NodeExplicitIndexCursor cursor = cursors.allocateNodeExplicitIndexCursor() )
         {
+            MutableLongSet nodes = new LongHashSet();
+
             // when
             indexRead.nodeExplicitIndexQuery( cursor, "foo", "bar:this*" );
 
@@ -107,15 +108,16 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindRelationshipByLookup() throws Exception
     {
         // given
-        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor();
-              PrimitiveLongSet edges = Primitive.longSet() )
+        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor(); )
         {
+            MutableLongSet edges = new LongHashSet();
+
             // when
             indexRead.relationshipExplicitIndexLookup(
                     cursor,
                     "rels",
                     "alpha",
-                    stringValue( "betting on the wrong string" ),
+                    "betting on the wrong string" ,
                     -1,
                     -1 );
 
@@ -123,7 +125,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
             assertFoundRelationships( cursor, 1, edges );
 
             // when
-            indexRead.relationshipExplicitIndexLookup( cursor, "rels", "bar", stringValue( "not that" ), -1, -1 );
+            indexRead.relationshipExplicitIndexLookup( cursor, "rels", "bar", "not that", -1, -1 );
 
             // then
             assertFoundRelationships( cursor, 0, edges );
@@ -134,9 +136,10 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
     public void shouldFindRelationshipByQuery() throws Exception
     {
         // given
-        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor();
-              PrimitiveLongSet relationships = Primitive.longSet() )
+        try ( RelationshipExplicitIndexCursor cursor = cursors.allocateRelationshipExplicitIndexCursor(); )
         {
+            MutableLongSet relationships = new LongHashSet();
+
             // when
             indexRead.relationshipExplicitIndexQuery( cursor, "rels", "alpha:betting*", -1, -1 );
 

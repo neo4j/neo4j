@@ -70,7 +70,7 @@ public class RESTApiModule implements ServerModule
         URI restApiUri = restApiUri( );
 
         webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
-        webServer.addFilter( new CorsFilter(), "/*" );
+        webServer.addFilter( new CorsFilter( logProvider ), "/*" );
         webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
         loadPlugins();
     }

@@ -59,7 +59,7 @@ public class HighLimitStoreMigrationTest
     @Test
     public void haveDifferentFormatCapabilitiesAsHighLimit3_0()
     {
-        assertFalse( HighLimit.RECORD_FORMATS.hasSameCapabilities( HighLimitV3_0_0.RECORD_FORMATS, CapabilityType.FORMAT ) );
+        assertFalse( HighLimit.RECORD_FORMATS.hasCompatibleCapabilities( HighLimitV3_0_0.RECORD_FORMATS, CapabilityType.FORMAT ) );
     }
 
     @Test

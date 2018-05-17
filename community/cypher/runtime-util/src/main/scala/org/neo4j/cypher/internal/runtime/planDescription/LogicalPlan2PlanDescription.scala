@@ -19,24 +19,23 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
-import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyName, PropertyKeyToken, Expression => ASTExpression}
-import org.neo4j.cypher.internal.v3_4.functions.Point
-import org.neo4j.cypher.internal.v3_4.logical.plans
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.util.v3_5.InternalException
+import org.neo4j.cypher.internal.v3_5.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyName, PropertyKeyToken, Expression => ASTExpression}
+import org.neo4j.cypher.internal.v3_5.functions.Point
+import org.neo4j.cypher.internal.v3_5.logical.plans
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 
-object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, ReadOnlies, Cardinalities) => InternalPlanDescription) {
+object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName, Boolean, Cardinalities) => InternalPlanDescription) {
 
   override def apply(input: LogicalPlan,
                      plannerName: PlannerName,
-                     readOnlies: ReadOnlies,
+                     readOnly: Boolean,
                      cardinalities: Cardinalities): InternalPlanDescription = {
-    val readOnly = readOnlies.get(input.id)
     new LogicalPlan2PlanDescription(readOnly, cardinalities).create(input)
-      .addArgument(Version("CYPHER 3.4"))
+      .addArgument(Version("CYPHER "+plannerName.version))
       .addArgument(RuntimeVersion("3.4"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))

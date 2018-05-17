@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+
 import java.io.Closeable;
 import java.util.Objects;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.asSet;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 
 /**
  * Primitive long version of collection that with given a sequence of add and removal operations, tracks
@@ -41,20 +40,27 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
  */
 public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Closeable
 {
+    private static final MutableLongSet NOT_INITIALIZED = LongSets.mutable.empty();
+
     private final CollectionsFactory collectionsFactory;
-    private PrimitiveLongSet addedElements;
-    private PrimitiveLongSet removedElements;
+    private MutableLongSet addedElements;
+    private MutableLongSet removedElements;
 
     public PrimitiveLongDiffSets()
     {
-        this( emptySet(), emptySet(), OnHeapCollectionsFactory.INSTANCE );
+        this( NOT_INITIALIZED, NOT_INITIALIZED, OnHeapCollectionsFactory.INSTANCE );
     }
 
-    public PrimitiveLongDiffSets( PrimitiveLongSet addedElements, PrimitiveLongSet removedElements, CollectionsFactory collectionsFactory )
+    public PrimitiveLongDiffSets( MutableLongSet addedElements, MutableLongSet removedElements, CollectionsFactory collectionsFactory )
     {
         this.addedElements = addedElements;
         this.removedElements = removedElements;
         this.collectionsFactory = collectionsFactory;
+    }
+
+    public PrimitiveLongDiffSets( CollectionsFactory collectionsFactory )
+    {
+        this( NOT_INITIALIZED, NOT_INITIALIZED, collectionsFactory );
     }
 
     @Override
@@ -69,7 +75,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
         return removedElements.contains( element );
     }
 
-    public void removeAll( PrimitiveLongIterator elementsToRemove )
+    public void removeAll( LongIterator elementsToRemove )
     {
         checkRemovedElements();
         while ( elementsToRemove.hasNext() )
@@ -78,7 +84,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
         }
     }
 
-    public void addAll( PrimitiveLongIterator elementsToAdd )
+    public void addAll( LongIterator elementsToAdd )
     {
         checkAddedElements();
         while ( elementsToAdd.hasNext() )
@@ -101,12 +107,12 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
 
     public void visit( PrimitiveLongDiffSetsVisitor visitor )
     {
-        PrimitiveLongIterator addedItems = addedElements.iterator();
+        LongIterator addedItems = addedElements.longIterator();
         while ( addedItems.hasNext() )
         {
             visitor.visitAdded( addedItems.next() );
         }
-        PrimitiveLongIterator removedItems = removedElements.iterator();
+        LongIterator removedItems = removedElements.longIterator();
         while ( removedItems.hasNext() )
         {
             visitor.visitRemoved( removedItems.next() );
@@ -114,7 +120,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
     }
 
     @Override
-    public PrimitiveLongIterator augment( PrimitiveLongIterator source )
+    public LongIterator augment( LongIterator source )
     {
         return DiffApplyingPrimitiveLongIterator.augment( source, addedElements, removedElements );
     }
@@ -132,21 +138,21 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
     }
 
     @Override
-    public PrimitiveLongSet getAdded()
+    public MutableLongSet getAdded()
     {
         return addedElements;
     }
 
     @Override
-    public PrimitiveLongSet getRemoved()
+    public MutableLongSet getRemoved()
     {
         return removedElements;
     }
 
     @Override
-    public PrimitiveLongSet getAddedSnapshot()
+    public MutableLongSet getAddedSnapshot()
     {
-        return asSet( addedElements );
+        return addedElements.toSet();
     }
 
     @Override
@@ -194,7 +200,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
 
     private void checkAddedElements()
     {
-        if ( emptySet() == addedElements )
+        if ( addedElements == NOT_INITIALIZED )
         {
             addedElements = collectionsFactory.newLongSet();
         }
@@ -202,7 +208,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
 
     private void checkRemovedElements()
     {
-        if ( emptySet() == removedElements )
+        if ( removedElements == NOT_INITIALIZED )
         {
             removedElements = collectionsFactory.newLongSet();
         }
@@ -211,7 +217,6 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
     @Override
     public void close()
     {
-        removedElements.close();
-        addedElements.close();
+        // nop
     }
 }

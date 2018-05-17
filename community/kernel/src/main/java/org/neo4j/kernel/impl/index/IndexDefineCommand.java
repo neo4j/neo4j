@@ -19,21 +19,26 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
+import org.eclipse.collections.api.map.primitive.ObjectIntMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
+
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 import org.neo4j.storageengine.api.WritableChannel;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static org.neo4j.collection.primitive.Primitive.intObjectMap;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
 
 /**
@@ -51,38 +56,20 @@ public class IndexDefineCommand extends Command
     static final int HIGHEST_POSSIBLE_ID = 0xFFFF - 1; // -1 since the actual value -1 is reserved for all-ones
     private final AtomicInteger nextIndexNameId = new AtomicInteger();
     private final AtomicInteger nextKeyId = new AtomicInteger();
-    private Map<String,Integer> indexNameIdRange;
-    private Map<String,Integer> keyIdRange;
-    private PrimitiveIntObjectMap<String> idToIndexName;
-    private PrimitiveIntObjectMap<String> idToKey;
+    private MutableObjectIntMap<String> indexNameIdRange = new ObjectIntHashMap<>();
+    private MutableObjectIntMap<String> keyIdRange = new ObjectIntHashMap<>();
+    private MutableIntObjectMap<String> idToIndexName = new IntObjectHashMap<>();
+    private MutableIntObjectMap<String> idToKey = new IntObjectHashMap<>();
 
-    public IndexDefineCommand()
+    public void init( MutableObjectIntMap<String> indexNames, MutableObjectIntMap<String> keys )
     {
-        setIndexNameIdRange( new HashMap<>() );
-        setKeyIdRange( new HashMap<>() );
-        idToIndexName = intObjectMap( 16 );
-        idToKey = intObjectMap( 16 );
+        this.indexNameIdRange = requireNonNull( indexNames, "indexNames" );
+        this.keyIdRange = requireNonNull( keys, "keys" );
+        this.idToIndexName = indexNames.flipUniqueValues();
+        this.idToKey = keys.flipUniqueValues();
     }
 
-    public void init( Map<String,Integer> indexNames, Map<String,Integer> keys )
-    {
-        this.setIndexNameIdRange( indexNames );
-        this.setKeyIdRange( keys );
-        idToIndexName = reverse( indexNames );
-        idToKey = reverse( keys );
-    }
-
-    private static PrimitiveIntObjectMap<String> reverse( Map<String,Integer> map )
-    {
-        PrimitiveIntObjectMap<String> result = Primitive.intObjectMap( map.size() );
-        for ( Map.Entry<String,Integer> entry : map.entrySet() )
-        {
-            result.put( entry.getValue(), entry.getKey() );
-        }
-        return result;
-    }
-
-    private static String getFromMap( PrimitiveIntObjectMap<String> map, int id )
+    private static String getFromMap( IntObjectMap<String> map, int id )
     {
         if ( id == -1 )
         {
@@ -91,7 +78,7 @@ public class IndexDefineCommand extends Command
         String result = map.get( id );
         if ( result == null )
         {
-            throw new IllegalArgumentException( "" + id );
+            throw new IllegalArgumentException( String.valueOf( id ) );
         }
         return result;
     }
@@ -116,7 +103,7 @@ public class IndexDefineCommand extends Command
         return getOrAssignId( keyIdRange, idToKey, nextKeyId, key );
     }
 
-    private int getOrAssignId( Map<String,Integer> stringToId, PrimitiveIntObjectMap<String> idToString,
+    private int getOrAssignId( MutableObjectIntMap<String> stringToId, MutableIntObjectMap<String> idToString,
             AtomicInteger nextId, String string )
     {
         if ( string == null )
@@ -124,20 +111,18 @@ public class IndexDefineCommand extends Command
             return -1;
         }
 
-        Integer id = stringToId.get( string );
-        if ( id != null )
+        if ( stringToId.containsKey( string ) )
         {
-            return id;
+            return stringToId.get( string );
         }
 
-        int nextIdInt = nextId.incrementAndGet();
-        if ( nextIdInt > HIGHEST_POSSIBLE_ID || stringToId.size() >= HIGHEST_POSSIBLE_ID )
+        int id = nextId.incrementAndGet();
+        if ( id > HIGHEST_POSSIBLE_ID || stringToId.size() >= HIGHEST_POSSIBLE_ID )
         {
             throw new IllegalStateException( format(
                     "Modifying more than %d indexes or keys in a single transaction is not supported",
                     HIGHEST_POSSIBLE_ID + 1 ) );
         }
-        id = nextIdInt;
 
         stringToId.put( string, id );
         idToString.put( id, string );
@@ -181,24 +166,16 @@ public class IndexDefineCommand extends Command
         return visitor.visitIndexDefineCommand( this );
     }
 
-    public Map<String,Integer> getIndexNameIdRange()
+    @VisibleForTesting
+    ObjectIntMap<String> getIndexNameIdRange()
     {
         return indexNameIdRange;
     }
 
-    private void setIndexNameIdRange( Map<String,Integer> indexNameIdRange )
-    {
-        this.indexNameIdRange = indexNameIdRange;
-    }
-
-    public Map<String,Integer> getKeyIdRange()
+    @VisibleForTesting
+    ObjectIntMap<String> getKeyIdRange()
     {
         return keyIdRange;
-    }
-
-    private void setKeyIdRange( Map<String,Integer> keyIdRange )
-    {
-        this.keyIdRange = keyIdRange;
     }
 
     @Override
@@ -213,22 +190,34 @@ public class IndexDefineCommand extends Command
         channel.put( NeoCommandType.INDEX_DEFINE_COMMAND );
         byte zero = 0;
         IndexCommand.writeIndexCommandHeader( channel, zero, zero, zero, zero, zero, zero, zero );
-        writeMap( channel, getIndexNameIdRange() );
-        writeMap( channel, getKeyIdRange() );
+        try
+        {
+            writeMap( channel, indexNameIdRange );
+            writeMap( channel, keyIdRange );
+        }
+        catch ( UncheckedIOException e )
+        {
+            throw new IOException( e );
+        }
     }
 
-    private void writeMap( WritableChannel channel, Map<String,Integer> map ) throws IOException
+    private static void writeMap( WritableChannel channel, ObjectIntMap<String> map ) throws IOException
     {
-        assert map.size() <= IndexDefineCommand.HIGHEST_POSSIBLE_ID :
-            "Can not write map with size larger than 2 bytes. Actual size " + map.size();
+        assert map.size() <= HIGHEST_POSSIBLE_ID : "Can not write map with size larger than 2 bytes. Actual size " + map.size();
         channel.putShort( (short) map.size() );
-        for ( Map.Entry<String,Integer> entry : map.entrySet() )
+
+        map.forEachKeyValue( ( key, id ) ->
         {
-            write2bLengthAndString( channel, entry.getKey() );
-            int id = entry.getValue();
-            assert id <= IndexDefineCommand.HIGHEST_POSSIBLE_ID :
-                "Can not write id larger than 2 bytes. Actual value " + id;
-            channel.putShort( (short) id );
-        }
+            assert id <= HIGHEST_POSSIBLE_ID : "Can not write id larger than 2 bytes. Actual value " + id;
+            try
+            {
+                write2bLengthAndString( channel, key );
+                channel.putShort( (short) id );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        } );
     }
 }

@@ -19,24 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
-import static org.neo4j.storageengine.api.EntityType.NODE;
-import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
 
 public class IndexMapTest
 {
@@ -55,10 +54,10 @@ public class IndexMapTest
     @Before
     public void setup()
     {
-        PrimitiveLongObjectMap<IndexProxy> map = Primitive.longObjectMap();
-        map.put( 1L, new TestIndexProxy( schema3_4 ) );
-        map.put( 2L, new TestIndexProxy( schema5_6_7 ) );
-        map.put( 3L, new TestIndexProxy( schema5_8 ) );
+        MutableLongObjectMap<IndexProxy> map = new LongObjectHashMap<>();
+        map.put( 1L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema3_4 ).withId( 1 ).withoutCapabilities() ) );
+        map.put( 2L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema5_6_7 ).withId( 2 ).withoutCapabilities() ) );
+        map.put( 3L, new TestIndexProxy( IndexDescriptorFactory.forSchema( schema5_8 ).withId( 3 ).withoutCapabilities() ) );
         map.put( 4L, new TestIndexProxy( node35_8 ) );
         map.put( 5L, new TestIndexProxy( rel35_8 ) );
         map.put( 6L, new TestIndexProxy( anynode_8 ) );
@@ -70,7 +69,7 @@ public class IndexMapTest
     public void shouldGetRelatedIndexForLabel()
     {
         assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, emptySet(), NODE ),
+                indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( schema3_4, node35_8, anynode_8 ) );
     }
 
@@ -86,7 +85,7 @@ public class IndexMapTest
     public void shouldGetRelatedIndexesForLabel()
     {
         assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 5 ), entityTokens( 3, 4 ), emptySet(), NODE ),
+                indexMap.getRelatedIndexes( entityTokens( 5 ), entityTokens( 3, 4 ), IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( schema5_6_7, schema5_8, anynode_8, node35_8 ) );
     }
 
@@ -114,11 +113,11 @@ public class IndexMapTest
     public void shouldHandleUnrelated()
     {
         assertThat(
-                indexMap.getRelatedIndexes( noEntityToken, noEntityToken, emptySet(), NODE ),
+                indexMap.getRelatedIndexes( noEntityToken, noEntityToken, IntSets.immutable.empty(), NODE ),
                 emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 2 ), noEntityToken, emptySet(), NODE ),
+                indexMap.getRelatedIndexes( entityTokens( 2 ), noEntityToken, IntSets.immutable.empty(), NODE ),
                 containsInAnyOrder( anynode_8 ) );
 
         assertThat(
@@ -222,24 +221,24 @@ public class IndexMapTest
         return entityTokenIds;
     }
 
-    private PrimitiveIntSet properties( int... propertyIds )
+    private IntSet properties( int... propertyIds )
     {
-        return PrimitiveIntCollections.asSet( propertyIds );
+        return new IntHashSet( propertyIds );
     }
 
     private class TestIndexProxy extends IndexProxyAdapter
     {
-        private final SchemaDescriptor schema;
+        private final CapableIndexDescriptor descriptor;
 
-        private TestIndexProxy( SchemaDescriptor schema )
+        private TestIndexProxy( CapableIndexDescriptor descriptor )
         {
-            this.schema = schema;
+            this.descriptor = descriptor;
         }
 
         @Override
-        public SchemaDescriptor schema()
+        public CapableIndexDescriptor getDescriptor()
         {
-            return schema;
+            return descriptor;
         }
     }
 }

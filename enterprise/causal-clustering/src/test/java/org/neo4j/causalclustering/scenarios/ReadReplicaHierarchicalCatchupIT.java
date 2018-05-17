@@ -30,7 +30,6 @@ import java.util.UUID;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -96,7 +95,7 @@ public class ReadReplicaHierarchicalCatchupIT
 
         for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
         {
-            coreClusterMember.stopCatchupServer();
+            coreClusterMember.disableCatchupServer();
         }
 
         // 5, 6 are other DCs

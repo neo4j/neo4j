@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.protocol.handshake;
 import io.netty.channel.socket.SocketChannel;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.neo4j.causalclustering.messaging.SimpleNettyChannel;
 import org.neo4j.causalclustering.net.ChildInitializer;
@@ -56,6 +57,8 @@ public class HandshakeServerInitializer implements ChildInitializer
     @Override
     public void initChannel( SocketChannel ch ) throws Exception
     {
+        log.info( "Installing handshake server local %s remote %s", ch.localAddress(), ch.remoteAddress() );
+
         pipelineBuilderFactory.server( ch, log )
                 .addFraming()
                 .add( "handshake_server_encoder", new ServerMessageEncoder() )
@@ -73,9 +76,16 @@ public class HandshakeServerInitializer implements ChildInitializer
         );
 
         handshakeServer.protocolStackFuture().whenComplete( ( protocolStack, failure ) -> onHandshakeComplete( protocolStack, channel, failure ) );
-        channel.closeFuture().addListener(
-                ignored -> channel.parent().pipeline().fireUserEventTriggered( new ServerHandshakeFinishedEvent.Closed( toSocketAddress( channel ) ) )
-        );
+        channel.closeFuture().addListener( f -> {
+            try
+            {
+                channel.parent().pipeline().fireUserEventTriggered(
+                        new ServerHandshakeFinishedEvent.Closed( toSocketAddress( channel ) ) );
+            }
+            catch ( RejectedExecutionException ignored )
+            {
+            }
+        } );
         return new NettyHandshakeServer( handshakeServer );
     }
 

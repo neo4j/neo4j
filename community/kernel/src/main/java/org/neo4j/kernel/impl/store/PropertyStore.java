@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -29,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
@@ -53,7 +54,6 @@ import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
@@ -411,7 +411,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return ByteBuffer.allocate( capacity ).order( ByteOrder.LITTLE_ENDIAN ).put( buffer );
     }
 
-    private static class PropertyBlockValueWriter implements ValueWriter<IllegalArgumentException>
+    private static class PropertyBlockValueWriter extends TemporalValueWriterAdapter<IllegalArgumentException>
     {
         private final PropertyBlock block;
         private final int keyId;
@@ -703,7 +703,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId,
-            PrimitiveLongObjectMap<PropertyRecord> propertyLookup )
+            LongObjectMap<PropertyRecord> propertyLookup )
     {
         long nextProp = firstRecordId;
         List<PropertyRecord> toReturn = new ArrayList<>();

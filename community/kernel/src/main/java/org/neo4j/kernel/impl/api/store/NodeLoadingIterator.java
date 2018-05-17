@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingLongFunction;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -28,10 +29,10 @@ import org.neo4j.storageengine.api.NodeItem;
 
 public class NodeLoadingIterator extends PrefetchingIterator<Cursor<NodeItem>>
 {
-    private final PrimitiveLongIterator ids;
+    private final LongIterator ids;
     private final ThrowingLongFunction<Cursor<NodeItem>,EntityNotFoundException> loader;
 
-    public NodeLoadingIterator( PrimitiveLongIterator ids,
+    public NodeLoadingIterator( LongIterator ids,
             ThrowingLongFunction<Cursor<NodeItem>,EntityNotFoundException> loader )
     {
         this.ids = ids;

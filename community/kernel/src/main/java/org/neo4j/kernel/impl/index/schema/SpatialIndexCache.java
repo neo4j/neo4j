@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
-import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
@@ -33,15 +36,16 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  * Iterating over the cache will return all currently created parts.
  *
  * @param <T> Type of parts
- * @param <E> Type of exception potentially thrown during creation
  */
-class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
+class SpatialIndexCache<T> implements Iterable<T>
 {
-    private final Factory<T, E> factory;
+    private final Factory<T> factory;
+    private ConcurrentHashMap<CoordinateReferenceSystem,T> spatials = new ConcurrentHashMap<>();
+    private final Lock instantiateCloseLock = new ReentrantLock();
+    // guarded by instantiateCloseLock
+    private boolean closed;
 
-    private Map<CoordinateReferenceSystem,T> spatials = new CopyOnWriteHashMap<>();
-
-    SpatialIndexCache( Factory<T, E> factory )
+    SpatialIndexCache( Factory<T> factory )
     {
         this.factory = factory;
     }
@@ -55,14 +59,50 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
      */
     T uncheckedSelect( CoordinateReferenceSystem crs )
     {
+        T existing = spatials.get( crs );
+        if ( existing != null )
+        {
+            return existing;
+        }
+
+        // Instantiate from factory. Do this under lock so that we coordinate with any concurrent call to close.
+        // Concurrent calls to instantiating parts won't contend with each other since there's only
+        // a single writer at a time anyway.
+        instantiateCloseLock.lock();
         try
         {
-            return select( crs );
+            assertOpen();
+            return spatials.computeIfAbsent( crs, key ->
+            {
+                try
+                {
+                    return factory.newSpatial( crs );
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+            } );
         }
-        catch ( Exception t )
+        finally
         {
-            throw new RuntimeException( t );
+            instantiateCloseLock.unlock();
         }
+    }
+
+    protected void assertOpen()
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException( this + " is already closed" );
+        }
+    }
+
+    void closeInstantiateCloseLock()
+    {
+        instantiateCloseLock.lock();
+        closed = true;
+        instantiateCloseLock.unlock();
     }
 
     /**
@@ -71,20 +111,17 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
      *
      * @param crs target coordinate reference system
      * @return selected part
-     * @throws E exception potentially thrown during creation
      */
-    T select( CoordinateReferenceSystem crs ) throws E
+    T select( CoordinateReferenceSystem crs ) throws IOException
     {
-        T part = spatials.get( crs );
-        if ( part == null )
+        try
         {
-            part = factory.newSpatial( crs );
-            if ( part != null )
-            {
-                spatials.put( crs, part );
-            }
+            return uncheckedSelect( crs );
         }
-        return part;
+        catch ( UncheckedIOException e )
+        {
+            throw e.getCause();
+        }
     }
 
     /**
@@ -109,10 +146,9 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
 
     void loadAll()
     {
-        Iterator<CoordinateReferenceSystem> crsIterator = CoordinateReferenceSystem.all();
-        while ( crsIterator.hasNext() )
+        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
-            uncheckedSelect( crsIterator.next() );
+            uncheckedSelect( crs );
         }
     }
 
@@ -126,10 +162,9 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
      * Factory used by the SpatialIndexCache to create parts.
      *
      * @param <T> Type of parts
-     * @param <E> Type of exception potentially thrown during create
      */
-    interface Factory<T, E extends Exception>
+    interface Factory<T>
     {
-        T newSpatial( CoordinateReferenceSystem crs ) throws E;
+        T newSpatial( CoordinateReferenceSystem crs ) throws IOException;
     }
 }

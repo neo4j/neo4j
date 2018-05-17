@@ -20,9 +20,8 @@
 package org.neo4j.bolt.v1.transport.socket;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -34,6 +33,7 @@ import java.util.List;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
+import org.neo4j.bolt.transport.DefaultBoltProtocolPipelineInstaller;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
@@ -44,7 +44,6 @@ import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.transport.BoltMessagingProtocolHandlerImpl;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
@@ -58,7 +57,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 
 /**
  * This tests network fragmentation of messages. Given a set of messages, it will serialize and chunk the message up
@@ -78,11 +76,9 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_
 @RunWith( Parameterized.class )
 public class FragmentedMessageDeliveryTest
 {
+    private EmbeddedChannel channel;
     // Only test one chunk size for now, this can be parameterized to test lots of different ones
     private int chunkSize = 16;
-
-    // Only test messages broken into three fragments for now, this can be parameterized later
-    private int numFragments = 3;
 
     // Only test one message for now. This can be parameterized later to test lots of different ones
     private RequestMessage[] messages = new RequestMessage[]{RunMessage.run( "Mjölnir" )};
@@ -94,6 +90,15 @@ public class FragmentedMessageDeliveryTest
     public static List<Neo4jPack> parameters()
     {
         return Arrays.asList( new Neo4jPackV1(), new Neo4jPackV2() );
+    }
+
+    @After
+    public void cleanup()
+    {
+        if ( channel != null )
+        {
+            channel.finishAndReleaseAll();
+        }
     }
 
     @Test
@@ -128,28 +133,20 @@ public class FragmentedMessageDeliveryTest
     private void testPermutation( byte[] unfragmented, ByteBuf[] fragments ) throws Exception
     {
         // Given
+        channel = new EmbeddedChannel();
+        BoltChannel boltChannel = newBoltChannel( channel );
+
         BoltStateMachine machine = mock( BoltStateMachine.class );
-
-        Channel ch = mock( Channel.class );
-        when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-
-        ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
-        when( ctx.channel() ).thenReturn( ch );
-
-        BoltChannel boltChannel = mock( BoltChannel.class );
-        when( boltChannel.channelHandlerContext() ).thenReturn( ctx );
-        when( boltChannel.rawChannel() ).thenReturn( ch );
-        when( boltChannel.log() ).thenReturn( NullBoltMessageLogger.getInstance() );
-
-        BoltMessagingProtocolHandlerImpl protocol = new BoltMessagingProtocolHandlerImpl( boltChannel,
+        DefaultBoltProtocolPipelineInstaller protocol = new DefaultBoltProtocolPipelineInstaller( boltChannel,
                 new SynchronousBoltConnection( machine ), neo4jPack, TransportThrottleGroup.NO_THROTTLE,
                 NullLogService.getInstance() );
+
+        protocol.install();
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )
         {
-            fragment.readerIndex( 0 ).retain();
-            protocol.handle( ctx, fragment );
+            channel.writeInbound( fragment.readerIndex( 0 ).retain() );
         }
 
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state
@@ -165,10 +162,6 @@ public class FragmentedMessageDeliveryTest
                                       "Serialized data delivered in fragments: " + describeFragments( fragments ) +
                                       "\n" +
                                       "Unfragmented data: " + HexPrinter.hex( unfragmented ) + "\n", e );
-        }
-        finally
-        {
-            protocol.close(); // To avoid buffer leak errors
         }
     }
 
@@ -194,10 +187,19 @@ public class FragmentedMessageDeliveryTest
             RecordingByteChannel channel = new RecordingByteChannel();
 
             BoltRequestMessageWriter writer = new BoltRequestMessageWriter(
-                    new Neo4jPackV1().newPacker( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+                    new Neo4jPackV1().newPacker( new BufferedChannelOutput( channel ) ) );
             writer.write( msgs[i] ).flush();
             serialized[i] = channel.getBytes();
         }
         return Chunker.chunk( chunkSize, serialized );
     }
+
+    private static BoltChannel newBoltChannel( EmbeddedChannel rawChannel )
+    {
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        when( boltChannel.rawChannel() ).thenReturn( rawChannel );
+        when( boltChannel.log() ).thenReturn( NullBoltMessageLogger.getInstance() );
+        return boltChannel;
+    }
+
 }

@@ -78,8 +78,8 @@ public interface IndexProgressor extends AutoCloseable
          * @param progressor The progressor
          * @param query The query of this progression
          */
-        void initialize( DESCRIPTOR descriptor, IndexProgressor progressor,
-                IndexQuery[] query );
+        void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
+                         IndexQuery[] query );
 
         /**
          * Accept the node id and values of a candidate index entry. Return true if the entry is

@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
+import org.neo4j.cypher.internal.frontend.v3_5.helpers.StringHelper._
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
@@ -246,6 +246,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     expectError("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname) IS NODE KEY",
                 String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT exists(person.firstname):%n" +
                   "Node Key constraint requires Neo4j Enterprise Edition"))
+  }
+
+  test("trying to store mixed type array") {
+    expectError("CREATE (a) SET a.value = [datetime(), time()] RETURN a.value",
+      "Neo4j only supports a subset of Cypher types for storage as singleton or array properties. " +
+        "Please refer to section cypher/syntax/values of the manual for more details."
+    )
   }
 
   private def expectError(query: String, expectedError: String) {

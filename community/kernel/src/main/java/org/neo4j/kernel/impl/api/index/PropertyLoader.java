@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
@@ -31,18 +32,18 @@ import org.neo4j.values.storable.Value;
 public interface PropertyLoader
 {
     /**
-     * Loads set of properties for node. For every target propertyId P, the value for this node is loaded. If the
+     * Loads set of properties for entity. For every target propertyId P, the value for this node is loaded. If the
      * node has P, the onProperty methods will be called on the sink, with the correct value, and P will be removed
      * from propertyIds. If the node lacks P no action will be taken.
-     *  @param nodeId id of the node to be loaded
+     *  @param entityId id of the node to be loaded
      * @param type
      * @param propertyIds set of target property ids to load. Loaded properties are remove from this set.
      * @param sink sink that will receive successfully loaded values for the target properties
      */
-    void loadProperties( long nodeId, EntityType type, PrimitiveIntSet propertyIds, PropertyLoadSink sink );
+    void loadProperties( long entityId, EntityType type, MutableIntSet propertyIds, PropertyLoadSink sink );
 
     interface PropertyLoadSink
     {
-        void onProperty( int propertyId, Value value );
+        void onProperty( int entityId, Value value );
     }
 }

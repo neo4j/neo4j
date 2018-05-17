@@ -126,19 +126,24 @@ public final class SharedDiscoveryService
         notifyCoreClients();
     }
 
-    synchronized void casLeaders( LeaderInfo leaderInfo, String dbName )
+    void casLeaders( LeaderInfo leaderInfo, String dbName )
     {
-        Optional<LeaderInfo> current = Optional.ofNullable( leaderMap.get( dbName ) );
-
-        boolean noUpdate = current.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
-
-        boolean greaterOrEqualTermExists =  current.map(l -> l.term() >= leaderInfo.term() ).orElse( false );
-
-        boolean success = !( greaterOrEqualTermExists || noUpdate );
-
-        if ( success )
+        synchronized ( leaderMap )
         {
-            leaderMap.put( dbName, leaderInfo );
+            Optional<LeaderInfo> current = Optional.ofNullable( leaderMap.get( dbName ) );
+
+            boolean sameLeader = current.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
+
+            int termComparison = current.map( l -> Long.compare( l.term(), leaderInfo.term() ) ).orElse( -1 );
+
+            boolean greaterTermExists = termComparison > 0;
+
+            boolean sameTermButNoStepDown = termComparison == 0 && !leaderInfo.isSteppingDown();
+
+            if ( !( greaterTermExists || sameTermButNoStepDown || sameLeader ) )
+            {
+                leaderMap.put( dbName, leaderInfo );
+            }
         }
     }
 

@@ -19,27 +19,25 @@
  */
 package org.neo4j.backup.stresstests;
 
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.BooleanSupplier;
 
+import org.neo4j.causalclustering.stresstests.Control;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helper.RepeatUntilCallable;
+import org.neo4j.helper.Workload;
 
 import static org.junit.Assert.assertTrue;
 
-class StartStop extends RepeatUntilCallable
+class StartStop extends Workload
 {
     private final AtomicReference<GraphDatabaseService> dbRef;
     private final Factory<GraphDatabaseService> factory;
 
-    StartStop( BooleanSupplier keepGoing, Runnable onFailure, Factory<GraphDatabaseService> factory,
-            AtomicReference<GraphDatabaseService> dbRef )
+    StartStop( Control control, Factory<GraphDatabaseService> factory, AtomicReference<GraphDatabaseService> dbRef )
     {
-        super( keepGoing, onFailure );
+        super( control );
         this.factory = factory;
         this.dbRef = dbRef;
     }

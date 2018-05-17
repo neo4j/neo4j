@@ -19,19 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -40,16 +42,16 @@ import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.AssertOpen;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
@@ -67,7 +69,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
@@ -85,7 +86,6 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
@@ -112,11 +112,10 @@ public class StorageLayer implements StoreReadLayer
     private final PropertyLoader propertyLoader;
     private final Supplier<StorageStatement> statementProvider;
     private final SchemaCache schemaCache;
-    private final IndexProviderMap indexProviderMap;
 
-    public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTokenHolder,
-            SchemaStorage schemaStorage, NeoStores neoStores, IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier,
-            SchemaCache schemaCache, IndexProviderMap indexProviderMap )
+    public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
+            RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
+            IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier, SchemaCache schemaCache )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -130,7 +129,6 @@ public class StorageLayer implements StoreReadLayer
         this.counts = neoStores.getCounts();
         this.propertyLoader = new PropertyLoader( neoStores );
         this.schemaCache = schemaCache;
-        this.indexProviderMap = indexProviderMap;
     }
 
     @Override
@@ -187,31 +185,25 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
+    public CapableIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override
-    public IndexDescriptor indexGetForName( String name )
-    {
-        return schemaCache.indexDescriptorForName( name );
-    }
-
-    @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schemaCache.indexDescriptorsForLabel( labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll()
+    public Iterator<CapableIndexDescriptor> indexesGetAll()
     {
-        return toIndexDescriptors( schemaCache.indexRules() );
+        return schemaCache.indexDescriptors().iterator();
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<CapableIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
     {
         return schemaCache.indexesByProperty( propertyId );
     }
@@ -219,10 +211,12 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
-        IndexRule rule = indexRule( index );
-        if ( rule != null )
+        StoreIndexDescriptor storeIndexDescriptor = getStoreIndexDescriptor( index );
+        if ( storeIndexDescriptor != null )
         {
-            return rule.getOwningConstraint();
+            // Think of the index as being orphaned if the owning constraint is missing or broken.
+            Long owningConstraint = storeIndexDescriptor.getOwningConstraint();
+            return schemaCache.hasConstraintRule( owningConstraint ) ? owningConstraint : null;
         }
         return null;
     }
@@ -231,12 +225,12 @@ public class StorageLayer implements StoreReadLayer
     public long indexGetCommittedId( IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( index );
-        if ( rule == null )
+        StoreIndexDescriptor storeIndexDescriptor = getStoreIndexDescriptor( index );
+        if ( storeIndexDescriptor == null )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
         }
-        return rule.getId();
+        return storeIndexDescriptor.getId();
     }
 
     @Override
@@ -245,22 +239,10 @@ public class StorageLayer implements StoreReadLayer
         return indexService.getIndexProxy( descriptor.schema() ).getState();
     }
 
-    @Override
-    public IndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor.schema() ).getProviderDescriptor();
-    }
-
-    public CapableIndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        boolean unique = descriptor.type() == IndexDescriptor.Type.UNIQUE;
-        SchemaDescriptor schema = descriptor.schema();
-        IndexProxy indexProxy = indexService.getIndexProxy( schema );
-
-        // TODO support multi-token
-        return new DefaultCapableIndexReference( unique, indexProxy.getIndexCapability(),
-                indexProxy.getProviderDescriptor(), schema.getEntityTokenIds()[0],
-                schema.getPropertyIds() );
+        IndexProxy indexProxy = indexService.getIndexProxy( descriptor.schema() );
+        return indexProxy.getDescriptor();
     }
 
     @Override
@@ -345,7 +327,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveIntIterator graphGetPropertyKeys()
+    public IntIterator graphGetPropertyKeys()
     {
         return new PropertyKeyIdIterator( propertyLoader.graphLoadProperties( new IteratingPropertyReceiver<>() ) );
     }
@@ -420,7 +402,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetAll()
+    public LongIterator nodesGetAll()
     {
         return new AllNodeIterator( nodeStore );
     }
@@ -498,7 +480,7 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
-        if ( !(startLabelId == ReadOperations.ANY_LABEL || endLabelId == ReadOperations.ANY_LABEL) )
+        if ( !(startLabelId == StatementConstants.ANY_LABEL || endLabelId == StatementConstants.ANY_LABEL) )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
@@ -567,9 +549,9 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node )
+    public IntSet relationshipTypes( StorageStatement statement, NodeItem node )
     {
-        PrimitiveIntSet set = intSet();
+        final MutableIntSet set = new IntHashSet();
         if ( node.isDense() )
         {
             RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();
@@ -603,13 +585,13 @@ public class StorageLayer implements StoreReadLayer
         }
     }
 
-    private IndexRule indexRule( IndexDescriptor index )
+    private StoreIndexDescriptor getStoreIndexDescriptor( IndexDescriptor index )
     {
-        for ( IndexRule rule : schemaCache.indexRules() )
+        for ( StoreIndexDescriptor descriptor : schemaCache.indexDescriptors() )
         {
-            if ( rule.getIndexDescriptor( indexProviderMap ).equals( index ) )
+            if ( descriptor.equals( index ) )
             {
-                return rule;
+                return descriptor;
             }
         }
 
@@ -703,10 +685,5 @@ public class StorageLayer implements StoreReadLayer
         throw new InvalidRecordException(
                 "Node " + nodeId + " neither start nor end node of relationship " + relationshipId +
                         " with startNode:" + startNode + " and endNode:" + endNode );
-    }
-
-    private Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
-    {
-        return Iterators.map( indexRule -> indexRule.getIndexDescriptor( indexProviderMap ), rules.iterator() );
     }
 }

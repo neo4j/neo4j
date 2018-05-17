@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.time._
 import java.time.temporal.TemporalAmount
 
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable.{ArrayValue, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, AnyValueWriter}
+
+import org.neo4j.kernel.internal.Version
 
 import scala.reflect.ClassTag
 
@@ -116,7 +118,9 @@ object CastSupport {
       case (a, b) if a.isInstanceOf[ListValue] || b.isInstanceOf[ListValue] => throw new CypherTypeException(
         "Collections containing collections can not be stored in properties.")
 
-      case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof.")
+      case _ => throw new CypherTypeException("Neo4j only supports a subset of Cypher types for storage as singleton or array properties. " +
+        "Please refer to section cypher/syntax/values of the manual for more details.")
+
     }
   }
 
@@ -241,23 +245,20 @@ object CastSupport {
     override def writeDuration(months: Long, days: Long, seconds: Long, nanos: Int): Unit =
       write(DurationValue.duration(months, days, seconds, nanos))
 
-    override def writeDate(epochDay: Long): Unit =
-      write(DateValue.epochDate(epochDay).asObject())
+    override def writeDate(localDate: LocalDate): Unit =
+      write(localDate)
 
-    override def writeLocalTime(nanoOfDay: Long): Unit =
-      write(LocalTimeValue.localTime(nanoOfDay).asObject())
+    override def writeLocalTime(localTime: LocalTime): Unit =
+      write(localTime)
 
-    override def writeTime(nanosOfDayUTC: Long, offsetSeconds: Int): Unit =
-      write(TimeValue.time(nanosOfDayUTC, ZoneOffset.ofTotalSeconds(offsetSeconds)).asObject())
+    override def writeTime(offsetTime: OffsetTime): Unit =
+      write(offsetTime)
 
-    override def writeLocalDateTime(epochSecond: Long, nano: Int): Unit =
-      write(LocalDateTimeValue.localDateTime(epochSecond,nano).asObject())
+    override def writeLocalDateTime(localDateTime: LocalDateTime): Unit =
+      write(localDateTime)
 
-    override def writeDateTime(epochSecondUTC: Long, nano: Int, offsetSeconds: Int): Unit =
-      write(DateTimeValue.datetime(epochSecondUTC, nano, ZoneOffset.ofTotalSeconds(offsetSeconds)).asObject())
-
-    override def writeDateTime(epochSecondUTC: Long, nano: Int, zoneId: String): Unit =
-      write(DateTimeValue.datetime(epochSecondUTC, nano, ZoneId.of(zoneId)).asObject())
+    override def writeDateTime(zonedDateTime: ZonedDateTime): Unit =
+      write(zonedDateTime)
   }
 
 }

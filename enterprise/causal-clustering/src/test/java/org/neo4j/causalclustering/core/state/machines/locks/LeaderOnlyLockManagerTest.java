@@ -52,7 +52,8 @@ public class LeaderOnlyLockManagerTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( me );
         Locks locks = mock( Locks.class );
-        when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
 
         LeaderOnlyLockManager lockManager =
                 new LeaderOnlyLockManager( me, replicator, leaderLocator, locks, replicatedLockStateMachine );
@@ -77,7 +78,8 @@ public class LeaderOnlyLockManagerTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( leader );
         Locks locks = mock( Locks.class );
-        when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
 
         LeaderOnlyLockManager lockManager =
                 new LeaderOnlyLockManager( me, replicator, leaderLocator, locks, replicatedLockStateMachine );

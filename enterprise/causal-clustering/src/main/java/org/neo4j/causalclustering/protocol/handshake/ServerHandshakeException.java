@@ -21,8 +21,8 @@ package org.neo4j.causalclustering.protocol.handshake;
 
 public class ServerHandshakeException extends Exception
 {
-    public ServerHandshakeException( String message )
+    public ServerHandshakeException( String message, ProtocolStack.Builder protocolStackBuilder )
     {
-        super( message );
+        super( message + " Negotiated protocols: " + protocolStackBuilder );
     }
 }

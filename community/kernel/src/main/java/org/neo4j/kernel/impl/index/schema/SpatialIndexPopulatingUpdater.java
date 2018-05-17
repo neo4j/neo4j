@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 
-public class SpatialIndexPopulatingUpdater extends SpatialIndexCache<IndexUpdater,IOException> implements IndexUpdater
+public class SpatialIndexPopulatingUpdater extends SpatialIndexCache<IndexUpdater> implements IndexUpdater
 {
     SpatialIndexPopulatingUpdater( SpatialIndexPopulator populator, PropertyAccessor propertyAccessor )
     {
@@ -82,7 +82,7 @@ public class SpatialIndexPopulatingUpdater extends SpatialIndexCache<IndexUpdate
         }
     }
 
-    static class PartFactory implements Factory<IndexUpdater,IOException>
+    static class PartFactory implements Factory<IndexUpdater>
     {
         private final SpatialIndexPopulator populator;
         private PropertyAccessor propertyAccessor;

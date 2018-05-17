@@ -55,6 +55,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory.SYNCHRONOUS_QUEUE;
 import static org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory.UNBOUNDED_QUEUE;
 
@@ -91,7 +92,7 @@ public class CachedThreadPoolExecutorFactoryTest
     @Test
     public void createShouldAssignCorrectQueue()
     {
-        executorService = factory.create( 0, 1, Duration.ZERO, queueSize, newThreadFactory() );
+        executorService = factory.create( 0, 1, Duration.ZERO, queueSize, false, newThreadFactory() );
 
         if ( executorService instanceof ThreadPoolExecutor )
         {
@@ -119,7 +120,7 @@ public class CachedThreadPoolExecutorFactoryTest
     @Test
     public void createShouldCreateExecutor()
     {
-        executorService = factory.create( 0, 1, Duration.ZERO, queueSize, newThreadFactory() );
+        executorService = factory.create( 0, 1, Duration.ZERO, queueSize, false, newThreadFactory() );
 
         assertNotNull( executorService );
         assertFalse( executorService.isShutdown() );
@@ -131,7 +132,7 @@ public class CachedThreadPoolExecutorFactoryTest
     {
         try
         {
-            factory.create( -1, 10, Duration.ZERO, 0, newThreadFactory() );
+            factory.create( -1, 10, Duration.ZERO, 0, false, newThreadFactory() );
             fail( "should throw exception" );
         }
         catch ( IllegalArgumentException ex )
@@ -145,7 +146,7 @@ public class CachedThreadPoolExecutorFactoryTest
     {
         try
         {
-            factory.create( 0, -1, Duration.ZERO, 0, newThreadFactory() );
+            factory.create( 0, -1, Duration.ZERO, 0, false, newThreadFactory() );
             fail( "should throw exception" );
         }
         catch ( IllegalArgumentException ex )
@@ -159,7 +160,7 @@ public class CachedThreadPoolExecutorFactoryTest
     {
         try
         {
-            factory.create( 0, 0, Duration.ZERO, 0, newThreadFactory() );
+            factory.create( 0, 0, Duration.ZERO, 0, false, newThreadFactory() );
             fail( "should throw exception" );
         }
         catch ( IllegalArgumentException ex )
@@ -169,11 +170,31 @@ public class CachedThreadPoolExecutorFactoryTest
     }
 
     @Test
+    public void createShouldStartCoreThreadsIfAsked()
+    {
+        AtomicInteger threadCounter = new AtomicInteger();
+
+        factory.create( 5, 10, Duration.ZERO, 0, true, newThreadFactoryWithCounter( threadCounter ) );
+
+        assertEquals( 5, threadCounter.get() );
+    }
+
+    @Test
+    public void createShouldNotStartCoreThreadsIfNotAsked()
+    {
+        AtomicInteger threadCounter = new AtomicInteger();
+
+        factory.create( 5, 10, Duration.ZERO, 0, false, newThreadFactoryWithCounter( threadCounter ) );
+
+        assertEquals( 0, threadCounter.get() );
+    }
+
+    @Test
     public void createShouldNotCreateExecutorWhenMaxPoolSizeIsLessThanCorePoolSize()
     {
         try
         {
-            factory.create( 10, 5, Duration.ZERO, 0, newThreadFactory() );
+            factory.create( 10, 5, Duration.ZERO, 0, false, newThreadFactory() );
             fail( "should throw exception" );
         }
         catch ( IllegalArgumentException ex )
@@ -188,7 +209,7 @@ public class CachedThreadPoolExecutorFactoryTest
         AtomicBoolean exitCondition = new AtomicBoolean( false );
         AtomicInteger threadCounter = new AtomicInteger( 0 );
 
-        executorService = factory.create( 0, 1, Duration.ZERO, 0, newThreadFactoryWithCounter( threadCounter ) );
+        executorService = factory.create( 0, 1, Duration.ZERO, 0, false, newThreadFactoryWithCounter( threadCounter ) );
 
         assertNotNull( executorService );
         assertEquals( 0, threadCounter.get() );
@@ -209,7 +230,7 @@ public class CachedThreadPoolExecutorFactoryTest
         AtomicBoolean exitCondition = new AtomicBoolean( false );
         AtomicInteger threadCounter = new AtomicInteger( 0 );
 
-        executorService = factory.create( 0, 5, Duration.ZERO, 0, newThreadFactoryWithCounter( threadCounter ) );
+        executorService = factory.create( 0, 5, Duration.ZERO, 0, false, newThreadFactoryWithCounter( threadCounter ) );
 
         assertNotNull( executorService );
         assertEquals( 0, threadCounter.get() );

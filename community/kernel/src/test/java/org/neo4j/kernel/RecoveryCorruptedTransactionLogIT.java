@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel;
 
+import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
+import org.eclipse.collections.api.map.primitive.ObjectLongMap;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +43,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.MultiSet;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -200,9 +202,9 @@ public class RecoveryCorruptedTransactionLogIT
                 " position LogPosition{logVersion=0, byteOffset=16} are unreadable and will be truncated." );
 
         assertEquals( 0, logFiles.getHighestLogVersion() );
-        MultiSet<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
+        ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
         assertEquals( 1, logEntriesDistribution.size() );
-        assertEquals( 1, logEntriesDistribution.count( CheckPoint.class ) );
+        assertEquals( 1, logEntriesDistribution.get( CheckPoint.class ) );
     }
 
     @Test
@@ -250,8 +252,8 @@ public class RecoveryCorruptedTransactionLogIT
                 "Any later transaction after LogPosition{logVersion=0, byteOffset=6245} are unreadable and will be truncated." );
 
         assertEquals( 0, logFiles.getHighestLogVersion() );
-        MultiSet<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
-        assertEquals( 1, logEntriesDistribution.count( CheckPoint.class ) );
+        ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
+        assertEquals( 1, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
         assertEquals( originalFileLength, highestLogFile.length() );
     }
@@ -291,8 +293,8 @@ public class RecoveryCorruptedTransactionLogIT
                 "Any later transaction after LogPosition{logVersion=3, byteOffset=4632} are unreadable and will be truncated." );
 
         assertEquals( 3, logFiles.getHighestLogVersion() );
-        MultiSet<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
-        assertEquals( 1, logEntriesDistribution.count( CheckPoint.class ) );
+        ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
+        assertEquals( 1, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
         assertEquals( originalFileLength, highestLogFile.length() );
     }
@@ -329,8 +331,8 @@ public class RecoveryCorruptedTransactionLogIT
                 "Any later transaction after LogPosition{logVersion=3, byteOffset=4650} are unreadable and will be truncated." );
 
         assertEquals( 3, logFiles.getHighestLogVersion() );
-        MultiSet<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
-        assertEquals( 4, logEntriesDistribution.count( CheckPoint.class ) );
+        ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
+        assertEquals( 4, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( transactionsToRecover, recoveryMonitor.getNumberOfRecoveredTransactions() );
         assertEquals( originalFileLength, highestLogFile.length() );
     }
@@ -361,8 +363,8 @@ public class RecoveryCorruptedTransactionLogIT
                 "are unreadable and will be truncated." );
 
         assertEquals( 5, logFiles.getHighestLogVersion() );
-        MultiSet<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
-        assertEquals( 1, logEntriesDistribution.count( CheckPoint.class ) );
+        ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
+        assertEquals( 1, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( originalFileLength, highestLogFile.length() );
     }
 
@@ -522,20 +524,20 @@ public class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private MultiSet<Class> getLogEntriesDistribution( LogFiles logFiles ) throws IOException
+    private ObjectLongMap<Class> getLogEntriesDistribution( LogFiles logFiles ) throws IOException
     {
         LogFile transactionLogFile = logFiles.getLogFile();
 
         LogPosition fileStartPosition = new LogPosition( 0, LogHeader.LOG_HEADER_SIZE );
         VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
 
-        MultiSet<Class> multiset = new MultiSet<>();
+        MutableObjectLongMap<Class> multiset = new ObjectLongHashMap<>();
         try ( ReadableLogChannel fileReader = transactionLogFile.getReader( fileStartPosition ) )
         {
             LogEntry logEntry = entryReader.readLogEntry( fileReader );
             while ( logEntry != null )
             {
-                multiset.add( logEntry.getClass() );
+                multiset.addToValue( logEntry.getClass(), 1 );
                 logEntry = entryReader.readLogEntry( fileReader );
             }
         }

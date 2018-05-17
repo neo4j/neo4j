@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.util.v3_5.InternalException
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
@@ -44,7 +44,7 @@ trait PrimitiveCachingExpandInto {
     * Finds all relationships connecting fromNode and toNode.
     */
   protected def findRelationships(query: QueryContext, fromNode: Long, toNode: Long,
-                                  relCache: PrimitiveRelationshipsCache, dir: SemanticDirection, relTypes: => Option[Array[Int]]): PrimitiveLongIterator = {
+                                  relCache: PrimitiveRelationshipsCache, dir: SemanticDirection, relTypes: => Option[Array[Int]]): LongIterator = {
 
     val fromNodeIsDense = query.nodeIsDense(fromNode)
     val toNodeIsDense = query.nodeIsDense(toNode)
@@ -83,7 +83,7 @@ trait PrimitiveCachingExpandInto {
   }
 
   private def relIterator(query: QueryContext, fromNode: Long, toNode: Long, preserveDirection: Boolean,
-                          relTypes: Option[Array[Int]], relCache: PrimitiveRelationshipsCache, dir: SemanticDirection): PrimitiveLongIterator = {
+                          relTypes: Option[Array[Int]], relCache: PrimitiveRelationshipsCache, dir: SemanticDirection): LongIterator = {
     val (start, localDirection, end) = if (preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
     val relationships: RelationshipIterator = query.getRelationshipsForIdsPrimitive(start, localDirection, relTypes)
 
@@ -101,7 +101,7 @@ trait PrimitiveCachingExpandInto {
         }
     }
 
-    new PrimitiveLongIterator {
+    new LongIterator {
       var nextRelId: Long = -1
       // used to ensure consecutive calls to hasNext(), without interleaved next(),
       // return same result & don't consume additional inner iterator elements
@@ -146,9 +146,9 @@ protected final class PrimitiveRelationshipsCache(capacity: Int) {
 
   val table = new mutable.OpenHashMap[(Long, Long), Array[Long]]()
 
-  def get(start: Long, end: Long, dir: SemanticDirection): Option[PrimitiveLongIterator] = {
+  def get(start: Long, end: Long, dir: SemanticDirection): Option[LongIterator] = {
     table.get(key(start, end, dir)).map(rels => {
-      new PrimitiveLongIterator {
+      new LongIterator {
         var index: Int = 0
 
         override def next(): Long = {

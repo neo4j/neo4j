@@ -49,7 +49,7 @@ public class StoreCopyProcess
     }
 
     public void replaceWithStoreFrom( CatchupAddressProvider addressProvider, StoreId expectedStoreId )
-            throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
+            throws IOException, StoreCopyFailedException, DatabaseShutdownException
     {
         try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, pageCache, localDatabase.storeDir() ) )
         {

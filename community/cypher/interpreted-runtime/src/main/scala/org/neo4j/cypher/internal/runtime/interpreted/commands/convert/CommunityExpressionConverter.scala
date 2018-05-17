@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
+import org.neo4j.cypher.internal.frontend.v3_5.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
-import org.neo4j.cypher.internal.util.v3_4.{InternalException, NonEmptyList}
-import org.neo4j.cypher.internal.v3_4.functions._
-import org.neo4j.cypher.internal.v3_4.logical.plans._
-import org.neo4j.cypher.internal.v3_4.{functions, expressions => ast}
+import org.neo4j.cypher.internal.util.v3_5.{InternalException, NonEmptyList}
+import org.neo4j.cypher.internal.v3_5.functions._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.neo4j.cypher.internal.v3_5.{functions, expressions => ast}
 
 object CommunityExpressionConverter extends ExpressionConverter {
 

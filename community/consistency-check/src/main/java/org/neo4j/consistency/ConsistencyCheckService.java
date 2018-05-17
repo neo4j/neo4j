@@ -73,7 +73,8 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.String.format;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadIndexProviders;
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
@@ -214,6 +215,7 @@ public class ConsistencyCheckService
     {
         Log log = logProvider.getLog( getClass() );
         config.augment( GraphDatabaseSettings.read_only, TRUE );
+        config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
 
         StoreFactory factory = new StoreFactory( storeDir, config,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
@@ -224,7 +226,7 @@ public class ConsistencyCheckService
         {
             try
             {
-                return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
+                return new PrintWriter( createOrOpenAsOutputStream( fileSystem, reportFile, true ) );
             }
             catch ( IOException e )
             {
@@ -254,7 +256,7 @@ public class ConsistencyCheckService
             IndexProviderMap indexes = loadIndexProviders( extensions );
 
             LabelScanStore labelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, monitors,
+                    new NativeLabelScanStore( pageCache, storeDir, fileSystem, FullStoreChangeStream.EMPTY, true, monitors,
                             RecoveryCleanupWorkCollector.IGNORE );
             life.add( labelScanStore );
 

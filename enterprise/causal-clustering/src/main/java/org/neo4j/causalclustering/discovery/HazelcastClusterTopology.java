@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IMap;
@@ -47,10 +48,11 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-import static org.neo4j.causalclustering.core.CausalClusteringSettings.refuse_to_be_leader;
 import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.of;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.refuse_to_be_leader;
 import static org.neo4j.helpers.SocketAddressParser.socketAddress;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
@@ -215,18 +217,23 @@ public final class HazelcastClusterTopology
     {
         IAtomicReference<LeaderInfo> leaderRef = hazelcastInstance.getAtomicReference( DB_NAME_LEADER_TERM_PREFIX + dbName );
 
-        LeaderInfo expected = leaderRef.get();
+        LeaderInfo current = leaderRef.get();
+        Optional<LeaderInfo> currentOpt = Optional.ofNullable( current );
 
-        boolean noUpdate = Optional.ofNullable( expected ).map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
+        boolean sameLeader =  currentOpt.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
 
-        boolean greaterOrEqualTermExists = Optional.ofNullable( expected ).map(l -> l.term() >= leaderInfo.term() ).orElse( false );
+        int termComparison =  currentOpt.map( l -> Long.compare( l.term(), leaderInfo.term() ) ).orElse( -1 );
 
-        if ( greaterOrEqualTermExists || noUpdate )
+        boolean greaterTermExists = termComparison > 0;
+
+        boolean sameTermButNoStepdown = termComparison == 0 && !leaderInfo.isSteppingDown();
+
+        if ( sameLeader || greaterTermExists || sameTermButNoStepdown )
         {
             return;
         }
 
-        leaderRef.compareAndSet( expected, leaderInfo );
+        leaderRef.compareAndSet( current, leaderInfo );
     }
 
     private static Optional<LeaderInfo> getLeaderForDBName( HazelcastInstance hazelcastInstance, String dbName )
@@ -258,24 +265,38 @@ public final class HazelcastClusterTopology
 
         for ( Member member : members )
         {
-            try
-            {
-                MemberId memberId = new MemberId( UUID.fromString( member.getStringAttribute( MEMBER_UUID ) ) );
-                String dbName = member.getStringAttribute( MEMBER_DB_NAME );
+            Collection<String> attrKeys = asList( MEMBER_UUID, RAFT_SERVER, TRANSACTION_SERVER,
+                    CLIENT_CONNECTOR_ADDRESSES, MEMBER_DB_NAME );
 
-                CoreServerInfo coreServerInfo = new CoreServerInfo(
-                        socketAddress( member.getStringAttribute( RAFT_SERVER ), AdvertisedSocketAddress::new ),
-                        socketAddress( member.getStringAttribute( TRANSACTION_SERVER ), AdvertisedSocketAddress::new ),
-                        ClientConnectorAddresses.fromString( member.getStringAttribute( CLIENT_CONNECTOR_ADDRESSES ) ),
-                        asSet( serverGroupsMMap.get( memberId.getUuid().toString() ) ),
-                        dbName );
-
-                coreMembers.put( memberId, coreServerInfo );
-            }
-            catch ( IllegalArgumentException e )
+            Map<String,String> attrMap = new HashMap<>();
+            boolean incomplete = false;
+            for ( String attrKey : attrKeys )
             {
-                log.warn( "Incomplete member attributes supplied from Hazelcast", e );
+                String attrValue = member.getStringAttribute( attrKey );
+                if ( attrValue == null )
+                {
+                    log.warn( "Missing member attribute '%s' for member %s", attrKey, member );
+                    incomplete = true;
+                }
+                else
+                {
+                    attrMap.put( attrKey, attrValue );
+                }
             }
+
+            if ( incomplete )
+            {
+                continue;
+            }
+
+            CoreServerInfo coreServerInfo = new CoreServerInfo(
+                    socketAddress( attrMap.get( RAFT_SERVER ), AdvertisedSocketAddress::new ),
+                    socketAddress( attrMap.get( TRANSACTION_SERVER ), AdvertisedSocketAddress::new ),
+                    ClientConnectorAddresses.fromString( attrMap.get( CLIENT_CONNECTOR_ADDRESSES ) ),
+                    asSet( serverGroupsMMap.get( attrMap.get( MEMBER_UUID ) ) ), attrMap.get( MEMBER_DB_NAME ) );
+
+            MemberId memberId = new MemberId( UUID.fromString( attrMap.get( MEMBER_UUID ) ) );
+            coreMembers.put( memberId, coreServerInfo );
         }
 
         return coreMembers;

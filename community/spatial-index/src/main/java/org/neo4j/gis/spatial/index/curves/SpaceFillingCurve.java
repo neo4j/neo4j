@@ -30,7 +30,6 @@ import org.neo4j.gis.spatial.index.Envelope;
 
 public abstract class SpaceFillingCurve
 {
-
     /**
      * Description of the space filling curve structure
      */

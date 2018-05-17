@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -51,6 +52,10 @@ import java.util.regex.Pattern;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
+import org.neo4j.values.utils.TemporalArithmeticException;
+import org.neo4j.values.utils.TemporalParseException;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
@@ -92,19 +97,19 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
     /**
      * @return the zone id, if time is supported. If time is supported, but no timezone, the defaultZone will be used.
-     * @throws IllegalArgumentException if time is not supported
+     * @throws UnsupportedTemporalUnitException if time is not supported
      */
     abstract ZoneId getZoneId( Supplier<ZoneId> defaultZone );
 
     /**
      * @return the zone id, if this temporal has a timezone.
-     * @throws UnsupportedTemporalTypeException if this does not have a timezone
+     * @throws UnsupportedTemporalUnitException if this does not have a timezone
      */
     abstract ZoneId getZoneId();
 
     /**
      * @return the zone offset, if this temporal has a zone offset.
-     * @throws UnsupportedTemporalTypeException if this does not have a offset
+     * @throws UnsupportedTemporalUnitException if this does not have a offset
      */
     abstract ZoneOffset getZoneOffset();
 
@@ -173,7 +178,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     {
         if (  !(endExclusive instanceof TemporalValue) )
         {
-            throw new IllegalArgumentException( "Can only compute durations between TemporalValues." );
+            throw new InvalidValuesArgumentException( "Can only compute durations between TemporalValues." );
         }
         TemporalValue from = this;
         TemporalValue to = (TemporalValue) endExclusive;
@@ -198,8 +203,16 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             from = attachTimeZone( from, to.getZoneId( to::getZoneOffset ) );
         }
-
-        return from.temporal().until( to, unit );
+        long until;
+        try
+        {
+            until = from.temporal().until( to, unit );
+        }
+        catch ( UnsupportedTemporalTypeException e )
+        {
+            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
+        }
+        return until;
     }
 
     private TemporalValue attachTime( TemporalValue temporal )
@@ -264,7 +277,16 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     @Override
     public final int get( TemporalField field )
     {
-        return temporal().get( field );
+        int accessor;
+        try
+        {
+         accessor = temporal().get( field );
+        }
+        catch ( UnsupportedTemporalTypeException e )
+        {
+            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
+        }
+        return accessor;
     }
 
     public final AnyValue get( String fieldName )
@@ -287,7 +309,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
             else
             {
-                throw new UnsupportedTemporalTypeException( "Epoch not supported." );
+                throw new UnsupportedTemporalUnitException( "Epoch not supported." );
             }
         }
         if ( field == Field.timezone )
@@ -302,9 +324,13 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             return Values.intValue( getZoneOffset().getTotalSeconds() / 60 );
         }
+        if ( field == Field.offsetSeconds )
+        {
+            return Values.intValue( getZoneOffset().getTotalSeconds() );
+        }
         if ( field == null || field.field == null )
         {
-            throw new UnsupportedTemporalTypeException( "No such field: " + fieldName );
+            throw new UnsupportedTemporalUnitException( "No such field: " + fieldName );
         }
         return Values.intValue( get( field.field ) );
     }
@@ -375,8 +401,8 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         VALUE result = matcher.matches() ? parser.apply( matcher ) : null;
         if ( result == null )
         {
-            throw new DateTimeParseException(
-                    "Text cannot be parsed to a " + valueName( type ), text, 0 );
+            throw new TemporalParseException(
+                    "Text cannot be parsed to a " + valueName( type ), text.toString(), 0 );
         }
         return result;
     }
@@ -387,7 +413,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         VALUE result = matcher != null && matcher.matches() ? parser.apply( matcher ) : null;
         if ( result == null )
         {
-            throw new DateTimeParseException(
+            throw new TemporalParseException(
                     "Text cannot be parsed to a " + valueName( type ), text.stringValue(), 0 );
         }
         return result;
@@ -404,8 +430,8 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         VALUE result = matcher.matches() ? parser.apply( matcher, defaultZone ) : null;
         if ( result == null )
         {
-            throw new DateTimeParseException(
-                    "Text cannot be parsed to a " + valueName( type ), text, 0 );
+            throw new TemporalParseException(
+                    "Text cannot be parsed to a " + valueName( type ), text.toString(), 0 );
         }
         return result;
     }
@@ -421,7 +447,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         VALUE result = matcher != null && matcher.matches() ? parser.apply( matcher, defaultZone ) : null;
         if ( result == null )
         {
-            throw new DateTimeParseException(
+            throw new TemporalParseException(
                     "Text cannot be parsed to a " + valueName( type ), text.stringValue(), 0 );
         }
         return result;
@@ -458,7 +484,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( state == null )
             {
-                throw new IllegalArgumentException( "Builder state empty" );
+                throw new InvalidValuesArgumentException( "Builder state empty" );
             }
             state.checkAssignments( this.supportsDate() );
             return buildInternal();
@@ -492,7 +518,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             Field field = Field.fields.get( fieldName.toLowerCase() );
             if ( field == null )
             {
-                throw new IllegalArgumentException( "No such field: " + fieldName );
+                throw new InvalidValuesArgumentException( "No such field: " + fieldName );
             }
             // Change state
             field.assign( this, value );
@@ -570,7 +596,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             @Override
             void assign( Builder<?> builder, AnyValue value )
             {
-                throw new IllegalArgumentException( "Not supported: " + name() );
+                throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
             }
         },
         offset//<pre>
@@ -579,7 +605,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             @Override
             void assign( Builder<?> builder, AnyValue value )
             {
-                throw new IllegalArgumentException( "Not supported: " + name() );
+                throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
             }
         },
         offsetMinutes//<pre>
@@ -588,7 +614,16 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             @Override
             void assign( Builder<?> builder, AnyValue value )
             {
-                throw new IllegalArgumentException( "Not supported: " + name() );
+                throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
+            }
+        },
+        offsetSeconds//<pre>
+        { //</pre>
+
+            @Override
+            void assign( Builder<?> builder, AnyValue value )
+            {
+                throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
             }
         },
         // time zone
@@ -600,11 +635,11 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 if ( !builder.supportsTimeZone() )
                 {
-                    throw new IllegalArgumentException( "Cannot assign time zone if also assigning other fields." );
+                    throw new UnsupportedTemporalUnitException( "Cannot assign time zone if also assigning other fields." );
                 }
                 if ( builder.timezone != null )
                 {
-                    throw new IllegalArgumentException( "Cannot assign timezone twice." );
+                    throw new InvalidValuesArgumentException( "Cannot assign timezone twice." );
                 }
                 builder.timezone = value;
             }
@@ -618,7 +653,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 if ( !builder.supportsDate() )
                 {
-                    throw new IllegalArgumentException( "Not supported: " + name() );
+                    throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
                 }
                 if ( builder.state == null )
                 {
@@ -641,7 +676,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 if ( !builder.supportsTime() )
                 {
-                    throw new IllegalArgumentException( "Not supported: " + name() );
+                    throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
                 }
                 if ( builder.state == null )
                 {
@@ -664,7 +699,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 if ( !builder.supportsDate() || !builder.supportsTime() )
                 {
-                    throw new IllegalArgumentException( "Not supported: " + name() );
+                    throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
                 }
                 if ( builder.state == null )
                 {
@@ -687,7 +722,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 if ( !builder.supportsEpoch() )
                 {
-                    throw new IllegalArgumentException( "Not supported: " + name() );
+                    throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
                 }
                 if ( builder.state == null )
                 {
@@ -710,7 +745,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 if ( !builder.supportsEpoch() )
                 {
-                    throw new IllegalArgumentException( "Not supported: " + name() );
+                    throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
                 }
                 if ( builder.state == null )
                 {
@@ -763,7 +798,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             assert field != null : "method should have been overridden";
             if ( !builder.supports( field ) )
             {
-                throw new IllegalArgumentException( "Not supported: " + name() );
+                throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
             }
             if ( builder.state == null )
             {
@@ -804,7 +839,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                     }
                     else
                     {
-                        throw new IllegalArgumentException( Field.year.name() + " must be specified" );
+                        throw new InvalidValuesArgumentException( Field.year.name() + " must be specified" );
                     }
                 }
                 time.checkAssignments();
@@ -875,17 +910,17 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( field == Field.date || field == Field.time )
             {
-                throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime or epochSeconds or epochMillis." );
+                throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with datetime or epochSeconds or epochMillis." );
             }
             else if ( field == Field.datetime )
             {
                 if ( epochSeconds != null )
                 {
-                    throw new IllegalArgumentException( field.name() + " cannot be selected together with epochSeconds." );
+                    throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with epochSeconds." );
                 }
                 else if ( epochMillis != null )
                 {
-                    throw new IllegalArgumentException( field.name() + " cannot be selected together with epochMillis." );
+                    throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with epochMillis." );
                 }
                 datetime = assignment( Field.datetime, datetime, value );
             }
@@ -893,11 +928,11 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 if ( epochMillis != null )
                 {
-                    throw new IllegalArgumentException( field.name() + " cannot be selected together with epochMillis." );
+                    throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with epochMillis." );
                 }
                 else if ( datetime != null )
                 {
-                    throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime." );
+                    throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with datetime." );
                 }
                 epochSeconds = assignment( Field.epochSeconds, epochSeconds, value );
             }
@@ -905,11 +940,11 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             {
                 if ( epochSeconds != null )
                 {
-                    throw new IllegalArgumentException( field.name() + " cannot be selected together with epochSeconds." );
+                    throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with epochSeconds." );
                 }
                 else if ( datetime != null )
                 {
-                    throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime." );
+                    throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with datetime." );
                 }
                 epochMillis = assignment( Field.epochMillis, epochMillis, value );
             }
@@ -933,7 +968,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( field == Field.datetime || field == Field.epochSeconds || field == Field.epochMillis )
             {
-                throw new IllegalArgumentException( field.name() + " cannot be selected together with date or time." );
+                throw new InvalidValuesArgumentException( field.name() + " cannot be selected together with date or time." );
             }
             else
             {
@@ -1059,7 +1094,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( date == null )
             {
-                throw new IllegalArgumentException( Field.month.name() + " must be specified"  );
+                throw new InvalidValuesArgumentException( Field.month.name() + " must be specified"  );
             }
         }
     }
@@ -1094,7 +1129,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 date = assignment( field, date, value );
                 return this;
             default:
-                throw new IllegalArgumentException( "Cannot assign " + field + " to calendar date." );
+                throw new UnsupportedTemporalUnitException( "Cannot assign " + field + " to calendar date." );
             }
         }
 
@@ -1147,7 +1182,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 date = assignment( field, date, value );
                 return this;
             default:
-                throw new IllegalArgumentException( "Cannot assign " + field + " to week date." );
+                throw new UnsupportedTemporalUnitException( "Cannot assign " + field + " to week date." );
             }
         }
 
@@ -1200,7 +1235,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 date = assignment( field, date, value );
                 return this;
             default:
-                throw new IllegalArgumentException( "Cannot assign " + field + " to quarter date." );
+                throw new UnsupportedTemporalUnitException( "Cannot assign " + field + " to quarter date." );
             }
         }
 
@@ -1249,7 +1284,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 date = assignment( field, date, value );
                 return this;
             default:
-                throw new IllegalArgumentException( "Cannot assign " + field + " to ordinal date." );
+                throw new UnsupportedTemporalUnitException( "Cannot assign " + field + " to ordinal date." );
             }
         }
 
@@ -1267,7 +1302,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     {
         if ( oldValue != null )
         {
-            throw new IllegalArgumentException( "cannot re-assign " + field );
+            throw new InvalidValuesArgumentException( "cannot re-assign " + field );
         }
         return newValue;
     }
@@ -1277,7 +1312,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     {
         if ( values[0].first() == null )
         {
-            throw new IllegalArgumentException( values[0].other() + " must be specified" );
+            throw new InvalidValuesArgumentException( values[0].other() + " must be specified" );
         }
 
         String firstNotAssigned = null;
@@ -1293,7 +1328,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
             else if ( firstNotAssigned != null )
             {
-                throw new IllegalArgumentException( value.other() + " cannot be specified without " + firstNotAssigned );
+                throw new InvalidValuesArgumentException( value.other() + " cannot be specified without " + firstNotAssigned );
             }
         }
     }
@@ -1305,7 +1340,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( value.first() == null )
             {
-                throw new IllegalArgumentException( value.other() + " must be specified" );
+                throw new InvalidValuesArgumentException( value.other() + " must be specified" );
             }
         }
     }
@@ -1331,15 +1366,15 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         long ns = safeCastIntegral( "nanosecond", nanosecond, Field.nanosecond.defaultValue );
         if ( ms < 0 || ms >= 1000 )
         {
-            throw new IllegalArgumentException( "Invalid millisecond: " + ms );
+            throw new InvalidValuesArgumentException( "Invalid millisecond: " + ms );
         }
         if ( us < 0 || us >= (millisecond != null ? 1000 : 1000_000) )
         {
-            throw new IllegalArgumentException( "Invalid microsecond: " + us );
+            throw new InvalidValuesArgumentException( "Invalid microsecond: " + us );
         }
         if ( ns < 0 || ns >= ( microsecond != null ? 1000 : millisecond != null ? 1000_000 : 1000_000_000 ) )
         {
-            throw new IllegalArgumentException( "Invalid nanosecond: " + ns );
+            throw new InvalidValuesArgumentException( "Invalid nanosecond: " + ns );
         }
         return (int) (ms * 1000_000 + us * 1000 + ns);
     }
@@ -1379,11 +1414,83 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         return truncated;
     }
 
+    static <TEMP extends Temporal> TEMP assertValidArgument( Supplier<TEMP> func )
+    {
+        try
+        {
+            return func.get();
+        }
+        catch ( DateTimeException e )
+        {
+            throw new InvalidValuesArgumentException( e.getMessage(), e );
+        }
+    }
+
+    static <TEMP extends Temporal> TEMP assertValidUnit( Supplier<TEMP> func )
+    {
+        try
+        {
+            return func.get();
+        }
+        catch ( DateTimeException e )
+        {
+            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
+        }
+    }
+
+    static <OFFSET extends ZoneId> OFFSET assertValidZone( Supplier<OFFSET> func )
+    {
+        try
+        {
+            return func.get();
+        }
+        catch ( DateTimeException e )
+        {
+            throw new InvalidValuesArgumentException( e.getMessage(), e );
+        }
+    }
+
+    static <TEMP extends Temporal> TEMP assertParsable( Supplier<TEMP> func )
+    {
+        try
+        {
+            return func.get();
+        }
+        catch ( DateTimeException e )
+        {
+            throw new TemporalParseException( e.getMessage(), e );
+        }
+    }
+
+    static String assertPrintable( Supplier<String> func )
+    {
+        try
+        {
+            return func.get();
+        }
+        catch ( DateTimeException e )
+        {
+            throw new TemporalParseException( e.getMessage(), e );
+        }
+    }
+
+    static <TEMP extends Temporal> TEMP assertValidArithmetic( Supplier<TEMP> func )
+    {
+        try
+        {
+            return func.get();
+        }
+        catch ( DateTimeException | ArithmeticException e )
+        {
+            throw new TemporalArithmeticException( e.getMessage(), e );
+        }
+    }
+
     static Pair<LocalDate,LocalTime> getTruncatedDateAndTime( TemporalUnit unit, TemporalValue input, String type )
     {
         if ( unit.isTimeBased() && !(input instanceof DateTimeValue || input instanceof LocalDateTimeValue) )
         {
-            throw new IllegalArgumentException( String.format( "Cannot truncate %s to %s with a time based unit.", input, type ) );
+            throw new UnsupportedTemporalUnitException( String.format( "Cannot truncate %s to %s with a time based unit.", input, type ) );
         }
         LocalDate localDate = input.getDatePart();
         LocalTime localTime = input.hasTime() ? input.getLocalTimePart() : LocalTimeValue.DEFAULT_LOCAL_TIME;
@@ -1408,8 +1515,13 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         String timezone;
 
         @Override
-        public void assign( String key, String value )
+        public void assign( String key, Object valueObj )
         {
+            if ( !(valueObj instanceof String) )
+            {
+                throw new InvalidValuesArgumentException( String.format( "Cannot assign %s to field %s", valueObj, key ) );
+            }
+            String value = (String) valueObj;
             if ( "timezone".equals( key.toLowerCase() ) )
             {
                 if ( timezone == null )
@@ -1418,12 +1530,12 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 }
                 else
                 {
-                    throw new IllegalArgumentException( "Cannot set timezone twice" );
+                    throw new InvalidValuesArgumentException( "Cannot set timezone twice" );
                 }
             }
             else
             {
-                throw new IllegalArgumentException( "Unsupported header field: " + value );
+                throw new InvalidValuesArgumentException( "Unsupported header field: " + value );
             }
         }
 
@@ -1431,7 +1543,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( timezone != null )
             {
-                ZoneId tz = ZoneId.of( timezone );
+                ZoneId tz = DateTimeValue.parseZoneName( timezone );
                 // Override defaultZone
                 return () -> tz;
             }

@@ -35,8 +35,8 @@ public class IndexStorageFactory
         this.structure = structure;
     }
 
-    public PartitionedIndexStorage indexStorageOf( long indexId, boolean archiveFailed )
+    public PartitionedIndexStorage indexStorageOf( long indexId )
     {
-        return new PartitionedIndexStorage( dirFactory, fileSystem, structure.directoryForIndex( indexId ), archiveFailed );
+        return new PartitionedIndexStorage( dirFactory, fileSystem, structure.directoryForIndex( indexId ) );
     }
 }

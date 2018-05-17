@@ -24,6 +24,7 @@ import org.mockito.Answers;
 import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
@@ -38,10 +39,13 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.ClockContext;
 
 import static org.mockito.Mockito.mock;
@@ -51,6 +55,12 @@ class StubKernelTransaction implements KernelTransaction
 {
     @Override
     public Statement acquireStatement()
+    {
+        return null;
+    }
+
+    @Override
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
     {
         return null;
     }
@@ -132,6 +142,12 @@ class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public ExecutionStatistics executionStatistics()
+    {
+        return null;
+    }
+
+    @Override
     public SchemaWrite schemaWrite()
     {
         return null;
@@ -167,6 +183,14 @@ class StubKernelTransaction implements KernelTransaction
         SecurityContext securityContext = mock( SecurityContext.class, Answers.RETURNS_DEEP_STUBS );
         when( securityContext.subject().username() ).thenReturn( "testUser" );
         return securityContext;
+    }
+
+    @Override
+    public AuthSubject subjectOrAnonymous()
+    {
+        AuthSubject subject = mock( AuthSubject.class );
+        when( subject.username() ).thenReturn( "testUser" );
+        return subject;
     }
 
     @Override
@@ -240,25 +264,31 @@ class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public NodeCursor nodeCursor()
+    public NodeCursor ambientNodeCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public RelationshipScanCursor relationshipCursor()
+    public RelationshipScanCursor ambientRelationshipCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public PropertyCursor propertyCursor()
+    public PropertyCursor ambientPropertyCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public ClockContext clocks()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void assertOpen()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

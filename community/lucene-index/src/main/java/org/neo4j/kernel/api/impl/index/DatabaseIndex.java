@@ -86,10 +86,8 @@ public interface DatabaseIndex<READER extends IndexReader> extends Closeable
 
     /**
      * Close index and deletes all it's partitions.
-     *
-     * @throws IOException
      */
-    void drop() throws IOException;
+    void drop();
 
     /**
      * Commits all index partitions.

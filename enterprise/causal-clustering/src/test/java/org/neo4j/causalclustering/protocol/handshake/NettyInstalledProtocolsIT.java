@@ -41,12 +41,11 @@ import org.junit.runners.Parameterized;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -65,17 +64,18 @@ import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.stream.Streams;
-import org.neo4j.test.assertion.Assert;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols.RAFT_1;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.COMPRESSION;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith( Parameterized.class )
 public class NettyInstalledProtocolsIT
@@ -87,7 +87,8 @@ public class NettyInstalledProtocolsIT
         this.parameters = parameters;
     }
 
-    private int timeoutSeconds = 10;
+    private static final int TIMEOUT_SECONDS = 10;
+    private static final LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Parameters> data()
@@ -102,12 +103,13 @@ public class NettyInstalledProtocolsIT
                 .collect( Collectors.toList() );
     }
 
+    @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
     private static Parameters raft1WithCompressionModifier( Optional<ModifierProtocol> protocol )
     {
         List<String> versions = Streams.ofOptional( protocol ).map( Protocol::implementation ).collect( Collectors.toList() );
         return new Parameters( "Raft 1, modifiers: " + protocol,
-                new ApplicationSupportedProtocols( RAFT, asList( RAFT_1.implementation() ) ),
-                asList( new ModifierSupportedProtocols( COMPRESSION, versions ) ) );
+                new ApplicationSupportedProtocols( RAFT, singletonList( RAFT_1.implementation() ) ),
+                singletonList( new ModifierSupportedProtocols( COMPRESSION, versions ) ) );
     }
 
     @Test
@@ -119,13 +121,13 @@ public class NettyInstalledProtocolsIT
                 RaftMessages.ClusterIdAwareMessage.of( new ClusterId( UUID.randomUUID() ), raftMessage );
 
         // when
-        client.send( networkMessage );
+        client.send( networkMessage ).syncUninterruptibly();
 
         // then
-        Assert.assertEventually(
+        assertEventually(
                 messages -> String.format( "Received messages %s should contain message decorating %s", messages, raftMessage ),
                 () -> server.received(),
-                contains( messageMatches( networkMessage ) ), timeoutSeconds, TimeUnit.SECONDS );
+                contains( messageMatches( networkMessage ) ), TIMEOUT_SECONDS, SECONDS );
     }
 
     private Server server;
@@ -145,7 +147,7 @@ public class NettyInstalledProtocolsIT
         server = new Server( serverPipelineBuilderFactory );
         server.start( applicationProtocolRepository, modifierProtocolRepository );
 
-        Config config = Config.builder().withSetting( CausalClusteringSettings.handshake_timeout, timeoutSeconds + "s" ).build();
+        Config config = Config.builder().withSetting( CausalClusteringSettings.handshake_timeout, TIMEOUT_SECONDS + "s" ).build();
 
         client = new Client( applicationProtocolRepository, modifierProtocolRepository, clientPipelineBuilderFactory, config );
 
@@ -184,7 +186,7 @@ public class NettyInstalledProtocolsIT
     {
         private Channel channel;
         private NioEventLoopGroup eventLoopGroup;
-        private final List<Object> received = new ArrayList<>();
+        private final List<Object> received = new CopyOnWriteArrayList<>();
         private NettyPipelineBuilderFactory pipelineBuilderFactory;
 
         ChannelInboundHandler nettyHandler = new SimpleChannelInboundHandler<Object>()
@@ -203,10 +205,8 @@ public class NettyInstalledProtocolsIT
 
         void start( final ApplicationProtocolRepository applicationProtocolRepository, final ModifierProtocolRepository modifierProtocolRepository )
         {
-            NullLogProvider log = NullLogProvider.getInstance();
-
             RaftProtocolServerInstaller.Factory raftFactory =
-                    new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineBuilderFactory, log );
+                    new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineBuilderFactory, logProvider );
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository =
                     new ProtocolInstallerRepository<>( singletonList( raftFactory ), ModifierProtocolInstaller.allServerInstallers );
 
@@ -214,18 +214,17 @@ public class NettyInstalledProtocolsIT
             ServerBootstrap bootstrap = new ServerBootstrap().group( eventLoopGroup )
                     .channel( NioServerSocketChannel.class )
                     .option( ChannelOption.SO_REUSEADDR, true )
-                    .localAddress( 0 )
+                    .localAddress( PortAuthority.allocatePort() )
                     .childHandler( new HandshakeServerInitializer( applicationProtocolRepository, modifierProtocolRepository,
-                            protocolInstallerRepository, pipelineBuilderFactory, log ).asChannelInitializer() );
+                            protocolInstallerRepository, pipelineBuilderFactory, logProvider ).asChannelInitializer() );
 
             channel = bootstrap.bind().syncUninterruptibly().channel();
         }
 
         void stop()
         {
-            channel.close().awaitUninterruptibly();
-            channel = null;
-            eventLoopGroup.shutdownGracefully( 0, 0, SECONDS );
+            channel.close().syncUninterruptibly();
+            eventLoopGroup.shutdownGracefully( 0, TIMEOUT_SECONDS, SECONDS );
         }
 
         int port()
@@ -249,7 +248,6 @@ public class NettyInstalledProtocolsIT
         Client( ApplicationProtocolRepository applicationProtocolRepository, ModifierProtocolRepository modifierProtocolRepository,
                 NettyPipelineBuilderFactory pipelineBuilderFactory, Config config )
         {
-            NullLogProvider logProvider = NullLogProvider.getInstance();
             RaftProtocolClientInstaller.Factory raftFactory = new RaftProtocolClientInstaller.Factory( pipelineBuilderFactory, logProvider );
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository =
                     new ProtocolInstallerRepository<>( singletonList( raftFactory ), ModifierProtocolInstaller.allClientInstallers );
@@ -263,7 +261,7 @@ public class NettyInstalledProtocolsIT
         @SuppressWarnings( "SameParameterValue" )
         void connect( int port )
         {
-            ChannelFuture channelFuture = bootstrap.connect( "localhost", port ).awaitUninterruptibly();
+            ChannelFuture channelFuture = bootstrap.connect( "localhost", port ).syncUninterruptibly();
             channel = channelFuture.channel();
         }
 
@@ -271,8 +269,8 @@ public class NettyInstalledProtocolsIT
         {
             if ( channel != null )
             {
-                channel.close().awaitUninterruptibly();
-                eventLoopGroup.shutdownGracefully( 0, 0, SECONDS );
+                channel.close().syncUninterruptibly();
+                eventLoopGroup.shutdownGracefully( 0, TIMEOUT_SECONDS, SECONDS ).syncUninterruptibly();
             }
         }
 

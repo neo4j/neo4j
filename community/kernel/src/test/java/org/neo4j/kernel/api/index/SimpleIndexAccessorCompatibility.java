@@ -30,10 +30,13 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.time.ZoneOffset.UTC;
 import static java.util.Arrays.asList;
@@ -64,7 +67,7 @@ import static org.neo4j.values.storable.TimeValue.time;
 public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     public SimpleIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite,
-            SchemaIndexDescriptor descriptor )
+            IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -177,6 +180,24 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
+    public void testIndexRangeSeekWithSpatial() throws Exception
+    {
+        Assume.assumeTrue( testSuite.supportsSpatial() );
+
+        PointValue p1 = Values.pointValue( CoordinateReferenceSystem.WGS84, -180, -1 );
+        PointValue p2 = Values.pointValue( CoordinateReferenceSystem.WGS84, -180, 1 );
+        PointValue p3 = Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 );
+
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), p1 ),
+                add( 2L, descriptor.schema(), p2 ),
+                add( 3L, descriptor.schema(), p3 )
+            ) );
+
+        assertThat( query( range( 1, p1, true, p2, true ) ), Matchers.contains( 1L, 2L ) );
+    }
+
+    @Test
     public void shouldScanAllValues() throws Exception
     {
         // GIVEN
@@ -197,7 +218,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100 ) );
+            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100 ) );
         }
 
         @Test
@@ -207,7 +228,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             // we cannot have them go around and throw exceptions, because that could potentially break
             // recovery.
             // Conflicting data can happen because of faulty data coercion. These faults are resolved by
-            // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
+            // the exact-match filtering we do on index seeks.
 
             updateAndCommit( asList(
                     add( 1L, descriptor.schema(), "a" ),
@@ -405,7 +426,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
+            super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
         }
 
         @Test
@@ -415,7 +436,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             // we cannot have them go around and throw exceptions, because that could potentially break
             // recovery.
             // Conflicting data can happen because of faulty data coercion. These faults are resolved by
-            // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
+            // the exact-match filtering we do on index seeks.
 
             updateAndCommit( asList(
                     add( 1L, descriptor.schema(), "a" ),

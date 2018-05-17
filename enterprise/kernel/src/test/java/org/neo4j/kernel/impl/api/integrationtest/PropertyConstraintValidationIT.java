@@ -31,18 +31,16 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
-import org.neo4j.test.assertion.Assert;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -53,10 +51,9 @@ import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodeKeyConstraintValidationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT
-        .NodePropertyExistenceConstraintValidationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT
-        .RelationshipPropertyExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodePropertyExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.RelationshipPropertyExistenceConstraintValidationIT;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
@@ -89,9 +86,9 @@ public class PropertyConstraintValidationIT
             SchemaHelper.createNodeKeyConstraint( db, label,  "property2", "property3" );
             SchemaHelper.createNodeKeyConstraint( db, label,  "property3", "property4" );
 
-            Assert.assertException( () ->
+            assertException( () ->
             {
-                try ( Transaction transaction = db.beginTx() )
+                try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
                 {
                     Node node = db.createNode( label );
                     node.setProperty( "property1", "1" );
@@ -101,9 +98,9 @@ public class PropertyConstraintValidationIT
             }, ConstraintViolationException.class,
                     "Node(0) with label `multiNodeKeyLabel` must have the properties `property2, property3`" );
 
-            Assert.assertException( () ->
+            assertException( () ->
             {
-                try ( Transaction transaction = db.beginTx() )
+                try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
                 {
                     Node node = db.createNode( label );
                     node.setProperty( "property1", "1" );
@@ -125,7 +122,7 @@ public class PropertyConstraintValidationIT
             // given
             long entityId = createConstraintAndEntity( "Label1", "key1", "value1" );
 
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
             int label = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
@@ -148,7 +145,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Override
-        long createEntity( KernelTransaction transaction, String type ) throws Exception
+        long createEntity( Transaction transaction, String type ) throws Exception
         {
             long node = transaction.dataWrite().nodeCreate();
             int labelId = transaction.tokenWrite().labelGetOrCreateForName( type );
@@ -157,7 +154,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Override
-        long createEntity( KernelTransaction transaction, String property, String value ) throws Exception
+        long createEntity( Transaction transaction, String property, String value ) throws Exception
         {
             long node = transaction.dataWrite().nodeCreate();
             int propertyKey = transaction.tokenWrite().propertyKeyGetOrCreateForName( property );
@@ -166,7 +163,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Override
-        long createEntity( KernelTransaction transaction, String type, String property, String value ) throws Exception
+        long createEntity( Transaction transaction, String type, String property, String value ) throws Exception
         {
             long node = createEntity( transaction, type );
             int propertyKey = transaction.tokenWrite().propertyKeyGetOrCreateForName( property );
@@ -177,7 +174,7 @@ public class PropertyConstraintValidationIT
         @Override
         long createConstraintAndEntity( String type, String property, String value ) throws Exception
         {
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
             int label = transaction.tokenWrite().labelGetOrCreateForName( type );
             long node = transaction.dataWrite().nodeCreate();
             transaction.dataWrite().nodeAddLabel( node, label );
@@ -205,7 +202,7 @@ public class PropertyConstraintValidationIT
         @Override
         int entityCount() throws TransactionFailureException
         {
-           KernelTransaction transaction = newTransaction();
+           Transaction transaction = newTransaction();
             int result = countNodes( transaction );
             rollback();
             return result;
@@ -229,7 +226,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Override
-        long createEntity( KernelTransaction transaction, String type ) throws Exception
+        long createEntity( Transaction transaction, String type ) throws Exception
         {
             long start = transaction.dataWrite().nodeCreate();
             long end = transaction.dataWrite().nodeCreate();
@@ -238,7 +235,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Override
-        long createEntity( KernelTransaction transaction, String property, String value ) throws Exception
+        long createEntity( Transaction transaction, String property, String value ) throws Exception
         {
             long start = transaction.dataWrite().nodeCreate();
             long end = transaction.dataWrite().nodeCreate();
@@ -252,7 +249,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Override
-        long createEntity( KernelTransaction transaction, String type, String property, String value ) throws Exception
+        long createEntity( Transaction transaction, String type, String property, String value ) throws Exception
         {
             long relationship = createEntity( transaction, type );
             int propertyKey = transaction.tokenWrite().propertyKeyGetOrCreateForName( property );
@@ -263,7 +260,7 @@ public class PropertyConstraintValidationIT
         @Override
         long createConstraintAndEntity( String type, String property, String value ) throws Exception
         {
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
             int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( type );
             long start = transaction.dataWrite().nodeCreate();
             long end = transaction.dataWrite().nodeCreate();
@@ -292,7 +289,7 @@ public class PropertyConstraintValidationIT
         @Override
         int entityCount() throws TransactionFailureException
         {
-            KernelTransaction transaction = newTransaction();
+            Transaction transaction = newTransaction();
             int result = countRelationships( transaction );
             rollback();
             return result;
@@ -303,11 +300,11 @@ public class PropertyConstraintValidationIT
     {
         abstract void createConstraint( String key, String property ) throws KernelException;
 
-        abstract long createEntity( KernelTransaction transaction, String type ) throws Exception;
+        abstract long createEntity( Transaction transaction, String type ) throws Exception;
 
-        abstract long createEntity( KernelTransaction transaction, String property, String value ) throws Exception;
+        abstract long createEntity( Transaction transaction, String property, String value ) throws Exception;
 
-        abstract long createEntity( KernelTransaction transaction, String type, String property, String value )
+        abstract long createEntity( Transaction transaction, String type, String property, String value )
                 throws Exception;
 
         abstract long createConstraintAndEntity( String type, String property, String value ) throws Exception;
@@ -333,7 +330,7 @@ public class PropertyConstraintValidationIT
             // given
             createConstraint( "Type1", "key1" );
 
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
             createEntity( transaction, "Type1" );
@@ -355,7 +352,7 @@ public class PropertyConstraintValidationIT
         {
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
             int key = transaction.tokenWrite().propertyKeyGetOrCreateForName( "key1" );
@@ -378,7 +375,7 @@ public class PropertyConstraintValidationIT
         {
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
             int key = transaction.tokenWrite().propertyKeyGetOrCreateForName( "key1" );
@@ -395,7 +392,7 @@ public class PropertyConstraintValidationIT
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
 
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
             int key = transaction.tokenWrite().propertyKeyGetOrCreateForName( "key1" );
@@ -410,7 +407,7 @@ public class PropertyConstraintValidationIT
             // given
             createConstraintAndEntity( "Type1", "key1", "value1" );
 
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
             createEntity( transaction, "key1", "value1" );

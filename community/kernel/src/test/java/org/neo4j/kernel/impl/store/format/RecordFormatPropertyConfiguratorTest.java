@@ -187,7 +187,7 @@ public class RecordFormatPropertyConfiguratorTest
         }
 
         @Override
-        public boolean hasSameCapabilities( RecordFormats other, CapabilityType type )
+        public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
         {
             return false;
         }

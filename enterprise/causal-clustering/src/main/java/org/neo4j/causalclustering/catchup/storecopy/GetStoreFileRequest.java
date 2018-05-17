@@ -31,16 +31,16 @@ import java.util.List;
 import org.neo4j.causalclustering.catchup.RequestMessageType;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.causalclustering.messaging.StoreCopyRequest;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.string.UTF8;
 
-public class GetStoreFileRequest implements CatchUpRequest
+public class GetStoreFileRequest implements StoreCopyRequest
 {
     private final StoreId expectedStoreId;
     private final File file;
@@ -53,12 +53,14 @@ public class GetStoreFileRequest implements CatchUpRequest
         this.requiredTransactionId = requiredTransactionId;
     }
 
-    long requiredTransactionId()
+    @Override
+    public long requiredTransactionId()
     {
         return requiredTransactionId;
     }
 
-    StoreId expectedStoreId()
+    @Override
+    public StoreId expectedStoreId()
     {
         return expectedStoreId;
     }
@@ -116,5 +118,12 @@ public class GetStoreFileRequest implements CatchUpRequest
                     new GetStoreFileRequest.StoreFileRequestMarshall().unmarshal0( new NetworkReadableClosableChannelNetty4( in ) );
             out.add( getStoreFileRequest );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "GetStoreFileRequest{" + "expectedStoreId=" + expectedStoreId + ", file=" + file.getName() + ", requiredTransactionId=" + requiredTransactionId +
+                '}';
     }
 }

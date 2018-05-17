@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -119,7 +120,7 @@ public class FusionIndexPopulatorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexPopulator = new FusionIndexPopulator( populators, fusionVersion.selector(), indexId, dropAction );
+        fusionIndexPopulator = new FusionIndexPopulator( populators, fusionVersion.selector(), indexId, dropAction, false );
     }
 
     private void resetMocks()
@@ -143,6 +144,14 @@ public class FusionIndexPopulatorTest
         {
             verify( alivePopulator, times( 1 ) ).create();
         }
+    }
+
+    @Test
+    public void createRemoveAnyLeftOversThatWasThereInIndexDirectoryBeforePopulation() throws IOException
+    {
+        fusionIndexPopulator.create();
+
+        verify( dropAction ).drop( indexId, false );
     }
 
     @Test
@@ -187,7 +196,7 @@ public class FusionIndexPopulatorTest
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
             // given
-            IOException failure = new IOException( "fail" );
+            UncheckedIOException failure = new UncheckedIOException( new IOException( "fail" ) );
             doThrow( failure ).when( alivePopulator ).drop();
 
             verifyCallFail( failure, () ->
