@@ -31,23 +31,34 @@ import org.neo4j.values.utils.ValueMath.overflowSafeAdd
  */
 class AvgFunction(val value: Expression)
   extends AggregationFunction
-  with NumericExpressionOnly {
+    with NumericOrDurationAggregationExpression {
 
   def name = "AVG"
 
   private var count: Long = 0L
-  private var sum: NumberValue = Values.ZERO_INT
 
-  override def result(state: QueryState): Value =
-    if (count > 0) sum
-    else Values.NO_VALUE
+  override def result(state: QueryState): Value = aggregatingType match {
+    case None =>
+      Values.NO_VALUE
+    case Some(AggregatingNumbers) =>
+      sumNumber
+    case Some(AggregatingDurations) =>
+      sumDuration.div(Values.longValue(count))
+  }
 
   override def apply(data: ExecutionContext, state: QueryState) {
-    actOnNumber(value(data, state), (number) => {
+    val vl = value(data, state)
+    actOnNumberOrDuration(vl,
+      number => {
       count += 1
-      val diff = number.minus(sum)
-      val next = diff.dividedBy(count.toDouble)
-      sum = overflowSafeAdd(sum, next)
-    })
+        val diff = number.minus(sumNumber)
+        val next = diff.dividedBy(count.toDouble)
+        sumNumber = overflowSafeAdd(sumNumber, next)
+      },
+      duration => {
+        count += 1
+        sumDuration = sumDuration.add(duration)
+      }
+    )
   }
 }

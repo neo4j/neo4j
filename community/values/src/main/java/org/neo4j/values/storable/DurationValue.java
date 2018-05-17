@@ -177,7 +177,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
     }
 
-    private static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
+    public static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
     private static final List<TemporalUnit> UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
     // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
     private static final Comparator<DurationValue> COMPARATOR =

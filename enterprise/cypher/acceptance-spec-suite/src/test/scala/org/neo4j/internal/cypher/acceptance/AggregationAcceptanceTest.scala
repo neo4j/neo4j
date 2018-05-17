@@ -24,6 +24,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.values.storable.DurationValue
 
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
@@ -224,5 +225,43 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       Map("a.prop" -> "alice", "b.prop" -> "bob", "count(a)" -> 1),
       Map("a.prop" -> "bob", "b.prop" -> "alice", "count(a)" -> 1)
     ))
+  }
+
+  test("Should sum durations") {
+    val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S')] as x RETURN sum(x) AS length"
+    executeWith(Configs.Interpreted - Configs.OldAndRule, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,40,500000000))))
+  }
+
+  test("Should sum durations from stored nodes") {
+    createNode(Map("d" -> DurationValue.duration(0,0,10,0)))
+    createNode(Map("d" -> DurationValue.duration(0,1,0,0)))
+    createNode(Map("d" -> DurationValue.duration(0,0,30,500000000)))
+
+    val query = "MATCH (n) RETURN sum(n.d) AS length"
+    executeWith(Configs.Interpreted - Configs.OldAndRule, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,40,500000000))))
+  }
+
+  test("Should not sum durations and numbers together") {
+    val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S'), 90] as x RETURN sum(x) AS length"
+    failWithError(Configs.Interpreted + Configs.Procs - Configs.OldAndRule, query, Seq("cannot mix number and durations"))
+  }
+
+  test("Should avg durations") {
+    val query = "UNWIND [duration('PT10S'), duration('P3D'), duration('PT20.6S')] as x RETURN avg(x) AS length"
+    executeWith(Configs.Interpreted - Configs.OldAndRule, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,10,200000000))))
+  }
+
+  test("Should avg durations from stored nodes") {
+    createNode(Map("d" -> DurationValue.duration(0,0,10,0)))
+    createNode(Map("d" -> DurationValue.duration(0,3,0,0)))
+    createNode(Map("d" -> DurationValue.duration(0,0,20,600000000)))
+
+    val query = "MATCH (n) RETURN avg(n.d) AS length"
+    executeWith(Configs.Interpreted - Configs.OldAndRule, query).toList should equal(List(Map("length" -> DurationValue.duration(0,1,10,200000000))))
+  }
+
+  test("Should not avg durations and numbers together") {
+    val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S'), 90] as x RETURN avg(x) AS length"
+    failWithError(Configs.Interpreted + Configs.Procs - Configs.OldAndRule, query, Seq("cannot mix number and durations"))
   }
 }
