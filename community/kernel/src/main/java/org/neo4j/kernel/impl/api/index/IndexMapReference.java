@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.values.storable.Value;
 
 public class IndexMapReference implements IndexMapSnapshotProvider
 {
@@ -61,7 +62,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return proxy;
     }
 
-    public IndexProxy getIndexProxy( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProxy getIndexProxy( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy proxy = indexMap.getIndexProxy( descriptor );
         if ( proxy == null )
@@ -71,7 +72,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return proxy;
     }
 
-    public long getIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long getIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy proxy = indexMap.getIndexProxy( descriptor );
         if ( proxy == null )
@@ -81,7 +82,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getIndexId( descriptor );
     }
 
-    public long getOnlineIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long getOnlineIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy proxy = getIndexProxy( descriptor );
         switch ( proxy.getState() )
@@ -99,8 +100,8 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    public Iterable<LabelSchemaDescriptor> getRelatedIndexes(
-            long[] changedLabels, long[] unchangedLabels, PrimitiveIntCollection properties )
+    public Iterable<SchemaDescriptor> getRelatedIndexes(
+            long[] changedLabels, long[] unchangedLabels, PrimitiveIntSet properties )
     {
         return indexMap.getRelatedIndexes( changedLabels, unchangedLabels, properties );
     }
@@ -108,5 +109,15 @@ public class IndexMapReference implements IndexMapSnapshotProvider
     public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
     {
         return new IndexUpdaterMap( indexMap, mode );
+    }
+
+    public void validateBeforeCommit( SchemaDescriptor index, Value[] tuple )
+    {
+        IndexProxy proxy = indexMap.getIndexProxy( index );
+        if ( proxy != null )
+        {
+            // Do this null-check since from the outside there's a best-effort matching going on between updates and actual indexes backing those.
+            proxy.validateBeforeCommit( tuple );
+        }
     }
 }

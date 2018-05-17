@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.{AbstractIterator, Iterator}
 
 case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: String, seen: String, target: String, right: Pipe)
-                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                               (val id: Id = Id.INVALID_ID)
 extends PipeWithSource(left) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
@@ -40,7 +40,7 @@ extends PipeWithSource(left) {
       override def getKey(row: ExecutionContext) = row(source)
 
       override def getValue(row: ExecutionContext) = row(seen) match {
-        case n: NodeValue => Some(n.id())
+        case n: VirtualNodeValue => Some(n.id())
         case Values.NO_VALUE => None
         case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
@@ -57,7 +57,7 @@ extends PipeWithSource(left) {
     // 3. Probe
     }.filter { ctx =>
       ctx(target) match {
-        case n: NodeValue => if(positivePredicate) triadicState.contains(n.id()) else !triadicState.contains(n.id())
+        case n: VirtualNodeValue => if(positivePredicate) triadicState.contains(n.id()) else !triadicState.contains(n.id())
         case _ => false
       }
     }

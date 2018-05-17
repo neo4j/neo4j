@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -277,7 +277,7 @@ public class JSONTokener
     public String nextString( char quote ) throws JSONException
     {
         char c;
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for ( ; ; )
         {
             c = next();
@@ -338,7 +338,7 @@ public class JSONTokener
      */
     public String nextTo( char d ) throws JSONException
     {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for ( ; ; )
         {
             char c = next();
@@ -364,7 +364,7 @@ public class JSONTokener
     public String nextTo( String delimiters ) throws JSONException
     {
         char c;
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for ( ; ; )
         {
             c = next();
@@ -417,7 +417,7 @@ public class JSONTokener
          * formatting character.
          */
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         while ( c >= ' ' && ",:]}/\\\"[{;=#".indexOf( c ) < 0 )
         {
             sb.append( c );

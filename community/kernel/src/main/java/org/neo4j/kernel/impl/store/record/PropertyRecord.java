@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -48,7 +48,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     // Holds the purely physical representation of the loaded properties in this record. This is so that
     // StorePropertyCursor is able to use this raw data without the rather heavy and bloated data structures
     // of PropertyBlock and thereabouts. So when a property record is loaded only these blocks are read,
-    // the construction of all PropertyBlock instances are loaded lazile when they are first needed, loaded
+    // the construction of all PropertyBlock instances are loaded lazily when they are first needed, loaded
     // by ensureBlocksLoaded().
     // Modifications to a property record are still done on the PropertyBlock abstraction and so it's also
     // that data that gets written to the log and record when it's time to do so.

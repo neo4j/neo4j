@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -107,6 +107,28 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
             {
                 rawConfiguration.put( GraphDatabaseSettings.allow_upgrade.name(), value );
+            }
+        } );
+        add( new SpecificPropertyMigration( "dbms.logs.timezone",
+                "dbms.logs.timezone has been replaced with dbms.db.timezone." )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+                rawConfiguration.put( GraphDatabaseSettings.db_timezone.name(), value );
+            }
+        } );
+        add( new SpecificPropertyMigration( "unsupported.dbms.enable_native_schema_index",
+                "unsupported.dbms.enable_native_schema_index has been replaced with dbms.index.default_schema_provider." )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+                if ( value.equals( Settings.FALSE ) )
+                {
+                    rawConfiguration.putIfAbsent( GraphDatabaseSettings.default_schema_provider.name(),
+                            GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName() );
+                }
             }
         } );
     }

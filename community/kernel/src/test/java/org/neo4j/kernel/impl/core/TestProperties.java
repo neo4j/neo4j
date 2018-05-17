@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,7 +36,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     private static final int VALUE_RANGE_SPLIT = 20;
 
     @Test
-    public void addAndRemovePropertiesWithinOneTransaction() throws Exception
+    public void addAndRemovePropertiesWithinOneTransaction()
     {
         Node node = getGraphDb().createNode();
 
@@ -50,7 +50,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void addAndRemovePropertiesWithinOneTransaction2() throws Exception
+    public void addAndRemovePropertiesWithinOneTransaction2()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "foo", "bar" );
@@ -73,7 +73,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void removeAndAddSameProperty() throws Exception
+    public void removeAndAddSameProperty()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "foo", "bar" );
@@ -91,7 +91,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void removeSomeAndSetSome() throws Exception
+    public void removeSomeAndSetSome()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "remove me", "trash" );
@@ -108,7 +108,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void removeOneOfThree() throws Exception
+    public void removeOneOfThree()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "1", 1 );
@@ -122,7 +122,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testLongPropertyValues() throws Exception
+    public void testLongPropertyValues()
     {
         Node n = getGraphDb().createNode();
         setPropertyAndAssertIt( n, -134217728L );
@@ -130,7 +130,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testIntPropertyValues() throws Exception
+    public void testIntPropertyValues()
     {
         Node n = getGraphDb().createNode();
         setPropertyAndAssertIt( n, -134217728 );
@@ -138,7 +138,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void booleanRange() throws Exception
+    public void booleanRange()
     {
         Node node = getGraphDb().createNode();
         setPropertyAndAssertIt( node, false );
@@ -146,7 +146,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void byteRange() throws Exception
+    public void byteRange()
     {
         Node node = getGraphDb().createNode();
         byte stride = Byte.MAX_VALUE / VALUE_RANGE_SPLIT;
@@ -158,7 +158,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void charRange() throws Exception
+    public void charRange()
     {
         Node node = getGraphDb().createNode();
         char stride = Character.MAX_VALUE / VALUE_RANGE_SPLIT;
@@ -170,7 +170,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shortRange() throws Exception
+    public void shortRange()
     {
         Node node = getGraphDb().createNode();
         short stride = Short.MAX_VALUE / VALUE_RANGE_SPLIT;
@@ -182,7 +182,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void intRange() throws Exception
+    public void intRange()
     {
         Node node = getGraphDb().createNode();
         int stride = Integer.MAX_VALUE / VALUE_RANGE_SPLIT;
@@ -194,7 +194,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void longRange() throws Exception
+    public void longRange()
     {
         Node node = getGraphDb().createNode();
         long stride = Long.MAX_VALUE / VALUE_RANGE_SPLIT;
@@ -206,7 +206,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void floatRange() throws Exception
+    public void floatRange()
     {
         Node node = getGraphDb().createNode();
         float stride = 16f;
@@ -219,7 +219,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void doubleRange() throws Exception
+    public void doubleRange()
     {
         Node node = getGraphDb().createNode();
         double stride = 4194304d; // 2^23
@@ -238,7 +238,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void loadManyProperties() throws Exception
+    public void loadManyProperties()
     {
         Node node = getGraphDb().createNode();
         for ( int i = 0; i < 200; i++ )
@@ -250,7 +250,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void name() throws Exception
+    public void name()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "name", "yo" );

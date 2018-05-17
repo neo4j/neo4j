@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,9 +35,9 @@ import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -81,8 +81,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     }
 
     /**
-     * Matches indexes to a node. This implementation mirrors NodeSchemaMatcher.onMatchingSchema(...), but as all
-     * accessor methods are different, a shared implementation was hard to achieve.
+     * Matches indexes to a node.
      */
     private void matchIndexesToNode(
             NodeRecord record,
@@ -95,7 +94,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap = null;
         for ( IndexRule indexRule : indexes.onlineRules() )
         {
-            long labelId = indexRule.schema().getLabelId();
+            long labelId = indexRule.schema().keyId();
             if ( labels.contains( labelId ) )
             {
                 if ( nodePropertyMap == null )
@@ -219,13 +218,14 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         return propertyIds;
     }
 
-    private IndexQuery[] seek( LabelSchemaDescriptor schema, Value[] propertyValues )
+    private IndexQuery[] seek( SchemaDescriptor schema, Value[] propertyValues )
     {
-        assert schema.getPropertyIds().length == propertyValues.length;
+        int[] propertyIds = schema.getPropertyIds();
+        assert propertyIds.length == propertyValues.length;
         IndexQuery[] query = new IndexQuery[propertyValues.length];
         for ( int i = 0; i < query.length; i++ )
         {
-            query[i] = IndexQuery.exact( schema.getPropertyIds()[i], propertyValues[i] );
+            query[i] = IndexQuery.exact( propertyIds[i], propertyValues[i] );
         }
         return query;
     }
@@ -244,7 +244,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                     Arrays.toString( query ) ), e );
         }
 
-        return reader.hasFullNumberPrecision( query )
+        return reader.hasFullValuePrecision( query )
                 ? indexedNodeIds : LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
     }
 

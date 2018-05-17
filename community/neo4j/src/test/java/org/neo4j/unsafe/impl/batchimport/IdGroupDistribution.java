@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,21 +22,22 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Random;
 
 import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
 /**
  * A little utility for randomizing dividing up nodes into {@link Group id spaces}.
- * At least used by {@link RandomDataIterator}. Supplied with number of nodes to divide up and number of groups
+ * Supplied with number of nodes to divide up and number of groups
  * to divide into, the group sizes are randomized and together they will contain all nodes.
  */
 public class IdGroupDistribution
 {
     private final long[] groupCounts;
-    private final Group[] groups;
+    private final Groups groups;
 
-    public IdGroupDistribution( long nodeCount, int numberOfGroups, Random random )
+    public IdGroupDistribution( long nodeCount, int numberOfGroups, Random random, Groups groups )
     {
+        this.groups = groups;
         groupCounts = new long[numberOfGroups];
-        groups = new Group[numberOfGroups];
 
         // Assign all except the last one
         long total = 0;
@@ -57,7 +58,7 @@ public class IdGroupDistribution
     private void assignGroup( int i, long count )
     {
         groupCounts[i] = count;
-        groups[i] = new Group.Adapter( i, "Group" + i );
+        groups.getOrCreate( "Group" + i );
     }
 
     public Group groupOf( long nodeInOrder )
@@ -68,7 +69,7 @@ public class IdGroupDistribution
             at += groupCounts[i];
             if ( nodeInOrder < at )
             {
-                return groups[i];
+                return groups.get( 1 + i );
             }
         }
         throw new IllegalArgumentException( "Strange, couldn't find group for node (import order) " + nodeInOrder +

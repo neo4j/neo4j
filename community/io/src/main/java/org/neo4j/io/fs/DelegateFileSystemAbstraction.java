@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -292,9 +292,16 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long lastModifiedTime( File file ) throws IOException
+    public long lastModifiedTime( File file )
     {
-        return Files.getLastModifiedTime( path( file ) ).toMillis();
+        try
+        {
+            return Files.getLastModifiedTime( path( file ) ).toMillis();
+        }
+        catch ( IOException e )
+        {
+            return 0;
+        }
     }
 
     @Override

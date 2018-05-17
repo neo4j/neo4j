@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -245,7 +245,7 @@ public class SettingsTest
     }
 
     @Test
-    public void badDurationMissingNumber() throws Exception
+    public void badDurationMissingNumber()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION ).build();
         expect.expect( InvalidSettingException.class );
@@ -254,7 +254,7 @@ public class SettingsTest
     }
 
     @Test
-    public void badDurationInvalidUnit() throws Exception
+    public void badDurationInvalidUnit()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION ).build();
         expect.expect( InvalidSettingException.class );
@@ -312,7 +312,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testLogicalLogRotationThreshold() throws Exception
+    public void testLogicalLogRotationThreshold()
     {
         // WHEN
         Setting<Long> setting = GraphDatabaseSettings.logical_log_rotation_threshold;
@@ -327,7 +327,7 @@ public class SettingsTest
     }
 
     @Test
-    public void testNormalizedRelativeURI() throws Exception
+    public void testNormalizedRelativeURI()
     {
         // Given
         Setting<URI> uri = setting( "mySetting", NORMALIZED_RELATIVE_URI, "http://localhost:7474///db///data///" );
@@ -337,7 +337,7 @@ public class SettingsTest
     }
 
     @Test
-    public void onlySingleInheritanceShouldBeAllowed() throws Exception
+    public void onlySingleInheritanceShouldBeAllowed()
     {
         Setting<String> a = setting( "A", STRING, "A" );
         Setting<String> b = setting( "B", STRING, "B" );

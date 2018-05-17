@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,21 +25,18 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.newapi.References.clearFlags;
-import static org.neo4j.kernel.impl.newapi.References.hasDirectFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasFilterFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasGroupFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasNodeFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasRelationshipFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasTxStateFlag;
-import static org.neo4j.kernel.impl.newapi.References.setDirectFlag;
-import static org.neo4j.kernel.impl.newapi.References.setFilterFlag;
-import static org.neo4j.kernel.impl.newapi.References.setGroupFlag;
-import static org.neo4j.kernel.impl.newapi.References.setNodeFlag;
-import static org.neo4j.kernel.impl.newapi.References.setRelationshipFlag;
-import static org.neo4j.kernel.impl.newapi.References.setTxStateFlag;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.FILTER;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.FILTER_TX_STATE;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.GROUP;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_INCOMING_OF_TYPE;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_LOOP_OF_TYPE;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_OUTGOING_OF_TYPE;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.parseEncoding;
+import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 public class ReferencesTest
@@ -50,9 +47,14 @@ public class ReferencesTest
     @Test
     public void shouldPreserveNoId()
     {
-        assertThat( setDirectFlag( NO_ID ), equalTo( (long) NO_ID ) );
-        assertThat( setFilterFlag( NO_ID ), equalTo( (long) NO_ID ) );
-        assertThat( setGroupFlag( NO_ID ), equalTo( (long) NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeForFiltering( NO_ID ), equalTo( (long) NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeForTxStateFiltering( NO_ID ), equalTo( (long) NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeGroup( NO_ID ), equalTo( (long) NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeNoIncomingRels( NO_ID ), equalTo( (long) NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeNoOutgoingRels( NO_ID ), equalTo( (long) NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeNoLoopRels( NO_ID ), equalTo( (long) NO_ID ) );
+
+        assertThat( GroupReferenceEncoding.encodeRelationship( NO_ID ), equalTo( (long) NO_ID ) );
     }
 
     @Test
@@ -62,81 +64,111 @@ public class ReferencesTest
         for ( int i = 0; i < 1000; i++ )
         {
             long reference = random.nextLong( MAX_ID_LIMIT );
-            assertThat( clearFlags( setDirectFlag( reference ) ), equalTo( reference ) );
-            assertThat( clearFlags( setGroupFlag( reference ) ), equalTo( reference ) );
-            assertThat( clearFlags( setFilterFlag( reference ) ), equalTo( reference ) );
+            int token = random.nextInt(Integer.MAX_VALUE);
+
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeGroup( reference ) ), equalTo( reference ) );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeForFiltering( reference ) ), equalTo( reference ) );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeForTxStateFiltering( reference ) ), equalTo( reference ) );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoIncomingRels( token ) ), equalTo( (long) token ) );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoOutgoingRels( token ) ), equalTo( (long) token ) );
+            assertThat( clearEncoding( RelationshipReferenceEncoding.encodeNoLoopRels( token ) ), equalTo( (long) token ) );
+
+            assertThat( clearEncoding( GroupReferenceEncoding.encodeRelationship( reference ) ), equalTo( reference ) );
         }
     }
 
+    // Relationship
+
     @Test
-    public void shouldSetFilterFlag()
+    public void encodeForFiltering()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
         {
             long reference = random.nextLong( MAX_ID_LIMIT );
-            assertFalse( hasFilterFlag( reference ) );
-            assertTrue( hasFilterFlag( setFilterFlag( reference ) ) );
+            assertNotEquals( FILTER, parseEncoding( reference ) );
+            assertEquals( FILTER, parseEncoding( RelationshipReferenceEncoding.encodeForFiltering( reference ) ) );
+            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeForFiltering( reference ) < 0 );
         }
     }
 
     @Test
-    public void shouldSetDirectFlag()
+    public void encodeForTxStateFiltering()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
         {
             long reference = random.nextLong( MAX_ID_LIMIT );
-            assertFalse( hasDirectFlag( reference ) );
-            assertTrue( hasDirectFlag( setDirectFlag( reference ) ) );
+            assertNotEquals( FILTER_TX_STATE, parseEncoding( reference ) );
+            assertEquals( FILTER_TX_STATE, parseEncoding( RelationshipReferenceEncoding.encodeForTxStateFiltering( reference ) ) );
+            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeForTxStateFiltering( reference ) < 0 );
         }
     }
 
     @Test
-    public void shouldSetGroupFlag()
+    public void encodeFromGroup()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
         {
             long reference = random.nextLong( MAX_ID_LIMIT );
-            assertFalse( hasGroupFlag( reference ) );
-            assertTrue( hasGroupFlag( setGroupFlag( reference ) ) );
+            assertNotEquals( GROUP, parseEncoding( reference ) );
+            assertEquals( GROUP, parseEncoding( RelationshipReferenceEncoding.encodeGroup( reference ) ) );
+            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeGroup( reference ) < 0 );
         }
     }
 
     @Test
-    public void shouldSetTxStateFlag()
+    public void encodeNoIncomingRels()
+    {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for ( int i = 0; i < 1000; i++ )
+        {
+            int token = random.nextInt(Integer.MAX_VALUE);
+            assertNotEquals( NO_INCOMING_OF_TYPE, parseEncoding( token ) );
+            assertEquals( NO_INCOMING_OF_TYPE, parseEncoding( RelationshipReferenceEncoding.encodeNoIncomingRels( token ) ) );
+            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeNoIncomingRels( token ) < 0 );
+        }
+    }
+
+    @Test
+    public void encodeNoOutgoingRels()
+    {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for ( int i = 0; i < 1000; i++ )
+        {
+            int token = random.nextInt(Integer.MAX_VALUE);
+            assertNotEquals( NO_OUTGOING_OF_TYPE, parseEncoding( token ) );
+            assertEquals( NO_OUTGOING_OF_TYPE, parseEncoding( RelationshipReferenceEncoding.encodeNoOutgoingRels( token ) ) );
+            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeNoOutgoingRels( token ) < 0 );
+        }
+    }
+
+    @Test
+    public void encodeNoLoopRels()
+    {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for ( int i = 0; i < 1000; i++ )
+        {
+            int token = random.nextInt(Integer.MAX_VALUE);
+            assertNotEquals( NO_LOOP_OF_TYPE, parseEncoding( token ) );
+            assertEquals( NO_LOOP_OF_TYPE, parseEncoding( RelationshipReferenceEncoding.encodeNoLoopRels( token ) ) );
+            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeNoLoopRels( token ) < 0 );
+        }
+    }
+
+    // Group
+
+    @Test
+    public void encodeRelationship()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
         {
             long reference = random.nextLong( MAX_ID_LIMIT );
-            assertFalse( hasTxStateFlag( reference ) );
-            assertTrue( hasTxStateFlag( setTxStateFlag( reference ) ) );
-        }
-    }
-
-    @Test
-    public void shouldSetNodeFlag()
-    {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        for ( int i = 0; i < 1000; i++ )
-        {
-            long reference = random.nextLong( MAX_ID_LIMIT );
-            assertFalse( hasNodeFlag( reference ) );
-            assertTrue( hasNodeFlag( setNodeFlag( reference ) ) );
-        }
-    }
-
-    @Test
-    public void shouldSetRelationshipFlag()
-    {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        for ( int i = 0; i < 1000; i++ )
-        {
-            long reference = random.nextLong( MAX_ID_LIMIT );
-            assertFalse( hasRelationshipFlag( reference ) );
-            assertTrue( hasRelationshipFlag( setRelationshipFlag( reference ) ) );
+            assertFalse( GroupReferenceEncoding.isRelationship( reference ) );
+            assertTrue( GroupReferenceEncoding.isRelationship( GroupReferenceEncoding.encodeRelationship( reference ) ) );
+            assertTrue( "encoded reference is negative", GroupReferenceEncoding.encodeRelationship( reference ) < 0 );
         }
     }
 }

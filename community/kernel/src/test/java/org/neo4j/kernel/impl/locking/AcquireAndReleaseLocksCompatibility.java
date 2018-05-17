@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,9 +24,9 @@ import org.junit.Test;
 
 import java.util.concurrent.Future;
 
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 /**
@@ -41,7 +41,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void exclusiveShouldWaitForExclusive() throws Exception
+    public void exclusiveShouldWaitForExclusive()
     {
         // When
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
@@ -57,7 +57,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void exclusiveShouldWaitForShared() throws Exception
+    public void exclusiveShouldWaitForShared()
     {
         // When
         clientA.acquireShared( LockTracer.NONE, NODE, 1L );
@@ -77,7 +77,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void sharedShouldWaitForExclusive() throws Exception
+    public void sharedShouldWaitForExclusive()
     {
         // When
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
@@ -93,7 +93,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void shouldTrySharedLock() throws Exception
+    public void shouldTrySharedLock()
     {
         // Given I've grabbed a share lock
         assertTrue( clientA.trySharedLock( NODE, 1L ) );
@@ -106,7 +106,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void shouldTryExclusiveLock() throws Exception
+    public void shouldTryExclusiveLock()
     {
         // Given I've grabbed an exclusive lock
         assertTrue( clientA.tryExclusiveLock( NODE, 1L ) );
@@ -119,7 +119,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void shouldTryUpgradeSharedToExclusive() throws Exception
+    public void shouldTryUpgradeSharedToExclusive()
     {
         // Given I've grabbed an exclusive lock
         assertTrue( clientA.trySharedLock( NODE, 1L ) );
@@ -132,7 +132,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void shouldUpgradeExclusiveOnTry() throws Exception
+    public void shouldUpgradeExclusiveOnTry()
     {
         // Given I've grabbed a shared lock
         clientA.acquireShared( LockTracer.NONE, NODE, 1L );

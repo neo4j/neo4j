@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,6 +30,8 @@ import static java.lang.String.format;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
@@ -87,6 +89,22 @@ public class BoltConnectorValidator extends ConnectorValidator
             setting = advertisedAddress( settingName,
                     listenAddress( settingName, 7687 ) );
             setting.setDescription( "Advertised address for this connector." );
+            break;
+        case "thread_pool_min_size":
+            setting = (BaseSetting) setting( settingName, INTEGER, NO_DEFAULT );
+            setting.setDescription( "The number of threads to keep in the thread pool bound to this connector, even if they are idle." );
+            break;
+        case "thread_pool_max_size":
+            setting = (BaseSetting) setting( settingName, INTEGER, NO_DEFAULT );
+            setting.setDescription( "The maximum number of threads allowed in the thread pool bound to this connector." );
+            break;
+        case "thread_pool_keep_alive":
+            setting = (BaseSetting) setting( settingName, DURATION, NO_DEFAULT );
+            setting.setDescription( "The maximum time an idle thread in the thread pool bound to this connector will wait for new tasks." );
+            break;
+        case "unsupported_thread_pool_queue_size":
+            setting = (BaseSetting) setting( settingName, INTEGER, NO_DEFAULT );
+            setting.setDescription( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" );
             break;
         default:
             return Optional.empty();

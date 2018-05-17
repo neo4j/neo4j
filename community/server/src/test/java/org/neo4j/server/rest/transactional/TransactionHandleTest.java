@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,11 +34,11 @@ import javax.servlet.http.HttpServletRequest;
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
+import org.neo4j.internal.kernel.api.Transaction.Type;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -69,7 +69,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
 
 public class TransactionHandleTest
@@ -257,7 +257,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldRollbackTransactionAndTellRegistryToForgetItsHandle() throws Exception
+    public void shouldRollbackTransactionAndTellRegistryToForgetItsHandle()
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -311,7 +311,7 @@ public class TransactionHandleTest
                 mock( HttpServletRequest.class ) );
 
         // then
-        verify( kernel ).newTransaction( any( Type.class ), any( SecurityContext.class ), anyLong() );
+        verify( kernel ).newTransaction( any( Type.class ), any( LoginContext.class ), anyLong() );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
@@ -460,12 +460,12 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldInterruptTransaction() throws Exception
+    public void shouldInterruptTransaction()
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
         TransitionalTxManagementKernelTransaction tx = mock( TransitionalTxManagementKernelTransaction.class );
-        when( kernel.newTransaction( any( Type.class ), any( SecurityContext.class ), anyLong() ) ).thenReturn( tx );
+        when( kernel.newTransaction( any( Type.class ), any( LoginContext.class ), anyLong() ) ).thenReturn( tx );
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
@@ -551,7 +551,7 @@ public class TransactionHandleTest
     {
         TransitionalTxManagementKernelTransaction context = mock( TransitionalTxManagementKernelTransaction.class );
         TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
-        when( kernel.newTransaction( any( Type.class ), any( SecurityContext.class ), anyLong() ) ).thenReturn( context );
+        when( kernel.newTransaction( any( Type.class ), any( LoginContext.class ), anyLong() ) ).thenReturn( context );
         return kernel;
     }
 
@@ -593,7 +593,7 @@ public class TransactionHandleTest
                         any( HttpServletRequest.class ),
                         any( GraphDatabaseQueryService.class ),
                         any( Type.class ),
-                        any( SecurityContext.class ),
+                        any( LoginContext.class ),
                         any( String.class ),
                         any( Map.class ) ) ).
                 thenReturn( tc );

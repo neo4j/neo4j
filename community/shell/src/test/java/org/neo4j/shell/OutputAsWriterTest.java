@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,7 +39,7 @@ public class OutputAsWriterTest
     private OutputAsWriter writer;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         out = System.out;
         buffer = new ByteArrayOutputStream();
@@ -49,7 +49,7 @@ public class OutputAsWriterTest
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         System.setOut( out );
     }

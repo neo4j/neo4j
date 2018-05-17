@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,13 +38,15 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -80,8 +82,9 @@ public class IndexingServiceIntegrationTest
     public static Collection<Object[]> parameters()
     {
         return asList(
-                new Object[]{new LuceneSchemaIndexProviderFactory(), LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR},
-                new Object[]{new NativeLuceneFusionSchemaIndexProviderFactory(), NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR},
+                new Object[]{new LuceneIndexProviderFactory(), LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR},
+                new Object[]{new NativeLuceneFusionIndexProviderFactory10(), NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR},
+                new Object[]{new NativeLuceneFusionIndexProviderFactory20(), NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR},
                 new Object[]{new InMemoryIndexProviderFactory(), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR} );
     }
 
@@ -89,7 +92,7 @@ public class IndexingServiceIntegrationTest
     public KernelExtensionFactory<?> kernelExtensionFactory;
 
     @Parameterized.Parameter( 1 )
-    public SchemaIndexProvider.Descriptor indexDescriptor;
+    public IndexProvider.Descriptor indexDescriptor;
 
     @Before
     public void setUp()
@@ -127,7 +130,7 @@ public class IndexingServiceIntegrationTest
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
         IndexRule rule = IndexRule.indexRule(
-                schemaStore.nextId(), IndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
+                schemaStore.nextId(), SchemaIndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
 
@@ -138,7 +141,7 @@ public class IndexingServiceIntegrationTest
     }
 
     @Test
-    public void testSchemaIndexMatchIndexingService() throws IndexNotFoundKernelException, IOException
+    public void testSchemaIndexMatchIndexingService() throws IndexNotFoundKernelException
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -199,13 +202,14 @@ public class IndexingServiceIntegrationTest
         int indexLabel7 = labelTokenHolder.getIdByName( indexLabelPrefix + 7 );
         int indexProperty7 = propertyKeyTokenHolder.getIdByName( indexPropertyPrefix + 7 );
 
-        IndexProxy index = indexingService.getIndexProxy( IndexDescriptorFactory.forLabel( indexLabel7, indexProperty7).schema() );
+        IndexProxy index = indexingService.getIndexProxy( SchemaIndexDescriptorFactory
+                .forLabel( indexLabel7, indexProperty7).schema() );
 
         index.drop();
 
         expectedException.expect( UnderlyingStorageException.class );
         expectedException.expectMessage( "Unable to force" );
-        indexingService.forceAll();
+        indexingService.forceAll( IOLimiter.unlimited() );
     }
 
     private PropertyKeyTokenHolder getPropertyKeyTokenHolder( GraphDatabaseService database )

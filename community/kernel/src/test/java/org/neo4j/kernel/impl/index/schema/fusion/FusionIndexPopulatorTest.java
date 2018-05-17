@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,131 +21,192 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.impl.index.schema.NativeSelector;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.core.AnyOf.anyOf;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyCallFail;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
 
+@RunWith( Parameterized.class )
 public class FusionIndexPopulatorTest
 {
-    private IndexPopulator nativePopulator;
-    private IndexPopulator lucenePopulator;
+    private IndexPopulator[] alivePopulators;
+    private IndexPopulator[] populators;
     private FusionIndexPopulator fusionIndexPopulator;
     private final long indexId = 8;
     private final DropAction dropAction = mock( DropAction.class );
 
-    @Before
-    public void mockComponents()
+    @Parameterized.Parameters( name = "{0}" )
+    public static FusionVersion[] versions()
     {
-        nativePopulator = mock( IndexPopulator.class );
-        lucenePopulator = mock( IndexPopulator.class );
-        fusionIndexPopulator = new FusionIndexPopulator( nativePopulator, lucenePopulator, new NativeSelector(), indexId, dropAction );
+        return new FusionVersion[]
+                {
+                        v00, v10, v20
+                };
+    }
+
+    @Parameterized.Parameter
+    public static FusionVersion fusionVersion;
+
+    @Before
+    public void setup()
+    {
+        initiateMocks();
+    }
+
+    private void initiateMocks()
+    {
+        int[] aliveSlots = fusionVersion.aliveSlots();
+        populators = new IndexPopulator[INSTANCE_COUNT];
+        Arrays.fill( populators, IndexPopulator.EMPTY );
+        alivePopulators = new IndexPopulator[aliveSlots.length];
+        for ( int i = 0; i < aliveSlots.length; i++ )
+        {
+            IndexPopulator mock = mock( IndexPopulator.class );
+            alivePopulators[i] = mock;
+            switch ( aliveSlots[i] )
+            {
+            case STRING:
+                populators[STRING] = mock;
+                break;
+            case NUMBER:
+                populators[NUMBER] = mock;
+                break;
+            case SPATIAL:
+                populators[SPATIAL] = mock;
+                break;
+            case TEMPORAL:
+                populators[TEMPORAL] = mock;
+                break;
+            case LUCENE:
+                populators[LUCENE] = mock;
+                break;
+            default:
+                throw new RuntimeException();
+            }
+        }
+        fusionIndexPopulator = new FusionIndexPopulator( populators, fusionVersion.selector(), indexId, dropAction, false );
+    }
+
+    private void resetMocks()
+    {
+        for ( IndexPopulator alivePopulator : alivePopulators )
+        {
+            reset( alivePopulator );
+        }
     }
 
     /* create */
 
     @Test
-    public void createMustCreateBothNativeAndLucene() throws Exception
+    public void createMustCreateAll() throws Exception
     {
         // when
         fusionIndexPopulator.create();
 
         // then
-        verify( nativePopulator, times( 1 ) ).create();
-        verify( lucenePopulator, times( 1 ) ).create();
+        for ( IndexPopulator alivePopulator : alivePopulators )
+        {
+            verify( alivePopulator, times( 1 ) ).create();
+        }
     }
 
     @Test
-    public void createMustThrowIfCreateNativeThrow() throws Exception
+    public void createRemoveAnyLeftOversThatWasThereInIndexDirectoryBeforePopulation() throws IOException
     {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( nativePopulator ).create();
+        fusionIndexPopulator.create();
 
-        verifyCallFail( failure, () ->
-        {
-            fusionIndexPopulator.create();
-            return null;
-        } );
+        verify( dropAction ).drop( indexId, false );
     }
 
     @Test
-    public void createMustThrowIfCreateLuceneThrow() throws Exception
+    public void createMustThrowIfAnyThrow() throws Exception
     {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( lucenePopulator ).create();
-
-        verifyCallFail( failure, () ->
+        for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            fusionIndexPopulator.create();
-            return null;
-        } );
+            // given
+            IOException failure = new IOException( "fail" );
+            doThrow( failure ).when( alivePopulator ).create();
+
+            verifyCallFail( failure, () ->
+            {
+                fusionIndexPopulator.create();
+                return null;
+            } );
+
+            // reset throw for testing of next populator
+            doAnswer( invocation -> null ).when( alivePopulator ).create();
+        }
     }
 
     /* drop */
 
     @Test
-    public void dropMustDropBothNativeAndLucene() throws Exception
+    public void dropMustDropAll() throws Exception
     {
         // when
         fusionIndexPopulator.drop();
 
         // then
-        verify( nativePopulator, times( 1 ) ).drop();
-        verify( lucenePopulator, times( 1 ) ).drop();
+        for ( IndexPopulator alivePopulator : alivePopulators )
+        {
+            verify( alivePopulator, times( 1 ) ).drop();
+        }
         verify( dropAction ).drop( indexId );
     }
 
     @Test
-    public void dropMustThrowIfDropNativeThrow() throws Exception
+    public void dropMustThrowIfAnyDropThrow() throws Exception
     {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( nativePopulator ).drop();
-
-        verifyCallFail( failure, () ->
+        for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            fusionIndexPopulator.drop();
-            return null;
-        } );
-    }
+            // given
+            IOException failure = new IOException( "fail" );
+            doThrow( failure ).when( alivePopulator ).drop();
 
-    @Test
-    public void dropMustThrowIfDropLuceneThrow() throws Exception
-    {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( lucenePopulator ).drop();
+            verifyCallFail( failure, () ->
+            {
+                fusionIndexPopulator.drop();
+                return null;
+            } );
 
-        verifyCallFail( failure, () ->
-        {
-            fusionIndexPopulator.drop();
-            return null;
-        } );
+            // reset throw for testing of next populator
+            doAnswer( invocation -> null ).when( alivePopulator ).drop();
+        }
     }
 
     /* add */
@@ -154,20 +215,15 @@ public class FusionIndexPopulatorTest
     public void addMustSelectCorrectPopulator() throws Exception
     {
         // given
-        Value[] numberValues = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
-        // Add with native for number values
-        for ( Value numberValue : numberValues )
+        for ( int i = 0; i < populators.length; i++ )
         {
-            verifyAddWithCorrectPopulator( nativePopulator, lucenePopulator, numberValue );
-        }
-
-        // Add with lucene for other values
-        for ( Value otherValue : otherValues )
-        {
-            verifyAddWithCorrectPopulator( lucenePopulator, nativePopulator, otherValue );
+            for ( Value value : values[i] )
+            {
+                verifyAddWithCorrectPopulator( orLucene( populators[i] ), value );
+            }
         }
 
         // All composite values should go to lucene
@@ -175,110 +231,98 @@ public class FusionIndexPopulatorTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyAddWithCorrectPopulator( lucenePopulator, nativePopulator, firstValue, secondValue );
+                verifyAddWithCorrectPopulator( populators[FusionIndexBase.LUCENE], firstValue, secondValue );
             }
         }
     }
 
-    private void verifyAddWithCorrectPopulator( IndexPopulator correctPopulator, IndexPopulator wrongPopulator, Value... numberValues )
+    private void verifyAddWithCorrectPopulator( IndexPopulator correctPopulator, Value... numberValues )
             throws IndexEntryConflictException, IOException
     {
-        Collection<IndexEntryUpdate<LabelSchemaDescriptor>> update = asList( add( numberValues ) );
+        Collection<IndexEntryUpdate<LabelSchemaDescriptor>> update = Collections.singletonList( add( numberValues ) );
         fusionIndexPopulator.add( update );
         verify( correctPopulator, times( 1 ) ).add( update );
-        verify( wrongPopulator, times( 0 ) ).add( update );
+        for ( IndexPopulator alivePopulator : alivePopulators )
+        {
+            if ( alivePopulator != correctPopulator )
+            {
+                verify( alivePopulator, never() ).add( update );
+            }
+        }
     }
 
     /* verifyDeferredConstraints */
-
     @Test
-    public void verifyDeferredConstraintsMustThrowIfNativeThrow() throws Exception
+    public void verifyDeferredConstraintsMustThrowIfAnyThrow() throws Exception
     {
-        // given
-        IndexEntryConflictException failure = mock( IndexEntryConflictException.class );
-        doThrow( failure ).when( nativePopulator ).verifyDeferredConstraints( any() );
-
-        verifyCallFail( failure, () ->
+        for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            fusionIndexPopulator.verifyDeferredConstraints( null );
-            return null;
-        } );
-    }
+            // given
+            IndexEntryConflictException failure = mock( IndexEntryConflictException.class );
+            doThrow( failure ).when( alivePopulator ).verifyDeferredConstraints( any() );
 
-    @Test
-    public void verifyDeferredConstraintsMustThrowIfLuceneThrow() throws Exception
-    {
-        // given
-        IndexEntryConflictException failure = mock( IndexEntryConflictException.class );
-        doThrow( failure ).when( lucenePopulator ).verifyDeferredConstraints( any() );
+            verifyCallFail( failure, () ->
+            {
+                fusionIndexPopulator.verifyDeferredConstraints( null );
+                return null;
+            } );
 
-        verifyCallFail( failure, () ->
-        {
-            fusionIndexPopulator.verifyDeferredConstraints( null );
-            return null;
-        } );
+            // reset throw for testing of next populator
+            doAnswer( invocation -> null ).when( alivePopulator ).verifyDeferredConstraints( any() );
+        }
     }
 
     /* close */
-
     @Test
-    public void successfulCloseMustCloseBothNativeAndLucene() throws Exception
+    public void successfulCloseMustCloseAll() throws Exception
     {
         // when
-        closeAndVerifyPropagation( nativePopulator, lucenePopulator, fusionIndexPopulator, true );
+        closeAndVerifyPropagation( true );
     }
 
     @Test
-    public void unsuccessfulCloseMustCloseBothNativeAndLucene() throws Exception
+    public void unsuccessfulCloseMustCloseAll() throws Exception
     {
         // when
-        closeAndVerifyPropagation( nativePopulator, lucenePopulator, fusionIndexPopulator, false );
+        closeAndVerifyPropagation( false );
     }
 
-    private void closeAndVerifyPropagation( IndexPopulator nativePopulator, IndexPopulator lucenePopulator,
-            FusionIndexPopulator fusionIndexPopulator, boolean populationCompletedSuccessfully ) throws IOException
+    private void closeAndVerifyPropagation( boolean populationCompletedSuccessfully ) throws IOException
     {
         fusionIndexPopulator.close( populationCompletedSuccessfully );
 
         // then
-        verify( nativePopulator, times( 1 ) ).close( populationCompletedSuccessfully );
-        verify( lucenePopulator, times( 1 ) ).close( populationCompletedSuccessfully );
-    }
-
-    @Test
-    public void closeMustThrowIfCloseNativeThrow() throws Exception
-    {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( nativePopulator ).close( anyBoolean() );
-
-        verifyCallFail( failure, () ->
+        for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            fusionIndexPopulator.close( anyBoolean() );
-            return null;
-        } );
+            verify( alivePopulator, times( 1 ) ).close( populationCompletedSuccessfully );
+        }
     }
 
     @Test
-    public void closeMustThrowIfCloseLuceneThrow() throws Exception
+    public void closeMustThrowIfCloseAnyThrow() throws Exception
     {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( lucenePopulator ).close( anyBoolean() );
-
-        verifyCallFail( failure, () ->
+        for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            fusionIndexPopulator.close( anyBoolean() );
-            return null;
-        } );
+            // given
+            IOException failure = new IOException( "fail" );
+            doThrow( failure ).when( alivePopulator ).close( anyBoolean() );
+
+            verifyCallFail( failure, () ->
+            {
+                fusionIndexPopulator.close( anyBoolean() );
+                return null;
+            } );
+
+            // reset throw for testing of next populator
+            doAnswer( invocation -> null ).when( alivePopulator ).close( anyBoolean() );
+        }
     }
 
-    @Test
-    public void closeMustCloseNativeIfLuceneThrow() throws Exception
+    private void verifyOtherCloseOnThrow( IndexPopulator throwingPopulator ) throws Exception
     {
         // given
         IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( lucenePopulator ).close( anyBoolean() );
+        doThrow( failure ).when( throwingPopulator ).close( anyBoolean() );
 
         // when
         try
@@ -291,38 +335,33 @@ public class FusionIndexPopulatorTest
         }
 
         // then
-        verify( nativePopulator, times( 1 ) ).close( true );
+        for ( IndexPopulator alivePopulator : alivePopulators )
+        {
+            verify( alivePopulator, times( 1 ) ).close( true );
+        }
     }
 
     @Test
-    public void closeMustCloseLuceneIfNativeThrow() throws Exception
+    public void closeMustCloseOthersIfAnyThrow() throws Exception
     {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( nativePopulator ).close( anyBoolean() );
-
-        // when
-        try
+        for ( IndexPopulator throwingPopulator : alivePopulators )
         {
-            fusionIndexPopulator.close( true );
-            fail( "Should have failed" );
+            verifyOtherCloseOnThrow( throwingPopulator );
+            resetMocks();
         }
-        catch ( IOException ignore )
-        {
-        }
-
-        // then
-        verify( lucenePopulator, times( 1 ) ).close( true );
     }
 
     @Test
-    public void closeMustThrowIfBothThrow() throws Exception
+    public void closeMustThrowIfAllThrow() throws Exception
     {
         // given
-        IOException nativeFailure = new IOException( "native" );
-        IOException luceneFailure = new IOException( "lucene" );
-        doThrow( nativeFailure ).when( nativePopulator ).close( anyBoolean() );
-        doThrow( luceneFailure ).when( lucenePopulator).close( anyBoolean() );
+        List<IOException> failures = new ArrayList<>();
+        for ( IndexPopulator alivePopulator : alivePopulators )
+        {
+            IOException failure = new IOException( "FAILURE[" + alivePopulator + "]" );
+            failures.add( failure );
+            doThrow( failure ).when( alivePopulator ).close( anyBoolean() );
+        }
 
         try
         {
@@ -333,81 +372,77 @@ public class FusionIndexPopulatorTest
         catch ( IOException e )
         {
             // then
-            assertThat( e, anyOf( sameInstance( nativeFailure ), sameInstance( luceneFailure ) ) );
+            if ( !failures.contains( e ) )
+            {
+                fail( "Thrown exception didn't match any of the expected failures: " + failures );
+            }
         }
     }
 
     /* markAsFailed */
-
     @Test
-    public void markAsFailedMustMarkBothNativeAndLucene() throws Exception
+    public void markAsFailedMustMarkAll() throws Exception
     {
         // when
         String failureMessage = "failure";
         fusionIndexPopulator.markAsFailed( failureMessage );
 
         // then
-        verify( nativePopulator, times( 1 ) ).markAsFailed( failureMessage );
-        verify( lucenePopulator, times( 1 ) ).markAsFailed( failureMessage );
-    }
-
-    @Test
-    public void markAsFailedMustThrowIfNativeThrow() throws Exception
-    {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( nativePopulator ).markAsFailed( anyString() );
-
-        // then
-        verifyCallFail( failure, () ->
+        for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            fusionIndexPopulator.markAsFailed( anyString() );
-            return null;
-        } );
+            verify( alivePopulator, times( 1 ) ).markAsFailed( failureMessage );
+        }
     }
 
     @Test
-    public void markAsFailedMustThrowIfLuceneThrow() throws Exception
+    public void markAsFailedMustThrowIfAnyThrow() throws Exception
     {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( lucenePopulator ).markAsFailed( anyString() );
-
-        // then
-        verifyCallFail( failure, () ->
+        for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            fusionIndexPopulator.markAsFailed( anyString() );
-            return null;
-        } );
+            // given
+            IOException failure = new IOException( "fail" );
+            doThrow( failure ).when( alivePopulator ).markAsFailed( anyString() );
+
+            // then
+            verifyCallFail( failure, () ->
+            {
+                fusionIndexPopulator.markAsFailed( anyString() );
+                return null;
+            } );
+
+            // reset throw for testing of next populator
+            doAnswer( invocation -> null ).when( alivePopulator ).markAsFailed( anyString() );
+        }
     }
 
     @Test
-    public void shouldIncludeSampleOnCorrectPopulator() throws Exception
+    public void shouldIncludeSampleOnCorrectPopulator()
     {
         // given
-        Value[] numberValues = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
 
-        for ( Value value : numberValues )
+        for ( int activeSlot : fusionVersion.aliveSlots() )
+        {
+            verifySampleToCorrectPopulator( values[activeSlot], populators[activeSlot] );
+        }
+    }
+
+    private void verifySampleToCorrectPopulator( Value[] values, IndexPopulator populator )
+    {
+        for ( Value value : values )
         {
             // when
             IndexEntryUpdate<LabelSchemaDescriptor> update = add( value );
             fusionIndexPopulator.includeSample( update );
 
             // then
-            verify( nativePopulator ).includeSample( update );
-            reset( nativePopulator );
+            verify( populator ).includeSample( update );
+            reset( populator );
         }
+    }
 
-        for ( Value value : otherValues )
-        {
-            // when
-            IndexEntryUpdate<LabelSchemaDescriptor> update = add( value );
-            fusionIndexPopulator.includeSample( update );
-
-            // then
-            verify( lucenePopulator ).includeSample( update );
-            reset( lucenePopulator );
-        }
+    private IndexPopulator orLucene( IndexPopulator populator )
+    {
+        return populator != IndexPopulator.EMPTY ? populator : populators[LUCENE];
     }
 }

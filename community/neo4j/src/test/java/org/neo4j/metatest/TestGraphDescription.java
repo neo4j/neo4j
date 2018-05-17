@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -59,24 +59,23 @@ public class TestGraphDescription implements GraphHolder
 
     @Test
     public void havingNoGraphAnnotationCreatesAnEmptyDataCollection()
-            throws Exception
     {
         assertTrue( "collection was not empty", data.get().isEmpty() );
     }
 
     @Test
     @Graph( "I know you" )
-    public void canCreateGraphFromSingleString() throws Exception
+    public void canCreateGraphFromSingleString()
     {
         verifyIKnowYou( "know", "I" );
     }
 
     @Test
     @Graph( { "a TO b", "b TO c", "c TO a" } )
-    public void canCreateGraphFromMultipleStrings() throws Exception
+    public void canCreateGraphFromMultipleStrings()
     {
         Map<String,Node> graph = data.get();
-        Set<Node> unique = new HashSet<Node>();
+        Set<Node> unique = new HashSet<>();
         Node n = graph.get( "a" );
         while ( unique.add( n ) )
         {
@@ -90,7 +89,7 @@ public class TestGraphDescription implements GraphHolder
 
     @Test
     @Graph( { "a:Person EATS b:Banana" } )
-    public void ensurePeopleCanEatBananas() throws Exception
+    public void ensurePeopleCanEatBananas()
     {
         Map<String,Node> graph = data.get();
         Node a = graph.get( "a" );
@@ -105,7 +104,7 @@ public class TestGraphDescription implements GraphHolder
 
     @Test
     @Graph( { "a:Person EATS b:Banana", "a EATS b:Apple" } )
-    public void ensurePeopleCanEatBananasAndApples() throws Exception
+    public void ensurePeopleCanEatBananasAndApples()
     {
         Map<String,Node> graph = data.get();
         Node a = graph.get( "a" );
@@ -121,7 +120,7 @@ public class TestGraphDescription implements GraphHolder
 
     @Test
     @Graph( value = {"I know you"}, autoIndexNodes = true )
-    public void canAutoIndexNodes() throws Exception
+    public void canAutoIndexNodes()
     {
         data.get();
 
@@ -137,7 +136,7 @@ public class TestGraphDescription implements GraphHolder
     @Test
     @Graph( nodes = {@NODE( name = "I", setNameProperty = true, properties = {
             @PROP( key = "name", value = "I" )} )}, autoIndexNodes = true )
-    public void canAutoIndexNodesExplicitProps() throws Exception
+    public void canAutoIndexNodesExplicitProps()
     {
         data.get();
 
@@ -160,7 +159,6 @@ public class TestGraphDescription implements GraphHolder
                     @PROP( key = "valid", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ) },
             autoIndexRelationships = true )
     public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex()
-            throws Exception
     {
         data.get();
         verifyIKnowYou( "knows", "me" );
@@ -184,29 +182,29 @@ public class TestGraphDescription implements GraphHolder
         {
             Map<String, Node> graph = data.get();
             assertEquals( "Wrong graph size.", 2, graph.size() );
-            Node I = graph.get( "I" );
-            assertNotNull( "The node 'I' was not defined", I );
+            Node iNode = graph.get( "I" );
+            assertNotNull( "The node 'I' was not defined", iNode );
             Node you = graph.get( "you" );
             assertNotNull( "The node 'you' was not defined", you );
-            assertEquals( "'I' has wrong 'name'.", myName, I.getProperty( "name" ) );
+            assertEquals( "'I' has wrong 'name'.", myName, iNode.getProperty( "name" ) );
             assertEquals( "'you' has wrong 'name'.", "you",
                     you.getProperty( "name" ) );
 
-            Iterator<Relationship> rels = I.getRelationships().iterator();
+            Iterator<Relationship> rels = iNode.getRelationships().iterator();
             assertTrue( "'I' has too few relationships", rels.hasNext() );
             Relationship rel = rels.next();
-            assertEquals( "'I' is not related to 'you'", you, rel.getOtherNode( I ) );
+            assertEquals( "'I' is not related to 'you'", you, rel.getOtherNode( iNode ) );
             assertEquals( "Wrong relationship type.", type, rel.getType().name() );
             assertFalse( "'I' has too many relationships", rels.hasNext() );
 
             rels = you.getRelationships().iterator();
             assertTrue( "'you' has too few relationships", rels.hasNext() );
             rel = rels.next();
-            assertEquals( "'you' is not related to 'i'", I, rel.getOtherNode( you ) );
+            assertEquals( "'you' is not related to 'i'", iNode, rel.getOtherNode( you ) );
             assertEquals( "Wrong relationship type.", type, rel.getType().name() );
             assertFalse( "'you' has too many relationships", rels.hasNext() );
 
-            assertEquals( "wrong direction", I, rel.getStartNode() );
+            assertEquals( "wrong direction", iNode, rel.getStartNode() );
         }
     }
 

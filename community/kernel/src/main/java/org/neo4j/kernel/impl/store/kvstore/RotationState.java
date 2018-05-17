@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Pair;
 
 abstract class RotationState<Key> extends ProgressiveState<Key>
@@ -84,13 +83,15 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
                     }
                     catch ( InterruptedException e )
                     {
-                        throw Exceptions.withCause( new InterruptedIOException( "Rotation was interrupted." ), e );
+                        throw (InterruptedIOException) new InterruptedIOException( "Rotation was interrupted." )
+                                .initCause( e );
                     }
                 }
             }
             Pair<File, KeyValueStoreFile> next = strategy
                     .next( file(), updateHeaders( headersUpdater ), keyFormat().filter( preState.dataProvider() ) );
-            return postState.create( ReadableState.store( preState.keyFormat(), next.other() ), next.first() );
+            return postState.create( ReadableState.store( preState.keyFormat(), next.other() ), next.first(),
+                    preState.versionContextSupplier );
         }
 
         @Override

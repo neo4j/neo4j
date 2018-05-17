@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,6 +29,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -119,6 +120,75 @@ enum ValueEncoding
                 boolean canEncode( Value value )
                 {
                     return Values.isBooleanValue( value );
+                }
+
+                @Override
+                Field encodeField( String name, Value value )
+                {
+                    return stringField( name, value.prettyPrint() );
+                }
+
+                @Override
+                void setFieldValue( Value value, Field field )
+                {
+                    field.setStringValue( value.prettyPrint() );
+                }
+
+                @Override
+                Query encodeQuery( Value value, int propertyNumber )
+                {
+                    return new ConstantScoreQuery(
+                            new TermQuery( new Term( key( propertyNumber ), value.prettyPrint() ) ) );
+                }
+            },
+    Spatial
+            {
+                @Override
+                String key()
+                {
+                    return "spatial";
+                }
+
+                @Override
+                boolean canEncode( Value value )
+                {
+                    return Values.isGeometryValue( value );
+                }
+
+                @Override
+                Field encodeField( String name, Value value )
+                {
+                    PointValue pointVal = (PointValue) value;
+                    return stringField( name, pointVal.toIndexableString() );
+                }
+
+                @Override
+                void setFieldValue( Value value, Field field )
+                {
+                    PointValue pointVal = (PointValue) value;
+                    field.setStringValue( pointVal.toIndexableString() );
+                }
+
+                @Override
+                Query encodeQuery( Value value, int propertyNumber )
+                {
+                    PointValue pointVal = (PointValue) value;
+                    return new ConstantScoreQuery(
+                            new TermQuery( new Term( key( propertyNumber ), pointVal.toIndexableString() ) ) );
+                }
+            },
+    Temporal
+            {
+                @Override
+                String key()
+                {
+                    return "temporal";
+                }
+
+                @Override
+                boolean canEncode( Value value )
+                {
+                    return Values.isTemporalValue( value );
                 }
 
                 @Override

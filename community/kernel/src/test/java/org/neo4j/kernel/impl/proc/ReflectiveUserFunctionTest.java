@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,18 +33,21 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
 
-import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -53,7 +56,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
+import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 
 public class ReflectiveUserFunctionTest
 {
@@ -64,7 +67,7 @@ public class ReflectiveUserFunctionTest
     private ComponentRegistry components;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         components = new ComponentRegistry();
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
@@ -80,7 +83,7 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction function = procedureCompiler.compileFunction( LoggingFunction.class ).get( 0 );
 
         // When
-        function.apply( new BasicContext(), new Object[0] );
+        function.apply( new BasicContext(), new AnyValue[0] );
 
         // Then
         verify( log ).debug( "1" );
@@ -110,10 +113,10 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction func = compile( SingleReadOnlyFunction.class ).get( 0 );
 
         // When
-        Object out = func.apply( new BasicContext(), new Object[0] );
+        Object out = func.apply( new BasicContext(), new AnyValue[0] );
 
         // Then
-        assertThat(out, equalTo(Arrays.asList("Bonnie", "Clyde")) );
+        assertThat(out, equalTo( ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
     }
 
     @Test
@@ -135,13 +138,13 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction coolPeople = compiled.get( 1 );
 
         // When
-        Object coolOut = coolPeople.apply( new BasicContext(), new Object[0] );
-        Object bananaOut = bananaPeople.apply( new BasicContext(), new Object[0] );
+        Object coolOut = coolPeople.apply( new BasicContext(), new AnyValue[0] );
+        Object bananaOut = bananaPeople.apply( new BasicContext(), new AnyValue[0] );
 
         // Then
-        assertThat( coolOut , equalTo(Arrays.asList("Bonnie", "Clyde")));
+        assertThat( coolOut , equalTo(ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
 
-        assertThat( ((Map) bananaOut).get("foo"), equalTo(Arrays.asList( "bar", "baz" )) );
+        assertThat( ((MapValue) bananaOut).get("foo"), equalTo( ValueUtils.of( Arrays.asList( "bar", "baz" ) ) ) );
     }
 
     @Test
@@ -188,9 +191,11 @@ public class ReflectiveUserFunctionTest
         exception.expect( ProcedureException.class );
         exception.expectMessage( String.format("Don't know how to map `char[]` to the Neo4j Type System.%n" +
                                  "Please refer to to the documentation for full details.%n" +
-                                 "For your reference, known types are: [boolean, double, java.lang.Boolean, java.lang" +
-                                 ".Double, java.lang.Long, java.lang.Number, java.lang.Object, java.lang.String, java" +
-                                 ".util.List, java.util.Map, long]" ));
+                                 "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
+                                 "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
+                                 "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
+                                 "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
+                                 "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ));
 
         // When
         compile( FunctionWithInvalidOutput.class ).get( 0 );
@@ -244,7 +249,7 @@ public class ReflectiveUserFunctionTest
                                  "Caused by: java.lang.IndexOutOfBoundsException" );
 
         // When
-        proc.apply( new BasicContext(), new Object[0] );
+        proc.apply( new BasicContext(), new AnyValue[0] );
     }
 
     @Test
@@ -258,8 +263,8 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction method = compile( SingleReadOnlyFunction.class ).get( 0 );
 
         // Expect
-        Object out = method.apply( new BasicContext(), new Object[0] );
-        assertThat(out, equalTo(Arrays.asList("Bonnie", "Clyde")) );
+        Object out = method.apply( new BasicContext(), new AnyValue[0] );
+        assertThat(out, equalTo( ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
     }
 
     @Test
@@ -305,7 +310,7 @@ public class ReflectiveUserFunctionTest
         for ( CallableUserFunction func : funcs )
         {
             String name = func.signature().name().name();
-            func.apply( new BasicContext(), new Object[0] );
+            func.apply( new BasicContext(), new AnyValue[0] );
             switch ( name )
             {
             case "newFunc":

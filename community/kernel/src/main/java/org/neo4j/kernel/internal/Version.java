@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -115,7 +115,7 @@ public class Version extends Service
                 "(\\d+" +                  // Major version
                 "\\.\\d+" +                // Minor version
                 "(\\.\\d+)?" +             // Optional patch version
-                "(\\-?[^,]+)?)" +          // Optional marker, like M01, GA, SNAPSHOT - anything other than a comma
+                "(-?[^,]+)?)" +          // Optional marker, like M01, GA, SNAPSHOT - anything other than a comma
                 ".*"                       // Anything else, such as git revision
         );
 

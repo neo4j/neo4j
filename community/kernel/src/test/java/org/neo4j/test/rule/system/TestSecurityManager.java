@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,7 @@ public class TestSecurityManager extends SecurityManager
 
     private SecurityManager securityManager;
 
-    public TestSecurityManager( SecurityManager securityManager )
+    TestSecurityManager( SecurityManager securityManager )
     {
         this.securityManager = securityManager;
     }
@@ -37,12 +37,6 @@ public class TestSecurityManager extends SecurityManager
     public void checkExit( int status )
     {
         throw new SystemExitError( status );
-    }
-
-    @Override
-    public boolean getInCheck()
-    {
-        return managerExists() ? securityManager.getInCheck() : super.getInCheck();
     }
 
     @Override

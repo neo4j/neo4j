@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.management;
 
@@ -47,7 +50,7 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canAccessKernelBean() throws Exception
+    public void canAccessKernelBean()
     {
         Kernel kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Kernel.class );
@@ -56,7 +59,7 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canAccessPrimitivesBean() throws Exception
+    public void canAccessPrimitivesBean()
     {
         Primitives primitives = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Primitives.class );
@@ -65,14 +68,14 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canListAllBeans() throws Exception
+    public void canListAllBeans()
     {
         Neo4jManager manager = getManager();
         assertTrue( "No beans returned", manager.allBeans().size() > 0 );
     }
 
     @Test
-    public void canGetConfigurationParameters() throws Exception
+    public void canGetConfigurationParameters()
     {
         Neo4jManager manager = getManager();
         Map<String, Object> configuration = manager.getConfiguration();
@@ -86,49 +89,49 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canGetLockManagerBean() throws Exception
+    public void canGetLockManagerBean()
     {
         assertNotNull( getManager().getLockManagerBean() );
     }
 
     @Test
-    public void canIndexSamplingManagerBean() throws Exception
+    public void canIndexSamplingManagerBean()
     {
         assertNotNull( getManager().getIndexSamplingManagerBean() );
     }
 
     @Test
-    public void canGetMemoryMappingBean() throws Exception
+    public void canGetMemoryMappingBean()
     {
         assertNotNull( getManager().getMemoryMappingBean() );
     }
 
     @Test
-    public void canGetPrimitivesBean() throws Exception
+    public void canGetPrimitivesBean()
     {
         assertNotNull( getManager().getPrimitivesBean() );
     }
 
     @Test
-    public void canGetStoreFileBean() throws Exception
+    public void canGetStoreFileBean()
     {
         assertNotNull( getManager().getStoreFileBean() );
     }
 
     @Test
-    public void canGetTransactionManagerBean() throws Exception
+    public void canGetTransactionManagerBean()
     {
         assertNotNull( getManager().getTransactionManagerBean() );
     }
 
     @Test
-    public void canGetPageCacheBean() throws Exception
+    public void canGetPageCacheBean()
     {
         assertNotNull( getManager().getPageCacheBean() );
     }
 
     @Test
-    public void canAccessMemoryMappingCompositData() throws Exception
+    public void canAccessMemoryMappingCompositData()
     {
         assertNotNull( "MemoryPools is null", getManager().getMemoryMappingBean().getMemoryPools() );
     }

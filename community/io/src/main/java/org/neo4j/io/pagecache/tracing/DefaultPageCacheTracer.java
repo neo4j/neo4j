@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.tracing;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.helpers.MathUtil;
@@ -42,6 +43,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     protected final LongAdder filesMapped = new LongAdder();
     protected final LongAdder filesUnmapped = new LongAdder();
     protected final LongAdder evictionExceptions = new LongAdder();
+    protected final AtomicLong maxPages = new AtomicLong();
 
     private final FlushEvent flushEvent = new FlushEvent()
     {
@@ -238,6 +240,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public double usageRatio()
+    {
+        return (faults.sum() - evictions.sum()) / (double) maxPages.get();
+    }
+
+    @Override
     public void pins( long pins )
     {
         this.pins.add( pins );
@@ -289,5 +297,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     public void flushes( long flushes )
     {
         this.flushes.add( flushes );
+    }
+
+    @Override
+    public void maxPages( long maxPages )
+    {
+        this.maxPages.set( maxPages );
     }
 }

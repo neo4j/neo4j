@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters.namePatternPredicatePatternElements
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
@@ -29,22 +31,22 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.frontend.v3_4.rewriters.Never
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{CostBasedPlannerName, GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, PropertyKeyId, RelTypeId}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 import scala.collection.mutable
 
@@ -56,19 +58,16 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
   val mockRel = newPatternRelationship("a", "b", "r")
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
 
-  def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
-
-  def newPatternRelationship(start: IdName, end: IdName, rel: IdName, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
+  def newPatternRelationship(start: String, end: String, rel: String, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
     PatternRelationship(rel, (start, end), dir, types, length)
   }
 
   class SpyableMetricsFactory extends MetricsFactory {
     def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
-    def newCostModel() =
-      SimpleMetricsFactory.newCostModel()
+    def newCostModel(config: CypherCompilerConfiguration) =
+      SimpleMetricsFactory.newCostModel(config)
     def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel =
       SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics)
   }
@@ -82,7 +81,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) =
-    newMetricsFactory.newMetrics(stats, newExpressionEvaluator)
+    newMetricsFactory.newMetrics(stats, newExpressionEvaluator, config)
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 
@@ -101,7 +100,31 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedStrategy(plan: LogicalPlan) = {
     val strategy = mock[QueryGraphSolver]
-    doReturn(plan, Nil: _*).when(strategy).plan(any())(any())
+    when(strategy.plan(any(), any(), any[Solveds], any[Cardinalities])).thenAnswer(new Answer[LogicalPlan] {
+      override def answer(invocation: InvocationOnMock): LogicalPlan = {
+        val solveds = invocation.getArgument[Solveds](2)
+        val cardinalities = invocation.getArgument[Cardinalities](3)
+        solveds.set(plan.id, PlannerQuery.empty)
+        cardinalities.set(plan.id, 0.0)
+        plan
+      }
+    })
+    strategy
+  }
+
+  def newMockedStrategyWithMultiplePlans(plans: LogicalPlan*): QueryGraphSolver = {
+    val strategy = mock[QueryGraphSolver]
+    val planIter = plans.iterator
+    when(strategy.plan(any(), any(), any[Solveds], any[Cardinalities])).thenAnswer(new Answer[LogicalPlan] {
+      override def answer(invocation: InvocationOnMock): LogicalPlan = {
+        val solveds = invocation.getArgument[Solveds](2)
+        val cardinalities = invocation.getArgument[Cardinalities](3)
+        val plan = planIter.next()
+        solveds.set(plan.id, PlannerQuery.empty)
+        cardinalities.set(plan.id, 0.0)
+        plan
+      }
+    })
     strategy
   }
 
@@ -116,11 +139,31 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       cardinality: Cardinality = Cardinality(1),
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
-                                      useErrorsOverWarnings: Boolean = false): LogicalPlanningContext =
-    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality), metrics, semanticTable,
+                                      useErrorsOverWarnings: Boolean = false): (LogicalPlanningContext, Solveds, Cardinalities) = {
+    val solveds = new Solveds
+    val cardinalities = new Cardinalities
+    (LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, solveds, cardinalities, idGen), metrics, semanticTable,
+      strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
+      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default),
+      solveds, cardinalities)
+  }
+
+  def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
+                                      metrics: Metrics = mockedMetrics,
+                                      semanticTable: SemanticTable = newMockedSemanticTable,
+                                      strategy: QueryGraphSolver = new IDPQueryGraphSolver(
+                                        SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]),
+                                        cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor]),
+                                      cardinality: Cardinality = Cardinality(1),
+                                      strictness: Option[StrictnessMode] = None,
+                                      notificationLogger: InternalNotificationLogger = devNullLogger,
+                                      useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
+    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, new StubSolveds, new StubCardinalities, idGen), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default)
+  }
 
   def newMockedStatistics = mock[GraphStatistics]
   def hardcodedStatistics = HardcodedGraphStatistics
@@ -131,29 +174,49 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     context
   }
 
-  def newMockedLogicalPlanWithProjections(ids: String*): LogicalPlan = {
+  def newMockedLogicalPlan(ids: String*): LogicalPlan = {
+    newMockedLogicalPlan(ids.toSet)
+  }
+
+  def newMockedLogicalPlan(solveds: Solveds, cardinalities: Cardinalities, ids: String*): LogicalPlan =
+    newMockedLogicalPlan(ids.toSet, solveds, cardinalities)
+
+  def newMockedLogicalPlanWithProjections(solveds: Solveds, ids: String*): LogicalPlan = {
     val projections = RegularQueryProjection(projections = ids.map((id) => id -> varFor(id)).toMap)
-    FakePlan(ids.map(IdName(_)).toSet)(CardinalityEstimation.lift(RegularPlannerQuery(
-        horizon = projections,
-        queryGraph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)): _*)
-      ), Cardinality(0))
+    val solved = RegularPlannerQuery(
+      horizon = projections,
+      queryGraph = QueryGraph.empty.addPatternNodes(ids: _*)
     )
+    val res = FakePlan(ids.toSet)
+    solveds.set(res.id, solved)
+    res
   }
 
-  def newMockedLogicalPlan(idNames: Set[IdName], cardinality: Cardinality = Cardinality(1), hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
-    val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints)
-    FakePlan(idNames)(CardinalityEstimation.lift(RegularPlannerQuery(qg), cardinality))
+  def newMockedLogicalPlan(idNames: Set[String],
+                           solveds: Solveds = new Solveds,
+                           cardinalities: Cardinalities = new Cardinalities,
+                           hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
+    val solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints))
+    newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames, solved, Cardinality(1))
   }
 
-  def newMockedLogicalPlan(ids: String*): LogicalPlan =
-    newMockedLogicalPlan(ids.map(IdName(_)).toSet)
+  def newMockedLogicalPlanWithSolved(solveds: Solveds = new Solveds,
+                                     cardinalities: Cardinalities = new Cardinalities,
+                                     idNames: Set[String],
+                                     solved: PlannerQuery,
+                                     cardinality: Cardinality = Cardinality(1)): LogicalPlan = {
+    val res = FakePlan(idNames)
+    solveds.set(res.id, solved)
+    cardinalities.set(res.id, cardinality)
+    res
+  }
 
-  def newMockedLogicalPlanWithSolved(ids: Set[IdName], solved: PlannerQuery with CardinalityEstimation): LogicalPlan =
-    FakePlan(ids)(solved)
-
-  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty): LogicalPlan = {
-    val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRelationships(patterns)
-    FakePlan(ids)(CardinalityEstimation.lift(RegularPlannerQuery(qg), Cardinality(0)))
+  def newMockedLogicalPlanWithPatterns(solveds: Solveds = new Solveds,
+                                       cardinalities: Cardinalities = new Cardinalities,
+                                       idNames: Set[String],
+                                       patterns: Seq[PatternRelationship] = Seq.empty): LogicalPlan = {
+    val solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns))
+    newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames, solved, Cardinality(0))
   }
 
   val config = CypherCompilerConfiguration(
@@ -165,7 +228,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
-    nonIndexedLabelWarningThreshold = 10000
+    nonIndexedLabelWarningThreshold = 10000,
+    planWithMinimumCardinalityEstimates = true
   )
 
   def buildPlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None) = {
@@ -194,7 +258,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   private def rewriteStuff(input: BaseState, context: CompilerContext): BaseState = {
     val newStatement = input.statement().endoRewrite(namePatternPredicatePatternElements)
-    LogicalPlanState(input).copy(maybeStatement = Some(newStatement))
+    input.withStatement(newStatement)
   }
 
   def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedName => ProcedureSignature] = None,
@@ -210,9 +274,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
     val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
-    val state = LogicalPlanState(query, None, CostBasedPlannerName.default)
-
-    val context = ContextHelper.create(exceptionCreator = mkException, planContext = planContext)
+    val state = LogicalPlanState(query, None, CostBasedPlannerName.default, new Solveds, new Cardinalities)
+    val context = ContextHelper.create(exceptionCreator = mkException, planContext = planContext, logicalPlanIdGen = idGen)
     val output = pipeLine.transform(state, context)
 
     output.unionQuery
@@ -224,8 +287,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 }
 
-case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+case class FakePlan(availableSymbols: Set[String] = Set.empty)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
   def rhs = None
   def lhs = None
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * This is a variation of apply, which only executes 'right' if all variables in 'items' != NO_VALUE.
@@ -35,11 +35,11 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *   }
   * }
   */
-case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[String])
+                           (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(left)
   override val rhs = Some(right)
 
-  override def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols ++ items
+  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols ++ items
 }

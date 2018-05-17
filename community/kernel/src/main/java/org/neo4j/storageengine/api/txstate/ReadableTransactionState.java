@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,18 +24,22 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.state.GraphState;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 
 /**
@@ -51,9 +55,19 @@ public interface ReadableTransactionState
     // ENTITY RELATED
 
     /**
-     * Returns all nodes that, in this tx, have had labelId removed.
+     * Returns all nodes that, in this tx, have had the labels changed.
      */
-    ReadableDiffSets<Long> nodesWithLabelChanged( int labelId );
+    ReadableDiffSets<Long> nodesWithLabelChanged( int label );
+
+    /**
+     * Returns all nodes that, in this tx, have had any of the labels changed.
+     */
+    ReadableDiffSets<Long> nodesWithAnyOfLabelsChanged( int... labels );
+
+    /**
+     * Returns all nodes that, in this tx, have had all the labels changed.
+     */
+    ReadableDiffSets<Long> nodesWithAllLabelsChanged( int... labels );
 
     /**
      * Returns nodes that have been added and removed in this tx.
@@ -108,11 +122,11 @@ public interface ReadableTransactionState
 
     // SCHEMA RELATED
 
-    ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
+    ReadableDiffSets<SchemaIndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    ReadableDiffSets<IndexDescriptor> indexChanges();
+    ReadableDiffSets<SchemaIndexDescriptor> indexChanges();
 
-    Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
+    Iterable<SchemaIndexDescriptor> constraintIndexesCreatedInTx();
 
     ReadableDiffSets<ConstraintDescriptor> constraintsChanges();
 
@@ -124,25 +138,23 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    ReadableDiffSets<Long> indexUpdatesForScan( IndexDescriptor index );
+    PrimitiveLongReadableDiffSets indexUpdatesForScan( SchemaIndexDescriptor index );
 
-    ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
+    PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( SchemaIndexDescriptor index, IndexQuery query );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
-                                                             Number lower, boolean includeLower,
-                                                             Number upper, boolean includeUpper );
+    PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor index, ValueTuple values );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor index,
-                                                             String lower, boolean includeLower,
-                                                             String upper, boolean includeUpper );
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor index, ValueGroup valueGroup,
+                                                            Value lower, boolean includeLower,
+                                                            Value upper, boolean includeUpper );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( SchemaIndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );
 
     RelationshipState getRelationshipState( long id );
 
-    PropertyContainerState getPropertiesState( long propertyReference );
+    GraphState getGraphState();
 
     Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId );
 

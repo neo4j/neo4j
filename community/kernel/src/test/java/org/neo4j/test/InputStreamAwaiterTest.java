@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -142,7 +142,7 @@ public class InputStreamAwaiterTest
         }
 
         @Override
-        public int available() throws IOException
+        public int available()
         {
             ticker.tick();
             if ( chunk >= chunks.length )
@@ -153,7 +153,7 @@ public class InputStreamAwaiterTest
         }
 
         @Override
-        public int read( byte[] target ) throws IOException
+        public int read( byte[] target )
         {
             if ( chunk >= chunks.length )
             {
@@ -165,7 +165,7 @@ public class InputStreamAwaiterTest
         }
 
         @Override
-        public int read() throws IOException
+        public int read()
         {
             throw new UnsupportedOperationException();
         }

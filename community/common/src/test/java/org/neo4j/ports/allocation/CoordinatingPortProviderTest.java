@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,7 +31,7 @@ import org.junit.Test;
 public class CoordinatingPortProviderTest
 {
     @Test
-    public void shouldProvideUniquePorts() throws Exception
+    public void shouldProvideUniquePorts()
     {
         PortRepository portRepository = mock( PortRepository.class );
         PortProvider portProvider = new CoordinatingPortProvider( portRepository, port -> false );
@@ -44,7 +44,7 @@ public class CoordinatingPortProviderTest
     }
 
     @Test
-    public void shouldSkipReservedPorts() throws Exception
+    public void shouldSkipReservedPorts()
     {
         PortRepository portRepository = mock( PortRepository.class );
         PortProvider portProvider = new CoordinatingPortProvider( portRepository, port -> false );
@@ -56,7 +56,7 @@ public class CoordinatingPortProviderTest
     }
 
     @Test
-    public void shouldSkipOccupiedPorts() throws Exception
+    public void shouldSkipOccupiedPorts()
     {
         PortRepository portRepository = mock( PortRepository.class );
         PortProbe portProbe = mock( PortProbe.class );

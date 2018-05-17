@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,13 +23,14 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -41,6 +42,9 @@ import static org.neo4j.procedure.Mode.DBMS;
 @SuppressWarnings( "unused" )
 public class BuiltInDbmsProcedures
 {
+    @Context
+    public Log log;
+
     @Context
     public GraphDatabaseAPI graph;
 
@@ -99,6 +103,7 @@ public class BuiltInDbmsProcedures
 
         String result = numberOfClearedQueries == 0 ? "Query cache already empty."
                                                     : "Query caches successfully cleared of " + numberOfClearedQueries + " queries.";
+        log.info( "Called dbms.clearQueryCaches(): " + result );
         return Stream.of( new StringResult( result ) );
     }
 
@@ -121,16 +126,18 @@ public class BuiltInDbmsProcedures
         public final String name;
         public final String signature;
         public final String description;
+        public final String mode;
 
         private ProcedureResult( ProcedureSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
+            this.mode = signature.mode().toString();
         }
     }
 
-    public class StringResult
+    public static class StringResult
     {
         public final String value;
 

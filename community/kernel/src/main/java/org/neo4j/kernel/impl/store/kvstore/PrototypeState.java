@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+
 public abstract class PrototypeState<Key> extends WritableState<Key>
 {
     protected final ActiveState<Key> store;
@@ -33,7 +35,7 @@ public abstract class PrototypeState<Key> extends WritableState<Key>
         this.store = store;
     }
 
-    protected abstract ActiveState<Key> create( ReadableState<Key> sub, File file );
+    protected abstract ActiveState<Key> create( ReadableState<Key> sub, File file, VersionContextSupplier versionContextSupplier );
 
     @Override
     protected final Headers headers()
@@ -60,7 +62,7 @@ public abstract class PrototypeState<Key> extends WritableState<Key>
     }
 
     @Override
-    public final void close() throws IOException
+    public final void close()
     {
         throw new UnsupportedOperationException( "should never be invoked" );
     }

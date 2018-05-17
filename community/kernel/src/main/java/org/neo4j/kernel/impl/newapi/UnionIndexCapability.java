@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,7 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Present the union of multiple index capabilities.
@@ -42,23 +42,23 @@ public class UnionIndexCapability implements IndexCapability
     }
 
     @Override
-    public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+    public IndexOrder[] orderCapability( ValueCategory... valueCategories )
     {
         Set<IndexOrder> orderCapability = new HashSet<>();
         for ( IndexCapability capability : capabilities )
         {
-            orderCapability.addAll( Arrays.asList( capability.orderCapability( valueGroups ) ) );
+            orderCapability.addAll( Arrays.asList( capability.orderCapability( valueCategories ) ) );
         }
         return orderCapability.toArray( new IndexOrder[orderCapability.size()] );
     }
 
     @Override
-    public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+    public IndexValueCapability valueCapability( ValueCategory... valueCategories )
     {
         IndexValueCapability currentBest = IndexValueCapability.NO;
         for ( IndexCapability capability : capabilities )
         {
-            IndexValueCapability next = capability.valueCapability( valueGroups );
+            IndexValueCapability next = capability.valueCapability( valueCategories );
             if ( next.compare( currentBest ) > 0 )
             {
                 currentBest = next;

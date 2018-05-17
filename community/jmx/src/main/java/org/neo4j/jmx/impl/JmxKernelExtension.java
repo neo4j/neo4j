@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -48,7 +48,7 @@ public class JmxKernelExtension implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         support = ManagementSupport.load();
         mbs = support.getMBeanServer();
@@ -75,7 +75,7 @@ public class JmxKernelExtension implements Lifecycle
                 }
             }
             catch ( Exception e )
-            { // Unexpected exception
+            {
                 log.info( "Failed to register JMX Bean " + provider + " (" + e + ")" );
             }
         }
@@ -92,17 +92,17 @@ public class JmxKernelExtension implements Lifecycle
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         for ( Neo4jMBean bean : beans )
         {
@@ -132,7 +132,7 @@ public class JmxKernelExtension implements Lifecycle
         throw new NotFoundException( "No management bean found for " + type.getName() );
     }
 
-    public <T> Collection<T> getManagementBeans( Class<T> beanInterface )
+    private <T> Collection<T> getManagementBeans( Class<T> beanInterface )
     {
         Collection<T> result = null;
         if ( support.getClass() != ManagementSupport.class && beans.size() > 0 && beans.get( 0 ) instanceof KernelBean )
@@ -143,13 +143,13 @@ public class JmxKernelExtension implements Lifecycle
             }
             catch ( UnsupportedOperationException ignore )
             {
-                result = null; // go to fall back
+                // go to fall back
             }
         }
         if ( result == null )
         {
             // Fall back: if we cannot create proxy, we can search for instances
-            result = new ArrayList<T>();
+            result = new ArrayList<>();
             for ( Neo4jMBean bean : beans )
             {
                 if ( beanInterface.isInstance( bean ) )

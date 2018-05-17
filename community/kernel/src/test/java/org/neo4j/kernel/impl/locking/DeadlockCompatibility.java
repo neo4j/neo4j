@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -53,7 +53,7 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     }
 
     @Test
-    public void shouldDetectTwoClientExclusiveDeadlock() throws Exception
+    public void shouldDetectTwoClientExclusiveDeadlock()
     {
         assertDetectsDeadlock(
                 acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ),
@@ -64,7 +64,7 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     }
 
     @Test
-    public void shouldDetectThreeClientExclusiveDeadlock() throws Exception
+    public void shouldDetectThreeClientExclusiveDeadlock()
     {
         assertDetectsDeadlock(
                 acquireExclusive( clientA, LockTracer.NONE, NODE, 1L ),
@@ -77,7 +77,7 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
     }
 
     @Test
-    public void shouldDetectMixedExclusiveAndSharedDeadlock() throws Exception
+    public void shouldDetectMixedExclusiveAndSharedDeadlock()
     {
         assertDetectsDeadlock(
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,7 +43,7 @@ public class StandardV3_4 extends BaseRecordFormats
     public StandardV3_4()
     {
         super( STORE_VERSION, StoreVersion.STANDARD_V3_4.introductionVersion(), 8, Capability.SCHEMA,
-                Capability.DENSE_NODES, Capability.LUCENE_5, Capability.POINT_PROPERTIES );
+                Capability.DENSE_NODES, Capability.LUCENE_5, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES );
     }
 
     @Override

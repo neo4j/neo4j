@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -41,7 +41,7 @@ public class IndexingServiceFactory
 
     public static IndexingService createIndexingService( Config config,
                                           JobScheduler scheduler,
-                                          SchemaIndexProviderMap providerMap,
+                                          IndexProviderMap providerMap,
                                           IndexStoreView storeView,
                                           TokenNameLookup tokenNameLookup,
                                           Iterable<IndexRule> indexRules,
@@ -52,7 +52,7 @@ public class IndexingServiceFactory
         if ( providerMap == null || providerMap.getDefaultProvider() == null )
         {
             throw new IllegalStateException( "You cannot run the database without an index provider, " +
-                                             "please make sure that a valid provider (subclass of " + SchemaIndexProvider.class.getName() +
+                                             "please make sure that a valid provider (subclass of " + IndexProvider.class.getName() +
                                              ") is on your classpath." );
         }
 

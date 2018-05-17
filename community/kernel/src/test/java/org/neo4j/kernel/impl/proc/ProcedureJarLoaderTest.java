@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,12 +32,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -45,6 +47,8 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
@@ -55,9 +59,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
-import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.impl.proc.ResourceInjectionTest.notAvailableMessage;
 
 @SuppressWarnings( "WeakerAccess" )
@@ -72,6 +76,7 @@ public class ProcedureJarLoaderTest
     private final ProcedureJarLoader jarloader =
             new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(),
                     registryWithUnsafeAPI(), log, procedureConfig() ), NullLog.getInstance() );
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void shouldLoadProcedureFromJar() throws Throwable
@@ -87,7 +92,7 @@ public class ProcedureJarLoaderTest
         assertThat( signatures, contains(
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
 
-        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0] ) ),
+        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{1337L} )) );
     }
 
@@ -108,7 +113,7 @@ public class ProcedureJarLoaderTest
                         .out( "someNumber", NTInteger )
                         .build() ));
 
-        assertThat( asList(procedures.get( 0 ).apply( new BasicContext(), new Object[]{42L} ) ),
+        assertThat( asList(procedures.get( 0 ).apply( new BasicContext(), new Object[]{42L}, resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{42L} )) );
     }
 
@@ -244,7 +249,7 @@ public class ProcedureJarLoaderTest
                 procedureSignature( "org", "neo4j", "kernel", "impl", "proc", "unsafeFullAccessProcedure" )
                         .out( "someNumber", NTInteger ).build() ) );
 
-        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0] ) ),
+        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{7331L} )) );
 
         List<UserFunctionSignature> functionsSignatures =
@@ -253,7 +258,7 @@ public class ProcedureJarLoaderTest
                 functionSignature( "org", "neo4j", "kernel", "impl", "proc", "unsafeFullAccessFunction" )
                         .out( NTInteger ).build() ) );
 
-        assertThat( functions.get( 0 ).apply( new BasicContext(), new Object[0] ), equalTo( 7331L ) );
+        assertThat( functions.get( 0 ).apply( new BasicContext(), new AnyValue[0] ), equalTo( Values.of( 7331L ) ) );
     }
 
     public URL createJarFor( Class<?> ... targets ) throws IOException

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.procedure;
 
@@ -26,8 +29,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -94,7 +99,7 @@ public class UserFunctionIT
     private GraphDatabaseService db;
 
     @Test
-    public void shouldGiveNiceErrorMessageOnWrongStaticType() throws Throwable
+    public void shouldGiveNiceErrorMessageOnWrongStaticType()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -109,7 +114,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldGiveNiceErrorMessageWhenNoArguments() throws Throwable
+    public void shouldGiveNiceErrorMessageWhenNoArguments()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -126,7 +131,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldShowDescriptionWhenMissingArguments() throws Throwable
+    public void shouldShowDescriptionWhenMissingArguments()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -144,7 +149,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallDelegatingFunction() throws Throwable
+    public void shouldCallDelegatingFunction()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -160,7 +165,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallRecursiveFunction() throws Throwable
+    public void shouldCallRecursiveFunction()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -176,7 +181,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithGenericArgument() throws Throwable
+    public void shouldCallFunctionWithGenericArgument()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -193,7 +198,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithMapArgument() throws Throwable
+    public void shouldCallFunctionWithMapArgument()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -209,7 +214,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithMapArgumentContainingNullFromParameter() throws Throwable
+    public void shouldCallFunctionWithMapArgumentContainingNullFromParameter()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -225,7 +230,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithNull() throws Throwable
+    public void shouldCallFunctionWithNull()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -241,7 +246,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithNullFromParameter() throws Throwable
+    public void shouldCallFunctionWithNullFromParameter()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -257,7 +262,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithNodeReturn() throws Throwable
+    public void shouldCallFunctionWithNodeReturn()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -275,7 +280,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnMissingFunction() throws Throwable
+    public void shouldGiveHelpfulErrorOnMissingFunction()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -289,7 +294,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnExceptionMidStream() throws Throwable
+    public void shouldGiveHelpfulErrorOnExceptionMidStream()
     {
         // Given
         // run in tx to avoid having to wait for tx rollback on shutdown
@@ -309,7 +314,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldShowCauseOfError() throws Throwable
+    public void shouldShowCauseOfError()
     {
         // Given
         // run in tx to avoid having to wait for tx rollback on shutdown
@@ -326,7 +331,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithAccessToDB() throws Throwable
+    public void shouldCallFunctionWithAccessToDB()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -346,7 +351,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldLogLikeThereIsNoTomorrow() throws Throwable
+    public void shouldLogLikeThereIsNoTomorrow()
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -379,7 +384,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldDenyReadOnlyFunctionToPerformWrites() throws Throwable
+    public void shouldDenyReadOnlyFunctionToPerformWrites()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -393,7 +398,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldNotBeAbleToCallWriteProcedureThroughReadFunction() throws Throwable
+    public void shouldNotBeAbleToCallWriteProcedureThroughReadFunction()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -407,7 +412,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldDenyReadOnlyFunctionToPerformSchema() throws Throwable
+    public void shouldDenyReadOnlyFunctionToPerformSchema()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -422,7 +427,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingFunction() throws Throwable
+    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingFunction()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -437,7 +442,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCoerceListOfNumbersToDoublesAtRuntimeWhenCallingFunction() throws Throwable
+    public void shouldCoerceListOfNumbersToDoublesAtRuntimeWhenCallingFunction()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -453,7 +458,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCoerceListOfMixedNumbers() throws Throwable
+    public void shouldCoerceListOfMixedNumbers()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -469,7 +474,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCoerceDoubleToLongAtRuntimeWhenCallingFunction() throws Throwable
+    public void shouldCoerceDoubleToLongAtRuntimeWhenCallingFunction()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -484,7 +489,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyFunction() throws Throwable
+    public void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyFunction()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -618,7 +623,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionReturningPaths() throws Throwable
+    public void shouldCallFunctionReturningPaths()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -705,7 +710,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldNotAllowReadFunctionInNoneTransaction() throws Throwable
+    public void shouldNotAllowReadFunctionInNoneTransaction()
     {
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -722,7 +727,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallProcedureWithAllDefaultArgument() throws Throwable
+    public void shouldCallProcedureWithAllDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues() AS result" );
@@ -733,7 +738,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldHandleNullAsParameter() throws Throwable
+    public void shouldHandleNullAsParameter()
     {
         //Given/When
         Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues($p) AS result", map( "p", null ) );
@@ -744,7 +749,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithOneProvidedRestDefaultArgument() throws Throwable
+    public void shouldCallFunctionWithOneProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues('another string') AS result" );
@@ -755,7 +760,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithTwoProvidedRestDefaultArgument() throws Throwable
+    public void shouldCallFunctionWithTwoProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues('another string', 1337) AS result" );
@@ -766,7 +771,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithThreeProvidedRestDefaultArgument() throws Throwable
+    public void shouldCallFunctionWithThreeProvidedRestDefaultArgument()
     {
         //Given/When
         Result res =
@@ -778,7 +783,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionWithFourProvidedRestDefaultArgument() throws Throwable
+    public void shouldCallFunctionWithFourProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute(
@@ -790,7 +795,7 @@ public class UserFunctionIT
     }
 
     @Test
-    public void shouldCallFunctionReturningNull() throws Throwable
+    public void shouldCallFunctionReturningNull()
     {
         //Given/When
         Result res = db.execute(
@@ -806,109 +811,27 @@ public class UserFunctionIT
      * built-in functions in any shape or form.
      */
     @Test
-    public void shouldListAllUserDefinedFunctions() throws Throwable
+    public void shouldListAllUserDefinedFunctions()
     {
         //Given/When
         Result res = db.execute( "CALL dbms.functions()" );
 
-        String expected = String.format(
-                "+------------------------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------------------------------------------" +
-                "---------------------------------------------+%n" +
-                "| name                                                | signature                             " +
-                "                                                                                              " +
-                "                         | description             |%n" +
-                "+------------------------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------------------------------------------" +
-                "---------------------------------------------+%n" +
-                "| \"org.neo4j.procedure.avgDoubleList\"                 | \"org.neo4j.procedure.avgDoubleList" +
-                "(someValue :: LIST? OF FLOAT?) :: (FLOAT?)\"                                                  " +
-                "                              | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.avgNumberList\"                 | \"org.neo4j.procedure.avgNumberList" +
-                "(someValue :: LIST? OF NUMBER?) :: (FLOAT?)\"                                                 " +
-                "                              | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.defaultValues\"                 | \"org.neo4j.procedure.defaultValues" +
-                "(string = a string :: STRING?, integer = 42 :: INTEGER?, float = 3.14 :: FLOAT?, boolean = " +
-                "true :: BOOLEAN?) :: (STRING?)\" | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.delegatingFunction\"            | \"org.neo4j.procedure" +
-                ".delegatingFunction(someValue :: INTEGER?) :: (INTEGER?)\"                                    " +
-                "                                            | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.genericArguments\"              | \"org.neo4j.procedure" +
-                ".genericArguments(strings :: LIST? OF LIST? OF STRING?, longs :: LIST? OF LIST? OF LIST? OF " +
-                "INTEGER?) :: (INTEGER?)\"                     | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.indexOutOfBounds\"              | \"org.neo4j.procedure" +
-                ".indexOutOfBounds() :: (INTEGER?)\"                                                           " +
-                "                                            | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.integrationTestMe\"             | \"org.neo4j.procedure" +
-                ".integrationTestMe() :: (INTEGER?)\"                                                          " +
-                "                                            | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.listCoolPeopleInDatabase\"      | \"org.neo4j.procedure" +
-                ".listCoolPeopleInDatabase() :: (LIST? OF ANY?)\"                                              " +
-                "                                            | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.logAround\"                     | \"org.neo4j.procedure.logAround() ::" +
-                " (INTEGER?)\"                                                                                 " +
-                "                             | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.mapArgument\"                   | \"org.neo4j.procedure.mapArgument" +
-                "(map :: MAP?) :: (INTEGER?)\"                                                                 " +
-                "                                | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.node\"                          | \"org.neo4j.procedure.node(id :: " +
-                "INTEGER?) :: (NODE?)\"                                                                        " +
-                "                                | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.nodeListArgument\"              | \"org.neo4j.procedure" +
-                ".nodeListArgument(nodes :: LIST? OF NODE?) :: (INTEGER?)\"                                    " +
-                "                                            | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.nodePaths\"                     | \"org.neo4j.procedure.nodePaths" +
-                "(someValue :: NODE?) :: (PATH?)\"                                                             " +
-                "                                  | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.nodeWithDescription\"           | \"org.neo4j.procedure" +
-                ".nodeWithDescription(someValue :: NODE?) :: (NODE?)\"                                         " +
-                "                                            | \"This is a description\" |%n" +
-                "| \"org.neo4j.procedure.readOnlyCallingWriteFunction\"  | \"org.neo4j.procedure" +
-                ".readOnlyCallingWriteFunction() :: (NODE?)\"                                                  " +
-                "                                            | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.readOnlyCallingWriteProcedure\" | \"org.neo4j.procedure" +
-                ".readOnlyCallingWriteProcedure() :: (INTEGER?)\"                                              " +
-                "                                            | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.readOnlyTryingToWrite\"         | \"org.neo4j.procedure" +
-                ".readOnlyTryingToWrite() :: (NODE?)\"                                                         " +
-                "                                            | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.readOnlyTryingToWriteSchema\"   | \"org.neo4j.procedure" +
-                ".readOnlyTryingToWriteSchema() :: (STRING?)\"                                                 " +
-                "                                            | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.recursiveSum\"                  | \"org.neo4j.procedure.recursiveSum" +
-                "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
-                "                               | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.shutdown\"                      | \"org.neo4j.procedure.shutdown() :: " +
-                "(STRING?)\"                                                                                   " +
-                "                             | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.simpleArgument\"                | \"org.neo4j.procedure.simpleArgument" +
-                "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
-                "                             | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.squareDouble\"                  | \"org.neo4j.procedure.squareDouble" +
-                "(someValue :: FLOAT?) :: (FLOAT?)\"                                                           " +
-                "                               | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.squareLong\"                    | \"org.neo4j.procedure.squareLong" +
-                "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
-                "                                 | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.throwsExceptionInStream\"       | \"org.neo4j.procedure" +
-                ".throwsExceptionInStream() :: (INTEGER?)\"                                                    " +
-                "                                            | \"\"                      |%n" +
-                "| \"org.neo4j.procedure.unsupportedFunction\"           | \"org.neo4j.procedure." +
-                "unsupportedFunction() :: (STRING?)\"                                                          " +
-                "                                           | \"\"                      |%n" +
-                "| \"this.is.test.only.sum\"                             | \"this.is.test.only.sum(numbers :: " +
-                "LIST? OF NUMBER?) :: (NUMBER?)\"                                                              " +
-                "                              | \"\"                      |%n" +
-                "+-----------------------------------------------------------------------------------------------" +
-                "----------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------+%n" +
-                "26 rows%n");
-
-        assertThat( res.resultAsString(), equalTo(expected) );
+        try ( BufferedReader reader = new BufferedReader(
+                new InputStreamReader( UserFunctionIT.class.getResourceAsStream( "/misc/userDefinedFunctions" ) ) ) )
+        {
+            String expected = reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
+            String actual = res.resultAsString();
+            // Be aware that the text file "userDefinedFunctions" must end with two newlines
+            assertThat( actual, equalTo(expected) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Failed to read userDefinedFunctions file." );
+        }
     }
 
     @Test
-    public void shouldCallFunctionWithSameNameAsBuiltIn() throws Throwable
+    public void shouldCallFunctionWithSameNameAsBuiltIn()
     {
         //Given/When
         Result res = db.execute( "RETURN this.is.test.only.sum([1337, 2.718281828, 3.1415]) AS result" );

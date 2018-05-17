@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,17 +19,22 @@
  */
 package org.neo4j.values.utils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 
 import static java.lang.String.format;
 
@@ -91,15 +96,15 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeEdgeReference( long edgeId )
+    public void writeRelationshipReference( long relId )
     {
-        append( format( "-[id=%d]-", edgeId ) );
+        append( format( "-[id=%d]-", relId ) );
     }
 
     @Override
-    public void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
     {
-        append( format( "-[id=%d :%s", edgeId, type.stringValue() ) );
+        append( format( "-[id=%d :%s", relId, type.stringValue() ) );
         if ( properties.size() > 0 )
         {
             append( " " );
@@ -135,7 +140,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, EdgeValue[] edges )
+    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships )
     {
         if ( nodes.length == 0 )
         {
@@ -143,9 +148,9 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         }
         //Path guarantees that nodes.length = edges.length = 1
         nodes[0].writeTo( this );
-        for ( int i = 0; i < edges.length; i++ )
+        for ( int i = 0; i < relationships.length; i++ )
         {
-            edges[i].writeTo( this );
+            relationships[i].writeTo( this );
             append( ">" );
             nodes[i + 1].writeTo( this );
         }
@@ -162,6 +167,60 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         append( "\", code: " );
         append( Integer.toString( crs.getCode() ) );
         append( "}}}}" );
+    }
+
+    @Override
+    public void writeDuration( long months, long days, long seconds, int nanos ) throws RuntimeException
+    {
+        append( "{duration: {months: " );
+        append( Long.toString( months ) );
+        append( ", days: " );
+        append( Long.toString( days ) );
+        append( ", seconds: " );
+        append( Long.toString( seconds ) );
+        append( ", nanos: " );
+        append( Long.toString( nanos ) );
+        append( "}}" );
+    }
+
+    @Override
+    public void writeDate( LocalDate localDate ) throws RuntimeException
+    {
+        append( "{date: " );
+        append( quote( localDate.toString() ) );
+        append( "}" );
+    }
+
+    @Override
+    public void writeLocalTime( LocalTime localTime ) throws RuntimeException
+    {
+        append( "{localTime: " );
+        append( quote( localTime.toString() ) );
+        append( "}" );
+    }
+
+    @Override
+    public void writeTime( OffsetTime offsetTime ) throws RuntimeException
+    {
+        append( "{time: " );
+        append( quote( offsetTime.toString() ) );
+        append( "}" );
+    }
+
+    @Override
+    public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
+    {
+        append( "{localDateTime: " );
+        append( quote( localDateTime.toString() ) );
+        append( "}" );
+    }
+
+    @Override
+    public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
+    {
+        append( "{datetime: " );
+        append( quote( zonedDateTime.toString() ) );
+        append( "}" );
     }
 
     @Override

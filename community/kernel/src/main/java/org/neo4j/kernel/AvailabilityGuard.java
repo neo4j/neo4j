@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -44,7 +44,7 @@ public class AvailabilityGuard
     public static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database available: ";
     public static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database unavailable: ";
 
-    public class UnavailableException extends Exception implements Status.HasStatus
+    public static class UnavailableException extends Exception implements Status.HasStatus
     {
         public UnavailableException( String message )
         {

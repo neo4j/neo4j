@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -18,8 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.kernel.impl.api;
-
-import java.io.IOException;
 
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -39,7 +37,7 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
         assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
         closeCountsUpdaterIfOpen();
@@ -66,7 +64,7 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command ) throws IOException
+    public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command )
     {
         assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
         haveUpdates = true;
@@ -79,7 +77,7 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+    public boolean visitSchemaRuleCommand( SchemaRuleCommand command )
     {
         // This shows that this transaction is a schema transaction, so it cannot have commands
         // updating any counts anyway. Therefore the counts updater is closed right away.

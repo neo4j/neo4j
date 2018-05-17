@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,7 @@ import org.neo4j.values.virtual.{PathValue, VirtualValues}
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = value match {
-    case p: PathValue => VirtualValues.list(p.edges():_*)
+    case p: PathValue => VirtualValues.list(p.relationships():_*)
     case x       => throw new SyntaxException("Expected " + path + " to be a path.")
   }
 

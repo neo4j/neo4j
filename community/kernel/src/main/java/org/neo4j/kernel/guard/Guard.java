@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,6 @@ package org.neo4j.kernel.guard;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.api.KernelStatement;
 
 /**
  * Guard that check entities for compatibility with some kind of guard criteria.
@@ -30,5 +29,4 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 public interface Guard
 {
     void check( KernelTransaction transaction );
-    void check( KernelStatement statement );
 }

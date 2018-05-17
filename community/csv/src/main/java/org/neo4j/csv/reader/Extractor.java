@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.csv.reader;
 
+import org.neo4j.values.storable.CSVHeaderInformation;
 /**
  * Extracts a value from a part of a {@code char[]} into any type of value, f.ex. a {@link Extractors#string()},
  * {@link Extractors#long_() long} or {@link Extractors#intArray()}.
@@ -39,10 +40,21 @@ public interface Extractor<T> extends Cloneable
      * @param data characters in a buffer.
      * @param offset offset into the buffer where the value starts.
      * @param length number of characters from the offset to extract.
-     * @param skippedChars whether or not there were skipped characters, f.ex. quotation.
+     * @param hadQuotes whether or not there were skipped characters, f.ex. quotation.
+     * @param optionalData optional data to be used for spatial or temporal values or null if csv header did not use it
      * @return {@code true} if a value was extracted, otherwise {@code false}.
      */
-    boolean extract( char[] data, int offset, int length, boolean skippedChars );
+    boolean extract( char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData );
+
+    /**
+     * Extracts value of type {@code T} from the given character data.
+     * @param data characters in a buffer.
+     * @param offset offset into the buffer where the value starts.
+     * @param length number of characters from the offset to extract.
+     * @param hadQuotes whether or not there were skipped characters, f.ex. quotation.
+     * @return {@code true} if a value was extracted, otherwise {@code false}.
+     */
+    boolean extract( char[] data, int offset, int length, boolean hadQuotes );
 
     /**
      * @return the most recently extracted value.
@@ -52,8 +64,7 @@ public interface Extractor<T> extends Cloneable
     /**
      * @return string representation of what type of value of produces. Also used as key in {@link Extractors}.
      */
-    @Override
-    String toString();
+    String name();
 
     Extractor<T> clone();
 }

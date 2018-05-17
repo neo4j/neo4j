@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.management.repr;
 
 import java.util.ArrayList;
-
 import javax.management.openmbean.CompositeData;
 
 import org.neo4j.server.rest.repr.ListRepresentation;
@@ -58,13 +57,11 @@ public class JmxCompositeDataRepresentation extends ObjectRepresentation
     public ListRepresentation getValue()
     {
 
-        ArrayList<Representation> values = new ArrayList<Representation>();
-        for ( Object key : data.getCompositeType()
-                .keySet() )
+        ArrayList<Representation> values = new ArrayList<>();
+        for ( Object key : data.getCompositeType().keySet() )
         {
             String name = key.toString();
-            String description = data.getCompositeType()
-                    .getDescription( name );
+            String description = data.getCompositeType().getDescription( name );
 
             Representation value = REPRESENTATION_DISPATCHER.dispatch( data.get( name ), "" );
 

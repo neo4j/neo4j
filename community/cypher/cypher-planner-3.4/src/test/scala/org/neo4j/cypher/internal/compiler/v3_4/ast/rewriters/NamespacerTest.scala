@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,19 +22,19 @@ package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StatementHelper._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_4.rewriters.Never
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticFeature
 import org.neo4j.cypher.internal.planner.v3_4.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.v3_4.inSequence
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
 
-class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
+class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
 
   case class TestCase(query: String, rewrittenQuery: String, semanticTableExpressions: List[Expression])
 
@@ -175,7 +175,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def assertRewritten(from: String, to: String, semanticTableExpressions: List[Expression], features: SemanticFeature*): Unit = {
     val fromAst = parseAndRewrite(from, features: _*)
-    val fromState = LogicalPlanState(from, None, IDPPlannerName, Some(fromAst), Some(fromAst.semanticState(features: _*)))
+    val fromState = LogicalPlanState(from, None, IDPPlannerName, new StubSolveds, new StubCardinalities, Some(fromAst), Some(fromAst.semanticState(features: _*)))
     val toState = Namespacer.transform(fromState, ContextHelper.create())
 
     val expectedAst = parseAndRewrite(to, features: _*)

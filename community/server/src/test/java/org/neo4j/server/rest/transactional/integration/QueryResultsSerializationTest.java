@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -396,13 +396,14 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnPropsOfDeletedRelationshipRest()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
+        graphdb().execute( "CREATE (:Start)-[:MARKER {p: 'a property'}]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
-                queryAsJsonRest( "MATCH (s)-[r:R]->(e) DELETE r RETURN r.p" ) );
+                queryAsJsonRest( "MATCH (s)-[r:MARKER]->(e) DELETE r RETURN r.p" ) );
 
-        assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
+        assertThat( "Error raw response: " + commit.rawContent(), commit,
+                hasErrors( Status.Statement.EntityNotFound ) );
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( nodesInDatabase(), equalTo( 2L ) );
     }
@@ -583,7 +584,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
      * This matcher is hardcoded to check for a list containing one deleted node and one map with a
      * deleted node mapped to the key `someKey`.
      */
-    public static Matcher<? super Response> restContainsNestedDeleted()
+    private static Matcher<? super Response> restContainsNestedDeleted()
     {
         return new TypeSafeMatcher<Response>()
         {

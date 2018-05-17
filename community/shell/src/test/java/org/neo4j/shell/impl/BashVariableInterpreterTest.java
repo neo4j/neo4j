@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,14 +19,13 @@
  */
 package org.neo4j.shell.impl;
 
-import java.text.SimpleDateFormat;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.text.SimpleDateFormat;
+
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
-import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -58,7 +57,7 @@ public class BashVariableInterpreterTest
     }
 
     @Test
-    public void customInterpreter() throws Exception
+    public void customInterpreter()
     {
         // GIVEN
         interpreter.addReplacer( "test", ( server, session ) -> "Hello" );

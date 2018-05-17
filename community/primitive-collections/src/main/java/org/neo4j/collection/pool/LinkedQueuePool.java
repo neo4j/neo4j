@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -79,12 +79,12 @@ public class LinkedQueuePool<R> implements Pool<R>
             private long lastCheckTime;
             private final LongSupplier clock;
 
-            public TimeoutCheckStrategy( long interval )
+            TimeoutCheckStrategy( long interval )
             {
                 this( interval, System::currentTimeMillis );
             }
 
-            public TimeoutCheckStrategy( long interval, LongSupplier clock )
+            TimeoutCheckStrategy( long interval, LongSupplier clock )
             {
                 this.interval = interval;
                 this.lastCheckTime = clock.getAsLong();
@@ -105,10 +105,10 @@ public class LinkedQueuePool<R> implements Pool<R>
         }
     }
 
-    public static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
+    private static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
 
     private final Queue<R> unused = new ConcurrentLinkedQueue<>();
-    private final Monitor monitor;
+    private final Monitor<R> monitor;
     private final int minSize;
     private final Factory<R> factory;
     private final CheckStrategy checkStrategy;
@@ -121,10 +121,10 @@ public class LinkedQueuePool<R> implements Pool<R>
     public LinkedQueuePool( int minSize, Factory<R> factory )
     {
         this( minSize, factory, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
-                new Monitor.Adapter() );
+                new Monitor.Adapter<>() );
     }
 
-    public LinkedQueuePool( int minSize, Factory<R> factory, CheckStrategy strategy, Monitor monitor )
+    public LinkedQueuePool( int minSize, Factory<R> factory, CheckStrategy strategy, Monitor<R> monitor )
     {
         this.minSize = minSize;
         this.factory = factory;
@@ -189,7 +189,8 @@ public class LinkedQueuePool<R> implements Pool<R>
     /**
      * Dispose of all pooled objects.
      */
-    public void disposeAll()
+    @Override
+    public void close()
     {
         for ( R resource = unused.poll(); resource != null; resource = unused.poll() )
         {

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.ha.upgrade;
 
@@ -37,6 +40,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.Dependencies;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient320;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
@@ -127,7 +131,9 @@ public class MasterClientTest
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
         when( deps.commitProcess() ).thenReturn( commitProcess );
         when( deps.logService() ).thenReturn( NullLogService.getInstance() );
-        when( deps.kernelTransactions() ).thenReturn( mock( KernelTransactions.class ) );
+        when( deps.versionContextSupplier() ).thenReturn( EmptyVersionContextSupplier.EMPTY );
+        KernelTransactions transactions = mock( KernelTransactions.class );
+        when( deps.kernelTransactions() ).thenReturn( transactions );
 
         ResponseUnpacker unpacker = life.add(
                 new TransactionCommittingResponseUnpacker( deps, DEFAULT_BATCH_SIZE, 0 ) );
@@ -178,7 +184,7 @@ public class MasterClientTest
         return when( mock( MasterImpl.SPI.class ).storeId() ).thenReturn( storeId ).getMock();
     }
 
-    private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI ) throws Throwable
+    private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI )
     {
         MasterImpl masterImpl = new MasterImpl( masterImplSPI, mock(
                 ConversationManager.class ), mock( Monitor.class ), masterConfig() );
@@ -192,7 +198,7 @@ public class MasterClientTest
                 ConversationManager.class ), mock( Monitor.class ), masterConfig() );
     }
 
-    private MasterServer newMasterServer( MasterImpl masterImpl ) throws Throwable
+    private MasterServer newMasterServer( MasterImpl masterImpl )
     {
         return life.add( new MasterServer( masterImpl, NullLogProvider.getInstance(),
                 masterServerConfiguration(),
@@ -202,12 +208,12 @@ public class MasterClientTest
                 ConversationManager.class ), logEntryReader ) );
     }
 
-    private MasterClient newMasterClient320( StoreId storeId ) throws Throwable
+    private MasterClient newMasterClient320( StoreId storeId )
     {
         return newMasterClient320( storeId, NO_OP_RESPONSE_UNPACKER );
     }
 
-    private MasterClient newMasterClient320( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
+    private MasterClient newMasterClient320( StoreId storeId, ResponseUnpacker responseUnpacker )
     {
         return life.add( new MasterClient320( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,

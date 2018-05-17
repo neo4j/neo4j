@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,7 +29,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,7 @@ public class RetrieveRelationshipsFromNodeIT extends AbstractRestFunctionalDocTe
     private long likes;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
@@ -74,7 +73,8 @@ public class RetrieveRelationshipsFromNodeIT extends AbstractRestFunctionalDocTe
         helper.createRelationship( "LIKES", helper.createNode(), nodeWithRelationships );
         helper.createRelationship( "HATES", nodeWithRelationships, helper.createNode() );
         nodeWithoutRelationships = helper.createNode();
-        nonExistingNode = nodeWithoutRelationships * 100;
+        nonExistingNode = helper.createNode();
+        helper.deleteNode( nonExistingNode );
     }
 
     private JaxRsResponse sendRetrieveRequestToServer( long nodeId, String path )
@@ -321,7 +321,7 @@ public class RetrieveRelationshipsFromNodeIT extends AbstractRestFunctionalDocTe
         return server().baseUri().toString();
     }
 
-    private void isLegalJson( String entity ) throws IOException, JsonParseException
+    private void isLegalJson( String entity ) throws JsonParseException
     {
         JsonHelper.jsonToMap( entity );
     }

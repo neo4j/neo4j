@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -57,7 +57,7 @@ public class FileUtilsTest
     private File path;
 
     @Before
-    public void doBefore() throws Exception
+    public void doBefore()
     {
         path = testDirectory.directory( "path" );
     }
@@ -101,7 +101,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromShorter() throws Exception
+    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromShorter()
     {
         File file = new File( "/a" );
         File from = new File( "/a/b" );
@@ -113,7 +113,7 @@ public class FileUtilsTest
 
     // INVALID
     @Test
-    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromSameLength() throws Exception
+    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromSameLength()
     {
         File file = new File( "/a/f" );
         File from = new File( "/a/b" );
@@ -124,7 +124,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromLonger() throws Exception
+    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromLonger()
     {
         File file = new File( "/a/c/f" );
         File from = new File( "/a/b" );
@@ -135,7 +135,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustThrowIfFromDirIsCompletePathToFile() throws Exception
+    public void pathToFileAfterMoveMustThrowIfFromDirIsCompletePathToFile()
     {
         File file = new File( "/a/b/f" );
         File from = new File( "/a/b/f" );
@@ -147,7 +147,7 @@ public class FileUtilsTest
 
     // SIBLING
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingToSibling() throws Exception
+    public void pathToFileAfterMoveMustWorkIfMovingToSibling()
     {
         File file = new File( "/a/b/f" );
         File from = new File( "/a/b" );
@@ -157,7 +157,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingToSiblingAndFileHasSubDir() throws Exception
+    public void pathToFileAfterMoveMustWorkIfMovingToSiblingAndFileHasSubDir()
     {
         File file = new File( "/a/b/d/f" );
         File from = new File( "/a/b" );
@@ -168,7 +168,7 @@ public class FileUtilsTest
 
     // DEEPER
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingToSubDir() throws Exception
+    public void pathToFileAfterMoveMustWorkIfMovingToSubDir()
     {
         File file = new File( "/a/b/f" );
         File from = new File( "/a/b" );
@@ -178,7 +178,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingToSubDirAndFileHasSubDir() throws Exception
+    public void pathToFileAfterMoveMustWorkIfMovingToSubDirAndFileHasSubDir()
     {
         File file = new File( "/a/b/d/f" );
         File from = new File( "/a/b" );
@@ -188,7 +188,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingOutOfDir() throws Exception
+    public void pathToFileAfterMoveMustWorkIfMovingOutOfDir()
     {
         File file = new File( "/a/b/f" );
         File from = new File( "/a/b" );
@@ -198,7 +198,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingOutOfDirAndFileHasSubDir() throws Exception
+    public void pathToFileAfterMoveMustWorkIfMovingOutOfDirAndFileHasSubDir()
     {
         File file = new File( "/a/b/d/f" );
         File from = new File( "/a/b" );
@@ -208,7 +208,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfNotMovingAtAll() throws Exception
+    public void pathToFileAfterMoveMustWorkIfNotMovingAtAll()
     {
         File file = new File( "/a/b/f" );
         File from = new File( "/a/b" );
@@ -218,7 +218,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfNotMovingAtAllAndFileHasSubDir() throws Exception
+    public void pathToFileAfterMoveMustWorkIfNotMovingAtAllAndFileHasSubDir()
     {
         File file = new File( "/a/b/d/f" );
         File from = new File( "/a/b" );
@@ -228,14 +228,14 @@ public class FileUtilsTest
     }
 
     @Test
-    public void allMacsHaveHighIO() throws Exception
+    public void allMacsHaveHighIO()
     {
         assumeTrue( SystemUtils.IS_OS_MAC );
         assertTrue( FileUtils.highIODevice( Paths.get( "." ), false ) );
     }
 
     @Test
-    public void windowsNeverHaveHighIO() throws Exception
+    public void windowsNeverHaveHighIO()
     {
         // Future work: Maybe we should do like on Mac and assume true on Windows as well?
         assumeTrue( SystemUtils.IS_OS_WINDOWS );
@@ -243,7 +243,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void onLinuxDevShmHasHighIO() throws Exception
+    public void onLinuxDevShmHasHighIO()
     {
         assumeTrue( SystemUtils.IS_OS_LINUX );
         assertTrue( FileUtils.highIODevice( Paths.get( "/dev/shm" ), false ) );
@@ -279,6 +279,18 @@ public class FileUtilsTest
         }
 
         assertThat( size( fs, dir ), is( 3L ) );
+    }
+
+    @Test
+    public void mustCountDirectoryContents() throws Exception
+    {
+        File dir = directory( "dir" );
+        File file = new File( dir, "file" );
+        File subdir = new File( dir, "subdir" );
+        file.createNewFile();
+        subdir.mkdirs();
+
+        assertThat( FileUtils.countFilesInDirectoryPath( dir.toPath() ), is( 2L ) );
     }
 
     private File directory( String name )

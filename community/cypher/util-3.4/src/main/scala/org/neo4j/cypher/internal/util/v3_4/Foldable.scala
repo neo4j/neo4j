@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,14 +28,6 @@ object Foldable {
     def children: Iterator[AnyRef] = that match {
       case p: Product => p.productIterator.asInstanceOf[Iterator[AnyRef]]
       case s: Seq[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case s: Set[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case m: Map[_, _] => m.iterator.asInstanceOf[Iterator[AnyRef]]
-      case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
-    }
-
-    def childrenWithListsAsSeq: Iterator[AnyRef] = that match {
-      case s: Seq[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case p: Product => p.productIterator.asInstanceOf[Iterator[AnyRef]]
       case s: Set[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
       case m: Map[_, _] => m.iterator.asInstanceOf[Iterator[AnyRef]]
       case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]

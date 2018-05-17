@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,7 +22,6 @@ package org.neo4j.io.fs.watcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.internal.stubbing.answers.ThrowsExceptionClass;
 
 import java.io.File;
 import java.io.IOException;
@@ -166,7 +165,7 @@ public class DefaultFileSystemWatcherTest
     private void prepareWatcher( TestWatchKey watchKey ) throws InterruptedException
     {
         when( watchServiceMock.take() ).thenReturn( watchKey )
-                .thenAnswer( new ThrowsExceptionClass( InterruptedException.class ) );
+                .thenThrow( InterruptedException.class );
     }
 
     private void watch( TestFileSystemWatcher watcher )

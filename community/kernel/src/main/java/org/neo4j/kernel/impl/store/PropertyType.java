@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -155,9 +155,13 @@ public enum PropertyType
             {
                 return headOf( recordBytes, DynamicArrayStore.NUMBER_HEADER_SIZE );
             }
-            else if ( itemType <= GEOMETRY.byteValue() )
+            else if ( itemType == GEOMETRY.byteValue() )
             {
                 return headOf( recordBytes, DynamicArrayStore.GEOMETRY_HEADER_SIZE );
+            }
+            else if ( itemType == TEMPORAL.byteValue() )
+            {
+                return headOf( recordBytes, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
             }
             throw new IllegalArgumentException( "Unknown array type " + itemType );
         }
@@ -207,6 +211,20 @@ public enum PropertyType
         public int calculateNumberOfBlocksUsed( long firstBlock )
         {
             return GeometryType.calculateNumberOfBlocksUsed( firstBlock );
+        }
+    },
+    TEMPORAL( 14 )
+    {
+        @Override
+        public Value value( PropertyBlock block, PropertyStore store )
+        {
+            return TemporalType.decode( block );
+        }
+
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return TemporalType.calculateNumberOfBlocksUsed( firstBlock );
         }
     };
 
@@ -279,6 +297,8 @@ public enum PropertyType
             return SHORT_ARRAY;
         case 13:
             return GEOMETRY;
+        case 14:
+            return TEMPORAL;
         default:
             return null;
         }

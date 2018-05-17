@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,8 +29,8 @@ import org.neo4j.helpers.HostnamePort;
 public class UdcTimerTask extends TimerTask
 {
     // ABKTODO: make this thread safe
-    public static final Map<String, Integer> successCounts = new HashMap<String, Integer>();
-    public static final Map<String, Integer> failureCounts = new HashMap<String, Integer>();
+    public static final Map<String, Integer> successCounts = new HashMap<>();
+    public static final Map<String, Integer> failureCounts = new HashMap<>();
 
     private final String storeId;
     private final Pinger pinger;

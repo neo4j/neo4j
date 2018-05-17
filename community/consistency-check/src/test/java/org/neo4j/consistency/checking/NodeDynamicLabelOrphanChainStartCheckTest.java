@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -44,7 +44,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     }
 
     @Test
-    public void shouldReportMissingOwnerId() throws Exception
+    public void shouldReportMissingOwnerId()
     {
         // given
         DynamicRecord record = new DynamicRecord( 0 );
@@ -59,7 +59,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     }
 
     @Test
-    public void shouldReportOwningNodeRecordNotInUse() throws Exception
+    public void shouldReportOwningNodeRecordNotInUse()
     {
         // given
         NodeRecord nodeRecord = notInUse( new NodeRecord( 12L, false, -1, -1 ) );
@@ -76,7 +76,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     }
 
     @Test
-    public void shouldReportOwningNodeRecordNotPointingBack() throws Exception
+    public void shouldReportOwningNodeRecordNotPointingBack()
     {
         // given
         long nodeId = 12L;

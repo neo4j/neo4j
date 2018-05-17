@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,8 +30,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -81,9 +81,9 @@ public class ConstraintCreationIT
             assertEquals( 0, Iterables.count( db.schema().getIndexes() ) );
         }
 
-        SchemaIndexProvider schemaIndexProvider =
-                db.getDependencyResolver().resolveDependency( SchemaIndexProviderMap.class ).getDefaultProvider();
-        File indexDir = schemaIndexProvider.directoryStructure().directoryForIndex( indexId );
+        IndexProvider indexProvider =
+                db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
+        File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
         assertFalse( new IndexFolderLayout( indexDir ).getIndexFolder().exists() );
     }

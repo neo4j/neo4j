@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.catchup.tx;
 
@@ -40,11 +43,12 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
+import static org.neo4j.causalclustering.catchup.CatchupResult.E_INVALID_REQUEST;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequest>
 {
@@ -74,16 +78,38 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     {
         monitor.increment();
 
-        long firstTxId = Math.max( msg.previousTxId(), BASE_TX_ID ) + 1;
+        if ( msg.previousTxId() <= 0 )
+        {
+            log.error( "Illegal tx pull request" );
+            endInteraction( ctx, E_INVALID_REQUEST, -1 );
+            return;
+        }
+
         StoreId localStoreId = storeIdSupplier.get();
         StoreId expectedStoreId = msg.expectedStoreId();
 
+        long firstTxId = msg.previousTxId() + 1;
         IOCursor<CommittedTransactionRepresentation> txCursor = getCursor( ctx, firstTxId, localStoreId, expectedStoreId );
 
         if ( txCursor != null )
         {
-            ctx.writeAndFlush( new ChunkedTransactionStream( localStoreId, txCursor, protocol ) );
+            ChunkedTransactionStream txStream = new ChunkedTransactionStream( localStoreId, firstTxId, txCursor, protocol );
             // chunked transaction stream ends the interaction internally and closes the cursor
+            ctx.writeAndFlush( txStream ).addListener( f ->
+            {
+                if ( log.isDebugEnabled() || !f.isSuccess() )
+                {
+                    String message = format( "Streamed transactions [%d--%d] to %s", firstTxId, txStream.lastTxId(), ctx.channel().remoteAddress() );
+                    if ( f.isSuccess() )
+                    {
+                        log.debug( message );
+                    }
+                    else
+                    {
+                        log.warn( message, f.cause() );
+                    }
+                }
+            } );
         }
     }
 

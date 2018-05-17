@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.impl.query;
 
@@ -53,7 +56,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
@@ -128,14 +131,14 @@ public class QueryLoggerIT
         db.getLocalUserManager().addRoleToUser( "architect", "mats" );
         db.getLocalUserManager().addRoleToUser( "reader", "andres" );
 
-        EnterpriseSecurityContext mats = db.login( "mats", "neo4j" );
+        EnterpriseLoginContext mats = db.login( "mats", "neo4j" );
 
         // run query
         db.executeQuery( mats, "UNWIND range(0, 10) AS i CREATE (:Foo {p: i})", Collections.emptyMap(), ResourceIterator::close );
         db.executeQuery( mats, "CREATE (:Label)", Collections.emptyMap(), ResourceIterator::close );
 
         // switch user, run query
-        EnterpriseSecurityContext andres = db.login( "andres", "neo4j" );
+        EnterpriseLoginContext andres = db.login( "andres", "neo4j" );
         db.executeQuery( andres, "MATCH (n:Label) RETURN n", Collections.emptyMap(), ResourceIterator::close );
 
         db.tearDown();
@@ -160,7 +163,7 @@ public class QueryLoggerIT
 
         db.getLocalUserManager().setUserPassword( "neo4j", "123", false );
 
-        EnterpriseSecurityContext subject = db.login( "neo4j", "123" );
+        EnterpriseLoginContext subject = db.login( "neo4j", "123" );
         db.executeQuery( subject, "UNWIND range(0, 10) AS i CREATE (:Foo {p: i})", Collections.emptyMap(),
                 ResourceIterator::close );
 
@@ -289,7 +292,7 @@ public class QueryLoggerIT
     }
 
     @Test
-    public void disabledQueryLogging() throws IOException
+    public void disabledQueryLogging()
     {
         GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
@@ -327,7 +330,7 @@ public class QueryLoggerIT
     }
 
     @Test
-    public void queryLogRotation() throws Exception
+    public void queryLogRotation()
     {
         final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
         databaseBuilder.setConfig( log_queries, Settings.TRUE )
@@ -386,7 +389,7 @@ public class QueryLoggerIT
                 .newGraphDatabase();
 
         EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
-        EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
+        EnterpriseLoginContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
 
         String query = "CALL dbms.security.changePassword('abc123')";
         try ( InternalTransaction tx = database
@@ -438,7 +441,7 @@ public class QueryLoggerIT
     }
 
     @Test
-    public void logQueriesWithSystemTimeZoneIsConfigured() throws IOException
+    public void logQueriesWithSystemTimeZoneIsConfigured()
     {
         TimeZone defaultTimeZone = TimeZone.getDefault();
         try
@@ -461,7 +464,7 @@ public class QueryLoggerIT
     {
         GraphDatabaseFacade database =
                 (GraphDatabaseFacade) databaseBuilder.setConfig( log_queries, Settings.TRUE )
-                        .setConfig( GraphDatabaseSettings.log_timezone, LogTimeZone.SYSTEM.name() )
+                        .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() )
                         .setConfig( logs_directory, logsDirectory.getPath() )
                         .newGraphDatabase();
         database.execute( QUERY ).close();

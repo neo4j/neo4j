@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -60,8 +60,7 @@ public class BasicAuthenticationTest
                 authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", "secret2" ) );
 
         // Then
-        assertThat(result.getSecurityContext().mode(), equalTo( AccessMode.Static.FULL));
-        assertThat( result.getSecurityContext().subject().username(), equalTo( "mike" ) );
+        assertThat( result.getLoginContext().subject().username(), equalTo( "mike" ) );
     }
 
     @Test

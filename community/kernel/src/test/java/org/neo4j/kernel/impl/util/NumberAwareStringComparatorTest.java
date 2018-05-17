@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 public class NumberAwareStringComparatorTest
 {
     @Test
-    public void shouldHandleSingleNumber() throws Exception
+    public void shouldHandleSingleNumber()
     {
         // LESSER
         assertLesser( "123", "456" );
@@ -43,14 +43,14 @@ public class NumberAwareStringComparatorTest
     }
 
     @Test
-    public void shouldHandleMixedAlthoughSimilarNumbersAndStrings() throws Exception
+    public void shouldHandleMixedAlthoughSimilarNumbersAndStrings()
     {
         assertLesser( "same-1-thing-45", "same-12-thing-45" );
         assertGreater( "same-2-thing-46", "same-2-thing-45" );
     }
 
     @Test
-    public void shouldHandleMixedAndDifferentNumbersAndStrings() throws Exception
+    public void shouldHandleMixedAndDifferentNumbersAndStrings()
     {
         assertLesser( "same123thing456", "same123thing456andmore" );
         assertGreater( "same12", "same1thing456andmore" );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -63,14 +63,12 @@ public class TestAStar extends Neo4jAlgoTestCase
         Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
 
         // WHEN
-        try ( WeightedPath path = finder.findSinglePath( start, start ) )
-        {
-            // THEN
-            assertNotNull( path );
-            assertEquals( start, path.startNode() );
-            assertEquals( start, path.endNode() );
-            assertEquals( 0, path.length() );
-        }
+        WeightedPath path = finder.findSinglePath( start, start );
+        // THEN
+        assertNotNull( path );
+        assertEquals( start, path.startNode() );
+        assertEquals( start, path.endNode() );
+        assertEquals( 0, path.length() );
     }
 
     @Test
@@ -90,12 +88,10 @@ public class TestAStar extends Neo4jAlgoTestCase
             assertEquals( start, path.endNode() );
             assertEquals( 0, path.length() );
         }
-
-        paths.forEach( Path::close );
     }
 
     @Test
-    public void wikipediaExample() throws Exception
+    public void wikipediaExample()
     {
         /* GIVEN
          *
@@ -128,12 +124,9 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "e", "end", "length", 2 );
 
         // WHEN
-        try ( WeightedPath path = finder.findSinglePath( start, end ) )
-        {
-
-            // THEN
-            assertPathDef( path, "start", "d", "e", "end" );
-        }
+        WeightedPath path = finder.findSinglePath( start, end );
+        // THEN
+        assertPathDef( path, "start", "d", "e", "end" );
     }
 
     /**
@@ -165,13 +158,12 @@ public class TestAStar extends Neo4jAlgoTestCase
             assertPath( path, nodeA, nodeB, nodeC );
             counter++;
         }
-        allPaths.forEach( Path::close );
         assertEquals( 1, counter );
     }
 
     @SuppressWarnings( { "rawtypes", "unchecked" } )
     @Test
-    public void canUseBranchState() throws Exception
+    public void canUseBranchState()
     {
         // This test doesn't use the predefined finder, which only means an unnecessary instantiation
         // if such an object. And this test will be run twice (once for each finder type in data()).
@@ -200,7 +192,7 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "B", "C", "length", 3d );
         graph.makeEdge( "A", "C", "length", 10d );
 
-        final Map<Node, Double> seenBranchStates = new HashMap<Node, Double>();
+        final Map<Node, Double> seenBranchStates = new HashMap<>();
         PathExpander<Double> expander = new PathExpander<Double>()
         {
             @Override
@@ -228,16 +220,14 @@ public class TestAStar extends Neo4jAlgoTestCase
         PathFinder<WeightedPath> traversalFinder = new TraversalAStar( expander,
                 new InitialBranchState.State( initialStateValue, initialStateValue ),
                 doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR );
-        try ( WeightedPath path = traversalFinder.findSinglePath( nodeA, nodeC ) )
-        {
-            assertEquals( (Double) 5.0D, (Double) path.weight() );
-            assertPathDef( path, "A", "B", "C" );
-            assertEquals( MapUtil.<Node,Double>genericMap( nodeA, 0D, nodeB, 2D ), seenBranchStates );
-        }
+        WeightedPath path = traversalFinder.findSinglePath( nodeA, nodeC );
+        assertEquals( (Double) 5.0D, (Double) path.weight() );
+        assertPathDef( path, "A", "B", "C" );
+        assertEquals( MapUtil.<Node,Double>genericMap( nodeA, 0D, nodeB, 2D ), seenBranchStates );
     }
 
     @Test
-    public void betterTentativePath() throws Exception
+    public void betterTentativePath()
     {
         // GIVEN
         EstimateEvaluator<Double> estimator = ( node, goal ) -> (Double) node.getProperty( "estimate" );
@@ -257,11 +247,9 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "3", "4", "weight", 0.013d );
 
         // WHEN
-        try ( WeightedPath best1_4 = finder.findSinglePath( node1, node4 ) )
-        {
-            // THEN
-            assertPath( best1_4, node1, node2, node3, node4 );
-        }
+        WeightedPath best14 = finder.findSinglePath( node1, node4 );
+        // THEN
+        assertPath( best14, node1, node2, node3, node4 );
     }
 
     static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = ( node, goal ) ->

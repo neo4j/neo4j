@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -62,13 +62,13 @@ public class Readables
     public static final CharReadable EMPTY = new CharReadable.Adapter()
     {
         @Override
-        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
+        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from )
         {
             return buffer;
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {   // Nothing to close
         }
 
@@ -79,7 +79,7 @@ public class Readables
         }
 
         @Override
-        public int read( char[] into, int offset, int length ) throws IOException
+        public int read( char[] into, int offset, int length )
         {
             return -1;
         }
@@ -308,5 +308,43 @@ public class Readables
                 throw new UnsupportedOperationException();
             }
         };
+    }
+
+    /**
+     * Extracts the first line, i.e characters until the first newline or end of stream.
+     * Reads one character at a time to be sure not to read too far ahead. The stream is left
+     * in a state of either exhausted or at the beginning of the next line of data.
+     *
+     * @param source {@link CharReadable} to read from.
+     * @return char[] containing characters until the first newline character or end of stream.
+     * @throws IOException on I/O reading error.
+     */
+    public static char[] extractFirstLineFrom( CharReadable source ) throws IOException
+    {
+        char[] result = new char[100];
+        int cursor = 0;
+        int read;
+        boolean foundEol = false;
+        do
+        {
+            // Grow on demand
+            if ( cursor >= result.length )
+            {
+                result = Arrays.copyOf( result, cursor * 2 );
+            }
+
+            // Read one character
+            read = source.read( result, cursor, 1 );
+            if ( read > 0 )
+            {
+                foundEol = BufferedCharSeeker.isEolChar( result[cursor] );
+                if ( !foundEol )
+                {
+                    cursor++;
+                }
+            }
+        }
+        while ( read > 0 && !foundEol );
+        return Arrays.copyOf( result, cursor );
     }
 }

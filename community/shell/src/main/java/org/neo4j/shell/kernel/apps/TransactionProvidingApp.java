@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -59,7 +59,7 @@ import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.shell.ShellException.stackTraceAsString;
 
 /**
@@ -136,7 +136,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return getCurrent( getServer(), session );
     }
 
-    public static boolean isCurrent( Session session, NodeOrRelationship thing ) throws ShellException
+    public static boolean isCurrent( Session session, NodeOrRelationship thing )
     {
         String currentThing = session.getCurrent();
         return currentThing != null && currentThing.equals(
@@ -149,7 +149,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     protected static void setCurrent( Session session,
-                                      NodeOrRelationship current ) throws ShellException
+                                      NodeOrRelationship current )
     {
         session.setCurrent( current.getTypedId().toString() );
     }
@@ -176,13 +176,13 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return RelationshipType.withName( name );
     }
 
-    protected static Direction getDirection( String direction ) throws ShellException
+    protected static Direction getDirection( String direction )
     {
         return getDirection( direction, Direction.OUTGOING );
     }
 
     protected static Direction getDirection( String direction,
-        Direction defaultDirection ) throws ShellException
+        Direction defaultDirection )
     {
         return parseEnum( Direction.class, direction, defaultDirection );
     }
@@ -349,7 +349,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
     }
 
-    protected void cdTo( Session session, Node node ) throws RemoteException, ShellException
+    protected void cdTo( Session session, Node node )
     {
         List<TypedId> wd = readCurrentWorkingDir( session );
         try
@@ -434,11 +434,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
 
         String title = findTitle( session, node );
-        StringBuilder result = new StringBuilder( "(" );
-        result.append( title != null ? title + "," : "" );
-        result.append( node.getId() );
-        result.append( ")" );
-        return result.toString();
+        return "(" + (title != null ? title + "," : "") + node.getId() + ")";
     }
 
     protected static String findTitle( Session session, Node node ) throws ShellException
@@ -500,11 +496,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
             return getDisplayNameForCurrent( server, session );
         }
 
-        StringBuilder result = new StringBuilder( "[" );
-        result.append( ":" ).append( relationship.getType().name() );
-        result.append( verbose ? "," + relationship.getId() : "" );
-        result.append( "]" );
-        return result.toString();
+        return "[" + ":" + relationship.getType().name() + (verbose ? "," + relationship.getId() : "") + "]";
     }
 
     public static String withArrows( Relationship relationship, String displayName, Node leftNode )
@@ -659,19 +651,18 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return result;
     }
 
-    protected static void printAndInterpretTemplateLines( Collection<String> templateLines,
-            boolean forcePrintHitHeader, boolean newLineBetweenHits, NodeOrRelationship entity,
-            GraphDatabaseShellServer server, Session session, Output out )
+    protected static void printAndInterpretTemplateLines( Collection<String> templateLines, boolean newLineBetweenHits,
+            NodeOrRelationship entity, GraphDatabaseShellServer server, Session session, Output out )
             throws ShellException, RemoteException
     {
-        if ( templateLines.isEmpty() || forcePrintHitHeader )
+        if ( templateLines.isEmpty() )
         {
             out.println( getDisplayName( server, session, entity, true ) );
         }
 
         if ( !templateLines.isEmpty() )
         {
-            Map<String, Object> data = new HashMap<String, Object>();
+            Map<String, Object> data = new HashMap<>();
             data.put( "i", entity.getId() );
             for ( String command : templateLines )
             {
@@ -692,9 +683,9 @@ public abstract class TransactionProvidingApp extends AbstractApp
      * @return the working directory as a list.
      * @throws RemoteException if an RMI error occurs.
      */
-    public static List<TypedId> readCurrentWorkingDir( Session session ) throws RemoteException
+    public static List<TypedId> readCurrentWorkingDir( Session session )
     {
-        List<TypedId> list = new ArrayList<TypedId>();
+        List<TypedId> list = new ArrayList<>();
         String path = session.getPath();
         if ( path != null && path.trim().length() > 0 )
         {
@@ -706,7 +697,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return list;
     }
 
-    public static void writeCurrentWorkingDir( List<TypedId> paths, Session session ) throws RemoteException
+    public static void writeCurrentWorkingDir( List<TypedId> paths, Session session )
     {
         String path = makePath( paths );
         session.setPath( path );
@@ -728,9 +719,9 @@ public abstract class TransactionProvidingApp extends AbstractApp
 
     protected static Map<String, Direction> filterMapToTypes( GraphDatabaseService db,
             Direction defaultDirection, Map<String, Object> filterMap, boolean caseInsensitiveFilters,
-            boolean looseFilters ) throws ShellException
+            boolean looseFilters )
     {
-        Map<String, Direction> matches = new TreeMap<String, Direction>();
+        Map<String, Direction> matches = new TreeMap<>();
         for ( RelationshipType type : db.getAllRelationshipTypes() )
         {
             Direction direction = null;
@@ -761,7 +752,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     protected static PathExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
-            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters )
     {
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,
@@ -780,7 +771,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     protected static PathExpander toSortedExpander( GraphDatabaseService db, Direction defaultDirection,
-            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters )
     {
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,

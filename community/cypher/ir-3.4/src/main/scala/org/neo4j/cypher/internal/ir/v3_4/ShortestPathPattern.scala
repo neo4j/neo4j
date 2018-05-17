@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.ir.v3_4
 
 import org.neo4j.cypher.internal.v3_4.expressions.ShortestPaths
 
-final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)
+final case class ShortestPathPattern(name: Option[String], rel: PatternRelationship, single: Boolean)
                                     (val expr: ShortestPaths) {
 
-  def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
+  def isFindableFrom(symbols: Set[String]) = symbols.contains(rel.left) && symbols.contains(rel.right)
 
-  def availableSymbols: Set[IdName] = name.toSet ++ rel.coveredIds
+  def availableSymbols: Set[String] = name.toSet ++ rel.coveredIds
 }
 
 object ShortestPathPattern {

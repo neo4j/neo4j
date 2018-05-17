@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -70,6 +70,14 @@ class NameMatchPatternElementTest extends CypherFunSuite {
   test("merge (a) merge p = (a)-[:R]->() return p") {
     val original = parser.parse("merge (a) merge p = (a)-[:R]->() return p")
     val expected = parser.parse("merge (a) merge p = (a)-[`  UNNAMED24`:R]->(`  UNNAMED31`) return p")
+
+    val result = original.rewrite(nameUpdatingClauses)
+    assert(result === expected)
+  }
+
+  test("merge (a)-[:R]->() return a") {
+    val original = parser.parse("merge (a)-[:R]->() return a")
+    val expected = parser.parse("merge (a)-[`  UNNAMED10`:R]->(`  UNNAMED17`) return a")
 
     val result = original.rewrite(nameUpdatingClauses)
     assert(result === expected)

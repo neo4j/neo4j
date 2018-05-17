@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,8 @@
 package org.neo4j.server.rest.transactional.integration;
 
 import org.codehaus.jackson.JsonNode;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -30,14 +32,18 @@ import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -48,6 +54,7 @@ import org.neo4j.server.web.XForwardUtil;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 
+import static java.lang.Math.max;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -67,6 +74,19 @@ import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 public class TransactionIT extends AbstractRestFunctionalTestBase
 {
     private final HTTP.Builder http = HTTP.withBaseUri( server().baseUri() );
+    private ExecutorService executors;
+
+    @Before
+    public void setUp()
+    {
+        executors = Executors.newFixedThreadPool( max( 3, Runtime.getRuntime().availableProcessors() ) );
+    }
+
+    @After
+    public void tearDown()
+    {
+        executors.shutdown();
+    }
 
     @Test
     public void begin__execute__commit() throws Exception
@@ -97,7 +117,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin__execute__rollback() throws Exception
+    public void begin__execute__rollback()
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
@@ -206,7 +226,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_and_commit() throws Exception
+    public void begin_and_execute_and_commit()
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
@@ -241,7 +261,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_and_commit_with_badly_escaped_statement() throws Exception
+    public void begin_and_execute_and_commit_with_badly_escaped_statement()
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
         String json = "{ \"statements\": [ { \"statement\": \"LOAD CSV WITH HEADERS FROM " +
@@ -375,7 +395,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_invalid_query_and_commit() throws Exception
+    public void begin_and_execute_invalid_query_and_commit()
     {
         // begin and execute and commit
         Response response = http.POST(
@@ -540,7 +560,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin__rollback__execute() throws Exception
+    public void begin__rollback__execute()
     {
         // begin
         Response begin = http.POST( "db/data/transaction" );
@@ -559,7 +579,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( execute.status(), equalTo( 404 ) );
     }
 
-    @Test
+    @Test( timeout = 30_000 )
     public void begin__execute__rollback_concurrently() throws Exception
     {
         // begin
@@ -567,52 +587,53 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( begin.status(), equalTo( 201 ) );
         assertHasTxLocation( begin );
 
+        Label sharedLockLabel = Label.label( "sharedLock" );
+        http.POST( "db/data/transaction/commit",
+                quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n:" + sharedLockLabel + ")' } ] }" ) );
+
+        CountDownLatch nodeLockLatch = new CountDownLatch( 1 );
+        CountDownLatch nodeReleaseLatch = new CountDownLatch( 1 );
+
+        Future<?> lockerFuture = executors.submit( () -> lockNodeWithLabel( sharedLockLabel, nodeLockLatch, nodeReleaseLatch ) );
+        nodeLockLatch.await();
+
         // execute
         final String executeResource = begin.location();
-        final String statement =
-                "WITH range(0, 100000) AS r UNWIND r AS i CREATE (n {number: i}) RETURN count(n)";
+        final String statement = "MATCH (n:" + sharedLockLabel + ") DELETE n RETURN count(n)";
 
-        final CountDownLatch latch = new CountDownLatch( 1 );
-
-        final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( () ->
+        final Future<Response> executeFuture = executors.submit( () ->
         {
-            latch.countDown();
-            Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
+            HTTP.Builder requestBuilder = HTTP.withBaseUri( server().baseUri() );
+            Response response = requestBuilder.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
                                                                         statement + "' } ] }" ) );
             assertThat( response.status(), equalTo( 200 ) );
             return response;
-
         } );
 
         // terminate
-        final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( () ->
+        final Future<Response> interruptFuture = executors.submit( () ->
         {
-            try
-            {
-                latch.await();
-                Thread.sleep( 100 );
-            }
-            catch ( InterruptedException ignored )
-            {
-                // go
-            }
-            Response response = http.DELETE( begin.location() );
-            assertThat( response.status(), equalTo( 200 ) );
+            waitForStatementExecution( statement );
+
+            Response response = http.DELETE( executeResource );
+            assertThat( response.toString(), response.status(), equalTo( 200 ) );
+            nodeReleaseLatch.countDown();
             return response;
         } );
 
         interruptFuture.get();
+        lockerFuture.get();
         Response execute = executeFuture.get();
         assertThat( execute, hasErrors( Status.Statement.ExecutionFailed ) );
 
         Response execute2 =
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+                http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertThat( execute2.status(), equalTo( 404 ) );
         assertThat( execute2, hasErrors( Status.Transaction.TransactionNotFound ) );
     }
 
     @Test
-    public void status_codes_should_appear_in_response() throws Exception
+    public void status_codes_should_appear_in_response()
     {
         Response response = http.POST( "db/data/transaction/commit",
                 quotedJson( "{ 'statements': [ { 'statement': 'RETURN {n}' } ] }" ) );
@@ -871,7 +892,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void correctStatusCodeWhenUsingHintWithoutAnyIndex() throws Exception
+    public void correctStatusCodeWhenUsingHintWithoutAnyIndex()
     {
         // begin and execute and commit
         Response begin = http.POST( "db/data/transaction/commit",
@@ -966,5 +987,38 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     private void assertHasTxLocation( Response begin )
     {
         assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
+    }
+
+    private void lockNodeWithLabel( Label sharedLockLabel, CountDownLatch nodeLockLatch, CountDownLatch nodeReleaseLatch )
+    {
+        GraphDatabaseService db = graphdb();
+        try ( Transaction ignored = db.beginTx() )
+        {
+            Node node = db.findNodes( sharedLockLabel ).next();
+            node.setProperty( "a", "b" );
+            nodeLockLatch.countDown();
+            nodeReleaseLatch.await();
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private static void waitForStatementExecution( String statement )
+    {
+        KernelTransactions kernelTransactions =
+                server().getDatabase().getGraph().getDependencyResolver().resolveDependency( KernelTransactions.class );
+        while ( !isStatementExecuting( kernelTransactions, statement ) )
+        {
+            Thread.yield();
+        }
+    }
+
+    private static boolean isStatementExecuting( KernelTransactions kernelTransactions, String statement )
+    {
+        return kernelTransactions.activeTransactions().stream()
+                .flatMap( KernelTransactionHandle::executingQueries )
+                .anyMatch( executingQuery -> statement.equals( executingQuery.queryText() ) );
     }
 }

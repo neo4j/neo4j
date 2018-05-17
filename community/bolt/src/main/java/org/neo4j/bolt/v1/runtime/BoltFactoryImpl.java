@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -65,7 +65,7 @@ public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         DependencyResolver dependencyResolver = gds.getDependencyResolver();
         queryExecutionEngine = dependencyResolver.resolveDependency( QueryExecutionEngine.class );
@@ -74,7 +74,7 @@ public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         queryExecutionEngine = null;
         queryService = null;
@@ -87,7 +87,7 @@ public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
         TransactionStateMachine.SPI transactionSPI = createTxSpi( clock );
         BoltStateMachine.SPI boltSPI = new BoltStateMachineSPI( boltChannel, usageData,
                 logging, authentication, connectionTracker, transactionSPI );
-        return new BoltStateMachine( boltSPI, boltChannel, clock );
+        return new BoltStateMachine( boltSPI, boltChannel, clock, logging );
     }
 
     private TransactionStateMachine.SPI createTxSpi( Clock clock )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -73,12 +73,14 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
         if ( ciphers != null )
         {
             sslContextFactory.setIncludeCipherSuites( ciphers.toArray( new String[ciphers.size()] ) );
+            sslContextFactory.setExcludeCipherSuites();
         }
 
-        List<String> protocols = sslPolicy.getTlsVersions();
+        String[] protocols = sslPolicy.getTlsVersions();
         if ( protocols != null )
         {
-            sslContextFactory.setIncludeProtocols( protocols.toArray( new String[protocols.size()] ) );
+            sslContextFactory.setIncludeProtocols( protocols );
+            sslContextFactory.setExcludeProtocols();
         }
 
         switch ( sslPolicy.getClientAuth() )

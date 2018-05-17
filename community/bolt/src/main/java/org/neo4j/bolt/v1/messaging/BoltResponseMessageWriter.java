@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,18 +20,15 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
+import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.cypher.result.QueryResult;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.utils.PrettyPrinter;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
@@ -44,86 +41,73 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
  */
 public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOException>
 {
-    public static final BoltResponseMessageBoundaryHook NO_BOUNDARY_HOOK = () ->
-    {
-    };
-
+    private final PackOutput output;
     private final Neo4jPack.Packer packer;
-    private final BoltResponseMessageBoundaryHook onMessageComplete;
     private final BoltMessageLogger messageLogger;
+    private final Log log;
 
-    /**
-     * @param packer            serializer to output channel
-     * @param onMessageComplete invoked for each message, after it's done writing to the output
-     * @param messageLogger     logger for Bolt messages
-     */
-    public BoltResponseMessageWriter( Neo4jPack.Packer packer, BoltResponseMessageBoundaryHook onMessageComplete,
-                                      BoltMessageLogger messageLogger )
+    public BoltResponseMessageWriter( Neo4jPack neo4jPack, PackOutput output, LogService logService, BoltMessageLogger messageLogger )
     {
-        this.packer = packer;
-        this.onMessageComplete = onMessageComplete;
+        this.output = output;
+        this.packer = neo4jPack.newPacker( output );
         this.messageLogger = messageLogger;
+        this.log = logService.getInternalLog( getClass() );
     }
 
     @Override
     public void onRecord( QueryResult.Record item ) throws IOException
     {
-        AnyValue[] fields = item.fields();
-        packer.packStructHeader( 1, RECORD.signature() );
-        packer.packListHeader( fields.length );
-        for ( AnyValue field : fields )
+        packCompleteMessageOrFail( RECORD, () ->
         {
-            packer.pack( field );
-        }
-        onMessageComplete.onMessageComplete();
-
-        //The record might contain unpackable values,
-        //hence we must consume any errors that might
-        //have occurred.
-        packer.consumeError();  // TODO: find a better way
+            AnyValue[] fields = item.fields();
+            packer.packStructHeader( 1, RECORD.signature() );
+            packer.packListHeader( fields.length );
+            for ( AnyValue field : fields )
+            {
+                packer.pack( field );
+            }
+        } );
     }
 
     @Override
     public void onSuccess( MapValue metadata ) throws IOException
     {
-        messageLogger.logSuccess( () -> metadata );
-        packer.packStructHeader( 1, SUCCESS.signature() );
-        packer.packRawMap( metadata );
-        onMessageComplete.onMessageComplete();
-    }
-
-    private Supplier<String> metadataSupplier( MapValue metadata )
-    {
-        return () ->
+        packCompleteMessageOrFail( SUCCESS, () ->
         {
-            PrettyPrinter printer = new PrettyPrinter();
-            metadata.writeTo( printer );
-            return printer.value();
-        };
+            packer.packStructHeader( 1, SUCCESS.signature() );
+            packer.pack( metadata );
+        } );
+
+        messageLogger.logSuccess( () -> metadata );
     }
 
     @Override
     public void onIgnored() throws IOException
     {
+        packCompleteMessageOrFail( IGNORED, () ->
+        {
+            packer.packStructHeader( 0, IGNORED.signature() );
+        } );
+
         messageLogger.logIgnored();
-        packer.packStructHeader( 0, IGNORED.signature() );
-        onMessageComplete.onMessageComplete();
     }
 
     @Override
     public void onFailure( Status status, String errorMessage ) throws IOException
     {
+        packCompleteMessageOrFail( FAILURE, () ->
+        {
+            packer.packStructHeader( 1, FAILURE.signature() );
+            packer.packMapHeader( 2 );
+
+            packer.pack( "code" );
+            packer.pack( status.code().serialize() );
+
+            packer.pack( "message" );
+            packer.pack( errorMessage );
+        } );
+
         messageLogger.logFailure( status );
-        packer.packStructHeader( 1, FAILURE.signature() );
-        packer.packMapHeader( 2 );
-
-        packer.pack( "code" );
-        packer.pack( status.code().serialize() );
-
-        packer.pack( "message" );
-        packer.pack( errorMessage );
-
-        onMessageComplete.onMessageComplete();
     }
 
     @Override
@@ -139,29 +123,26 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
         packer.flush();
     }
 
-    private class MapToObjectWriter extends BaseToObjectValueWriter<RuntimeException>
+    private void packCompleteMessageOrFail( BoltResponseMessage message, ThrowingAction<IOException> action ) throws IOException
     {
-
-        private UnsupportedOperationException exception =
-                new UnsupportedOperationException( "Functionality not implemented." );
-
-        @Override
-        protected Node newNodeProxyById( long id )
+        boolean packingFailed = true;
+        output.beginMessage();
+        try
         {
-            throw exception;
+            action.apply();
+            packingFailed = false;
+            output.messageSucceeded();
         }
-
-        @Override
-        protected Relationship newRelationshipProxyById( long id )
+        catch ( Throwable error )
         {
-            throw exception;
-        }
-
-        @Override
-        protected Point newPoint( CoordinateReferenceSystem crs, double[] coordinate )
-        {
-            throw exception;
+            if ( packingFailed )
+            {
+                // packing failed, there might be some half-written data in the output buffer right now
+                // notify output about the failure so that it cleans up the buffer
+                output.messageFailed();
+                log.error( "Failed to write full %s message because: %s", message, error.getMessage() );
+            }
+            throw error;
         }
     }
-
 }

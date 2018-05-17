@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileTest.Catalogu
 public class KeyValueStoreFileTest
 {
     @Test
-    public void shouldFindPageInPageCatalogue() throws Exception
+    public void shouldFindPageInPageCatalogue()
     {
         assertEquals( "(single page) in middle of range", 0, findPage( 50, page( 1, 100 ) ) );
         assertEquals( "(single page) at beginning of range", 0, findPage( 1, page( 1, 100 ) ) );
@@ -95,7 +95,7 @@ public class KeyValueStoreFileTest
     }
 
     @Test
-    public void shouldComputeMaxPage() throws Exception
+    public void shouldComputeMaxPage()
     {
         assertEquals( "less than one page", 0, maxPage( 1024, 4, 100 ) );
         assertEquals( "exactly one page", 0, maxPage( 1024, 4, 256 ) );

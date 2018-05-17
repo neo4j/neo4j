@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,13 +27,13 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,9 +41,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 public class ProceduresKernelIT extends KernelIntegrationTest
 {
@@ -60,11 +60,11 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     public void shouldGetProcedureByName() throws Throwable
     {
         // Given
-        kernel.registerProcedure( procedure );
+        internalKernel().registerProcedure( procedure );
 
         // When
-        ProcedureSignature found = readOperationsInNewTransaction()
-                .procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) );
+        ProcedureSignature found = procs()
+                .procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) ).signature();
 
         // Then
         assertThat( found, equalTo( signature ) );
@@ -75,8 +75,8 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     public void shouldGetBuiltInProcedureByName() throws Throwable
     {
         // When
-        ProcedureSignature found = readOperationsInNewTransaction()
-                .procedureGet( procedureName( "db", "labels" ) );
+        ProcedureSignature found = procs()
+                .procedureGet( procedureName( "db", "labels" ) ).signature();
 
         // Then
         assertThat( found, equalTo( procedureSignature( procedureName( "db", "labels" ) )
@@ -88,13 +88,13 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     public void shouldGetAllProcedures() throws Throwable
     {
         // Given
-        kernel.registerProcedure( procedure );
-        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).out( "name", NTString ).build() ) );
-        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc3" ).out( "name", NTString ).build() ) );
+        internalKernel().registerProcedure( procedure );
+        internalKernel().registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).out( "name", NTString ).build() ) );
+        internalKernel().registerProcedure( procedure( procedureSignature( "example", "exampleProc3" ).out( "name", NTString ).build() ) );
 
         // When
         List<ProcedureSignature> signatures =
-                Iterables.asList( readOperationsInNewTransaction().proceduresGetAll() );
+                Iterables.asList( newTransaction().procedures().proceduresGetAll() );
 
         // Then
         assertThat( signatures, hasItems(
@@ -113,7 +113,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         exception.expectMessage( "Procedures with zero output fields must be declared as VOID" );
 
         // When
-        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) );
+        internalKernel().registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) );
         commit();
     }
 
@@ -121,11 +121,13 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     public void shouldCallReadOnlyProcedure() throws Throwable
     {
         // Given
-        kernel.registerProcedure( procedure );
+        internalKernel().registerProcedure( procedure );
 
         // When
-        RawIterator<Object[], ProcedureException> found = procedureCallOpsInNewTx()
-                .procedureCallRead( new QualifiedName( new String[]{"example"}, "exampleProc" ), new Object[]{ 1337 } );
+        RawIterator<Object[],ProcedureException> found = procs()
+                .procedureCallRead(
+                        procs().procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) ).id(),
+                        new Object[]{1337} );
 
         // Then
         assertThat( asList( found ), contains( equalTo( new Object[]{1337} ) ) );
@@ -133,24 +135,23 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void registeredProcedureShouldGetReadOperations() throws Throwable
+    public void registeredProcedureShouldGetRead() throws Throwable
     {
         // Given
-        kernel.registerProcedure( new CallableProcedure.BasicProcedure( signature )
+        internalKernel().registerProcedure( new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+            public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input,
+                    ResourceTracker resourceTracker ) throws ProcedureException
             {
-                try ( Statement statement = ctx.get( Context.KERNEL_TRANSACTION ).acquireStatement() )
-                {
-                    return RawIterator.<Object[],ProcedureException>of( new Object[]{statement.readOperations()} );
-                }
+                return RawIterator.<Object[],ProcedureException>of(
+                        new Object[]{ctx.get( Context.KERNEL_TRANSACTION ).dataRead()} );
             }
         } );
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procedureCallOpsInNewTx().procedureCallRead( signature.name(), new Object[]{""} );
+                procs().procedureCallRead( procs().procedureGet( signature.name() ).id(), new Object[]{""} );
 
         // Then
         assertNotNull( asList( stream  ).get( 0 )[0] );
@@ -162,7 +163,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker )
             {
                 return RawIterator.<Object[], ProcedureException>of( input );
             }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,8 @@
 package org.neo4j.time;
 
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.concurrent.TimeUnit;
@@ -79,5 +81,16 @@ public class Clocks
     {
         return new FakeClock( initialTime.getLong( ChronoField.INSTANT_SECONDS ), TimeUnit.SECONDS )
                 .forward( initialTime.getLong( ChronoField.NANO_OF_SECOND ), TimeUnit.NANOSECONDS );
+    }
+
+    /**
+     * Returns a clock that ticks every time it is accessed
+     * @param initialInstant initial time for clock
+     * @param tickDuration amount of time of each tick
+     * @return access tick clock
+     */
+    public static TickOnAccessClock tickOnAccessClock( Instant initialInstant, Duration tickDuration )
+    {
+        return new TickOnAccessClock( initialInstant, tickDuration );
     }
 }

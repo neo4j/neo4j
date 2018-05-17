@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,14 +37,14 @@ public class MandatoryTransactionsForIndexHitsFacadeTest
     private IndexHits<Node> indexHits;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         Index<Node> index = createIndex();
         indexHits = queryIndex( index );
     }
 
     @Test
-    public void shouldMandateTransactionsForUsingIterator() throws Exception
+    public void shouldMandateTransactionsForUsingIterator()
     {
         try ( ResourceIterator<Node> iterator = indexHits.iterator() )
         {
@@ -71,7 +71,7 @@ public class MandatoryTransactionsForIndexHitsFacadeTest
     }
 
     @Test
-    public void shouldMandateTransactionsForGetSingle() throws Exception
+    public void shouldMandateTransactionsForGetSingle()
     {
         try
         {

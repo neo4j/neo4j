@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 import scala.collection.JavaConverters._
 
 case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: Expression)
-                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                      (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with ListSupport {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
@@ -35,7 +35,7 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
       (outerContext) =>
         val values = makeTraversable(expression(outerContext, state))
         values.iterator().asScala.foreach { v =>
-          val innerState = state.withInitialContext(outerContext.newWith1(variable, v))
+          val innerState = state.withInitialContext(executionContextFactory.copyWith(outerContext, variable, v))
           inner.createResults(innerState).length // exhaust the iterator, in case there's a merge read increasing cardinality inside the foreach
         }
         outerContext

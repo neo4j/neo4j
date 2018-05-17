@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,18 +22,19 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.unsolvedPreds
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 case object selectCovered extends CandidateGenerator[LogicalPlan] {
   val patternExpressionSolver = PatternExpressionSolver()
-  def apply(in: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val unsolvedPredicates = unsolvedPreds(queryGraph.selections, in)
+  def apply(in: LogicalPlan, queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
+    val unsolvedPredicates = unsolvedPreds(solveds)(queryGraph.selections, in)
 
     if (unsolvedPredicates.isEmpty)
       Seq()
     else {
-      val (plan, predicates) = patternExpressionSolver(in, unsolvedPredicates)
-      Seq(context.logicalPlanProducer.planSelection(plan, predicates, unsolvedPredicates))
+      val (plan, predicates) = patternExpressionSolver(in, unsolvedPredicates, context, solveds, cardinalities)
+      Seq(context.logicalPlanProducer.planSelection(plan, predicates, unsolvedPredicates, context))
     }
   }
 }

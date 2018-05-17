@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,19 +19,36 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.graphdb.ResourceIterable;
+import java.util.function.Supplier;
 
 /**
  * {@link Iterable} that returns {@link InputIterator} instances.
  */
-public interface InputIterable<T> extends ResourceIterable<T>
+public interface InputIterable
 {
-    @Override
-    InputIterator<T> iterator();
+    InputIterator iterator();
 
     /**
      * @return whether or not multiple calls to {@link #iterator()} and therefore multiple passes
      * over its data is supported.
      */
     boolean supportsMultiplePasses();
+
+    static InputIterable replayable( Supplier<InputIterator> source )
+    {
+        return new InputIterable()
+        {
+            @Override
+            public InputIterator iterator()
+            {
+                return source.get();
+            }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return true;
+            }
+        };
+    }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -64,7 +64,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class ConfigTest
 {
-
     private static final String ORIGIN = "test";
 
     public static class MyMigratingSettings implements LoadableConfig
@@ -166,7 +165,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldBeAbleToAugmentConfig() throws Exception
+    public void shouldBeAbleToAugmentConfig()
     {
         // Given
         Config config = Config();
@@ -181,7 +180,7 @@ public class ConfigTest
     }
 
     @Test
-    public void augmentAnotherConfig() throws Exception
+    public void augmentAnotherConfig()
     {
         Config config = Config();
         config.augment( MySettingsWithDefaults.hello, "Hi" );
@@ -248,7 +247,6 @@ public class ConfigTest
 
     @Test
     public void shouldSetInternalParameter()
-            throws Exception
     {
         // Given
         Config config = Config.builder()
@@ -264,7 +262,6 @@ public class ConfigTest
 
     @Test
     public void shouldSetDocumentedDefaultValue()
-            throws Exception
     {
         // Given
         Config config = Config.builder()
@@ -282,7 +279,7 @@ public class ConfigTest
     }
 
     @Test
-    public void validatorsShouldBeCalledWhenBuilding() throws Exception
+    public void validatorsShouldBeCalledWhenBuilding()
     {
         // Should not throw
         Config.builder()
@@ -326,7 +323,7 @@ public class ConfigTest
     }
 
     @Test
-    public void isConfigured() throws Exception
+    public void isConfigured()
     {
         Config config = Config();
         assertFalse( config.isConfigured( MySettingsWithDefaults.hello ) );
@@ -335,7 +332,7 @@ public class ConfigTest
     }
 
     @Test
-    public void isConfiguredShouldNotReturnTrueEvenThoughDefaultValueExists() throws Exception
+    public void isConfiguredShouldNotReturnTrueEvenThoughDefaultValueExists()
     {
         Config config = Config();
         assertFalse( config.isConfigured( MySettingsWithDefaults.hello ) );
@@ -343,7 +340,7 @@ public class ConfigTest
     }
 
     @Test
-    public void withConnectorsDisabled() throws Exception
+    public void withConnectorsDisabled()
     {
         Connector httpConnector = new HttpConnector();
         Connector boltConnector = new BoltConnector();
@@ -358,7 +355,7 @@ public class ConfigTest
     }
 
     @Test
-    public void augmentDefaults() throws Exception
+    public void augmentDefaults()
     {
         Config config = Config();
         assertEquals( "Hello, World!", config.get( MySettingsWithDefaults.hello ) );
@@ -373,7 +370,7 @@ public class ConfigTest
     }
 
     @Test
-    public void updateDynamicShouldLogChanges() throws Exception
+    public void updateDynamicShouldLogChanges()
     {
         String settingName = MyDynamicSettings.boolSetting.name();
         String changedMessage = "Setting changed: '%s' changed from '%s' to '%s' via '%s'";
@@ -394,7 +391,7 @@ public class ConfigTest
     }
 
     @Test
-    public void updateDynamicShouldThrowIfSettingIsNotDynamic() throws Exception
+    public void updateDynamicShouldThrowIfSettingIsNotDynamic()
     {
         Config config = Config.builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
         expect.expect( IllegalArgumentException.class );
@@ -402,7 +399,7 @@ public class ConfigTest
     }
 
     @Test
-    public void updateDynamicShouldInformRegisteredListeners() throws Exception
+    public void updateDynamicShouldInformRegisteredListeners()
     {
         Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         AtomicInteger counter = new AtomicInteger( 0 );
@@ -417,7 +414,7 @@ public class ConfigTest
     }
 
     @Test
-    public void updateDynamicShouldNotAllowInvalidSettings() throws Exception
+    public void updateDynamicShouldNotAllowInvalidSettings()
     {
         Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         expect.expect( InvalidSettingException.class );
@@ -425,7 +422,7 @@ public class ConfigTest
     }
 
     @Test
-    public void registeringUpdateListenerOnNonDynamicSettingMustThrow() throws Exception
+    public void registeringUpdateListenerOnNonDynamicSettingMustThrow()
     {
         Config config = Config.builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
         expect.expect( IllegalArgumentException.class );
@@ -433,7 +430,7 @@ public class ConfigTest
     }
 
     @Test
-    public void updateDynamicShouldLogExceptionsFromUpdateListeners() throws Exception
+    public void updateDynamicShouldLogExceptionsFromUpdateListeners()
     {
         Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         IllegalStateException exception = new IllegalStateException( "Boo" );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -206,7 +206,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void shouldReportIndexExists() throws Exception
+    public void shouldReportIndexExists()
     {
         // given
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
@@ -221,7 +221,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void shouldReportIndexExistsWithMatchingConfiguration() throws Exception
+    public void shouldReportIndexExistsWithMatchingConfiguration()
     {
         // given
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
@@ -237,7 +237,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void shouldThrowOnIndexExistsWithMismatchingConfiguration() throws Exception
+    public void shouldThrowOnIndexExistsWithMismatchingConfiguration()
     {
         // given
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();
@@ -263,7 +263,7 @@ public class ExplicitIndexTransactionStateImplTest
     }
 
     @Test
-    public void shouldReportIndexDoesNotExist() throws Exception
+    public void shouldReportIndexDoesNotExist()
     {
         // given
         ExplicitIndexTransactionStateImpl state = newExplicitIndexTxState();

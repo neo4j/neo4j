@@ -1,27 +1,37 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.backup;
 
 import java.io.File;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import org.neo4j.backup.impl.BackupClient;
+import org.neo4j.backup.impl.BackupOutcome;
+import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.BackupServer;
+import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -99,8 +109,9 @@ public class OnlineBackup
      */
     public OnlineBackup backup( File targetDirectory )
     {
-        outcome = new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, getConsistencyCheck( true ),
-                defaultConfig(), timeoutMillis, forensics );
+        Path dir = targetDirectory.toPath();
+        outcome = new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull(
+                hostNameOrIp, port, dir, getConsistencyCheck( true ), defaultConfig(), timeoutMillis, forensics );
         return this;
     }
 
@@ -133,9 +144,9 @@ public class OnlineBackup
      */
     public OnlineBackup backup( File targetDirectory, boolean verification )
     {
-        outcome =
-                new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, getConsistencyCheck( verification ),
-                        defaultConfig(), timeoutMillis, forensics );
+        outcome = new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull(
+                hostNameOrIp, port, targetDirectory.toPath(), getConsistencyCheck( verification ), defaultConfig(),
+                timeoutMillis, forensics );
         return this;
     }
 
@@ -167,8 +178,9 @@ public class OnlineBackup
      */
     public OnlineBackup backup( File targetDirectory, Config tuningConfiguration )
     {
-        outcome = new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, getConsistencyCheck( true ),
-                tuningConfiguration, timeoutMillis, forensics );
+        outcome = new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull(
+                hostNameOrIp, port, targetDirectory.toPath(), getConsistencyCheck( true ), tuningConfiguration,
+                timeoutMillis, forensics );
         return this;
     }
 
@@ -203,9 +215,9 @@ public class OnlineBackup
      */
     public OnlineBackup backup( File targetDirectory, Config tuningConfiguration, boolean verification )
     {
-        outcome =
-                new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, getConsistencyCheck( verification ),
-                        tuningConfiguration, timeoutMillis, forensics );
+        outcome = new BackupProtocolService( out ).doIncrementalBackupOrFallbackToFull(
+                hostNameOrIp, port, targetDirectory.toPath(), getConsistencyCheck( verification ), tuningConfiguration,
+                timeoutMillis, forensics );
         return this;
     }
 
@@ -245,7 +257,7 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup full( String targetDirectory )
     {
-        outcome = new BackupProtocolService( out ).doFullBackup( hostNameOrIp, port, new File( targetDirectory ),
+        outcome = new BackupProtocolService( out ).doFullBackup( hostNameOrIp, port, Paths.get( targetDirectory ),
                 getConsistencyCheck( true ), defaultConfig(), timeoutMillis, forensics );
         return this;
     }
@@ -266,7 +278,7 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup full( String targetDirectory, boolean verification )
     {
-        outcome = new BackupProtocolService( out ).doFullBackup( hostNameOrIp, port, new File( targetDirectory ),
+        outcome = new BackupProtocolService( out ).doFullBackup( hostNameOrIp, port, Paths.get( targetDirectory ),
                 getConsistencyCheck( verification ), defaultConfig(), timeoutMillis, forensics );
         return this;
     }
@@ -289,7 +301,7 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup full( String targetDirectory, boolean verification, Config tuningConfiguration )
     {
-        outcome = new BackupProtocolService( out ).doFullBackup( hostNameOrIp, port, new File( targetDirectory ),
+        outcome = new BackupProtocolService( out ).doFullBackup( hostNameOrIp, port, Paths.get( targetDirectory ),
                 getConsistencyCheck( verification ), tuningConfiguration, timeoutMillis, forensics );
         return this;
     }
@@ -310,8 +322,9 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup incremental( String targetDirectory )
     {
-        outcome = new BackupProtocolService( out ).doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ), getConsistencyCheck( false ),
-                timeoutMillis, defaultConfig() );
+        outcome = new BackupProtocolService( out ).doIncrementalBackup(
+                hostNameOrIp, port, Paths.get( targetDirectory ), getConsistencyCheck( false ), timeoutMillis,
+                defaultConfig() );
         return this;
     }
 
@@ -332,8 +345,9 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup incremental( String targetDirectory, boolean verification )
     {
-        outcome = new BackupProtocolService( out ).doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ), getConsistencyCheck( verification ),
-                timeoutMillis, defaultConfig() );
+        outcome = new BackupProtocolService( out ).doIncrementalBackup(
+                hostNameOrIp, port, Paths.get( targetDirectory ), getConsistencyCheck( verification ), timeoutMillis,
+                defaultConfig() );
         return this;
     }
 

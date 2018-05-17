@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,13 +19,24 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.Base64;
 
 import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 public final class ArrayEncoder
 {
@@ -50,7 +61,7 @@ public final class ArrayEncoder
 
     static class ValueEncoder implements ValueWriter<RuntimeException>
     {
-        StringBuilder builder;
+        private StringBuilder builder;
 
         ValueEncoder()
         {
@@ -151,6 +162,48 @@ public final class ArrayEncoder
         }
 
         @Override
+        public void writeDuration( long months, long days, long seconds, int nanos ) throws RuntimeException
+        {
+            builder.append( DurationValue.duration( months, days, seconds, nanos ).prettyPrint() );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeDate( LocalDate localDate ) throws RuntimeException
+        {
+            builder.append( DateValue.date( localDate ).prettyPrint() );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeLocalTime( LocalTime localTime ) throws RuntimeException
+        {
+            builder.append( LocalTimeValue.localTime( localTime ).prettyPrint() );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeTime( OffsetTime offsetTime ) throws RuntimeException
+        {
+            builder.append( TimeValue.time( offsetTime ).prettyPrint() );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
+        {
+            builder.append( LocalDateTimeValue.localDateTime( localDateTime ).prettyPrint() );
+            builder.append( '|' );
+        }
+
+        @Override
+        public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
+        {
+            builder.append( DateTimeValue.datetime( zonedDateTime ).prettyPrint() );
+            builder.append( '|' );
+        }
+
+        @Override
         public void beginArray( int size, ArrayType arrayType )
         {
             if ( size > 0 )
@@ -189,6 +242,12 @@ public final class ArrayEncoder
             case CHAR: return 'L';
             case STRING: return 'L';
             case POINT: return 'P';
+            case ZONED_DATE_TIME: return 'T';
+            case LOCAL_DATE_TIME: return 'T';
+            case DATE: return 'T';
+            case ZONED_TIME: return 'T';
+            case LOCAL_TIME: return 'T';
+            case DURATION: return 'A';
             default: throw new UnsupportedOperationException( "Not supported array type: " + arrayType );
             }
         }

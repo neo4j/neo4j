@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.shell.apps;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.helpers.Service;
@@ -189,19 +190,15 @@ public class Man extends AbstractApp
         {
             Collection<String> list = new ArrayList<>();
             // TODO Shouldn't trust the server to be an AbstractAppServer
-            for ( String name : ((AbstractAppServer) server).getAllAvailableCommands() )
-            {
-                list.add( name );
-            }
+            list.addAll( Arrays.asList( ((AbstractAppServer) server).getAllAvailableCommands() ) );
             availableCommands = list;
         }
         return availableCommands;
     }
 
-    private static synchronized String availableCommandsAsString(
-        ShellServer server )
+    private static synchronized String availableCommandsAsString( ShellServer server )
     {
-        StringBuffer commands = new StringBuffer();
+        StringBuilder commands = new StringBuilder();
         for ( String command : getAvailableCommands( server ) )
         {
             if ( commands.length() > 0 )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,34 +22,31 @@ package org.neo4j.bolt.v1.runtime;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.util.ValueUtils;
-import java.util.Map;
+import java.util.Collections;
 import java.util.Optional;
 
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.time.FakeClock;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -228,7 +225,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldStartWithAutoCommitState() throws Exception
+    public void shouldStartWithAutoCommitState()
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
@@ -424,6 +421,126 @@ public class TransactionStateMachineTest
         }
     }
 
+    @Test
+    public void shouldCloseResultAndTransactionHandlesWhenExecutionFails() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        TransactionStateMachine.BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        try
+        {
+            stateMachine.run( "SOME STATEMENT", null );
+
+            fail( "exception expected" );
+        }
+        catch ( RuntimeException t )
+        {
+            assertEquals( t.getMessage(), "some error" );
+        }
+
+        assertNull( stateMachine.ctx.currentResultHandle );
+        assertNull( stateMachine.ctx.currentResult );
+        assertNull( stateMachine.ctx.currentTransaction );
+    }
+
+    @Test
+    public void shouldCloseResultAndTransactionHandlesWhenConsumeFails() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        stateMachine.run( "SOME STATEMENT", null );
+
+        assertNotNull( stateMachine.ctx.currentResultHandle );
+        assertNotNull( stateMachine.ctx.currentResult );
+
+        try
+        {
+            stateMachine.streamResult( boltResult ->
+            {
+                throw new RuntimeException( "some error" );
+            } );
+
+            fail( "exception expected" );
+        }
+        catch ( RuntimeException t )
+        {
+            assertEquals( t.getMessage(), "some error" );
+        }
+
+        assertNull( stateMachine.ctx.currentResultHandle );
+        assertNull( stateMachine.ctx.currentResult );
+        assertNull( stateMachine.ctx.currentTransaction );
+    }
+
+    @Test
+    public void shouldCloseResultHandlesWhenExecutionFailsInExplicitTransaction() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        TransactionStateMachine.BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        try
+        {
+            stateMachine.run( "BEGIN", ValueUtils.asMapValue( Collections.emptyMap() ) );
+            stateMachine.streamResult( boltResult ->
+            {
+
+            });
+            stateMachine.run( "SOME STATEMENT", null );
+
+            fail( "exception expected" );
+        }
+        catch ( RuntimeException t )
+        {
+            assertEquals( t.getMessage(), "some error" );
+        }
+
+        assertNull( stateMachine.ctx.currentResultHandle );
+        assertNull( stateMachine.ctx.currentResult );
+        assertNotNull( stateMachine.ctx.currentTransaction );
+    }
+
+    @Test
+    public void shouldCloseResultHandlesWhenConsumeFailsInExplicitTransaction() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        stateMachine.run( "BEGIN", ValueUtils.asMapValue( Collections.emptyMap() ) );
+        stateMachine.streamResult( boltResult ->
+        {
+
+        });
+        stateMachine.run( "SOME STATEMENT", null );
+
+        assertNotNull( stateMachine.ctx.currentResultHandle );
+        assertNotNull( stateMachine.ctx.currentResult );
+
+        try
+        {
+            stateMachine.streamResult( boltResult ->
+            {
+                throw new RuntimeException( "some error" );
+            } );
+
+            fail( "exception expected" );
+        }
+        catch ( RuntimeException t )
+        {
+            assertEquals( t.getMessage(), "some error" );
+        }
+
+        assertNull( stateMachine.ctx.currentResultHandle );
+        assertNull( stateMachine.ctx.currentResult );
+        assertNotNull( stateMachine.ctx.currentTransaction );
+    }
+
     private static KernelTransaction newTransaction()
     {
         KernelTransaction transaction = mock( KernelTransaction.class );
@@ -457,9 +574,10 @@ public class TransactionStateMachineTest
         TransactionStateMachine.BoltResultHandle resultHandle = newResultHandle();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( mock( KernelTransaction.class ) );
-        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any() ) ).thenReturn( resultHandle );
-        when( stateMachineSPI.executeQuery( any(), any(), eq( "FAIL" ), any(), any() ) ).thenThrow( new TransactionTerminatedException( failureStatus ) );
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( kernelTransaction );
+        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.executeQuery( any(), any(), eq( "FAIL" ), any() ) ).thenThrow( new TransactionTerminatedException( failureStatus ) );
 
         return stateMachineSPI;
     }
@@ -470,7 +588,18 @@ public class TransactionStateMachineTest
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
         when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any() ) ).thenReturn( resultHandle );
+
+        return stateMachineSPI;
+    }
+
+    private static TransactionStateMachineSPI newTransactionStateMachineSPI( KernelTransaction transaction,
+            TransactionStateMachine.BoltResultHandle resultHandle ) throws KernelException
+    {
+        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
+
+        when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
     }
@@ -480,6 +609,15 @@ public class TransactionStateMachineTest
         TransactionStateMachine.BoltResultHandle resultHandle = mock( TransactionStateMachine.BoltResultHandle.class );
 
         when( resultHandle.start() ).thenReturn( BoltResult.EMPTY );
+
+        return resultHandle;
+    }
+
+    private static TransactionStateMachine.BoltResultHandle newResultHandle( Throwable t ) throws KernelException
+    {
+        TransactionStateMachine.BoltResultHandle resultHandle = mock( TransactionStateMachine.BoltResultHandle.class );
+
+        when( resultHandle.start() ).thenThrow( t );
 
         return resultHandle;
     }

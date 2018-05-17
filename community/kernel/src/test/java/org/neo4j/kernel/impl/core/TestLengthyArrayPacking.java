@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,7 +35,7 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     private static final String SOME_MIXED_CHARS = "abc421#¤åäö(/&€";
     private static final String SOME_LATIN_1_CHARS = "abcdefghijklmnopqrstuvwxyz";
     @Test
-    public void bitPackingOfLengthyArrays() throws Exception
+    public void bitPackingOfLengthyArrays()
     {
         long arrayRecordsBefore = dynamicArrayRecordsInUse();
 
@@ -59,21 +59,21 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     // Tests for strings, although the test class name suggests otherwise
 
     @Test
-    public void makeSureLongLatin1StringUsesOneBytePerChar() throws Exception
+    public void makeSureLongLatin1StringUsesOneBytePerChar()
     {
         String string = stringOfLength( SOME_LATIN_1_CHARS, DEFAULT_DATA_BLOCK_SIZE * 2 - 1 );
         makeSureRightAmountOfDynamicRecordsUsed( string, 2, STRING_RECORD_COUNTER );
     }
 
     @Test
-    public void makeSureLongUtf8StringUsesLessThanTwoBytesPerChar() throws Exception
+    public void makeSureLongUtf8StringUsesLessThanTwoBytesPerChar()
     {
         String string = stringOfLength( SOME_MIXED_CHARS, DEFAULT_DATA_BLOCK_SIZE + 10 );
         makeSureRightAmountOfDynamicRecordsUsed( string, 2, STRING_RECORD_COUNTER );
     }
 
     @Test
-    public void makeSureLongLatin1StringArrayUsesOneBytePerChar() throws Exception
+    public void makeSureLongLatin1StringArrayUsesOneBytePerChar()
     {
         // Exactly 120 bytes: 5b header + (19+4)*5. w/o compression 5+(19*2 + 4)*5
         String[] stringArray = new String[5];
@@ -85,7 +85,7 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void makeSureLongUtf8StringArrayUsesLessThanTwoBytePerChar() throws Exception
+    public void makeSureLongUtf8StringArrayUsesLessThanTwoBytePerChar()
     {
         String[] stringArray = new String[7];
         for ( int i = 0; i < stringArray.length; i++ )
@@ -96,7 +96,7 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     }
 
     private void makeSureRightAmountOfDynamicRecordsUsed( Object value, int expectedAddedDynamicRecords,
-            DynamicRecordCounter recordCounter ) throws Exception
+            DynamicRecordCounter recordCounter )
     {
         long stringRecordsBefore = recordCounter.count();
         Node node = getGraphDb().createNode();

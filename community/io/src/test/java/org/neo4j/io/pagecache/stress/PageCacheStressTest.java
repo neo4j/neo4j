@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,8 +29,8 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -87,9 +87,8 @@ public class PageCacheStressTest
         {
             PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
             swapperFactory.open( fs, Configuration.EMPTY );
-
             try ( PageCache pageCacheUnderTest = new MuninnPageCache(
-                    swapperFactory, numberOfCachePages, tracer, pageCursorTracerSupplier ) )
+                    swapperFactory, numberOfCachePages, tracer, pageCursorTracerSupplier, EmptyVersionContextSupplier.EMPTY ) )
             {
                 PageCacheStresser pageCacheStresser =
                         new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );
@@ -106,7 +105,7 @@ public class PageCacheStressTest
         int numberOfCachePages = 1000;
 
         PageCacheTracer tracer = NULL;
-        PageCursorTracerSupplier pageCursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
+        PageCursorTracerSupplier pageCursorTracerSupplier = PageCursorTracerSupplier.NULL;
         Condition condition;
 
         File workingDirectory;
@@ -151,6 +150,12 @@ public class PageCacheStressTest
         public Builder withWorkingDirectory( File workingDirectory )
         {
             this.workingDirectory = workingDirectory;
+            return this;
+        }
+
+        public Builder withPageCursorTracerSupplier( PageCursorTracerSupplier cursorTracerSupplier )
+        {
+            this.pageCursorTracerSupplier = cursorTracerSupplier;
             return this;
         }
     }

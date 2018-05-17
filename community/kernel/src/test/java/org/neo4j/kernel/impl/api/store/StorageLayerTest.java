@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,12 +30,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.LockTracer;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -66,8 +66,8 @@ public abstract class StorageLayerTest
         db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         this.disk = resolver.resolveDependency( StorageEngine.class ).storeReadLayer();
-        this.state = new KernelStatement( null, null, disk.newStatement(), new Procedures(), new CanWrite(),
-                LockTracer.NONE, null );
+        this.state = new KernelStatement( null, null, disk.newStatement(),
+                LockTracer.NONE, null, new ClockContext(), EmptyVersionContextSupplier.EMPTY );
     }
 
     protected GraphDatabaseService createGraphDatabase()
@@ -97,34 +97,31 @@ public abstract class StorageLayerTest
 
     protected int labelId( Label label )
     {
-        try ( Transaction ignored = db.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignored = db.beginTx() )
         {
-            return statement.readOperations().labelGetForName( label.name() );
+            return ktx().tokenRead().nodeLabel( label.name() );
         }
     }
 
     protected int relationshipTypeId( RelationshipType type )
     {
-        try ( Transaction ignored = db.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignored = db.beginTx() )
         {
-            return statement.readOperations().relationshipTypeGetForName( type.name() );
+            return ktx().tokenRead().relationshipType( type.name() );
         }
     }
 
     protected int propertyKeyId( String propertyKey )
     {
-        try ( Transaction ignored = db.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignored = db.beginTx() )
         {
-            return statement.readOperations().propertyKeyGetForName( propertyKey );
+            return ktx().tokenRead().propertyKey( propertyKey );
         }
     }
 
-    protected Statement statement()
+    protected KernelTransaction ktx()
     {
         DependencyResolver dependencyResolver = db.getDependencyResolver();
-        return dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
+        return dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 }

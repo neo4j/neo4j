@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +37,7 @@ import java.util.function.Consumer;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -100,7 +100,7 @@ public class StorePropertyCursorTest
             new Object[]{"alongershortstring", PropertyType.SHORT_STRING},
             new Object[]{"areallylongshortstringbutstillnotsobig", PropertyType.SHORT_STRING},
             new Object[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 1.234, 4.321 ), PropertyType.GEOMETRY},
-            new Object[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.234, 4.321, -6.543 ), PropertyType.GEOMETRY},
+            new Object[]{Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1.234, 4.321, -6.543 ), PropertyType.GEOMETRY},
             new Object[]{new double[]{0.0d}, PropertyType.SHORT_ARRAY},
             new Object[]{new double[]{1.2d}, PropertyType.SHORT_ARRAY},
             new Object[]{new double[]{1.2d, 1.4d}, PropertyType.SHORT_ARRAY},
@@ -113,8 +113,8 @@ public class StorePropertyCursorTest
                     Values.pointValue( CoordinateReferenceSystem.WGS84, 4.321, -6.543 )
             }, PropertyType.ARRAY},
             new Object[]{new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 3.987, 1.234, 4.321 ),
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.234, 4.321, -6.543 )
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 3.987, 1.234, 4.321 ),
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1.234, 4.321, -6.543 )
             }, PropertyType.ARRAY},
 
             new Object[]{"thisisaveryveryveryverylongstringwhichisnotgonnafiteverintothepropertyblock",
@@ -268,7 +268,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnTheCursorToTheCacheOnClose() throws Throwable
+        public void shouldReturnTheCursorToTheCacheOnClose()
         {
             // given
             StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
@@ -294,7 +294,7 @@ public class StorePropertyCursorTest
         protected static PropertyStore propertyStore;
 
         @BeforeClass
-        public static void setUp() throws IOException
+        public static void setUp()
         {
             pageCache = pageCacheRule.getPageCache( fsRule.get() );
             EphemeralFileSystemAbstraction fs = fsRule.get();
@@ -307,20 +307,21 @@ public class StorePropertyCursorTest
             Config config = Config.defaults();
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             NullLogProvider logProvider = NullLogProvider.getInstance();
-            neoStores = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider )
+            neoStores = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider,
+                    EmptyVersionContextSupplier.EMPTY )
                     .openAllNeoStores( true );
             propertyStore = neoStores.getPropertyStore();
         }
 
         @AfterClass
-        public static void tearDown() throws IOException
+        public static void tearDown()
         {
             neoStores.close();
             pageCache.close();
         }
 
         @Test
-        public void ignore() throws Exception
+        public void ignore()
         {
             // JUnit gets confused if this class has no method with the @Test annotation.
             // This is also why this class is not abstract.
@@ -343,7 +344,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnAProperty() throws Throwable
+        public void shouldReturnAProperty()
         {
             // given
             int keyId = 11;
@@ -403,7 +404,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnAPropertyBySkippingOne() throws Throwable
+        public void shouldReturnAPropertyBySkippingOne()
         {
             // given
             int keyId1 = 11;
@@ -435,7 +436,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnTwoProperties() throws Throwable
+        public void shouldReturnTwoProperties()
         {
             // given
             int keyId1 = 11;
@@ -485,7 +486,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReuseCorrectlyCursor() throws Throwable
+        public void shouldReuseCorrectlyCursor()
         {
             // given
             int keyId = 11;

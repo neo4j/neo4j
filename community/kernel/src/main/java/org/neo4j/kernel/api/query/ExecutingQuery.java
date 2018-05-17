@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -63,6 +63,7 @@ public class ExecutingQuery
     @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
     private final String threadExecutingTheQueryName;
     private final LongSupplier activeLockCount;
+    private final long initialActiveLocks;
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
     private final HeapAllocation heapAllocation;
@@ -104,6 +105,7 @@ public class ExecutingQuery
         this.queryParameters = queryParameters;
         this.transactionAnnotationData = transactionAnnotationData;
         this.activeLockCount = activeLockCount;
+        this.initialActiveLocks = activeLockCount.getAsLong();
         this.threadExecutingTheQueryId = threadExecutingTheQueryId;
         this.threadExecutingTheQueryName = threadExecutingTheQueryName;
         this.cpuClock = cpuClock;
@@ -161,8 +163,9 @@ public class ExecutingQuery
         // guarded by barrier - like planningDoneNanos
         PlannerInfo planner = status.isPlanning() ? null : this.plannerInfo;
         List<ActiveLock> waitingOnLocks = status.isWaitingOnLocks() ? status.waitingOnLocks() : Collections.emptyList();
+        // activeLockCount is not atomic to capture, so we capture it after the most sensitive part.
+        long totalActiveLocks = this.activeLockCount.getAsLong();
         // just needs to be captured at some point...
-        long activeLockCount = this.activeLockCount.getAsLong();
         long heapAllocatedBytes = heapAllocation.allocatedBytes( threadExecutingTheQueryId );
         PageCounterValues pageCounters = new PageCounterValues( pageCursorCounters );
 
@@ -188,7 +191,7 @@ public class ExecutingQuery
                 status.name(),
                 status.toMap( currentTimeNanos ),
                 waitingOnLocks,
-                activeLockCount,
+                totalActiveLocks - initialActiveLocks,
                 heapAllocatedBytes
         );
     }

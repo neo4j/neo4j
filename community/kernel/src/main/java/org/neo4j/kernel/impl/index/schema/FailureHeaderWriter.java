@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,7 +46,7 @@ class FailureHeaderWriter implements Consumer<PageCursor>
     public void accept( PageCursor cursor )
     {
         byte[] bytesToWrite = failureBytes;
-        cursor.putByte( NativeSchemaNumberIndexPopulator.BYTE_FAILED );
+        cursor.putByte( NativeSchemaIndexPopulator.BYTE_FAILED );
         int availableSpace = cursor.getCurrentPageSize() - cursor.getOffset();
         if ( bytesToWrite.length + HEADER_LENGTH_FIELD_LENGTH > availableSpace )
         {

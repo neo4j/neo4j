@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -52,7 +52,7 @@ public class MapWrappingWriter extends MappingWriter
     @Override
     protected ListWriter newList( String type, String key )
     {
-        List<Object> list = new ArrayList<Object>();
+        List<Object> list = new ArrayList<>();
         data.put( key, list );
         return new ListWrappingWriter( list, interactive );
     }
@@ -60,7 +60,7 @@ public class MapWrappingWriter extends MappingWriter
     @Override
     protected MappingWriter newMapping( String type, String key )
     {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         data.put( key, map );
         return new MapWrappingWriter( map, interactive );
     }

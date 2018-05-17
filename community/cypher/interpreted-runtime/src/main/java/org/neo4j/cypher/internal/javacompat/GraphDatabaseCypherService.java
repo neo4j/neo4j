@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,10 +28,10 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -53,46 +53,16 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     }
 
     @Override
-    public Node createNode()
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
     {
-        return graph.createNode();
+        return graph.beginTransaction( type, loginContext );
     }
 
     @Override
-    public Long createNodeId()
-    {
-        return graph.createNodeId();
-    }
-
-    @Override
-    public Node createNode( Label... labels )
-    {
-        return graph.createNode( labels );
-    }
-
-    @Override
-    public Node getNodeById( long id )
-    {
-        return graph.getNodeById( id );
-    }
-
-    @Override
-    public Relationship getRelationshipById( long id )
-    {
-        return graph.getRelationshipById( id );
-    }
-
-    @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
-    {
-        return graph.beginTransaction( type, securityContext );
-    }
-
-    @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext,
             long timeout, TimeUnit unit )
     {
-        return graph.beginTransaction( type, securityContext, timeout, unit );
+        return graph.beginTransaction( type, loginContext, timeout, unit );
     }
 
     @Override

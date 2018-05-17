@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,19 +32,20 @@ public class CombiningIterable<T> implements Iterable<T>
 {
     private Iterable<Iterable<T>> iterables;
 
-    public CombiningIterable( Iterable<Iterable<T>> iterables )
+    @SuppressWarnings( "unchecked" )
+    public <INNER extends Iterable<T>> CombiningIterable( Iterable<INNER> iterables )
     {
-        this.iterables = iterables;
+        this.iterables = (Iterable) iterables;
     }
 
     @Override
     public Iterator<T> iterator()
     {
-        LinkedList<Iterator<T>> iterators = new LinkedList<Iterator<T>>();
+        LinkedList<Iterator<T>> iterators = new LinkedList<>();
         for ( Iterable<T> iterable : iterables )
         {
             iterators.add( iterable.iterator() );
         }
-        return new CombiningIterator<T>( iterators );
+        return new CombiningIterator<>( iterators );
     }
 }

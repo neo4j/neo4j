@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,6 +36,7 @@ import org.neo4j.commandline.arguments.Arguments;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -52,7 +53,7 @@ public class HelpCommandTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void printsUnknownCommandWhenUnknownCommandIsProvided() throws Exception
+    public void printsUnknownCommandWhenUnknownCommandIsProvided()
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         when( commandLocator.getAllProviders() ).thenReturn( Collections.EMPTY_LIST );
@@ -63,6 +64,7 @@ public class HelpCommandTest
         try
         {
             helpCommand.execute( "foobar" );
+            fail();
         }
         catch ( IncorrectUsage e )
         {
@@ -71,7 +73,7 @@ public class HelpCommandTest
     }
 
     @Test
-    public void printsAvailableCommandsWhenUnknownCommandIsProvided() throws Exception
+    public void printsAvailableCommandsWhenUnknownCommandIsProvided()
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         ArrayList<AdminCommand.Provider> mockCommands = new ArrayList<AdminCommand.Provider>()
@@ -88,6 +90,7 @@ public class HelpCommandTest
         try
         {
             helpCommand.execute( "foobar" );
+            fail();
         }
         catch ( IncorrectUsage e )
         {
@@ -125,7 +128,7 @@ public class HelpCommandTest
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
                             "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "available commands:%n" +
@@ -169,7 +172,7 @@ public class HelpCommandTest
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
                             "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "This is a description of the foobar command.%n" +

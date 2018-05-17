@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -136,14 +136,9 @@ public class DefaultCacheAccess implements CacheAccess
         @Override
         public boolean withinBounds( long id )
         {
-            if ( recordsPerCPU == 0 )
-            {
-                // We haven't split the id space into segments per thread
-                return true;
-            }
-
-            return id >= threadIndex * recordsPerCPU &&
-                   id < (threadIndex + 1) * recordsPerCPU;
+            return recordsPerCPU == 0 ||  // We haven't split the id space into segments per thread
+                    id >= threadIndex * recordsPerCPU &&
+                    id < (threadIndex + 1) * recordsPerCPU;
         }
 
         @Override

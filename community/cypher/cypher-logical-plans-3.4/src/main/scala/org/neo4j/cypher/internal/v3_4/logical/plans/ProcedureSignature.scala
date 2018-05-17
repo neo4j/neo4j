@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import java.util
-
-import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UnresolvedCall
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
 
 case class ProcedureSignature(name: QualifiedName,
@@ -31,7 +29,8 @@ case class ProcedureSignature(name: QualifiedName,
                               deprecationInfo: Option[String],
                               accessMode: ProcedureAccessMode,
                               description: Option[String] = None,
-                              warning: Option[String] = None) {
+                              warning: Option[String] = None,
+                              id: Option[Int] = None) {
 
   def outputFields = outputSignature.getOrElse(Seq.empty)
 
@@ -49,13 +48,15 @@ case class UserFunctionSignature(name: QualifiedName,
                                  deprecationInfo: Option[String],
                                  allowed: Array[String],
                                  description: Option[String],
-                                 isAggregate: Boolean) {
+                                 isAggregate: Boolean,
+                                 id: Option[Int] = None) {
   override def toString = s"$name(${inputSignature.mkString(", ")}) :: ${outputType.toNeoTypeString}"
 }
 
 object QualifiedName {
   def apply(unresolved: UnresolvedCall): QualifiedName =
     QualifiedName(unresolved.procedureNamespace.parts, unresolved.procedureName.name)
+
   def apply(unresolved: FunctionInvocation): QualifiedName =
     QualifiedName(unresolved.namespace.parts, unresolved.functionName.name)
 }

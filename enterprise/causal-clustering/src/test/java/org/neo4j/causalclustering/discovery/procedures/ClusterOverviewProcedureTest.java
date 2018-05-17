@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.discovery.procedures;
 
@@ -31,24 +34,26 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
+import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.causalclustering.discovery.TestTopology.addressesForCore;
 import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplica;
-import static org.neo4j.causalclustering.discovery.TestTopology.adressesForCore;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ClusterOverviewProcedureTest
@@ -64,9 +69,9 @@ public class ClusterOverviewProcedureTest
         MemberId follower1 = new MemberId( UUID.randomUUID() );
         MemberId follower2 = new MemberId( UUID.randomUUID() );
 
-        coreMembers.put( theLeader, adressesForCore( 0 ) );
-        coreMembers.put( follower1, adressesForCore( 1 ) );
-        coreMembers.put( follower2, adressesForCore( 2 ) );
+        coreMembers.put( theLeader, addressesForCore( 0 ) );
+        coreMembers.put( follower1, addressesForCore( 1 ) );
+        coreMembers.put( follower2, addressesForCore( 2 ) );
 
         Map<MemberId,ReadReplicaInfo> replicaMembers = new HashMap<>();
         MemberId replica4 = new MemberId( UUID.randomUUID() );
@@ -75,28 +80,31 @@ public class ClusterOverviewProcedureTest
         replicaMembers.put( replica4, addressesForReadReplica( 4 ) );
         replicaMembers.put( replica5, addressesForReadReplica( 5 ) );
 
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( replicaMembers ) );
+        Map<MemberId,RoleInfo> roleMap = new HashMap<>();
+        roleMap.put( theLeader, RoleInfo.LEADER );
+        roleMap.put( follower1, RoleInfo.FOLLOWER );
+        roleMap.put( follower2, RoleInfo.FOLLOWER );
 
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( theLeader );
+        when( topologyService.allCoreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
+        when( topologyService.allReadReplicas() ).thenReturn( new ReadReplicaTopology( replicaMembers ) );
+        when( topologyService.allCoreRoles() ).thenReturn( roleMap );
 
         ClusterOverviewProcedure procedure =
-                new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
+                new ClusterOverviewProcedure( topologyService, NullLogProvider.getInstance() );
 
         // when
-        final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0] );
+        final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0], null );
 
-        assertThat( members.next(), new IsRecord( theLeader.getUuid(), 5000, Role.LEADER, asSet( "core", "core0" ) ) );
+        assertThat( members.next(), new IsRecord( theLeader.getUuid(), 5000, RoleInfo.LEADER, asSet( "core", "core0" ) ) );
         assertThat( members.next(),
-                new IsRecord( follower1.getUuid(), 5001, Role.FOLLOWER, asSet( "core", "core1" ) ) );
+                new IsRecord( follower1.getUuid(), 5001, RoleInfo.FOLLOWER, asSet( "core", "core1" ) ) );
         assertThat( members.next(),
-                new IsRecord( follower2.getUuid(), 5002, Role.FOLLOWER, asSet( "core", "core2" ) ) );
+                new IsRecord( follower2.getUuid(), 5002, RoleInfo.FOLLOWER, asSet( "core", "core2" ) ) );
 
         assertThat( members.next(),
-                new IsRecord( replica4.getUuid(), 6004, Role.READ_REPLICA, asSet( "replica", "replica4" ) ) );
+                new IsRecord( replica4.getUuid(), 6004, RoleInfo.READ_REPLICA, asSet( "replica", "replica4" ) ) );
         assertThat( members.next(),
-                new IsRecord( replica5.getUuid(), 6005, Role.READ_REPLICA, asSet( "replica", "replica5" ) ) );
+                new IsRecord( replica5.getUuid(), 6005, RoleInfo.READ_REPLICA, asSet( "replica", "replica5" ) ) );
 
         assertFalse( members.hasNext() );
     }
@@ -105,21 +113,32 @@ public class ClusterOverviewProcedureTest
     {
         private final UUID memberId;
         private final int boltPort;
-        private final Role role;
+        private final RoleInfo role;
         private final Set<String> groups;
+        private final String dbName;
 
-        IsRecord( UUID memberId, int boltPort, Role role, Set<String> groups )
+        IsRecord( UUID memberId, int boltPort, RoleInfo role, Set<String> groups, String dbName )
         {
             this.memberId = memberId;
             this.boltPort = boltPort;
             this.role = role;
             this.groups = groups;
+            this.dbName = dbName;
+        }
+
+        IsRecord( UUID memberId, int boltPort, RoleInfo role, Set<String> groups )
+        {
+            this.memberId = memberId;
+            this.boltPort = boltPort;
+            this.role = role;
+            this.groups = groups;
+            this.dbName = CausalClusteringSettings.database.getDefaultValue();
         }
 
         @Override
         protected boolean matchesSafely( Object[] record )
         {
-            if ( record.length != 4 )
+            if ( record.length != 5 )
             {
                 return false;
             }
@@ -142,7 +161,12 @@ public class ClusterOverviewProcedureTest
             }
 
             Set<String> recordGroups = Iterables.asSet( (List<String>) record[3] );
-            return groups.equals( recordGroups );
+            if ( !groups.equals( recordGroups ) )
+            {
+                return false;
+            }
+
+            return dbName.equals( record[4] );
         }
 
         @Override
@@ -153,6 +177,7 @@ public class ClusterOverviewProcedureTest
                     ", boltPort=" + boltPort +
                     ", role=" + role +
                     ", groups=" + groups +
+                    ", database=" + dbName +
                     '}' );
         }
     }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -47,6 +47,7 @@ import org.neo4j.server.rest.RESTRequestGenerator;
 import org.neo4j.server.rest.RESTRequestGenerator.ResponseEntity;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -54,6 +55,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -95,7 +97,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     }
 
     @Before
-    public void setupTheDatabase() throws Exception
+    public void setupTheDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
     }
@@ -119,7 +121,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
 
         Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity() );
 
-        assertNotNull( jsonMap.containsKey( PAGED_TRAVERSE_LINK_REL ) );
+        assertThat( jsonMap.containsKey( PAGED_TRAVERSE_LINK_REL ), is( true ) );
         assertThat( String.valueOf( jsonMap.get( PAGED_TRAVERSE_LINK_REL ) ),
                 containsString( "/db/data/node/" + String.valueOf( theStartNode.getId() )
                         + "/paged/traverse/{returnType}{?pageSize,leaseTime}" ) );
@@ -132,7 +134,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
                  "options apply as for a regular traverser, meaning that +node+, +path+,\n" +
                  "or +fullpath+, can be targeted." )
     @Test
-    public void shouldPostATraverserWithDefaultOptionsAndReceiveTheFirstPageOfResults() throws Exception
+    public void shouldPostATraverserWithDefaultOptionsAndReceiveTheFirstPageOfResults()
     {
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
@@ -148,9 +150,8 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
         assertThat( entity.response()
                 .getLocation()
                 .toString(), containsString( "/db/data/node/" + theStartNode.getId() + "/paged/traverse/node/" ) );
-        assertEquals( "application/json; charset=UTF-8", entity.response()
-                .getType()
-                .toString() );
+        assertEquals( "application/json; charset=utf-8", entity.response()
+                .getType().toString().toLowerCase() );
     }
 
     @Documented( "Paging through the results of a paged traverser.\n\n" +
@@ -294,7 +295,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     @Test
     public void shouldRespondWith400OnScriptErrors()
     {
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
 
         theStartNode = createLinkedList( 1, server.getDatabase() );
 

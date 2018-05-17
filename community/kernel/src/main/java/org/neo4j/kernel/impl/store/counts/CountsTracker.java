@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -85,44 +86,17 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     public static final String TYPE_DESCRIPTOR = "CountsStore";
 
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
-            File baseFile )
+            File baseFile, VersionContextSupplier versionContextSupplier )
     {
-        this( logProvider, fs, pages, config, baseFile, Clocks.nanoClock() );
+        this( logProvider, fs, pages, config, baseFile, Clocks.nanoClock(), versionContextSupplier );
     }
 
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
-                          File baseFile, SystemNanoClock clock )
+                          File baseFile, SystemNanoClock clock, VersionContextSupplier versionContextSupplier )
     {
-        super( fs, pages, baseFile, new RotationMonitor()
-        {
-            final Log log = logProvider.getLog( CountsTracker.class );
-
-            @Override
-            public void failedToOpenStoreFile( File path, Exception error )
-            {
-                log.error( "Failed to open counts store file: " + path, error );
-            }
-
-            @Override
-            public void beforeRotation( File source, File target, Headers headers )
-            {
-            }
-
-            @Override
-            public void rotationSucceeded( File source, File target, Headers headers )
-            {
-                log.info( format( "Rotated counts store at transaction %d to [%s], from [%s].",
-                        headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
-            }
-
-            @Override
-            public void rotationFailed( File source, File target, Headers headers, Exception e )
-            {
-                log.error( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
-                        headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
-            }
-        }, new RotationTimerFactory( clock,
-                config.get( counts_store_rotation_timeout ).toMillis() ), 16, 16, HEADER_FIELDS );
+        super( fs, pages, baseFile, new CountsTrackerRotationMonitor( logProvider ),
+                new RotationTimerFactory( clock, config.get( counts_store_rotation_timeout ).toMillis() ),
+                versionContextSupplier, 16, 16, HEADER_FIELDS );
     }
 
     public CountsTracker setInitializer( final DataInitializer<Updater> initializer )
@@ -289,6 +263,41 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     protected void writeFormatSpecifier( WritableBuffer formatSpecifier )
     {
         formatSpecifier.put( 0, FORMAT );
+    }
+
+    private static class CountsTrackerRotationMonitor implements RotationMonitor
+    {
+        final Log log;
+
+        CountsTrackerRotationMonitor( LogProvider logProvider )
+        {
+            log = logProvider.getLog( CountsTracker.class );
+        }
+
+        @Override
+        public void failedToOpenStoreFile( File path, Exception error )
+        {
+            log.error( "Failed to open counts store file: " + path, error );
+        }
+
+        @Override
+        public void beforeRotation( File source, File target, Headers headers )
+        {
+        }
+
+        @Override
+        public void rotationSucceeded( File source, File target, Headers headers )
+        {
+            log.info( format( "Rotated counts store at transaction %d to [%s], from [%s].",
+                    headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
+        }
+
+        @Override
+        public void rotationFailed( File source, File target, Headers headers, Exception e )
+        {
+            log.error( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
+                    headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
+        }
     }
 
     private class DelegatingVisitor extends Visitor implements MetadataVisitor

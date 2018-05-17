@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,26 +21,40 @@ package org.neo4j.values.utils;
 
 import org.junit.Test;
 
+import java.time.ZoneOffset;
 import java.util.HashMap;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.virtual.EdgeReference;
-import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeReference;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.RelationshipReference;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.byteValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -125,11 +139,11 @@ public class PrettyPrinterTest
     public void shouldHandleEdgeReference()
     {
         // Given
-        EdgeReference edge = VirtualValues.edge( 42L );
+        RelationshipReference rel = VirtualValues.relationship( 42L );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
-        edge.writeTo( printer );
+        rel.writeTo( printer );
 
         // Then
         assertThat( printer.value(), equalTo( "-[id=42]-" ) );
@@ -141,12 +155,12 @@ public class PrettyPrinterTest
         // Given
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
         NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
-        EdgeValue edge = VirtualValues.edgeValue( 42L, startNode, endNode, stringValue( "R" ),
+        RelationshipValue rel = VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ),
                 props( "foo", intValue( 42 ), "bar", list( intValue( 1337 ), stringValue( "baz" ) ) ) );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
-        edge.writeTo( printer );
+        rel.writeTo( printer );
 
         // Then
         assertThat( printer.value(), equalTo( "-[id=42 :R {bar: [1337, \"baz\"], foo: 42}]-" ) );
@@ -157,11 +171,11 @@ public class PrettyPrinterTest
     {
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
         NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
-        EdgeValue edge = VirtualValues.edgeValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
+        RelationshipValue rel = VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
-        edge.writeTo( printer );
+        rel.writeTo( printer );
 
         // Then
         assertThat( printer.value(), equalTo( "-[id=42 :R]-" ) );
@@ -187,8 +201,8 @@ public class PrettyPrinterTest
         // Given
         NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
         NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
-        EdgeValue edge = VirtualValues.edgeValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
-        PathValue path = VirtualValues.path( new NodeValue[]{startNode, endNode}, new EdgeValue[]{edge} );
+        RelationshipValue rel = VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
+        PathValue path = VirtualValues.path( new NodeValue[]{startNode, endNode}, new RelationshipValue[]{rel} );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
@@ -310,6 +324,83 @@ public class PrettyPrinterTest
 
         // Then
         assertThat( printer.value(), equalTo( "__(ツ)__" ) );
+    }
+
+    @Test
+    public void shouldHandleDuration()
+    {
+        DurationValue duration = duration( 12, 45, 90, 9911 );
+        PrettyPrinter printer = new PrettyPrinter();
+
+        duration.writeTo( printer );
+
+        assertEquals( "{duration: {months: 12, days: 45, seconds: 90, nanos: 9911}}", printer.value() );
+    }
+
+    @Test
+    public void shouldHandleDate()
+    {
+        DateValue date = date( 1991, 9, 24 );
+        PrettyPrinter printer = new PrettyPrinter();
+
+        date.writeTo( printer );
+
+        assertEquals( "{date: \"1991-09-24\"}", printer.value() );
+    }
+
+    @Test
+    public void shouldHandleLocalTime()
+    {
+        LocalTimeValue localTime = localTime( 18, 39, 24, 111222777 );
+        PrettyPrinter printer = new PrettyPrinter();
+
+        localTime.writeTo( printer );
+
+        assertEquals( "{localTime: \"18:39:24.111222777\"}", printer.value() );
+    }
+
+    @Test
+    public void shouldHandleTime()
+    {
+        TimeValue time = time( 11, 19, 11, 123456789, ZoneOffset.ofHoursMinutes( -9, -30 ) );
+        PrettyPrinter printer = new PrettyPrinter();
+
+        time.writeTo( printer );
+
+        assertEquals( "{time: \"11:19:11.123456789-09:30\"}", printer.value() );
+    }
+
+    @Test
+    public void shouldHandleLocalDateTime()
+    {
+        LocalDateTimeValue localDateTime = localDateTime( 2015, 8, 8, 8, 40, 29, 999888111 );
+        PrettyPrinter printer = new PrettyPrinter();
+
+        localDateTime.writeTo( printer );
+
+        assertEquals( "{localDateTime: \"2015-08-08T08:40:29.999888111\"}", printer.value() );
+    }
+
+    @Test
+    public void shouldHandleDateTimeWithTimeZoneId()
+    {
+        DateTimeValue datetime = datetime( 2045, 2, 7, 12, 00, 40, 999888999, "Europe/London" );
+        PrettyPrinter printer = new PrettyPrinter();
+
+        datetime.writeTo( printer );
+
+        assertEquals( "{datetime: \"2045-02-07T12:00:40.999888999Z[Europe/London]\"}", printer.value() );
+    }
+
+    @Test
+    public void shouldHandleDateTimeWithTimeZoneOffset()
+    {
+        DateTimeValue datetime = datetime( 1988, 4, 19, 10, 12, 59, 112233445, ZoneOffset.ofHoursMinutes( 3, 15 ) );
+        PrettyPrinter printer = new PrettyPrinter();
+
+        datetime.writeTo( printer );
+
+        assertEquals( "{datetime: \"1988-04-19T10:12:59.112233445+03:15\"}", printer.value() );
     }
 
     private MapValue props( Object... keyValue )

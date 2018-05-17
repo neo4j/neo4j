@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -42,6 +42,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -104,12 +105,12 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldErrorWithNoSuchUser() throws Throwable
+    public void shouldErrorWithNoSuchUser()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "bob" );
         verify( out ).stdErrLine( "command failed: no such user: 'bob'" );
         verify( out ).exit( 1 );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     @Test
@@ -127,7 +128,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments1() throws Throwable
+    public void shouldGetUsageOnWrongArguments1()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN );
         assertNoAuthIniFile();
@@ -140,18 +141,18 @@ public class SetDefaultAdminCommandIT
         verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set size of JVM heap during command execution." ) );
+        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
         verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
         verify( out ).stdErrLine(
                 String.format( "Sets the user to become admin if users but no roles are present, for example%n" +
                         "when upgrading to neo4j 3.1 enterprise." ) );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments2() throws Throwable
+    public void shouldGetUsageOnWrongArguments2()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "foo", "bar" );
         assertNoAuthIniFile();
@@ -164,14 +165,14 @@ public class SetDefaultAdminCommandIT
         verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set size of JVM heap during command execution." ) );
+        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
         verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
         verify( out ).stdErrLine(
                 String.format( "Sets the user to become admin if users but no roles are present, for example%n" +
                         "when upgrading to neo4j 3.1 enterprise." ) );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     private void insertUser( String username, boolean initial ) throws Throwable

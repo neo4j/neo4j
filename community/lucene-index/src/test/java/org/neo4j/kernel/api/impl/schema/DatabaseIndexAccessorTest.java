@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -45,8 +45,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -76,7 +76,7 @@ public class DatabaseIndexAccessorTest
     public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Parameterized.Parameter( 0 )
-    public IndexDescriptor index;
+    public SchemaIndexDescriptor index;
     @Parameterized.Parameter( 1 )
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
 
@@ -86,8 +86,8 @@ public class DatabaseIndexAccessorTest
     private final Object value = "value";
     private final Object value2 = 40;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final IndexDescriptor GENERAL_INDEX = IndexDescriptorFactory.forLabel( 0, PROP_ID );
-    private static final IndexDescriptor UNIQUE_INDEX = IndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
+    private static final SchemaIndexDescriptor GENERAL_INDEX = SchemaIndexDescriptorFactory.forLabel( 0, PROP_ID );
+    private static final SchemaIndexDescriptor UNIQUE_INDEX = SchemaIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
     private static final Config CONFIG = Config.defaults();
 
     @Parameterized.Parameters( name = "{0}" )
@@ -123,7 +123,7 @@ public class DatabaseIndexAccessorTest
     }
 
     private static Object[] arg(
-            IndexDescriptor index,
+            SchemaIndexDescriptor index,
             IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
     {
         return new Object[]{index, foo};

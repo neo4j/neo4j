@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -51,11 +51,8 @@ public class PropertySettingStrategy
      * @param properties
      */
     public void setAllProperties( PropertyContainer entity, Map<String, Object> properties ) throws PropertyValueException
-
     {
-        Map<String, Object> propsToSet = properties == null ?
-                new HashMap<String, Object>() :
-                properties;
+        Map<String, Object> propsToSet = properties == null ? new HashMap<>() : properties;
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -157,7 +154,7 @@ public class PropertySettingStrategy
         return convertToNativeArray( (Collection<?>) value );
     }
 
-    private Object emptyArrayOfType( Class<?> cls ) throws PropertyValueException
+    private Object emptyArrayOfType( Class<?> cls )
     {
        return Array.newInstance( cls, 0);
     }

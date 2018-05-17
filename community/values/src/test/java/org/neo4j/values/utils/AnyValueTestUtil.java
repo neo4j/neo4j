@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.utils;
 
+import java.util.function.Supplier;
+
 import org.neo4j.values.AnyValue;
 
 import static org.junit.Assert.assertFalse;
@@ -29,20 +31,22 @@ public class AnyValueTestUtil
 {
     public static void assertEqual( AnyValue a, AnyValue b )
     {
-        assertTrue(
-                String.format( "%s should be equivalent to %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+        assertTrue( formatMessage( "should be equivalent to", a, b ),
                 a.equals( b ) );
         assertTrue(
-                String.format( "%s should be equivalent to %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+                formatMessage( "should be equivalent to", b, a ),
                 b.equals( a ) );
-        assertTrue(
-                String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+        assertTrue( formatMessage( "should be equal to", a, b ),
                 a.ternaryEquals( b ) );
-        assertTrue(
-                String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+        assertTrue( formatMessage( "should be equal to", b, a ),
                 b.ternaryEquals( a ) );
-        assertTrue( String.format( "%s should have same hashcode as %s", a.getClass().getSimpleName(),
-                b.getClass().getSimpleName() ), a.hashCode() == b.hashCode() );
+        assertTrue( formatMessage( "should have same hashcode as", a, b ),
+                a.hashCode() == b.hashCode() );
+    }
+
+    private static String formatMessage( String should, AnyValue a, AnyValue b )
+    {
+        return String.format( "%s(%s) %s %s(%s)", a.getClass().getSimpleName(), a.toString(), should, b.getClass().getSimpleName(), b.toString() );
     }
 
     public static void assertEqualValues( AnyValue a, AnyValue b )
@@ -67,5 +71,26 @@ public class AnyValueTestUtil
         assertFalse( b + " should not be equivalent to " + a, b.equals( a ) );
         assertNull( a + " should be incomparable to " + b, a.ternaryEquals( b ) );
         assertNull( b + " should be incomparable to " + a, b.ternaryEquals( a ) );
+    }
+
+    public static <X extends Exception, T> X assertThrows( Class<X> exception, Supplier<T> thunk )
+    {
+        T value;
+        try
+        {
+            value = thunk.get();
+        }
+        catch ( Exception e )
+        {
+            if ( exception.isInstance( e ) )
+            {
+                return exception.cast( e );
+            }
+            else
+            {
+                throw new AssertionError( "Expected " + exception.getName(), e );
+            }
+        }
+        throw new AssertionError( "Expected " + exception.getName() + " but returned: " + value );
     }
 }

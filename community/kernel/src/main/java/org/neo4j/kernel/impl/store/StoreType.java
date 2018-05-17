@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -260,10 +260,10 @@ public enum StoreType
      * @param storeFileName file name of the store file to check.
      * @return Returns whether or not store file by given file name should be managed by the page cache.
      */
-    public static boolean shouldBeManagedByPageCache( String storeFileName )
+    public static boolean canBeManagedByPageCache( String storeFileName )
     {
         boolean isLabelScanStore = NativeLabelScanStore.FILE_NAME.equals( storeFileName );
-        return isLabelScanStore || StoreType.typeOf( storeFileName ).map( StoreType::isRecordStore ).orElse( false );
+        return isLabelScanStore || StoreType.typeOf( storeFileName ).map( StoreType::isRecordStore ).orElse( Boolean.FALSE );
     }
 
     protected boolean isStoreFile( String fileName )

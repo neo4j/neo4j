@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -381,7 +381,7 @@ public class DumpCommandTest
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
                             "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "Dump a database into a single-file archive. The archive can be used by the load%n" +
@@ -396,7 +396,7 @@ public class DumpCommandTest
         }
     }
 
-    private void execute( final String database ) throws IncorrectUsage, CommandFailed, AccessDeniedException
+    private void execute( final String database ) throws IncorrectUsage, CommandFailed
     {
         new DumpCommand( homeDir, configDir, dumper )
                 .execute( new String[]{"--database=" + database, "--to=" + archive} );

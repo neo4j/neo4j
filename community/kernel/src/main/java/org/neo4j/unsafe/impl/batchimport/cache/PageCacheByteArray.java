@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -54,12 +54,26 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     @Override
     public void swap( long fromIndex, long toIndex )
     {
-        byte[] a = defaultValue.clone();
-        byte[] b = defaultValue.clone();
-        get( fromIndex, a );
-        get( toIndex, b );
-        set( fromIndex, b );
-        set( toIndex, a );
+        long fromPageId = pageId( fromIndex );
+        int fromOffset = offset( fromIndex );
+        long toPageId = pageId( toIndex );
+        int toOffset = offset( toIndex );
+        try ( PageCursor fromCursor = pagedFile.io( fromPageId, PF_SHARED_WRITE_LOCK );
+              PageCursor toCursor = pagedFile.io( toPageId, PF_SHARED_WRITE_LOCK ) )
+        {
+            fromCursor.next();
+            toCursor.next();
+            for ( int i = 0; i < entrySize; i++, fromOffset++, toOffset++ )
+            {
+                byte intermediary = fromCursor.getByte( fromOffset );
+                fromCursor.putByte( fromOffset, toCursor.getByte( toOffset ) );
+                toCursor.putByte( toOffset, intermediary );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
@@ -156,6 +170,31 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     }
 
     @Override
+    public long get5ByteLong( long index, int offset )
+    {
+        long pageId = pageId( index );
+        offset += offset( index );
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
+        {
+            cursor.next();
+            long result;
+            do
+            {
+                long low4b = cursor.getInt( offset ) & 0xFFFFFFFFL;
+                long high1b = cursor.getByte( offset + Integer.BYTES ) & 0xFF;
+                result = low4b | (high1b << Integer.SIZE);
+            }
+            while ( cursor.shouldRetry() );
+            checkBounds( cursor );
+            return result == 0xFFFFFFFFFFL ? -1 : result;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
     public long get6ByteLong( long index, int offset )
     {
         long pageId = pageId( index );
@@ -167,12 +206,12 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
             do
             {
                 long low4b = cursor.getInt( offset ) & 0xFFFFFFFFL;
-                long high2b = cursor.getShort( offset + Integer.BYTES );
+                long high2b = cursor.getShort( offset + Integer.BYTES ) & 0xFFFF;
                 result = low4b | (high2b << Integer.SIZE);
             }
             while ( cursor.shouldRetry() );
             checkBounds( cursor );
-            return result;
+            return result == 0xFFFFFFFFFFFFL ? -1 : result;
         }
         catch ( IOException e )
         {
@@ -276,6 +315,24 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     }
 
     @Override
+    public void set5ByteLong( long index, int offset, long value )
+    {
+        long pageId = pageId( index );
+        offset += offset( index );
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
+        {
+            cursor.next();
+            cursor.putInt( offset, (int) value );
+            cursor.putByte( offset + Integer.BYTES, (byte) (value >>> Integer.SIZE) );
+            checkBounds( cursor );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
     public void set6ByteLong( long index, int offset, long value )
     {
         long pageId = pageId( index );
@@ -323,12 +380,12 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
             do
             {
                 int lowWord = cursor.getShort( offset ) & 0xFFFF;
-                byte highByte = cursor.getByte( offset + Short.BYTES );
+                int highByte = cursor.getByte( offset + Short.BYTES ) & 0xFF;
                 result = lowWord | (highByte << Short.SIZE);
             }
             while ( cursor.shouldRetry() );
             checkBounds( cursor );
-            return result;
+            return result == 0xFFFFFF ? -1 : result;
         }
         catch ( IOException e )
         {

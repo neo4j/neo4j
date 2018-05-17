@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,7 +25,7 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -41,7 +41,7 @@ public class UnionIndexCapabilityTest
     private static final IndexOrder[] ORDER_CAPABILITIES_NONE = new IndexOrder[0];
 
     @Test
-    public void shouldCreateUnionOfOrderCapabilities() throws Exception
+    public void shouldCreateUnionOfOrderCapabilities()
     {
         // given
         UnionIndexCapability union;
@@ -76,7 +76,7 @@ public class UnionIndexCapabilityTest
     }
 
     @Test
-    public void shouldCreateUnionOfValueCapability() throws Exception
+    public void shouldCreateUnionOfValueCapability()
     {
         UnionIndexCapability union;
 
@@ -153,19 +153,19 @@ public class UnionIndexCapabilityTest
 
     private void assertValueCapability( UnionIndexCapability union, IndexValueCapability expectedValueCapability )
     {
-        IndexValueCapability actual = union.valueCapability( someValueGroup() );
+        IndexValueCapability actual = union.valueCapability( someValueCategory() );
         assertEquals( expectedValueCapability, actual );
     }
 
     private void assertOrderCapability( UnionIndexCapability union, IndexOrder... expected )
     {
-        IndexOrder[] actual = union.orderCapability( someValueGroup() );
+        IndexOrder[] actual = union.orderCapability( someValueCategory() );
         assertTrue( "Actual contains all expected", ArrayUtil.containsAll( expected, actual ) );
         assertTrue( "Actual contains nothing else than expected", ArrayUtil.containsAll( actual, expected ) );
     }
 
-    private ValueGroup someValueGroup()
+    private ValueCategory someValueCategory()
     {
-        return ValueGroup.TEXT;
+        return ValueCategory.TEXT;
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
@@ -66,7 +66,7 @@ public class IntegrityValidatorTest
     }
 
     @Test
-    public void deletingNodeWithRelationshipsIsNotAllowed() throws Exception
+    public void deletingNodeWithRelationshipsIsNotAllowed()
     {
         // Given
         NeoStores store = mock( NeoStores.class );
@@ -89,7 +89,7 @@ public class IntegrityValidatorTest
     }
 
     @Test
-    public void transactionsStartedBeforeAConstraintWasCreatedAreDisallowed() throws Exception
+    public void transactionsStartedBeforeAConstraintWasCreatedAreDisallowed()
     {
         // Given
         NeoStores store = mock( NeoStores.class );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -84,7 +84,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public void setUsers( ListSnapshot<User> usersSnapshot ) throws InvalidArgumentsException, IOException
+    public void setUsers( ListSnapshot<User> usersSnapshot ) throws InvalidArgumentsException
     {
         for ( User user : usersSnapshot.values() )
         {
@@ -109,7 +109,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
 
     @Override
     public void update( User existingUser, User updatedUser )
-            throws ConcurrentModificationException, IOException, InvalidArgumentsException
+            throws ConcurrentModificationException, IOException
     {
         // Assert input is ok
         if ( !existingUser.name().equals( updatedUser.name() ) )

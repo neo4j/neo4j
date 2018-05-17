@@ -1,21 +1,24 @@
 #
-# Copyright (c) 2002-2017 "Neo Technology,"
-# Network Engine for Objects in Lund AB [http://neotechnology.com]
+# Copyright (c) 2002-2018 "Neo4j,"
+# Neo4j Sweden AB [http://neo4j.com]
 #
-# This file is part of Neo4j.
-#
-# Neo4j is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+# This file is part of Neo4j Enterprise Edition. The included source
+# code can be redistributed and/or modified under the terms of the
+# GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+# (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+# Commons Clause, as found in the associated LICENSE.txt file.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
 #
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# Neo4j object code can be licensed independently from the source
+# under separate terms from the AGPL. Inquiries can be directed to:
+# licensing@neo4j.com
+#
+# More information is also available at:
+# https://neo4j.com/licensing/
 #
 
 Feature: ProcedureCallAcceptance
@@ -82,10 +85,10 @@ Feature: ProcedureCallAcceptance
     RETURN *
     """
     Then the result should be, in order:
-      | label | c |
-      | 'A'   | 3 |
-      | 'B'   | 3 |
-      | 'C'   | 3 |
+      | c | label |
+      | 3 | 'A'   |
+      | 3 | 'B'   |
+      | 3 | 'C'   |
     And no side effects
 
   Scenario: Standalone call to VOID procedure that takes no arguments
@@ -107,7 +110,8 @@ Feature: ProcedureCallAcceptance
     CALL test.doNothing()
     RETURN n
     """
-    Then the result should be empty
+    Then the result should be:
+      | n |
     And no side effects
 
   Scenario: In-query call to VOID procedure does not consume rows
@@ -179,7 +183,7 @@ Feature: ProcedureCallAcceptance
       | 'Berlin' | 49           |
     And no side effects
 
-  @pending
+  @ignore
   Scenario: Standalone call to procedure with implicit arguments
     Given this scenario is pending on: decision to change semantics to be in line with the explicit argument form of standalone calls
     And there exists a procedure test.my.proc(name :: STRING?, id :: INTEGER?) :: (city :: STRING?, country_code :: INTEGER?):
@@ -287,7 +291,7 @@ Feature: ProcedureCallAcceptance
       | 'close enough' |
     And no side effects
 
-  @pending
+  @ignore
   Scenario: Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
     Given this scenario is pending on: decision on number type coercion rules
     And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: STRING?):
@@ -302,7 +306,7 @@ Feature: ProcedureCallAcceptance
       | 'close enough' |
     And no side effects
 
-  @pending
+  @ignore
   Scenario: In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
     Given this scenario is pending on: decision on number type coercion rules
     And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: STRING?):

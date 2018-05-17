@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,7 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingLongFunction;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 
@@ -43,7 +43,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyItera
 public class NodeLoadingIteratorTest
 {
     @Test
-    public void shouldHandleAnEmptyIterator() throws Exception
+    public void shouldHandleAnEmptyIterator()
     {
         // given
         NodeLoadingIterator iterator = new NodeLoadingIterator( emptyIterator(), id ->
@@ -56,7 +56,7 @@ public class NodeLoadingIteratorTest
     }
 
     @Test
-    public void shouldHandleANonEmptyIterator() throws Exception
+    public void shouldHandleANonEmptyIterator()
     {
         // given
         Map<Long,Cursor<NodeItem>> map = new HashMap<>( 3 );
@@ -77,7 +77,7 @@ public class NodeLoadingIteratorTest
     }
 
     @Test
-    public void shouldHandleANonEmptyIteratorWithNotFoundEntities() throws Exception
+    public void shouldHandleANonEmptyIteratorWithNotFoundEntities()
     {
         // given
         Map<Long,Cursor<NodeItem>> map = new HashMap<>( 3 );

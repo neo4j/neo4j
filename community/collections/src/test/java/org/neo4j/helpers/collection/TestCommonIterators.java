@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -60,7 +60,7 @@ public class TestCommonIterators
     public void testCachingIterator()
     {
         Iterator<Integer> source = new RangeIterator( 8 );
-        CachingIterator<Integer> caching = new CachingIterator<Integer>( source );
+        CachingIterator<Integer> caching = new CachingIterator<>( source );
 
         try
         {
@@ -161,7 +161,7 @@ public class TestCommonIterators
     public void testPagingIterator()
     {
         Iterator<Integer> source = new RangeIterator( 24 );
-        PagingIterator<Integer> pager = new PagingIterator<Integer>( source, 10 );
+        PagingIterator<Integer> pager = new PagingIterator<>( source, 10 );
         assertEquals( 0, pager.page() );
         assertTrue( pager.hasNext() );
         assertPage( pager.nextPage(), 10, 0 );

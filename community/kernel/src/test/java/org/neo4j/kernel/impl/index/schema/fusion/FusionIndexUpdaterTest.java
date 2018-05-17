@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,37 +20,108 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.Arrays;
 
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.impl.index.schema.NativeSelector;
+import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
+import static org.neo4j.helpers.ArrayUtil.without;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.change;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.remove;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
 
+@RunWith( Parameterized.class )
 public class FusionIndexUpdaterTest
 {
-    private IndexUpdater nativeUpdater;
-    private IndexUpdater luceneUpdater;
+    private IndexUpdater[] aliveUpdaters;
+    private IndexUpdater[] updaters;
     private FusionIndexUpdater fusionIndexUpdater;
+
+    @Rule
+    public RandomRule random = new RandomRule();
+    @Parameterized.Parameters( name = "{0}" )
+    public static FusionVersion[] versions()
+    {
+        return new FusionVersion[]
+                {
+                        v00, v10, v20
+                };
+    }
+
+    @Parameterized.Parameter
+    public static FusionVersion fusionVersion;
 
     @Before
     public void setup()
     {
-        nativeUpdater = mock( IndexUpdater.class );
-        luceneUpdater = mock( IndexUpdater.class );
-        fusionIndexUpdater = new FusionIndexUpdater( nativeUpdater, luceneUpdater, new NativeSelector() );
+        initiateMocks();
+    }
+
+    private void initiateMocks()
+    {
+        int[] activeSlots = fusionVersion.aliveSlots();
+        updaters = new IndexUpdater[INSTANCE_COUNT];
+        Arrays.fill( updaters, SwallowingIndexUpdater.INSTANCE );
+        aliveUpdaters = new IndexUpdater[activeSlots.length];
+        for ( int i = 0; i < activeSlots.length; i++ )
+        {
+            IndexUpdater mock = mock( IndexUpdater.class );
+            aliveUpdaters[i] = mock;
+            switch ( activeSlots[i] )
+            {
+            case STRING:
+                updaters[STRING] = mock;
+                break;
+            case NUMBER:
+                updaters[NUMBER] = mock;
+                break;
+            case SPATIAL:
+                updaters[SPATIAL] = mock;
+                break;
+            case TEMPORAL:
+                updaters[TEMPORAL] = mock;
+                break;
+            case LUCENE:
+                updaters[LUCENE] = mock;
+                break;
+            default:
+                throw new RuntimeException();
+            }
+        }
+        fusionIndexUpdater = new FusionIndexUpdater( updaters, fusionVersion.selector() );
+    }
+
+    private void resetMocks()
+    {
+        for ( IndexUpdater updater : aliveUpdaters )
+        {
+            reset( updater );
+        }
     }
 
     /* process */
@@ -59,32 +130,24 @@ public class FusionIndexUpdaterTest
     public void processMustSelectCorrectForAdd() throws Exception
     {
         // given
-        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
-        // when
-        // ... value supported by native
-        for ( Value value : supportedByNative )
+        for ( int i = 0; i < updaters.length; i++ )
         {
-            //then
-            verifyAddWithCorrectUpdater( nativeUpdater, luceneUpdater, value );
+            for ( Value value : values[i] )
+            {
+                // then
+                verifyAddWithCorrectUpdater( orLucene( updaters[i] ), value );
+            }
         }
 
-        // when
-        // ... value not supported by native
-        for ( Value value : notSupportedByNative )
-        {
-            verifyAddWithCorrectUpdater( luceneUpdater, nativeUpdater, value );
-        }
-
-        // when
-        // ... value is composite
+        // when value is composite
         for ( Value firstValue : allValues )
         {
             for ( Value secondValue : allValues )
             {
-                verifyAddWithCorrectUpdater( luceneUpdater, nativeUpdater, firstValue, secondValue );
+                verifyAddWithCorrectUpdater( updaters[LUCENE], firstValue, secondValue );
             }
         }
     }
@@ -93,123 +156,129 @@ public class FusionIndexUpdaterTest
     public void processMustSelectCorrectForRemove() throws Exception
     {
         // given
-        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
-        // when
-        // ... value supported by native
-        for ( Value value : supportedByNative )
+        for ( int i = 0; i < updaters.length; i++ )
         {
-            //then
-            verifyRemoveWithCorrectUpdater( nativeUpdater, luceneUpdater, value );
+            for ( Value value : values[i] )
+            {
+                // then
+                verifyRemoveWithCorrectUpdater( orLucene( updaters[i] ), value );
+            }
         }
 
-        // when
-        // ... value not supported by native
-        for ( Value value : notSupportedByNative )
-        {
-            verifyRemoveWithCorrectUpdater( luceneUpdater, nativeUpdater, value );
-        }
-
-        // when
-        // ... value is composite
+        // when value is composite
         for ( Value firstValue : allValues )
         {
             for ( Value secondValue : allValues )
             {
-                verifyRemoveWithCorrectUpdater( luceneUpdater, nativeUpdater, firstValue, secondValue );
+                verifyRemoveWithCorrectUpdater( updaters[LUCENE], firstValue, secondValue );
             }
         }
     }
 
     @Test
-    public void processMustSelectCorrectForChangeSupportedByNative() throws Exception
+    public void processMustSelectCorrectForChange() throws Exception
     {
         // given
-        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
 
         // when
-        // ... before - supported
-        // ... after - supported
-        for ( Value before : supportedByNative )
+        for ( int i = 0; i < updaters.length; i++ )
         {
-            for ( Value after : supportedByNative )
+            for ( Value before : values[i] )
             {
-                verifyChangeWithCorrectUpdaterNotMixed( nativeUpdater, luceneUpdater, before, after );
+                for ( Value after : values[i] )
+                {
+                    verifyChangeWithCorrectUpdaterNotMixed( orLucene( updaters[i] ), before, after );
+                }
             }
         }
     }
 
     @Test
-    public void processMustSelectCorrectForChangeNotSupportedByNative() throws Exception
+    public void processMustSelectCorrectForChangeFromOneGroupToAnother() throws Exception
     {
-        // given
-        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
-
-        // when
-        // ... before - not supported
-        // ... after - not supported
-        for ( Value before : notSupportedByNative )
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
+        for ( int f = 0; f < values.length; f++ )
         {
-            for ( Value after : notSupportedByNative )
+            // given
+            for ( int t = 0; t < values.length; t++ )
             {
-                verifyChangeWithCorrectUpdaterNotMixed( luceneUpdater, nativeUpdater, before, after );
+                if ( f != t )
+                {
+                    // when
+                    verifyChangeWithCorrectUpdaterMixed( orLucene( updaters[f] ), orLucene( updaters[t] ), values[f], values[t] );
+                }
+                else
+                {
+                    verifyChangeWithCorrectUpdaterNotMixed( orLucene( updaters[f] ), values[f] );
+                }
+                resetMocks();
             }
         }
     }
 
-    @Test
-    public void processMustSelectCorrectForChangeFromNativeToLucene() throws Exception
+    private IndexUpdater orLucene( IndexUpdater updater )
     {
-        // given
-        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
-
-        // when
-        // ... before - supported
-        // ... after - not supported
-        verifyChangeWithCorrectUpdaterMixed( nativeUpdater, luceneUpdater, supportedByNative, notSupportedByNative );
+        return updater != SwallowingIndexUpdater.INSTANCE ? updater : updaters[LUCENE];
     }
 
-    @Test
-    public void processMustSelectCorrectForChangeFromLuceneToNative() throws Exception
-    {
-        // given
-        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
-
-        // when
-        // ... before - not supported
-        // ... after - supported
-        verifyChangeWithCorrectUpdaterMixed( luceneUpdater, nativeUpdater, notSupportedByNative, supportedByNative );
-    }
-
-    private void verifyAddWithCorrectUpdater( IndexUpdater correctPopulator, IndexUpdater wrongPopulator, Value... numberValues )
+    private void verifyAddWithCorrectUpdater( IndexUpdater correctPopulator, Value... numberValues )
             throws IndexEntryConflictException, IOException
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = add( numberValues );
         fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
-        verify( wrongPopulator, times( 0 ) ).process( update );
+        for ( IndexUpdater populator : aliveUpdaters )
+        {
+            if ( populator != correctPopulator )
+            {
+                verify( populator, never() ).process( update );
+            }
+        }
     }
 
-    private void verifyRemoveWithCorrectUpdater( IndexUpdater correctPopulator, IndexUpdater wrongPopulator, Value... numberValues )
+    private void verifyRemoveWithCorrectUpdater( IndexUpdater correctPopulator, Value... numberValues )
             throws IndexEntryConflictException, IOException
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.remove( numberValues );
         fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
-        verify( wrongPopulator, times( 0 ) ).process( update );
+        for ( IndexUpdater populator : aliveUpdaters )
+        {
+            if ( populator != correctPopulator )
+            {
+                verify( populator, never() ).process( update );
+            }
+        }
     }
 
-    private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater correctPopulator, IndexUpdater wrongPopulator, Value before,
+    private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater correctPopulator, Value before,
             Value after ) throws IndexEntryConflictException, IOException
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.change( before, after );
         fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
-        verify( wrongPopulator, times( 0 ) ).process( update );
+        for ( IndexUpdater populator : aliveUpdaters )
+        {
+            if ( populator != correctPopulator )
+            {
+                verify( populator, never() ).process( update );
+            }
+        }
+    }
+
+    private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater updater, Value[] supportedValues ) throws IndexEntryConflictException, IOException
+    {
+        for ( Value before : supportedValues )
+        {
+            for ( Value after : supportedValues )
+            {
+                verifyChangeWithCorrectUpdaterNotMixed( updater, before, after );
+            }
+        }
     }
 
     private void verifyChangeWithCorrectUpdaterMixed( IndexUpdater expectRemoveFrom, IndexUpdater expectAddTo, Value[] beforeValues,
@@ -223,11 +292,17 @@ public class FusionIndexUpdaterTest
                 Value after = afterValues[afterIndex];
 
                 IndexEntryUpdate<LabelSchemaDescriptor> change = change( before, after );
-                IndexEntryUpdate<LabelSchemaDescriptor> remove = remove( before );
-                IndexEntryUpdate<LabelSchemaDescriptor> add = add( after );
                 fusionIndexUpdater.process( change );
-                verify( expectRemoveFrom, times( afterIndex + 1 ) ).process( remove );
-                verify( expectAddTo, times( beforeIndex + 1 ) ).process( add );
+
+                if ( expectRemoveFrom != expectAddTo )
+                {
+                    verify( expectRemoveFrom, times( afterIndex + 1 ) ).process( remove( before ) );
+                    verify( expectAddTo, times( beforeIndex + 1 ) ).process( add( after ) );
+                }
+                else
+                {
+                    verify( expectRemoveFrom, times( 1 ) ).process( change( before, after ) );
+                }
             }
         }
     }
@@ -235,43 +310,41 @@ public class FusionIndexUpdaterTest
     /* close */
 
     @Test
-    public void closeMustCloseBothNativeAndLucene() throws Exception
+    public void closeMustCloseAll() throws Exception
     {
         // when
         fusionIndexUpdater.close();
 
         // then
-        verify( nativeUpdater, times( 1 ) ).close();
-        verify( luceneUpdater, times( 1 ) ).close();
+        for ( IndexUpdater updater : aliveUpdaters )
+        {
+            verify( updater, times( 1 ) ).close();
+        }
     }
 
     @Test
-    public void closeMustThrowIfLuceneThrow() throws Exception
+    public void closeMustThrowIfAnyThrow() throws Exception
     {
-        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( luceneUpdater, fusionIndexUpdater );
+        for ( IndexUpdater updater : aliveUpdaters )
+        {
+            FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updater, fusionIndexUpdater );
+            resetMocks();
+        }
     }
 
     @Test
-    public void closeMustThrowIfNativeThrow() throws Exception
+    public void closeMustCloseOthersIfAnyThrow() throws Exception
     {
-        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( nativeUpdater, fusionIndexUpdater );
+        for ( IndexUpdater updater : aliveUpdaters )
+        {
+            FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updater, fusionIndexUpdater, without( aliveUpdaters, updater ) );
+            resetMocks();
+        }
     }
 
     @Test
-    public void closeMustCloseNativeIfLuceneThrow() throws Exception
+    public void closeMustThrowIfAllThrow() throws Exception
     {
-        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( luceneUpdater, nativeUpdater, fusionIndexUpdater );
-    }
-
-    @Test
-    public void closeMustCloseLuceneIfNativeThrow() throws Exception
-    {
-        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( nativeUpdater, luceneUpdater, fusionIndexUpdater );
-    }
-
-    @Test
-    public void closeMustThrowIfBothThrow() throws Exception
-    {
-        FusionIndexTestHelp.verifyFusionCloseThrowIfBothThrow( nativeUpdater, luceneUpdater, fusionIndexUpdater );
+        FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow( fusionIndexUpdater, aliveUpdaters );
     }
 }

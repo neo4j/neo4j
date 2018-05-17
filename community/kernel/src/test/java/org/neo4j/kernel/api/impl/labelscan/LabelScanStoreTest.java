@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -95,7 +95,7 @@ public abstract class LabelScanStoreTest
     protected File dir;
 
     @Before
-    public void clearDir() throws IOException
+    public void clearDir()
     {
         dir = testDirectory.directory();
     }
@@ -114,7 +114,7 @@ public abstract class LabelScanStoreTest
             LabelScanStore.Monitor monitor );
 
     @Test
-    public void failToRetrieveWriterOnReadOnlyScanStore() throws IOException
+    public void failToRetrieveWriterOnReadOnlyScanStore()
     {
         createAndStartReadOnly();
         expectedException.expect( UnsupportedOperationException.class );
@@ -225,7 +225,7 @@ public abstract class LabelScanStoreTest
     }
 
     @Test
-    public void shouldScanSingleRange() throws Exception
+    public void shouldScanSingleRange()
     {
         // GIVEN
         int labelId1 = 1;
@@ -249,7 +249,7 @@ public abstract class LabelScanStoreTest
     }
 
     @Test
-    public void shouldScanMultipleRanges() throws Exception
+    public void shouldScanMultipleRanges()
     {
         // GIVEN
         int labelId1 = 1;
@@ -278,7 +278,7 @@ public abstract class LabelScanStoreTest
     }
 
     @Test
-    public void shouldWorkWithAFullRange() throws Exception
+    public void shouldWorkWithAFullRange()
     {
         // given
         long labelId = 0;
@@ -325,7 +325,7 @@ public abstract class LabelScanStoreTest
     }
 
     @Test
-    public void shouldSeeEntriesWhenOnlyLowestIsPresent() throws Exception
+    public void shouldSeeEntriesWhenOnlyLowestIsPresent()
     {
         // given
         long labelId = 0;
@@ -380,7 +380,7 @@ public abstract class LabelScanStoreTest
     }
 
     @Test
-    public void shouldRebuildFromScratchIfIndexMissing() throws Exception
+    public void shouldRebuildFromScratchIfIndexMissing()
     {
         // GIVEN a start of the store with existing data in it
         start( asList(

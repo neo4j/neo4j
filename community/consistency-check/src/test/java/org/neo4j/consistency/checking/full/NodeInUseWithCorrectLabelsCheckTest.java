@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -47,7 +47,7 @@ import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 public class NodeInUseWithCorrectLabelsCheckTest
 {
     @Test
-    public void shouldReportNodeNotInUse() throws Exception
+    public void shouldReportNodeNotInUse()
     {
         // given
         int nodeId = 42;
@@ -65,7 +65,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineBothDirections() throws Exception
+    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineBothDirections()
     {
         // given
         int nodeId = 42;
@@ -85,7 +85,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineIndexToStore() throws Exception
+    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreInlineIndexToStore()
     {
         // given
         int nodeId = 42;
@@ -105,7 +105,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicBothDirections() throws Exception
+    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicBothDirections()
     {
         // given
         int nodeId = 42;
@@ -129,7 +129,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicIndexToStore() throws Exception
+    public void shouldReportNodeWithoutExpectedLabelWhenLabelsAreDynamicIndexToStore()
     {
         // given
         int nodeId = 42;
@@ -201,7 +201,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
     }
 
     @Test
-    public void shouldRemainSilentWhenEverythingIsInOrder() throws Exception
+    public void shouldRemainSilentWhenEverythingIsInOrder()
     {
         // given
         int nodeId = 42;

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher.internal
 
@@ -24,17 +27,19 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{SlottedExecutionResultBuilderFactory, SlottedPipeBuilder}
+import org.neo4j.cypher.internal.compiler.v3_4.CacheCheckResult
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CacheCheckResult, CompilationPhaseTracer, Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Phase}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.ReadOnlies
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.slotted.{SlottedExecutionResultBuilderFactory, SlottedPipeBuilder}
+import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.CypherException
 import org.neo4j.cypher.internal.v3_4.logical.plans.{IndexUsage, LogicalPlan}
@@ -58,7 +63,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
 
   override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
 
-  override def description = "create interpreted execution plan"
+  override def description = "create slotted execution plan"
 
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
@@ -84,18 +89,22 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
                                                               expressionConverters = converters,
                                                               pipeBuilderFactory = pipeBuilderFactory)
+      val readOnlies = new ReadOnlies
+      from.solveds.mapTo(readOnlies, _.readOnly)
       val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(),
-                                                         from.plannerName)
+                                                         from.plannerName, readOnlies, from.cardinalities)
       val pipeInfo = executionPlanBuilder
         .build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
       val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
       val columns = from.statement().returnColumns
       val resultBuilderFactory =
         new SlottedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, physicalPlan.slotConfigurations)
-      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating,
+      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, updating,
                                                                         resultBuilderFactory,
                                                                         context.notificationLogger,
-                                                                        SlottedRuntimeName)
+                                                                        SlottedRuntimeName,
+                                                                        readOnlies,
+                                                                        from.cardinalities)
       val fingerprint = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
@@ -103,7 +112,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
 
       if (ENABLE_DEBUG_PRINTS) {
         if (!PRINT_PLAN_INFO_EARLY) {
-          // Print after execution plan building to see any occuring exceptions first
+          // Print after execution plan building to see any occurring exceptions first
           printPlanInfo(from)
           printRewrittenPlanInfo(logicalPlan)
         }
@@ -142,7 +151,8 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                      params: MapValue): InternalExecutionResult =
       runFunction(queryContext, planType, params)
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = fingerprint.isStale(lastTxId, statistics)
+    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult =
+      fingerprint.checkPlanReusability(lastTxId, statistics)
 
     override def runtimeUsed: RuntimeName = SlottedRuntimeName
   }

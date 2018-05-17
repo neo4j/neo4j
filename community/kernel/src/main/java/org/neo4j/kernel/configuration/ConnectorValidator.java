@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -37,13 +38,14 @@ import org.neo4j.graphdb.config.SettingGroup;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 public abstract class ConnectorValidator implements SettingGroup<Object>
 {
-    private static final List<String> validTypes =
+    private static final Set<String> validTypes =
             Arrays.stream( Connector.ConnectorType.values() )
                     .map( Enum::name )
-                    .collect( toList() );
+                    .collect( toSet() );
     static final String DEPRECATED_CONNECTOR_MSG =
             "Warning: connectors with names other than [http,https,bolt] are%n" +
                     "deprecated and support for them will be removed in a future%n" +

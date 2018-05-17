@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -104,7 +104,7 @@ class CoerceToTest extends CypherFunSuite {
 
   test("RELATIONSHIP") {
     testedTypes
-      .coerce(edgeValue(11L, nodeValue(11L, stringArray("L"), EMPTY_MAP), nodeValue(12L, stringArray("L"), EMPTY_MAP),
+      .coerce(relationshipValue(11L, nodeValue(11L, stringArray("L"), EMPTY_MAP), nodeValue(12L, stringArray("L"), EMPTY_MAP),
                         stringValue("T"), EMPTY_MAP))
       .to(CTAny).unchanged
       .to(CTRelationship).unchanged

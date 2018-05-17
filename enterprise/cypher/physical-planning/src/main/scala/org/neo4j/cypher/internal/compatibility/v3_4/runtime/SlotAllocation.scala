@@ -1,29 +1,34 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.{ArgumentSizes, SlotConfigurations}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration.Size
 import org.neo4j.cypher.internal.frontend.v3_4.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, IdName, NoHeaders, ShortestPathPattern}
-import org.neo4j.cypher.internal.util.v3_4.{InternalException, UnNamedNameGenerator}
+import org.neo4j.cypher.internal.ir.v3_4.{HasHeaders, NoHeaders, ShortestPathPattern}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
+import org.neo4j.cypher.internal.util.v3_4.{Foldable, InternalException, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -49,8 +54,8 @@ object SlotAllocation {
 
   case class SlotsAndArgument(slotConfiguration: SlotConfiguration, argumentSize: Size)
 
-  case class PhysicalPlan(slotConfigurations: Map[LogicalPlanId, SlotConfiguration],
-                          argumentSizes: Map[LogicalPlanId, Size])
+  case class PhysicalPlan(slotConfigurations: SlotConfigurations,
+                          argumentSizes: ArgumentSizes)
 
   /**
     * Allocate slot for every operator in the logical plan tree {@code lp}.
@@ -60,10 +65,9 @@ object SlotAllocation {
     */
   def allocateSlots(lp: LogicalPlan,
                     semanticTable: SemanticTable,
-                    initialSlotsAndArgument: Option[SlotsAndArgument] = None): PhysicalPlan = {
-
-    val allocations = new mutable.OpenHashMap[LogicalPlanId, SlotConfiguration]()
-    val arguments = new mutable.OpenHashMap[LogicalPlanId, Size]()
+                    initialSlotsAndArgument: Option[SlotsAndArgument] = None,
+                   allocations: SlotConfigurations = new SlotConfigurations,
+                   arguments: ArgumentSizes = new ArgumentSizes): PhysicalPlan = {
 
     val planStack = new mutable.Stack[(Boolean, LogicalPlan)]()
     val resultStack = new mutable.Stack[SlotConfiguration]()
@@ -72,7 +76,7 @@ object SlotAllocation {
     var comingFrom = lp
 
     def recordArgument(plan: LogicalPlan, argument: SlotsAndArgument) = {
-      arguments += plan.assignedId -> argument.argumentSize
+      arguments.set(plan.id, argument.argumentSize)
     }
 
     /**
@@ -105,7 +109,7 @@ object SlotAllocation {
           recordArgument(current, argument)
           val slotsIncludingExpressions = allocateExpressions(current, nullable, argument.slotConfiguration.copy(), allocations, arguments)(semanticTable)
           val result = allocate(current, nullable, slotsIncludingExpressions)
-          allocations += (current.assignedId -> result)
+          allocations.set(current.id, result)
           resultStack.push(result)
 
         case (Some(_), None) =>
@@ -114,7 +118,7 @@ object SlotAllocation {
                          else argumentStack.top
           val slotsIncludingExpressions = allocateExpressions(current, nullable, sourceSlots, allocations, arguments)(semanticTable)
           val result = allocate(current, nullable, slotsIncludingExpressions, recordArgument(_, argument))
-          allocations += (current.assignedId -> result)
+          allocations.set(current.id, result)
           resultStack.push(result)
 
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
@@ -138,7 +142,7 @@ object SlotAllocation {
           val lhsSlotsIncludingExpressions = allocateExpressions(current, nullable, lhsSlots, allocations, arguments, shouldAllocateLhs = true)(semanticTable)
           val rhsSlotsIncludingExpressions = allocateExpressions(current, nullable, rhsSlots, allocations, arguments, shouldAllocateLhs = false)(semanticTable)
           val result = allocate(current, nullable, lhsSlotsIncludingExpressions, rhsSlotsIncludingExpressions, recordArgument(_, argument))
-          allocations += (current.assignedId -> result)
+          allocations.set(current.id, result)
           if (isAnApplyPlan(current))
             argumentStack.pop()
           resultStack.push(result)
@@ -147,25 +151,34 @@ object SlotAllocation {
       comingFrom = current
     }
 
-    PhysicalPlan(allocations.toMap, arguments.toMap)
+    PhysicalPlan(allocations, arguments)
   }
 
   // NOTE: If we find a NestedPlanExpression within the given LogicalPlan, the slotConfigurations and argumentSizes maps will be updated
   private def allocateExpressions(lp: LogicalPlan, nullable: Boolean, slots: SlotConfiguration,
-                                  slotConfigurations: mutable.Map[LogicalPlanId, SlotConfiguration],
-                                  argumentSizes: mutable.Map[LogicalPlanId, Size],
+                                  slotConfigurations: SlotConfigurations,
+                                  argumentSizes: ArgumentSizes,
                                   shouldAllocateLhs: Boolean = true)
+                                 (semanticTable: SemanticTable): SlotConfiguration = {
+    allocateExpressionsInternal(lp, nullable, slots, slotConfigurations, argumentSizes, shouldAllocateLhs, lp.id)(semanticTable)
+  }
+
+  private def allocateExpressionsInternal(p: Foldable, nullable: Boolean, slots: SlotConfiguration,
+                                          slotConfigurations: SlotConfigurations,
+                                          argumentSizes: ArgumentSizes,
+                                          shouldAllocateLhs: Boolean = true,
+                                          planId: Id)
                                  (semanticTable: SemanticTable): SlotConfiguration = {
     case class Accumulator(slots: SlotConfiguration, doNotTraverseExpression: Option[Expression])
 
     val TRAVERSE_INTO_CHILDREN = Some((s: Accumulator) => s)
     val DO_NOT_TRAVERSE_INTO_CHILDREN = None
 
-    val result = lp.treeFold[Accumulator](Accumulator(slots, doNotTraverseExpression = None)) {
+    val result = p.treeFold[Accumulator](Accumulator(slots, doNotTraverseExpression = None)) {
       //-----------------------------------------------------
       // Logical plans
       //-----------------------------------------------------
-      case p: LogicalPlan if p.assignedId != lp.assignedId =>
+      case p: LogicalPlan if p.id != planId =>
         acc: Accumulator => (acc, DO_NOT_TRAVERSE_INTO_CHILDREN) // Do not traverse the logical plan tree! We are only looking at the given lp
 
       case ValueHashJoin(_, _, Equals(_, rhsExpression)) if shouldAllocateLhs =>
@@ -206,13 +219,17 @@ object SlotAllocation {
             val slotsAndArgument = SlotsAndArgument(argumentSlotConfiguration, Size(slots.numberOfLongs, slots.numberOfReferences))
 
             // Allocate slots for nested plan
-            val nestedPhysicalPlan = allocateSlots(e.plan, semanticTable, initialSlotsAndArgument = Some(slotsAndArgument))
+            // Pass in mutable attributes to be modified by recursive call
+            val nestedPhysicalPlan = allocateSlots(e.plan, semanticTable, initialSlotsAndArgument = Some(slotsAndArgument), slotConfigurations, argumentSizes)
 
-            // Update the physical plan
-            slotConfigurations ++= nestedPhysicalPlan.slotConfigurations
-            argumentSizes ++= nestedPhysicalPlan.argumentSizes
+            // Allocate slots for the projection expression, based on the resulting slot configuration
+            // from the inner plan
+            val nestedSlots = nestedPhysicalPlan.slotConfigurations(e.plan.id)
+            allocateExpressionsInternal(e.projection, nullable, nestedSlots, slotConfigurations, argumentSizes, shouldAllocateLhs, planId)(semanticTable)
 
-            (acc, DO_NOT_TRAVERSE_INTO_CHILDREN) // We already recursively allocated the nested plan, so do not traverse into its children
+            // Since we did allocation for nested plan and projection explicitly we do not need to traverse into children
+            // The inner slot configuration does not need to affect the accumulated result of the outer plan
+            (acc, DO_NOT_TRAVERSE_INTO_CHILDREN)
           }
         }
 
@@ -239,7 +256,7 @@ object SlotAllocation {
     lp match {
       case leaf: NodeLogicalLeafPlan =>
         val result = argument
-        result.newLong(leaf.idName.name, nullable, CTNode)
+        result.newLong(leaf.idName, nullable, CTNode)
         result
 
       case _:Argument =>
@@ -247,26 +264,26 @@ object SlotAllocation {
 
       case leaf: DirectedRelationshipByIdSeek =>
         val result = argument
-        result.newLong(leaf.idName.name, nullable, CTRelationship)
-        result.newLong(leaf.startNode.name, nullable, CTNode)
-        result.newLong(leaf.endNode.name, nullable, CTNode)
+        result.newLong(leaf.idName, nullable, CTRelationship)
+        result.newLong(leaf.startNode, nullable, CTNode)
+        result.newLong(leaf.endNode, nullable, CTNode)
         result
 
       case leaf: UndirectedRelationshipByIdSeek =>
         val result = argument
-        result.newLong(leaf.idName.name, nullable, CTRelationship)
-        result.newLong(leaf.leftNode.name, nullable, CTNode)
-        result.newLong(leaf.rightNode.name, nullable, CTNode)
+        result.newLong(leaf.idName, nullable, CTRelationship)
+        result.newLong(leaf.leftNode, nullable, CTNode)
+        result.newLong(leaf.rightNode, nullable, CTNode)
         result
 
       case leaf: NodeCountFromCountStore =>
         val result = argument
-        result.newReference(leaf.idName.name, false, CTInteger)
+        result.newReference(leaf.idName, false, CTInteger)
         result
 
       case leaf: RelationshipCountFromCountStore =>
         val result = argument
-        result.newReference(leaf.idName.name, false, CTInteger)
+        result.newReference(leaf.idName, false, CTInteger)
         result
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
@@ -302,14 +319,14 @@ object SlotAllocation {
         }
         result
 
-      case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
+      case Expand(_, _, _, _, to, relName, ExpandAll) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newLong(relName, nullable, CTRelationship)
         result.newLong(to, nullable, CTNode)
         result
 
-      case Expand(_, _, _, _, _, IdName(relName), ExpandInto) =>
+      case Expand(_, _, _, _, _, relName, ExpandInto) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newLong(relName, nullable, CTRelationship)
@@ -324,7 +341,8 @@ object SlotAllocation {
            _: Limit |
            _: Skip |
            _: Sort |
-           _: Top
+           _: Top |
+           _: ActiveRead
       =>
         source
 
@@ -341,7 +359,7 @@ object SlotAllocation {
         }
         source
 
-      case OptionalExpand(_, _, _, _, IdName(to), IdName(rel), ExpandAll, _) =>
+      case OptionalExpand(_, _, _, _, to, rel, ExpandAll, _) =>
         // Note that OptionExpand only is optional on the expand and not on incoming rows, so
         // we do not need to record the argument here.
         // A new pipeline is not strictly needed here unless we have batching/vectorization
@@ -350,7 +368,7 @@ object SlotAllocation {
         result.newLong(to, nullable = true, CTNode)
         result
 
-      case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
+      case OptionalExpand(_, _, _, _, _, rel, ExpandInto, _) =>
         // Note that OptionExpand only is optional on the expand and not on incoming rows, so
         // we do not need to record the argument here.
         // A new pipeline is not strictly needed here unless we have batching/vectorization
@@ -359,16 +377,16 @@ object SlotAllocation {
         result
 
       case VarExpand(_,
-                       IdName(from),
+                       from,
                        _,
                        _,
                        _,
-                       IdName(to),
-                       IdName(edge),
+                       to,
+                       edge,
                        _,
                        expansionMode,
-                       IdName(tempNode),
-                       IdName(tempEdge),
+                       tempNode,
+                       tempEdge,
                        _,
                        _,
                        _) =>
@@ -389,18 +407,11 @@ object SlotAllocation {
       case PruningVarExpand(_, from, _, _, to, _, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
-        result.newLong(from.name, nullable, CTNode)
-        result.newLong(to.name, nullable, CTNode)
+        result.newLong(from, nullable, CTNode)
+        result.newLong(to, nullable, CTNode)
         result
 
-      case FullPruningVarExpand(_, from, _, _, to, _, _, _) =>
-        // A new pipeline is not strictly needed here unless we have batching/vectorization
-        val result = source.copy()
-        result.newLong(from.name, nullable, CTNode)
-        result.newLong(to.name, nullable, CTNode)
-        result
-
-      case CreateNode(_, IdName(name), _, _) =>
+      case CreateNode(_, name, _, _) =>
         source.newLong(name, nullable = false, CTNode)
         source
 
@@ -408,11 +419,11 @@ object SlotAllocation {
         // The variable name should already have been allocated by the NodeLeafPlan
         source
 
-      case CreateRelationship(_, IdName(name), _, _, _, _) =>
+      case CreateRelationship(_, name, _, _, _, _) =>
         source.newLong(name, nullable = false, CTRelationship)
         source
 
-      case MergeCreateRelationship(_, IdName(name), _, _, _, _) =>
+      case MergeCreateRelationship(_, name, _, _, _, _) =>
         source.newLong(name, nullable = false, CTRelationship)
         source
 
@@ -422,7 +433,7 @@ object SlotAllocation {
       case DropResult(_) =>
         source
 
-      case UnwindCollection(_, IdName(variable), _) =>
+      case UnwindCollection(_, variable, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         val result = source.copy()
         result.newReference(variable, nullable = true, CTAny)
@@ -454,17 +465,17 @@ object SlotAllocation {
 
       case ProjectEndpoints(_, _, start, startInScope, end, endInScope, _, _, _) =>
         if (!startInScope)
-          source.newLong(start.name, nullable, CTNode)
+          source.newLong(start, nullable, CTNode)
         if (!endInScope)
-          source.newLong(end.name, nullable, CTNode)
+          source.newLong(end, nullable, CTNode)
         source
 
       case LoadCSV(_, _, variableName, NoHeaders, _, _) =>
-        source.newReference(variableName.name, nullable, CTList(CTAny))
+        source.newReference(variableName, nullable, CTList(CTAny))
         source
 
       case LoadCSV(_, _, variableName, HasHeaders, _, _) =>
-        source.newReference(variableName.name, nullable, CTMap)
+        source.newReference(variableName, nullable, CTMap)
         source
 
       case ProcedureCall(_, ResolvedCall(_, _, callResults, _, _)) =>
@@ -481,6 +492,9 @@ object SlotAllocation {
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         // TODO: Actually perform pipeline break here if needed
         allocateShortestPathPattern(shortestPathPattern, source, nullable)
+        source
+
+      case e: ErrorPlan =>
         source
 
       case p =>
@@ -505,6 +519,11 @@ object SlotAllocation {
       case _: Apply =>
         rhs
 
+      case _: TriadicSelection =>
+        // TriadicSelection is essentially a special Apply which performs filtering.
+        // All the slots are allocated by it's left and right children
+        rhs
+
       case _: AbstractSemiApply |
            _: AbstractSelectOrSemiApply =>
         lhs
@@ -513,19 +532,19 @@ object SlotAllocation {
            _: ConditionalApply =>
         rhs
 
-      case LetSemiApply(_, _, IdName(name)) =>
+      case LetSemiApply(_, _, name) =>
         lhs.newReference(name, false, CTBoolean)
         lhs
 
-      case LetAntiSemiApply(_, _, IdName(name)) =>
+      case LetAntiSemiApply(_, _, name) =>
         lhs.newReference(name, false, CTBoolean)
         lhs
 
-      case LetSelectOrSemiApply(_, _, IdName(name), _) =>
+      case LetSelectOrSemiApply(_, _, name, _) =>
         lhs.newReference(name, false, CTBoolean)
         lhs
 
-      case LetSelectOrAntiSemiApply(_, _, IdName(name), _) =>
+      case LetSelectOrAntiSemiApply(_, _, name, _) =>
         lhs.newReference(name, false, CTBoolean)
         lhs
 
@@ -541,17 +560,39 @@ object SlotAllocation {
         }
         result
 
+      case RightOuterHashJoin(nodes, _, _) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
+        recordArgument(lp)
+        val result = rhs.copy()
+        lhs.foreachSlotOrdered {
+          case (k, slot) if !nodes(k) =>
+            result.add(k, slot.asNullable)
+
+          case _ => // If the column is one of the join columns there is no need to add it again
+        }
+        result
+
+      case LeftOuterHashJoin(nodes, _, _) =>
+        // A new pipeline is not strictly needed here unless we have batching/vectorization
+        recordArgument(lp)
+        val result = lhs.copy()
+        rhs.foreachSlotOrdered {
+          case (k, slot) if !nodes(k) =>
+            result.add(k, slot.asNullable)
+
+          case _ => // If the column is one of the join columns there is no need to add it again
+        }
+        result
+
       case NodeHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val nodeKeys = nodes.map(_.name)
         val result = lhs.copy()
         rhs.foreachSlotOrdered {
-          case (k, slot) if !nodeKeys(k) =>
+          case (k, slot) if !nodes(k) =>
             result.add(k, slot)
-            // If the column is one of the join columns there is no need to add it again
 
-          case _ =>
+          case _ => // If the column is one of the join columns there is no need to add it again
         }
         result
 
@@ -567,22 +608,8 @@ object SlotAllocation {
         }
         slotConfig
 
-      case OuterHashJoin(nodes, _, _) =>
-        // A new pipeline is not strictly needed here unless we have batching/vectorization
-        recordArgument(lp)
-        val nodeKeys = nodes.map(_.name)
-        val result = lhs.copy()
-        rhs.foreachSlotOrdered {
-          case (k, slot) if !nodeKeys(k) =>
-            result.add(k, slot)
-          // If the column is one of the join columns there is no need to add it again
-
-          case _ =>
-        }
-        result
-
       case RollUpApply(_, _, collectionName, _, _) =>
-        lhs.newReference(collectionName.name, nullable, CTList(CTAny))
+        lhs.newReference(collectionName, nullable, CTList(CTAny))
         lhs
 
       case _: ForeachApply =>
@@ -629,14 +656,13 @@ object SlotAllocation {
         // The slot for the iteration variable of foreach needs to be available as an argument on the rhs of the apply
         // so we allocate it on the lhs (even though its value will not be needed after the foreach is done)
         val typeSpec = semanticTable.getActualTypeFor(listExpression)
-        if (typeSpec.contains(ListType(CTNode))) {
-          lhs.newLong(variableName, true, CTNode)
-        }
-        else if (typeSpec.contains(ListType(CTRelationship))) {
-          lhs.newLong(variableName, true, CTRelationship)
-        }
-        else {
-          lhs.newReference(variableName, true, CTAny)
+        val listOfNodes = typeSpec.contains(ListType(CTNode))
+        val listOfRels = typeSpec.contains(ListType(CTRelationship))
+
+        (listOfNodes, listOfRels) match {
+          case (true, false) => lhs.newLong(variableName, true, CTNode)
+          case (false, true) => lhs.newLong(variableName, true, CTRelationship)
+          case _ => lhs.newReference(variableName, true, CTAny)
         }
         lhs
 
@@ -662,6 +688,7 @@ object SlotAllocation {
   private def isAnApplyPlan(current: LogicalPlan): Boolean = current match {
     case _: AntiConditionalApply |
          _: Apply |
+         _: TriadicSelection |
          _: AbstractSemiApply |
          _: AbstractSelectOrSemiApply |
          _: AbstractLetSelectOrSemiApply |
@@ -677,7 +704,7 @@ object SlotAllocation {
   private def allocateShortestPathPattern(shortestPathPattern: ShortestPathPattern,
                                           slots: SlotConfiguration,
                                           nullable: Boolean) = {
-    val maybePathName = shortestPathPattern.name.map(_.name)
+    val maybePathName = shortestPathPattern.name
     val part = shortestPathPattern.expr
     val pathName = maybePathName.getOrElse(UnNamedNameGenerator.name(part.position))
     val rel = part.element match {

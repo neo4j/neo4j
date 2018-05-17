@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,6 +32,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Set;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.ssl.PkiUtils;
@@ -48,6 +49,7 @@ public class CertificatesIT
     private static File keyFile;
     private static File certFile;
     private static PkiUtils certFactory;
+    private static TransportTestUtil util;
 
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
@@ -56,7 +58,7 @@ public class CertificatesIT
         settings.put( tls_key_file.name(), keyFile.getAbsolutePath() );
         settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );
         settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).enabled.name(), "true" );
-        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).address.name(), "localhost:7878" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
     } );
 
     @Test
@@ -68,7 +70,7 @@ public class CertificatesIT
         {
             // WHEN
             connection.connect( server.lookupConnector( DEFAULT_CONNECTOR_KEY ) )
-                    .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
+                    .send( util.acceptedVersions( 1, 0, 0, 0 ) );
 
             // THEN
             Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
@@ -102,6 +104,8 @@ public class CertificatesIT
         certFile.delete();
 
         certFactory.createSelfSignedCertificate( certFile, keyFile, "my.domain" );
+
+        util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
 }

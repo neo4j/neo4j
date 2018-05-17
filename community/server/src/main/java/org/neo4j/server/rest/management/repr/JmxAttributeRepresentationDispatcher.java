@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.management.repr;
 
 import java.util.ArrayList;
-
 import javax.management.openmbean.CompositeData;
 
 import org.neo4j.server.rest.repr.ListRepresentation;
@@ -66,7 +65,7 @@ public class JmxAttributeRepresentationDispatcher extends RepresentationDispatch
 
     private Representation dispatchCompositeDataArray( CompositeData[] property, String param )
     {
-        ArrayList<Representation> values = new ArrayList<Representation>();
+        ArrayList<Representation> values = new ArrayList<>();
         for ( CompositeData value : property )
         {
             values.add( new JmxCompositeDataRepresentation( value ) );

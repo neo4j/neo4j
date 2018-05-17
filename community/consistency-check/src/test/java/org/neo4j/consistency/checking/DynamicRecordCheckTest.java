@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -56,7 +56,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordNotInUse() throws Exception
+    public void shouldNotReportAnythingForRecordNotInUse()
     {
         // given
         DynamicRecord property = notInUse( record( 42 ) );
@@ -69,7 +69,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordThatDoesNotReferenceOtherRecords() throws Exception
+    public void shouldNotReportAnythingForRecordThatDoesNotReferenceOtherRecords()
     {
         // given
         DynamicRecord property = inUse( fill( record( 42 ), blockSize / 2 ) );
@@ -82,7 +82,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordWithConsistentReferences() throws Exception
+    public void shouldNotReportAnythingForRecordWithConsistentReferences()
     {
         // given
         DynamicRecord property = inUse( fill( record( 42 ) ) );
@@ -97,7 +97,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportNextRecordNotInUse() throws Exception
+    public void shouldReportNextRecordNotInUse()
     {
         // given
         DynamicRecord property = inUse( fill( record( 42 ) ) );
@@ -113,7 +113,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportSelfReferentialNext() throws Exception
+    public void shouldReportSelfReferentialNext()
     {
         // given
         DynamicRecord property = add( inUse( fill( record( 42 ) ) ) );
@@ -128,7 +128,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportNonFullRecordWithNextReference() throws Exception
+    public void shouldReportNonFullRecordWithNextReference()
     {
         // given
         DynamicRecord property = inUse( fill( record( 42 ), blockSize - 1 ) );
@@ -144,7 +144,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportInvalidDataLength() throws Exception
+    public void shouldReportInvalidDataLength()
     {
         // given
         DynamicRecord property = inUse( record( 42 ) );
@@ -159,7 +159,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportEmptyRecord() throws Exception
+    public void shouldReportEmptyRecord()
     {
         // given
         DynamicRecord property = inUse( record( 42 ) );
@@ -173,7 +173,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportRecordWithEmptyNext() throws Exception
+    public void shouldReportRecordWithEmptyNext()
     {
         // given
         DynamicRecord property = inUse( fill( record( 42 ) ) );
@@ -189,7 +189,7 @@ public abstract class DynamicRecordCheckTest
     }
 
     @Test
-    public void shouldReportCorrectTypeBasedOnProperBitsOnly() throws Exception
+    public void shouldReportCorrectTypeBasedOnProperBitsOnly()
     {
         // given
         DynamicRecord property = inUse( record( 42 ) );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,16 +20,16 @@
 package org.neo4j.kernel.impl.locking;
 
 import java.lang.reflect.Array;
-import java.util.HashMap;
-import java.util.Map;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.helpers.Strings;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -47,7 +47,7 @@ public enum ResourceTypes implements ResourceType
     private static final boolean useStrongHashing =
             FeatureToggles.flag( ResourceTypes.class, "useStrongHashing", false );
 
-    private static final Map<Integer,ResourceType> idToType = new HashMap<>();
+    private static final PrimitiveIntObjectMap<ResourceType> idToType = Primitive.intObjectMap();
     private static final HashFunction indexEntryHash_2_2_0 = HashFunction.xorShift32();
     private static final HashFunction indexEntryHash_4_x = HashFunction.incrementalXXH64();
 

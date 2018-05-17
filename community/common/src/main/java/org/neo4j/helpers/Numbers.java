@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,6 +30,15 @@ public class Numbers
         return (short) value;
     }
 
+    public static byte safeCastIntToUnsignedByte( int value )
+    {
+        if ( (value & ~0xFF) != 0 )
+        {
+            throw new ArithmeticException( getOverflowMessage( value, "unsigned byte" ) );
+        }
+        return (byte) value;
+    }
+
     public static int safeCastLongToInt( long value )
     {
         if ( (int) value != value )
@@ -40,6 +49,15 @@ public class Numbers
     }
 
     public static short safeCastLongToShort( long value )
+    {
+        if ( (short) value != value )
+        {
+            throw new ArithmeticException( getOverflowMessage( value, Short.TYPE ) );
+        }
+        return (short) value;
+    }
+
+    public static short safeCastIntToShort( int value )
     {
         if ( (short) value != value )
         {
@@ -60,6 +78,11 @@ public class Numbers
     public static int unsignedShortToInt( short value )
     {
         return value & 0xFFFF;
+    }
+
+    public static int unsignedByteToInt( byte value )
+    {
+        return value & 0xFF;
     }
 
     private static String getOverflowMessage( long value, Class<?> clazz )

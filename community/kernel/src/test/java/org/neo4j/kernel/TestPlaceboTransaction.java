@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,18 +26,18 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -48,19 +48,18 @@ public class TestPlaceboTransaction
     private Transaction placeboTx;
     private Node resource;
     private KernelTransaction kernelTransaction;
-    private ReadOperations readOps;
+    private Locks locks;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
-        when( bridge.get() ).thenReturn( mock( Statement.class ) );
-        kernelTransaction = spy( KernelTransaction.class );
         Statement statement = mock( Statement.class );
-        readOps = mock( ReadOperations.class );
-        when( statement.readOperations() ).thenReturn( readOps );
         when( bridge.get() ).thenReturn( statement );
-        placeboTx = new PlaceboTransaction( () -> kernelTransaction, bridge );
+        kernelTransaction = spy( KernelTransaction.class );
+        locks = mock( Locks.class );
+        when(kernelTransaction.locks()).thenReturn( locks );
+        placeboTx = new PlaceboTransaction( kernelTransaction );
         resource = mock( Node.class );
         when( resource.getId() ).thenReturn( 1L );
     }
@@ -94,7 +93,7 @@ public class TestPlaceboTransaction
         placeboTx.close();
 
         // Then
-        verify( kernelTransaction, times( 0 ) ).failure();
+        verify( kernelTransaction, never() ).failure();
     }
 
     @Test
@@ -107,27 +106,27 @@ public class TestPlaceboTransaction
 
         // Then
         verify( kernelTransaction ).failure();
-        verify( kernelTransaction, times( 0 ) ).success();
+        verify( kernelTransaction, never() ).success();
     }
 
     @Test
-    public void canAcquireReadLock() throws Exception
+    public void canAcquireReadLock()
     {
         // when
         placeboTx.acquireReadLock( resource );
 
         // then
-        verify( readOps ).acquireShared( ResourceTypes.NODE, resource.getId() );
+        verify( locks ).acquireSharedNodeLock( resource.getId() );
     }
 
     @Test
-    public void canAcquireWriteLock() throws Exception
+    public void canAcquireWriteLock()
     {
         // when
         placeboTx.acquireWriteLock( resource );
 
         // then
-        verify( readOps ).acquireExclusive( ResourceTypes.NODE, resource.getId() );
+        verify( locks ).acquireExclusiveNodeLock( resource.getId() );
     }
 
     @Test
@@ -137,7 +136,7 @@ public class TestPlaceboTransaction
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )
                 .thenReturn( Optional.of( Status.Transaction.Interrupted ) );
 
-        PlaceboTransaction tx = new PlaceboTransaction( () -> kernelTransaction, new ThreadToStatementContextBridge() );
+        PlaceboTransaction tx = new PlaceboTransaction( kernelTransaction );
 
         Optional<Status> terminationReason1 = tx.terminationReason();
         Optional<Status> terminationReason2 = tx.terminationReason();

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -559,14 +559,7 @@ public abstract class SubProcess<T, P> implements Serializable
                 if ( live == null )
                 {
                     final Set<Handler> handlers = live = new HashSet<>();
-                    Runtime.getRuntime().addShutdownHook( new Thread()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            killAll( handlers );
-                        }
-                    } );
+                    Runtime.getRuntime().addShutdownHook( new Thread( () -> killAll( handlers ) ) );
                 }
                 live.add( handler );
             }
@@ -655,22 +648,17 @@ public abstract class SubProcess<T, P> implements Serializable
         int stop( TimeUnit unit, long timeout )
         {
             final CountDownLatch latch = new CountDownLatch( unit == null ? 0 : 1 );
-            Thread stopper = new Thread()
-            {
-                @Override
-                public void run()
+            Thread stopper = new Thread( () -> {
+                latch.countDown();
+                try
                 {
-                    latch.countDown();
-                    try
-                    {
-                        dispatcher.stop();
-                    }
-                    catch ( RemoteException e )
-                    {
-                        process.destroy();
-                    }
+                    dispatcher.stop();
                 }
-            };
+                catch ( RemoteException e )
+                {
+                    process.destroy();
+                }
+            } );
             stopper.start();
             try
             {

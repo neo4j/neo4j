@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,9 +31,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionQueue;
@@ -117,7 +117,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         end.set( true );
 
         // THEN (assertions as part of the workers applying transactions)
-        workers.awaitAndThrowOnError( RuntimeException.class );
+        workers.awaitAndThrowOnError();
     }
 
     private void awaitOnline( IndexProxy index ) throws InterruptedException
@@ -234,7 +234,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         long nodeId;
 
         @Override
-        public boolean visit( StorageCommand element ) throws IOException
+        public boolean visit( StorageCommand element )
         {
             if ( element instanceof NodeCommand )
             {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker.Monitor;
+import org.neo4j.unsafe.impl.batchimport.ImportLogic.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 
 import static org.mockito.Mockito.mock;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class EstimationSanityCheckerTest
 {
     @Test
-    public void shouldWarnAboutCountGettingCloseToCapacity() throws Exception
+    public void shouldWarnAboutCountGettingCloseToCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
@@ -45,12 +45,12 @@ public class EstimationSanityCheckerTest
         new EstimationSanityChecker( formats, monitor ).sanityCheck( estimates );
 
         // then
-        verify( monitor ).nodeCountCapacity( formats.node().getMaxId(), estimates.numberOfNodes() );
-        verify( monitor ).relationshipCountCapacity( formats.relationship().getMaxId(), estimates.numberOfRelationships() );
+        verify( monitor ).mayExceedNodeIdCapacity( formats.node().getMaxId(), estimates.numberOfNodes() );
+        verify( monitor ).mayExceedRelationshipIdCapacity( formats.relationship().getMaxId(), estimates.numberOfRelationships() );
     }
 
     @Test
-    public void shouldWarnAboutCounthigherThanCapacity() throws Exception
+    public void shouldWarnAboutCounthigherThanCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
@@ -62,12 +62,12 @@ public class EstimationSanityCheckerTest
         new EstimationSanityChecker( formats, monitor ).sanityCheck( estimates );
 
         // then
-        verify( monitor ).nodeCountCapacity( formats.node().getMaxId(), estimates.numberOfNodes() );
-        verify( monitor ).relationshipCountCapacity( formats.relationship().getMaxId(), estimates.numberOfRelationships() );
+        verify( monitor ).mayExceedNodeIdCapacity( formats.node().getMaxId(), estimates.numberOfNodes() );
+        verify( monitor ).mayExceedRelationshipIdCapacity( formats.relationship().getMaxId(), estimates.numberOfRelationships() );
     }
 
     @Test
-    public void shouldNotWantIfCountWayLowerThanCapacity() throws Exception
+    public void shouldNotWantIfCountWayLowerThanCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,19 +21,20 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 import scala.annotation.tailrec
 
-case class Selector(pickBestFactory: LogicalPlanningFunction0[CandidateSelector],
+case class Selector(pickBestFactory: (LogicalPlanningContext, Solveds, Cardinalities) => CandidateSelector,
                     planGenerators: CandidateGenerator[LogicalPlan]*) extends PlanTransformer[QueryGraph] {
-  def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val pickBest = pickBestFactory(context)
+  def apply(input: LogicalPlan, queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+    val pickBest = pickBestFactory(context, solveds, cardinalities)
 
     @tailrec
     def selectIt(plan: LogicalPlan): LogicalPlan = {
       val plans = planGenerators.
-        flatMap(generator => generator(plan, queryGraph))
+        flatMap(generator => generator(plan, queryGraph, context, solveds, cardinalities))
 
       pickBest(plans) match {
         case Some(p) => selectIt(p)

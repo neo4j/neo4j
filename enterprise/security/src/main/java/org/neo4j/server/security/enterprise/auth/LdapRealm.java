@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.auth;
 
@@ -63,8 +66,8 @@ import javax.naming.ldap.StartTlsResponse;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
-import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
@@ -228,8 +231,6 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
                     jndiLdapContextFactory.getAuthenticationMechanism() );
             ctx.addToEnvironment( Context.SECURITY_PRINCIPAL, principal );
             ctx.addToEnvironment( Context.SECURITY_CREDENTIALS, credentials );
-
-            ctx.reconnect( ctx.getConnectControls() );
 
             return ctx;
         }
@@ -548,16 +549,8 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
                 }
                 else
                 {
-                    try
-                    {
-                        LdapContext ctx2 = ldapContextFactory.getLdapContext( loginUser, credentials );
-                        LdapUtils.closeContext( ctx2 );
-                    }
-                    catch ( Exception ex )
-                    {
-                        // We have to rethrow the exception, to indicate invalid login
-                        throw ex;
-                    }
+                    LdapContext ctx2 = ldapContextFactory.getLdapContext( loginUser, credentials );
+                    LdapUtils.closeContext( ctx2 );
                 }
             }
             else
@@ -675,7 +668,7 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
     }
 
     @Override
-    public void initialize() throws Throwable
+    public void initialize()
     {
         if ( authorizationEnabled )
         {
@@ -685,17 +678,17 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
     }
 

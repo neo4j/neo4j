@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,6 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.RECYCLE_BATCHES;
 
 /**
  * Stage for counting groups per node, populates {@link RelationshipGroupCache}. Steps:
@@ -45,9 +46,9 @@ public class CountGroupsStage extends Stage
     public CountGroupsStage( Configuration config, RecordStore<RelationshipGroupRecord> store,
             RelationshipGroupCache groupCache, StatsProvider... additionalStatsProviders )
     {
-        super( NAME, null, config, 0 );
+        super( NAME, null, config, RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allIn( store, config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, store, null ) );
+        add( new ReadRecordsStep<>( control(), config, false, store ) );
         add( new CountGroupsStep( control(), config, groupCache, additionalStatsProviders ) );
     }
 }

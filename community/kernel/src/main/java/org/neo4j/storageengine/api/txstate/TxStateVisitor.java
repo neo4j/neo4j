@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,11 +22,10 @@ package org.neo4j.storageengine.api.txstate;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
 
 /**
@@ -55,9 +54,9 @@ public interface TxStateVisitor extends AutoCloseable
     void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed ) throws
             ConstraintValidationException;
 
-    void visitAddedIndex( IndexDescriptor element );
+    void visitAddedIndex( SchemaIndexDescriptor element );
 
-    void visitRemovedIndex( IndexDescriptor element );
+    void visitRemovedIndex( SchemaIndexDescriptor element );
 
     void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException;
 
@@ -86,7 +85,6 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                throws ConstraintValidationException
         {
         }
 
@@ -97,14 +95,13 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed ) throws ConstraintValidationException
+                Iterator<StorageProperty> changed, Iterator<Integer> removed )
         {
         }
 
         @Override
         public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
                 Iterator<StorageProperty> changed, Iterator<Integer> removed )
-                        throws RelationshipPropertyExistenceException
         {
         }
 
@@ -116,17 +113,16 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
-                throws ConstraintValidationException
         {
         }
 
         @Override
-        public void visitAddedIndex( IndexDescriptor index )
+        public void visitAddedIndex( SchemaIndexDescriptor index )
         {
         }
 
         @Override
-        public void visitRemovedIndex( IndexDescriptor index )
+        public void visitRemovedIndex( SchemaIndexDescriptor index )
         {
         }
 
@@ -228,13 +224,13 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( IndexDescriptor index )
+        public void visitAddedIndex( SchemaIndexDescriptor index )
         {
             actual.visitAddedIndex( index );
         }
 
         @Override
-        public void visitRemovedIndex( IndexDescriptor index )
+        public void visitRemovedIndex( SchemaIndexDescriptor index )
         {
             actual.visitRemovedIndex( index );
         }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.Optional;
 
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -49,10 +49,10 @@ public class CountsStoreTransactionApplierTest
         // WHEN
         try ( TransactionApplier txApplier = applier.startTx( new TransactionToApply( null, 2L ) ) )
         {
-            txApplier.visitNodeCountsCommand( new Command.NodeCountsCommand( ReadOperations.ANY_LABEL, 1 ) );
+            txApplier.visitNodeCountsCommand( new Command.NodeCountsCommand( StatementConstants.ANY_LABEL, 1 ) );
         }
 
         // THEN
-        verify( updater, times( 1 ) ).incrementNodeCount( ReadOperations.ANY_LABEL, 1 );
+        verify( updater, times( 1 ) ).incrementNodeCount( StatementConstants.ANY_LABEL, 1 );
     }
 }

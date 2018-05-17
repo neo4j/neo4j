@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,6 +34,12 @@ case class PrefixSeekRangeWrapper(
 
 case class InequalitySeekRangeWrapper(
                                        range: InequalitySeekRange[Expression]
+                                     )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+}
+
+case class PointDistanceSeekRangeWrapper(
+                                       range: PointDistanceRange[Expression]
                                      )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

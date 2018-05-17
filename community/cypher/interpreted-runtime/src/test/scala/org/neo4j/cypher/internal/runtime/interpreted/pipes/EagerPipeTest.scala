@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,20 +19,26 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryContextAdaptation, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class EagerPipeTest extends CypherFunSuite {
+
+  private val queryContext = new QueryContext with QueryContextAdaptation {
+    override val transactionalContext: QueryTransactionalContext = mock[QueryTransactionalContext]
+  }
+  private val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
   test("shouldMakeLazyEager") {
     // Given a lazy iterator that is not empty
     val lazyIterator = new LazyIterator[ExecutionContext](10, (_) => ExecutionContext.empty)
     val src = new FakePipe(lazyIterator)
-    val eager = new EagerPipe(src)()
+    val eager = EagerPipe(src)()
     lazyIterator should not be empty
 
     // When
-    val resultIterator = eager.createResults(QueryStateHelper.empty)
+    val resultIterator = eager.createResults(queryState)
 
     // Then the lazy iterator is emptied, and the returned iterator is not
     lazyIterator shouldBe empty

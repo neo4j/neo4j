@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Predicate;
 
@@ -53,7 +52,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
  * This to make a conscious decision about who will create the record instance and in that process figure out
  * ways to reduce number of record instances created. The other way is to use a {@link RecordCursor}, created
  * by {@link #newRecordCursor(AbstractBaseRecord)} and placed at a certain record using
- * {@link #placeRecordCursor(long, RecordCursor, RecordLoad)}. A {@link RecordCursor} will keep underlying
+ * {@link RecordCursor#placeAt(long, RecordLoad)}. A {@link RecordCursor} will keep underlying
  * {@link PageCursor} open until until the {@link RecordCursor} is closed and so will be efficient if multiple
  * records are retrieved from it. A {@link RecordCursor} will follow {@link #getNextRecordReference(AbstractBaseRecord)}
  * references to get to {@link RecordCursor#next()} record.

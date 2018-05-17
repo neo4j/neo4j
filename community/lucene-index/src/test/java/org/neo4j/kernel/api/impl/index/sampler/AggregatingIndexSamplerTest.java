@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
@@ -33,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 public class AggregatingIndexSamplerTest
 {
     @Test
-    public void samplePartitionedIndex() throws IndexNotFoundKernelException
+    public void samplePartitionedIndex()
     {
         List<IndexSampler> samplers = Arrays.asList( createSampler( 1 ), createSampler( 2 ) );
         AggregatingIndexSampler partitionedSampler = new AggregatingIndexSampler( samplers );
@@ -58,7 +57,7 @@ public class AggregatingIndexSamplerTest
         }
 
         @Override
-        public IndexSample sampleIndex() throws IndexNotFoundKernelException
+        public IndexSample sampleIndex()
         {
             return new IndexSample( value, value, value * 2 );
         }

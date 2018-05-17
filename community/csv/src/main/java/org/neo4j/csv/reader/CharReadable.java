@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -60,6 +60,11 @@ public interface CharReadable extends Closeable, SourceTraceability
      * Reads characters into the given array starting at {@code offset}, reading {@code length} number of characters.
      *
      * Similar to {@link Reader#read(char[], int, int)}
+     * @param into char[] to read the data into.
+     * @param offset offset to start reading into the char[].
+     * @param length number of bytes to read maxuimum.
+     * @return number of bytes read, or 0 if there were no bytes read and end of readable is reached.
+     * @throws IOException on read error.
      */
     int read( char[] into, int offset, int length ) throws IOException;
 
@@ -85,25 +90,19 @@ public interface CharReadable extends Closeable, SourceTraceability
         }
 
         @Override
-        public long lineNumber()
-        {
-            return 0;
-        }
-
-        @Override
         public String sourceDescription()
         {
             return "EMPTY";
         }
 
         @Override
-        public int read( char[] into, int offset, int length ) throws IOException
+        public int read( char[] into, int offset, int length )
         {
             return -1;
         }
 
         @Override
-        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
+        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from )
         {
             buffer.compact( buffer, from );
             return buffer;
@@ -116,7 +115,7 @@ public interface CharReadable extends Closeable, SourceTraceability
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
     };

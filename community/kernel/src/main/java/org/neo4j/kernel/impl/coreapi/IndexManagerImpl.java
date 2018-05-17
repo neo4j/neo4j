@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,19 +32,19 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 
 public class IndexManagerImpl implements IndexManager
 {
-    private final Supplier<Statement> transactionBridge;
+    private final Supplier<Transaction> transactionBridge;
     private final IndexProvider provider;
     private final AutoIndexer<Node> nodeAutoIndexer;
     private final RelationshipAutoIndexer relAutoIndexer;
 
-    public IndexManagerImpl( Supplier<Statement> bridge,
+    public IndexManagerImpl( Supplier<Transaction> bridge,
                              IndexProvider provider,
                              AutoIndexer<Node> nodeAutoIndexer,
                              RelationshipAutoIndexer relAutoIndexer )
@@ -58,9 +58,9 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public boolean existsForNodes( String indexName )
     {
-        try ( Statement statement = transactionBridge.get() )
+        try
         {
-            statement.readOperations().nodeExplicitIndexGetConfiguration( indexName );
+            transactionBridge.get().indexRead().nodeExplicitIndexGetConfiguration( indexName );
             return true;
         }
         catch ( ExplicitIndexNotFoundKernelException e )
@@ -91,18 +91,16 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public String[] nodeIndexNames()
     {
-        try ( Statement statement = transactionBridge.get() )
-        {
-            return statement.readOperations().nodeExplicitIndexesGetAll();
-        }
+
+        return transactionBridge.get().indexRead().nodeExplicitIndexesGetAll();
     }
 
     @Override
     public boolean existsForRelationships( String indexName )
     {
-        try ( Statement statement = transactionBridge.get() )
+        try
         {
-            statement.readOperations().relationshipExplicitIndexGetConfiguration( indexName );
+            transactionBridge.get().indexRead().relationshipExplicitIndexGetConfiguration( indexName );
             return true;
         }
         catch ( ExplicitIndexNotFoundKernelException e )
@@ -134,24 +132,23 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public String[] relationshipIndexNames()
     {
-        try ( Statement statement = transactionBridge.get() )
-        {
-            return statement.readOperations().relationshipExplicitIndexesGetAll();
-        }
+
+        return transactionBridge.get().indexRead().relationshipExplicitIndexesGetAll();
     }
 
     @Override
     public Map<String,String> getConfiguration( Index<? extends PropertyContainer> index )
     {
-        try ( Statement statement = transactionBridge.get() )
+        try
         {
+            Transaction transaction = transactionBridge.get();
             if ( index.getEntityType().equals( Node.class ) )
             {
-                return statement.readOperations().nodeExplicitIndexGetConfiguration( index.getName() );
+                return transaction.indexRead().nodeExplicitIndexGetConfiguration( index.getName() );
             }
             if ( index.getEntityType().equals( Relationship.class ) )
             {
-                return statement.readOperations().relationshipExplicitIndexGetConfiguration( index.getName() );
+                return transaction.indexRead().relationshipExplicitIndexGetConfiguration( index.getName() );
             }
             throw new IllegalArgumentException( "Unknown entity type " + index.getEntityType().getSimpleName() );
         }
@@ -166,15 +163,16 @@ public class IndexManagerImpl implements IndexManager
     {
         // Configuration changes should be done transactionally. However this
         // has always been done non-transactionally, so it's not a regression.
-        try ( Statement statement = transactionBridge.get() )
+        try
         {
+            Transaction transaction = transactionBridge.get();
             if ( index.getEntityType().equals( Node.class ) )
             {
-                return statement.dataWriteOperations().nodeExplicitIndexSetConfiguration( index.getName(), key, value );
+                return transaction.indexWrite().nodeExplicitIndexSetConfiguration( index.getName(), key, value );
             }
             if ( index.getEntityType().equals( Relationship.class ) )
             {
-                return statement.dataWriteOperations().relationshipExplicitIndexSetConfiguration(
+                return transaction.indexWrite().relationshipExplicitIndexSetConfiguration(
                         index.getName(), key, value );
             }
             throw new IllegalArgumentException( "Unknown entity type " + index.getEntityType().getSimpleName() );
@@ -194,15 +192,17 @@ public class IndexManagerImpl implements IndexManager
     {
         // Configuration changes should be done transactionally. However this
         // has always been done non-transactionally, so it's not a regression.
-        try ( Statement statement = transactionBridge.get() )
+
+        try
         {
+            Transaction transaction = transactionBridge.get();
             if ( index.getEntityType().equals( Node.class ) )
             {
-                return statement.dataWriteOperations().nodeExplicitIndexRemoveConfiguration( index.getName(), key );
+                return transaction.indexWrite().nodeExplicitIndexRemoveConfiguration( index.getName(), key );
             }
             if ( index.getEntityType().equals( Relationship.class ) )
             {
-                return statement.dataWriteOperations().relationshipExplicitIndexRemoveConfiguration(
+                return transaction.indexWrite().relationshipExplicitIndexRemoveConfiguration(
                         index.getName(), key );
             }
             throw new IllegalArgumentException( "Unknown entity type " + index.getEntityType().getSimpleName() );

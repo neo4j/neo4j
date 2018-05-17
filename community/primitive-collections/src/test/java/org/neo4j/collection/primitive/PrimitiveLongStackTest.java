@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 public class PrimitiveLongStackTest
 {
     @Test
-    public void shouldPushAndPollSomeEntities() throws Exception
+    public void shouldPushAndPollSomeEntities()
     {
         // GIVEN
         PrimitiveLongStack stack = new PrimitiveLongStack( 6 );
@@ -51,7 +51,7 @@ public class PrimitiveLongStackTest
     }
 
     @Test
-    public void shouldGrowArray() throws Exception
+    public void shouldGrowArray()
     {
         // GIVEN
         PrimitiveLongStack stack = new PrimitiveLongStack( 5 );
@@ -73,7 +73,7 @@ public class PrimitiveLongStackTest
     }
 
     @Test
-    public void shouldStoreLongs() throws Exception
+    public void shouldStoreLongs()
     {
         // GIVEN
         PrimitiveLongStack stack = new PrimitiveLongStack( 5 );
@@ -93,7 +93,7 @@ public class PrimitiveLongStackTest
     }
 
     @Test
-    public void shouldIterate() throws Exception
+    public void shouldIterate()
     {
         // GIVEN
         PrimitiveLongStack stack = new PrimitiveLongStack();

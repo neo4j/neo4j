@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -29,9 +30,9 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -45,10 +46,10 @@ public class TransactionHookIT extends KernelIntegrationTest
     {
         // Given
         TransactionHook hook = mock( TransactionHook.class );
-        kernel.registerTransactionHook( hook );
+        internalKernel().registerTransactionHook( hook );
 
         // When
-        DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+        Write ops = dataWriteInNewTransaction();
         ops.nodeCreate();
         commit();
 
@@ -80,10 +81,10 @@ public class TransactionHookIT extends KernelIntegrationTest
                 return new Throwable( message );
             }
         } );
-        kernel.registerTransactionHook( hook );
+        internalKernel().registerTransactionHook( hook );
 
         // When
-        DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+        Write ops = dataWriteInNewTransaction();
         ops.nodeCreate();
 
         try
@@ -91,7 +92,7 @@ public class TransactionHookIT extends KernelIntegrationTest
             commit();
             fail("Expected this to fail.");
         }
-        catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
+        catch ( TransactionFailureException e )
         {
             assertThat( e.status(), equalTo( Status.Transaction.TransactionHookFailed ) );
             assertThat( e.getCause().getMessage(), equalTo( message ) );

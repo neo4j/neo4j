@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,17 +30,17 @@ import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.function.IOFunctions;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.array;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 
 public class DataFactoriesTest
@@ -48,6 +48,8 @@ public class DataFactoriesTest
     private static final int BUFFER_SIZE = 10_000;
     private static final Configuration COMMAS = withBufferSize( Configuration.COMMAS, BUFFER_SIZE );
     private static final Configuration TABS = withBufferSize( Configuration.TABS, BUFFER_SIZE );
+
+    private final Groups groups = new Groups();
 
     @Test
     public void shouldParseDefaultNodeFileHeaderCorrectly() throws Exception
@@ -58,7 +60,7 @@ public class DataFactoriesTest
         Extractors extractors = new Extractors( ',' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType );
+        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -79,7 +81,7 @@ public class DataFactoriesTest
         Extractors extractors = new Extractors( '\t' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, TABS, idType );
+        Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, TABS, idType, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -100,7 +102,7 @@ public class DataFactoriesTest
         Extractors extractors = new Extractors( '\t' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType );
+        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -122,7 +124,7 @@ public class DataFactoriesTest
         // WHEN
         try
         {
-            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType );
+            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType, groups );
             fail( "Should fail" );
         }
         catch ( DuplicateHeaderException e )
@@ -144,7 +146,7 @@ public class DataFactoriesTest
         // WHEN
         try
         {
-            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType );
+            DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, idType, groups );
             fail( "Should fail" );
         }
         catch ( DuplicateHeaderException e )
@@ -163,7 +165,7 @@ public class DataFactoriesTest
         Extractors extractors = new Extractors( ';' );
 
         // WHEN
-        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, IdType.ACTUAL );
+        Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, TABS, IdType.ACTUAL, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -178,14 +180,14 @@ public class DataFactoriesTest
         // GIVEN
         final CharReadable firstSource = wrap( "id:ID\tname:String\tbirth_date:long" );
         final CharReadable secondSource = wrap( "0\tThe node\t123456789" );
-        DataFactory<InputNode> dataFactory = data( value -> value,
+        DataFactory dataFactory = DataFactories.data( value -> value,
                 () -> new MultiReadable( Readables.iterator( IOFunctions.identity(), firstSource, secondSource ) ) );
         Header.Factory headerFactory = defaultFormatNodeFileHeader();
         Extractors extractors = new Extractors( ';' );
 
         // WHEN
         CharSeeker seeker = CharSeekers.charSeeker( new MultiReadable( dataFactory.create( TABS ).stream() ), TABS, false );
-        Header header = headerFactory.create( seeker, TABS, IdType.ACTUAL );
+        Header header = headerFactory.create( seeker, TABS, IdType.ACTUAL, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -199,12 +201,16 @@ public class DataFactoriesTest
     public void shouldParseGroupName() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = seeker( ":START_ID(GroupOne)\t:END_ID(GroupTwo)\ttype:TYPE\tdate:long\tmore:long[]" );
+        String groupOneName = "GroupOne";
+        String groupTwoName = "GroupTwo";
+        CharSeeker seeker = seeker( ":START_ID(" + groupOneName + ")\t:END_ID(" + groupTwoName + ")\ttype:TYPE\tdate:long\tmore:long[]" );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
+        groups.getOrCreate( groupOneName );
+        groups.getOrCreate( groupTwoName );
 
         // WHEN
-        Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, TABS, idType );
+        Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, TABS, idType, groups );
 
         // THEN
         assertArrayEquals( array(
@@ -217,7 +223,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldFailOnUnexpectedNodeHeaderType() throws Exception
+    public void shouldFailOnUnexpectedNodeHeaderType()
     {
         // GIVEN
         CharSeeker seeker = seeker( ":ID,:START_ID" );
@@ -226,7 +232,7 @@ public class DataFactoriesTest
         // WHEN
         try
         {
-            Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType );
+            Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType, groups );
             fail( "Should have failed" );
         }
         catch ( InputException e )
@@ -237,7 +243,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldFailOnUnexpectedRelationshipHeaderType() throws Exception
+    public void shouldFailOnUnexpectedRelationshipHeaderType()
     {
         // GIVEN
         CharSeeker seeker = seeker( ":LABEL,:START_ID,:END_ID,:TYPE" );
@@ -246,7 +252,7 @@ public class DataFactoriesTest
         // WHEN
         try
         {
-            Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, COMMAS, idType );
+            Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, COMMAS, idType, groups );
             fail( "Should have failed" );
         }
         catch ( InputException e )
@@ -290,6 +296,6 @@ public class DataFactoriesTest
 
     private Header.Entry entry( String name, Type type, String groupName, Extractor<?> extractor )
     {
-        return new Header.Entry( name, type, groupName, extractor );
+        return new Header.Entry( name, type, groups.getOrCreate( groupName ), extractor );
     }
 }

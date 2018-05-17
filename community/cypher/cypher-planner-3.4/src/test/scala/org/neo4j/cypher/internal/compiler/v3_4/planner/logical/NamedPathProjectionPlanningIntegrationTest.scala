@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,11 +29,11 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
   test("should build plans containing outgoing path projections") {
     planFor("MATCH p = (a:X)-[r]->(b) RETURN p")._2 should equal(
       Projection(
-        Expand( NodeByLabelScan("a",  lblName("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
+        Expand( NodeByLabelScan("a",  lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
         expressions = Map(
           "p" -> PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
         )
-      )(solved)
+      )
     )
   }
 
@@ -48,8 +48,8 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
           FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
           varFor("a")
         ) _),
-          Expand(NodeByLabelScan("a", lblName("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved)
-      )(solved)
+          Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+      )
     )
   }
 
@@ -70,8 +70,8 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
             SignedDecimalIntegerLiteral("10") _
           ) _
         ),
-          Expand(NodeByLabelScan("a", lblName("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved)
-      )(solved)
+          Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+      )
     )
   }
 }

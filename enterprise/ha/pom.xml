@@ -18,6 +18,11 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
   <packaging>jar</packaging>
 
+  <properties>
+    <license-text.header>../../build/AGPL-3-header.txt</license-text.header>
+    <moduleName>org.neo4j.kernel.ha</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -26,16 +31,15 @@
 
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3</name>
+      <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
       <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-      <comments>The software ("Software") developed and owned by Network Engine for
-        Objects in Lund AB (referred to in this notice as "Neo Technology") is
-        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+      <comments>The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
+        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 with the Commons Clause to all
         third parties and that license is included below.
 
         However, if you have executed an End User Software License and Services
         Agreement or an OEM Software License and Support Services Agreement, or
-        another commercial license agreement with Neo Technology or one of its
+        another commercial license agreement with Neo4j or one of its
         affiliates (each, a "Commercial Agreement"), the terms of the license in
         such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
         LICENSE Version 3 and you may use the Software solely pursuant to the
@@ -44,8 +48,52 @@
     </license>
   </licenses>
 
+  <profiles>
+    <profile>
+      <id>test-ha</id>
+      <activation>
+        <property>
+          <name>test-ha</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>false</skipTests>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <skipTests>false</skipTests>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
       <!-- This module contains public API, run javadoc and revapi -->
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
@@ -123,7 +171,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
@@ -132,17 +179,14 @@
     <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-core</artifactId>
-        <scope>test</scope>
     </dependency>
     <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-library</artifactId>
-        <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>

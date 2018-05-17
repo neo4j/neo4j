@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import java.util.Iterator;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -44,7 +45,7 @@ public class IndexSamplingController
     private final JobScheduler scheduler;
     private final RecoveryCondition indexRecoveryCondition;
     private final boolean backgroundSampling;
-    private final Lock samplingLock = new ReentrantLock( true );
+    private final Lock samplingLock = new ReentrantLock();
 
     private JobHandle backgroundSamplingHandle;
 
@@ -69,7 +70,7 @@ public class IndexSamplingController
     public void sampleIndexes( IndexSamplingMode mode )
     {
         IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
-        jobQueue.addAll( !mode.sampleOnlyIfUpdated, indexMap.indexIds() );
+        jobQueue.addAll( !mode.sampleOnlyIfUpdated, PrimitiveLongCollections.toIterator( indexMap.indexIds() ) );
         scheduleSampling( mode, indexMap );
     }
 
@@ -86,7 +87,7 @@ public class IndexSamplingController
         try
         {
             IndexMap indexMap = indexMapSnapshotProvider.indexMapSnapshot();
-            Iterator<Long> indexIds = indexMap.indexIds();
+            PrimitiveLongIterator indexIds = indexMap.indexIds();
             while ( indexIds.hasNext() )
             {
                 long indexId = indexIds.next();
@@ -104,7 +105,7 @@ public class IndexSamplingController
 
     public interface RecoveryCondition
     {
-        boolean test( long indexId, IndexDescriptor descriptor );
+        boolean test( long indexId, SchemaIndexDescriptor descriptor );
     }
 
     private void scheduleSampling( IndexSamplingMode mode, IndexMap indexMap )

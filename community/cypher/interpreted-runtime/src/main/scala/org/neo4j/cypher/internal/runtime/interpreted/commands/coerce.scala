@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,7 +37,7 @@ object coerce {
         case CTAny => value
         case CTString => value.asInstanceOf[TextValue]
         case CTNode => value.asInstanceOf[NodeValue]
-        case CTRelationship => value.asInstanceOf[EdgeValue]
+        case CTRelationship => value.asInstanceOf[RelationshipValue]
         case CTPath => value.asInstanceOf[PathValue]
         case CTInteger => Values.longValue(value.asInstanceOf[NumberValue].longValue())
         case CTFloat => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.neo4j.values.storable.ThrowingValueWriter.throwing;
+
 public class ThrowingValueWriterTest
 {
     @Rule
@@ -33,7 +35,7 @@ public class ThrowingValueWriterTest
     {
         // Given
         Value value = Values.of( "This is a value" );
-        ThrowingValueWriter writer = new ThrowingValueWriter();
+        ValueWriter<TestException> writer = throwing( TestException::new );
 
         // Expect
         exception.expect( TestException.class );
@@ -44,93 +46,5 @@ public class ThrowingValueWriterTest
 
     private static class TestException extends Exception
     {
-    }
-
-    private static class ThrowingValueWriter implements ValueWriter<TestException>
-    {
-
-        @Override
-        public void writeNull() throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writeBoolean( boolean value ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writeInteger( byte value ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writeInteger( short value ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writeInteger( int value ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writeInteger( long value ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writeFloatingPoint( float value ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writeFloatingPoint( double value ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writeString( String value ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writeString( char value ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void beginArray( int size, ArrayType arrayType ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void endArray() throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writeByteArray( byte[] value ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws TestException
-        {
-            throw new TestException();
-        }
     }
 }

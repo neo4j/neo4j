@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -75,7 +76,7 @@ public class StoreAccess
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
         this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance() ).openAllNeoStores() );
+                fileSystem, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openAllNeoStores() );
         this.closeable = true;
     }
 
@@ -184,25 +185,6 @@ public class StoreAccess
     public CountsAccessor getCounts()
     {
         return counts;
-    }
-
-    protected RecordStore<?>[] allStores()
-    {
-        if ( propStore == null )
-        {
-            // for when the property store isn't available (e.g. because the contained data in very sensitive)
-            return new RecordStore<?>[]{ // no property stores
-                    nodeStore, relStore,
-                    relationshipTypeTokenStore, relationshipTypeNameStore,
-                    labelTokenStore, labelNameStore, nodeDynamicLabelStore
-            };
-        }
-        return new RecordStore<?>[]{
-                schemaStore, nodeStore, relStore, propStore, stringStore, arrayStore,
-                relationshipTypeTokenStore, propertyKeyTokenStore, labelTokenStore,
-                relationshipTypeNameStore, propertyKeyNameStore, labelNameStore,
-                nodeDynamicLabelStore
-        };
     }
 
     private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store )

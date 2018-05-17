@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,31 +23,31 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;
 
 public class MultipleUnderlyingStorageExceptions extends UnderlyingStorageException
 {
-    public final Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions;
+    public final Set<Pair<SchemaDescriptor, UnderlyingStorageException>> exceptions;
 
-    public MultipleUnderlyingStorageExceptions( Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions )
+    public MultipleUnderlyingStorageExceptions( Set<Pair<SchemaDescriptor, UnderlyingStorageException>> exceptions )
     {
         super( buildMessage( exceptions ) );
         this.exceptions = Collections.unmodifiableSet( exceptions );
 
-        for ( Pair<IndexDescriptor, UnderlyingStorageException> exception : exceptions )
+        for ( Pair<SchemaDescriptor, UnderlyingStorageException> exception : exceptions )
         {
             this.addSuppressed( exception.other() );
         }
     }
 
-    private static String buildMessage( Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions )
+    private static String buildMessage( Set<Pair<SchemaDescriptor, UnderlyingStorageException>> exceptions )
     {
         StringBuilder builder = new StringBuilder( );
         builder.append("Errors when closing (flushing) index updaters:");
 
-        for ( Pair<IndexDescriptor, UnderlyingStorageException> pair : exceptions )
+        for ( Pair<SchemaDescriptor, UnderlyingStorageException> pair : exceptions )
         {
             builder.append( format( " (%s) %s", pair.first().toString(), pair.other().getMessage() ) );
         }

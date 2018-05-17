@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,14 +46,14 @@ public class GetNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     private RestRequest req = RestRequest.req();
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
 
     @Documented( "Get properties for node." )
     @Test
-    public void shouldGet200ForProperties() throws JsonParseException
+    public void shouldGet200ForProperties()
     {
         String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
         JaxRsResponse createResponse = req.post( functionalTestHelper.dataUri() + "node/", entity );
@@ -61,7 +61,7 @@ public class GetNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldGetContentLengthHeaderForRetrievingProperties() throws JsonParseException
+    public void shouldGetContentLengthHeaderForRetrievingProperties()
     {
         String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
         final RestRequest request = req;
@@ -111,7 +111,7 @@ public class GetNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldBeJSONContentTypeOnPropertiesResponse() throws JsonParseException
+    public void shouldBeJSONContentTypeOnPropertiesResponse()
     {
         String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
         JaxRsResponse createResource = req.post( functionalTestHelper.dataUri() + "node/", entity );
@@ -129,7 +129,7 @@ public class GetNodePropertiesIT extends AbstractRestFunctionalDocTestBase
 
     @Documented( "Get property for node.\n" + "\n" + "Get a single node property from a node." )
     @Test
-    public void shouldGet200ForProperty() throws JsonParseException
+    public void shouldGet200ForProperty()
     {
         String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
         JaxRsResponse createResponse = req.post( functionalTestHelper.dataUri() + "node/", entity );
@@ -148,7 +148,7 @@ public class GetNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldBeJSONContentTypeOnPropertyResponse() throws JsonParseException
+    public void shouldBeJSONContentTypeOnPropertyResponse()
     {
         String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
 
@@ -163,7 +163,7 @@ public class GetNodePropertiesIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldReturnEmptyMapForEmptyProperties() throws Exception
+    public void shouldReturnEmptyMapForEmptyProperties()
     {
         // Given
         String location = HTTP.POST( server().baseUri().resolve( "db/data/node" ).toString() ).location();

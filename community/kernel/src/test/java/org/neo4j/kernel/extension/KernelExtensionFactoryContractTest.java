@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -84,7 +84,7 @@ public abstract class KernelExtensionFactoryContractTest
     }
 
     @Test
-    public void extensionShouldHavePublicNoArgConstructor() throws Exception
+    public void extensionShouldHavePublicNoArgConstructor()
     {
         KernelExtensionFactory<?> instance = null;
         try
@@ -100,7 +100,7 @@ public abstract class KernelExtensionFactoryContractTest
     }
 
     @Test
-    public void shouldBeAbleToLoadExtensionAsAServiceProvider() throws Exception
+    public void shouldBeAbleToLoadExtensionAsAServiceProvider()
     {
         KernelExtensionFactory<?> instance = null;
         try
@@ -119,7 +119,7 @@ public abstract class KernelExtensionFactoryContractTest
     }
 
     @Test
-    public void differentInstancesShouldHaveEqualHashCodesAndBeEqual() throws Exception
+    public void differentInstancesShouldHaveEqualHashCodesAndBeEqual()
     {
         KernelExtensionFactory<?> one = newInstance();
         KernelExtensionFactory<?> two = newInstance();
@@ -138,7 +138,7 @@ public abstract class KernelExtensionFactoryContractTest
     }
 
     @Test
-    public void canLoadKernelExtension() throws Exception
+    public void canLoadKernelExtension()
     {
         GraphDatabaseService graphdb = graphdb( 0 );
         try

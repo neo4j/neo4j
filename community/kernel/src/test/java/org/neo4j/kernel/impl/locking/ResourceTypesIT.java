@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
+import org.neo4j.memory.GlobalMemoryTracker;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -40,7 +41,7 @@ public class ResourceTypesIT
     public void indexEntryHashing()
     {
         int collisions = 0;
-        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap( 35_000_000 ) )
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap( 35_000_000, GlobalMemoryTracker.INSTANCE ) )
         {
 
             int labelIdCount = 50;

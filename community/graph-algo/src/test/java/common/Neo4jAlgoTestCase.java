@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -61,7 +61,7 @@ public abstract class Neo4jAlgoTestCase
     }
 
     @BeforeClass
-    public static void setUpGraphDb() throws Exception
+    public static void setUpGraphDb()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
@@ -74,7 +74,7 @@ public abstract class Neo4jAlgoTestCase
     }
 
     @AfterClass
-    public static void tearDownGraphDb() throws Exception
+    public static void tearDownGraphDb()
     {
         graphDb.shutdown();
     }
@@ -124,7 +124,7 @@ public abstract class Neo4jAlgoTestCase
 
     protected <E> void assertContains( Iterable<E> actual, E... expected )
     {
-        Set<E> expectation = new HashSet<E>( Arrays.asList( expected ) );
+        Set<E> expectation = new HashSet<>( Arrays.asList( expected ) );
         for ( E element : actual )
         {
             if ( !expectation.remove( element ) )
@@ -155,7 +155,7 @@ public abstract class Neo4jAlgoTestCase
 
     public void assertPaths( Iterable<? extends Path> paths, List<String> pathDefs )
     {
-        List<String> unexpectedDefs = new ArrayList<String>();
+        List<String> unexpectedDefs = new ArrayList<>();
         try ( ResourceIterator<? extends Path> iterator = Iterators.asResourceIterator( paths.iterator() ) )
         {
             while ( iterator.hasNext() )
@@ -172,7 +172,6 @@ public abstract class Neo4jAlgoTestCase
                 {
                     unexpectedDefs.add( getPathDef( path ) );
                 }
-                path.close();
             }
         }
         assertTrue( "These unexpected paths were found: " + unexpectedDefs +
@@ -182,7 +181,7 @@ public abstract class Neo4jAlgoTestCase
 
     public void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
     {
-        assertPaths( paths, new ArrayList<String>( Arrays.asList( pathDefinitions ) ) );
+        assertPaths( paths, new ArrayList<>( Arrays.asList( pathDefinitions ) ) );
     }
 
     public void assertPathsWithPaths( Iterable<? extends Path> actualPaths, Path... expectedPaths )

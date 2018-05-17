@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,13 +27,13 @@ public class MandatoryTransactionsForGraphDatabaseServiceTest extends
         AbstractMandatoryTransactionsTest<GraphDatabaseService>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnGraphDatabaseService() throws Exception
+    public void shouldTerminateWhenCallingMethodsOnGraphDatabaseService()
     {
         assertFacadeMethodsThrowAfterTerminate( ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
     }

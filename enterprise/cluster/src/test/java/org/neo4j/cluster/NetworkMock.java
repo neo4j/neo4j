@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster;
 
@@ -50,9 +53,9 @@ import org.neo4j.logging.Log;
  */
 public class NetworkMock
 {
-    Map<String, TestProtocolServer> participants = new LinkedHashMap<String, TestProtocolServer>();
+    Map<String, TestProtocolServer> participants = new LinkedHashMap<>();
 
-    private List<MessageDelivery> messageDeliveries = new ArrayList<MessageDelivery>();
+    private List<MessageDelivery> messageDeliveries = new ArrayList<>();
 
     private long now;
     private Monitors monitors;
@@ -72,7 +75,7 @@ public class NetworkMock
         this.timeoutStrategy = timeoutStrategy;
         this.logService = logService;
         this.log = logService.getInternalLog( NetworkMock.class );
-        futureWaiter = new LinkedList<Pair<Future<?>, Runnable>>();
+        futureWaiter = new LinkedList<>();
     }
 
     public TestProtocolServer addServer( int serverId, URI serverUri )
@@ -149,7 +152,7 @@ public class NetworkMock
         }
 
         // Get all sent messages from all test servers
-        List<Message> messages = new ArrayList<Message>();
+        List<Message> messages = new ArrayList<>();
         for ( TestProtocolServer testServer : participants.values() )
         {
             testServer.sendMessages( messages );
@@ -158,9 +161,9 @@ public class NetworkMock
         // Now send them and figure out latency
         for ( Message message : messages )
         {
-            String to = message.getHeader( Message.TO );
+            String to = message.getHeader( Message.HEADER_TO );
             long delay = 0;
-            if ( message.getHeader( Message.TO ).equals( message.getHeader( Message.FROM ) ) )
+            if ( message.getHeader( Message.HEADER_TO ).equals( message.getHeader( Message.HEADER_FROM ) ) )
             {
                 log.debug( "Sending message to itself; zero latency" );
             }
@@ -243,7 +246,7 @@ public class NetworkMock
 
     public List<TestProtocolServer> getServers()
     {
-        return new ArrayList<TestProtocolServer>( participants.values() );
+        return new ArrayList<>( participants.values() );
     }
 
     public MultipleFailureLatencyStrategy getNetworkLatencyStrategy()

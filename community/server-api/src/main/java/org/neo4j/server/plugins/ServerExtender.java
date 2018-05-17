@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,9 +39,9 @@ public final class ServerExtender
     ServerExtender( PluginPointFactory pluginPointFactory )
     {
         this.pluginPointFactory = pluginPointFactory;
-        targetToPluginMap.put( Node.class, new ConcurrentHashMap<String, PluginPoint>() );
-        targetToPluginMap.put( Relationship.class, new ConcurrentHashMap<String, PluginPoint>() );
-        targetToPluginMap.put( GraphDatabaseService.class, new ConcurrentHashMap<String, PluginPoint>() );
+        targetToPluginMap.put( Node.class, new ConcurrentHashMap<>() );
+        targetToPluginMap.put( Relationship.class, new ConcurrentHashMap<>() );
+        targetToPluginMap.put( GraphDatabaseService.class, new ConcurrentHashMap<>() );
     }
 
     Iterable<PluginPoint> getExtensionsFor( Class<?> type )

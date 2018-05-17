@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -47,19 +47,18 @@ public interface UserManager
     {
         @Override
         public User newUser( String username, String initialPassword, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
         {
             return null;
         }
 
         @Override
-        public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
+        public boolean deleteUser( String username )
         {
             return false;
         }
 
         @Override
-        public User getUser( String username ) throws InvalidArgumentsException
+        public User getUser( String username )
         {
             return null;
         }
@@ -72,7 +71,6 @@ public interface UserManager
 
         @Override
         public void setUserPassword( String username, String password, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
         {
         }
 

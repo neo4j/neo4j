@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -53,7 +54,7 @@ public class PropertyPhysicalToLogicalConverterTest
     private NeoStores neoStores;
 
     @Test
-    public void shouldConvertInlinedAddedProperty() throws Exception
+    public void shouldConvertInlinedAddedProperty()
     {
         // GIVEN
         int key = 10;
@@ -68,7 +69,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertInlinedChangedProperty() throws Exception
+    public void shouldConvertInlinedChangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -86,7 +87,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldIgnoreInlinedUnchangedProperty() throws Exception
+    public void shouldIgnoreInlinedUnchangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -101,7 +102,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertInlinedRemovedProperty() throws Exception
+    public void shouldConvertInlinedRemovedProperty()
     {
         // GIVEN
         int key = 10;
@@ -118,7 +119,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicAddedProperty() throws Exception
+    public void shouldConvertDynamicAddedProperty()
     {
         // GIVEN
         int key = 10;
@@ -132,7 +133,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicChangedProperty() throws Exception
+    public void shouldConvertDynamicChangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -148,7 +149,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicInlinedRemovedProperty() throws Exception
+    public void shouldConvertDynamicInlinedRemovedProperty()
     {
         // GIVEN
         int key = 10;
@@ -164,7 +165,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldTreatPropertyThatMovedToAnotherRecordAsChange() throws Exception
+    public void shouldTreatPropertyThatMovedToAnotherRecordAsChange()
     {
         // GIVEN
         int key = 12;
@@ -221,19 +222,20 @@ public class PropertyPhysicalToLogicalConverterTest
     private final long[] labels = new long[]{11};
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
         StoreFactory storeFactory = new StoreFactory( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         neoStores.close();
     }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,8 +34,10 @@ import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -52,6 +54,7 @@ public class JmxQueryProcedureTest
     private MBeanServer jmxServer;
     private ObjectName beanName;
     private String attributeName;
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void shouldHandleBasicMBean() throws Throwable
@@ -61,7 +64,7 @@ public class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"} );
+        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"}, resourceTracker );
 
         // then
         assertThat( asList( result ), contains(
@@ -89,7 +92,7 @@ public class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"} );
+        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"}, resourceTracker );
 
         // then
         assertThat( asList( result ), contains(
@@ -133,7 +136,7 @@ public class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"} );
+        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"}, resourceTracker );
 
         // then
         assertThat( asList( result ), contains(
@@ -158,7 +161,7 @@ public class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"} );
+        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"}, resourceTracker );
 
         // then we verify that we respond with the expected number of beans without error
         //      .. we don't assert more than this, this is more of a smoke test to ensure

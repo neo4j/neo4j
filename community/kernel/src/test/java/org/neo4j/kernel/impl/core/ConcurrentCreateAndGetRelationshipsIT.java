@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -61,7 +61,7 @@ public class ConcurrentCreateAndGetRelationshipsIT
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         CountDownLatch startSignal = new CountDownLatch( 1 );
         AtomicBoolean stopSignal = new AtomicBoolean();
-        AtomicReference<Exception> failure = new AtomicReference<Exception>();
+        AtomicReference<Exception> failure = new AtomicReference<>();
         Node parentNode = createNode( db );
         Collection<Worker> workers = createWorkers( db, startSignal, stopSignal, failure, parentNode );
 
@@ -89,7 +89,7 @@ public class ConcurrentCreateAndGetRelationshipsIT
     private Collection<Worker> createWorkers( GraphDatabaseService db, CountDownLatch startSignal,
             AtomicBoolean stopSignal, AtomicReference<Exception> failure, Node parentNode )
     {
-        Collection<Worker> workers = new ArrayList<Worker>();
+        Collection<Worker> workers = new ArrayList<>();
         for ( int i = 0; i < 2; i++ )
         {
             workers.add( newWorker( db, startSignal, stopSignal, failure, parentNode ) );

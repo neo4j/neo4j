@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,20 +19,19 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * For every source row, produce a row containing only the variables in 'columns'. The ProduceResult operator is
   * always planned as the root operator in a logical plan tree.
   */
-case class ProduceResult(source: LogicalPlan, columns: Seq[String]) extends LogicalPlan {
+case class ProduceResult(source: LogicalPlan, columns: Seq[String])(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   val lhs = Some(source)
   def rhs = None
 
-  def solved: PlannerQuery with CardinalityEstimation = source.solved
-
-  def availableSymbols: Set[IdName] = source.availableSymbols
+  val availableSymbols: Set[String] = source.availableSymbols
 
   def strictness: StrictnessMode = source.strictness
 }

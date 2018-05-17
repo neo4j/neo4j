@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -65,31 +65,42 @@ public abstract class ArrayValue extends Value implements SequenceValue
     }
 
     @Override
-    public boolean equals( boolean x )
+    public final boolean eq( Object other )
+    {
+        if ( other == null )
+        {
+            return false;
+        }
+
+        return other instanceof SequenceValue && this.equals( (SequenceValue) other );
+    }
+
+    @Override
+    public final boolean equals( boolean x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( long x )
+    public final boolean equals( long x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( double x )
+    public final boolean equals( double x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( char x )
+    public final boolean equals( char x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( String x )
+    public final boolean equals( String x )
     {
         return false;
     }

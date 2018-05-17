@@ -158,28 +158,6 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Server Invoke - Enterprise v3.0" {
-      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Enterprise'
-
-      $result = Get-Java -ForServer -Neo4jServer $serverObject
-      $resultArgs = ($result.args -join ' ')
-
-      It "should have main class of org.neo4j.server.enterprise.EnterpriseEntryPoint" {
-        $resultArgs | Should Match ([regex]::Escape(' org.neo4j.server.enterprise.EnterpriseEntryPoint'))
-      }
-    }
-
-    Context "Server Invoke - Enterprise Arbiter v3.0" {
-      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Enterprise' -DatabaseMode 'Arbiter'
-
-      $result = Get-Java -ForServer -Neo4jServer $serverObject
-      $resultArgs = ($result.args -join ' ')
-
-      It "should have main class of org.neo4j.server.enterprise.EnterpriseEntryPoint" {
-        $resultArgs | Should Match ([regex]::Escape(' org.neo4j.server.enterprise.ArbiterEntryPoint'))
-      }
-    }
-
     Context "Server Invoke - Should set heap size" {
       $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
         -NeoConfSettings 'dbms.memory.heap.initial_size=123k','dbms.memory.heap.max_size=234g'

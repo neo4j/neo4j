@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.auth;
 
@@ -42,13 +45,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.IntPredicate;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.neo4j.helpers.Strings.escape;
@@ -62,9 +70,11 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     private final CacheManager cacheManager;
     private final SecurityLog securityLog;
     private final boolean logSuccessfulLogin;
+    private final boolean propertyAuthorization;
+    private final Map<String,List<String>> roleToPropertyBlacklist;
 
     MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms, CacheManager cacheManager,
-            SecurityLog securityLog, boolean logSuccessfulLogin )
+            SecurityLog securityLog, boolean logSuccessfulLogin, boolean propertyAuthorization, Map<String,List<String>> roleToPropertyBlacklist )
     {
         this.userManager = userManager;
         this.realms = realms;
@@ -73,6 +83,8 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         securityManager = new DefaultSecurityManager( realms );
         this.securityLog = securityLog;
         this.logSuccessfulLogin = logSuccessfulLogin;
+        this.propertyAuthorization = propertyAuthorization;
+        this.roleToPropertyBlacklist = roleToPropertyBlacklist;
         securityManager.setSubjectFactory( new ShiroSubjectFactory() );
         ((ModularRealmAuthenticator) securityManager.getAuthenticator())
                 .setAuthenticationStrategy( new ShiroAuthenticationStrategy() );
@@ -90,37 +102,37 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     }
 
     @Override
-    public EnterpriseSecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
+    public EnterpriseLoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
-        EnterpriseSecurityContext securityContext;
+        EnterpriseLoginContext securityContext;
 
         ShiroAuthToken token = new ShiroAuthToken( authToken );
         assertValidScheme( token );
 
         try
         {
-            securityContext = new StandardEnterpriseSecurityContext(
+            securityContext = new StandardEnterpriseLoginContext(
                     this, (ShiroSubject) securityManager.login( null, token ) );
             AuthenticationResult authenticationResult = securityContext.subject().getAuthenticationResult();
             if ( authenticationResult == AuthenticationResult.SUCCESS )
             {
                 if ( logSuccessfulLogin )
                 {
-                    securityLog.info( securityContext, "logged in" );
+                    securityLog.info( securityContext.subject(), "logged in" );
                 }
             }
             else if ( authenticationResult == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
             {
-                securityLog.info( securityContext, "logged in (password change required)" );
+                securityLog.info( securityContext.subject(), "logged in (password change required)" );
             }
             else
             {
-                String errorMessage = ((StandardEnterpriseSecurityContext.NeoShiroSubject) securityContext.subject())
+                String errorMessage = ((StandardEnterpriseLoginContext.NeoShiroSubject) securityContext.subject())
                         .getAuthenticationFailureMessage();
                 securityLog.error( "[%s]: failed to log in: %s", escape( token.getPrincipal().toString() ), errorMessage );
             }
             // No need to keep full Shiro authentication info around on the subject
-            ((StandardEnterpriseSecurityContext.NeoShiroSubject) securityContext.subject()).clearAuthenticationInfo();
+            ((StandardEnterpriseLoginContext.NeoShiroSubject) securityContext.subject()).clearAuthenticationInfo();
         }
         catch ( UnsupportedTokenException e )
         {
@@ -135,7 +147,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         catch ( ExcessiveAttemptsException e )
         {
             // NOTE: We only get this with single (internal) realm authentication
-            securityContext = new StandardEnterpriseSecurityContext( this,
+            securityContext = new StandardEnterpriseLoginContext( this,
                     new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS ) );
             securityLog.error( "[%s]: failed to log in: too many failed attempts",
                     escape( token.getPrincipal().toString() ) );
@@ -158,7 +170,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
                         cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "" );
                 throw new AuthProviderFailedException( e.getCause().getMessage(), e.getCause() );
             }
-            securityContext = new StandardEnterpriseSecurityContext( this,
+            securityContext = new StandardEnterpriseLoginContext( this,
                     new ShiroSubject( securityManager, AuthenticationResult.FAILURE ) );
             Throwable cause = e.getCause();
             Throwable causeCause = e.getCause() != null ? e.getCause().getCause() : null;
@@ -245,9 +257,9 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     }
 
     @Override
-    public EnterpriseUserManager getUserManager( SecurityContext securityContext )
+    public EnterpriseUserManager getUserManager( AuthSubject authSubject, boolean isUserManager )
     {
-        return new PersonalUserManager( userManager, securityContext, securityLog );
+        return new PersonalUserManager( userManager, authSubject, securityLog, isUserManager );
     }
 
     @Override
@@ -296,5 +308,37 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
             }
         }
         return infoList;
+    }
+
+    IntPredicate getPropertyPermissions( Set<String> roles, Function<String, Integer> tokenLookup )
+    {
+        if ( propertyAuthorization )
+        {
+            PrimitiveIntSet blackListed = Primitive.intSet();
+            for ( String role : roles )
+            {
+                if ( roleToPropertyBlacklist.containsKey( role ) )
+                {
+                    assert roleToPropertyBlacklist.get( role ) != null : "Blacklist has to contain properties";
+                    for ( String propName : roleToPropertyBlacklist.get( role ) )
+                    {
+
+                        try
+                        {
+                            blackListed.add( tokenLookup.apply( propName ) );
+                        }
+                        catch ( Exception e )
+                        {
+                            securityLog.error( "Error in setting up property permissions, '" + propName + "' is not a valid property name." );
+                        }
+                    }
+                }
+            }
+            return property -> !blackListed.contains( property );
+        }
+        else
+        {
+            return property -> true;
+        }
     }
 }

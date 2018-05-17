@@ -26,16 +26,15 @@
 
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3</name>
+      <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
       <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-      <comments>The software ("Software") developed and owned by Network Engine for
-        Objects in Lund AB (referred to in this notice as "Neo Technology") is
-        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+      <comments>The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
+        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 with the Commons Clause to all
         third parties and that license is included below.
 
         However, if you have executed an End User Software License and Services
         Agreement or an OEM Software License and Support Services Agreement, or
-        another commercial license agreement with Neo Technology or one of its
+        another commercial license agreement with Neo4j or one of its
         affiliates (each, a "Commercial Agreement"), the terms of the license in
         such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
         LICENSE Version 3 and you may use the Software solely pursuant to the
@@ -45,7 +44,8 @@
   </licenses>
 
   <properties>
-    <opencypher.version>1.0.0-M06</opencypher.version>
+    <license-text.header>../../../build/AGPL-3-header.txt</license-text.header>
+    <moduleName>org.neo4j.internal.cypher.spec.suite.tools</moduleName>
   </properties>
   
   <build>
@@ -63,28 +63,8 @@
 
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>tck</artifactId>
+      <artifactId>tck-api</artifactId>
       <version>${opencypher.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>grammar</artifactId>
-      <version>${opencypher.version}</version>
-    </dependency>
-
-    <!-- Visualization -->
-
-    <dependency>
-      <groupId>org.jfree</groupId>
-      <artifactId>jfreechart</artifactId>
-      <version>1.0.19</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.xmlgraphics</groupId>
-      <artifactId>batik-svggen</artifactId>
-      <version>1.8</version>
     </dependency>
 
     <!-- scala -->
@@ -99,29 +79,19 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_2.11</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.scalautils</groupId>
       <artifactId>scalautils_2.11</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
-      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.novus</groupId>
+      <artifactId>salat-core_2.11</artifactId>
+      <scope>compile</scope>
     </dependency>
 
     <!-- neo4j -->
@@ -167,20 +137,6 @@
       <artifactId>neo4j-cypher</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>
-
-    <!-- other -->
-
-    <dependency>
-      <groupId>com.novus</groupId>
-      <artifactId>salat-core_2.11</artifactId>
-      <version>1.9.9</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
   </dependencies>

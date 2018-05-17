@@ -1,24 +1,28 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.scenarios;
 
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -27,6 +31,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -36,6 +41,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
@@ -46,7 +52,6 @@ import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
@@ -60,8 +65,9 @@ import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -87,6 +93,7 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -95,6 +102,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.scenarios.SampleData.createData;
 import static org.neo4j.function.Predicates.awaitEx;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
@@ -113,7 +121,7 @@ public class ReadReplicaReplicationIT
     public final ClusterRule clusterRule = new ClusterRule().withNumberOfCoreMembers( NR_CORE_MEMBERS )
             .withNumberOfReadReplicas( NR_READ_REPLICAS )
             .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
-            .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
+            .withDiscoveryServiceType( DiscoveryServiceType.HAZELCAST );
 
     @Test
     public void shouldNotBeAbleToWriteToReadReplica() throws Exception
@@ -233,10 +241,6 @@ public class ReadReplicaReplicationIT
         {
             Path relativePath = dbStoreDirectory.relativize( files.next().toPath().toAbsolutePath() );
             labelScanStoreFiles.add( relativePath );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
         }
     }
 
@@ -446,7 +450,7 @@ public class ReadReplicaReplicationIT
         // when the poller is paused, transaction doesn't make it to the read replica
         try
         {
-            transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
+            transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 15 ) );
             fail( "should have thrown exception" );
         }
         catch ( TransactionFailureException e )
@@ -456,7 +460,7 @@ public class ReadReplicaReplicationIT
 
         // when the poller is resumed, it does make it to the read replica
         pollingClient.start();
-        transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
+        transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 15 ) );
     }
 
     private TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )
@@ -591,6 +595,47 @@ public class ReadReplicaReplicationIT
             SortedMap<Long,File> logs = new FileNames( raftLogDir ).getAllFiles( fileSystem, mock( Log.class ) );
             return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );
         }
+    }
+
+    @Test
+    public void pageFaultsFromReplicationMustCountInMetrics() throws Exception
+    {
+        // Given initial pin counts on all members
+        Cluster cluster = clusterRule.startCluster();
+        Function<ReadReplica,PageCacheCounters> getPageCacheCounters =
+                ccm -> ccm.database().getDependencyResolver().resolveDependency( PageCacheCounters.class );
+        List<PageCacheCounters> countersList =
+                cluster.readReplicas().stream().map( getPageCacheCounters ).collect( Collectors.toList() );
+        long[] initialPins = countersList.stream().mapToLong( PageCacheCounters::pins ).toArray();
+
+        // when the leader commits a write transaction,
+        cluster.coreTx( ( db, tx ) ->
+        {
+            Node node = db.createNode( label( "boo" ) );
+            node.setProperty( "foobar", "baz_bat" );
+            tx.success();
+        } );
+
+        // then the replication should cause pins on a majority of core members to increase.
+        // However, the commit returns as soon as the transaction has been replicated through the Raft log, which
+        // happens before the transaction is applied on the members, and then replicated to read-replicas.
+        // Therefor we are racing with the transaction application on the read-replicas, so we have to spin.
+        int minimumUpdatedMembersCount = countersList.size() / 2 + 1;
+        assertEventually( "Expected followers to eventually increase pin counts", () ->
+        {
+            long[] pinsAfterCommit = countersList.stream().mapToLong( PageCacheCounters::pins ).toArray();
+            int membersWithIncreasedPinCount = 0;
+            for ( int i = 0; i < initialPins.length; i++ )
+            {
+                long before = initialPins[i];
+                long after = pinsAfterCommit[i];
+                if ( before < after )
+                {
+                    membersWithIncreasedPinCount++;
+                }
+            }
+            return membersWithIncreasedPinCount;
+        }, Matchers.is( greaterThanOrEqualTo( minimumUpdatedMembersCount ) ), 10, SECONDS );
     }
 
     private final BiConsumer<CoreGraphDatabase,Transaction> createSomeData = ( db, tx ) ->

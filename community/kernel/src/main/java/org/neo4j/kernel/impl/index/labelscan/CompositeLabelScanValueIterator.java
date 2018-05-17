@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -102,7 +102,7 @@ class CompositeLabelScanValueIterator extends PrimitiveLongBaseIterator implemen
         toClose.clear();
     }
 
-    private class IdAndSource implements Comparable<IdAndSource>
+    private static class IdAndSource implements Comparable<IdAndSource>
     {
         private long latestReturned;
         private final PrimitiveLongIterator source;

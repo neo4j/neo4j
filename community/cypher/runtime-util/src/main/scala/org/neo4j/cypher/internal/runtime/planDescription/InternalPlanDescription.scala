@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,12 +24,17 @@ import java.util
 import org.neo4j.cypher.exceptionHandler
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName, SeekableArgs}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{QualifiedName, SeekableArgs}
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
+
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /**
   * Abstract description of an execution plan
@@ -39,7 +44,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
   def arguments: Seq[Argument]
 
-  def id: LogicalPlanId
+  def id: Id
 
   def name: String
 
@@ -56,20 +61,29 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   def addArgument(arg: Argument): InternalPlanDescription
 
   def flatten: Seq[InternalPlanDescription] = {
-    def flattenAcc(acc: Seq[InternalPlanDescription], plan: InternalPlanDescription): Seq[InternalPlanDescription] = {
-      plan.children.toIndexedSeq.foldLeft(acc :+ plan) {
-        case (acc1, plan1) => flattenAcc(acc1, plan1)
+      val flatten = new ArrayBuffer[InternalPlanDescription]
+      val stack = new mutable.Stack[InternalPlanDescription]()
+      stack.push(self)
+      while (stack.nonEmpty) {
+        val plan = stack.pop()
+        flatten.append(plan)
+        plan.children match {
+          case NoChildren =>
+          case SingleChild(child) =>
+            stack.push(child)
+          case TwoChildren(l, r) =>
+            stack.push(r)
+            stack.push(l)
+        }
       }
-    }
-
-    flattenAcc(Seq.empty, this)
+      flatten
   }
 
   def orderedVariables: Seq[String] = variables.toIndexedSeq.sorted
 
   def totalDbHits: Option[Long] = {
     val allMaybeDbHits: Seq[Option[Long]] = flatten.map {
-      case plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x }
+      plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x }
     }
 
     allMaybeDbHits.reduce[Option[Long]] {
@@ -98,16 +112,15 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   override def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])
 
   override def getProfilerStatistics: ExecutionPlanDescription.ProfilerStatistics = new ProfilerStatistics {
-    def getDbHits: Long = extract { case DbHits(count) => count }
+    def getDbHits: Long = extract { case DbHits(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
 
-    def getRows: Long = extract { case Rows(count) => count }
+    def getRows: Long = extract { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
 
-    def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }
+    def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }.getOrElse(0)
 
-    def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }
+    def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }.getOrElse(0)
 
-    private def extract(f: PartialFunction[Argument, Long]): Long =
-      arguments.collectFirst(f).getOrElse(throw new InternalException("Don't have profiler stats"))
+    private def extract(f: PartialFunction[Argument, Long]): Option[Long] = arguments.collectFirst(f)
   }
 
 }
@@ -150,6 +163,8 @@ object InternalPlanDescription {
     case class PrefixIndex(label: String, propertyKey: String, prefix: ast.Expression) extends Argument
 
     case class InequalityIndex(label: String, propertyKey: String, bounds: Seq[String]) extends Argument
+
+    case class PointDistanceIndex(label: String, propertyKey: String, point: String, distance: String, inclusive: Boolean) extends Argument
 
     case class LabelName(label: String) extends Argument
 
@@ -264,7 +279,7 @@ final case class TwoChildren(lhs: InternalPlanDescription, rhs: InternalPlanDesc
   def map(f: InternalPlanDescription => InternalPlanDescription) = TwoChildren(lhs = lhs.map(f), rhs = rhs.map(f))
 }
 
-final case class PlanDescriptionImpl(id: LogicalPlanId,
+final case class PlanDescriptionImpl(id: Id,
                                      name: String,
                                      children: Children,
                                      arguments: Seq[Argument],
@@ -357,7 +372,7 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 
   override def find(name: String): Seq[InternalPlanDescription] = similar.last.find(name)
 
-  override def id: LogicalPlanId = similar.last.id
+  override def id: Id = similar.last.id
 
   override def addArgument(argument: Argument): InternalPlanDescription = ???
 
@@ -367,7 +382,7 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 
 }
 
-final case class ArgumentPlanDescription(id: LogicalPlanId,
+final case class ArgumentPlanDescription(id: Id,
                                          arguments: Seq[Argument] = Seq.empty,
                                          variables: Set[String])
   extends InternalPlanDescription {

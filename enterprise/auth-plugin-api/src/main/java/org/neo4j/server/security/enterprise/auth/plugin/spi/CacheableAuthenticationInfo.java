@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
@@ -24,11 +27,11 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * A cacheable object that can be returned as the result of successful authentication by an
- * <tt>AuthenticationPlugin</tt>.
+ * {@link AuthenticationPlugin}.
  *
  * <p>This object can be cached by the Neo4j authentication cache.
  *
- * <p>This is an alternative to <tt>CustomCacheableAuthenticationInfo</tt> if you want Neo4j to manage secure
+ * <p>This is an alternative to {@link CustomCacheableAuthenticationInfo} if you want Neo4j to manage secure
  * hashing and matching of cached credentials.
  *
  * <p>NOTE: Caching only occurs if it is explicitly enabled by the plugin.
@@ -54,8 +57,7 @@ public interface CacheableAuthenticationInfo extends AuthenticationInfo
 
     /**
      * Should return credentials that can be cached, so that successive authentication attempts could be performed
-     * against the cached authentication info from a previous successful authentication attempt, without having to
-     * call <tt>AuthenticationInfo.getAuthenticationInfo()</tt> again.
+     * against the cached authentication info from a previous successful authentication attempt.
      *
      * <p>NOTE: The returned credentials will be hashed using a cryptographic hash function together
      * with a random salt (generated with a secure random number generator) before being stored.
@@ -68,12 +70,12 @@ public interface CacheableAuthenticationInfo extends AuthenticationInfo
     byte[] credentials();
 
     /**
-     * Creates a new <tt>CacheableAuthenticationInfo</tt>
+     * Creates a new {@link CacheableAuthenticationInfo}
      *
      * @param principal a principal that uniquely identifies the authenticated subject within this authentication
      *                  provider
      * @param credentials credentials that can be cached
-     * @return a new <tt>CacheableAuthenticationInfo</tt> containing the given parameters
+     * @return a new {@link CacheableAuthenticationInfo} containing the given parameters
      */
     static CacheableAuthenticationInfo of( Object principal, byte[] credentials )
     {

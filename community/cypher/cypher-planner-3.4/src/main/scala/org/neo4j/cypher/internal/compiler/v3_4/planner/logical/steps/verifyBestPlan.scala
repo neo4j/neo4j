@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,12 +25,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
-  def apply(plan: LogicalPlan, expected: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val constructed = plan.solved
+  def apply(plan: LogicalPlan, expected: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
+    val constructed = solveds.get(plan.id)
     if (expected != constructed) {
       val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context.planContext)
       val unfulfillableJoinHints = findUnfulfillableJoinHints(expected, context.planContext)
@@ -45,36 +46,39 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
           val expectedHints = expected.allHints
           val actualHints = constructed.allHints
-          val missing = expectedHints -- actualHints
+          val missing = expectedHints.diff(actualHints)
+          val solvedInAddition = actualHints.diff(expectedHints)
+          val inventedHintsAndThenSolvedThem = solvedInAddition.exists(!expectedHints.contains(_))
+          if (missing.nonEmpty || inventedHintsAndThenSolvedThem) {
+            def out(h: Seq[Hint]) = h.mkString("`", ", ", "`")
 
-          def out(h: Set[Hint]) = h.mkString("`", ", ", "`")
-
-          val details = if (missing.isEmpty)
-            s"""Expected:
-               |${out(expectedHints)}
-               |
+            val details = if (missing.isEmpty)
+              s"""Expected:
+                 |${out(expectedHints)}
+                 |
                |Instead, got:
-               |${out(actualHints)}""".stripMargin
-          else
-            s"Could not solve these hints: ${out(missing)}"
+                 |${out(actualHints)}""".stripMargin
+            else
+              s"Could not solve these hints: ${out(missing)}"
 
-          val message =
-            s"""Failed to fulfil the hints of the query.
-               |$details
-               |
+            val message =
+              s"""Failed to fulfil the hints of the query.
+                 |$details
+                 |
                |Plan $plan""".stripMargin
 
-          throw new HintException(message)
+            throw new HintException(message)
+          }
         }
       } else {
         processUnfulfilledIndexHints(context, unfulfillableIndexHints)
-        processUnfulfilledJoinHints(context, unfulfillableJoinHints)
+        processUnfulfilledJoinHints(plan, context, unfulfillableJoinHints)
       }
     }
     plan
   }
 
-  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Set[UsingIndexHint]) = {
+  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Seq[UsingIndexHint]): Unit = {
     if (hints.nonEmpty) {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
@@ -88,12 +92,12 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def processUnfulfilledJoinHints(context: LogicalPlanningContext, hints: Set[UsingJoinHint]) = {
+  private def processUnfulfilledJoinHints(plan: LogicalPlan, context: LogicalPlanningContext, hints: Seq[UsingJoinHint]): Unit = {
     if (hints.nonEmpty) {
       // we were unable to plan hash join on some requested nodes
       if (context.useErrorsOverWarnings) {
         val firstJoinHint = hints.head
-        throw new JoinHintException(firstJoinHint.variables.map(_.name).reduceLeft(_ + ", " + _), "Unable to plan hash join")
+        throw new JoinHintException(firstJoinHint.variables.map(_.name).reduceLeft(_ + ", " + _), s"Unable to plan hash join. Instead, constructed\n$plan")
       } else {
         hints.foreach { hint =>
           context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.variables.map(_.name).toIndexedSeq))
@@ -102,10 +106,10 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Set[UsingIndexHint] = {
+  private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Seq[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property1,property2)
-      case UsingIndexHint(_, LabelName(label), properties)
+      case UsingIndexHint(_, LabelName(label), properties, _)
         if planContext.indexGet(label, properties.map(_.name)).isDefined ||
           planContext.uniqueIndexGet(label, properties.map(_.name)).isDefined => None
       // no such index exists
@@ -115,7 +119,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def findUnfulfillableJoinHints(query: PlannerQuery, planContext: PlanContext): Set[UsingJoinHint] = {
+  private def findUnfulfillableJoinHints(query: PlannerQuery, planContext: PlanContext): Seq[UsingJoinHint] = {
     query.allHints.collect {
       case hint: UsingJoinHint => hint
     }

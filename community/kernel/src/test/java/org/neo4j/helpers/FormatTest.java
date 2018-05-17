@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,12 +21,16 @@ package org.neo4j.helpers;
 
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class FormatTest
 {
     @Test
-    public void shouldDisplayBytes() throws Exception
+    public void shouldDisplayBytes()
     {
         // when
         String format = Format.bytes( 123 );
@@ -37,7 +41,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayKiloBytes() throws Exception
+    public void shouldDisplayKiloBytes()
     {
         // when
         String format = Format.bytes( 1_234 );
@@ -48,7 +52,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayMegaBytes() throws Exception
+    public void shouldDisplayMegaBytes()
     {
         // when
         String format = Format.bytes( 1_234_567 );
@@ -59,7 +63,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayGigaBytes() throws Exception
+    public void shouldDisplayGigaBytes()
     {
         // when
         String format = Format.bytes( 1_234_567_890 );
@@ -70,7 +74,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayPlainCount() throws Exception
+    public void shouldDisplayPlainCount()
     {
         // when
         String format = Format.count( 10 );
@@ -80,7 +84,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayThousandCount() throws Exception
+    public void shouldDisplayThousandCount()
     {
         // when
         String format = Format.count( 2_000 );
@@ -91,7 +95,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayMillionCount() throws Exception
+    public void shouldDisplayMillionCount()
     {
         // when
         String format = Format.count( 2_000_000 );
@@ -102,7 +106,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayBillionCount() throws Exception
+    public void shouldDisplayBillionCount()
     {
         // when
         String format = Format.count( 2_000_000_000 );
@@ -113,7 +117,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayTrillionCount() throws Exception
+    public void shouldDisplayTrillionCount()
     {
         // when
         String format = Format.count( 4_000_000_000_000L );
@@ -121,5 +125,13 @@ public class FormatTest
         // then
         assertTrue( format.startsWith( "4" ) );
         assertTrue( format.endsWith( "T" ) );
+    }
+
+    @Test
+    public void displayDuration()
+    {
+        assertThat( Format.duration( MINUTES.toMillis( 1 ) + SECONDS.toMillis( 2 ) ), is( "1m 2s" ) );
+        assertThat( Format.duration( 42 ), is( "42ms" ) );
+        assertThat( Format.duration( 0 ), is( "0ms" ) );
     }
 }

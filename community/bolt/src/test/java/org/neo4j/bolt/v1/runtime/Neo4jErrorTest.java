@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,9 +26,12 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertEquals;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class Neo4jErrorTest
 {
@@ -44,13 +47,13 @@ public class Neo4jErrorTest
     }
 
     @Test
-    public void shouldConvertDeadlockException() throws Throwable
+    public void shouldConvertDeadlockException()
     {
         // When
         Neo4jError error = Neo4jError.from( new DeadlockDetectedException( null ) );
 
         // Then
-        assertEquals( error.status(), Status.Transaction.DeadlockDetected );
+        assertEquals( Status.Transaction.DeadlockDetected, error.status() );
     }
 
     @Test
@@ -86,6 +89,21 @@ public class Neo4jErrorTest
                 "Why do I give valuable time%n" +
                 "To people who don't care if I live or die?"
         )));
+    }
+
+    @Test
+    public void shouldCombineSingleErrorToItself()
+    {
+        Neo4jError error = Neo4jError.from( Status.Request.Invalid, "Really bad request" );
+        Neo4jError combinedError = Neo4jError.combine( singletonList( error ) );
+
+        assertEquals( error, combinedError );
+    }
+
+    @Test
+    public void shouldCombineNoErrorsToNull()
+    {
+        assertNull( Neo4jError.combine( emptyList() ) );
     }
 
     @Test

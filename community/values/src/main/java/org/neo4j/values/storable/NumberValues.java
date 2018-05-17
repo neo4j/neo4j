@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -173,7 +173,7 @@ public final class NumberValues
         {
             if ( fpn < 0.0 )
             {
-                if ( (NON_DOUBLE_LONG & in) == NON_DOUBLE_LONG ) // the high order bits are only sign bits
+                if ( (NON_DOUBLE_LONG & in) == 0L ) // the high order bits are only sign bits
                 { // no loss of precision if converting the long to a double, so it's safe to compare as double
                     return fpn == in;
                 }
@@ -191,7 +191,7 @@ public final class NumberValues
         {
             if ( !(fpn < 0.0) )
             {
-                if ( (NON_DOUBLE_LONG & in) == 0 ) // the high order bits are only sign bits
+                if ( (NON_DOUBLE_LONG & in) == 0L ) // the high order bits are only sign bits
                 { // no loss of precision if converting the long to a double, so it's safe to compare as double
                     return fpn == in;
                 }
@@ -211,7 +211,7 @@ public final class NumberValues
     // Tested by PropertyValueComparisonTest
     public static int compareDoubleAgainstLong( double lhs, long rhs )
     {
-        if ( (NON_DOUBLE_LONG & rhs) != NON_DOUBLE_LONG )
+        if ( (NON_DOUBLE_LONG & rhs) != 0L )
         {
             if ( Double.isNaN( lhs ) )
             {

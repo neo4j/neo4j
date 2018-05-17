@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.util.v3_4.NonEmptyList
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, Predicate}
+import org.neo4j.cypher.internal.ir.v3_4.Predicate
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -98,12 +98,12 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
     GreaterThanOrEqual(lhs, SignedDecimalIntegerLiteral(v.toString)_)(pos)
 
   private def pred(expr: Expression) =
-    Predicate(expr.dependencies.map { ident => IdName(ident.name) }, expr)
+    Predicate(expr.dependencies.map { ident => ident.name }, expr)
 
   private def anded(property: Property, first: InequalityExpression, others: InequalityExpression*) = {
     val variable = property.map.asInstanceOf[Variable]
     val inequalities = NonEmptyList(first, others: _*)
-    val deps = others.foldLeft(first.dependencies) { (acc, elem) => acc ++ elem.dependencies }.map { ident => IdName(ident.name) }
+    val deps = others.foldLeft(first.dependencies) { (acc, elem) => acc ++ elem.dependencies }.map { ident => ident.name }
     Predicate(deps, AndedPropertyInequalities(variable, property, inequalities))
   }
 }

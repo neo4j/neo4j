@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -62,9 +62,10 @@ public class ImportCommandTest
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        Importer importer = mock( Importer.class );
         when( mockImporterFactory
                 .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
-                .thenReturn( mock( Importer.class ) );
+                .thenReturn( importer );
 
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
         {
@@ -86,9 +87,10 @@ public class ImportCommandTest
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        Importer importer = mock( Importer.class );
         when( mockImporterFactory
                 .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
-                .thenReturn( mock( Importer.class ) );
+                .thenReturn( importer );
 
         ImportCommand importCommand =
                 new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(),
@@ -107,9 +109,10 @@ public class ImportCommandTest
     {
         File homeDir = testDir.directory( "home" );
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        Importer importer = mock( Importer.class );
         when( mockImporterFactory
                 .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
-                .thenReturn( mock( Importer.class ) );
+                .thenReturn( importer );
 
         ImportCommand importCommand =
                 new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(),
@@ -215,6 +218,7 @@ public class ImportCommandTest
                             "                          [--quote=<quotation-character>]%n" +
                             "                          [--max-memory=<max-memory-that-importer-can-use>]%n" +
                             "                          [--f=<File containing all arguments to this import>]%n" +
+                            "                          [--high-io=<true/false>]%n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
                             "                          [--from=<source-directory>]%n" +
@@ -223,7 +227,7 @@ public class ImportCommandTest
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
                             "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "Import a collection of CSV files with --mode=csv (default), or a database from a%n" +
@@ -294,7 +298,10 @@ public class ImportCommandTest
                             "      arguments on the command line directly.Each argument can be on a separate%n" +
                             "      line or multiple arguments per line separated by space.Arguments%n" +
                             "      containing spaces needs to be quoted.Supplying other arguments in addition%n" +
-                            "      to this file argument is not supported. [default:]%n" ),
+                            "      to this file argument is not supported. [default:]%n" +
+                            "  --high-io=<true/false>%n" +
+                            "      Ignore environment-based heuristics, and assume that the target storage%n" +
+                            "      subsystem can support parallel IO with high throughput. [default:null]%n" ),
                     baos.toString() );
         }
     }

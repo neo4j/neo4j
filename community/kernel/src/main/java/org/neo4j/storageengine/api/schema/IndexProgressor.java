@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,11 @@
  */
 package org.neo4j.storageengine.api.schema;
 
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
+import org.neo4j.kernel.impl.newapi.ExplicitIndexProgressor;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -59,6 +63,7 @@ public interface IndexProgressor extends AutoCloseable
     /**
      * Close the progressor and all attached resources. Idempotent.
      */
+    @Override
     void close();
 
     /**
@@ -69,10 +74,12 @@ public interface IndexProgressor extends AutoCloseable
         /**
          * Setup the client for progressing using the supplied progressor. The values feed in accept map to the
          * propertyIds provided here. Called by index implementation.
+         * @param descriptor The descriptor
          * @param progressor The progressor
-         * @param propertyIds The property ids of this progression
+         * @param query The query of this progression
          */
-        void initialize( IndexProgressor progressor, int[] propertyIds );
+        void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor,
+                         IndexQuery[] query );
 
         /**
          * Accept the node id and values of a candidate index entry. Return true if the entry is
@@ -82,6 +89,8 @@ public interface IndexProgressor extends AutoCloseable
          * @return true if the entry is accepted, false otherwise
          */
         boolean acceptNode( long reference, Value... values );
+
+        boolean needsValues();
     }
 
     /**
@@ -93,8 +102,13 @@ public interface IndexProgressor extends AutoCloseable
          * Setup the client for progressing using the supplied progressor. Called by index implementation.
          * @param progressor the progressor
          * @param providesLabels true if the progression can provide label information
+         * @param label the label to scan for
          */
-        void initialize( IndexProgressor progressor, boolean providesLabels );
+        void scan( LabelScanValueIndexProgressor progressor, boolean providesLabels, int label );
+
+        void unionScan( IndexProgressor progressor, boolean providesLabels, int... labels );
+
+        void intersectionScan( IndexProgressor progressor, boolean providesLabels, int... labels );
 
         /**
          * Accept the node id and (some) labels of a candidate index entry. Return true if the entry
@@ -116,7 +130,7 @@ public interface IndexProgressor extends AutoCloseable
          * @param progressor the progressor
          * @param expectedSize expected number of entries this progressor will feed the client.
          */
-        void initialize( IndexProgressor progressor, int expectedSize );
+        void initialize( ExplicitIndexProgressor progressor, int expectedSize );
 
         /**
          * Accept the entity id and a score. Return true if the entry is accepted, false otherwise

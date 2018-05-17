@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,11 +20,11 @@
 package org.neo4j.kernel.api.schema.constaints;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema.SchemaUtil;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 public abstract class IndexBackedConstraintDescriptor extends ConstraintDescriptor implements LabelSchemaSupplier
 {
@@ -42,9 +42,9 @@ public abstract class IndexBackedConstraintDescriptor extends ConstraintDescript
         return schema;
     }
 
-    public IndexDescriptor ownedIndexDescriptor()
+    public SchemaIndexDescriptor ownedIndexDescriptor()
     {
-        return IndexDescriptorFactory.uniqueForSchema( schema );
+        return SchemaIndexDescriptorFactory.uniqueForSchema( schema );
     }
 
     @Override

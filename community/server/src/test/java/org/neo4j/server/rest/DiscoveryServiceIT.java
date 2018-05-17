@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void shouldRespondWith200WhenRetrievingDiscoveryDocument() throws Exception
+    public void shouldRespondWith200WhenRetrievingDiscoveryDocument()
     {
         JaxRsResponse response = getDiscoveryDocument();
         assertEquals( 200, response.getStatus() );
@@ -45,7 +45,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument() throws Exception
+    public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument()
     {
         JaxRsResponse response = getDiscoveryDocument();
         assertNotNull( response.getHeaders().get( "Content-Length" ) );
@@ -53,7 +53,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument() throws Exception
+    public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument()
     {
         JaxRsResponse response = getDiscoveryDocument();
         assertThat( response.getType().toString(), containsString( APPLICATION_JSON ) );
@@ -78,7 +78,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRedirectOnHtmlRequest() throws Exception
+    public void shouldRedirectOnHtmlRequest()
     {
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
@@ -89,7 +89,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
         assertEquals( 303, clientResponse.getStatus() );
     }
 
-    private JaxRsResponse getDiscoveryDocument() throws Exception
+    private JaxRsResponse getDiscoveryDocument()
     {
         return new RestRequest( server().baseUri() ).get();
     }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -66,8 +66,7 @@ public final class ConfigurationBean extends Neo4jMBean
     }
 
     @Override
-    public Object getAttribute( String attribute ) throws AttributeNotFoundException, MBeanException,
-            ReflectionException
+    public Object getAttribute( String attribute )
     {
         return config.get( attribute ).valueAsString().orElse( null );
     }
@@ -92,7 +91,7 @@ public final class ConfigurationBean extends Neo4jMBean
 
     @Override
     public void setAttribute( Attribute attribute )
-            throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException
+            throws InvalidAttributeValueException
     {
         throw new InvalidAttributeValueException( "Not a writable attribute: " + attribute.getName() );
     }
@@ -107,7 +106,7 @@ public final class ConfigurationBean extends Neo4jMBean
 
     @Override
     public Object invoke( String s, Object[] objects, String[] strings )
-            throws MBeanException, ReflectionException
+            throws MBeanException
     {
         try
         {

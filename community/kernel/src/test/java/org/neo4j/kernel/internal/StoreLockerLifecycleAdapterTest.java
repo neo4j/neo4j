@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,26 +43,26 @@ public class StoreLockerLifecycleAdapterTest
     public final TestDirectory directory = TestDirectory.testDirectory();
 
     @Test
-    public void shouldAllowDatabasesToUseFilesetsSequentially() throws Exception
+    public void shouldAllowDatabasesToUseFilesetsSequentially()
     {
         newDb().shutdown();
         newDb().shutdown();
     }
 
     @Test
-    public void shouldNotAllowDatabasesToUseFilesetsConcurrently() throws Exception
+    public void shouldNotAllowDatabasesToUseFilesetsConcurrently()
     {
         shouldNotAllowDatabasesToUseFilesetsConcurrently( stringMap() );
     }
 
     @Test
-    public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode() throws Exception
+    public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode()
     {
         shouldNotAllowDatabasesToUseFilesetsConcurrently(
                 stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
     }
 
-    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<String,String> config ) throws Exception
+    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<String,String> config )
     {
         GraphDatabaseService db = newDb();
         try

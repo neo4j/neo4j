@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,28 +19,67 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.List;
+import java.util.Set;
+
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.Value;
 
-public class UniqueLayoutTestUtil extends LayoutTestUtil<SchemaNumberKey,SchemaNumberValue>
+class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> extends LayoutTestUtil<KEY, VALUE>
 {
-    UniqueLayoutTestUtil()
+
+    private final LayoutTestUtil<KEY, VALUE> delegate;
+
+    UniqueLayoutTestUtil( LayoutTestUtil<KEY, VALUE> delegate )
     {
-        super( IndexDescriptorFactory.uniqueForLabel( 42, 666 ) );
+        super( delegate.schemaIndexDescriptor );
+        this.delegate = delegate;
     }
 
     @Override
-    public Layout<SchemaNumberKey,SchemaNumberValue> createLayout()
+    Layout<KEY,VALUE> createLayout()
     {
-        return new UniqueNumberLayout();
+        return delegate.createLayout();
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates()
     {
-        return someUpdatesNoDuplicateValues();
+        return delegate.someUpdatesNoDuplicateValues();
+    }
+
+    @Override
+    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
+    {
+        return delegate.rangeQuery( from, fromInclusive, to, toInclusive );
+    }
+
+    @Override
+    int compareIndexedPropertyValue( KEY key1, KEY key2 )
+    {
+        return delegate.compareIndexedPropertyValue( key1, key2 );
+    }
+
+    @Override
+    Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    {
+        return delegate.newUniqueValue( random, uniqueCompareValues, uniqueValues );
+    }
+
+    @Override
+    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues()
+    {
+        return delegate.someUpdatesNoDuplicateValues();
+    }
+
+    @Override
+    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues()
+    {
+        return delegate.someUpdatesWithDuplicateValues();
     }
 
     @Override

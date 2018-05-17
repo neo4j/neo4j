@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,8 +35,8 @@ import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 public class PartitionedIndexReaderTest
 {
 
-    private IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 0, 1 );
+    private SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( 0, 1 );
     @Mock
     private IndexSamplingConfig samplingConfig;
     @Mock
@@ -100,7 +100,7 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        IndexQuery.NumberRangePredicate query = IndexQuery.range( 1, 1, true, 2, true );
+        IndexQuery.RangePredicate<?> query = IndexQuery.range( 1, 1, true, 2, true );
         when( indexReader1.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 1 ) );
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
@@ -115,7 +115,7 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        IndexQuery.StringRangePredicate query = IndexQuery.range( 1, "a", false, "b", true );
+        IndexQuery.RangePredicate<?> query = IndexQuery.range( 1, "a", false, "b", true );
         when( indexReader1.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 1 ) );
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
@@ -184,7 +184,7 @@ public class PartitionedIndexReaderTest
 
     private PartitionedIndexReader createPartitionedReaderFromReaders()
     {
-        return new PartitionedIndexReader( getPartitionReaders() );
+        return new PartitionedIndexReader( schemaIndexDescriptor, getPartitionReaders() );
     }
 
     private List<SimpleIndexReader> getPartitionReaders()
@@ -194,7 +194,7 @@ public class PartitionedIndexReaderTest
 
     private PartitionedIndexReader createPartitionedReader()
     {
-        return new PartitionedIndexReader( getPartitionSearchers(), indexDescriptor, samplingConfig, taskCoordinator );
+        return new PartitionedIndexReader( getPartitionSearchers(), schemaIndexDescriptor, samplingConfig, taskCoordinator );
     }
 
     private List<PartitionSearcher> getPartitionSearchers()
@@ -212,7 +212,7 @@ public class PartitionedIndexReaderTest
         }
 
         @Override
-        public IndexSample sampleIndex() throws IndexNotFoundKernelException
+        public IndexSample sampleIndex()
         {
             return new IndexSample( sampleValue, sampleValue, sampleValue );
         }

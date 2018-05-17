@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api.schema;
 
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
@@ -38,7 +40,7 @@ public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
     }
 
     @Override
-    public void initialize( IndexProgressor progressor, int[] propertyIds )
+    public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
     {
         this.progressor = progressor;
     }
@@ -48,6 +50,12 @@ public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
     {
         this.reference = reference;
         this.values = values;
+        return true;
+    }
+
+    @Override
+    public boolean needsValues()
+    {
         return true;
     }
 

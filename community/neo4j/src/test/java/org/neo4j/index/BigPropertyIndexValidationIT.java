@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,8 +37,8 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static junit.framework.Assert.fail;
-import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 public class BigPropertyIndexValidationIT
 {
@@ -64,7 +64,7 @@ public class BigPropertyIndexValidationIT
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation() throws Exception
+    public void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -95,7 +95,7 @@ public class BigPropertyIndexValidationIT
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation() throws Exception
+    public void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -127,7 +127,7 @@ public class BigPropertyIndexValidationIT
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd() throws Exception
+    public void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();

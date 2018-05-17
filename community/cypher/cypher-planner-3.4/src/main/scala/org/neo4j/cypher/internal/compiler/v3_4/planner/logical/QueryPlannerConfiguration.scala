@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_4.{UpdateStrategy, defaultUpdateStrategy}
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object QueryPlannerConfiguration {
@@ -65,7 +66,8 @@ object QueryPlannerConfiguration {
     ),
     optionalSolvers = Seq(
       applyOptional,
-      outerHashJoin
+      leftOuterHashJoin,
+      rightOuterHashJoin
     ),
     leafPlanners = LeafPlannerList(allLeafPlanners),
   updateStrategy = defaultUpdateStrategy
@@ -75,13 +77,13 @@ object QueryPlannerConfiguration {
 case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
                                      applySelections: PlanTransformer[QueryGraph],
                                      optionalSolvers: Seq[OptionalSolver],
-                                     pickBestCandidate: LogicalPlanningFunction0[CandidateSelector],
+                                     pickBestCandidate: (LogicalPlanningContext, Solveds, Cardinalities) => CandidateSelector,
                                      updateStrategy: UpdateStrategy) {
 
-  def toKit()(implicit context: LogicalPlanningContext): QueryPlannerKit =
+  def toKit(context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): QueryPlannerKit =
     QueryPlannerKit(
-      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg),
-      pickBest = pickBestCandidate(context)
+      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg, context, solveds, cardinalities),
+      pickBest = pickBestCandidate(context, solveds, cardinalities)
     )
 
   def withLeafPlanners(leafPlanners: LeafPlannerIterable) = copy(leafPlanners = leafPlanners)
@@ -89,9 +91,7 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
   def withUpdateStrategy(updateStrategy: UpdateStrategy) = copy(updateStrategy = updateStrategy)
 }
 
-case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,
-
-                           pickBest: CandidateSelector) {
+case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan, pickBest: CandidateSelector) {
   def select(plans: Iterable[Seq[LogicalPlan]], qg: QueryGraph): Iterable[Seq[LogicalPlan]] =
     plans.map(_.map(plan => select(plan, qg)))
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,12 +35,14 @@ import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
+import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 
+import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.csv.reader.Configuration.DEFAULT;
 import static org.neo4j.tooling.ImportTool.parseFileArgumentList;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
@@ -156,7 +158,11 @@ public class ImportCommand implements AdminCommand
                     "File containing all arguments, used as an alternative to supplying all arguments on the command line directly."
                             + "Each argument can be on a separate line or multiple arguments per line separated by space."
                             + "Arguments containing spaces needs to be quoted."
-                            + "Supplying other arguments in addition to this file argument is not supported." ) );
+                            + "Supplying other arguments in addition to this file argument is not supported." ) )
+            .withArgument( new OptionalNamedArg( "high-io",
+                    "true/false",
+                    null,
+                    "Ignore environment-based heuristics, and assume that the target storage subsystem can support parallel IO with high throughput." ) );
     }
 
     static
@@ -216,7 +222,7 @@ public class ImportCommand implements AdminCommand
             {
                 allArguments.parse( parseFileArgumentList( fileArgument.get().toFile() ) );
             }
-            database = allArguments.get( "database" );
+            database = allArguments.get( ARG_DATABASE );
             additionalConfigFile = allArguments.getOptionalPath( "additional-config" );
         }
         catch ( IllegalArgumentException e )

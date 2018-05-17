@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -117,7 +117,7 @@ public class JmxService implements AdvertisableService
     {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
-        ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
+        ArrayList<JmxMBeanRepresentation> beans = new ArrayList<>();
         for ( Object objName : server.queryNames( createObjectName( domainName, objectName ), null ) )
         {
             beans.add( new JmxMBeanRepresentation( (ObjectName) objName ) );
@@ -151,7 +151,7 @@ public class JmxService implements AdvertisableService
             String json = dodgeStartingUnicodeMarker( query );
             Collection<Object> queries = (Collection<Object>) JsonHelper.readJson( json );
 
-            ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
+            ArrayList<JmxMBeanRepresentation> beans = new ArrayList<>();
             for ( Object queryObj : queries )
             {
                 assert queryObj instanceof String;
@@ -163,11 +163,7 @@ public class JmxService implements AdvertisableService
 
             return output.ok( new ListRepresentation( "jmxBean", beans ) );
         }
-        catch ( JsonParseException e )
-        {
-            return output.badRequest( e );
-        }
-        catch ( MalformedObjectNameException e )
+        catch ( JsonParseException | MalformedObjectNameException e )
         {
             return output.badRequest( e );
         }

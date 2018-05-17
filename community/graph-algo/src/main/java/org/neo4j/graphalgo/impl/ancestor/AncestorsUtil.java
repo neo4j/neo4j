@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -67,7 +67,7 @@ public class AncestorsUtil
 
     private static LinkedList<Node> getAncestorsPlusSelf( Node node, PathExpander expander )
     {
-        LinkedList<Node> ancestors = new LinkedList<Node>();
+        LinkedList<Node> ancestors = new LinkedList<>();
         ancestors.add( node );
         ResourceIterator<Relationship> relIterator =
                 Iterators.asResourceIterator( expander.expand( singleNodePath( node ), NO_STATE ).iterator() );

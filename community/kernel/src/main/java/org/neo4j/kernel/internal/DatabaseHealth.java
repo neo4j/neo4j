@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,8 +23,6 @@ import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.logging.Log;
-
-import static org.neo4j.helpers.Exceptions.withCause;
 
 public class DatabaseHealth
 {
@@ -64,8 +62,14 @@ public class DatabaseHealth
                 }
                 catch ( NoSuchMethodException e )
                 {
-                    exception = withCause( panicDisguise.getConstructor( String.class )
-                            .newInstance( panicMessage ), causeOfPanic );
+                    exception = panicDisguise.getConstructor( String.class ).newInstance( panicMessage );
+                    try
+                    {
+                        exception.initCause( causeOfPanic );
+                    }
+                    catch ( IllegalStateException ignored )
+                    {
+                    }
                 }
             }
             catch ( Exception e )

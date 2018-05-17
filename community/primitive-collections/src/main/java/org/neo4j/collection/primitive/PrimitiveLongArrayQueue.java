@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -124,7 +124,7 @@ public class PrimitiveLongArrayQueue implements PrimitiveLongCollection
         int newCapacity = values.length << 1;
         if ( newCapacity < 0 )
         {
-            throw new IllegalStateException( "Fail to increase capacity queue capacity." );
+            throw new IllegalStateException( "Fail to increase queue capacity." );
         }
         long[] newValues = new long[newCapacity];
         int elementsFromHeadTillEnd = values.length - head;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,6 +28,7 @@ import org.junit.runners.Parameterized.Parameters;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -127,7 +128,7 @@ public class GenerationSafePointerPairTest
     private final PageCursor cursor = ByteArrayPageCursor.wrap( new byte[PAGE_SIZE] );
 
     @Test
-    public void shouldReadWithLogicalPosition() throws Exception
+    public void shouldReadWithLogicalPosition()
     {
         // GIVEN
         cursor.setOffset( SLOT_A_OFFSET );
@@ -145,7 +146,7 @@ public class GenerationSafePointerPairTest
     }
 
     @Test
-    public void shouldReadWithNoLogicalPosition() throws Exception
+    public void shouldReadWithNoLogicalPosition()
     {
         // GIVEN
         cursor.setOffset( SLOT_A_OFFSET );
@@ -163,7 +164,7 @@ public class GenerationSafePointerPairTest
     }
 
     @Test
-    public void shouldWrite() throws Exception
+    public void shouldWrite()
     {
         // GIVEN
         cursor.setOffset( SLOT_A_OFFSET );

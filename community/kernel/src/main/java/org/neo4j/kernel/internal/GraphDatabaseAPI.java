@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,8 +26,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
 
@@ -58,18 +58,18 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
     /**
      * Begin internal transaction with specified type and access mode
      * @param type transaction type
-     * @param securityContext transaction security context
+     * @param loginContext transaction login context
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext );
+    InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext );
 
     /**
      * Begin internal transaction with specified type, access mode and timeout
      * @param type transaction type
-     * @param securityContext transaction security context
+     * @param loginContext transaction login context
      * @param timeout transaction timeout
      * @param unit time unit of timeout argument
      * @return internal transaction
      */
-    InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout, TimeUnit unit );
+    InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout, TimeUnit unit );
 }

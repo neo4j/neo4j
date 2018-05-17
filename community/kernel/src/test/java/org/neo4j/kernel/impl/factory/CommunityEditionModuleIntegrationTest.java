@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -71,7 +71,7 @@ public class CommunityEditionModuleIntegrationTest
     @Test
     public void fileWatcherFileNameFilter()
     {
-        Predicate<String> filter = CommunityEditionModule.fileWatcherFileNameFilter();
+        Predicate<String> filter = CommunityEditionModule.communityFileWatcherFileNameFilter();
         assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );
         assertFalse( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
         assertTrue( filter.test( TransactionLogFiles.DEFAULT_NAME + ".1" ) );

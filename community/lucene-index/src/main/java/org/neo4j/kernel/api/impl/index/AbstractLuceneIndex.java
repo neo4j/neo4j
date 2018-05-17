@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,7 +36,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
@@ -278,7 +277,7 @@ public abstract class AbstractLuceneIndex
                 }
                 catch ( IOException ex )
                 {
-                    throw Exceptions.withCause( ex, e );
+                    e.addSuppressed( ex );
                 }
             }
             throw e;

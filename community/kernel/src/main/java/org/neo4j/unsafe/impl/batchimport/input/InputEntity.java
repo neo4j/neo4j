@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,204 +19,342 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-
-import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.helpers.collection.Pair;
-
-import static java.lang.String.format;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Represents an entity from an input source, for example a .csv file.
+ * Simple utility for gathering all information about an {@link InputEntityVisitor} and exposing getters
+ * for that data. Easier to work with than purely visitor-based implementation in tests.
  */
-public abstract class InputEntity implements SourceTraceability
+public class InputEntity implements InputEntityVisitor, Cloneable
 {
     public static final Object[] NO_PROPERTIES = new Object[0];
     public static final String[] NO_LABELS = new String[0];
 
-    private Object[] properties;
-    private Long firstPropertyId;
-    private final String sourceDescription;
-    private long lineNumber;
-    private long position;
+    private final InputEntityVisitor delegate;
 
-    public InputEntity( String sourceDescription, long sourceLineNumber, long sourcePosition,
-            Object[] properties, Long firstPropertyId )
+    public InputEntity( InputEntityVisitor delegate )
     {
-        assert properties.length % 2 == 0 : Arrays.toString( properties );
-
-        this.sourceDescription = sourceDescription;
-        this.lineNumber = sourceLineNumber;
-        this.position = sourcePosition;
-
-        this.properties = properties;
-        this.firstPropertyId = firstPropertyId;
+        this.delegate = delegate;
+        clear();
     }
 
-    /**
-     * @return properties on this entity. Properties sits in one array with alternating keys (even indexes)
-     * and values (odd indexes).
-     */
+    public InputEntity()
+    {
+        this( InputEntityVisitor.NULL );
+    }
+
+    public boolean hasPropertyId;
+    public long propertyId;
+    public boolean hasIntPropertyKeyIds;
+    public final List<Object> properties = new ArrayList<>();
+
+    public boolean hasLongId;
+    public long longId;
+    public Object objectId;
+    public Group idGroup;
+
+    public final List<String> labels = new ArrayList<>();
+    public boolean hasLabelField;
+    public long labelField;
+
+    public boolean hasLongStartId;
+    public long longStartId;
+    public Object objectStartId;
+    public Group startIdGroup;
+
+    public boolean hasLongEndId;
+    public long longEndId;
+    public Object objectEndId;
+    public Group endIdGroup;
+
+    public boolean hasIntType;
+    public int intType;
+    public String stringType;
+
+    private boolean end;
+
+    @Override
+    public boolean propertyId( long nextProp )
+    {
+        checkClear();
+        hasPropertyId = true;
+        propertyId = nextProp;
+        return delegate.propertyId( nextProp );
+    }
+
+    @Override
+    public boolean property( String key, Object value )
+    {
+        checkClear();
+        properties.add( key );
+        properties.add( value );
+        return delegate.property( key, value );
+    }
+
+    @Override
+    public boolean property( int propertyKeyId, Object value )
+    {
+        checkClear();
+        hasIntPropertyKeyIds = true;
+        properties.add( propertyKeyId );
+        properties.add( value );
+        return delegate.property( propertyKeyId, value );
+    }
+
+    @Override
+    public boolean id( long id )
+    {
+        checkClear();
+        hasLongId = true;
+        longId = id;
+        return delegate.id( id );
+    }
+
+    @Override
+    public boolean id( Object id, Group group )
+    {
+        checkClear();
+        objectId = id;
+        idGroup = group;
+        return delegate.id( id, group );
+    }
+
+    @Override
+    public boolean labels( String[] labels )
+    {
+        checkClear();
+        Collections.addAll( this.labels, labels );
+        return delegate.labels( labels );
+    }
+
+    @Override
+    public boolean labelField( long labelField )
+    {
+        checkClear();
+        hasLabelField = true;
+        this.labelField = labelField;
+        return delegate.labelField( labelField );
+    }
+
+    @Override
+    public boolean startId( long id )
+    {
+        checkClear();
+        hasLongStartId = true;
+        longStartId = id;
+        return delegate.startId( id );
+    }
+
+    @Override
+    public boolean startId( Object id, Group group )
+    {
+        checkClear();
+        objectStartId = id;
+        startIdGroup = group;
+        return delegate.startId( id, group );
+    }
+
+    @Override
+    public boolean endId( long id )
+    {
+        checkClear();
+        hasLongEndId = true;
+        longEndId = id;
+        return delegate.endId( id );
+    }
+
+    @Override
+    public boolean endId( Object id, Group group )
+    {
+        checkClear();
+        objectEndId = id;
+        endIdGroup = group;
+        return delegate.endId( id, group );
+    }
+
+    @Override
+    public boolean type( int type )
+    {
+        checkClear();
+        hasIntType = true;
+        intType = type;
+        return delegate.type( type );
+    }
+
+    @Override
+    public boolean type( String type )
+    {
+        checkClear();
+        stringType = type;
+        return delegate.type( type );
+    }
+
+    @Override
+    public void endOfEntity() throws IOException
+    {
+        // Mark that the next call to any data method should clear the state
+        end = true;
+        delegate.endOfEntity();
+    }
+
+    public String[] labels()
+    {
+        return labels.toArray( new String[labels.size()] );
+    }
+
     public Object[] properties()
     {
-        return properties;
+        return properties.toArray();
+    }
+
+    public Object id()
+    {
+        return hasLongId ? longId : objectId;
+    }
+
+    public Object endId()
+    {
+        return hasLongEndId ? longEndId : objectEndId;
+    }
+
+    public Object startId()
+    {
+        return hasLongStartId ? longStartId : objectStartId;
+    }
+
+    private void checkClear()
+    {
+        if ( end )
+        {
+            clear();
+        }
+    }
+
+    private void clear()
+    {
+        end = false;
+        hasPropertyId = false;
+        propertyId = -1;
+        hasIntPropertyKeyIds = false;
+        properties.clear();
+        hasLongId = false;
+        longId = -1;
+        objectId = null;
+        idGroup = Group.GLOBAL;
+        labels.clear();
+        hasLabelField = false;
+        labelField = -1;
+        hasLongStartId = false;
+        longStartId = -1;
+        objectStartId = null;
+        startIdGroup = Group.GLOBAL;
+        hasLongEndId = false;
+        longEndId = -1;
+        objectEndId = null;
+        endIdGroup = Group.GLOBAL;
+        hasIntType = false;
+        intType = -1;
+        stringType = null;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        delegate.close();
     }
 
     public int propertyCount()
     {
-        return properties.length / 2;
+        return properties.size() / 2;
     }
 
     public Object propertyKey( int i )
     {
-        return properties[i * 2];
+        return properties.get( i * 2 );
     }
 
     public Object propertyValue( int i )
     {
-        return properties[i * 2 + 1];
+        return properties.get( i * 2 + 1 );
     }
 
-    /**
-     * Adds properties to existing properties in this entity. Properties that exist
-     * @param keyValuePairs
-     */
-    public void updateProperties( UpdateBehaviour behaviour, Object... keyValuePairs )
+    public void replayOnto( InputEntityVisitor visitor ) throws IOException
     {
-        assert keyValuePairs.length % 2 == 0 : Arrays.toString( keyValuePairs );
-
-        // There were no properties before, just set these and be done
-        if ( properties == null || properties.length == 0 )
+        // properties
+        if ( hasPropertyId )
         {
-            setProperties( keyValuePairs );
-            return;
+            visitor.propertyId( propertyId );
         }
-
-        // We need to look at existing properties
-        // First make room for any new properties
-        int newLength = collectiveNumberOfKeys( properties, keyValuePairs ) * 2;
-        properties = newLength == properties.length ? properties : Arrays.copyOf( properties, newLength );
-        for ( int i = 0; i < keyValuePairs.length; i++ )
+        else if ( !properties.isEmpty() )
         {
-            Object key = keyValuePairs[i++];
-            Object value = keyValuePairs[i];
-            updateProperty( key, value, behaviour );
-        }
-    }
-
-    private int collectiveNumberOfKeys( Object[] properties, Object[] otherProperties )
-    {
-        int collidingKeys = 0;
-        for ( int i = 0; i < properties.length; i += 2 )
-        {
-            Object key = properties[i];
-            for ( int j = 0; j < otherProperties.length; j += 2 )
+            int propertyCount = propertyCount();
+            for ( int i = 0; i < propertyCount; i++ )
             {
-                Object otherKey = otherProperties[j];
-                if ( otherKey.equals( key ) )
+                if ( hasIntPropertyKeyIds )
                 {
-                    collidingKeys++;
-                    break;
+                    visitor.property( (Integer) propertyKey( i ), propertyValue( i ) );
+                }
+                else
+                {
+                    visitor.property( (String) propertyKey( i ), propertyValue( i ) );
                 }
             }
         }
-        return properties.length / 2 + otherProperties.length / 2 - collidingKeys;
-    }
 
-    private void updateProperty( Object key, Object value, UpdateBehaviour behaviour )
-    {
-        int free = 0;
-        for ( int i = 0; i < properties.length; i++ )
+        // id
+        if ( hasLongId )
         {
-            Object existingKey = properties[i++];
-            if ( existingKey == null )
-            {
-                free = i - 1;
-                break;
-            }
-            if ( existingKey.equals( key ) )
-            {   // update
-                properties[i] = behaviour.merge( properties[i], value );
-                return;
-            }
+            visitor.id( longId );
+        }
+        else if ( objectId != null )
+        {
+            visitor.id( objectId, idGroup );
         }
 
-        // Add
-        properties[free++] = key;
-        properties[free] = value;
-    }
-
-    public void setProperties( Object... keyValuePairs )
-    {
-        properties = keyValuePairs;
-        firstPropertyId = null;
-    }
-
-    public boolean hasFirstPropertyId()
-    {
-        return firstPropertyId != null;
-    }
-
-    public long firstPropertyId()
-    {
-        return firstPropertyId;
-    }
-
-    @Override
-    public String sourceDescription()
-    {
-        return sourceDescription;
-    }
-
-    @Override
-    public long lineNumber()
-    {
-        return lineNumber;
-    }
-
-    @Override
-    public long position()
-    {
-        return position;
-    }
-
-    public void rebase( long baseLineNumber, long basePosition )
-    {
-        lineNumber += baseLineNumber;
-        position += basePosition;
-    }
-
-    @Override
-    public String toString()
-    {
-        Collection<Pair<String,?>> fields = new ArrayList<>();
-        toStringFields( fields );
-
-        StringBuilder builder = new StringBuilder( "%s:" );
-        Object[] arguments = new Object[fields.size() + 1];
-        int cursor = 0;
-        arguments[cursor++] = getClass().getSimpleName();
-        for ( Pair<String, ?> item : fields )
+        // labels
+        if ( hasLabelField )
         {
-            builder.append( "%n   %s" );
-            arguments[cursor++] = item.first() + ": " + item.other();
+            visitor.labelField( labelField );
+        }
+        else if ( !labels.isEmpty() )
+        {
+            visitor.labels( labels.toArray( new String[labels.size()] ) );
         }
 
-        return format( builder.append( "%n" ).toString(), arguments );
-    }
+        // start id
+        if ( hasLongStartId )
+        {
+            visitor.startId( longStartId );
+        }
+        else if ( objectStartId != null )
+        {
+            visitor.startId( objectStartId, startIdGroup );
+        }
 
-    protected void toStringFields( Collection<Pair<String, ?>> fields )
-    {
-        fields.add( Pair.of( "source", sourceDescription + ":" + lineNumber ) );
-        if ( hasFirstPropertyId() )
+        // end id
+        if ( hasLongEndId )
         {
-            fields.add( Pair.of( "nextProp", firstPropertyId ) );
+            visitor.endId( longEndId );
         }
-        else if ( properties != null && properties.length > 0 )
+        else if ( objectEndId != null )
         {
-            fields.add( Pair.of( "properties", Arrays.toString( properties ) ) );
+            visitor.endId( objectEndId, endIdGroup );
         }
+
+        // type
+        if ( hasIntType )
+        {
+            visitor.type( intType );
+        }
+        else if ( stringType != null )
+        {
+            visitor.type( stringType );
+        }
+
+        // all done
+        visitor.endOfEntity();
     }
 }

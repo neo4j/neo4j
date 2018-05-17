@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.IOException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -146,46 +145,36 @@ public class ConcurrentChangesOnEntitiesTest
 
     private Thread newThreadForNodeAction( final long nodeId, final Consumer<Node> nodeConsumer )
     {
-        return new Thread()
-        {
-            @Override
-            public void run()
+        return new Thread( () -> {
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    Node node = db.getNodeById( nodeId );
-                    barrier.await();
-                    nodeConsumer.accept( node );
-                    tx.success();
-                }
-                catch ( Exception e )
-                {
-                    ex.set( e );
-                }
+                Node node = db.getNodeById( nodeId );
+                barrier.await();
+                nodeConsumer.accept( node );
+                tx.success();
             }
-        };
+            catch ( Exception e )
+            {
+                ex.set( e );
+            }
+        } );
     }
 
     private Thread newThreadForRelationshipAction( final long relationshipId, final Consumer<Relationship> relConsumer )
     {
-        return new Thread()
-        {
-            @Override
-            public void run()
+        return new Thread( () -> {
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    Relationship relationship = db.getRelationshipById( relationshipId );
-                    barrier.await();
-                    relConsumer.accept( relationship );
-                    tx.success();
-                }
-                catch ( Exception e )
-                {
-                    ex.set( e );
-                }
+                Relationship relationship = db.getRelationshipById( relationshipId );
+                barrier.await();
+                relConsumer.accept( relationship );
+                tx.success();
             }
-        };
+            catch ( Exception e )
+            {
+                ex.set( e );
+            }
+        } );
     }
 
     private void startAndWait( Thread t1, Thread t2 ) throws Exception
@@ -202,7 +191,7 @@ public class ConcurrentChangesOnEntitiesTest
         }
     }
 
-    private void assertDatabaseConsistent() throws IOException
+    private void assertDatabaseConsistent()
     {
         LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
         try

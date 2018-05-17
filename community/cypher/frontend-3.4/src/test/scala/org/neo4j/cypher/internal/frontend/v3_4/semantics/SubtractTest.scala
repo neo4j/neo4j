@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,12 @@ class SubtractTest extends InfixExpressionTestBase(Subtract(_, _)(DummyPosition(
     testValidTypes(CTInteger, CTFloat)(CTFloat)
     testValidTypes(CTFloat, CTInteger)(CTFloat)
     testValidTypes(CTFloat, CTFloat)(CTFloat)
+    testValidTypes(CTDuration, CTDuration)(CTDuration)
+    testValidTypes(CTDate, CTDuration)(CTDate)
+    testValidTypes(CTTime, CTDuration)(CTTime)
+    testValidTypes(CTLocalTime, CTDuration)(CTLocalTime)
+    testValidTypes(CTDateTime, CTDuration)(CTDateTime)
+    testValidTypes(CTLocalDateTime, CTDuration)(CTLocalDateTime)
   }
 
   test("shouldHandleCombinedSpecializations") {
@@ -44,7 +50,7 @@ class SubtractTest extends InfixExpressionTestBase(Subtract(_, _)(DummyPosition(
       "Type mismatch: expected Float or Integer but was Boolean"
     )
     testInvalidApplication(CTBoolean, CTInteger)(
-      "Type mismatch: expected Float or Integer but was Boolean"
+      "Type mismatch: expected Float, Integer, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Boolean"
     )
   }
 }

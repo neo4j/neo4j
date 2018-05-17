@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -74,9 +74,9 @@ public class CommunityLockAcquisitionTimeoutIT
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private final OtherThreadExecutor<Void> secondTransactionExecutor = new OtherThreadExecutor<Void>(
-            "transactionExecutor", null );
-    private final OtherThreadExecutor<Void> clockExecutor = new OtherThreadExecutor<Void>( "clockExecutor", null );
+    private final OtherThreadExecutor<Void> secondTransactionExecutor =
+            new OtherThreadExecutor<>( "transactionExecutor", null );
+    private final OtherThreadExecutor<Void> clockExecutor = new OtherThreadExecutor<>( "clockExecutor", null );
 
     private static final int TEST_TIMEOUT = 5000;
     private static final String TEST_PROPERTY_NAME = "a";

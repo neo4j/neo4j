@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,18 +19,19 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.PlanDescriptionArgumentSerializer.serialize
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTBoolean, CTList, CTNode, CTString}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.v3_4.{Cardinality, DummyPosition}
+import org.neo4j.cypher.internal.util.v3_4.DummyPosition
 import org.neo4j.cypher.internal.v3_4.expressions.{DummyExpression, SemanticDirection, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, LogicalPlan, NestedPlanExpression}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NestedPlanExpression}
+import org.neo4j.cypher.internal.v3_4.logical.plans
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
   private val pos = DummyPosition(0)
+  implicit val idGen = new SequentialIdGen()
 
   test("serialization should leave numeric arguments as numbers") {
     serialize(DbHits(12)) shouldBe a [java.lang.Number]
@@ -52,7 +53,7 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("serialize nested plan expression") {
-    val argument: LogicalPlan = Argument(Set.empty)(solved)
+    val argument: LogicalPlan = plans.Argument(Set.empty)
     val expression = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString), DummyPosition(5))
 
     val nested = NestedPlanExpression(argument, expression)(pos)
@@ -70,6 +71,11 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     serialize(KeyNames(Seq(value))) should equal (
       "GenericCase(Vector((any(x in n.values where x =~ Literal(^T-?\\d+$)),SubstringFunction(ContainerIndex(FilterFunction(n.values,x,x =~ Literal(^T-?\\d+$)),Literal(0)),Literal(1),None))),Some(Literal(1))) == {p0}"
     )
+  }
+
+  test("should serialize point distance index seeks") {
+    serialize(PointDistanceIndex("L", "location", "p", "300", inclusive = false)) should equal(":L(location) WHERE distance(_,p) < 300")
+    serialize(PointDistanceIndex("L", "location", "p", "300", inclusive = true)) should equal(":L(location) WHERE distance(_,p) <= 300")
   }
 
 }

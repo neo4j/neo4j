@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,14 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, QueryGraph, QueryHorizon}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 
-class PlannerQueryWrapper(pq: irV3_3.PlannerQuery with irV3_3.CardinalityEstimation) extends irV3_4.PlannerQuery with irV3_4.CardinalityEstimation {
+class PlannerQueryWrapper(pq: irV3_3.PlannerQuery) extends irV3_4.PlannerQuery {
   override val queryGraph = null
   override val horizon = null
   override val tail = null
   override def dependencies = ???
   override protected def copy(queryGraph: QueryGraph, horizon: QueryHorizon, tail: Option[PlannerQuery]) = ???
-
-  override lazy val estimatedCardinality = helpers.as3_4(pq.estimatedCardinality)
-
   override lazy val readOnly = pq.readOnly
 }

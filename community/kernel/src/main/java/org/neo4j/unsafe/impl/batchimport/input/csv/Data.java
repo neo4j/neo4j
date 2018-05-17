@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,15 +23,14 @@ import java.io.IOException;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
 /**
  * Produces a {@link CharSeeker} that can seek and extract values from a csv/tsv style data stream.
  * A decorator also comes with it which can specify global overrides/defaults of extracted input entities.
  */
-public interface Data<ENTITY extends InputEntity>
+public interface Data
 {
     RawIterator<CharReadable,IOException> stream();
 
-    Decorator<ENTITY> decorator();
+    Decorator decorator();
 }

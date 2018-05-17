@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -44,16 +44,16 @@ public class FilteringIterable<T> implements Iterable<T>
     @Override
     public Iterator<T> iterator()
     {
-        return new FilteringIterator<T>( source.iterator(), predicate );
+        return new FilteringIterator<>( source.iterator(), predicate );
     }
 
     public static <T> Iterable<T> notNull( Iterable<T> source )
     {
-        return new FilteringIterable<T>( source, Predicates.notNull() );
+        return new FilteringIterable<>( source, Predicates.notNull() );
     }
 
     public static <T> Iterable<T> noDuplicates( Iterable<T> source )
     {
-        return new FilteringIterable<T>( source, Predicates.noDuplicates() );
+        return new FilteringIterable<>( source, Predicates.noDuplicates() );
     }
 }

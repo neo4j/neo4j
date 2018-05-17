@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,16 +20,34 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase;
-import org.neo4j.kernel.configuration.Settings;
 
-public class NodeValueIndexCursorLuceneTest extends NodeValueIndexCursorTestBase<ReadTestSupport>
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
+
+public class NodeValueIndexCursorLuceneTest extends AbstractNodeValueIndexCursorTest
 {
     @Override
     public ReadTestSupport newTestSupport()
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.enable_native_schema_index, Settings.FALSE );
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, LUCENE10.providerName() );
         return readTestSupport;
+    }
+
+    @Override
+    protected String providerKey()
+    {
+        return "lucene";
+    }
+
+    @Override
+    protected String providerVersion()
+    {
+        return "1.0";
+    }
+
+    @Override
+    protected boolean spatialRangeSupport()
+    {
+        return true;
     }
 }

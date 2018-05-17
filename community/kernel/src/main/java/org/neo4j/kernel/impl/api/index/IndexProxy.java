@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,10 +21,13 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -33,14 +36,12 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 /**
  * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
@@ -60,31 +61,29 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
  *
  * @see ContractCheckingIndexProxy
  */
-public interface IndexProxy extends LabelSchemaSupplier
+public interface IndexProxy extends SchemaDescriptorSupplier
 {
     void start() throws IOException;
 
     IndexUpdater newUpdater( IndexUpdateMode mode );
 
     /**
-     * Initiates dropping this index context. The returned {@link Future} can be used to await
-     * its completion.
+     * Drop index.
      * Must close the context as well.
      */
-    Future<Void> drop() throws IOException;
+    void drop() throws IOException;
 
     /**
-     * Initiates a closing of this index context. The returned {@link Future} can be used to await
-     * its completion.
+     * Close this index context.
      */
-    Future<Void> close() throws IOException;
+    void close() throws IOException;
 
-    IndexDescriptor getDescriptor();
+    SchemaIndexDescriptor getDescriptor();
 
     @Override
-    LabelSchemaDescriptor schema();
+    SchemaDescriptor schema();
 
-    SchemaIndexProvider.Descriptor getProviderDescriptor();
+    IndexProvider.Descriptor getProviderDescriptor();
 
     InternalIndexState getState();
 
@@ -97,7 +96,9 @@ public interface IndexProxy extends LabelSchemaSupplier
 
     PopulationProgress getIndexPopulationProgress();
 
-    void force() throws IOException;
+    void force( IOLimiter ioLimiter ) throws IOException;
+
+    void refresh() throws IOException;
 
     /**
      * @throws IndexNotFoundKernelException if the index isn't online yet.
@@ -112,6 +113,16 @@ public interface IndexProxy extends LabelSchemaSupplier
     void activate() throws IndexActivationFailedKernelException;
 
     void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException;
+
+    /**
+     * Validates a {@link Value} so that it's OK to later apply to the index. This method is designed to be
+     * called before committing a transaction as to prevent exception during applying that transaction.
+     *
+     * @param tuple {@link Value value tuple} to validate.
+     */
+    void validateBeforeCommit( Value[] tuple );
+
+    long getIndexId();
 
     ResourceIterator<File> snapshotFiles() throws IOException;
 

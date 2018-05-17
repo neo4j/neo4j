@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,6 +22,8 @@ package org.neo4j.values.storable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 
 import static org.neo4j.values.storable.BufferValueWriter.Specials.beginArray;
@@ -32,6 +34,7 @@ import static org.neo4j.values.storable.ValueWriter.ArrayType.CHAR;
 import static org.neo4j.values.storable.ValueWriter.ArrayType.DOUBLE;
 import static org.neo4j.values.storable.ValueWriter.ArrayType.FLOAT;
 import static org.neo4j.values.storable.ValueWriter.ArrayType.INT;
+import static org.neo4j.values.storable.ValueWriter.ArrayType.LOCAL_DATE_TIME;
 import static org.neo4j.values.storable.ValueWriter.ArrayType.LONG;
 import static org.neo4j.values.storable.ValueWriter.ArrayType.SHORT;
 import static org.neo4j.values.storable.ValueWriter.ArrayType.STRING;
@@ -59,6 +62,7 @@ public class ValueWriteToTest
                 shouldWrite( Values.NO_VALUE, (Object) null ),
                 shouldWrite( Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 2 ), Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 2 ) ),
                 shouldWrite( Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2 ), Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2 ) ),
+                shouldWrite( LocalDate.of( 1991, 10, 18 ), DateValue.date( 1991, 10, 18 ) ),
 
                 // array properties
                 shouldWrite( new byte[]{1, 2, 3}, byteArray( new byte[]{1, 2, 3} ) ),
@@ -71,6 +75,9 @@ public class ValueWriteToTest
                 shouldWrite( new char[]{'a', 'b'}, beginArray( 2, CHAR ), 'a', 'b', endArray() ),
                 shouldWrite( new String[]{"a", "b"}, beginArray( 2, STRING ), "a", "b", endArray() ),
                 shouldWrite( new boolean[]{true, false}, beginArray( 2, BOOLEAN ), true, false, endArray() ),
+                shouldWrite( new LocalDateTime[]{LocalDateTime.of( 1991, 10, 18, 6, 37, 0, 0 ), LocalDateTime.of( 1992, 10, 18, 6, 37, 0, 0 )},
+                        beginArray( 2, LOCAL_DATE_TIME ), LocalDateTimeValue.localDateTime( 1991, 10, 18, 6, 37, 0, 0 ),
+                        LocalDateTimeValue.localDateTime( 1992, 10, 18, 6, 37, 0, 0 ), endArray() ),
 
                 shouldWrite( new byte[]{1, 2, 3}, byteArray( new byte[]{1, 2, 3} ) )
         );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -47,7 +47,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
 @RunWith( Parameterized.class )
 public class ByteArrayTest extends NumberArrayPageCacheTestSupport
 {
-    private static final byte[] DEFAULT = new byte[25];
+    private static final byte[] DEFAULT = new byte[50];
     private static final int LENGTH = 1_000;
     private static Fixture fixture;
 
@@ -97,7 +97,7 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
     }
 
     @Test
-    public void shouldSetAndGetBasicTypes() throws Exception
+    public void shouldSetAndGetBasicTypes()
     {
         int index = 0;
         byte[] actualBytes = new byte[DEFAULT.length];
@@ -130,12 +130,9 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         array.setShort( index, 1, (short) 1234 );
         array.setInt( index, 5, 12345 );
         array.setLong( index, 9, Long.MAX_VALUE - 100 );
-        array.set3ByteInt( index, 17, 76767 );
-    }
-
-    private void setArray( int index, byte[] bytes )
-    {
-        array.set( index, bytes );
+        array.set3ByteInt( index, 17, 0b10101010_10101010_10101010 );
+        array.set5ByteLong( index, 20, 0b10101010_10101010_10101010_10101010_10101010L );
+        array.set6ByteLong( index, 25, 0b10101010_10101010_10101010_10101010_10101010_10101010L );
     }
 
     private void verifySimpleValues( int index )
@@ -144,7 +141,14 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         assertEquals( (short) 1234, array.getShort( index, 1 ) );
         assertEquals( 12345, array.getInt( index, 5 ) );
         assertEquals( Long.MAX_VALUE - 100, array.getLong( index, 9 ) );
-        assertEquals( 76767, array.get3ByteInt( index, 17 ) );
+        assertEquals( 0b10101010_10101010_10101010, array.get3ByteInt( index, 17 ) );
+        assertEquals( 0b10101010_10101010_10101010_10101010_10101010L, array.get5ByteLong( index, 20 ) );
+        assertEquals( 0b10101010_10101010_10101010_10101010_10101010_10101010L, array.get6ByteLong( index, 25 ) );
+    }
+
+    private void setArray( int index, byte[] bytes )
+    {
+        array.set( index, bytes );
     }
 
     private void verifyArray( int index, byte[] actualBytes, byte[] scratchBuffer )
@@ -154,7 +158,31 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
     }
 
     @Test
-    public void shouldDetectMinusOne() throws Exception
+    public void shouldDetectMinusOneFor3ByteInts()
+    {
+        // WHEN
+        array.set3ByteInt( 10, 2, -1 );
+        array.set3ByteInt( 10, 5, -1 );
+
+        // THEN
+        assertEquals( -1L, array.get3ByteInt( 10, 2 ) );
+        assertEquals( -1L, array.get3ByteInt( 10, 5 ) );
+    }
+
+    @Test
+    public void shouldDetectMinusOneFor5ByteLongs()
+    {
+        // WHEN
+        array.set5ByteLong( 10, 2, -1 );
+        array.set5ByteLong( 10, 7, -1 );
+
+        // THEN
+        assertEquals( -1L, array.get5ByteLong( 10, 2 ) );
+        assertEquals( -1L, array.get5ByteLong( 10, 7 ) );
+    }
+
+    @Test
+    public void shouldDetectMinusOneFor6ByteLongs()
     {
         // WHEN
         array.set6ByteLong( 10, 2, -1 );
@@ -166,7 +194,7 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
     }
 
     @Test
-    public void shouldHandleMultipleCallsToClose() throws Exception
+    public void shouldHandleMultipleCallsToClose()
     {
         // WHEN
         array.close();

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -113,7 +113,7 @@ public class ConsistencyCheckToolTest
             File storeDir = testDirectory.directory();
             File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
             Properties properties = new Properties();
-            properties.setProperty( GraphDatabaseSettings.log_timezone.name(), LogTimeZone.SYSTEM.name() );
+            properties.setProperty( GraphDatabaseSettings.db_timezone.name(), LogTimeZone.SYSTEM.name() );
             properties.store( new FileWriter( configFile ), null );
             String[] args = {storeDir.getPath(), "-config", configFile.getPath()};
 
@@ -283,7 +283,7 @@ public class ConsistencyCheckToolTest
     }
 
     private void runConsistencyCheckToolWith( FileSystemAbstraction fileSystem, String... args )
-            throws IOException, ToolFailureException
+            throws ToolFailureException
     {
         new ConsistencyCheckTool( mock( ConsistencyCheckService.class ), fileSystem, mock( PrintStream.class),
                 mock( PrintStream.class ) ).run( args );

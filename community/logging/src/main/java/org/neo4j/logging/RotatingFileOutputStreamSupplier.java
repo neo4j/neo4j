@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,6 +24,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,7 +37,7 @@ import java.util.function.Supplier;
 import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 
 /**
  * A {@link Supplier} of {@link OutputStream}s backed by on-disk files, which
@@ -273,7 +275,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                         if ( fileSystem.fileExists( outputFile ) )
                         {
                             shiftArchivedOutputFiles();
-                            fileSystem.renameFile( outputFile, archivedOutputFile( 1 ) );
+                            fileSystem.renameFile( outputFile, archivedOutputFile( outputFile, 1 ) );
                         }
                     }
                     catch ( Exception e )
@@ -333,37 +335,57 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
 
     private OutputStream openOutputFile() throws IOException
     {
-        return createOrOpenAsOuputStream( fileSystem, outputFile, true );
+        return createOrOpenAsOutputStream( fileSystem, outputFile, true );
     }
 
     private void shiftArchivedOutputFiles() throws IOException
     {
-        for ( int i = lastArchivedOutputFileNumber(); i > 0; --i )
+        for ( int i = lastArchivedOutputFileNumber( fileSystem, outputFile ); i > 0; --i )
         {
-            File archive = archivedOutputFile( i );
+            File archive = archivedOutputFile( outputFile, i );
             if ( i >= maxArchives )
             {
                 fileSystem.deleteFile( archive );
             }
             else
             {
-                fileSystem.renameFile( archive, archivedOutputFile( i + 1 ) );
+                fileSystem.renameFile( archive, archivedOutputFile( outputFile, i + 1 ) );
             }
         }
     }
 
-    private int lastArchivedOutputFileNumber()
+    private static int lastArchivedOutputFileNumber( FileSystemAbstraction fileSystem, File outputFile )
     {
         int i = 1;
-        while ( fileSystem.fileExists( archivedOutputFile( i ) ) )
+        while ( fileSystem.fileExists( archivedOutputFile( outputFile, i ) ) )
         {
             i++;
         }
         return i - 1;
     }
 
-    private File archivedOutputFile( int archiveNumber )
+    private static File archivedOutputFile( File outputFile, int archiveNumber )
     {
         return new File( String.format( "%s.%d", outputFile.getPath(), archiveNumber ) );
+    }
+
+    /**
+     * Exposes the algorithm for collecting existing rotated log files.
+     */
+    public static List<File> getAllArchives( FileSystemAbstraction fileSystem,  File outputFile )
+    {
+        ArrayList<File> ret = new ArrayList<>();
+        int i = 1;
+        while ( true )
+        {
+            File file = archivedOutputFile( outputFile, i );
+            if ( !fileSystem.fileExists( file ) )
+            {
+                break;
+            }
+            ret.add( file );
+            i++;
+        }
+        return ret;
     }
 }

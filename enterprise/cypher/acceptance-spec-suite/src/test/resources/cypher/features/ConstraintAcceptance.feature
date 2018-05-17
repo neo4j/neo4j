@@ -1,21 +1,24 @@
 #
-# Copyright (c) 2002-2017 "Neo Technology,"
-# Network Engine for Objects in Lund AB [http://neotechnology.com]
+# Copyright (c) 2002-2018 "Neo4j,"
+# Neo4j Sweden AB [http://neo4j.com]
 #
-# This file is part of Neo4j.
-#
-# Neo4j is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+# This file is part of Neo4j Enterprise Edition. The included source
+# code can be redistributed and/or modified under the terms of the
+# GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+# (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+# Commons Clause, as found in the associated LICENSE.txt file.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
 #
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# Neo4j object code can be licensed independently from the source
+# under separate terms from the AGPL. Inquiries can be directed to:
+# licensing@neo4j.com
+#
+# More information is also available at:
+# https://neo4j.com/licensing/
 #
 
 Feature: ConstraintAcceptance
@@ -230,6 +233,7 @@ Feature: ConstraintAcceptance
       | +labels     | 2 |
       | +properties | 3 |
 
+  @allowCustomErrors
   Scenario: Should fail on merge using multiple unique indexes using same key if found different nodes
     Given an empty graph
     And having executed:
@@ -250,6 +254,7 @@ Feature: ConstraintAcceptance
       """
     Then a ConstraintValidationFailed should be raised at runtime: CreateBlockedByConstraint
 
+  @allowCustomErrors
   Scenario: Should fail on merge using multiple unique indexes if found different nodes
     Given an empty graph
     And having executed:
@@ -270,6 +275,7 @@ Feature: ConstraintAcceptance
       """
     Then a ConstraintValidationFailed should be raised at runtime: CreateBlockedByConstraint
 
+  @allowCustomErrors
   Scenario: Should fail on merge using multiple unique indexes if it found a node matching single property only
     Given an empty graph
     And having executed:
@@ -290,6 +296,7 @@ Feature: ConstraintAcceptance
       """
     Then a ConstraintValidationFailed should be raised at runtime: CreateBlockedByConstraint
 
+  @allowCustomErrors
   Scenario: Should fail on merge using multiple unique indexes if it found a node matching single property only flipped order
     Given an empty graph
     And having executed:
@@ -310,6 +317,7 @@ Feature: ConstraintAcceptance
       """
     Then a ConstraintValidationFailed should be raised at runtime: CreateBlockedByConstraint
 
+  @allowCustomErrors
   Scenario: Should fail on merge using multiple unique indexes and labels if found different nodes
     Given an empty graph
     And having executed:
@@ -330,6 +338,7 @@ Feature: ConstraintAcceptance
       """
     Then a ConstraintValidationFailed should be raised at runtime: CreateBlockedByConstraint
 
+  @allowCustomErrors
   Scenario: Merge with uniqueness constraints must properly handle multiple labels
     Given an empty graph
     And having executed:
@@ -427,6 +436,7 @@ Feature: ConstraintAcceptance
       | +labels     | 1 |
       | +properties | 2 |
 
+  @allowCustomErrors
   Scenario: Failing when creation would violate constraint
     Given an empty graph
     And having executed:

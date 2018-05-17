@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -161,7 +161,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Test
-    public void shouldNotAccessNonExistentProperties() throws Exception
+    public void shouldNotAccessNonExistentProperties()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -175,7 +175,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             node.properties( props );
             assertFalse( "no properties by direct method", props.next() );
 
-            read.nodeProperties( node.propertiesReference(), props );
+            read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
             assertFalse( "no properties via property ref", props.next() );
 
             assertFalse( "only one node", node.next() );
@@ -183,7 +183,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Test
-    public void shouldAccessSingleProperty() throws Exception
+    public void shouldAccessSingleProperty()
     {
         assertAccessSingleProperty( byteProp, Values.of( (byte) 13 ) );
         assertAccessSingleProperty( shortProp, Values.of( (short) 13 ) );
@@ -210,7 +210,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Test
-    public void shouldAccessAllNodeProperties() throws Exception
+    public void shouldAccessAllNodeProperties()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -268,7 +268,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertEquals( "correct value", expectedValue, props.propertyValue() );
             assertFalse( "single property", props.next() );
 
-            read.nodeProperties( node.propertiesReference(), props );
+            read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
             assertTrue( "has properties via property ref", props.next() );
             assertEquals( "correct value", expectedValue, props.propertyValue() );
             assertFalse( "single property", props.next() );

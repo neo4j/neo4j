@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -50,6 +50,7 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -121,7 +122,7 @@ public class CountsRotationTest
     }
 
     @Test
-    public void shouldCreateEmptyCountsTrackerStoreWhenCreatingDatabase() throws IOException
+    public void shouldCreateEmptyCountsTrackerStoreWhenCreatingDatabase()
     {
         // GIVEN
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -236,7 +237,7 @@ public class CountsRotationTest
     }
 
     @Test
-    public void shouldRotateCountsStoreWhenClosingTheDatabase() throws IOException
+    public void shouldRotateCountsStoreWhenClosingTheDatabase()
     {
         // GIVEN
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -388,7 +389,7 @@ public class CountsRotationTest
     private CountsTracker createCountsTracker( PageCache pageCache, Config config )
     {
         return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, config,
-                new File( dir.getPath(), COUNTS_STORE_BASE ) );
+                new File( dir.getPath(), COUNTS_STORE_BASE ), EmptyVersionContextSupplier.EMPTY );
     }
 
     private void checkPoint( GraphDatabaseAPI db ) throws IOException

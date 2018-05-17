@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,14 +26,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static junit.framework.Assert.fail;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class DependenciesTest
 {
     @Test
-    public void givenSatisfiedTypeWhenResolveWithTypeThenInstanceReturned() throws Exception
+    public void givenSatisfiedTypeWhenResolveWithTypeThenInstanceReturned()
     {
         // Given
         Dependencies dependencies = new Dependencies(  );
@@ -49,7 +49,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenSatisfiedTypeWhenResolveWithSuperTypeThenInstanceReturned() throws Exception
+    public void givenSatisfiedTypeWhenResolveWithSuperTypeThenInstanceReturned()
     {
         // Given
         Dependencies dependencies = new Dependencies(  );
@@ -65,7 +65,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenSatisfiedTypeWhenResolveWithInterfaceThenInstanceReturned() throws Exception
+    public void givenSatisfiedTypeWhenResolveWithInterfaceThenInstanceReturned()
     {
         // Given
         Dependencies dependencies = new Dependencies(  );
@@ -81,7 +81,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenSatisfiedTypeWhenResolveWithSubInterfaceThenInstanceReturned() throws Exception
+    public void givenSatisfiedTypeWhenResolveWithSubInterfaceThenInstanceReturned()
     {
         // Given
         Dependencies dependencies = new Dependencies(  );
@@ -97,7 +97,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenSatisfiedTypeInParentWhenResolveWithTypeInEmptyDependenciesThenInstanceReturned() throws Exception
+    public void givenSatisfiedTypeInParentWhenResolveWithTypeInEmptyDependenciesThenInstanceReturned()
     {
         // Given
         Dependencies parent = new Dependencies(  );
@@ -114,7 +114,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenSatisfiedTypeInParentAndDependenciesWhenResolveWithTypeInDependenciesThenInstanceReturned() throws Exception
+    public void givenSatisfiedTypeInParentAndDependenciesWhenResolveWithTypeInDependenciesThenInstanceReturned()
     {
         // Given
         Dependencies parent = new Dependencies(  );
@@ -132,7 +132,7 @@ public class DependenciesTest
     }
 
     @Test
-    public void givenEmptyDependenciesWhenResolveWithTypeThenException() throws Exception
+    public void givenEmptyDependenciesWhenResolveWithTypeThenException()
     {
         // Given
         Dependencies dependencies = new Dependencies( );

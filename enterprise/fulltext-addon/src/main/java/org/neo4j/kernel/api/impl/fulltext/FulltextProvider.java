@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
@@ -23,15 +26,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 
 public interface FulltextProvider extends AutoCloseable
 {
     FulltextProvider NULL_PROVIDER = new FulltextProvider()
     {
         @Override
-        public void registerTransactionEventHandler() throws IOException
+        public void registerTransactionEventHandler()
         {
             throw noProvider();
         }
@@ -43,19 +47,19 @@ public interface FulltextProvider extends AutoCloseable
         }
 
         @Override
-        public void openIndex( String identifier, FulltextIndexType type ) throws IOException
+        public void openIndex( String identifier, FulltextIndexType type )
         {
             throw noProvider();
         }
 
         @Override
-        public void createIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException
+        public void createIndex( String identifier, FulltextIndexType type, List<String> properties )
         {
             throw noProvider();
         }
 
         @Override
-        public ReadOnlyFulltext getReader( String identifier, FulltextIndexType type ) throws IOException
+        public ReadOnlyFulltext getReader( String identifier, FulltextIndexType type )
         {
             throw noProvider();
         }
@@ -74,13 +78,18 @@ public interface FulltextProvider extends AutoCloseable
 
         @Override
         public void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys )
-                throws IOException, InvalidArgumentsException
         {
             throw noProvider();
         }
 
         @Override
-        public void close() throws Exception
+        public void registerFileListing( NeoStoreFileListing fileListing )
+        {
+            throw noProvider();
+        }
+
+        @Override
+        public void close()
         {
             throw noProvider();
         }
@@ -94,7 +103,7 @@ public interface FulltextProvider extends AutoCloseable
     String LUCENE_FULLTEXT_ADDON_PREFIX = "__lucene__fulltext__addon__";
     String FIELD_ENTITY_ID = LUCENE_FULLTEXT_ADDON_PREFIX + "internal__id__";
 
-    void registerTransactionEventHandler() throws IOException;
+    void registerTransactionEventHandler();
 
     /**
      * Wait for the asynchronous background population, if one is on-going, to complete.
@@ -125,4 +134,6 @@ public interface FulltextProvider extends AutoCloseable
     InternalIndexState getState( String identifier, FulltextIndexType type );
 
     void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys ) throws IOException, InvalidArgumentsException;
+
+    void registerFileListing( NeoStoreFileListing fileListing );
 }

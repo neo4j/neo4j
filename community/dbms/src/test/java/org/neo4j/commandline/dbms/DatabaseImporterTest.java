@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -52,7 +52,7 @@ public class DatabaseImporterTest
     public final TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
-    public void requiresFromArgument() throws Exception
+    public void requiresFromArgument()
     {
         String[] arguments = {"--mode=database", "--database=bar"};
 
@@ -69,7 +69,7 @@ public class DatabaseImporterTest
     }
 
     @Test
-    public void failIfSourceIsNotAStore() throws Exception
+    public void failIfSourceIsNotAStore()
     {
         File from = testDir.directory( "empty" );
         String[] arguments = {"--mode=database", "--database=bar", "--from=" + from.getAbsolutePath()};

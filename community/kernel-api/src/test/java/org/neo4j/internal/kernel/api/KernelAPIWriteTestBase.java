@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,12 +22,13 @@ package org.neo4j.internal.kernel.api;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 
 /**
  * KernelAPIWriteTestBase is the basis of write tests targeting the Kernel API.
@@ -46,7 +47,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIWriteTestSupport testSupport;
     protected Session session;
-    protected ManagedTestCursors cursors;
+    protected Modes modes;
     protected static GraphDatabaseService graphDb;
 
     /**
@@ -66,19 +67,18 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         }
         testSupport.clearGraph();
         Kernel kernel = testSupport.kernelToTest();
-        session = kernel.beginSession( SecurityContext.AUTH_DISABLED );
-        cursors = new ManagedTestCursors( kernel.cursors() );
+        session = kernel.beginSession( LoginContext.AUTH_DISABLED );
+        modes = kernel.modes();
     }
 
     @After
     public void closeSession()
     {
         session.close();
-        cursors.assertAllClosedAndReset();
     }
 
     @AfterClass
-    public static void tearDown() throws Exception
+    public static void tearDown()
     {
         if ( testSupport != null )
         {

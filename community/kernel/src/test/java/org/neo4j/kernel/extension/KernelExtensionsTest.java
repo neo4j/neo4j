@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ import static org.neo4j.helpers.collection.Iterables.iterable;
 public class KernelExtensionsTest
 {
     @Test
-    public void shouldConsultUnsatisfiedDependencyHandler() throws Exception
+    public void shouldConsultUnsatisfiedDependencyHandler()
     {
         // GIVEN
         KernelContext context = mock( KernelContext.class );
@@ -83,7 +83,7 @@ public class KernelExtensionsTest
         }
 
         @Override
-        public Lifecycle newInstance( KernelContext context, TestingDependencies dependencies ) throws Throwable
+        public Lifecycle newInstance( KernelContext context, TestingDependencies dependencies )
         {
             return new TestingExtension( dependencies.jobScheduler() );
         }

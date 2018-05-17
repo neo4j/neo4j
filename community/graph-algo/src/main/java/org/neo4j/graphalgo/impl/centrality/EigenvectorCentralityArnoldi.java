@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -69,10 +69,7 @@ public class EigenvectorCentralityArnoldi extends EigenvectorCentralityBase
         // Create a list of the nodes, in order to quickly translate an index
         // into a node.
         ArrayList<Node> nodes = new ArrayList<>( nodeSet.size() );
-        for ( Node node : nodeSet )
-        {
-            nodes.add( node );
-        }
+        nodes.addAll( nodeSet );
         DoubleMatrix hMatrix = new DoubleMatrix();
         DoubleMatrix qMatrix = new DoubleMatrix();
         for ( int i = 0; i < nodes.size(); ++i )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,25 +21,43 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.locking.LockTracer;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -47,42 +65,62 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.newapi.References.clearFlags;
-import static org.neo4j.kernel.impl.newapi.References.hasDirectFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasFilterFlag;
-import static org.neo4j.kernel.impl.newapi.References.hasGroupFlag;
+import static java.lang.String.format;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
+import static org.neo4j.kernel.impl.newapi.GroupReferenceEncoding.isRelationship;
+import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
+import static org.neo4j.kernel.impl.newapi.RelationshipDirection.INCOMING;
+import static org.neo4j.kernel.impl.newapi.RelationshipDirection.LOOP;
+import static org.neo4j.kernel.impl.newapi.RelationshipDirection.OUTGOING;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
+import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
 abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Read,
         org.neo4j.internal.kernel.api.ExplicitIndexRead,
-        org.neo4j.internal.kernel.api.SchemaRead
+        org.neo4j.internal.kernel.api.SchemaRead,
+        org.neo4j.internal.kernel.api.Procedures,
+        org.neo4j.internal.kernel.api.Locks
 {
-    private final Cursors cursors;
-    private final TxStateHolder txStateHolder;
-    protected final AssertOpen assertOpen;
+    private final DefaultCursors cursors;
+    final KernelTransactionImplementation ktx;
 
-    Read( Cursors cursors, TxStateHolder txStateHolder, AssertOpen assertOpen )
+    Read( DefaultCursors cursors, KernelTransactionImplementation ktx )
     {
         this.cursors = cursors;
-        this.txStateHolder = txStateHolder;
-        this.assertOpen = assertOpen;
+        this.ktx = ktx;
     }
 
     @Override
     public final void nodeIndexSeek(
-            org.neo4j.internal.kernel.api.IndexReference index,
-            org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
+            IndexReference index,
+            NodeValueIndexCursor cursor,
             IndexOrder indexOrder,
-            IndexQuery... query ) throws KernelException
+            IndexQuery... query ) throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
+        if ( hasForbiddenProperties( index ) )
+        {
+            cursor.close();
+            return;
+        }
 
-        ((NodeValueIndexCursor) cursor).setRead( this );
-        IndexProgressor.NodeValueClient target = (NodeValueIndexCursor) cursor;
-        IndexReader reader = indexReader( index );
-        if ( !reader.hasFullNumberPrecision( query ) )
+        DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
+        IndexReader reader = indexReader( index, false );
+        cursorImpl.setRead( this, null );
+        IndexProgressor.NodeValueClient target = withFullValuePrecision( cursorImpl, query, reader );
+        reader.query( target, indexOrder, query );
+    }
+
+    private IndexProgressor.NodeValueClient withFullValuePrecision( DefaultNodeValueIndexCursor cursor,
+            IndexQuery[] query, IndexReader reader )
+    {
+        IndexProgressor.NodeValueClient target = cursor;
+        if ( !reader.hasFullValuePrecision( query ) )
         {
             IndexQuery[] filters = new IndexQuery[query.length];
             int j = 0;
@@ -90,17 +128,18 @@ abstract class Read implements TxStateHolder,
             {
                 switch ( q.type() )
                 {
-                case rangeNumeric:
-                    if ( !reader.hasFullNumberPrecision( q ) )
+                case range:
+                    ValueGroup valueGroup = q.valueGroup();
+                    if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY) && !reader.hasFullValuePrecision( q ) )
                     {
                         filters[j++] = q;
                     }
                     break;
                 case exact:
                     Value value = ((IndexQuery.ExactPredicate) q).value();
-                    if ( value.valueGroup() == ValueGroup.NUMBER )
+                    if ( value.valueGroup() == ValueGroup.NUMBER || Values.isArrayValue( value ) || value.valueGroup() == ValueGroup.GEOMETRY )
                     {
-                        if ( !reader.hasFullNumberPrecision( q ) )
+                        if ( !reader.hasFullValuePrecision( q ) )
                         {
                             filters[j++] = q;
                         }
@@ -113,145 +152,210 @@ abstract class Read implements TxStateHolder,
             if ( j > 0 )
             {
                 filters = Arrays.copyOf( filters, j );
-                target = new NodeValueClientFilter( target, cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), this, filters );
+                target = new NodeValueClientFilter( target, cursors.allocateNodeCursor(),
+                        cursors.allocatePropertyCursor(), this, filters );
             }
         }
-        reader.query( target, indexOrder, query );
+        return target;
+    }
+
+    @Override
+    public final long lockingNodeUniqueIndexSeek(
+            IndexReference index,
+            IndexQuery.ExactPredicate... predicates )
+            throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        assertIndexOnline( index );
+        assertPredicatesMatchSchema( index, predicates );
+        int labelId = index.label();
+
+        Locks.Client locks = ktx.statementLocks().optimistic();
+        LockTracer lockTracer = ktx.lockTracer();
+        long indexEntryId = indexEntryResourceId( labelId, predicates );
+
+        //First try to find node under a shared lock
+        //if not found upgrade to exclusive and try again
+        locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
+        try ( DefaultNodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
+        {
+            nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
+            if ( !cursor.next() )
+            {
+                locks.releaseShared( INDEX_ENTRY, indexEntryId );
+                locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
+                nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
+                if ( cursor.next() ) // we found it under the exclusive lock
+                {
+                    // downgrade to a shared lock
+                    locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
+                    locks.releaseExclusive( INDEX_ENTRY, indexEntryId );
+                }
+            }
+
+            return cursor.nodeReference();
+        }
+    }
+
+    void nodeIndexSeekWithFreshIndexReader(
+            IndexReference index,
+            DefaultNodeValueIndexCursor cursor,
+            IndexQuery.ExactPredicate... query ) throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+    {
+        IndexReader reader = indexReader( index, true );
+        cursor.setRead( this, reader );
+        IndexProgressor.NodeValueClient target = withFullValuePrecision( cursor, query, reader );
+        reader.query( target, IndexOrder.NONE, query );
     }
 
     @Override
     public final void nodeIndexScan(
-            org.neo4j.internal.kernel.api.IndexReference index,
-            org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
+            IndexReference index,
+            NodeValueIndexCursor cursor,
             IndexOrder indexOrder ) throws KernelException
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
+        if ( hasForbiddenProperties( index ) )
+        {
+            cursor.close();
+            return;
+        }
 
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
-        ((NodeValueIndexCursor) cursor).setRead( this );
-        indexReader( index ).query( (NodeValueIndexCursor) cursor, indexOrder, IndexQuery.exists( firstProperty ) );
+        ((DefaultNodeValueIndexCursor) cursor).setRead( this, null );
+        indexReader( index, false ).query( (DefaultNodeValueIndexCursor) cursor, indexOrder, IndexQuery.exists( firstProperty ) );
+    }
+
+    private boolean hasForbiddenProperties( IndexReference index )
+    {
+        AccessMode mode = ktx.securityContext().mode();
+        for ( int prop : index.properties() )
+        {
+            if ( !mode.allowsPropertyReads( prop ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
-    public final void nodeLabelScan( int label, org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor )
+    public final void nodeLabelScan( int label, NodeLabelIndexCursor cursor )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
 
-        ((NodeLabelIndexCursor) cursor).setRead( this );
-        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithLabel( label ) );
+        DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
+        indexCursor.setRead( this );
+        labelScanReader().nodesWithLabel( indexCursor, label);
     }
 
     @Override
-    public void nodeLabelUnionScan( org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor, int... labels )
+    public void nodeLabelUnionScan( NodeLabelIndexCursor cursor, int... labels )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
 
-        ((NodeLabelIndexCursor) cursor).setRead( this );
-        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAnyOfLabels( labels ) );
+        DefaultNodeLabelIndexCursor client = (DefaultNodeLabelIndexCursor) cursor;
+        client.setRead( this );
+        client.unionScan( new NodeLabelIndexProgressor( labelScanReader().nodesWithAnyOfLabels( labels ), client ),
+                false, labels );
     }
 
     @Override
-    public void nodeLabelIntersectionScan( org.neo4j.internal.kernel.api.NodeLabelIndexCursor cursor, int... labels )
+    public void nodeLabelIntersectionScan( NodeLabelIndexCursor cursor, int... labels )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
 
-        ((NodeLabelIndexCursor) cursor).setRead( this );
-        labelScan( (NodeLabelIndexCursor) cursor, labelScanReader().nodesWithAllLabels( labels ) );
-    }
-
-    private void labelScan( IndexProgressor.NodeLabelClient client, PrimitiveLongResourceIterator iterator )
-    {
-        client.initialize( new NodeLabelIndexProgressor( iterator, client ), false );
+        DefaultNodeLabelIndexCursor client = (DefaultNodeLabelIndexCursor) cursor;
+        client.setRead( this );
+        client.intersectionScan(
+                new NodeLabelIndexProgressor( labelScanReader().nodesWithAllLabels( labels ), client ),
+                false, labels );
     }
 
     @Override
-    public final Scan<org.neo4j.internal.kernel.api.NodeLabelIndexCursor> nodeLabelScan( int label )
+    public final Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public final void allNodesScan( org.neo4j.internal.kernel.api.NodeCursor cursor )
+    public final void allNodesScan( NodeCursor cursor )
     {
-        assertOpen.assertOpen();
-        ((NodeCursor) cursor).scan( this );
+        ktx.assertOpen();
+        ((DefaultNodeCursor) cursor).scan( this );
     }
 
     @Override
-    public final Scan<org.neo4j.internal.kernel.api.NodeCursor> allNodesScan()
+    public final Scan<NodeCursor> allNodesScan()
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public final void singleNode( long reference, org.neo4j.internal.kernel.api.NodeCursor cursor )
+    public final void singleNode( long reference, NodeCursor cursor )
     {
-        assertOpen.assertOpen();
-        ((NodeCursor) cursor).single( reference, this );
+        ktx.assertOpen();
+        ((DefaultNodeCursor) cursor).single( reference, this );
     }
 
     @Override
-    public final void singleRelationship( long reference, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
+    public final void singleRelationship( long reference, RelationshipScanCursor cursor )
     {
-        assertOpen.assertOpen();
-        ((RelationshipScanCursor) cursor).single( reference, this );
+        ktx.assertOpen();
+        ((DefaultRelationshipScanCursor) cursor).single( reference, this );
     }
 
     @Override
-    public final void allRelationshipsScan( org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
+    public final void allRelationshipsScan( RelationshipScanCursor cursor )
     {
-        assertOpen.assertOpen();
-        ((RelationshipScanCursor) cursor).scan( -1/*include all labels*/, this );
+        ktx.assertOpen();
+        ((DefaultRelationshipScanCursor) cursor).scan( -1/*include all labels*/, this );
     }
 
     @Override
-    public final Scan<org.neo4j.internal.kernel.api.RelationshipScanCursor> allRelationshipsScan()
+    public final Scan<RelationshipScanCursor> allRelationshipsScan()
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public final void relationshipLabelScan( int label, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
+    public final void relationshipTypeScan( int type, RelationshipScanCursor cursor )
     {
-        assertOpen.assertOpen();
-        ((RelationshipScanCursor) cursor).scan( label, this );
+        ktx.assertOpen();
+        ((DefaultRelationshipScanCursor) cursor).scan( type, this );
     }
 
     @Override
-    public final Scan<org.neo4j.internal.kernel.api.RelationshipScanCursor> relationshipLabelScan( int label )
+    public final Scan<RelationshipScanCursor> relationshipTypeScan( int type )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public final void relationshipGroups(
-            long nodeReference, long reference, org.neo4j.internal.kernel.api.RelationshipGroupCursor cursor )
+            long nodeReference, long reference, RelationshipGroupCursor cursor )
     {
-        assertOpen.assertOpen();
-        if ( reference == NO_ID ) // there are no relationships for this node
+        ktx.assertOpen();
+        // the relationships for this node are not grouped in the store
+        if ( reference != NO_ID && isRelationship( reference ) )
         {
-            cursor.close();
-        }
-        else if ( hasDirectFlag( reference ) ) // the relationships for this node are not grouped
-        {
-            ((RelationshipGroupCursor) cursor).buffer( nodeReference, clearFlags( reference ), this );
+            ((DefaultRelationshipGroupCursor) cursor).buffer( nodeReference, clearEncoding( reference ), this );
         }
         else // this is a normal group reference.
         {
-            ((RelationshipGroupCursor) cursor).direct( nodeReference, reference, this );
+            ((DefaultRelationshipGroupCursor) cursor).direct( nodeReference, reference, this );
         }
     }
 
     @Override
     public final void relationships(
-            long nodeReference, long reference, org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
+            long nodeReference, long reference, RelationshipTraversalCursor cursor )
     {
-        /* TODO: There are actually five (5!) different ways a relationship traversal cursor can be initialized:
+        /* There are 5 different ways a relationship traversal cursor can be initialized:
          *
          * 1. From a batched group in a detached way. This happens when the user manually retrieves the relationships
          *    references from the group cursor and passes it to this method and if the group cursor was based on having
@@ -278,122 +382,152 @@ abstract class Read implements TxStateHolder,
          *
          * This means that we need reference encodings (flags) for cases: 1, 3, 4, 5
          */
-        assertOpen.assertOpen();
-        if ( reference == NO_ID ) // there are no relationships for this node
+        ktx.assertOpen();
+
+        int relationshipType;
+        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
+        DefaultRelationshipTraversalCursor internalCursor = (DefaultRelationshipTraversalCursor)cursor;
+
+        switch ( encoding )
         {
-            cursor.close();
-        }
-        else if ( hasGroupFlag( reference ) ) // this reference is actually to a group record
-        {
-            ((RelationshipTraversalCursor) cursor).groups( nodeReference, clearFlags( reference ), this );
-        }
-        else if ( hasFilterFlag( reference ) ) // this relationship chain need to be filtered
-        {
-            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, clearFlags( reference ), this );
-        }
-        else // this is a normal relationship reference
-        {
-            ((RelationshipTraversalCursor) cursor).chain( nodeReference, reference, this );
+        case NONE: // this is a normal relationship reference
+            internalCursor.chain( nodeReference, reference, this );
+            break;
+
+        case FILTER: // this relationship chain needs to be filtered
+            internalCursor.filtered( nodeReference, clearEncoding( reference ), this, true );
+            break;
+
+        case FILTER_TX_STATE: // tx-state changes should be filtered by the head of this chain
+            internalCursor.filtered( nodeReference, clearEncoding( reference ), this, false );
+            break;
+
+        case GROUP: // this reference is actually to a group record
+            internalCursor.groups( nodeReference, clearEncoding( reference ), this );
+            break;
+
+        case NO_OUTGOING_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            relationshipType = (int) clearEncoding( reference );
+            internalCursor.filteredTxState( nodeReference, this, relationshipType, OUTGOING );
+            break;
+
+        case NO_INCOMING_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            relationshipType = (int) clearEncoding( reference );
+            internalCursor.filteredTxState( nodeReference, this, relationshipType, INCOMING );
+            break;
+
+        case NO_LOOP_OF_TYPE: // nothing in store, but proceed to check tx-state changes
+            relationshipType = (int) clearEncoding( reference );
+            internalCursor.filteredTxState( nodeReference, this, relationshipType, LOOP );
+            break;
+
+        default:
+            throw new IllegalStateException( "Unknown encoding " + encoding );
         }
     }
 
     @Override
-    public final void nodeProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public final void nodeProperties( long nodeReference, long reference, PropertyCursor cursor )
     {
-        assertOpen.assertOpen();
-        ((PropertyCursor) cursor).init( reference, this, assertOpen );
+        ktx.assertOpen();
+        ((DefaultPropertyCursor) cursor).initNode( nodeReference, reference, this, ktx );
     }
 
     @Override
-    public final void relationshipProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public final void relationshipProperties( long relationshipReference, long reference,
+            PropertyCursor cursor )
     {
-        assertOpen.assertOpen();
-        ((PropertyCursor) cursor).init( reference, this, assertOpen );
+        ktx.assertOpen();
+        ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
     }
 
     @Override
-    public final void graphProperties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public final void graphProperties( PropertyCursor cursor )
     {
-        assertOpen.assertOpen();
-        ((PropertyCursor) cursor).init( graphPropertiesReference(), this, assertOpen );
+        ktx.assertOpen();
+        ((DefaultPropertyCursor) cursor).initGraph( graphPropertiesReference(), this, ktx );
     }
 
     abstract long graphPropertiesReference();
 
     @Override
     public final void nodeExplicitIndexLookup(
-            org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, String key, Value value ) throws KernelException
+            NodeExplicitIndexCursor cursor, String index, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException
     {
-        assertOpen.assertOpen();
-        ((NodeExplicitIndexCursor) cursor).setRead( this );
-        explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).get( key, value.asObject() ) );
+        ktx.assertOpen();
+        ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
+        explicitIndex( (DefaultNodeExplicitIndexCursor) cursor,
+                explicitNodeIndex( index ).get( key, value ) );
     }
 
     @Override
     public final void nodeExplicitIndexQuery(
-            org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, Object query ) throws KernelException
+            NodeExplicitIndexCursor cursor, String index, Object query )
+            throws ExplicitIndexNotFoundKernelException
     {
-        assertOpen.assertOpen();
-        ((NodeExplicitIndexCursor) cursor).setRead( this );
-        explicitIndex( (org.neo4j.kernel.impl.newapi.NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
+        ktx.assertOpen();
+        ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
+        explicitIndex( (DefaultNodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
                 query instanceof Value ? ((Value) query).asObject() : query ) );
     }
 
     @Override
     public final void nodeExplicitIndexQuery(
-            org.neo4j.internal.kernel.api.NodeExplicitIndexCursor cursor, String index, String key, Object query ) throws KernelException
+            NodeExplicitIndexCursor cursor, String index, String key, Object query )
+            throws ExplicitIndexNotFoundKernelException
     {
-        assertOpen.assertOpen();
-        ((NodeExplicitIndexCursor) cursor).setRead( this );
-        explicitIndex( (NodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
+        ktx.assertOpen();
+        ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
+        explicitIndex( (DefaultNodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
                 key, query instanceof Value ? ((Value) query).asObject() : query ) );
     }
 
     @Override
-    public void relationshipExplicitIndexGet(
-            org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor cursor,
+    public void relationshipExplicitIndexLookup(
+            RelationshipExplicitIndexCursor cursor,
             String index,
             String key,
-            Value value,
+            Object value,
             long source,
-            long target ) throws KernelException
+            long target ) throws ExplicitIndexNotFoundKernelException
     {
-        assertOpen.assertOpen();
-        ((RelationshipExplicitIndexCursor) cursor).setRead( this );
+        ktx.assertOpen();
+        ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
-                (RelationshipExplicitIndexCursor) cursor,
-                explicitRelationshipIndex( index ).get( key, value.asObject(), source, target ) );
+                (DefaultRelationshipExplicitIndexCursor) cursor,
+                explicitRelationshipIndex( index ).get( key, value, source, target ) );
     }
 
     @Override
     public void relationshipExplicitIndexQuery(
-            org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor cursor,
+            RelationshipExplicitIndexCursor cursor,
             String index,
             Object query,
             long source,
-            long target ) throws KernelException
+            long target ) throws ExplicitIndexNotFoundKernelException
     {
-        assertOpen.assertOpen();
-        ((RelationshipExplicitIndexCursor) cursor).setRead( this );
+        ktx.assertOpen();
+        ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
-                (RelationshipExplicitIndexCursor) cursor,
+                (DefaultRelationshipExplicitIndexCursor) cursor,
                 explicitRelationshipIndex( index )
                         .query( query instanceof Value ? ((Value) query).asObject() : query, source, target ) );
     }
 
     @Override
     public void relationshipExplicitIndexQuery(
-            org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor cursor,
+            RelationshipExplicitIndexCursor cursor,
             String index,
             String key,
             Object query,
             long source,
-            long target ) throws KernelException
+            long target ) throws ExplicitIndexNotFoundKernelException
     {
-        assertOpen.assertOpen();
-        ((RelationshipExplicitIndexCursor) cursor).setRead( this );
+        ktx.assertOpen();
+        ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
-                (RelationshipExplicitIndexCursor) cursor,
+                (DefaultRelationshipExplicitIndexCursor) cursor,
                 explicitRelationshipIndex( index ).query(
                         key, query instanceof Value ? ((Value) query).asObject() : query, source, target ) );
     }
@@ -406,34 +540,34 @@ abstract class Read implements TxStateHolder,
     @Override
     public final void futureNodeReferenceRead( long reference )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
     }
 
     @Override
     public final void futureRelationshipsReferenceRead( long reference )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
     }
 
     @Override
     public final void futureNodePropertyReferenceRead( long reference )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
     }
 
     @Override
     public final void futureRelationshipPropertyReferenceRead( long reference )
     {
-        assertOpen.assertOpen();
+        ktx.assertOpen();
     }
 
-    abstract IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index );
+    abstract IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException;
 
     abstract LabelScanReader labelScanReader();
 
-    abstract ExplicitIndex explicitNodeIndex( String indexName ) throws KernelException;
+    abstract ExplicitIndex explicitNodeIndex( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
-    abstract ExplicitIndex explicitRelationshipIndex( String indexName ) throws KernelException;
+    abstract ExplicitIndex explicitRelationshipIndex( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
     @Override
     public abstract CapableIndexReference index( int label, int... properties );
@@ -456,6 +590,8 @@ abstract class Read implements TxStateHolder,
 
     abstract void relationship( RelationshipRecord record, long reference, PageCursor pageCursor );
 
+    abstract void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor );
+
     abstract void property( PropertyRecord record, long reference, PageCursor pageCursor );
 
     abstract void group( RelationshipGroupRecord record, long reference, PageCursor page );
@@ -464,25 +600,196 @@ abstract class Read implements TxStateHolder,
 
     abstract long relationshipHighMark();
 
-    abstract TextValue string( PropertyCursor cursor, long reference, PageCursor page );
+    abstract TextValue string( DefaultPropertyCursor cursor, long reference, PageCursor page );
 
-    abstract ArrayValue array( PropertyCursor cursor, long reference, PageCursor page );
+    abstract ArrayValue array( DefaultPropertyCursor cursor, long reference, PageCursor page );
 
     @Override
     public TransactionState txState()
     {
-        return txStateHolder.txState();
+        return ktx.txState();
     }
 
     @Override
     public ExplicitIndexTransactionState explicitIndexTxState()
     {
-        return txStateHolder.explicitIndexTxState();
+        return ktx.explicitIndexTxState();
     }
 
     @Override
     public boolean hasTxStateWithChanges()
     {
-        return txStateHolder.hasTxStateWithChanges();
+        return ktx.hasTxStateWithChanges();
     }
+
+    @Override
+    public void acquireExclusiveNodeLock( long... ids )
+    {
+        acquireExclusiveLock( ResourceTypes.NODE, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireExclusiveRelationshipLock( long... ids )
+    {
+        acquireExclusiveLock( ResourceTypes.RELATIONSHIP, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireExclusiveExplicitIndexLock( long... ids )
+    {
+        acquireExclusiveLock( ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireExclusiveLabelLock( long... ids )
+    {
+        acquireExclusiveLock( ResourceTypes.LABEL, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseExclusiveNodeLock( long... ids )
+    {
+        releaseExclusiveLock( ResourceTypes.NODE, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseExclusiveRelationshipLock( long... ids )
+    {
+        releaseExclusiveLock( ResourceTypes.RELATIONSHIP, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseExclusiveExplicitIndexLock( long... ids )
+    {
+        releaseExclusiveLock( ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseExclusiveLabelLock( long... ids )
+    {
+        releaseExclusiveLock( ResourceTypes.LABEL, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireSharedNodeLock( long... ids )
+    {
+        acquireSharedLock( ResourceTypes.NODE, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireSharedRelationshipLock( long... ids )
+    {
+        acquireSharedLock( ResourceTypes.RELATIONSHIP, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireSharedExplicitIndexLock( long... ids )
+    {
+        acquireSharedLock( ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void acquireSharedLabelLock( long... ids )
+    {
+        acquireSharedLock( ResourceTypes.LABEL, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseSharedNodeLock( long... ids )
+    {
+        releaseSharedLock( ResourceTypes.NODE, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseSharedRelationshipLock( long... ids )
+    {
+        releaseSharedLock( ResourceTypes.RELATIONSHIP, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseSharedExplicitIndexLock( long... ids )
+    {
+        releaseSharedLock( ResourceTypes.EXPLICIT_INDEX, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseSharedLabelLock( long... ids )
+    {
+        releaseSharedLock( ResourceTypes.LABEL, ids );
+        ktx.assertOpen();
+    }
+
+    void sharedOptimisticLock( ResourceType resource, long resourceId )
+    {
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), resource, resourceId );
+    }
+
+    private void acquireExclusiveLock( ResourceTypes types, long... ids )
+    {
+        ktx.statementLocks().pessimistic().acquireExclusive( ktx.lockTracer(), types, ids );
+    }
+
+    private void releaseExclusiveLock( ResourceTypes types, long... ids )
+    {
+        ktx.statementLocks().pessimistic().releaseExclusive( types, ids );
+    }
+
+    private void acquireSharedLock( ResourceTypes types, long... ids )
+    {
+        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), types, ids );
+    }
+
+    private void releaseSharedLock( ResourceTypes types, long... ids )
+    {
+        ktx.statementLocks().pessimistic().releaseShared( types, ids );
+    }
+
+    private void assertIndexOnline( IndexReference index )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        switch ( indexGetState( index ) )
+        {
+        case ONLINE:
+            return;
+        default:
+            throw new IndexBrokenKernelException( indexGetFailure( index ) );
+        }
+    }
+
+    private void assertPredicatesMatchSchema( IndexReference index, IndexQuery.ExactPredicate[] predicates )
+            throws IndexNotApplicableKernelException
+    {
+        int[] propertyIds = index.properties();
+        if ( propertyIds.length != predicates.length )
+        {
+            throw new IndexNotApplicableKernelException(
+                    format( "The index specifies %d properties, but only %d lookup predicates were given.",
+                            propertyIds.length, predicates.length ) );
+        }
+        for ( int i = 0; i < predicates.length; i++ )
+        {
+            if ( predicates[i].propertyKeyId() != propertyIds[i] )
+            {
+                throw new IndexNotApplicableKernelException(
+                        format( "The index has the property id %d in position %d, but the lookup property id was %d.",
+                                propertyIds[i], i, predicates[i].propertyKeyId() ) );
+            }
+        }
+    }
+
 }

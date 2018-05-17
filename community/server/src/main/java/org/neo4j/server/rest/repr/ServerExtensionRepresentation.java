@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,14 +31,11 @@ public final class ServerExtensionRepresentation extends MappingRepresentation
     public ServerExtensionRepresentation( String name, List<ExtensionPointRepresentation> methods )
     {
         super( RepresentationType.SERVER_PLUGIN_DESCRIPTION );
-        this.extended = new HashMap<String, EntityExtensionRepresentation>();
+        this.extended = new HashMap<>();
         for ( ExtensionPointRepresentation extension : methods )
         {
-            EntityExtensionRepresentation entity = extended.get( extension.getExtendedEntity() );
-            if ( entity == null )
-            {
-                extended.put( extension.getExtendedEntity(), entity = new EntityExtensionRepresentation() );
-            }
+            EntityExtensionRepresentation entity =
+                    extended.computeIfAbsent( extension.getExtendedEntity(), k -> new EntityExtensionRepresentation() );
             entity.add( extension );
         }
     }
@@ -59,7 +56,7 @@ public final class ServerExtensionRepresentation extends MappingRepresentation
         EntityExtensionRepresentation()
         {
             super( "entity-extensions" );
-            this.extensions = new ArrayList<ExtensionPointRepresentation>();
+            this.extensions = new ArrayList<>();
         }
 
         void add( ExtensionPointRepresentation extension )

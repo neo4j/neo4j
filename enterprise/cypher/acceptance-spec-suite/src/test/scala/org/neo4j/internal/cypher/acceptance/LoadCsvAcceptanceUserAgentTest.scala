@@ -1,47 +1,48 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.scalatest.BeforeAndAfterAll
 import sun.net.www.protocol.http.HttpURLConnection
 
 class LoadCsvAcceptanceUserAgentTest
   extends ExecutionEngineFunSuite with BeforeAndAfterAll with CypherComparisonSupport {
 
-  val expectedToSucceed: TestConfiguration = Configs.Interpreted - Configs.Version2_3
-
   test("should be able to download data from the web") {
     val url = s"http://127.0.0.1:$port/test.csv".cypherEscape
 
-    val result = executeWith(expectedToSucceed, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
     result.columnAs[Long]("count(line)").toList should equal(List(3))
   }
 
   test("should be able to download from a website when redirected and cookies are set") {
     val url = s"http://127.0.0.1:$port/redirect_test.csv".cypherEscape
 
-    val result = executeWith(expectedToSucceed, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
     result.columnAs[Long]("count(line)").toList should equal(List(3))
   }
   private val CSV_DATA_CONTENT = "1,1,1\n2,2,2\n3,3,3\n".getBytes

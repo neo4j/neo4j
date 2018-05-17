@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -67,27 +67,25 @@ public interface AutoIndexOperations
 
         @Override
         public void propertyAdded( ExplicitIndexWrite write, long entityId, int propertyKeyId, Value value )
-                throws AutoIndexingKernelException
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public void propertyChanged( ExplicitIndexWrite write, long entityId, int propertyKeyId, Value oldValue,
-                Value newValue ) throws AutoIndexingKernelException
+                Value newValue )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public void propertyRemoved( ExplicitIndexWrite write, long entityId, int propertyKey )
-                throws AutoIndexingKernelException
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void entityRemoved( ExplicitIndexWrite write, long entityId ) throws AutoIndexingKernelException
+        public void entityRemoved( ExplicitIndexWrite write, long entityId )
         {
             throw new UnsupportedOperationException();
         }

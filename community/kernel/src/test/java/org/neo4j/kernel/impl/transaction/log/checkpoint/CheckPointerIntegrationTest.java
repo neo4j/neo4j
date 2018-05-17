@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -72,7 +72,7 @@ public class CheckPointerIntegrationTest
     private File storeDir;
 
     @Before
-    public void setup() throws IOException
+    public void setup()
     {
         fs = fsRule.get();
         storeDir = testDirectory.graphDbDir();
@@ -82,7 +82,7 @@ public class CheckPointerIntegrationTest
 
     @Test
     public void databaseShutdownDuringConstantCheckPointing() throws
-            InterruptedException, IOException
+            InterruptedException
     {
         GraphDatabaseService db = builder
                 .setConfig( GraphDatabaseSettings.check_point_interval_time, 0 + "ms" )

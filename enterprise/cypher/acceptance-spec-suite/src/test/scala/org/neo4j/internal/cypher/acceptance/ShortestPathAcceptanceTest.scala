@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -49,9 +52,6 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     nodeD = createLabeledNode("D")
   }
 
-  // TODO The next four tests are expected to work with 3.1 and rule planner (not 2.3!) as soon as the dependencies are updated
-  val excludedConfigs = Configs.Version3_1 + Configs.AllRulePlanners
-
   test("shortest path in a with clause") {
 
     relate(nodeA, nodeB)
@@ -63,7 +63,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
         | RETURN nodes(x)
       """.stripMargin
 
-    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
+    val result = executeWith(expectedToSucceed - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
 
     result should equal(List(List(nodeA, nodeB)))
   }
@@ -79,7 +79,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
         | RETURN nodes(x)
       """.stripMargin
 
-    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
+    val result = executeWith(expectedToSucceed - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
 
     result should equal(List(null))
   }
@@ -96,7 +96,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
         | RETURN nodes(x)
       """.stripMargin
 
-    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
+    val result = executeWith(expectedToSucceed - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
 
     result should equal(List(List(nodeA, nodeB)))
   }
@@ -113,7 +113,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
         | RETURN nodes(x)
       """.stripMargin
 
-    val result = executeWith(expectedToSucceed - excludedConfigs - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
+    val result = executeWith(expectedToSucceed - Configs.Version2_3, query).columnAs[List[Node]]("nodes(x)").toList
 
     result should equal(List.empty)
   }
@@ -497,7 +497,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p) AS nodes
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, query)
+    val result = executeWith(expectedToSucceed, query)
 
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }
@@ -512,7 +512,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p) as nodes
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, query)
+    val result = executeWith(expectedToSucceed, query)
 
     result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Mickey"))),
       Map("nodes" -> List(nodes("Donald"), nodes("Mickey"), nodes("Minnie"))),
@@ -530,7 +530,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p) as nodes
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed - Configs.SlottedInterpreted, query)
+    val result = executeWith(expectedToSucceed, query)
 
     result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Mickey"))),
       Map("nodes" -> List(nodes("Donald"), nodes("Mickey"), nodes("Minnie"))),
@@ -741,6 +741,16 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
         |RETURN length(path)""".stripMargin)
     // Then
     result.toList should equal(List(Map("length(path)" -> 2)))
+  }
+
+  test("should not require named nodes in shortest path") {
+    graph.execute("CREATE (a:Person)-[:WATCH]->(b:Movie)")
+
+    val query =
+      """MATCH p=shortestPath( (:Person)-[*1..4]->(:Movie) )
+        |RETURN length(p)
+      """.stripMargin
+    graph.execute(query).columnAs[Int]("length(p)").next() should be (1)
   }
 
   private def createLdbc14Model(): Unit = {

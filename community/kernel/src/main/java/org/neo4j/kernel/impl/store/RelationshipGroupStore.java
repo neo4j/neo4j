@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,8 +30,10 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StorageStatement;
 
-public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGroupRecord,IntStoreHeader>
+public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGroupRecord,IntStoreHeader> implements
+        StorageStatement.Groups
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipGroupStore";
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * For each relationship id in 'relIds', fetch the corresponding relationship. For each relationship,
@@ -29,12 +29,12 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *   - the start node as 'startNode'
   *   - the end node as 'endNode'
   */
-case class DirectedRelationshipByIdSeek(idName: IdName,
+case class DirectedRelationshipByIdSeek(idName: String,
                                         relIds: SeekableArgs,
-                                        startNode: IdName,
-                                        endNode: IdName,
-                                        argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan {
+                                        startNode: String,
+                                        endNode: String,
+                                        argumentIds: Set[String])(implicit idGen: IdGen)
+  extends LogicalLeafPlan(idGen) {
 
-  def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, startNode, endNode)
+  val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
 }

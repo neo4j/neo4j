@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,7 +22,6 @@ package org.neo4j.kernel.internal;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -99,7 +98,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
 
             // Sort by name
             List<File> fileList = Arrays.asList( files );
-            Collections.sort( fileList, ( o1, o2 ) -> o1.getName().compareTo( o2.getName() ) );
+            fileList.sort( Comparator.comparing( File::getName ) );
 
             for ( File file : fileList )
             {
@@ -147,7 +146,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
 
             public void addFile( File file )
             {
-                if ( StoreType.shouldBeManagedByPageCache( file.getName() ) )
+                if ( StoreType.canBeManagedByPageCache( file.getName() ) )
                 {
                     size += file.length();
                 }

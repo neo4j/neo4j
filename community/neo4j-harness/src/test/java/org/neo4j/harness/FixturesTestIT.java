@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,16 +28,18 @@ import java.io.IOException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static java.lang.System.lineSeparator;
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -215,11 +217,12 @@ public class FixturesTestIT
         }
     }
 
-    private TestServerBuilder getServerBuilder( File targetFolder ) throws IOException
+    private TestServerBuilder getServerBuilder( File targetFolder )
     {
         TestServerBuilder serverBuilder = newInProcessBuilder( targetFolder )
                 .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
-                        ServerTestUtils.getRelativePath( testDir.directory(), LegacySslPolicyConfig.certificates_directory ) );
+                        ServerTestUtils.getRelativePath( testDir.directory(), LegacySslPolicyConfig.certificates_directory ) )
+                .withConfig( ServerSettings.script_enabled, Settings.TRUE );
         return serverBuilder;
     }
 

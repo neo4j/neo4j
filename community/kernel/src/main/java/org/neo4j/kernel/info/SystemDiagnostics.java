@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,6 +35,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
+import java.time.zone.ZoneRulesProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -46,11 +47,10 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.logging.Logger;
 
 import static java.net.NetworkInterface.getNetworkInterfaces;
-
 import static org.neo4j.helpers.Format.bytes;
 
 enum SystemDiagnostics implements DiagnosticsProvider
@@ -151,7 +151,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
 
         private Collection<String> buildClassPath( ClassLoader loader, String[] pathKeys, String... classPaths )
         {
-            Map<String, String> paths = new HashMap<String, String>();
+            Map<String, String> paths = new HashMap<>();
             assert pathKeys.length == classPaths.length;
             for ( int i = 0; i < classPaths.length; i++ )
             {
@@ -183,7 +183,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
                 }
                 loader = loader.getParent();
             }
-            List<String> result = new ArrayList<String>( paths.size() );
+            List<String> result = new ArrayList<>( paths.size() );
             for ( Map.Entry<String, String> path : paths.entrySet() )
             {
                 result.add( " [" + path.getValue() + "] " + path.getKey() );
@@ -237,6 +237,27 @@ enum SystemDiagnostics implements DiagnosticsProvider
             }
         }
     },
+    TIMEZONE_DATABASE( "(IANA) TimeZone Database Version:" )
+    {
+        @Override
+        void dump( Logger logger )
+        {
+            Map<String,Integer> versions = new HashMap<>();
+            for ( String tz : ZoneRulesProvider.getAvailableZoneIds() )
+            {
+                for ( String version : ZoneRulesProvider.getVersions( tz ).keySet() )
+                {
+                    versions.compute( version, ( key, value ) -> value == null ? 1 : (value + 1) );
+                }
+            }
+            String[] sorted = versions.keySet().toArray( new String[0] );
+            Arrays.sort( sorted );
+            for ( String tz : sorted )
+            {
+                logger.log( "  TimeZone version: %s (available for %d zone identifiers)", tz, versions.get( tz ) );
+            }
+        }
+    },
     LINUX_SCHEDULERS( "Linux scheduler information:" )
     {
         private final File SYS_BLOCK = new File( "/sys/block" );
@@ -250,18 +271,22 @@ enum SystemDiagnostics implements DiagnosticsProvider
         @Override
         void dump( Logger logger )
         {
-            for ( File subdir : SYS_BLOCK.listFiles( path -> path.isDirectory() ) )
+            File[] files = SYS_BLOCK.listFiles( File::isDirectory );
+            if ( files != null )
             {
-                File scheduler = new File( subdir, "queue/scheduler" );
-                if ( scheduler.isFile() )
+                for ( File subdir : files )
                 {
-                    try ( Stream<String> lines = Files.lines( scheduler.toPath() ) )
+                    File scheduler = new File( subdir, "queue/scheduler" );
+                    if ( scheduler.isFile() )
                     {
-                        lines.forEach( logger::log );
-                    }
-                    catch ( IOException e )
-                    {
-                        // ignore
+                        try ( Stream<String> lines = Files.lines( scheduler.toPath() ) )
+                        {
+                            lines.forEach( logger::log );
+                        }
+                        catch ( IOException e )
+                        {
+                            // ignore
+                        }
                     }
                 }
             }

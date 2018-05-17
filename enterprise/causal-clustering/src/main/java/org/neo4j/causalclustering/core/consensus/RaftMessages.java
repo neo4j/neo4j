@@ -1,24 +1,28 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core.consensus;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -140,9 +144,30 @@ public interface RaftMessages
         }
     }
 
+    interface AnyVote
+    {
+        interface Request
+        {
+            long term();
+
+            long lastLogTerm();
+
+            long lastLogIndex();
+
+            MemberId candidate();
+        }
+
+        interface Response
+        {
+            long term();
+
+            boolean voteGranted();
+        }
+    }
+
     interface Vote
     {
-        class Request extends BaseRaftMessage
+        class Request extends BaseRaftMessage implements AnyVote.Request
         {
             private long term;
             private MemberId candidate;
@@ -158,6 +183,7 @@ public interface RaftMessages
                 this.lastLogTerm = lastLogTerm;
             }
 
+            @Override
             public long term()
             {
                 return term;
@@ -204,23 +230,26 @@ public interface RaftMessages
                         from, term, candidate, lastLogIndex, lastLogTerm );
             }
 
+            @Override
             public long lastLogTerm()
             {
                 return lastLogTerm;
             }
 
+            @Override
             public long lastLogIndex()
             {
                 return lastLogIndex;
             }
 
+            @Override
             public MemberId candidate()
             {
                 return candidate;
             }
         }
 
-        class Response extends BaseRaftMessage
+        class Response extends BaseRaftMessage implements AnyVote.Response
         {
             private long term;
             private boolean voteGranted;
@@ -270,11 +299,13 @@ public interface RaftMessages
                 return format( "Vote.Response from %s {term=%d, voteGranted=%s}", from, term, voteGranted );
             }
 
+            @Override
             public long term()
             {
                 return term;
             }
 
+            @Override
             public boolean voteGranted()
             {
                 return voteGranted;
@@ -284,7 +315,7 @@ public interface RaftMessages
 
     interface PreVote
     {
-        class Request extends BaseRaftMessage
+        class Request extends BaseRaftMessage implements AnyVote.Request
         {
             private long term;
             private MemberId candidate;
@@ -300,6 +331,7 @@ public interface RaftMessages
                 this.lastLogTerm = lastLogTerm;
             }
 
+            @Override
             public long term()
             {
                 return term;
@@ -346,23 +378,26 @@ public interface RaftMessages
                         from, term, candidate, lastLogIndex, lastLogTerm );
             }
 
+            @Override
             public long lastLogTerm()
             {
                 return lastLogTerm;
             }
 
+            @Override
             public long lastLogIndex()
             {
                 return lastLogIndex;
             }
 
+            @Override
             public MemberId candidate()
             {
                 return candidate;
             }
         }
 
-        class Response extends BaseRaftMessage
+        class Response extends BaseRaftMessage implements AnyVote.Response
         {
             private long term;
             private boolean voteGranted;
@@ -412,11 +447,13 @@ public interface RaftMessages
                 return format( "PreVote.Response from %s {term=%d, voteGranted=%s}", from, term, voteGranted );
             }
 
+            @Override
             public long term()
             {
                 return term;
             }
 
+            @Override
             public boolean voteGranted()
             {
                 return voteGranted;
@@ -434,8 +471,7 @@ public interface RaftMessages
             private RaftLogEntry[] entries;
             private long leaderCommit;
 
-            public Request( MemberId from, long leaderTerm, long prevLogIndex, long prevLogTerm,
-                            RaftLogEntry[] entries, long leaderCommit )
+            public Request( MemberId from, long leaderTerm, long prevLogIndex, long prevLogTerm, RaftLogEntry[] entries, long leaderCommit )
             {
                 super( from, Type.APPEND_ENTRIES_REQUEST );
                 Objects.requireNonNull( entries );
@@ -501,7 +537,7 @@ public interface RaftMessages
             @Override
             public int hashCode()
             {
-                return Objects.hash( leaderTerm, prevLogIndex, prevLogTerm, entries, leaderCommit );
+                return Objects.hash( leaderTerm, prevLogIndex, prevLogTerm, Arrays.hashCode( entries ), leaderCommit );
             }
 
             @Override
@@ -912,12 +948,63 @@ public interface RaftMessages
         }
     }
 
-    class ClusterIdAwareMessage implements RaftMessage
+    interface EnrichedRaftMessage<RM extends RaftMessage> extends RaftMessage
+    {
+        RM message();
+
+        @Override
+        default MemberId from()
+        {
+            return message().from();
+        }
+
+        @Override
+        default Type type()
+        {
+            return message().type();
+        }
+
+        @Override
+        default <T, E extends Exception> T dispatch( Handler<T, E> handler ) throws E
+        {
+            return message().dispatch( handler );
+        }
+    }
+
+    interface ClusterIdAwareMessage<RM extends RaftMessage> extends EnrichedRaftMessage<RM>
+    {
+        ClusterId clusterId();
+
+        static <RM extends RaftMessage> ClusterIdAwareMessage<RM> of( ClusterId clusterId, RM message )
+        {
+            return new ClusterIdAwareMessageImpl<>( clusterId, message );
+        }
+    }
+
+    interface ReceivedInstantAwareMessage<RM extends RaftMessage> extends EnrichedRaftMessage<RM>
+    {
+        Instant receivedAt();
+
+        static <RM extends RaftMessage> ReceivedInstantAwareMessage<RM> of( Instant receivedAt, RM message )
+        {
+            return new ReceivedInstantAwareMessageImpl<>( receivedAt, message );
+        }
+    }
+
+    interface ReceivedInstantClusterIdAwareMessage<RM extends RaftMessage> extends ReceivedInstantAwareMessage<RM>, ClusterIdAwareMessage<RM>
+    {
+        static <RM extends RaftMessage> ReceivedInstantClusterIdAwareMessage<RM> of( Instant receivedAt, ClusterId clusterId, RM message )
+        {
+            return new ReceivedInstantClusterIdAwareMessageImpl<>( receivedAt, clusterId, message );
+        }
+    }
+
+    class ClusterIdAwareMessageImpl<RM extends RaftMessage> implements ClusterIdAwareMessage<RM>
     {
         private final ClusterId clusterId;
-        private final RaftMessage message;
+        private final RM message;
 
-        public ClusterIdAwareMessage( ClusterId clusterId, RaftMessage message )
+        private ClusterIdAwareMessageImpl( ClusterId clusterId, RM message )
         {
             Objects.requireNonNull( message );
             this.clusterId = clusterId;
@@ -929,7 +1016,8 @@ public interface RaftMessages
             return clusterId;
         }
 
-        public RaftMessage message()
+        @Override
+        public RM message()
         {
             return message;
         }
@@ -945,38 +1033,132 @@ public interface RaftMessages
             {
                 return false;
             }
-            ClusterIdAwareMessage that = (ClusterIdAwareMessage) o;
-            return Objects.equals( clusterId, that.clusterId ) && Objects.equals( message, that.message );
+            ClusterIdAwareMessageImpl<?> that = (ClusterIdAwareMessageImpl<?>) o;
+            return Objects.equals( clusterId, that.clusterId ) && Objects.equals( message(), that.message() );
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash( clusterId, message );
+            return Objects.hash( clusterId, message() );
         }
 
         @Override
         public String toString()
         {
-            return format( "{clusterId: %s, message: %s}", clusterId, message );
+            return format( "{clusterId: %s, message: %s}", clusterId, message() );
+        }
+    }
+
+    class ReceivedInstantAwareMessageImpl<RM extends RaftMessage> implements ReceivedInstantAwareMessage<RM>
+    {
+        private final Instant receivedAt;
+        private final RM message;
+
+        private ReceivedInstantAwareMessageImpl( Instant receivedAt, RM message )
+        {
+            Objects.requireNonNull( message );
+            this.receivedAt = receivedAt;
+            this.message = message;
         }
 
         @Override
-        public MemberId from()
+        public Instant receivedAt()
         {
-            return message.from();
+            return receivedAt;
         }
 
         @Override
-        public Type type()
+        public RM message()
         {
-            return message.type();
+            return message;
         }
 
         @Override
-        public <T, E extends Exception> T dispatch( Handler<T,E> visitor ) throws E
+        public boolean equals( Object o )
         {
-            return message.dispatch( visitor );
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            ReceivedInstantAwareMessageImpl<?> that = (ReceivedInstantAwareMessageImpl<?>) o;
+            return Objects.equals( receivedAt, that.receivedAt ) && Objects.equals( message(), that.message() );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( receivedAt, message() );
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "{receivedAt: %s, message: %s}", receivedAt, message() );
+        }
+    }
+
+    class ReceivedInstantClusterIdAwareMessageImpl<RM extends RaftMessage> implements ReceivedInstantClusterIdAwareMessage<RM>
+    {
+        private final Instant receivedAt;
+        private final ClusterId clusterId;
+        private final RM message;
+
+        private ReceivedInstantClusterIdAwareMessageImpl( Instant receivedAt, ClusterId clusterId, RM message )
+        {
+            Objects.requireNonNull( message );
+            this.clusterId = clusterId;
+            this.receivedAt = receivedAt;
+            this.message = message;
+        }
+
+        @Override
+        public Instant receivedAt()
+        {
+            return receivedAt;
+        }
+
+        @Override
+        public ClusterId clusterId()
+        {
+            return clusterId;
+        }
+
+        @Override
+        public RM message()
+        {
+            return message;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            ReceivedInstantClusterIdAwareMessageImpl<?> that = (ReceivedInstantClusterIdAwareMessageImpl<?>) o;
+            return Objects.equals( receivedAt, that.receivedAt ) && Objects.equals( clusterId, that.clusterId ) && Objects.equals( message(), that.message() );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( receivedAt, clusterId, message() );
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "{clusterId: %s, receivedAt: %s, message: %s}", clusterId, receivedAt, message() );
         }
     }
 
@@ -1029,8 +1211,8 @@ public interface RaftMessages
 
     abstract class BaseRaftMessage implements RaftMessage
     {
-        protected MemberId from;
-        private Type type;
+        protected final MemberId from;
+        private final Type type;
 
         BaseRaftMessage( MemberId from, Type type )
         {

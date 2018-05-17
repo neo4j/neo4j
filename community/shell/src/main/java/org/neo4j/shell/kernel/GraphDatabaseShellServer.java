@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,8 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -123,7 +123,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         }
     }
 
-    public void registerTopLevelTransactionInProgress( Serializable clientId ) throws ShellException
+    public void registerTopLevelTransactionInProgress( Serializable clientId )
     {
         if ( !clients.containsKey( clientId ) )
         {
@@ -133,9 +133,9 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         }
     }
 
-    public Statement getStatement()
+    public TokenRead getTokenRead()
     {
-        return getThreadToStatementContextBridge().get();
+        return getThreadToStatementContextBridge().getKernelTransactionBoundToThisThread( true ).tokenRead();
     }
 
     private ThreadToStatementContextBridge getThreadToStatementContextBridge()
@@ -264,7 +264,6 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     {
         @Override
         public String getReplacement( ShellServer server, Session session )
-                throws ShellException
         {
             try
             {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -58,14 +58,14 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
         nodeCommandsById.clear();
         propertyCommandsByNodeIds.clear();
     }
 
     @Override
-    public boolean visitNodeCommand( NodeCommand command ) throws IOException
+    public boolean visitNodeCommand( NodeCommand command )
     {
         nodeCommandsById.put( command.getKey(), command );
         if ( !hasUpdates && mayResultInIndexUpdates( command ) )
@@ -92,7 +92,7 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+    public boolean visitPropertyCommand( PropertyCommand command )
     {
         if ( mayResultInIndexUpdates( command ) )
         {

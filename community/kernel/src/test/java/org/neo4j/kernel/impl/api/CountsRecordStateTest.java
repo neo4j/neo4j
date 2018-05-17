@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,7 +35,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
 public class CountsRecordStateTest
 {
     @Test
-    public void shouldReportDifferencesBetweenDifferentStates() throws Exception
+    public void shouldReportDifferencesBetweenDifferentStates()
     {
         // given
         CountsRecordState oracle = new CountsRecordState();
@@ -60,7 +60,7 @@ public class CountsRecordStateTest
     }
 
     @Test
-    public void shouldNotReportAnythingForEqualStates() throws Exception
+    public void shouldNotReportAnythingForEqualStates()
     {
         // given
         CountsRecordState oracle = new CountsRecordState();

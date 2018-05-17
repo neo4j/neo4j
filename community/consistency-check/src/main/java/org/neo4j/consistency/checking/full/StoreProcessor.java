@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -209,7 +209,6 @@ public class StoreProcessor extends AbstractStoreProcessor
     public <R extends AbstractBaseRecord> void applyFilteredParallel( final RecordStore<R> store,
             final ProgressListener progressListener, int numberOfThreads, long recordsPerCpu,
             final QueueDistributor<R> distributor )
-            throws Exception
     {
         cacheAccess.prepareForProcessingOfSingleStore( recordsPerCpu );
         RecordProcessor<R> processor = new RecordProcessor.Adapter<R>()

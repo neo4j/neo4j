@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,24 +23,25 @@ import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AscSortItem, DescSortItem, SortItem}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, ColumnOrder, Descending, LogicalPlan}
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
-  def apply(plan: LogicalPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = query.horizon match {
+  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = query.horizon match {
     case p: QueryProjection =>
       val shuffle = p.shuffle
       val producedPlan = (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
         case (Nil, s, l) =>
-          addLimit(l, addSkip(s, plan))
+          addLimit(l, addSkip(s, plan, context), context)
 
         case (sortItems, s, l) =>
           require(sortItems.forall(_.expression.isInstanceOf[Variable]))
           val columnOrders = sortItems.map(columnOrder)
-          val sortedPlan = context.logicalPlanProducer.planSort(plan, columnOrders, sortItems)
+          val sortedPlan = context.logicalPlanProducer.planSort(plan, columnOrders, sortItems, context)
 
-          addLimit(l, addSkip(s, sortedPlan))
+          addLimit(l, addSkip(s, sortedPlan, context), context)
       }
 
       producedPlan
@@ -49,14 +50,14 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
   }
 
   private def columnOrder(in: SortItem): ColumnOrder = in match {
-    case AscSortItem(Variable(key)) => Ascending(IdName(key))
-    case DescSortItem(Variable(key)) => Descending(IdName(key))
+    case AscSortItem(Variable(key)) => Ascending(key)
+    case DescSortItem(Variable(key)) => Descending(key)
     case _ => throw new InternalException("Sort items expected to only use single variable expression")
   }
 
-  private def addSkip(s: Option[Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =
-    s.fold(plan)(x => context.logicalPlanProducer.planSkip(plan, x))
+  private def addSkip(s: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext) =
+    s.fold(plan)(x => context.logicalPlanProducer.planSkip(plan, x, context))
 
-  private def addLimit(s: Option[Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =
-    s.fold(plan)(x => context.logicalPlanProducer.planLimit(plan, x))
+  private def addLimit(s: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext) =
+    s.fold(plan)(x => context.logicalPlanProducer.planLimit(plan, x, context = context))
 }

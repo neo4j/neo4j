@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertThat;
 public class RateLimitedAuthenticationStrategyTest
 {
     @Test
-    public void shouldReturnSuccessForValidAttempt() throws Exception
+    public void shouldReturnSuccessForValidAttempt()
     {
         // Given
         FakeClock clock = getFakeClock();
@@ -49,7 +49,7 @@ public class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
-    public void shouldReturnFailureForInvalidAttempt() throws Exception
+    public void shouldReturnFailureForInvalidAttempt()
     {
         // Given
         FakeClock clock = getFakeClock();
@@ -61,7 +61,7 @@ public class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
-    public void shouldNotSlowRequestRateOnLessThanMaxFailedAttempts() throws Exception
+    public void shouldNotSlowRequestRateOnLessThanMaxFailedAttempts()
     {
         // Given
         FakeClock clock = getFakeClock();
@@ -77,7 +77,7 @@ public class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
-    public void shouldSlowRequestRateOnMultipleFailedAttempts() throws Exception
+    public void shouldSlowRequestRateOnMultipleFailedAttempts()
     {
         // Given
         FakeClock clock = getFakeClock();
@@ -100,7 +100,7 @@ public class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
-    public void shouldSlowRequestRateOnMultipleFailedAttemptsWhereAttemptIsValid() throws Exception
+    public void shouldSlowRequestRateOnMultipleFailedAttemptsWhereAttemptIsValid()
     {
         // Given
         FakeClock clock = getFakeClock();

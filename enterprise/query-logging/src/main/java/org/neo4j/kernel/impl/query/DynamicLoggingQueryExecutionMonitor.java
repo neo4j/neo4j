@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.impl.query;
 
@@ -30,15 +33,16 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 import static org.neo4j.kernel.impl.query.QueryLogger.NO_LOG;
 
-class DynamicLoggingQueryExecutionMonitor implements QueryExecutionMonitor
+class DynamicLoggingQueryExecutionMonitor extends LifecycleAdapter implements QueryExecutionMonitor
 {
     private final Config config;
     private final FileSystemAbstraction fileSystem;
@@ -70,10 +74,11 @@ class DynamicLoggingQueryExecutionMonitor implements QueryExecutionMonitor
         this.debugLog = debugLog;
     }
 
-    synchronized void init() throws IOException
+    @Override
+    public synchronized void init()
     {
         // This set of settings are currently not dynamic:
-        currentLogTimeZone = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+        currentLogTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         logBuilder = FormattedLog.withZoneId( currentLogTimeZone );
         currentQueryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
 
@@ -189,15 +194,15 @@ class DynamicLoggingQueryExecutionMonitor implements QueryExecutionMonitor
 
     private void buildNonRotatingLog() throws IOException
     {
-        OutputStream logOutputStream = createOrOpenAsOuputStream( fileSystem, currentQueryLogFile, true );
+        OutputStream logOutputStream = createOrOpenAsOutputStream( fileSystem, currentQueryLogFile, true );
         log = logBuilder.toOutputStream( logOutputStream );
         closable = logOutputStream;
     }
 
-    synchronized void close() throws IOException
+    @Override
+    public synchronized void shutdown()
     {
-        // Disabling log_queries will implicitly close and release all associated resources.
-        config.updateDynamicSetting( GraphDatabaseSettings.log_queries.name(), "false", "lifecycle" );
+        closeCurrentLogIfAny();
     }
 
     @Override

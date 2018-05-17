@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,8 +25,6 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,9 +33,8 @@ import java.util.function.Predicate;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static java.lang.System.lineSeparator;
 import static java.lang.System.nanoTime;
-import static java.lang.reflect.Modifier.isPublic;
-import static java.lang.reflect.Modifier.isStatic;
 import static org.neo4j.helpers.Exceptions.stringify;
 import static org.neo4j.helpers.Format.duration;
 
@@ -45,6 +42,56 @@ public class DebugUtil
 {
     private DebugUtil()
     {
+    }
+
+    public static void logTrace( String fmt, Object... args )
+    {
+        logTrace( 2, 5, fmt, args );
+    }
+
+    public static void logTrace( int skip, int limit, String fmt, Object... args )
+    {
+        if ( enabledAssertions() )
+        {
+            Thread thread = Thread.currentThread();
+            String threadName = thread.getName();
+            ThreadGroup group = thread.getThreadGroup();
+            String groupPart = group != null ? " in group " + group.getName() : "";
+            String message = "[" + threadName + groupPart + "] " + String.format( fmt, args );
+            TraceLog traceLog = new TraceLog( message );
+            printLimitedStackTrace( System.err, traceLog, skip, limit );
+        }
+    }
+
+    private static void printLimitedStackTrace( PrintStream out, Throwable cause, int skip, int limit )
+    {
+        synchronized ( out )
+        {
+            String[] lines = stringify( cause ).split( lineSeparator() );
+            for ( String line : lines )
+            {
+                if ( line.startsWith( "\tat " ) )
+                {
+                    if ( skip > 0 )
+                    {
+                        skip--;
+                    }
+                    else if ( limit > 0 )
+                    {
+                        limit--;
+                        out.println( line );
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    out.println( line );
+                }
+            }
+        }
     }
 
     public static void printShortStackTrace( Throwable cause, int maxNumberOfStackLines )
@@ -135,12 +182,7 @@ public class DebugUtil
         public AtomicInteger add( Throwable t )
         {
             CallStack key = new CallStack( t, considerMessages );
-            AtomicInteger count = uniqueStackTraces.get( key );
-            if ( count == null )
-            {
-                count = new AtomicInteger();
-                uniqueStackTraces.put( key, count );
-            }
+            AtomicInteger count = uniqueStackTraces.computeIfAbsent( key, k -> new AtomicInteger() );
             count.incrementAndGet();
             return count;
         }
@@ -164,14 +206,7 @@ public class DebugUtil
 
         public StackTracer printAtShutdown( final PrintStream out, final int interestThreshold )
         {
-            Runtime.getRuntime().addShutdownHook( new Thread()
-            {
-                @Override
-                public void run()
-                {
-                    print( out, interestThreshold );
-                }
-            } );
+            Runtime.getRuntime().addShutdownHook( new Thread( () -> print( out, interestThreshold ) ) );
             return this;
         }
 
@@ -267,110 +302,13 @@ public class DebugUtil
         }
     }
 
-    public static class CallCounter<T>
+    private static boolean enabledAssertions()
     {
-        private final Map<T, AtomicInteger> calls = new HashMap<>();
-        private final String name;
-
-        public CallCounter( String name )
-        {
-            this.name = name;
-        }
-
-        public CallCounter<T> printAtShutdown( final PrintStream out )
-        {
-            Runtime.getRuntime().addShutdownHook( new Thread()
-            {
-                @Override
-                public void run()
-                {
-                    print( out );
-                }
-            } );
-            return this;
-        }
-
-        public void inc( T key )
-        {
-            AtomicInteger count = calls.get( key );
-            if ( count == null )
-            {
-                count = new AtomicInteger();
-                calls.put( key, count );
-            }
-            count.incrementAndGet();
-        }
-
-        private void print( PrintStream out )
-        {
-            out.println( "Calls made regarding " + name + ":" );
-            for ( Map.Entry<T, AtomicInteger> entry : calls.entrySet() )
-            {
-                out.println( "\t" + entry.getKey() + ": " + entry.getValue() );
-            }
-        }
-    }
-
-    /**
-     * Only enabled iff -ea is enabled.
-     *
-     * Tries to track down which test that got us to the point in execution we're at right now by analyzing the
-     * stack trace elements of the current thread. If no test was found on the stack trace or if -ea is not enabled,
-     * then an empty string is returned.
-     *
-     * Basically it will try to find the first public non-static method with a {@code @Test} annotation
-     * and, if found, return {@code <simple-class-name>#<test-method-name>}.
-     *
-     * This method can be added to places where there's a suspicion that tests forget to close resources,
-     * for example threads, where threads can have this string added as the last part of its name. And it can be
-     * left there in production code as well, since it will be dormant if the JVM hasn't got assertions enabled.
-     */
-    public static String trackTest()
-    {
-        boolean track = false;
-        assert track = true : "A trick to set this variable to true if assertions are enabled";
-
-        if ( track )
-        {
-            for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
-            {
-                try
-                {
-                    String className = element.getClassName();
-                    Class<?> cls = Class.forName( className );
-                    Method method = cls.getDeclaredMethod( element.getMethodName() );
-                    if ( !isStatic( method.getModifiers() ) &&
-                         isPublic( method.getModifiers() ) &&
-                         hasTestAnnotation( method ) )
-                    {
-                        return " @ " + simpleClassName( className ) + "#" + element.getMethodName();
-                    }
-                }
-                catch ( ClassNotFoundException | SecurityException | NoSuchMethodException e )
-                {
-                    // This is so weird, but hey, who am I to judge all ours precious JVM and class loader
-                    continue;
-                }
-            }
-        }
-        return "";
-    }
-
-    private static String simpleClassName( String className )
-    {
-        return className.indexOf( '.' ) == -1 ? className : className.substring( className.lastIndexOf( '.' ) + 1 );
-    }
-
-    private static boolean hasTestAnnotation( Method method )
-    {
-        for ( Annotation annotation : method.getAnnotations() )
-        {
-            if ( annotation.annotationType().getSimpleName().equals( "Test" ) )
-            {
-                return true;
-            }
-        }
-        return false;
+        boolean enabled = false;
+        //noinspection AssertWithSideEffects,ConstantConditions
+        assert enabled = true : "A trick to set this variable to true if assertions are enabled";
+        //noinspection ConstantConditions
+        return enabled;
     }
 
     /**

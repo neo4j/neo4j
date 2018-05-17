@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,6 +26,7 @@ import java.util.Arrays;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -35,6 +36,8 @@ import org.neo4j.unsafe.impl.batchimport.store.StorePrepareIdSequence;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -43,7 +46,7 @@ import static org.mockito.Mockito.when;
 public class UpdateRecordsStepTest
 {
     @Test
-    public void ioThroughputStatDoesNotOverflow() throws Throwable
+    public void ioThroughputStatDoesNotOverflow()
     {
         // store with huge record size to force overflow and not create huge batch of records
         RecordStore<NodeRecord> store = mock( RecordStore.class );
@@ -66,7 +69,7 @@ public class UpdateRecordsStepTest
     }
 
     @Test
-    public void recordWithReservedIdIsSkipped() throws Throwable
+    public void recordWithReservedIdIsSkipped()
     {
         RecordStore<NodeRecord> store = mock( NodeStore.class );
         StageControl stageControl = mock( StageControl.class );
@@ -82,11 +85,11 @@ public class UpdateRecordsStepTest
 
         step.process( batch, mock( BatchSender.class ) );
 
-        verify( store ).prepareForCommit( node1, store );
+        verify( store ).prepareForCommit( eq( node1 ), any( IdSequence.class ) );
         verify( store ).updateRecord( node1 );
-        verify( store ).prepareForCommit( node2, store );
+        verify( store ).prepareForCommit( eq( node2 ), any( IdSequence.class ) );
         verify( store ).updateRecord( node2 );
-        verify( store, never() ).prepareForCommit( nodeWithReservedId, store );
+        verify( store, never() ).prepareForCommit( eq( nodeWithReservedId ), any( IdSequence.class ) );
         verify( store, never() ).updateRecord( nodeWithReservedId );
     }
 }

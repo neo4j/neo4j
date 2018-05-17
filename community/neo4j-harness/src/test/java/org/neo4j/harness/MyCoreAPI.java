@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,9 +20,8 @@
 package org.neo4j.harness;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -45,12 +44,12 @@ public class MyCoreAPI
     public long makeNode( String label ) throws ProcedureException
     {
         long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() );
-                Statement statement = this.txBridge.get() )
+        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() ) )
         {
-            long nodeId = statement.dataWriteOperations().nodeCreate();
-            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label );
-            statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
+            KernelTransaction ktx = txBridge.getKernelTransactionBoundToThisThread( true );
+            long nodeId = ktx.dataWrite().nodeCreate();
+            int labelId = ktx.tokenWrite().labelGetOrCreateForName( label );
+            ktx.dataWrite().nodeAddLabel( nodeId, labelId );
             result = nodeId;
             tx.success();
         }
@@ -66,10 +65,10 @@ public class MyCoreAPI
     public long countNodes()
     {
         long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() );
-                Statement statement = this.txBridge.get() )
+        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() ) )
         {
-            result = statement.readOperations().countsForNode( -1 );
+            KernelTransaction kernelTransaction = this.txBridge.getKernelTransactionBoundToThisThread(true );
+            result = kernelTransaction.dataRead().countsForNode( -1 );
             tx.success();
         }
         return result;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertTrue;
 public class ServerSettingsTest
 {
     @Test
-    public void webServerThreadCountDefaultShouldBeDocumented() throws Exception
+    public void webServerThreadCountDefaultShouldBeDocumented()
     {
         Config config = Config.builder().withServerDefaults().build();
 
@@ -55,7 +55,7 @@ public class ServerSettingsTest
     }
 
     @Test
-    public void configValuesContainsConnectors() throws Exception
+    public void configValuesContainsConnectors()
     {
         Config config = Config.builder().withServerDefaults().build();
 
@@ -71,7 +71,7 @@ public class ServerSettingsTest
     }
 
     @Test
-    public void connectorSettingHasItsOwnValues() throws Exception
+    public void connectorSettingHasItsOwnValues()
     {
         Config config = Config.builder().withServerDefaults()
                 .withSetting( new HttpConnector( "http" ).address, "localhost:123" ).build();

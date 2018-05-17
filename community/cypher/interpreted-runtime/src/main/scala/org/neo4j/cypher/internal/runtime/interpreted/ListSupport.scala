@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -55,7 +55,7 @@ trait ListSupport {
   protected def castToList: PartialFunction[AnyValue, ListValue] = {
     case x: ArrayValue => VirtualValues.fromArray(x)
     case x: ListValue => x
-    case x: MapValue => VirtualValues.list(x)
+    case x: MapValue => VirtualValues.list(x) // TODO: This is slightly peculiar. Excercise this in tests to clarify behavior
   }
 
   implicit class RichSeq[T](inner: Seq[T]) {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -49,7 +49,7 @@ public class ParameterizedSuiteRunner extends Suite
 
     private static class ParameterBuilder extends RunnerBuilder
     {
-        private final Map<Class<?>, Parameterization> parameterizations = new HashMap<Class<?>, Parameterization>();
+        private final Map<Class<?>, Parameterization> parameterizations = new HashMap<>();
         private final Class<?> suiteClass;
 
         ParameterBuilder( Class<?> suiteClass ) throws InitializationError
@@ -67,7 +67,7 @@ public class ParameterizedSuiteRunner extends Suite
                     break;
                 }
             }
-            List<Throwable> errors = new ArrayList<Throwable>();
+            List<Throwable> errors = new ArrayList<>();
             if ( !ok )
             {
                 errors.add( new IllegalArgumentException( "Suite class (" + suiteClass.getName() +
@@ -97,7 +97,7 @@ public class ParameterizedSuiteRunner extends Suite
 
         Class<?>[] suiteClasses()
         {
-            ArrayList<Class<?>> classes = new ArrayList<Class<?>>( parameterizations.keySet() );
+            ArrayList<Class<?>> classes = new ArrayList<>( parameterizations.keySet() );
             for ( Method method : suiteClass.getMethods() )
             {
                 if ( method.getAnnotation( Test.class ) != null )

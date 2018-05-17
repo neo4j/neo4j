@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,24 +21,22 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-
-import static org.neo4j.helpers.FutureAdapter.VOID;
+import org.neo4j.values.storable.Value;
 
 public class OnlineIndexProxy implements IndexProxy
 {
@@ -81,6 +79,7 @@ public class OnlineIndexProxy implements IndexProxy
             IndexStoreView storeView,
             boolean forcedIdempotentMode )
     {
+        assert accessor != null;
         this.indexId = indexId;
         this.indexMeta = indexMeta;
         this.accessor = accessor;
@@ -98,8 +97,23 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        IndexUpdater actual = accessor.newUpdater( forcedIdempotentMode ? IndexUpdateMode.RECOVERY : mode );
+        IndexUpdater actual = accessor.newUpdater( escalateModeIfNecessary( mode ) );
         return started ? updateCountingUpdater( actual ) : actual;
+    }
+
+    private IndexUpdateMode escalateModeIfNecessary( IndexUpdateMode mode )
+    {
+        if ( forcedIdempotentMode )
+        {
+            // If this proxy is flagged with taking extra care about idempotency then escalate ONLINE to ONLINE_IDEMPOTENT.
+            if ( mode != IndexUpdateMode.ONLINE )
+            {
+                throw new IllegalArgumentException( "Unexpected mode " + mode + " given that " + this +
+                        " has been marked with forced idempotent mode. Expected mode " + IndexUpdateMode.ONLINE );
+            }
+            return IndexUpdateMode.ONLINE_IDEMPOTENT;
+        }
+        return mode;
     }
 
     private IndexUpdater updateCountingUpdater( final IndexUpdater indexUpdater )
@@ -108,27 +122,26 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> drop() throws IOException
+    public void drop() throws IOException
     {
         indexCountsRemover.remove();
         accessor.drop();
-        return VOID;
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public SchemaIndexDescriptor getDescriptor()
     {
         return indexMeta.indexDescriptor();
     }
 
     @Override
-    public LabelSchemaDescriptor schema()
+    public SchemaDescriptor schema()
     {
         return indexMeta.indexDescriptor().schema();
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    public IndexProvider.Descriptor getProviderDescriptor()
     {
         return indexMeta.providerDescriptor();
     }
@@ -146,16 +159,21 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        accessor.force();
+        accessor.force( ioLimiter );
     }
 
     @Override
-    public Future<Void> close() throws IOException
+    public void refresh() throws IOException
+    {
+        accessor.refresh();
+    }
+
+    @Override
+    public void close() throws IOException
     {
         accessor.close();
-        return VOID;
     }
 
     @Override
@@ -165,7 +183,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException
+    public boolean awaitStoreScanCompleted()
     {
         return false; // the store scan is already completed
     }
@@ -180,6 +198,18 @@ public class OnlineIndexProxy implements IndexProxy
     public void validate()
     {
         // ok, it's online so it's valid
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        accessor.validateBeforeCommit( tuple );
+    }
+
+    @Override
+    public long getIndexId()
+    {
+        return indexId;
     }
 
     @Override

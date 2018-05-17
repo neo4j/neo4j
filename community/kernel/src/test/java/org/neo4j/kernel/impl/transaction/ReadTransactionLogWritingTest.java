@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -58,7 +58,7 @@ public class ReadTransactionLogWritingTest
     private long logEntriesWrittenBeforeReadOperations;
 
     @Before
-    public void createDataset() throws IOException
+    public void createDataset()
     {
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
@@ -75,7 +75,7 @@ public class ReadTransactionLogWritingTest
     }
 
     @Test
-    public void shouldNotWriteAnyLogCommandInPureReadTransaction() throws Exception
+    public void shouldNotWriteAnyLogCommandInPureReadTransaction()
     {
         // WHEN
         executeTransaction( getRelationships() );

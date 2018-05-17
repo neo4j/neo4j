@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,7 +33,7 @@ public class TestJavascriptExecutor
 {
 
     @Test
-    public void shouldExecuteBasicScript() throws Exception
+    public void shouldExecuteBasicScript()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor( "1337;" );
@@ -47,12 +47,12 @@ public class TestJavascriptExecutor
     }
 
     @Test
-    public void shouldAllowContextVariables() throws Exception
+    public void shouldAllowContextVariables()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor( "myVar;" );
 
-        Map<String, Object> ctx = new HashMap<String, Object>();
+        Map<String, Object> ctx = new HashMap<>();
         ctx.put( "myVar", 1338 );
 
         // When
@@ -64,7 +64,7 @@ public class TestJavascriptExecutor
     }
 
     @Test
-    public void shouldBeAbleToReuseExecutor() throws Exception
+    public void shouldBeAbleToReuseExecutor()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor( "1337;" );
@@ -79,7 +79,7 @@ public class TestJavascriptExecutor
     }
 
     @Test
-    public void varsSetInOneExecutionShouldNotBeAvailableInAnother() throws Exception
+    public void varsSetInOneExecutionShouldNotBeAvailableInAnother()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor(
@@ -89,7 +89,7 @@ public class TestJavascriptExecutor
                 "  this['theVar']; " +
                 "}" );
 
-        Map<String, Object> ctx = new HashMap<String, Object>();
+        Map<String, Object> ctx = new HashMap<>();
 
         // When
         ctx.put( "firstRun", true );

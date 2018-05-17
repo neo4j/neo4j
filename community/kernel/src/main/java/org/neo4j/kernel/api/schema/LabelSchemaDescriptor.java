@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,15 +22,18 @@ package org.neo4j.kernel.api.schema;
 import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.schema.SchemaComputer;
+import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
-public class LabelSchemaDescriptor implements SchemaDescriptor, LabelSchemaSupplier
+public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 {
     private final int labelId;
     private final int[] propertyIds;
 
-    public LabelSchemaDescriptor( int labelId, int... propertyIds )
+    LabelSchemaDescriptor( int labelId, int... propertyIds )
     {
         this.labelId = labelId;
         this.propertyIds = propertyIds;
@@ -55,6 +58,13 @@ public class LabelSchemaDescriptor implements SchemaDescriptor, LabelSchemaSuppl
                 SchemaUtil.niceProperties( tokenNameLookup, propertyIds ) );
     }
 
+    @Override
+    public String keyName( TokenNameLookup tokenNameLookup )
+    {
+        return tokenNameLookup.labelGetName( labelId );
+    }
+
+    @Override
     public int getLabelId()
     {
         return labelId;
@@ -78,20 +88,10 @@ public class LabelSchemaDescriptor implements SchemaDescriptor, LabelSchemaSuppl
         return propertyIds;
     }
 
-    public int getPropertyId()
-    {
-        if ( propertyIds.length != 1 )
-        {
-            throw new IllegalStateException(
-                    "Single property schema requires one property but had " + propertyIds.length );
-        }
-        return propertyIds[0];
-    }
-
     @Override
     public boolean equals( Object o )
     {
-        if ( o != null && o instanceof LabelSchemaDescriptor )
+        if ( o instanceof LabelSchemaDescriptor )
         {
             LabelSchemaDescriptor that = (LabelSchemaDescriptor)o;
             return labelId == that.getLabelId() && Arrays.equals( propertyIds, that.getPropertyIds() );

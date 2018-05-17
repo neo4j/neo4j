@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 public class DependencyResolverSupplierTest
 {
     @Test
-    public void shouldReturnTheDependencyResolveFromTheRegisteredDatasource() throws Exception
+    public void shouldReturnTheDependencyResolveFromTheRegisteredDatasource()
     {
         // given
         DataSourceManager dataSourceManager = new DataSourceManager();
@@ -50,7 +50,7 @@ public class DependencyResolverSupplierTest
     }
 
     @Test
-    public void shouldReturnNullIfDataSourceHasBeenUnregistered() throws Exception
+    public void shouldReturnNullIfDataSourceHasBeenUnregistered()
     {
         // given
         DataSourceManager dataSourceManager = new DataSourceManager();

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.ha.correctness;
 
@@ -41,13 +44,13 @@ class MessageDeliveryAction implements ClusterAction
     @Override
     public Iterable<ClusterAction> perform( ClusterState state ) throws URISyntaxException
     {
-        String to = message.getHeader( Message.TO );
+        String to = message.getHeader( Message.HEADER_TO );
         return Iterables.map( MESSAGE_TO_ACTION, state.instance( to ).process( messageCopy() ) );
     }
 
     private Message<? extends MessageType> messageCopy() throws URISyntaxException
     {
-        URI to = new URI( message.getHeader( Message.TO ) );
+        URI to = new URI( message.getHeader( Message.HEADER_TO ) );
         Message<MessageType> copy = Message.to( message.getMessageType(), to, message.getPayload());
         return message.copyHeadersTo( copy );
     }
@@ -55,8 +58,8 @@ class MessageDeliveryAction implements ClusterAction
     @Override
     public String toString()
     {
-        return "(" + message.getHeader( Message.FROM ) + ")-[" + message.getMessageType().name() + "]->(" +
-                message.getHeader( Message.TO ) + ")";
+        return "(" + message.getHeader( Message.HEADER_FROM ) + ")-[" + message.getMessageType().name() + "]->(" +
+                message.getHeader( Message.HEADER_TO ) + ")";
     }
 
     @Override
@@ -82,12 +85,12 @@ class MessageDeliveryAction implements ClusterAction
             return false;
         }
 
-        if ( !first.getHeader( Message.FROM ).equals( other.getHeader( Message.FROM ) ) )
+        if ( !first.getHeader( Message.HEADER_FROM ).equals( other.getHeader( Message.HEADER_FROM ) ) )
         {
             return false;
         }
 
-        if ( !first.getHeader( Message.TO ).equals( other.getHeader( Message.TO ) ) )
+        if ( !first.getHeader( Message.HEADER_TO ).equals( other.getHeader( Message.HEADER_TO ) ) )
         {
             return false;
         }
@@ -114,8 +117,8 @@ class MessageDeliveryAction implements ClusterAction
     public int hashCode()
     {
         int result = message.getMessageType().hashCode();
-        result = 31 * result + message.getHeader( Message.FROM ).hashCode();
-        result = 31 * result + message.getHeader( Message.TO ).hashCode();
+        result = 31 * result + message.getHeader( Message.HEADER_FROM ).hashCode();
+        result = 31 * result + message.getHeader( Message.HEADER_TO ).hashCode();
         return result;
     }
 }

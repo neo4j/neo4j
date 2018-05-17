@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class DecayingFlagsTest
 {
     @Test
-    public void shouldTrackToggle() throws Throwable
+    public void shouldTrackToggle()
     {
         // Given
         DecayingFlags.Key myFeature = new DecayingFlags.Key( 1 );
@@ -40,7 +40,7 @@ public class DecayingFlagsTest
     }
 
     @Test
-    public void shouldTrackMultipleFlags() throws Throwable
+    public void shouldTrackMultipleFlags()
     {
         // Given
         DecayingFlags.Key featureA = new DecayingFlags.Key( 1 );
@@ -57,7 +57,7 @@ public class DecayingFlagsTest
     }
 
     @Test
-    public void toggleShouldDecay() throws Throwable
+    public void toggleShouldDecay()
     {
         // Given
         DecayingFlags.Key featureA = new DecayingFlags.Key( 1 );
@@ -84,7 +84,7 @@ public class DecayingFlagsTest
     }
 
     @Test
-    public void resetFlagShouldRecoverIfToggledAgain() throws Throwable
+    public void resetFlagShouldRecoverIfToggledAgain()
     {
         // Given
         DecayingFlags.Key featureA = new DecayingFlags.Key( 9 );

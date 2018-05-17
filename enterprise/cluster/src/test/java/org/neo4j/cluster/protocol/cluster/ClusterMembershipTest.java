@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.protocol.cluster;
 
@@ -23,8 +26,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.URISyntaxException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 /**
  * TODO
@@ -34,7 +35,7 @@ public class ClusterMembershipTest
 {
     @Test
     public void threeNodesJoinAndThenLeave()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 70 ).
@@ -49,7 +50,7 @@ public class ClusterMembershipTest
 
     @Test
     public void threeNodesJoinAndThenLeaveInOriginalOrder()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 100 ).
@@ -66,7 +67,7 @@ public class ClusterMembershipTest
 
     @Test
     public void noobTest()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 1, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 3 ).
@@ -78,7 +79,7 @@ public class ClusterMembershipTest
 
     @Test
     public void sevenNodesJoinAndThenLeave()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 7, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 500 ).
@@ -101,7 +102,7 @@ public class ClusterMembershipTest
 
     @Test
     public void oneNodeJoinThenTwoJoinRoughlyAtSameTime()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 500 ).
@@ -115,7 +116,7 @@ public class ClusterMembershipTest
 
     @Test
     public void oneNodeJoinThenThreeJoinRoughlyAtSameTime2()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 4, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 800 ).
@@ -130,7 +131,7 @@ public class ClusterMembershipTest
 
     @Test
     public void twoNodesJoinThenOneLeavesAsThirdJoins()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 820 ).
@@ -145,7 +146,7 @@ public class ClusterMembershipTest
     @Test
     @Ignore( "instance 1 is in start, 2 in discovery. Correct but we don't have a way to verify it yet" )
     public void oneNodeCreatesClusterAndThenAnotherJoinsAsFirstLeaves()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 2, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 1000 ).
@@ -157,7 +158,7 @@ public class ClusterMembershipTest
 
     @Test
     public void threeNodesJoinAndThenFirstLeavesAsFourthJoins()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 4, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 200 ).
@@ -172,7 +173,7 @@ public class ClusterMembershipTest
 
     @Test
     public void threeNodesJoinAndThenFirstLeavesAsFourthJoins2()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 5, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 200 ).
@@ -190,7 +191,7 @@ public class ClusterMembershipTest
     @Ignore( "Ignore until fix available" )
     @Test
     public void threeNodesJoinAtSameTime()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 400 ).

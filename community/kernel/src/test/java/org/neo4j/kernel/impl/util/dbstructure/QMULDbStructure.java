@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 //
 // GENERATED FILE. DO NOT EDIT.
@@ -62,7 +62,7 @@ implements Visitable<DbStructureVisitor>
         visitor.visitPropertyKey( 16, "location_lat" );
         visitor.visitRelationshipType( 0, "friends" );
         visitor.visitRelationshipType( 1, "FRIEND" );
-        visitor.visitIndex( IndexDescriptorFactory.forLabel( 1, 2 ), ":Person(uid)", 1.0d, 135164L );
+        visitor.visitIndex( SchemaIndexDescriptorFactory.forLabel( 1, 2 ), ":Person(uid)", 1.0d, 135164L );
         visitor.visitAllNodesCount( 135242L );
         visitor.visitNodeCount( 1, "Person", 135213L );
         visitor.visitRelCount( -1, -1, -1, "MATCH ()-[]->() RETURN count(*)", 4537616L );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 
 public interface TokenWrite
 {
@@ -27,19 +28,39 @@ public interface TokenWrite
      * Returns a label id for a label name. If the label doesn't exist prior to
      * this call it gets created.
      */
-    int labelGetOrCreateForName( String labelName ) throws KernelException;
+    int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException;
+
+    /**
+     * Creates a label with the given id
+     * @param labelName the name of the label
+     * @param id the id of the label
+     */
+    void labelCreateForName( String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException;
+
+    /**
+     * Creates a property token with the given id
+     * @param propertyKeyName the name of the property
+     * @param id the id of the property
+     */
+    void propertyKeyCreateForName( String propertyKeyName, int id ) throws IllegalTokenNameException;
+
+    /**
+     * Creates a relationship type with the given id
+     * @param relationshipTypeName the name of the relationship
+     * @param id the relationship type
+     */
+    void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws IllegalTokenNameException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
      */
-    int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException;
+    int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException;
 
-    int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException;
-
-    void labelCreateForName( String labelName, int id ) throws KernelException;
-
-    void propertyKeyCreateForName( String propertyKeyName, int id ) throws KernelException;
-
-    void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws KernelException;
+    /**
+     * Returns the id associated with the relationship type or creates a new one.
+     * @param relationshipTypeName the name of the relationship
+     * @return the id associated with the name
+     */
+    int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
 }

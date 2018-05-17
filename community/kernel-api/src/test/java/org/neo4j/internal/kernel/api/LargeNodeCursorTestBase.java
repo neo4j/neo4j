@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,6 +40,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
 
     private static Random random = new Random( 2 );
 
+    @Override
     void createTestGraph( GraphDatabaseService graphDb )
     {
         List<Node> deleted = new ArrayList<>();
@@ -71,7 +72,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
     }
 
     @Test
-    public void shouldScanNodes() throws Exception
+    public void shouldScanNodes()
     {
         // given
         List<Long> ids = new ArrayList<>();
@@ -90,7 +91,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
     }
 
     @Test
-    public void shouldAccessNodesByReference() throws Exception
+    public void shouldAccessNodesByReference()
     {
         // given
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )

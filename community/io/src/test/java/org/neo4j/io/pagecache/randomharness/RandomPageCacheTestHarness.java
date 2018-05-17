@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -47,8 +47,8 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.test.rule.TestDirectory;
@@ -96,7 +96,7 @@ public class RandomPageCacheTestHarness implements Closeable
         cachePageCount = 20;
         filePageCount = cachePageCount * 10;
         tracer = PageCacheTracer.NULL;
-        cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
+        cursorTracerSupplier = PageCursorTracerSupplier.NULL;
         commandCount = 1000;
 
         Command[] commands = Command.values();
@@ -379,7 +379,7 @@ public class RandomPageCacheTestHarness implements Closeable
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.open( fs, Configuration.EMPTY );
         MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, tracer,
-                cursorTracerSupplier );
+                cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY );
         if ( filePageSize == 0 )
         {
             filePageSize = cache.pageSize();

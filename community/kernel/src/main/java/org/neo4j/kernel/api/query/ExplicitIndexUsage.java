@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,12 +22,12 @@ package org.neo4j.kernel.api.query;
 import java.util.HashMap;
 import java.util.Map;
 
-class ExplicitIndexUsage extends IndexUsage
+public class ExplicitIndexUsage extends IndexUsage
 {
     private final String index;
     private final String entityType;
 
-    ExplicitIndexUsage( String identifier, String index, String entityType )
+    public ExplicitIndexUsage( String identifier, String index, String entityType )
     {
         super( identifier );
         this.index = index;

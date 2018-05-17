@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -82,8 +82,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     {
         // We don't have to assert max processors here since importer will not count every processor
         // equally. A step being very idle (due to being very very fast) counts as almost nothing.
-        this.numberOfProcessors = numberOfProcessors;
-        processors( numberOfProcessors - numberOfProcessors );
+        processors( numberOfProcessors );
         return this;
     }
 

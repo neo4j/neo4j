@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -165,7 +165,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
         long baseIndex = offsets.get( rebase( nodeId ) );
         // grouCount is extra validation, really
         int groupCount = groupCount( nodeId );
-        long index = scanForFreeFrom( baseIndex, groupCount, groupRecord.getType(), groupRecord.getOwningNode() );
+        long index = scanForFreeFrom( baseIndex, groupCount, groupRecord.getType(), nodeId );
 
         // Put the group at this index
         cache.setByte( index, 0, (byte) 1 );

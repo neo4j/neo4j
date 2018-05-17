@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,6 +26,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.StorePrepareIdSequence;
 
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.RECYCLE_BATCHES;
+
 /**
  * Takes information about relationship groups in the {@link NodeRelationshipCache}, which is produced
  * as a side-effect of linking relationships together, and writes them out into {@link RelationshipGroupStore}.
@@ -37,7 +39,7 @@ public class RelationshipGroupStage extends Stage
     public RelationshipGroupStage( String topic, Configuration config,
             RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache )
     {
-        super( NAME, topic, config, 0 );
+        super( NAME, topic, config, RECYCLE_BATCHES );
         add( new ReadGroupRecordsByCacheStep( control(), config, store, cache ) );
         add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence() ) );
     }

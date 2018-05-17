@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,6 +24,7 @@ import java.time.Clock
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilerContext, _}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{CheckForUnresolvedTokens, ResolveTokens}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.ASTRewriter
@@ -43,9 +44,14 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
                                                       contextCreation: ContextCreator[Context]) {
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
-  def planPreparedQuery(state: BaseState,
-                        context: Context): LogicalPlanState = planPipeLine.transform(state, context)
+  def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = {
+    val pipeLine = if (context.debugOptions.contains("tostring"))
+      planPipeLine andThen DebugPrinter
+    else
+      planPipeLine
 
+    pipeLine.transform(state, context)
+  }
 
   def parseQuery(queryText: String,
                  rawQueryText: String,
@@ -55,10 +61,10 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
                  offset: Option[InputPosition],
                  tracer: CompilationPhaseTracer): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
-    val startState = LogicalPlanState(queryText, offset, plannerName)
+    val startState = InitialState(queryText, offset, plannerName)
     //TODO: these nulls are a short cut
     val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, debugOptions,
-      offset, monitors, metricsFactory, null, config, updateStrategy, clock, evaluator = null)
+      offset, monitors, metricsFactory, null, config, updateStrategy, clock, logicalPlanIdGen = null, evaluator = null)
     CompilationPhases.parsing(sequencer).transform(startState, context)
   }
 
@@ -99,4 +105,5 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                                        errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
                                        legacyCsvQuoteEscaping: Boolean,
-                                       nonIndexedLabelWarningThreshold: Long)
+                                       nonIndexedLabelWarningThreshold: Long,
+                                       planWithMinimumCardinalityEstimates: Boolean)

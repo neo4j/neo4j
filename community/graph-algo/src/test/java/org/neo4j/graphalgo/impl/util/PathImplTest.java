@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -46,9 +47,7 @@ import static org.mockito.Mockito.when;
 
 public class PathImplTest
 {
-
-    private NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
-    private RelationshipProxy.RelationshipActions relationshipActions = mock( RelationshipProxy.RelationshipActions.class );
+    private final EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
 
     @Test
     public void singularNodeWorksForwardsAndBackwards()
@@ -73,7 +72,7 @@ public class PathImplTest
     }
 
     @Test
-    public void pathsWithTheSameContentsShouldBeEqual() throws Exception
+    public void pathsWithTheSameContentsShouldBeEqual()
     {
 
         Node node = createNode( 1337L );
@@ -89,7 +88,7 @@ public class PathImplTest
     }
 
     @Test
-    public void pathsWithDifferentLengthAreNotEqual() throws Exception
+    public void pathsWithDifferentLengthAreNotEqual()
     {
         Node node = createNode( 1337L );
         Relationship relationship = createRelationship( 1337L, 7331L );
@@ -106,7 +105,7 @@ public class PathImplTest
     @Test
     public void testPathReverseNodes()
     {
-        when( relationshipActions.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
+        when( spi.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
 
         Path path = new PathImpl.Builder( createNodeProxy( 1 ) )
                                 .push( createRelationshipProxy( 1, 2 ) )
@@ -125,7 +124,7 @@ public class PathImplTest
     @Test
     public void testPathNodes()
     {
-        when( relationshipActions.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
+        when( spi.newNodeProxy( Mockito.anyLong() ) ).thenAnswer( new NodeProxyAnswer() );
 
         Path path = new PathImpl.Builder( createNodeProxy( 1 ) )
                 .push( createRelationshipProxy( 1, 2 ) )
@@ -143,12 +142,12 @@ public class PathImplTest
 
     private RelationshipProxy createRelationshipProxy( int startNodeId, int endNodeId )
     {
-        return new RelationshipProxy( relationshipActions, 1L, startNodeId, 1, endNodeId );
+        return new RelationshipProxy( spi, 1L, startNodeId, 1, endNodeId );
     }
 
     private NodeProxy createNodeProxy( int nodeId )
     {
-        return new NodeProxy( nodeActions, nodeId );
+        return new NodeProxy( spi, nodeId );
     }
 
     private Node createNode( long nodeId )
@@ -171,7 +170,7 @@ public class PathImplTest
     private class NodeProxyAnswer implements Answer<NodeProxy>
     {
         @Override
-        public NodeProxy answer( InvocationOnMock invocation ) throws Throwable
+        public NodeProxy answer( InvocationOnMock invocation )
         {
             return createNodeProxy( ((Number) invocation.getArgument( 0 )).intValue() );
         }

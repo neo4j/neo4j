@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,29 +19,23 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-
 /**
  * Collects items and is {@link #close() closed} after any and all items have been collected.
  * The {@link Collector} is responsible for closing whatever closeable resource received from the importer.
  */
 public interface Collector extends AutoCloseable
 {
-    void collectBadRelationship( InputRelationship relationship, Object specificValue );
+    void collectBadRelationship(
+            Object startId, String startIdGroup, String type,
+            Object endId, String endIdGroup, Object specificValue );
 
-    void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource );
+    void collectDuplicateNode( Object id, long actualId, String group );
 
     void collectExtraColumns( String source, long row, String value );
 
     long badEntries();
 
-    /**
-     * @return iterator of node ids that were found to be duplicates of already imported nodes.
-     * Returned node ids was imported, but never used to connect any relationship to, and should
-     * be deleted. Must be returned sorted in ascending id order.
-     */
-    PrimitiveLongIterator leftOverDuplicateNodesIds();
+    boolean isCollectingBadRelationships();
 
     /**
      * Flushes whatever changes to the underlying resource supplied from the importer.
@@ -52,23 +46,7 @@ public interface Collector extends AutoCloseable
     Collector EMPTY = new Collector()
     {
         @Override
-        public PrimitiveLongIterator leftOverDuplicateNodesIds()
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
         public void collectExtraColumns( String source, long row, String value )
-        {
-        }
-
-        @Override
-        public void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource )
-        {
-        }
-
-        @Override
-        public void collectBadRelationship( InputRelationship relationship, Object specificValue )
         {
         }
 
@@ -81,6 +59,23 @@ public interface Collector extends AutoCloseable
         public long badEntries()
         {
             return 0;
+        }
+
+        @Override
+        public void collectBadRelationship( Object startId, String startIdGroup, String type, Object endId, String endIdGroup,
+                Object specificValue )
+        {
+        }
+
+        @Override
+        public void collectDuplicateNode( Object id, long actualId, String group )
+        {
+        }
+
+        @Override
+        public boolean isCollectingBadRelationships()
+        {
+            return true;
         }
     };
 }

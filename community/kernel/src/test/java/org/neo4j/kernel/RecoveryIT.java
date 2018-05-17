@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -59,6 +59,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -471,15 +473,18 @@ public class RecoveryIT
     private void assertSameStoreContents( EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, File storeDir )
     {
         NullLogProvider logProvider = NullLogProvider.getInstance();
+        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         try (
                 PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache();
+                        PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
+                        .getOrCreatePageCache();
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache();
+                        PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
+                        .getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( storeDir, defaults(), new DefaultIdGeneratorFactory( fs1 ),
-                        pageCache1, fs1, logProvider ).openAllNeoStores();
+                        pageCache1, fs1, logProvider, contextSupplier ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( storeDir, defaults(), new DefaultIdGeneratorFactory( fs2 ),
-                        pageCache2, fs2, logProvider ).openAllNeoStores();
+                        pageCache2, fs2, logProvider, contextSupplier ).openAllNeoStores()
                 )
         {
             for ( StoreType storeType : StoreType.values() )
@@ -599,7 +604,7 @@ public class RecoveryIT
                         }
                         else if ( operation < 0.9 )
                         {   // delete relationship
-                            onRandomRelationship( nodes, relationship -> relationship.delete() );
+                            onRandomRelationship( nodes, Relationship::delete );
                         }
                         else
                         {   // delete node

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
+
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -170,7 +171,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         }
 
         @Override
-        public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
+        public boolean visitNodeCommand( Command.NodeCommand command )
         {
             // for label store updates
             NodeRecord before = command.getBefore();
@@ -198,7 +199,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         }
 
         @Override
-        public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+        public boolean visitPropertyCommand( PropertyCommand command )
         {
             return indexUpdatesExtractor.visitPropertyCommand( command );
         }

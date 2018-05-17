@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,9 +33,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -63,7 +63,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingStringProperty() throws Exception
+    public void shouldBuildDocumentRepresentingStringProperty()
     {
         // given
         Document document = documentRepresentingProperties( (long) 123, "hello" );
@@ -74,7 +74,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingMultipleStringProperties() throws Exception
+    public void shouldBuildDocumentRepresentingMultipleStringProperties()
     {
         // given
         String[] values = new String[]{"hello", "world"};
@@ -87,7 +87,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingMultiplePropertiesOfDifferentTypes() throws Exception
+    public void shouldBuildDocumentRepresentingMultiplePropertiesOfDifferentTypes()
     {
         // given
         Object[] values = new Object[]{"hello", 789};
@@ -100,7 +100,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingBoolProperty() throws Exception
+    public void shouldBuildDocumentRepresentingBoolProperty()
     {
         // given
         Document document = documentRepresentingProperties( (long) 123, true );
@@ -111,18 +111,18 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingNumberProperty() throws Exception
+    public void shouldBuildDocumentRepresentingNumberProperty()
     {
         // given
         Document document = documentRepresentingProperties( (long) 123, 12 );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( 12.0, document.getField( Number.key( 0 ) ).numericValue().doubleValue() );
+        assertEquals( 12.0, document.getField( Number.key( 0 ) ).numericValue().doubleValue(), 0.001 );
     }
 
     @Test
-    public void shouldBuildDocumentRepresentingArrayProperty() throws Exception
+    public void shouldBuildDocumentRepresentingArrayProperty()
     {
         // given
         Document document = documentRepresentingProperties( (long) 123, new Object[]{new Integer[]{1, 2, 3}} );
@@ -133,7 +133,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildQueryRepresentingBoolProperty() throws Exception
+    public void shouldBuildQueryRepresentingBoolProperty()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( true );
@@ -145,7 +145,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildQueryRepresentingStringProperty() throws Exception
+    public void shouldBuildQueryRepresentingStringProperty()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( "Characters" );
@@ -157,7 +157,7 @@ public class LuceneDocumentStructureTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldBuildQueryRepresentingNumberProperty() throws Exception
+    public void shouldBuildQueryRepresentingNumberProperty()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( 12 );
@@ -165,12 +165,12 @@ public class LuceneDocumentStructureTest
         NumericRangeQuery<Double> query = (NumericRangeQuery<Double>) constantScoreQuery.getQuery();
 
         // then
-        assertEquals( 12.0, query.getMin() );
-        assertEquals( 12.0, query.getMax() );
+        assertEquals( 12.0, query.getMin(), 0.001 );
+        assertEquals( 12.0, query.getMax(),0.001 );
     }
 
     @Test
-    public void shouldBuildQueryRepresentingArrayProperty() throws Exception
+    public void shouldBuildQueryRepresentingArrayProperty()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( new Object[]{new Integer[]{1, 2, 3}} );
@@ -182,7 +182,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildQueryRepresentingMultipleProperties() throws Exception
+    public void shouldBuildQueryRepresentingMultipleProperties()
     {
         // given
         BooleanQuery booleanQuery = (BooleanQuery) newSeekQuery( true, "Characters", 12, new Integer[]{1, 2, 3} );
@@ -202,27 +202,27 @@ public class LuceneDocumentStructureTest
         // then
         assertEquals( "true", boolTermQuery.getTerm().text() );
         assertEquals( "Characters", stringTermQuery.getTerm().text() );
-        assertEquals( 12.0, numericRangeQuery.getMin() );
-        assertEquals( 12.0, numericRangeQuery.getMax() );
+        assertEquals( 12.0, numericRangeQuery.getMin(), 0.001 );
+        assertEquals( 12.0, numericRangeQuery.getMax(), 0.001 );
         assertEquals( "D1.0|2.0|3.0|", arrayTermQuery.getTerm().text() );
     }
 
     @Test
-    public void shouldBuildRangeSeekByNumberQueryForStrings() throws Exception
+    public void shouldBuildRangeSeekByNumberQueryForStrings()
     {
         // given
         NumericRangeQuery<Double> query = LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( 12.0d, null );
 
         // then
         assertEquals( "number", query.getField() );
-        assertEquals( 12.0, query.getMin() );
+        assertEquals( 12.0, query.getMin(), 0.001 );
         assertEquals( true, query.includesMin() );
         assertEquals( null, query.getMax() );
         assertEquals( true, query.includesMax() );
     }
 
     @Test
-    public void shouldBuildRangeSeekByStringQueryForStrings() throws Exception
+    public void shouldBuildRangeSeekByStringQueryForStrings()
     {
         // given
         TermRangeQuery query = (TermRangeQuery) LuceneDocumentStructure
@@ -237,7 +237,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildWildcardQueries() throws Exception
+    public void shouldBuildWildcardQueries()
     {
         // given
         WildcardQuery query = (WildcardQuery) LuceneDocumentStructure.newWildCardStringQuery( "foo" );
@@ -247,7 +247,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void shouldBuildRangeSeekByPrefixQueryForStrings() throws Exception
+    public void shouldBuildRangeSeekByPrefixQueryForStrings()
     {
         // given
         MultiTermQuery prefixQuery = (MultiTermQuery) LuceneDocumentStructure.newRangeSeekByPrefixQuery( "Prefix" );
@@ -257,7 +257,7 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
-    public void checkFieldUsageForUniquenessVerification() throws Exception
+    public void checkFieldUsageForUniquenessVerification()
     {
         assertFalse( useFieldForUniquenessVerification( "id" ) );
         assertFalse( useFieldForUniquenessVerification( "1number" ) );

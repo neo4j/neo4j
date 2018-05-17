@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -124,7 +124,7 @@ class PluginPointFactoryImpl implements PluginPointFactory
                         @Override
                         Object convert( Object[] result )
                         {
-                            return new HashSet<Object>( Arrays.asList( result ) );
+                            return new HashSet<>( Arrays.asList( result ) );
                         }
                     };
                 }
@@ -203,7 +203,7 @@ class PluginPointFactoryImpl implements PluginPointFactory
         }
     }
 
-    private static final Map<Class<?>, TypeCaster> TYPES = new HashMap<Class<?>, TypeCaster>();
+    private static final Map<Class<?>, TypeCaster> TYPES = new HashMap<>();
     static
     {
         put( TYPES, new StringTypeCaster(), String.class );

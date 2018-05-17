@@ -1,25 +1,28 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
-import java.io.IOException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -35,6 +38,9 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.Statement;
@@ -42,14 +48,11 @@ import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -130,7 +133,6 @@ public class EnterpriseBuiltInDbmsProcedures
      */
     //@Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException, IOException
     {
         assertAdminOrSelf( username );
 
@@ -154,7 +156,6 @@ public class EnterpriseBuiltInDbmsProcedures
 
     //@Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
     public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException
     {
         assertAdminOrSelf( username );
 
@@ -215,12 +216,14 @@ public class EnterpriseBuiltInDbmsProcedures
         public final String signature;
         public final String description;
         public final List<String> roles;
+        public final String mode;
 
         public ProcedureResult( ProcedureSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
+            this.mode = signature.mode().toString();
             roles = new ArrayList<>();
             switch ( signature.mode() )
             {
@@ -257,8 +260,9 @@ public class EnterpriseBuiltInDbmsProcedures
         private boolean isAdminProcedure( String procedureName )
         {
             return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName ) ||
-                   name.equals( "dbms.listConfig" ) ||
-                   name.equals( "dbms.setConfigValue" );
+                    name.equals( "dbms.listConfig" ) ||
+                    name.equals( "dbms.setConfigValue" ) ||
+                    name.equals( "dbms.clearQueryCaches" );
         }
     }
 
@@ -280,17 +284,19 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "List all queries currently executing at this instance that are visible to the user." )
     @Procedure( name = "dbms.listQueries", mode = DBMS )
-    public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
+    public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
-        NodeManager nodeManager = resolver.resolveDependency( NodeManager.class );
+
+        EmbeddedProxySPI nodeManager = resolver.resolveDependency( EmbeddedProxySPI.class );
+        ZoneId zoneId = getConfiguredTimeZone();
         try
         {
             return getKernelTransactions().activeTransactions().stream()
                 .flatMap( KernelTransactionHandle::executingQueries )
                     .filter( query -> isAdminOrSelf( query.username() ) )
                     .map( catchThrown( InvalidArgumentsException.class,
-                            query -> new QueryStatusResult( query, nodeManager ) ) );
+                            query -> new QueryStatusResult( query, nodeManager, zoneId ) ) );
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -307,7 +313,7 @@ public class EnterpriseBuiltInDbmsProcedures
         try
         {
             Set<KernelTransactionHandle> handles = getKernelTransactions().activeTransactions().stream()
-                    .filter( transaction -> isAdminOrSelf( transaction.securityContext().subject().username() ) )
+                    .filter( transaction -> isAdminOrSelf( transaction.subject().username() ) )
                     .collect( toSet() );
 
             Map<KernelTransactionHandle,List<QuerySnapshot>> handleQuerySnapshotsMap = handles.stream()
@@ -315,10 +321,13 @@ public class EnterpriseBuiltInDbmsProcedures
 
             TransactionDependenciesResolver transactionBlockerResolvers =
                     new TransactionDependenciesResolver( handleQuerySnapshotsMap );
+
+            ZoneId zoneId = getConfiguredTimeZone();
+
             return handles.stream()
                     .map( catchThrown( InvalidArgumentsException.class,
                             tx -> new TransactionStatusResult( tx, transactionBlockerResolvers,
-                                    handleQuerySnapshotsMap ) ) );
+                                    handleQuerySnapshotsMap, zoneId ) ) );
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -355,7 +364,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
-    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
         try
@@ -379,7 +388,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing a query with any of the given query ids." )
     @Procedure( name = "dbms.killQueries", mode = DBMS )
-    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
         try
@@ -395,7 +404,7 @@ public class EnterpriseBuiltInDbmsProcedures
             {
                 for ( String id : idTexts )
                 {
-                    if ( !terminatedQuerys.stream().anyMatch( query -> query.queryId.equals( id ) ) )
+                    if ( terminatedQuerys.stream().noneMatch( query -> query.queryId.equals( id ) ) )
                     {
                         terminatedQuerys.add( new QueryFailedTerminationResult( fromExternalString( id ) ) );
                     }
@@ -469,7 +478,7 @@ public class EnterpriseBuiltInDbmsProcedures
     {
         long terminatedCount = getActiveTransactions( dependencyResolver )
             .stream()
-            .filter( tx -> tx.securityContext().subject().hasUsername( username ) &&
+            .filter( tx -> tx.subject().hasUsername( username ) &&
                             !tx.isUnderlyingTransaction( currentTx ) )
             .map( tx -> tx.markForTermination( Status.Transaction.Terminated ) )
             .filter( marked -> marked )
@@ -520,6 +529,12 @@ public class EnterpriseBuiltInDbmsProcedures
             .map( entry -> new ConnectionResult( entry.getKey(), entry.getValue() ) );
     }
 
+    private ZoneId getConfiguredTimeZone()
+    {
+        Config config = resolver.resolveDependency( Config.class );
+        return config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
+    }
+
     private boolean isAdmin()
     {
         return securityContext.isAdmin();
@@ -539,7 +554,6 @@ public class EnterpriseBuiltInDbmsProcedures
     }
 
     private void assertAdminOrSelf( String username )
-            throws InvalidArgumentsException
     {
         if ( !isAdminOrSelf( username ) )
         {

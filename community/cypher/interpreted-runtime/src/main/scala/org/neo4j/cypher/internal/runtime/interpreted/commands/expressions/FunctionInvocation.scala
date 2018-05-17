@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,30 +19,52 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
-import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions}
 import org.neo4j.cypher.internal.v3_4.logical.plans.UserFunctionSignature
 import org.neo4j.values._
 
-case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
+abstract class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends Expression with GraphElementPropertyFunctions {
-  private val valueConverter = ValueConversion.getValueConverter(signature.outputType)
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val query = state.query
     val argValues = arguments.map(arg => {
-      query.asObject(arg(ctx, state))
+      arg(ctx, state)
     })
-    val result = query.callFunction(signature.name, argValues, signature.allowed)
-    valueConverter(result)
+    call(query, argValues)
   }
 
-  override def rewrite(f: (Expression) => Expression) =
-    f(FunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
+  protected def call(query: QueryContext,
+                   argValues: IndexedSeq[AnyValue]): AnyValue
+
 
   override def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 
   override def toString = s"${signature.name}(${arguments.mkString(",")})"
+}
+
+case class FunctionInvocationById(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
+  extends FunctionInvocation(signature, arguments) {
+
+  protected def call(query: QueryContext,
+                   argValues: IndexedSeq[AnyValue]): AnyValue = {
+    query.callFunction(signature.id.get, argValues, signature.allowed)
+  }
+
+  override def rewrite(f: (Expression) => Expression) =
+    f(FunctionInvocationById(signature, arguments.map(a => a.rewrite(f))))
+}
+
+case class FunctionInvocationByName(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
+  extends FunctionInvocation(signature, arguments) {
+
+  protected def call(query: QueryContext,
+                     argValues: IndexedSeq[AnyValue]): AnyValue = {
+    query.callFunction(signature.name, argValues, signature.allowed)
+  }
+
+  override def rewrite(f: (Expression) => Expression) =
+    f(FunctionInvocationByName(signature, arguments.map(a => a.rewrite(f))))
 }

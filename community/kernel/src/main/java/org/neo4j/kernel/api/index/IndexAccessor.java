@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,10 +26,13 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
+import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
@@ -39,6 +42,8 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
  */
 public interface IndexAccessor extends Closeable
 {
+    IndexAccessor EMPTY = new Adapter();
+
     /**
      * Deletes this index as well as closes all used external resources.
      * There will not be any interactions after this call.
@@ -50,7 +55,7 @@ public interface IndexAccessor extends Closeable
     /**
      * Return an updater for applying a set of changes to this index.
      * Updates must be visible in {@link #newReader() readers} created after this update.
-     *
+     * <p>
      * This is called with IndexUpdateMode.RECOVERY when starting up after
      * a crash or similar. Updates given then may have already been applied to this index, so
      * additional checks must be in place so that data doesn't get duplicated, but is idempotent.
@@ -62,9 +67,20 @@ public interface IndexAccessor extends Closeable
      * rotating the logical log. After completion of this call there cannot be any essential state that
      * hasn't been forced to disk.
      *
+     * @param ioLimiter The {@link IOLimiter} to use for implementations living on top of {@link org.neo4j.io.pagecache.PageCache}.
      * @throws IOException if there was a problem forcing the state to persistent storage.
      */
-    void force() throws IOException;
+    void force( IOLimiter ioLimiter ) throws IOException;
+
+    /**
+     * Refreshes this index, so that {@link #newReader() readers} created after completion of this call
+     * will see the latest updates. This happens automatically on closing {@link #newUpdater(IndexUpdateMode)}
+     * w/ {@link IndexUpdateMode#ONLINE}, but not guaranteed for {@link IndexUpdateMode#RECOVERY}.
+     * Therefore this call is complementary for updates that has taken place with {@link IndexUpdateMode#RECOVERY}.
+     *
+     * @throws IOException if there was a problem refreshing the index.
+     */
+    void refresh() throws IOException;
 
     /**
      * Closes this index accessor. There will not be any interactions after this call.
@@ -101,6 +117,19 @@ public interface IndexAccessor extends Closeable
      */
     void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException;
 
+    /**
+     * @return true if index was not shutdown properly and its internal state is dirty, false otherwise
+     */
+    boolean isDirty();
+
+    /**
+     * Validates the {@link Value value tuple} before transaction determines that it can commit.
+     */
+    default void validateBeforeCommit( Value[] tuple )
+    {
+        // For most value types there are no specific validations to be made.
+    }
+
     class Adapter implements IndexAccessor
     {
         @Override
@@ -115,7 +144,12 @@ public interface IndexAccessor extends Closeable
         }
 
         @Override
-        public void force()
+        public void force( IOLimiter ioLimiter )
+        {
+        }
+
+        @Override
+        public void refresh()
         {
         }
 
@@ -142,7 +176,7 @@ public interface IndexAccessor extends Closeable
                 }
 
                 @Override
-                public void close() throws IOException
+                public void close()
                 {
                 }
 
@@ -162,8 +196,13 @@ public interface IndexAccessor extends Closeable
 
         @Override
         public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-                throws IndexEntryConflictException, IOException
         {
+        }
+
+        @Override
+        public boolean isDirty()
+        {
+            return false;
         }
     }
 
@@ -189,9 +228,15 @@ public interface IndexAccessor extends Closeable
         }
 
         @Override
-        public void force() throws IOException
+        public void force( IOLimiter ioLimiter ) throws IOException
         {
-            delegate.force();
+            delegate.force( ioLimiter );
+        }
+
+        @Override
+        public void refresh() throws IOException
+        {
+            delegate.refresh();
         }
 
         @Override
@@ -229,6 +274,18 @@ public interface IndexAccessor extends Closeable
                 throws IndexEntryConflictException, IOException
         {
             delegate.verifyDeferredConstraints( propertyAccessor );
+        }
+
+        @Override
+        public boolean isDirty()
+        {
+            return delegate.isDirty();
+        }
+
+        @Override
+        public void validateBeforeCommit( Value[] tuple )
+        {
+            delegate.validateBeforeCommit( tuple );
         }
     }
 }

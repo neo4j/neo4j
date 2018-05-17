@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -56,7 +56,6 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def executionPlanDescription(): InternalPlanDescription =
     executionPlanBuilder()
-      .addArgument(Version(s"CYPHER ${CypherVersion.default.name}"))
       .addArgument(RuntimeVersion(CypherVersion.default.name))
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
@@ -109,7 +108,11 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     try {
-      javaValues.feedIteratorToVisitable(result.map(r => fieldNames.map(r))).accept(visitor)
+      val maybeRecordIterator = result.recordIterator
+      if (maybeRecordIterator.isDefined)
+        javaValues.feedQueryResultRecordIteratorToVisitable(maybeRecordIterator.get).accept(visitor)
+      else
+        javaValues.feedIteratorToVisitable(result.map(r => fieldNames.map(r))).accept(visitor)
     } finally {
       self.close()
     }

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.com.storecopy;
 
@@ -23,6 +26,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -200,6 +204,11 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
         LogService logService();
 
         KernelTransactions kernelTransactions();
+
+        /**
+         * Version context supplier
+         */
+        VersionContextSupplier versionContextSupplier();
     }
 
     /**
@@ -253,12 +262,15 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
         {
             return resolver.resolveDependency( KernelTransactions.class );
         }
+
+        @Override
+        public VersionContextSupplier versionContextSupplier()
+        {
+            return resolver.resolveDependency( VersionContextSupplier.class );
+        }
     }
 
     public static final int DEFAULT_BATCH_SIZE = 100;
-
-    static final String msg = "Kernel panic detected: pulled transactions cannot be applied to a non-healthy database. "
-            + "In order to resolve this issue a manual restart of this instance is required.";
 
     // Assigned in constructor
     private final Dependencies dependencies;
@@ -268,6 +280,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
     // Assigned in start()
     private TransactionObligationFulfiller obligationFulfiller;
     private TransactionBatchCommitter batchCommitter;
+    private VersionContextSupplier versionContextSupplier;
     private Log log;
     // Assigned in stop()
     private volatile boolean stopped;
@@ -295,7 +308,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
         }
 
         BatchingResponseHandler responseHandler = new BatchingResponseHandler( maxBatchSize,
-                batchCommitter, obligationFulfiller, txHandler, log );
+                batchCommitter, obligationFulfiller, txHandler, versionContextSupplier, log );
         try
         {
             response.accept( responseHandler );
@@ -311,6 +324,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
     {
         this.obligationFulfiller = dependencies.obligationFulfiller();
         this.log = dependencies.logService().getInternalLog( BatchingResponseHandler.class );
+        this.versionContextSupplier = dependencies.versionContextSupplier();
         this.batchCommitter = new TransactionBatchCommitter( dependencies.kernelTransactions(), idReuseSafeZoneTime,
                 dependencies.commitProcess(), log );
         this.stopped = false;

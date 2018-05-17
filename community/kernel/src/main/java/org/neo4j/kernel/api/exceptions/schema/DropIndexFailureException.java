@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,18 +21,19 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.SchemaUtil;
 
 import static java.lang.String.format;
 
 public class DropIndexFailureException extends SchemaKernelException
 {
-    private final LabelSchemaDescriptor descriptor;
+    private final SchemaDescriptor descriptor;
     private static final String message = "Unable to drop index on %s: %s";
 
-    public DropIndexFailureException( LabelSchemaDescriptor descriptor, SchemaKernelException cause )
+    public DropIndexFailureException( SchemaDescriptor descriptor, SchemaKernelException cause )
     {
         super( Status.Schema.IndexDropFailed, format( message, descriptor.userDescription( SchemaUtil.idTokenNameLookup ),
                         cause.getMessage() ), cause );

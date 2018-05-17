@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,26 +19,23 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import static org.junit.Assert.assertTrue;
-
+import common.Neo4jAlgoTestCase;
 import org.junit.Test;
-import org.neo4j.graphalgo.CostEvaluator;
+
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphalgo.impl.util.DoubleComparator;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertTrue;
 
 public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
 {
-    protected Dijkstra<Double> getDijkstra( String startNode, String endNode,
-            RelationshipType... relTypes )
+    protected Dijkstra<Double> getDijkstra( String startNode, String endNode, RelationshipType... relTypes )
     {
-        return new Dijkstra<Double>( 0.0, graph.getNode( startNode ),
-                graph.getNode( endNode ), ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
+        return new Dijkstra<>( 0.0, graph.getNode( startNode ), graph.getNode( endNode ),
+                ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
                 relTypes );
     }
 

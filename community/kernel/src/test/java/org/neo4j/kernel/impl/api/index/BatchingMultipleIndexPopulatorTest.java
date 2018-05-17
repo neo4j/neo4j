@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,16 +34,16 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertSame;
@@ -70,11 +70,11 @@ public class BatchingMultipleIndexPopulatorTest
 {
     public static final int propertyId = 1;
     public static final int labelId = 1;
-    private final IndexDescriptor index1 = IndexDescriptorFactory.forLabel(1, 1);
-    private final IndexDescriptor index42 = IndexDescriptorFactory.forLabel(42, 42);
+    private final SchemaIndexDescriptor index1 = SchemaIndexDescriptorFactory.forLabel(1, 1);
+    private final SchemaIndexDescriptor index42 = SchemaIndexDescriptorFactory.forLabel(42, 42);
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         clearProperty( QUEUE_THRESHOLD_NAME );
         clearProperty( TASK_QUEUE_SIZE_NAME );
@@ -256,7 +256,7 @@ public class BatchingMultipleIndexPopulatorTest
                     NullLogProvider.getInstance() );
 
             populator = addPopulator( batchingPopulator, index1 );
-            List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
+            List<IndexEntryUpdate<SchemaIndexDescriptor>> expected = forUpdates( index1, update1, update2 );
             doThrow( batchFlushError ).when( populator ).add( expected );
 
             batchingPopulator.indexAllNodes().run();
@@ -321,7 +321,7 @@ public class BatchingMultipleIndexPopulatorTest
         verify( executor, atLeast( 5 ) ).execute( any( Runnable.class ) );
     }
 
-    private List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, NodeUpdates... updates )
+    private List<IndexEntryUpdate<SchemaIndexDescriptor>> forUpdates( SchemaIndexDescriptor index, NodeUpdates... updates )
     {
         return Iterables.asList(
                 Iterables.concat(
@@ -339,7 +339,7 @@ public class BatchingMultipleIndexPopulatorTest
                 .build();
     }
 
-    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, IndexDescriptor descriptor )
+    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, SchemaIndexDescriptor descriptor )
     {
         IndexPopulator populator = mock( IndexPopulator.class );
 
@@ -349,8 +349,8 @@ public class BatchingMultipleIndexPopulatorTest
         flipper.setFlipTarget( indexProxyFactory );
 
         batchingPopulator.addPopulator(
-                populator, descriptor.schema().getLabelId(),
-                new IndexMeta( descriptor, new SchemaIndexProvider.Descriptor( "foo", "1" ), NO_CAPABILITY ),
+                populator, descriptor.schema().keyId(),
+                new IndexMeta( 1, descriptor, new IndexProvider.Descriptor( "foo", "1" ), NO_CAPABILITY ),
                 flipper, failedIndexProxyFactory, "testIndex" );
 
         return populator;

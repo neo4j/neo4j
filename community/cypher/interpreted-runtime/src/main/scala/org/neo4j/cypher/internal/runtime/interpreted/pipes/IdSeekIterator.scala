@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 abstract class IdSeekIterator[T]
   extends Iterator[ExecutionContext] with NumericHelper {
@@ -47,8 +47,11 @@ abstract class IdSeekIterator[T]
 
   private def computeNextEntity(): T = {
     while (entityIds.hasNext) {
-      val id = asLongEntityId(entityIds.next())
-      val maybeEntity = operations.getByIdIfExists(id.longValue())
+      val maybeEntity = for {
+        id <- asLongEntityId(entityIds.next())
+        entity <- operations.getByIdIfExists(id)
+      } yield entity
+
       if(maybeEntity.isDefined) return maybeEntity.get
     }
     null.asInstanceOf[T]
@@ -57,6 +60,7 @@ abstract class IdSeekIterator[T]
 
 final class NodeIdSeekIterator(ident: String,
                                baseContext: ExecutionContext,
+                               executionContextFactory: ExecutionContextFactory,
                                protected val operations: Operations[NodeValue],
                                protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[NodeValue] {
@@ -64,22 +68,24 @@ final class NodeIdSeekIterator(ident: String,
   def hasNext: Boolean = hasNextEntity
 
   def next(): ExecutionContext =
-    baseContext.newWith1(ident, nextEntity())
+    executionContextFactory.copyWith(baseContext, ident, nextEntity())
 }
 
 final class DirectedRelationshipIdSeekIterator(ident: String,
                                                fromNode: String,
                                                toNode: String,
                                                baseContext: ExecutionContext,
-                                               protected val operations: Operations[EdgeValue],
+                                               executionContextFactory: ExecutionContextFactory,
+                                               protected val operations: Operations[RelationshipValue],
                                                protected val entityIds: Iterator[AnyValue])
-  extends IdSeekIterator[EdgeValue] {
+  extends IdSeekIterator[RelationshipValue] {
 
   def hasNext: Boolean = hasNextEntity
 
   def next(): ExecutionContext = {
     val rel = nextEntity()
-    baseContext.newWith3(ident, rel, fromNode, rel.startNode(), toNode, rel.endNode())
+    executionContextFactory.copyWith(baseContext, ident, rel, fromNode, rel.startNode(), toNode, rel.endNode()
+    )
   }
 }
 
@@ -87,11 +93,12 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
                                                  fromNode: String,
                                                  toNode: String,
                                                  baseContext: ExecutionContext,
-                                                 protected val operations: Operations[EdgeValue],
+                                                 executionContextFactory: ExecutionContextFactory,
+                                                 protected val operations: Operations[RelationshipValue],
                                                  protected val entityIds: Iterator[AnyValue])
-  extends IdSeekIterator[EdgeValue] {
+  extends IdSeekIterator[RelationshipValue] {
 
-  private var lastEntity: EdgeValue = _
+  private var lastEntity: RelationshipValue = _
   private var lastStart: NodeValue = _
   private var lastEnd: NodeValue = _
   private var emitSibling = false
@@ -101,13 +108,13 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
   def next(): ExecutionContext = {
     if (emitSibling) {
       emitSibling = false
-      baseContext.newWith3(ident, lastEntity, fromNode, lastEnd, toNode, lastStart)
+      executionContextFactory.copyWith(baseContext, ident, lastEntity, fromNode, lastEnd, toNode, lastStart)
     } else {
       emitSibling = true
       lastEntity = nextEntity()
       lastStart = lastEntity.startNode()
       lastEnd = lastEntity.endNode()
-      baseContext.newWith3(ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
+      executionContextFactory.copyWith(baseContext, ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
     }
   }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,12 +22,16 @@ package org.neo4j.tooling.procedure;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.harness.junit.Neo4jRule;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.tooling.procedure.procedures.valid.Procedures;
 
@@ -42,7 +46,10 @@ public class ProcedureTest
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
-    public Neo4jRule graphDb = new Neo4jRule().withProcedure( PROCEDURES_CLASS );
+    public Neo4jRule graphDb = new Neo4jRule()
+            .withConfig( ServerSettings.script_enabled, Settings.TRUE )
+            .dumpLogsOnFailure( System.out )
+            .withProcedure( PROCEDURES_CLASS );
     private String procedureNamespace = PROCEDURES_CLASS.getPackage().getName();
 
     @Test
@@ -116,7 +123,9 @@ public class ProcedureTest
 
     private Config configuration()
     {
-        return Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
+        return Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .withConnectionTimeout( 10, TimeUnit.SECONDS )
+                .toConfig();
     }
 
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,9 +31,7 @@ class ResourceManager extends CloseableResource {
   private val resources: util.Set[AutoCloseable] = newSetFromMap(new util.IdentityHashMap[AutoCloseable, java.lang.Boolean]())
 
   def trace(resource: AutoCloseable): Unit =
-    if (!resources.add(resource)) {
-      throw new IllegalStateException(s"$resource is already in the resource set $resources")
-    }
+    resources.add(resource)
 
   def release(resource: AutoCloseable): Unit = {
     resource.close()

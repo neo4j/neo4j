@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -58,9 +58,9 @@ public class ConsistentPropertyReadsIT
             for ( int i = 0; i < nodes.length; i++ )
             {
                 nodes[i] = db.createNode();
-                for ( int j = 0; j < keys.length; j++ )
+                for ( String key : keys )
                 {
-                    nodes[i].setProperty( keys[j], values[0] );
+                    nodes[i].setProperty( key, values[0] );
                 }
             }
             tx.success();

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.store.record;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule.Kind;
 
@@ -93,20 +93,20 @@ public class SchemaRuleDeserializer2_0to3_1
 
     private static IndexRule readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
     {
-        SchemaIndexProvider.Descriptor providerDescriptor = readIndexProviderDescriptor( serialized );
+        IndexProvider.Descriptor providerDescriptor = readIndexProviderDescriptor( serialized );
         int[] propertyKeyIds = readIndexPropertyKeys( serialized );
-        IndexDescriptor descriptor = constraintIndex ?
-                                     IndexDescriptorFactory.uniqueForLabel( label, propertyKeyIds ) :
-                                     IndexDescriptorFactory.forLabel( label, propertyKeyIds );
+        SchemaIndexDescriptor descriptor = constraintIndex ?
+                                           SchemaIndexDescriptorFactory.uniqueForLabel( label, propertyKeyIds ) :
+                                           SchemaIndexDescriptorFactory.forLabel( label, propertyKeyIds );
         long owningConstraint = constraintIndex ? readOwningConstraint( serialized ) : NO_OWNING_CONSTRAINT;
         return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
     }
 
-    private static SchemaIndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer serialized )
+    private static IndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer serialized )
     {
         String providerKey = getDecodedStringFrom( serialized );
         String providerVersion = getDecodedStringFrom( serialized );
-        return new SchemaIndexProvider.Descriptor( providerKey, providerVersion );
+        return new IndexProvider.Descriptor( providerKey, providerVersion );
     }
 
     private static int[] readIndexPropertyKeys( ByteBuffer serialized )

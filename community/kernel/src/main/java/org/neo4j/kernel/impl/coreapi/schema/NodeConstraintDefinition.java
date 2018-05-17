@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Label;
@@ -73,7 +71,6 @@ abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinitio
         }
         NodeConstraintDefinition that = (NodeConstraintDefinition) o;
         return label.name().equals( that.label.name() ) && Arrays.equals( propertyKeys, that.propertyKeys );
-
     }
 
     protected String propertyText()

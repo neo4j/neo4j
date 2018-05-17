@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
@@ -41,7 +41,7 @@ case class ExpandIntoPipe(source: Pipe,
                           toName: String,
                           dir: SemanticDirection,
                           lazyTypes: LazyTypes)
-                          (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                          (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with CachingExpandInto {
   self =>
   private final val CACHE_SIZE = 100000
@@ -64,7 +64,7 @@ case class ExpandIntoPipe(source: Pipe,
                   .getOrElse(findRelationships(state.query, fromNode, n, relCache, dir, lazyTypes.types(state.query)))
 
                 if (relationships.isEmpty) Iterator.empty
-                else relationships.map(r => row.newWith1(relName, r))
+                else relationships.map(r => executionContextFactory.copyWith(row, relName, r))
               case _ => throw new InternalException(s"$toNode must be node or null")
             }
 

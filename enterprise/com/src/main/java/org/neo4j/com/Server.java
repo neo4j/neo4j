@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.com;
 
@@ -49,7 +52,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -156,7 +158,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         chunkSize = config.getChunkSize();
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
@@ -202,7 +204,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         String name = getClass().getSimpleName();
         msgLog.info( name + " communication server shutting down and unbinding from  " + socketAddress );
@@ -237,7 +239,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public ChannelPipeline getPipeline() throws Exception
+    public ChannelPipeline getPipeline()
     {
         ChannelPipeline pipeline = Channels.pipeline();
         pipeline.addLast( "monitor", new MonitorChannelHandler( byteCounterMonitor ) );
@@ -247,14 +249,13 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+    public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e )
     {
         channelGroup.add( e.getChannel() );
     }
 
     @Override
     public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
-            throws Exception
     {
         try
         {
@@ -272,7 +273,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
             ctx.getChannel().close();
             tryToCloseChannel( ctx.getChannel() );
-            throw Exceptions.launderedException( e );
+            throw e;
         }
     }
 
@@ -319,7 +320,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+    public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e )
     {
         msgLog.warn( "Exception from Netty", e.getCause() );
     }
@@ -411,7 +412,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             if ( partialRequest == null )
             {
                 // This is the first chunk in a multi-chunk request
-                RequestType<T> type = getRequestContext( buffer.readByte() );
+                RequestType type = getRequestContext( buffer.readByte() );
                 RequestContext context = readContext( buffer );
                 ChannelBuffer targetBuffer = mapSlave( channel, context );
                 partialRequest = new PartialRequest( type, context, targetBuffer );
@@ -422,7 +423,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         else
         {
             PartialRequest partialRequest = partialRequests.remove( channel );
-            RequestType<T> type;
+            RequestType type;
             RequestContext context;
             ChannelBuffer targetBuffer;
             ChannelBuffer bufferToReadFrom;
@@ -488,7 +489,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
     }
 
-    protected void responseWritten( RequestType<T> type, Channel channel, RequestContext context )
+    protected void responseWritten( RequestType type, Channel channel, RequestContext context )
     {
     }
 
@@ -511,7 +512,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         return readRequestContext;
     }
 
-    protected abstract RequestType<T> getRequestContext( byte id );
+    protected abstract RequestType getRequestContext( byte id );
 
     protected ChannelBuffer mapSlave( Channel channel, RequestContext slave )
     {
@@ -551,13 +552,13 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     private class TargetCaller implements Response.Handler, Runnable
     {
-        private final RequestType<T> type;
+        private final RequestType type;
         private final Channel channel;
         private final RequestContext context;
         private final ChunkingChannelBuffer targetBuffer;
         private final ChannelBuffer bufferToReadFrom;
 
-        TargetCaller( RequestType<T> type, Channel channel, RequestContext context,
+        TargetCaller( RequestType type, Channel channel, RequestContext context,
                       ChunkingChannelBuffer targetBuffer, ChannelBuffer bufferToReadFrom )
         {
             this.type = type;
@@ -590,7 +591,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 targetBuffer.clear( true );
                 writeFailureResponse( e, targetBuffer );
                 tryToFinishOffChannel( channel, context );
-                throw Exceptions.launderedException( e );
+                throw new RuntimeException( e );
             }
             finally
             {
@@ -603,7 +604,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
 
         @Override
-        public void obligation( long txId ) throws IOException
+        public void obligation( long txId )
         {
             targetBuffer.writeByte( -1 );
             targetBuffer.writeLong( txId );
@@ -613,7 +614,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         public Visitor<CommittedTransactionRepresentation,Exception> transactions()
         {
             targetBuffer.writeByte( 1 );
-            return new CommittedTransactionSerializer( new NetworkFlushableChannel(  targetBuffer ) );
+            return new CommittedTransactionSerializer( new NetworkFlushableChannel( targetBuffer ) );
         }
     }
 
@@ -621,9 +622,9 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     {
         final RequestContext context;
         final ChannelBuffer buffer;
-        final RequestType<T> type;
+        final RequestType type;
 
-        PartialRequest( RequestType<T> type, RequestContext context, ChannelBuffer buffer )
+        PartialRequest( RequestType type, RequestContext context, ChannelBuffer buffer )
         {
             this.type = type;
             this.context = context;

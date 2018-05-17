@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,6 +31,7 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
@@ -61,6 +62,7 @@ public class RejectTransportEncryptionIT
     public Exception expected;
 
     private TransportConnection client;
+    private TransportTestUtil util;
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()
@@ -82,6 +84,7 @@ public class RejectTransportEncryptionIT
     public void setup()
     {
         this.client = cf.newInstance();
+        this.util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
     @After
@@ -98,6 +101,6 @@ public class RejectTransportEncryptionIT
     {
         exception.expect( expected.getClass() );
         exception.expectMessage( expected.getMessage() );
-        client.connect( server.lookupDefaultConnector() ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
+        client.connect( server.lookupDefaultConnector() ).send( util.acceptedVersions( 1, 0, 0, 0 ) );
     }
 }

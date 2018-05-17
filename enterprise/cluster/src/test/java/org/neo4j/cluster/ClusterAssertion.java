@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster;
 
@@ -34,7 +37,7 @@ public class ClusterAssertion
 
     public static ClusterAssertion basedOn( int[] serverIds )
     {
-        Map<Integer, InstanceAssertion> out = new HashMap<Integer, InstanceAssertion>();
+        Map<Integer, InstanceAssertion> out = new HashMap<>();
 
         for ( int i = 0; i < serverIds.length; i++ )
         {
@@ -42,7 +45,7 @@ public class ClusterAssertion
         }
 
         ClusterAssertion result = new ClusterAssertion();
-        result.in = new HashMap<Integer, InstanceAssertion>(  );
+        result.in = new HashMap<>();
         result.out = out;
         return result;
     }
@@ -55,8 +58,8 @@ public class ClusterAssertion
 
     public ClusterAssertion joins( int... joiners )
     {
-        final Map<Integer, InstanceAssertion> newIn = new HashMap<Integer, InstanceAssertion>( in );
-        final Map<Integer, InstanceAssertion> newOut = new HashMap<Integer, InstanceAssertion>( out );
+        final Map<Integer, InstanceAssertion> newIn = new HashMap<>( in );
+        final Map<Integer, InstanceAssertion> newOut = new HashMap<>( out );
         for ( int joiner : joiners )
         {
             newIn.put( joiner, newOut.remove( joiner ) );
@@ -70,7 +73,7 @@ public class ClusterAssertion
 
     public ClusterAssertion failed( final int failed )
     {
-        final Map<Integer, InstanceAssertion> newIn = new HashMap<Integer, InstanceAssertion>( in );
+        final Map<Integer, InstanceAssertion> newIn = new HashMap<>( in );
         final InstanceAssertion current = in.get( failed );
 
         InstanceAssertion failedInstance = new InstanceAssertion()
@@ -91,7 +94,7 @@ public class ClusterAssertion
 
     public ClusterAssertion elected( final int elected, final String atRole )
     {
-        final Map<Integer, InstanceAssertion> newIn = new HashMap<Integer, InstanceAssertion>();
+        final Map<Integer, InstanceAssertion> newIn = new HashMap<>();
         for ( final Map.Entry<Integer, InstanceAssertion> instanceAssertionEntry : in.entrySet() )
         {
             final InstanceAssertion assertion = instanceAssertionEntry.getValue();
@@ -139,14 +142,14 @@ public class ClusterAssertion
         int serverId;
         URI uri;
         boolean isFailed;
-        Map<Integer, URI> reachableInstances = new HashMap<Integer, URI>();
-        Map<Integer, URI> failedInstances = new HashMap<Integer, URI>();
-        Map<String, Integer> roles = new HashMap<String, Integer>();
+        Map<Integer, URI> reachableInstances = new HashMap<>();
+        Map<Integer, URI> failedInstances = new HashMap<>();
+        Map<String, Integer> roles = new HashMap<>();
 
-        public InstanceAssertion()
+        InstanceAssertion()
         {}
 
-        public InstanceAssertion( int serverId, URI uri )
+        InstanceAssertion( int serverId, URI uri )
         {
             this.serverId = serverId;
             this.uri = uri;
@@ -157,9 +160,9 @@ public class ClusterAssertion
             this.serverId = instance.serverId;
             this.uri = instance.uri;
             this.isFailed = instance.isFailed;
-            this.reachableInstances = new HashMap<Integer, URI>( instance.reachableInstances );
-            this.failedInstances = new HashMap<Integer, URI>( instance.failedInstances );
-            this.roles = new HashMap<String, Integer>( instance.roles );
+            this.reachableInstances = new HashMap<>( instance.reachableInstances );
+            this.failedInstances = new HashMap<>( instance.failedInstances );
+            this.roles = new HashMap<>( instance.roles );
         }
     }
 }

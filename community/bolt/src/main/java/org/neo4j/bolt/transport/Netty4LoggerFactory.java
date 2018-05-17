@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -231,7 +231,7 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
                 // Netty uses MessageFormat as placeholders, we use String.format()
                 // Sidenote: MessageFormat is the right tool for this job, it handles
                 // pluralization, i18n etc., we should change at some point.
-                return nettyLogTemplate.replaceAll( "\\{\\}", "%s" );
+                return nettyLogTemplate.replaceAll( "\\{}", "%s" );
             }
 
         };

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions
 
@@ -56,7 +59,6 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
     else
       body.nodeGetPropertyForVar(nodeIdVar.name, nodeIdVar.codeGenType, propKeyVar, localName)
 
-  //TODO will probably need to send in type so that nodes can be unboxed
   override def propertyById[E](body: MethodStructure[E], localName: String) =
     if (nodeIdVar.nullable)
       body.ifNotStatement(body.isNull(nodeIdVar.name, nodeIdVar.codeGenType)) {ifBody =>
@@ -65,7 +67,7 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
     else
       body.nodeGetPropertyById(nodeIdVar.name, nodeIdVar.codeGenType, token.get, localName)
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Value
 }
 
 case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable, propKeyVar: String)
@@ -74,18 +76,18 @@ case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable,
   override def propertyByName[E](body: MethodStructure[E], localName: String) =
     if (relIdVar.nullable)
       body.ifNotStatement(body.isNull(relIdVar.name, CodeGenType.primitiveRel)) { ifBody =>
-        ifBody.relationshipGetPropertyForVar(relIdVar.name, propKeyVar, localName)
+        ifBody.relationshipGetPropertyForVar(relIdVar.name, relIdVar.codeGenType, propKeyVar, localName)
       }
     else
-      body.relationshipGetPropertyForVar(relIdVar.name, propKeyVar, localName)
+      body.relationshipGetPropertyForVar(relIdVar.name, relIdVar.codeGenType, propKeyVar, localName)
 
   override def propertyById[E](body: MethodStructure[E], localName: String) =
   if (relIdVar.nullable)
     body.ifNotStatement(body.isNull(relIdVar.name, CodeGenType.primitiveRel)) { ifBody =>
-      ifBody.relationshipGetPropertyById(relIdVar.name, token.get, localName)
+      ifBody.relationshipGetPropertyById(relIdVar.name, relIdVar.codeGenType, token.get, localName)
     }
     else
-      body.relationshipGetPropertyById(relIdVar.name, token.get, localName)
+      body.relationshipGetPropertyById(relIdVar.name, relIdVar.codeGenType, token.get, localName)
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Value
 }

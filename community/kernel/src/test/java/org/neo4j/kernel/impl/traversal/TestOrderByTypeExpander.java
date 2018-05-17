@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -85,7 +85,7 @@ public class TestOrderByTypeExpander extends TraversalTestBase
     }
 
     @Test
-    public void evenDifferentDirectionsKeepsOrder() throws Exception
+    public void evenDifferentDirectionsKeepsOrder()
     {
         PathExpander expander = new OrderedByTypeExpander()
                 .add( next, INCOMING )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,7 @@ import java.math.RoundingMode
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, Selections}
+import org.neo4j.cypher.internal.ir.v3_4.Selections
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics._
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, Selectivity}
@@ -79,8 +79,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForSubstringSargable(name, selections, propertyKey, None)
 
     // WHERE x.prop <, <=, >=, > that could benefit from an index
-    case AsValueRangeSeekable(seekable@InequalityRangeSeekable(_, _, _)) =>
+    case AsValueRangeSeekable(seekable) =>
       calculateSelectivityForValueRangeSeekable(seekable, selections)
+
+      // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
+    case AsDistanceSeekable(seekable) =>
+      calculateSelectivityForPointDistanceSeekable(seekable, selections)
 
     // WHERE has(x.prop)
     case AsPropertyScannable(scannable) =>
@@ -136,7 +140,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                       selections: Selections,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = selections.labelsOnNode(IdName(variable))
+    val labels = selections.labelsOnNode(variable)
     val indexSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {
@@ -197,9 +201,29 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val factor = math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
     val negatedEquality = BigDecimalCombiner.negate(equality)
 
-    val base = if (seekable.hasEquality) equality else math.BigDecimal.valueOf(0)
+    val base = if (seekable.hasEquality) equality else math.BigDecimal.ZERO
+    val rangeAmountFactor = math.BigDecimal.ONE.divide(math.BigDecimal.valueOf(seekable.expr.inequalities.size))
     val selectivity = base.add(BigDecimalCombiner.andTogetherBigDecimals(
-      Seq(math.BigDecimal.valueOf(seekable.expr.inequalities.size), factor, negatedEquality)
+      Seq(rangeAmountFactor, factor, negatedEquality)
+    ).get)
+    val result = Selectivity.of(selectivity.doubleValue()).getOrElse(Selectivity.ONE)
+    result
+  }
+
+  private def calculateSelectivityForPointDistanceSeekable(seekable: PointDistanceSeekable,
+                                                        selections: Selections)
+                                                       (implicit semanticTable: SemanticTable): Selectivity = {
+    val name = seekable.ident.name
+    val propertyKeyName = seekable.propertyKeyName
+    val equalitySelectivity = calculateSelectivityForPropertyEquality(name, Some(1), selections, propertyKeyName)
+
+    // the selectivity for equality equals the center of the circle for which we're querying
+    val equality = math.BigDecimal.valueOf(equalitySelectivity.factor)
+    val factor = math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
+    val negatedEquality = BigDecimalCombiner.negate(equality)
+
+    val selectivity = equality.add(BigDecimalCombiner.andTogetherBigDecimals(
+      Seq(factor, negatedEquality)
     ).get)
     val result = Selectivity.of(selectivity.doubleValue()).getOrElse(Selectivity.ONE)
     result
@@ -209,7 +233,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                       selections: Selections,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = selections.labelsOnNode(IdName(variable))
+    val labels = selections.labelsOnNode(variable)
     val indexPropertyExistsSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {

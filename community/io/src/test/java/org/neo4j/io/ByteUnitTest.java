@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,7 @@ import static org.junit.Assert.assertThat;
 public class ByteUnitTest
 {
     @Test
-    public void convertZero() throws Exception
+    public void convertZero()
     {
         assertThat( ByteUnit.Byte.toBytes( 0 ), is( 0L ) );
         assertThat( ByteUnit.Byte.toKibiBytes( 0 ), is( 0L ) );
@@ -88,7 +88,7 @@ public class ByteUnitTest
     }
 
     @Test
-    public void convertOneToEIC() throws Exception
+    public void convertOneToEIC()
     {
         assertThat( ByteUnit.KibiByte.toBytes( 1 ), is( 1024L ) );
         assertThat( ByteUnit.KibiByte.toKibiBytes( 1 ), is( 1L ) );
@@ -140,7 +140,7 @@ public class ByteUnitTest
     }
 
     @Test
-    public void unitsAsBytes() throws Exception
+    public void unitsAsBytes()
     {
         assertThat( ByteUnit.bytes( 1 ), is( 1L ) );
         assertThat( ByteUnit.kibiBytes( 1 ), is( 1024L ) );
@@ -233,31 +233,31 @@ public class ByteUnitTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowWhenParsingInvalidUnit() throws Exception
+    public void mustThrowWhenParsingInvalidUnit()
     {
         ByteUnit.parse( "1 XB" );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowWhenParsingUnitInterjectedWithNumber() throws Exception
+    public void mustThrowWhenParsingUnitInterjectedWithNumber()
     {
         ByteUnit.parse( "1K2i3B" );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowWhenParsingNonNumbericTest() throws Exception
+    public void mustThrowWhenParsingNonNumbericTest()
     {
         ByteUnit.parse( "abc" );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowWhenParsingOnlyUnit() throws Exception
+    public void mustThrowWhenParsingOnlyUnit()
     {
         ByteUnit.parse( "MiB" );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowWhenParsingUnitBeforeValue() throws Exception
+    public void mustThrowWhenParsingUnitBeforeValue()
     {
         ByteUnit.parse( "MiB 1" );
     }

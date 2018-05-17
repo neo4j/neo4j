@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,10 +29,10 @@ import java.security.Principal;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.PasswordPolicy;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.impl.security.Credential;
@@ -42,7 +42,7 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
-import org.neo4j.server.security.auth.BasicSecurityContext;
+import org.neo4j.server.security.auth.BasicLoginContext;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.test.server.EntityOutputFormat;
@@ -64,7 +64,7 @@ public class UserServiceTest
     protected final UserRepository userRepository = new InMemoryUserRepository();
 
     protected UserManagerSupplier userManagerSupplier;
-    protected SecurityContext neo4jContext;
+    protected LoginContext neo4jContext;
     protected Principal neo4jPrinciple;
 
     protected void setupAuthManagerAndSubject()
@@ -73,7 +73,7 @@ public class UserServiceTest
                 mock( AuthenticationStrategy.class), new InMemoryUserRepository() );
 
         userManagerSupplier = basicAuthManager;
-        neo4jContext = new BasicSecurityContext( basicAuthManager, NEO4J_USER, AuthenticationResult.SUCCESS );
+        neo4jContext = new BasicLoginContext( NEO4J_USER, AuthenticationResult.SUCCESS );
     }
 
     @Before
@@ -85,7 +85,7 @@ public class UserServiceTest
     }
 
     @After
-    public void tearDown() throws InvalidArgumentsException, IOException
+    public void tearDown() throws IOException
     {
         userRepository.delete( NEO4J_USER );
     }

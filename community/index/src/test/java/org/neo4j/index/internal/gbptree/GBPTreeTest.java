@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,8 +29,10 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -50,10 +52,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.DelegatingPageCache;
@@ -62,6 +62,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.PageCacheRule;
@@ -79,8 +80,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -91,7 +92,7 @@ public class GBPTreeTest
 {
     private static final int DEFAULT_PAGE_SIZE = 256;
 
-    private static final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
+    private static final Layout<MutableLong,MutableLong> layout = longLayout().build();
 
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
@@ -144,7 +145,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = new SimpleLongLayout( 0, "Something else" );
+        SimpleLongLayout otherLayout = longLayout().withCustomerNameAsMetaData( "Something else" ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -167,14 +168,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = new SimpleLongLayout()
-        {
-            @Override
-            public long identifier()
-            {
-                return 123456;
-            }
-        };
+        SimpleLongLayout otherLayout = longLayout().withIdentifier( 123456 ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -194,14 +188,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = new SimpleLongLayout()
-        {
-            @Override
-            public int majorVersion()
-            {
-                return super.majorVersion() + 1;
-            }
-        };
+        SimpleLongLayout otherLayout = longLayout().withMajorVersion( 123 ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -221,14 +208,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = new SimpleLongLayout()
-        {
-            @Override
-            public int minorVersion()
-            {
-                return super.minorVersion() + 1;
-            }
-        };
+        SimpleLongLayout otherLayout = longLayout().withMinorVersion( 123 ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -364,7 +344,7 @@ public class GBPTreeTest
     }
 
     @Test
-    public void shouldFailWhenTryingToOpenWithDifferentFormatVersion() throws Exception
+    public void shouldFailWhenTryingToOpenWithDifferentFormatIdentifier() throws Exception
     {
         // GIVEN
         int pageSize = DEFAULT_PAGE_SIZE;
@@ -373,12 +353,11 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> ignored = builder.build() )
         {   // Open/close is enough
         }
-        setFormatVersion( pageCache, pageSize, GBPTree.FORMAT_VERSION - 1 );
 
         try
         {
             // WHEN
-            builder.build();
+            builder.with( longLayout().withFixedSize( false ).build() ).build();
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )
@@ -465,7 +444,7 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong, MutableLong> index = index( controlledPageCache ).build() )
         {
             // WHEN
-            assert throwOnNextIO.compareAndSet( false, true );
+            assertTrue( throwOnNextIO.compareAndSet( false, true ) );
             try ( Writer<MutableLong,MutableLong> ignored = index.writer() )
             {
                 fail( "Expected to throw" );
@@ -625,6 +604,21 @@ public class GBPTreeTest
         verifyHeader( pageCache, expectedHeader );
     }
 
+    @Test( timeout = 10_000 )
+    public void writeHeaderInDirtyTreeMustNotDeadlock() throws Exception
+    {
+        PageCache pageCache = createPageCache( 256 );
+        makeDirty( pageCache );
+
+        Consumer<PageCursor> headerWriter = pc -> pc.putBytes( "failed".getBytes() );
+        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( RecoveryCleanupWorkCollector.IGNORE ).build() )
+        {
+            index.checkpoint( IOLimiter.unlimited(), headerWriter );
+        }
+
+        verifyHeader( pageCache, "failed".getBytes() );
+    }
+
     private void verifyHeader( PageCache pageCache, byte[] expectedHeader ) throws IOException
     {
         // WHEN
@@ -647,7 +641,7 @@ public class GBPTreeTest
 
         // WHEN
         // Read separate
-        GBPTree.readHeader( pageCache, indexFile, layout, headerReader );
+        GBPTree.readHeader( pageCache, indexFile, headerReader );
 
         assertEquals( expectedHeader.length, length.get() );
         assertArrayEquals( expectedHeader, readHeader );
@@ -660,12 +654,116 @@ public class GBPTreeTest
         File doesNotExist = new File( "Does not exist" );
         try
         {
-            GBPTree.readHeader( createPageCache( DEFAULT_PAGE_SIZE ), doesNotExist, layout, NO_HEADER_READER );
+            GBPTree.readHeader( createPageCache( DEFAULT_PAGE_SIZE ), doesNotExist, NO_HEADER_READER );
             fail( "Should have failed" );
         }
         catch ( NoSuchFileException e )
         {
             // good
+        }
+    }
+
+    @Test
+    public void openWithReadHeaderMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception
+    {
+        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER ) );
+    }
+
+    @Test
+    public void openWithConstructorMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception
+    {
+        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> index( pageCache ).build() );
+    }
+
+    private void openMustThrowMetadataMismatchExceptionIfFileIsEmpty( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
+    {
+        // given an existing empty file
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        pageCache.map( indexFile, pageCache.pageSize(), StandardOpenOption.CREATE ).close();
+
+        // when
+        try
+        {
+            opener.accept( pageCache );
+            fail( "Should've thrown IOException" );
+        }
+        catch ( MetadataMismatchException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void readHeaderMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception
+    {
+        openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing(
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER ) );
+    }
+
+    @Test
+    public void constructorMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception
+    {
+        openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing( pageCache -> index( pageCache ).build() );
+    }
+
+    private void openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
+    {
+        // given an existing index with only the first page in it
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        {   // Just for creating it
+        }
+        fs.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
+
+        // when
+        try
+        {
+            opener.accept( pageCache );
+            fail( "Should've thrown IOException" );
+        }
+        catch ( MetadataMismatchException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
+    {
+        openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros(
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER ) );
+    }
+
+    @Test
+    public void constructorMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros() throws Exception
+    {
+        openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros( pageCache -> index( pageCache ).build() );
+    }
+
+    private void openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
+    {
+        // given an existing index with all-zero state pages
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        {   // Just for creating it
+        }
+        fs.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
+        try ( OutputStream out = fs.openAsOutputStream( indexFile, true ) )
+        {
+            byte[] allZeroPage = new byte[DEFAULT_PAGE_SIZE];
+            out.write( allZeroPage ); // page A
+            out.write( allZeroPage ); // page B
+        }
+
+        // when
+        try
+        {
+            opener.accept( pageCache );
+            fail( "Should've thrown IOException" );
+        }
+        catch ( MetadataMismatchException e )
+        {
+            // then good
         }
     }
 
@@ -688,7 +786,7 @@ public class GBPTreeTest
                 length.set( headerData.limit() );
                 headerData.get( readHeader );
             };
-            GBPTree.readHeader( pageCache, indexFile, layout, headerReader );
+            GBPTree.readHeader( pageCache, indexFile, headerReader );
 
             // THEN
             assertEquals( headerBytes.length, length.get() );
@@ -793,7 +891,7 @@ public class GBPTreeTest
         write.get();
         close.get();
         assertTrue( "Writer should not be able to acquired after close",
-                writerError.get() instanceof IllegalStateException );
+                writerError.get() instanceof FileIsNotMappedException );
     }
 
     private PageCache pageCacheWithBarrierInClose( final AtomicBoolean enabled, final Barrier.Control barrier )
@@ -843,6 +941,34 @@ public class GBPTreeTest
         barrier.release();
         close.get();
         write.get();
+    }
+
+    @Test
+    public void dirtyIndexIsNotCleanOnNextStartWithoutRecovery() throws IOException
+    {
+        makeDirty();
+
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( RecoveryCleanupWorkCollector.IGNORE ).build() )
+        {
+            assertTrue( index.wasDirtyOnStartup() );
+        }
+    }
+
+    @Test
+    public void correctlyShutdownIndexIsClean() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                writer.put( new MutableLong( 1L ), new MutableLong( 2L ) );
+            }
+            index.checkpoint( IOLimiter.unlimited() );
+        }
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            assertFalse( index.wasDirtyOnStartup() );
+        }
     }
 
     @Test( timeout = 5_000L )
@@ -1102,115 +1228,6 @@ public class GBPTreeTest
             catch ( ExecutionException e )
             {
                 assertThat( e.getMessage(), allOf( containsString( "cleaning" ), containsString( "failed" ) ) );
-            }
-        }
-    }
-
-    // todo checkpointMustRecognizeFailedCleaning
-
-    /* Insertion and read tests */
-
-    @Test
-    public void shouldSeeSimpleInsertions() throws Exception
-    {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            int count = 1000;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    writer.put( new MutableLong( i ), new MutableLong( i ) );
-                }
-            }
-
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                          index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    assertTrue( cursor.next() );
-                    assertEquals( i, cursor.get().key().longValue() );
-                }
-                assertFalse( cursor.next() );
-            }
-        }
-    }
-
-    @Test
-    public void shouldSeeSimpleInsertionsWithExactMatch() throws Exception
-    {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            int count = 1000;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    writer.put( new MutableLong( i ), new MutableLong( i ) );
-                }
-            }
-
-            for ( int i = 0; i < count; i++ )
-            {
-                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                              index.seek( new MutableLong( i ), new MutableLong( i ) ) )
-                {
-                    assertTrue( cursor.next() );
-                    assertEquals( i, cursor.get().key().longValue() );
-                    assertFalse( cursor.next() );
-                }
-            }
-        }
-    }
-
-    /* Randomized tests */
-
-    @Test
-    public void shouldSplitCorrectly() throws Exception
-    {
-        // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            // WHEN
-            int count = 1_000;
-            PrimitiveLongSet seen = Primitive.longSet( count );
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                for ( int i = 0; i < count; i++ )
-                {
-                    MutableLong key;
-                    do
-                    {
-                        key = new MutableLong( random.nextInt( 100_000 ) );
-                    }
-                    while ( !seen.add( key.longValue() ) );
-                    MutableLong value = new MutableLong( i );
-                    writer.put( key, value );
-                    seen.add( key.longValue() );
-                }
-            }
-
-            // THEN
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                          index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
-            {
-                long prev = -1;
-                while ( cursor.next() )
-                {
-                    MutableLong hit = cursor.get().key();
-                    if ( hit.longValue() < prev )
-                    {
-                        fail( hit + " smaller than prev " + prev );
-                    }
-                    prev = hit.longValue();
-                    assertTrue( seen.remove( hit.longValue() ) );
-                }
-
-                if ( !seen.isEmpty() )
-                {
-                    fail( "expected hits " + Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
-                }
             }
         }
     }
@@ -1593,20 +1610,27 @@ public class GBPTreeTest
         }
     }
 
-    private class ControlledRecoveryCleanupWorkCollector extends LifecycleAdapter
+    private static class ControlledRecoveryCleanupWorkCollector extends LifecycleAdapter
             implements RecoveryCleanupWorkCollector
     {
         Queue<CleanupJob> jobs = new LinkedList<>();
         List<CleanupJob> startedJobs = new LinkedList<>();
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
             CleanupJob job;
             while ( (job = jobs.poll()) != null )
             {
-                job.run();
-                startedJobs.add( job );
+                try
+                {
+                    job.run();
+                    startedJobs.add( job );
+                }
+                finally
+                {
+                    job.close();
+                }
             }
         }
 
@@ -1675,7 +1699,7 @@ public class GBPTreeTest
                         return super.io( pageId, pf_flags );
                     }
 
-                    private void maybeBlock() throws IOException
+                    private void maybeBlock()
                     {
                         if ( blockOnNextIO.get() )
                         {
@@ -1689,7 +1713,12 @@ public class GBPTreeTest
 
     private void makeDirty() throws IOException
     {
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        makeDirty( createPageCache( DEFAULT_PAGE_SIZE ) );
+    }
+
+    private void makeDirty( PageCache pageCache ) throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
         {
             // Make dirty
             index.writer().close();
@@ -1782,16 +1811,6 @@ public class GBPTreeTest
         public int count()
         {
             return count;
-        }
-    }
-
-    private void setFormatVersion( PageCache pageCache, int pageSize, int formatVersion ) throws IOException
-    {
-        try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize );
-              PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK ) )
-        {
-            assertTrue( cursor.next() );
-            cursor.putInt( formatVersion );
         }
     }
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest.security;
 
-import com.sun.jersey.core.util.Base64;
 import org.junit.After;
 
 import java.io.IOException;
+import java.util.Base64;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.string.UTF8;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class CommunityServerTestBase extends ExclusiveServerTestBase
@@ -51,9 +51,19 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         server.start();
     }
 
-    protected String challengeResponse( String username, String password )
+    protected void startServer( boolean authEnabled, String accessControlAllowOrigin ) throws IOException
     {
-        return "Basic " + base64( username + ":" + password );
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
+                .withProperty( ServerSettings.http_access_control_allow_origin.name(), accessControlAllowOrigin )
+                .build();
+        server.start();
+    }
+
+    protected String basicAuthHeader( String username, String password )
+    {
+        String usernamePassword = username + ':' + password;
+        return "Basic " + Base64.getEncoder().encodeToString( usernamePassword.getBytes() );
     }
 
     protected String dataURL()
@@ -71,8 +81,8 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         return server.baseUri().resolve( "user/" + username + "/password" ).toString();
     }
 
-    protected String base64( String value )
+    protected String txCommitURL()
     {
-        return UTF8.decode( Base64.encode( value ) );
+        return server.baseUri().resolve( "db/data/transaction/commit" ).toString();
     }
 }

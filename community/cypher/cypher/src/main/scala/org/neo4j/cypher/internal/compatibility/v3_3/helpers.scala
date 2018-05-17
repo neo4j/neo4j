@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,8 +23,10 @@ import org.neo4j.cypher.CypherVersion.v3_3
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState => LogicalPlanStateV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3, UpdateStrategy => UpdateStrategyV3_3}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
+import org.neo4j.cypher.internal.compiler.{v3_4 => compilerV3_4}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer => CompilationPhaseTracer3_3}
@@ -33,13 +35,14 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3
 import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, ast => astV3_4, notification => nfV3_4}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_4Phase}
-import org.neo4j.cypher.internal.frontend.v3_4.{phases => phasesV3_4}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticTable => SemanticTableV3_4}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality => CardinalityV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{DPPlannerName, IDPPlannerName, PlannerNameWithVersion, ProcedurePlannerName}
+import org.neo4j.cypher.internal.util.v3_4.attribution.{Attributes, Id}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, InputPosition}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId => LogicalPlanIdV3_3}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId => LogicalPlanIdV3_4}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 
 object helpers {
@@ -83,12 +86,12 @@ object helpers {
     }
   }
 
-  def as3_3(calc: phasesV3_4.StatsDivergenceCalculator): phasesV3_3.StatsDivergenceCalculator = calc match {
-    case phasesV3_4.StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis) =>
+  def as3_3(calc: compilerV3_4.StatsDivergenceCalculator): phasesV3_3.StatsDivergenceCalculator = calc match {
+    case compilerV3_4.StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis) =>
       phasesV3_3.StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
-    case phasesV3_4.StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis) =>
+    case compilerV3_4.StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis) =>
       phasesV3_3.StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
-    case phasesV3_4.StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis) =>
+    case compilerV3_4.StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis) =>
       phasesV3_3.StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
   }
 
@@ -96,7 +99,7 @@ object helpers {
 
   def as3_4(pos: InputPositionV3_3): InputPosition = if(pos == null) null else InputPosition(pos.offset, pos.line, pos.column)
 
-  def as3_4(planId: LogicalPlanIdV3_3) : LogicalPlanIdV3_4 = new LogicalPlanIdV3_4(planId.underlying)
+  def as3_4(planId: LogicalPlanIdV3_3) : Id = Id(planId.underlying)
 
   def as3_4(plannerName: PlannerNameV3_3) : PlannerName = plannerName match {
     case IDPPlannerNameV3_3 => IDPPlannerName
@@ -145,28 +148,57 @@ object helpers {
     case nfV3_3.DeprecatedPlannerNotification => nfV3_4.DeprecatedPlannerNotification
   }
 
-  def as3_4(logicalPlan: LogicalPlanStateV3_3) : LogicalPlanState = {
-    val startPosition = logicalPlan.startPosition.map(as3_4)
+  def as3_4(logicalPlanState: LogicalPlanStateV3_3) : LogicalPlanState = {
+    val startPosition = logicalPlanState.startPosition.map(as3_4)
     // Wrap the planner name to correctly report version 3.3.
-    val plannerName = PlannerNameWithVersion(as3_4(logicalPlan.plannerName), v3_3.name)
+    val plannerName = PlannerNameWithVersion(as3_4(logicalPlanState.plannerName), v3_3.name)
 
-    def isImportant(expression: ExpressionV3_3) : Boolean = logicalPlan.maybeSemanticTable.exists(_.seen(expression))
+    val solveds = new Solveds
+    val cardinalities = new Cardinalities
+    val (plan3_4, semanticTable3_4) = convertLogicalPlan(logicalPlanState, solveds, cardinalities)
 
-    val (plan3_4, expressionMap) = LogicalPlanConverter.convertLogicalPlan(logicalPlan.maybeLogicalPlan.get, isImportant)
+    val statement3_3 = logicalPlanState.maybeStatement.get
 
-    val statement3_3 = logicalPlan.maybeStatement.get
-
-    LogicalPlanState(logicalPlan.queryText,
+    LogicalPlanState(logicalPlanState.queryText,
       startPosition,
       plannerName,
+      solveds,
+      cardinalities,
       Some(as3_4(statement3_3)),
       None,
-      logicalPlan.maybeExtractedParams,
-      logicalPlan.maybeSemanticTable.map(t => SemanticTableConverter.convertSemanticTable(t, expressionMap)),
+      logicalPlanState.maybeExtractedParams,
+      Some(semanticTable3_4),
       None,
       Some(plan3_4),
-      Some(logicalPlan.maybePeriodicCommit.flatten.map(x => as3_4(x))),
+      Some(logicalPlanState.maybePeriodicCommit.flatten.map(x => as3_4(x))),
       Set.empty)
   }
 
+  private def convertLogicalPlan(logicalPlanState: LogicalPlanStateV3_3,
+                                 solveds: Solveds,
+                                 cardinalities: Cardinalities): (LogicalPlanV3_4, SemanticTableV3_4) = {
+
+    def isImportant(expression: ExpressionV3_3) : Boolean =
+      logicalPlanState.maybeSemanticTable.exists(_.seen(expression))
+
+    val idConverter = new MaxIdConverter
+    val (plan3_4, expressionMap) =
+      LogicalPlanConverter.convertLogicalPlan(
+        logicalPlanState.maybeLogicalPlan.get,
+        solveds,
+        cardinalities,
+        idConverter,
+        isImportant
+      )
+
+    val attributes = Attributes(idConverter.idGenFromMax, solveds, cardinalities)
+    val planWithActiveReads = ActiveReadInjector(attributes).apply(plan3_4)
+    val maybeTable = logicalPlanState.maybeSemanticTable
+    val semanticTable = if (maybeTable.isDefined) {
+      SemanticTableConverter.convertSemanticTable(maybeTable.get, expressionMap)
+    } else {
+      new SemanticTableV3_4()
+    }
+    (planWithActiveReads, semanticTable)
+  }
 }

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.scenarios;
 
@@ -36,7 +39,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext.AUTH_DISABLED;
 
 public class CausalClusteringProceduresIT
 {
@@ -54,7 +57,7 @@ public class CausalClusteringProceduresIT
     }
 
     @Test
-    public void coreProceduresShouldBeAvailable() throws Throwable
+    public void coreProceduresShouldBeAvailable()
     {
         String[] coreProcs = new String[]{
                 "dbms.cluster.role", // Server role
@@ -80,7 +83,7 @@ public class CausalClusteringProceduresIT
     }
 
     @Test
-    public void readReplicaProceduresShouldBeAvailable() throws Exception
+    public void readReplicaProceduresShouldBeAvailable()
     {
         // given
         String[] readReplicaProcs = new String[]{

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * A stage of processing, mainly consisting of one or more {@link Step steps} that batches of data to
@@ -92,9 +90,16 @@ public class Stage
                 }
             }
         }
+        execution.close();
         if ( exception != null )
         {
-            throw launderedException( exception );
+            throw new RuntimeException( exception );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return execution.getStageName();
     }
 }

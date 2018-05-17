@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -65,8 +65,6 @@ public class FloydWarshall<CostType>
      * @param infinitelyBad
      *            A cost worse than all others. This is used to initialize the
      *            distance matrix.
-     * @param costRelationType
-     *            The relationship type to traverse.
      * @param relationDirection
      *            The direction in which the paths should follow the
      *            relationships.
@@ -124,7 +122,7 @@ public class FloydWarshall<CostType>
         costMatrix = (CostType[][]) new Object[n][n];
         predecessors = new Integer[n][n];
         IndexedNodes = new Node[n];
-        nodeIndexes = new HashMap<Node,Integer>();
+        nodeIndexes = new HashMap<>();
         for ( int i = 0; i < n; ++i )
         {
             for ( int j = 0; j < n; ++j )
@@ -154,9 +152,7 @@ public class FloydWarshall<CostType>
             if ( relationDirection.equals( Direction.BOTH )
                 || relationDirection.equals( Direction.OUTGOING ) )
             {
-                costMatrix[i1][i2] = costEvaluator
-.getCost( relationship,
-                        Direction.OUTGOING );
+                costMatrix[i1][i2] = costEvaluator.getCost( relationship, Direction.OUTGOING );
                 predecessors[i1][i2] = i1;
             }
             if ( relationDirection.equals( Direction.BOTH )
@@ -212,7 +208,7 @@ public class FloydWarshall<CostType>
     public List<Node> getPath( Node startNode, Node targetNode )
     {
         calculate();
-        LinkedList<Node> path = new LinkedList<Node>();
+        LinkedList<Node> path = new LinkedList<>();
         int index = nodeIndexes.get( targetNode );
         int startIndex = nodeIndexes.get( startNode );
         Node n = targetNode;

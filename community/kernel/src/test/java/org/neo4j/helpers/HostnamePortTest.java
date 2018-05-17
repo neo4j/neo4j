@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -73,7 +73,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testSinglePortOnly() throws Exception
+    public void testSinglePortOnly()
     {
         HostnamePort hostnamePort = new HostnamePort( ":1234" );
         assertNull( hostnamePort.getHost() );
@@ -82,7 +82,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testPortRangeOnly() throws Exception
+    public void testPortRangeOnly()
     {
         HostnamePort hostnamePort = new HostnamePort( ":1230-1240" );
         assertNull( hostnamePort.getHost() );
@@ -91,7 +91,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testDefaultHost() throws Exception
+    public void testDefaultHost()
     {
         HostnamePort hostnamePort = new HostnamePort( ":1234" );
         assertThat( hostnamePort.getHost( "1.2.3.4" ), equalTo( "1.2.3.4" ) );
@@ -114,7 +114,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testGetHostAddressUnknown() throws Exception
+    public void testGetHostAddressUnknown()
     {
         // Given
         String unknownHost = "unknownHost";
@@ -416,7 +416,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesIP() throws Exception
+    public void testMatchesIP()
     {
         // Given
 
@@ -451,7 +451,7 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesNullHostWithUnknownHost() throws Exception
+    public void testMatchesNullHostWithUnknownHost()
     {
         // Given
 

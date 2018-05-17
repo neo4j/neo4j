@@ -1,30 +1,34 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core.state.machines.token;
+
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -40,10 +44,8 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static java.util.Collections.singletonList;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequestSerializer.commandBytes;
 import static org.neo4j.causalclustering.core.state.machines.token.TokenType.LABEL;
 import static org.neo4j.causalclustering.core.state.machines.tx.LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader;
@@ -54,12 +56,12 @@ public class ReplicatedTokenStateMachineTest
     private final int UNEXPECTED_TOKEN_ID = 1024;
 
     @Test
-    public void shouldCreateTokenId() throws Exception
+    public void shouldCreateTokenId()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry,
-                new Token.Factory(), NullLogProvider.getInstance() );
+                new Token.Factory(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( mock( TransactionCommitProcess.class ), -1 );
 
         // when
@@ -71,12 +73,12 @@ public class ReplicatedTokenStateMachineTest
     }
 
     @Test
-    public void shouldAllocateTokenIdToFirstReplicateRequest() throws Exception
+    public void shouldAllocateTokenIdToFirstReplicateRequest()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry,
-                new Token.Factory(), NullLogProvider.getInstance() );
+                new Token.Factory(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         stateMachine.installCommitProcess( mock( TransactionCommitProcess.class ), -1 );
 
@@ -94,7 +96,7 @@ public class ReplicatedTokenStateMachineTest
     }
 
     @Test
-    public void shouldStoreRaftLogIndexInTransactionHeader() throws Exception
+    public void shouldStoreRaftLogIndexInTransactionHeader()
     {
         // given
         int logIndex = 1;
@@ -102,7 +104,7 @@ public class ReplicatedTokenStateMachineTest
         StubTransactionCommitProcess commitProcess = new StubTransactionCommitProcess( null, null );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>(
                 new TokenRegistry<>( "Token" ), new Token.Factory(),
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( commitProcess, -1 );
 
         // when

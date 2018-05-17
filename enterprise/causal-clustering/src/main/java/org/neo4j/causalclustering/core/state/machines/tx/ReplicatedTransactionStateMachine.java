@@ -1,25 +1,27 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core.state.machines.tx;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.Result;
@@ -27,7 +29,8 @@ import org.neo4j.causalclustering.core.state.machines.StateMachine;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -49,6 +52,7 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     private final int maxBatchSize;
     private final Log log;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
+    private final VersionContextSupplier versionContextSupplier;
 
     private TransactionQueue queue;
     private long lastCommittedIndex = -1;
@@ -56,13 +60,15 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     public ReplicatedTransactionStateMachine( CommandIndexTracker commandIndexTracker,
                                               ReplicatedLockTokenStateMachine lockStateMachine, int maxBatchSize,
                                               LogProvider logProvider,
-                                              PageCursorTracerSupplier pageCursorTracerSupplier )
+                                              PageCursorTracerSupplier pageCursorTracerSupplier,
+                                              VersionContextSupplier versionContextSupplier )
     {
         this.commandIndexTracker = commandIndexTracker;
         this.lockTokenStateMachine = lockStateMachine;
         this.maxBatchSize = maxBatchSize;
         this.log = logProvider.getLog( getClass() );
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
+        this.versionContextSupplier = versionContextSupplier;
     }
 
     public synchronized void installCommitProcess( TransactionCommitProcess commitProcess, long lastCommittedIndex )
@@ -103,9 +109,15 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
         {
             try
             {
-                TransactionToApply transaction = new TransactionToApply( tx );
+                TransactionToApply transaction = new TransactionToApply( tx, versionContextSupplier.getVersionContext() );
                 transaction.onClose( txId ->
                 {
+                    if ( tx.getLatestCommittedTxWhenStarted() >= txId )
+                    {
+                        throw new IllegalStateException(
+                                format( "Out of order transaction. Expected that %d < %d", tx.getLatestCommittedTxWhenStarted(), txId ) );
+                    }
+
                     callback.accept( Result.of( txId ) );
                     commandIndexTracker.setAppliedCommandIndex( commandIndex );
                 } );
@@ -119,7 +131,7 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     }
 
     @Override
-    public void flush() throws IOException
+    public void flush()
     {
         // implicitly flushed
     }

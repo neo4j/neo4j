@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 public class DataSourceManagerTest
 {
     @Test
-    public void shouldCallListenersOnStart() throws Throwable
+    public void shouldCallListenersOnStart()
     {
         // given
         DataSourceManager manager = new DataSourceManager();
@@ -47,7 +47,7 @@ public class DataSourceManagerTest
     }
 
     @Test
-    public void shouldCallListenersWhenAddedIfManagerAlreadyStarted() throws Throwable
+    public void shouldCallListenersWhenAddedIfManagerAlreadyStarted()
     {
         // given
         DataSourceManager manager = new DataSourceManager();
@@ -63,7 +63,7 @@ public class DataSourceManagerTest
     }
 
     @Test
-    public void shouldCallListenersOnDataSourceRegistrationIfManagerAlreadyStarted() throws Throwable
+    public void shouldCallListenersOnDataSourceRegistrationIfManagerAlreadyStarted()
     {
         // given
         DataSourceManager manager = new DataSourceManager();

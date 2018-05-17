@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
@@ -39,8 +40,8 @@ import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -63,7 +64,7 @@ public class LuceneSchemaIndexPopulationIT
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private final int affectedNodes;
-    private final IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForLabel( 0, 0 );
+    private final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.uniqueForLabel( 0, 0 );
 
     @Before
     public void before()
@@ -105,7 +106,7 @@ public class LuceneSchemaIndexPopulationIT
             try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex, descriptor ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
-                indexAccessor.force();
+                indexAccessor.force( IOLimiter.unlimited() );
 
                 // now index is online and should contain updates data
                 assertTrue( uniqueIndex.isOnline() );

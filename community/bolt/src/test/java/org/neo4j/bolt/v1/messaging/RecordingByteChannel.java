@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,13 +38,13 @@ public class RecordingByteChannel implements WritableByteChannel, ReadableByteCh
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
 
     }
 
     @Override
-    public int write( ByteBuffer src ) throws IOException
+    public int write( ByteBuffer src )
     {
         buffer.position( writePosition );
         int originalPosition = writePosition;
@@ -56,7 +56,7 @@ public class RecordingByteChannel implements WritableByteChannel, ReadableByteCh
     }
 
     @Override
-    public int read( ByteBuffer dst ) throws IOException
+    public int read( ByteBuffer dst )
     {
         if ( readPosition == writePosition )
         {

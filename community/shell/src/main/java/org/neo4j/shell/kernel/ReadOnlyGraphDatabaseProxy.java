@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,6 +38,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -59,8 +60,8 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceIterableWrapper;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -95,16 +96,16 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
     {
-        return actual.beginTransaction( type, securityContext );
+        return actual.beginTransaction( type, loginContext );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout,
             TimeUnit unit )
     {
-        return actual.beginTransaction( type, securityContext, timeout, unit );
+        return actual.beginTransaction( type, loginContext, timeout, unit );
     }
 
     @Override
@@ -788,19 +789,19 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         @Override
         public IndexHits<T> get( String key, Object value )
         {
-            return new ReadOnlyIndexHitsProxy<T>( this, actual.get( key, value ) );
+            return new ReadOnlyIndexHitsProxy<>( this, actual.get( key, value ) );
         }
 
         @Override
         public IndexHits<T> query( String key, Object queryOrQueryObject )
         {
-            return new ReadOnlyIndexHitsProxy<T>( this, actual.query( key, queryOrQueryObject ) );
+            return new ReadOnlyIndexHitsProxy<>( this, actual.query( key, queryOrQueryObject ) );
         }
 
         @Override
         public IndexHits<T> query( Object queryOrQueryObject )
         {
-            return new ReadOnlyIndexHitsProxy<T>( this, actual.query( queryOrQueryObject ) );
+            return new ReadOnlyIndexHitsProxy<>( this, actual.query( queryOrQueryObject ) );
         }
 
         @Override
@@ -1082,6 +1083,31 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public ResourceIterator<Node> findNodes( Label label, String key, Object value )
     {
         return actual.findNodes( label, key, value );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
+    {
+        return actual.findNodes( label, key1, value1, key2, value2 );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2,
+            String key3, Object value3 )
+    {
+        return actual.findNodes( label, key1, value1, key2, value2, key3, value3 );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
+    {
+        return actual.findNodes( label, propertyValues );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode )
+    {
+        return actual.findNodes( label, key, template, searchMode );
     }
 
     @Override

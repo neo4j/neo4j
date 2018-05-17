@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,10 +26,12 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -40,6 +42,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -73,30 +76,14 @@ public class NativeLabelScanStoreRebuildTest
     {
         // given
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
-        NativeLabelScanStore nativeLabelScanStore = null;
-        try
-        {
-            nativeLabelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, THROWING_STREAM, false, new Monitors(),
-                            IMMEDIATE );
-
-            nativeLabelScanStore.init();
-            nativeLabelScanStore.start();
-        }
-        catch ( IllegalArgumentException e )
-        {
-            if ( nativeLabelScanStore != null )
-            {
-                nativeLabelScanStore.shutdown();
-            }
-        }
+        createDirtyIndex( pageCache );
 
         // when
         RecordingMonitor monitor = new RecordingMonitor();
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
 
-        nativeLabelScanStore =
+        NativeLabelScanStore nativeLabelScanStore =
                 new NativeLabelScanStore( pageCache, storeDir, EMPTY, false, monitors, IMMEDIATE );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
@@ -105,6 +92,46 @@ public class NativeLabelScanStoreRebuildTest
         assertTrue( monitor.notValid );
         assertTrue( monitor.rebuilding );
         assertTrue( monitor.rebuilt );
+        nativeLabelScanStore.shutdown();
+    }
+
+    @Test
+    public void doNotRebuildIfOpenedInReadOnlyModeAndIndexIsNotClean() throws IOException
+    {
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
+        createDirtyIndex( pageCache );
+
+        Monitors monitors = new Monitors();
+        RecordingMonitor monitor = new RecordingMonitor();
+        monitors.addMonitorListener( monitor );
+
+        NativeLabelScanStore nativeLabelScanStore =
+                new NativeLabelScanStore( pageCache, storeDir, EMPTY, true, monitors, RecoveryCleanupWorkCollector.IGNORE );
+        nativeLabelScanStore.init();
+        nativeLabelScanStore.start();
+
+        assertTrue( monitor.notValid );
+        assertFalse( monitor.rebuilt );
+        assertFalse( monitor.rebuilding );
+        nativeLabelScanStore.shutdown();
+    }
+
+    @Test
+    public void labelScanStoreIsDirtyWhenIndexIsNotClean() throws IOException
+    {
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
+        createDirtyIndex( pageCache );
+
+        Monitors monitors = new Monitors();
+        RecordingMonitor monitor = new RecordingMonitor();
+        monitors.addMonitorListener( monitor );
+
+        NativeLabelScanStore nativeLabelScanStore =
+                new NativeLabelScanStore( pageCache, storeDir, EMPTY, true, monitors, RecoveryCleanupWorkCollector.IGNORE );
+        nativeLabelScanStore.init();
+        nativeLabelScanStore.start();
+
+        assertTrue( nativeLabelScanStore.isDirty() );
         nativeLabelScanStore.shutdown();
     }
 
@@ -134,6 +161,26 @@ public class NativeLabelScanStoreRebuildTest
             assertThat( e.getMessage(), Matchers.stringContainsInOrder( Iterables.asIterable( "2", "1" ) ) );
         }
         finally
+        {
+            if ( nativeLabelScanStore != null )
+            {
+                nativeLabelScanStore.shutdown();
+            }
+        }
+    }
+
+    private void createDirtyIndex( PageCache pageCache ) throws IOException
+    {
+        NativeLabelScanStore nativeLabelScanStore = null;
+        try
+        {
+            nativeLabelScanStore = new NativeLabelScanStore( pageCache, storeDir, THROWING_STREAM, false,
+                    new Monitors(), IMMEDIATE );
+
+            nativeLabelScanStore.init();
+            nativeLabelScanStore.start();
+        }
+        catch ( IllegalArgumentException e )
         {
             if ( nativeLabelScanStore != null )
             {

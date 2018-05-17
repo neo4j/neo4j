@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -1331,7 +1331,7 @@ public class AppsIT extends AbstractShellIT
                 expectedCommitCount );
     }
 
-    private void verifyNumberOfCommits( String query, long expectedCommitCount ) throws Exception
+    private void verifyNumberOfCommits( String query, long expectedCommitCount )
     {
         // Given
 
@@ -1366,7 +1366,7 @@ public class AppsIT extends AbstractShellIT
         return db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
     }
 
-    private String createCsvFile( long size ) throws IOException, InterruptedException
+    private String createCsvFile( long size ) throws IOException
     {
         File tmpFile = File.createTempFile( "data", ".csv", null );
         tmpFile.deleteOnExit();

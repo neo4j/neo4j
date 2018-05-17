@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,13 +19,26 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import java.time.Clock;
+import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
+import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_policy;
+
 
 /**
  * A check point threshold provides information if a check point is required or not.
  */
 public interface CheckPointThreshold
 {
+    long DEFAULT_CHECKING_FREQUENCY_MILLIS = TimeUnit.SECONDS.toMillis( 10 );
+
     /**
      * This method initialize the threshold by providing the initial transaction id
      *
@@ -45,10 +58,89 @@ public interface CheckPointThreshold
     /**
      * This method notifies the threshold that a check point has happened. This must be called every time a check point
      * has been written in the transaction log in order to make sure that the threshold updates its condition.
-     *
+     * <p>
      * This is important since we might have multiple thresholds or forced check points.
      *
      * @param transactionId the latest transaction committed id used by the check point
      */
     void checkPointHappened( long transactionId );
+
+    /**
+     * Return a desired checking frequency, as a number of milliseconds between calls to
+     * {@link #isCheckPointingNeeded(long, Consumer)}.
+     *
+     * @return A desired scheduling frequency in milliseconds.
+     */
+    long checkFrequencyMillis();
+
+    /**
+     * Create and configure a {@link CheckPointThreshold} based on the given configurations.
+     */
+    static CheckPointThreshold createThreshold(
+            Config config, Clock clock, LogPruning logPruning, LogProvider logProvider )
+    {
+        String policyName = config.get( check_point_policy );
+        CheckPointThresholdPolicy policy;
+        try
+        {
+            policy = CheckPointThresholdPolicy.loadPolicy( policyName );
+        }
+        catch ( NoSuchElementException e )
+        {
+            logProvider.getLog( CheckPointThreshold.class ).warn(
+                    "Could not load check point policy '" + check_point_policy.name() + "=" + policyName + "'. " +
+                    "Using default policy instead.", e );
+            policy = new PeriodicThresholdPolicy();
+        }
+        return policy.createThreshold( config, clock, logPruning, logProvider );
+    }
+
+    /**
+     * Create a new {@link CheckPointThreshold} which will trigger if any of the given thresholds triggers.
+     */
+    static CheckPointThreshold or( final CheckPointThreshold... thresholds )
+    {
+        return new CheckPointThreshold()
+        {
+            @Override
+            public void initialize( long transactionId )
+            {
+                for ( CheckPointThreshold threshold : thresholds )
+                {
+                    threshold.initialize( transactionId );
+                }
+            }
+
+            @Override
+            public boolean isCheckPointingNeeded( long transactionId, Consumer<String> consumer )
+            {
+                for ( CheckPointThreshold threshold : thresholds )
+                {
+                    if ( threshold.isCheckPointingNeeded( transactionId, consumer ) )
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            @Override
+            public void checkPointHappened( long transactionId )
+            {
+                for ( CheckPointThreshold threshold : thresholds )
+                {
+                    threshold.checkPointHappened( transactionId );
+                }
+            }
+
+            @Override
+            public long checkFrequencyMillis()
+            {
+                return Stream.of( thresholds )
+                             .mapToLong( CheckPointThreshold::checkFrequencyMillis )
+                             .min().orElse( DEFAULT_CHECKING_FREQUENCY_MILLIS );
+            }
+        };
+    }
 }

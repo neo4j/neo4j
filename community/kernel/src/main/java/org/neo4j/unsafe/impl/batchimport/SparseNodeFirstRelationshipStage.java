@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,6 +28,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.StorePrepareIdSequence;
 
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.RECYCLE_BATCHES;
 
 /**
  * Updates sparse {@link NodeRecord node records} with relationship heads after relationship linking. Steps:
@@ -46,9 +47,9 @@ public class SparseNodeFirstRelationshipStage extends Stage
 
     public SparseNodeFirstRelationshipStage( Configuration config, NodeStore nodeStore, NodeRelationshipCache cache )
     {
-        super( NAME, null, config, ORDER_SEND_DOWNSTREAM );
+        super( NAME, null, config, ORDER_SEND_DOWNSTREAM | RECYCLE_BATCHES );
         add( new ReadNodeIdsByCacheStep( control(), config, cache, NodeType.NODE_TYPE_SPARSE ) );
-        add( new ReadRecordsStep<>( control(), config, true, nodeStore, null ) );
+        add( new ReadRecordsStep<>( control(), config, true, nodeStore ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
                 new SparseNodeFirstRelationshipProcessor( cache ), false ) );
         add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence() ) );

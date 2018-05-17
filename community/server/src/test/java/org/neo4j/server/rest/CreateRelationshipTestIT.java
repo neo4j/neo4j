@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -42,7 +42,7 @@ public class CreateRelationshipTestIT extends AbstractRestFunctionalDocTestBase
     @Graph( "Joe knows Sara" )
     @Documented( "Upon successful creation of a relationship, the new relationship is returned." )
     @Title( "Create a relationship with properties" )
-    public void create_a_relationship_with_properties() throws Exception
+    public void create_a_relationship_with_properties()
     {
         String jsonString = "{\"to\" : \""
                             + getDataUri()

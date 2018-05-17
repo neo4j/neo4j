@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -32,10 +32,10 @@ abstract class SchemaRuleTestBase
     protected static final int PROPERTY_ID_1 = 30;
     protected static final int PROPERTY_ID_2 = 31;
 
-    protected static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
-            new SchemaIndexProvider.Descriptor( "index-provider", "1.0" );
-    protected static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR_2 =
-            new SchemaIndexProvider.Descriptor( "index-provider-2", "2.0" );
+    protected static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR =
+            new IndexProvider.Descriptor( "index-provider", "1.0" );
+    protected static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR_2 =
+            new IndexProvider.Descriptor( "index-provider-2", "2.0" );
 
     protected void assertEquality( Object o1, Object o2 )
     {

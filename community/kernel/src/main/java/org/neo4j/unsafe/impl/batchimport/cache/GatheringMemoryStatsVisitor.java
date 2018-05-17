@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
+
+import static java.lang.Long.max;
 
 import static org.neo4j.helpers.Format.bytes;
 
@@ -70,5 +72,15 @@ public class GatheringMemoryStatsVisitor implements MemoryStatsVisitor
             memoryUser.acceptMemoryStatsVisitor( memoryVisitor );
         }
         return memoryVisitor.getTotalUsage();
+    }
+
+    public static long highestMemoryUsageOf( MemoryStatsVisitor.Visitable... memoryUsers )
+    {
+        long max = 0;
+        for ( MemoryStatsVisitor.Visitable visitable : memoryUsers )
+        {
+            max = max( max, totalMemoryUsageOf( visitable ) );
+        }
+        return max;
     }
 }

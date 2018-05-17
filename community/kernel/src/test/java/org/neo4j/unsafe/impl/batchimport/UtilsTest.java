@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,27 +22,19 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
 public class UtilsTest
 {
 
     @Test
-    public void shouldDetectCollisions() throws Exception
+    public void shouldDetectCollisions()
     {
         // GIVEN
         long[] first = new long[] {1, 4, 7, 10, 100, 101};
@@ -56,7 +48,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldNotReportDisjointArraysAsCollision() throws Exception
+    public void shouldNotReportDisjointArraysAsCollision()
     {
         // GIVEN
         long[] first = new long[] {1, 4, 7, 10, 100, 101};
@@ -70,7 +62,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldBeCorrectForSomeRandomBatches() throws Exception
+    public void shouldBeCorrectForSomeRandomBatches()
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();
@@ -81,20 +73,19 @@ public class UtilsTest
         }
 
         // WHEN
-        for ( int i = 0; i < batches.length; i++ )
+        for ( long[] rBatch : batches )
         {
-            for ( int j = 0; j < batches.length; j++ )
+            for ( long[] lBatch : batches )
             {
                 // THEN
-                assertEquals(
-                        actuallyCollides( batches[i], batches[j] ),
-                        Utils.anyIdCollides( batches[i], batches[i].length, batches[j], batches[j].length ) );
+                assertEquals( actuallyCollides( rBatch, lBatch ),
+                        Utils.anyIdCollides( rBatch, rBatch.length, lBatch, lBatch.length ) );
             }
         }
     }
 
     @Test
-    public void shouldMergeIdsInto() throws Exception
+    public void shouldMergeIdsInto()
     {
         // GIVEN
         long[] values = new long[]{2, 4, 10, 11, 14};
@@ -110,7 +101,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldMergeSomeRandomIdsInto() throws Exception
+    public void shouldMergeSomeRandomIdsInto()
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();
@@ -126,26 +117,6 @@ public class UtilsTest
             Utils.mergeSortedInto( values, into, batchSize );
             assertArrayEquals( expectedMergedArray, into );
         }
-    }
-
-    @Test
-    public void shouldContinueIdIteratorThroughNulls() throws Exception
-    {
-        // GIVEN
-        Collection<InputNode> inputs = Arrays.asList(
-                new InputNode( "Source", 1, 1, "1", NO_PROPERTIES, null, NO_LABELS, null ),
-                new InputNode( "Source", 2, 2, null, NO_PROPERTIES, null, NO_LABELS, null ),
-                new InputNode( "Source", 3, 3, "3", NO_PROPERTIES, null, NO_LABELS, null ) );
-        InputIterable<InputNode> input = SimpleInputIteratorWrapper.wrap( "Source", inputs );
-
-        // WHEN
-        Iterator<Object> ids = Utils.idsOf( input ).iterator();
-
-        // THEN
-        assertEquals( "1", ids.next() );
-        assertNull( ids.next() );
-        assertEquals( "3", ids.next() );
-        assertFalse( ids.hasNext() );
     }
 
     private long[] manuallyMerge( long[] values, long[] into )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,8 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.forwards;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.RECYCLE_BATCHES;
+
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
@@ -38,9 +40,9 @@ public class NodeDegreeCountStage extends Stage
     public NodeDegreeCountStage( Configuration config, RelationshipStore store, NodeRelationshipCache cache,
             StatsProvider memoryUsageStatsProvider )
     {
-        super( NAME, null, config, 0 );
+        super( NAME, null, config, RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, forwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, store, null ) );
+        add( new ReadRecordsStep<>( control(), config, false, store ) );
         add( new CalculateDenseNodesStep( control(), config, cache, memoryUsageStatsProvider ) );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -48,6 +49,8 @@ public class LogHeaderWriterTest
 
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void shouldWriteALogHeaderInTheGivenChannel() throws IOException
@@ -101,7 +104,7 @@ public class LogHeaderWriterTest
     public void shouldWriteALogHeaderInAFile() throws IOException
     {
         // given
-        final File file = File.createTempFile( "WriteLogHeader", getClass().getSimpleName() );
+        final File file = testDirectory.file( "WriteLogHeader" );
 
         // when
         writeLogHeader( fileSystemRule.get(), file, expectedLogVersion, expectedTxId );
@@ -132,7 +135,7 @@ public class LogHeaderWriterTest
     public void shouldWriteALogHeaderInAStoreChannel() throws IOException
     {
         // given
-        final File file = File.createTempFile( "WriteLogHeader", getClass().getSimpleName() );
+        final File file = testDirectory.file( "WriteLogHeader" );
         final StoreChannel channel = fileSystemRule.get().open( file, OpenMode.READ_WRITE );
 
         // when

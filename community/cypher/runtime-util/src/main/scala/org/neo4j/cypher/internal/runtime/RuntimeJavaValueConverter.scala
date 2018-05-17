@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -53,6 +53,17 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
       while (continue && fields.hasNext) {
         row._fields = fields.next()
         continue = visitor.visit(row)
+      }
+    }
+  }
+
+  case class feedQueryResultRecordIteratorToVisitable[EX <: Exception](recordIterator: Iterator[Record]) {
+    def accept(visitor: QueryResultVisitor[EX]) = {
+      var continue = true
+      while (continue && recordIterator.hasNext) {
+        val row = recordIterator.next()
+        continue = visitor.visit(row)
+        row.release()
       }
     }
   }

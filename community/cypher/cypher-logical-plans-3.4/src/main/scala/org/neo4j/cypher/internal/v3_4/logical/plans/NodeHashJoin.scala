@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Join two result streams using a hash table. 'Left' is completely consumed and buffered in a hash table, using a
@@ -36,12 +36,13 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *   for ( leftRow <- group )
   *     produce (leftRow merge rightRow)
   */
-case class NodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)
-                       (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with EagerLogicalPlan {
+case class NodeHashJoin(nodes: Set[String],
+                        left: LogicalPlan,
+                        right: LogicalPlan)
+                       (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

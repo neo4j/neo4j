@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,9 +28,9 @@ import java.util.Optional;
 
 import org.neo4j.test.rule.TestDirectory;
 
-import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.util.Converters.regexFiles;
 import static org.neo4j.kernel.impl.util.Converters.toOptionalHostnamePortFromRawAddress;
@@ -68,7 +68,7 @@ public class ConvertersTest
 
         // then
         assertTrue( port.isPresent() );
-        assertEquals( new Integer( 1234 ), port.get() );
+        assertEquals( Integer.valueOf( 1234 ), port.get() );
     }
 
     @Test

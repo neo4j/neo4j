@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,7 +35,7 @@ public class NaiveTrustManager implements X509TrustManager
     }
 
     @Override
-    public void checkClientTrusted( X509Certificate[] x509Certificates, String s ) throws CertificateException
+    public void checkClientTrusted( X509Certificate[] x509Certificates, String s )
     {
         for ( X509Certificate x509Certificate : x509Certificates )
         {
@@ -44,7 +44,7 @@ public class NaiveTrustManager implements X509TrustManager
     }
 
     @Override
-    public void checkServerTrusted( X509Certificate[] x509Certificates, String s ) throws CertificateException
+    public void checkServerTrusted( X509Certificate[] x509Certificates, String s )
     {
         for ( X509Certificate x509Certificate : x509Certificates )
         {

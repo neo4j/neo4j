@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -45,37 +45,37 @@ public class PathRepresentationTest
 {
 
     @Test
-    public void shouldHaveLength() throws BadInputException
+    public void shouldHaveLength()
     {
         assertNotNull( pathrep().length() );
     }
 
     @Test
-    public void shouldHaveStartNodeLink() throws BadInputException
+    public void shouldHaveStartNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, pathrep().startNode() );
     }
 
     @Test
-    public void shouldHaveEndNodeLink() throws BadInputException
+    public void shouldHaveEndNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, pathrep().endNode() );
     }
 
     @Test
-    public void shouldHaveNodeList() throws BadInputException
+    public void shouldHaveNodeList()
     {
         assertNotNull( pathrep().nodes() );
     }
 
     @Test
-    public void shouldHaveRelationshipList() throws BadInputException
+    public void shouldHaveRelationshipList()
     {
         assertNotNull( pathrep().relationships() );
     }
 
     @Test
-    public void shouldHaveDirectionList() throws BadInputException
+    public void shouldHaveDirectionList()
     {
         assertNotNull( pathrep().directions() );
     }
@@ -125,7 +125,7 @@ public class PathRepresentationTest
         Relationship cb = relationship( 18, c, "HATES", b );
         Relationship cd = relationship( 19, c, "KNOWS", d );
 
-        return new PathRepresentation<Path>( path( a, link( ab, b ), link( cb, c ), link( cd, d ) ) );
+        return new PathRepresentation<>( path( a, link( ab, b ), link( cb, c ), link( cd, d ) ) );
     }
 
     public static void verifySerialisation( Map<String, Object> pathrep )

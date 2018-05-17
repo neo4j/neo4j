@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,7 +29,7 @@ public class MetadataCollectorTest
     private final BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[4] );
 
     @Test
-    public void shouldComputePageCatalogue() throws Exception
+    public void shouldComputePageCatalogue()
     {
         // given
         StubCollector collector = new StubCollector( 4 );
@@ -58,7 +58,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputePageCatalogueOverThreePages() throws Exception
+    public void shouldComputePageCatalogueOverThreePages()
     {
         // given
         StubCollector collector = new StubCollector( 4 );
@@ -94,7 +94,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputePageCatalogueWhenHeaderCoversEntireFirstPage() throws Exception
+    public void shouldComputePageCatalogueWhenHeaderCoversEntireFirstPage()
     {
         // given
         StubCollector collector = new StubCollector( 4, "a", "b", "c" );
@@ -117,7 +117,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputePageCatalogueWhenHeaderExceedsFirstPage() throws Exception
+    public void shouldComputePageCatalogueWhenHeaderExceedsFirstPage()
     {
         // given
         StubCollector collector = new StubCollector( 4, "a", "b", "c", "d" );
@@ -141,7 +141,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputeCatalogueWhenSingleDataEntryInPage() throws Exception
+    public void shouldComputeCatalogueWhenSingleDataEntryInPage()
     {
         // given
         StubCollector collector = new StubCollector( 4, "a", "b" );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Context;
 
 /**
@@ -32,26 +32,21 @@ import org.neo4j.kernel.api.proc.Context;
 public class ComponentRegistry
 {
     /** Given the context of a procedure call, provide some component. */
-    public interface Provider<T> extends ThrowingFunction<Context, T,ProcedureException>
+    public interface Provider<T> extends ThrowingFunction<Context,T,ProcedureException>
     {
         // This interface intentionally empty, alias for the Function generic above
     }
 
-    private final Map<Class<?>, Provider<?>> suppliers;
+    private final Map<Class<?>, Provider<?>> suppliers = new HashMap<>();
 
     public ComponentRegistry()
     {
-        this( new HashMap<>() );
     }
 
-    public ComponentRegistry( Map<Class<?>, Provider<?>> suppliers )
+    @SuppressWarnings( "unchecked" )
+    <T> Provider<T> providerFor( Class<T> type )
     {
-        this.suppliers = suppliers;
-    }
-
-    public Provider<?> providerFor( Class<?> type )
-    {
-        return suppliers.get( type );
+        return (Provider<T>) suppliers.get( type );
     }
 
     public <T> void register( Class<T> cls, Provider<T> supplier )

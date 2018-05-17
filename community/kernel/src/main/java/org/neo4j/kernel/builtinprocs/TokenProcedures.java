@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -40,30 +39,22 @@ public class TokenProcedures
     public void createLabel( @Name( "newLabel" ) String newLabel )
             throws IllegalTokenNameException, TooManyLabelsException
     {
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            statement.tokenWriteOperations().labelGetOrCreateForName( newLabel );
-        }
+
+        tx.tokenWrite().labelGetOrCreateForName( newLabel );
     }
 
     @Description( "Create a RelationshipType" )
     @Procedure( name = "db.createRelationshipType", mode = WRITE )
     public void createRelationshipType( @Name( "newRelationshipType" ) String newRelationshipType ) throws IllegalTokenNameException
     {
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( newRelationshipType );
-        }
+        tx.tokenWrite().relationshipTypeGetOrCreateForName( newRelationshipType );
     }
 
     @Description( "Create a Property" )
     @Procedure( name = "db.createProperty", mode = WRITE )
     public void createProperty( @Name( "newProperty" ) String newProperty ) throws IllegalTokenNameException
     {
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            statement.tokenWriteOperations().propertyKeyGetOrCreateForName( newProperty );
-        }
+        tx.tokenWrite().propertyKeyGetOrCreateForName( newProperty );
     }
 
 }

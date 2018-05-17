@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,26 +43,19 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
     public void testDijkstraDirection1()
     {
         graph.makeEdge( "s", "e" );
-        Dijkstra<Double> dijkstra = new Dijkstra<Double>(
-            (double) 0,
-            graph.getNode( "s" ),
-            graph.getNode( "e" ),
-                ( relationship, direction ) ->
-                {
+        Dijkstra<Double> dijkstra =
+                new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) -> {
                     assertEquals( Direction.OUTGOING, direction );
                     return 1.0;
-                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.OUTGOING, MyRelTypes.R1 );
+                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                        Direction.OUTGOING, MyRelTypes.R1 );
         dijkstra.getCost();
-        dijkstra = new Dijkstra<Double>( (double) 0, graph.getNode( "s" ),
-            graph.getNode( "e" ), ( relationship, direction ) ->
-        {
-            assertEquals( Direction.INCOMING, direction );
-            return 1.0;
-        }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.INCOMING, MyRelTypes.R1 );
+        dijkstra =
+                new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) -> {
+                    assertEquals( Direction.INCOMING, direction );
+                    return 1.0;
+                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                        Direction.INCOMING, MyRelTypes.R1 );
         dijkstra.getCost();
     }
 
@@ -77,26 +70,19 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
         graph.makeEdge( "b", "s" );
         graph.makeEdge( "e", "c" );
         graph.makeEdge( "d", "e" );
-        Dijkstra<Double> dijkstra = new Dijkstra<Double>(
-            (double) 0,
-            graph.getNode( "s" ),
-            graph.getNode( "e" ),
-                ( relationship, direction ) ->
-                {
+        Dijkstra<Double> dijkstra =
+                new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) -> {
                     assertEquals( Direction.OUTGOING, direction );
                     return 1.0;
-                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.OUTGOING, MyRelTypes.R1 );
+                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                        Direction.OUTGOING, MyRelTypes.R1 );
         dijkstra.getCost();
-        dijkstra = new Dijkstra<Double>( (double) 0, graph.getNode( "s" ),
-            graph.getNode( "e" ), ( relationship, direction ) ->
-        {
-            assertEquals( Direction.INCOMING, direction );
-            return 1.0;
-        }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.INCOMING, MyRelTypes.R1 );
+        dijkstra =
+                new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) -> {
+                    assertEquals( Direction.INCOMING, direction );
+                    return 1.0;
+                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                        Direction.INCOMING, MyRelTypes.R1 );
         dijkstra.getCost();
     }
 
@@ -132,13 +118,10 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
         Relationship r5 = graph.makeEdge( "e", "f" );
         Relationship r6 = graph.makeEdge( "g", "f" );
         Relationship r7 = graph.makeEdge( "g", "end" );
-        HashMap<Relationship, Direction> dirs = new HashMap<Relationship, Direction>();
-        Dijkstra<Double> dijkstra = new Dijkstra<Double>( (double) 0, graph
-            .getNode( "start" ), graph.getNode( "end" ),
-            new directionSavingCostEvaluator( dirs ),
-            new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.BOTH, MyRelTypes.R1 );
+        HashMap<Relationship, Direction> dirs = new HashMap<>();
+        Dijkstra<Double> dijkstra = new Dijkstra<>( (double) 0, graph.getNode( "start" ), graph.getNode( "end" ), new directionSavingCostEvaluator( dirs ),
+                new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                Direction.BOTH, MyRelTypes.R1 );
         dijkstra.getCost();
         assertEquals( Direction.OUTGOING, dirs.get( r1 ) );
         assertEquals( Direction.INCOMING, dirs.get( r2 ) );

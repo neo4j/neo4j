@@ -1,21 +1,24 @@
 #
-# Copyright (c) 2002-2017 "Neo Technology,"
-# Network Engine for Objects in Lund AB [http://neotechnology.com]
+# Copyright (c) 2002-2018 "Neo4j,"
+# Neo4j Sweden AB [http://neo4j.com]
 #
-# This file is part of Neo4j.
-#
-# Neo4j is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+# This file is part of Neo4j Enterprise Edition. The included source
+# code can be redistributed and/or modified under the terms of the
+# GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+# (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+# Commons Clause, as found in the associated LICENSE.txt file.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
 #
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# Neo4j object code can be licensed independently from the source
+# under separate terms from the AGPL. Inquiries can be directed to:
+# licensing@neo4j.com
+#
+# More information is also available at:
+# https://neo4j.com/licensing/
 #
 
 Feature: ReturnAcceptance
@@ -95,4 +98,48 @@ Feature: ReturnAcceptance
     Then the result should be:
       | result |
       | null   |
+    And no side effects
+
+  Scenario: Return a nested list with null
+    Given any graph
+    When executing query:
+      """
+      RETURN [[1], [null], null] AS result
+      """
+    Then the result should be:
+      | result      |
+      | [[1], [null], null] |
+    And no side effects
+
+  Scenario: Return a map with null
+    Given any graph
+    When executing query:
+      """
+      RETURN {foo: null} AS result
+      """
+    Then the result should be:
+      | result      |
+      | {foo: null} |
+    And no side effects
+
+  Scenario: Return null in list with nested lists and maps
+    Given any graph
+    When executing query:
+      """
+      RETURN [null, [null, {a: null}], {b: [null, {c: [null]}]}] AS result
+      """
+    Then the result should be:
+      | result      |
+      | [null, [null, {a: null}], {b: [null, {c: [null]}]}] |
+    And no side effects
+
+  Scenario: Return null in map with nested lists and maps
+    Given any graph
+    When executing query:
+      """
+      RETURN {a: null, b: {c: null, d: {e: null}, f: [null, {g: null, h: [null], i: {j: null}}]}} as result
+      """
+    Then the result should be:
+      | result      |
+      | {a: null, b: {c: null, d: {e: null}, f: [null, {g: null, h: [null], i: {j: null}}]}} |
     And no side effects

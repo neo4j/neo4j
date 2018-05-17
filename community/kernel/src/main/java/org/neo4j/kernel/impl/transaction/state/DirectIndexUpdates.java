@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
@@ -33,15 +33,15 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
  */
 public class DirectIndexUpdates implements IndexUpdates
 {
-    private final Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates;
+    private final Iterable<IndexEntryUpdate<SchemaDescriptor>> updates;
 
-    public DirectIndexUpdates( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates )
+    public DirectIndexUpdates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates )
     {
         this.updates = updates;
     }
 
     @Override
-    public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
+    public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
     {
         return updates.iterator();
     }

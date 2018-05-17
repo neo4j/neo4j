@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -104,12 +104,12 @@ public class InputEntityCacherTokenCreationTest
     private void cacheRelationship( int iterations, int maxNumberOfRelationshipTypes ) throws IOException
     {
         RecordFormats recordFormats = mockRecordFormats( 1000, 1000, maxNumberOfRelationshipTypes, 1000 );
-
-        try ( InputRelationshipCacher cacher = getRelationshipCacher( recordFormats ) )
+        try ( InputRelationshipCacheWriter cacher = getRelationshipCacher( recordFormats );
+              InputEntityVisitor visitor = cacher.wrap( new InputEntity() ) )
         {
             for ( int i = 0; i < iterations; i++ )
             {
-                cacher.writeEntity( generateRelationship( getRandoms() ) );
+                generateRelationship( getRandoms(), visitor );
             }
         }
     }
@@ -118,11 +118,12 @@ public class InputEntityCacherTokenCreationTest
     {
         RecordFormats recordFormats = mockRecordFormats( 1000, maxNumberOfLabels, 1000, 1000 );
 
-        try ( InputNodeCacher cacher = getNodeCacher( recordFormats ) )
+        try ( InputNodeCacheWriter cacher = getNodeCacher( recordFormats );
+              InputEntityVisitor visitor = cacher.wrap( new InputEntity() ) )
         {
             for ( int i = 0; i < iterations; i++ )
             {
-                cacher.writeLabelDiff( (byte) 0, randomLabels(), new String[]{} );
+                generateNode( getRandoms(), visitor );
             }
         }
     }
@@ -131,11 +132,13 @@ public class InputEntityCacherTokenCreationTest
     {
         RecordFormats recordFormats = mockRecordFormats( 1000, 1000, 1000, maxNumberOfGroups );
 
-        try ( TestInputEntityCacher cacher = getEntityCacher( recordFormats ) )
+        try ( InputNodeCacheWriter cacher = getNodeCacher( recordFormats );
+              InputEntityVisitor visitor = cacher.wrap( new InputEntity() ) )
         {
+            Randoms randoms = getRandoms();
             for ( int i = 0; i < iterations; i++ )
             {
-                cacher.writeGroup( generateGroup(), i );
+                generateNode( randoms, visitor, false );
             }
         }
     }
@@ -144,12 +147,13 @@ public class InputEntityCacherTokenCreationTest
     {
         RecordFormats recordFormats = mockRecordFormats( maxNumberOfProperties, 1000, 1000, 1000 );
 
-        try ( TestInputEntityCacher cacher = getEntityCacher( recordFormats ) )
+        try ( InputNodeCacheWriter cacher = getNodeCacher( recordFormats );
+              InputEntityVisitor visitor = cacher.wrap( new InputEntity() ) )
         {
             Randoms randoms = getRandoms();
             for ( int i = 0; i < iterations; i++ )
             {
-                cacher.writeEntity( generateNode( randoms ) );
+                generateNode( randoms, visitor );
             }
         }
     }
@@ -161,17 +165,29 @@ public class InputEntityCacherTokenCreationTest
                                          "tokens is not supported." );
     }
 
-    private InputRelationship generateRelationship( Randoms randoms )
+    private void generateRelationship( Randoms randoms, InputEntityVisitor relationship ) throws IOException
     {
-        return new InputRelationship( null, 0, 0, generatemProperties( randoms ), null,
-                generateGroup(), randomId( randoms ), generateGroup(), randomId( randoms ),
-                getUniqueString(), null );
+        generateProperties( randoms, relationship );
+        relationship.startId( randomId( randoms ), generateGroup() );
+        relationship.endId( randomId( randoms ), generateGroup() );
+        relationship.type( getUniqueString() );
+        relationship.endOfEntity();
     }
 
-    private InputNode generateNode( Randoms random )
+    private void generateNode( Randoms random, InputEntityVisitor node ) throws IOException
     {
-        return new InputNode( null, 0, 0, generateGroup(), randomId( random ), generatemProperties( random ), null,
-                randomLabels(), null );
+        generateNode( random, node, true );
+    }
+
+    private void generateNode( Randoms random, InputEntityVisitor node, boolean propertiesAndLabels ) throws IOException
+    {
+        node.id( randomId( random ), generateGroup() );
+        if ( propertiesAndLabels )
+        {
+            generateProperties( random, node );
+            node.labels( randomLabels() );
+        }
+        node.endOfEntity();
     }
 
     private Group generateGroup()
@@ -194,16 +210,15 @@ public class InputEntityCacherTokenCreationTest
         return uniqueIdGenerator.getAndIncrement() + "";
     }
 
-    private Object[] generatemProperties( Randoms random )
+    private void generateProperties( Randoms random, InputEntityVisitor entity )
     {
         int length = 1;
-        Object[] properties = new Object[length * 2];
-        for ( int i = 0; i < properties.length; i++ )
+        for ( int i = 0; i < length; i++ )
         {
-            properties[i++] = getUniqueString();
-            properties[i] = random.propertyValue() + "";
+            String key = getUniqueString();
+            String value = random.propertyValue() + "";
+            entity.property( key, value );
         }
-        return properties;
     }
 
     private Object randomId( Randoms random )
@@ -238,30 +253,15 @@ public class InputEntityCacherTokenCreationTest
         return new Randoms( randomRule.random(), Randoms.DEFAULT );
     }
 
-    private TestInputEntityCacher getEntityCacher( RecordFormats recordFormats ) throws IOException
+    private InputNodeCacheWriter getNodeCacher( RecordFormats recordFormats )
     {
-        return new TestInputEntityCacher( mock( StoreChannel.class ),
-                mock( StoreChannel.class ), recordFormats, 100, 100 );
+        return new InputNodeCacheWriter( mock( StoreChannel.class ),
+                mock( StoreChannel.class ), recordFormats, 100 );
     }
 
-    private InputNodeCacher getNodeCacher( RecordFormats recordFormats ) throws IOException
+    private InputRelationshipCacheWriter getRelationshipCacher( RecordFormats recordFormats )
     {
-        return new InputNodeCacher( mock( StoreChannel.class ),
-                mock( StoreChannel.class ), recordFormats, 100, 100 );
-    }
-
-    private InputRelationshipCacher getRelationshipCacher( RecordFormats recordFormats ) throws IOException
-    {
-        return new InputRelationshipCacher( mock( StoreChannel.class ),
-                mock( StoreChannel.class ), recordFormats, 100, 100 );
-    }
-
-    private class TestInputEntityCacher extends InputEntityCacher
-    {
-        TestInputEntityCacher( StoreChannel channel, StoreChannel header,
-                RecordFormats recordFormats, int bufferSize, int groupSlots ) throws IOException
-        {
-            super( channel, header, recordFormats, bufferSize, 100, groupSlots );
-        }
+        return new InputRelationshipCacheWriter( mock( StoreChannel.class ),
+                mock( StoreChannel.class ), recordFormats, 100 );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.ir.v3_4
 
 import org.neo4j.cypher.internal.v3_4.expressions.{RelTypeName, SemanticDirection}
 
-final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: SemanticDirection,
+final case class PatternRelationship(name: String, nodes: (String, String), dir: SemanticDirection,
                                      types: Seq[RelTypeName], length: PatternLength) {
 
-  def directionRelativeTo(node: IdName): SemanticDirection = if (node == left) dir else dir.reversed
+  def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
 
-  def otherSide(node: IdName) = if (node == left) right else left
+  def otherSide(node: String) = if (node == left) right else left
 
-  def coveredIds: Set[IdName] = Set(name, left, right)
+  def coveredIds: Set[String] = Set(name, left, right)
 
   def left = nodes._1
 

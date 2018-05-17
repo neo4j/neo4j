@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,14 +27,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class LinkedQueuePoolTest
 {
     @Test
-    public void shouldTimeoutGracefully() throws InterruptedException
+    public void shouldTimeoutGracefully()
     {
         FakeClock clock = new FakeClock();
 
@@ -53,7 +53,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldBuildUpGracefullyUntilReachedMinPoolSize() throws InterruptedException
+    public void shouldBuildUpGracefullyUntilReachedMinPoolSize()
     {
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
@@ -76,7 +76,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldBuildUpGracefullyWhilePassingMinPoolSizeBeforeTimerRings() throws InterruptedException
+    public void shouldBuildUpGracefullyWhilePassingMinPoolSizeBeforeTimerRings()
     {
         // GIVEN
         StatefulMonitor stateMonitor = new StatefulMonitor();
@@ -101,7 +101,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldUpdateTargetSizeWhenSpikesOccur() throws Exception
+    public void shouldUpdateTargetSizeWhenSpikesOccur()
     {
         // given
         final int MIN_SIZE = 5;
@@ -122,7 +122,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldKeepSmallPeakAndNeverDisposeIfAcquireAndReleaseContinuously() throws Exception
+    public void shouldKeepSmallPeakAndNeverDisposeIfAcquireAndReleaseContinuously()
     {
         // given
         final int MIN_SIZE = 1;
@@ -147,7 +147,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldSlowlyReduceTheNumberOfFlyweightsInThePoolWhenFlyweightsAreReleased() throws Exception
+    public void shouldSlowlyReduceTheNumberOfFlyweightsInThePoolWhenFlyweightsAreReleased()
     {
         // given
         final int MIN_SIZE = 50;
@@ -179,7 +179,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldMaintainPoolAtHighWatermarkWhenConcurrentUsagePassesMinSize() throws Exception
+    public void shouldMaintainPoolAtHighWatermarkWhenConcurrentUsagePassesMinSize()
     {
         // given
         final int MIN_SIZE = 50;
@@ -230,7 +230,7 @@ public class LinkedQueuePoolTest
     }
 
     @Test
-    public void shouldReclaimAndRecreateWhenLullBetweenSpikesOccurs() throws Exception
+    public void shouldReclaimAndRecreateWhenLullBetweenSpikesOccurs()
     {
         // given
         final int MIN_SIZE = 50;
@@ -283,7 +283,6 @@ public class LinkedQueuePoolTest
     private void buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( int MAX_SIZE, FakeClock clock,
                                                                               LinkedQueuePool<Object> pool,
                                                                               List<FlyweightHolder<Object>> holders )
-            throws InterruptedException
     {
         holders.addAll( acquireFromPool( pool, MAX_SIZE ) );
 
@@ -305,7 +304,6 @@ public class LinkedQueuePoolTest
     }
 
     private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times )
-            throws InterruptedException
     {
         List<FlyweightHolder<R>> acquirers = new LinkedList<>();
         for ( int i = 0; i < times; i++ )
@@ -317,7 +315,7 @@ public class LinkedQueuePoolTest
         return acquirers;
     }
 
-    private class FlyweightHolder<R> implements Runnable
+    private static class FlyweightHolder<R> implements Runnable
     {
         private final LinkedQueuePool<R> pool;
         private R resource;
@@ -339,7 +337,7 @@ public class LinkedQueuePoolTest
         }
     }
 
-    private class StatefulMonitor implements LinkedQueuePool.Monitor<Object>
+    private static class StatefulMonitor implements LinkedQueuePool.Monitor<Object>
     {
         public AtomicInteger currentPeakSize = new AtomicInteger( -1 );
         public AtomicInteger targetSize = new AtomicInteger( -1 );

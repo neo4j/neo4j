@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import org.neo4j.cypher.internal.{CommunityCompatibilityFactory, ExecutionEngine}
 import org.neo4j.graphdb.{TransactionTerminatedException, TransientTransactionFailureException}
 import org.neo4j.internal.kernel.api.Transaction.Type
-import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
+import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContext, TransactionalContextFactory}
@@ -120,9 +120,10 @@ class KillQueryTest extends ExecutionEngineFunSuite {
             case _: TransientTransactionFailureException =>
 
             case e: Throwable =>
-              tx.close()
               continue.set(false)
               exLogger(e)
+          } finally {
+            tx.close()
           }
         }
       }

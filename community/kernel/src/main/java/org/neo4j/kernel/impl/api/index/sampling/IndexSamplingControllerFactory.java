@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import java.util.function.Predicate;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.scheduler.JobScheduler;
@@ -92,7 +92,7 @@ public class IndexSamplingControllerFactory
             private final DoubleLongRegister register = newDoubleLongRegister();
 
             @Override
-            public boolean test( long indexId, IndexDescriptor descriptor )
+            public boolean test( long indexId, SchemaIndexDescriptor descriptor )
             {
                 boolean result = storeView.indexSample( indexId, register ).readSecond() == 0;
                 if ( result )

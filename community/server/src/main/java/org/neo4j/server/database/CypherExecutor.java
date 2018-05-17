@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,7 +39,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
@@ -65,7 +65,7 @@ public class CypherExecutor extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         DependencyResolver resolver = database.getGraph().getDependencyResolver();
         this.executionEngine = (ExecutionEngine) resolver.resolveDependency( QueryExecutionEngine.class );
@@ -74,7 +74,7 @@ public class CypherExecutor extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         this.executionEngine = null;
         this.contextFactory = null;

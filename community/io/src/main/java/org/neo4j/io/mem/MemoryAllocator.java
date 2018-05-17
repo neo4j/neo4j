@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,15 +20,16 @@
 package org.neo4j.io.mem;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.memory.MemoryAllocationTracker;
 
 /**
  * A MemoryAllocator is simple: it only allocates memory, until it itself is finalizable and frees it all in one go.
  */
 public interface MemoryAllocator
 {
-    static MemoryAllocator createAllocator( String expectedMemory )
+    static MemoryAllocator createAllocator( String expectedMemory, MemoryAllocationTracker memoryTracker )
     {
-        return new GrabAllocator( ByteUnit.parse( expectedMemory ) );
+        return new GrabAllocator( ByteUnit.parse( expectedMemory ), memoryTracker );
     }
 
     /**

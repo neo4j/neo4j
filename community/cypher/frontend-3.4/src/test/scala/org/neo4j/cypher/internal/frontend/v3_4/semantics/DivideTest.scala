@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,18 +33,20 @@ class DivideTest extends InfixExpressionTestBase(Divide(_, _)(DummyPosition(0)))
     testValidTypes(CTInteger, CTFloat)(CTFloat)
     testValidTypes(CTFloat, CTInteger)(CTFloat)
     testValidTypes(CTFloat, CTFloat)(CTFloat)
+    testValidTypes(CTDuration, CTFloat)(CTDuration)
+    testValidTypes(CTDuration, CTInteger)(CTDuration)
   }
 
   test("shouldHandleCombinedSpecializations") {
     testValidTypes(CTFloat | CTInteger, CTFloat | CTInteger)(CTFloat | CTInteger)
   }
 
-  test("shouldFailTypeCheckWhenAddingIncompatible") {
+  test("shouldFailTypeCheckWhenIncompatible") {
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Float or Integer but was Boolean"
     )
     testInvalidApplication(CTBoolean, CTInteger)(
-      "Type mismatch: expected Float or Integer but was Boolean"
+      "Type mismatch: expected Float, Integer or Duration but was Boolean"
     )
   }
 }

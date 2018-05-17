@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,7 +46,7 @@ public class DefaultTransactionTracerTest
     private final Monitor monitor = mock( Monitor.class );
 
     @Test
-    public void shouldComputeStartEndAndTotalTimeForLogRotation() throws Throwable
+    public void shouldComputeStartEndAndTotalTimeForLogRotation()
     {
         DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock, monitor, jobScheduler );
 
@@ -65,7 +65,7 @@ public class DefaultTransactionTracerTest
     }
 
     @Test
-    public void shouldReturnMinusOneIfNoDataIsAvailableForLogRotation() throws Throwable
+    public void shouldReturnMinusOneIfNoDataIsAvailableForLogRotation()
     {
         DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock, monitor, jobScheduler );
 

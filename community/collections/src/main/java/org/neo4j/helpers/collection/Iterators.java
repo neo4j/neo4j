@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -50,10 +50,12 @@ import static java.util.Collections.emptyIterator;
  * Contains common functionality regarding {@link Iterator}s and
  * {@link Iterable}s.
  */
-public abstract class Iterators
+public final class Iterators
 {
-    private static final ResourceIterator EMPTY_RESOURCE_ITERATOR =
-            resourceIterator( emptyIterator(), Resource.EMPTY );
+    private Iterators()
+    {
+        throw new AssertionError( "no instance" );
+    }
 
     /**
      * Returns the given iterator's first element or {@code null} if no
@@ -389,12 +391,12 @@ public abstract class Iterators
 
     public static <T> Collection<T> asCollection( Iterator<T> iterable )
     {
-        return addToCollection( iterable, new ArrayList<T>() );
+        return addToCollection( iterable, new ArrayList<>() );
     }
 
     public static <T> List<T> asList( Iterator<T> iterator )
     {
-        return addToCollection( iterator, new ArrayList<T>() );
+        return addToCollection( iterator, new ArrayList<>() );
     }
 
     public static <T, EX extends Exception> List<T> asList( RawIterator<T, EX> iterator ) throws EX
@@ -409,7 +411,7 @@ public abstract class Iterators
 
     public static <T> Set<T> asSet( Iterator<T> iterator )
     {
-        return addToCollection( iterator, new HashSet<T>() );
+        return addToCollection( iterator, new HashSet<>() );
     }
 
     /**
@@ -589,7 +591,7 @@ public abstract class Iterators
     @SuppressWarnings( "unchecked" )
     public static <T> ResourceIterator<T> emptyResourceIterator()
     {
-        return EMPTY_RESOURCE_ITERATOR;
+        return (ResourceIterator<T>) EmptyResourceIterator.EMPTY_RESOURCE_ITERATOR;
     }
 
     public static <T> boolean contains( Iterator<T> iterator, T item )
@@ -668,17 +670,22 @@ public abstract class Iterators
         return new RawIterator<T,EX>()
         {
             @Override
-            public boolean hasNext() throws EX
+            public boolean hasNext()
             {
                 return iter.hasNext();
             }
 
             @Override
-            public T next() throws EX
+            public T next()
             {
                 return iter.next();
             }
         };
+    }
+
+    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator( Stream<T> stream )
+    {
+        return asRawIterator( stream.iterator() );
     }
 
     public static <FROM, TO> Iterator<TO> flatMap( Function<? super FROM, ? extends Iterator<TO>> function, Iterator<FROM> from )
@@ -773,5 +780,27 @@ public abstract class Iterators
             return stream.onClose( ((Resource) iterator)::close );
         }
         return stream;
+    }
+
+    private static class EmptyResourceIterator<E> implements ResourceIterator<E>
+    {
+        private static final ResourceIterator<Object> EMPTY_RESOURCE_ITERATOR = new Iterators.EmptyResourceIterator<>();
+
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public E next()
+        {
+            throw new NoSuchElementException();
+        }
     }
 }

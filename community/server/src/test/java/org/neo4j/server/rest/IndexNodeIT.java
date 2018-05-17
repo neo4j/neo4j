@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -136,7 +136,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                  "non-existent indexes will automatically be created as you do. See\n" +
                  "<<indexing-create-advanced>> for more information on index configuration." )
     @Test
-    public void shouldCreateANamedNodeIndexWithConfiguration() throws Exception
+    public void shouldCreateANamedNodeIndexWithConfiguration()
     {
         int expectedIndexes = helper.getNodeIndexes().length + 1;
 
@@ -641,7 +641,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRespondWith400WhenSendingCorruptJson() throws Exception
+    public void shouldRespondWith400WhenSendingCorruptJson()
     {
         final String indexName = indexes.newInstance();
         helper.createNodeIndex( indexName );
@@ -853,7 +853,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                  "In this case, the node already exists in the index, and thus we get a `HTTP 409` status response,\n" +
                  "as we have set the uniqueness to `create_or_fail`." )
     @Test
-    public void addExistingNodeToUniqueIndexExisting() throws Exception
+    public void addExistingNodeToUniqueIndexExisting()
     {
         final String indexName = indexes.newInstance();
         final String key = "some-key";
@@ -882,7 +882,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                  "Add a node to an index unless a node already exists for the given index data. In\n" +
                  "this case, a new node is created since nothing existing is found in the index." )
     @Test
-    public void put_node_if_absent___create() throws Exception
+    public void put_node_if_absent___create()
     {
         final String index = indexes.newInstance();
         String key = "name";
@@ -897,7 +897,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void already_indexed_node_should_not_fail_on_create_or_fail() throws Exception
+    public void already_indexed_node_should_not_fail_on_create_or_fail()
     {
         // Given
         final String index = indexes.newInstance();

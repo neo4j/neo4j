@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,9 +22,9 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
-public interface Decorator<ENTITY extends InputEntity> extends Function<ENTITY,ENTITY>, Resource
+public interface Decorator extends Function<InputEntityVisitor,InputEntityVisitor>, Resource
 {
     /**
      * @return whether or not this decorator is mutable. This is important because a state-less decorator

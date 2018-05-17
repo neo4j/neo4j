@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,8 +22,9 @@ package org.neo4j.kernel.api.index;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -109,19 +110,19 @@ public interface IndexPopulator
      * Close this populator and releases any resources related to it.
      * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
-     * {@link SchemaIndexProvider#getInitialState(long, IndexDescriptor)} also returns {@link InternalIndexState#ONLINE}.
+     * {@link IndexProvider#getInitialState(long, SchemaIndexDescriptor)} also returns {@link InternalIndexState#ONLINE}.
      *
      * @param populationCompletedSuccessfully {@code true} if the index population was successful, where the index should
      * be marked as {@link InternalIndexState#ONLINE}, otherwise {@code false} where index should be marked as
      * {@link InternalIndexState#FAILED} and the failure, previously handed to this populator using {@link #markAsFailed(String)}
-     * should be stored and made available for later requests from {@link SchemaIndexProvider#getPopulationFailure(long)}.
+     * should be stored and made available for later requests from {@link IndexProvider#getPopulationFailure(long, SchemaIndexDescriptor)}.
      * @throws IOException on I/O error.
      */
     void close( boolean populationCompletedSuccessfully ) throws IOException;
 
     /**
      * Called then a population failed. The failure string should be stored for future retrieval by
-     * {@link SchemaIndexProvider#getPopulationFailure(long)}. Called before {@link #close(boolean)}
+     * {@link IndexProvider#getPopulationFailure(long, SchemaIndexDescriptor)}. Called before {@link #close(boolean)}
      * if there was a failure during population.
      *
      * @param failure the description of the failure.
@@ -141,6 +142,8 @@ public interface IndexPopulator
      */
     IndexSample sampleResult();
 
+    IndexPopulator EMPTY = new Adapter();
+
     class Adapter implements IndexPopulator
     {
         @Override
@@ -149,13 +152,12 @@ public interface IndexPopulator
         }
 
         @Override
-        public void drop() throws IOException
+        public void drop()
         {
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException,
-                IOException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
         {
         }
 

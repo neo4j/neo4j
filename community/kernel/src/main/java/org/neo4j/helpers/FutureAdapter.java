@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -104,15 +104,14 @@ public abstract class FutureAdapter<V> implements Future<V>
             }
 
             @Override
-            public T get() throws InterruptedException, ExecutionException
+            public T get() throws InterruptedException
             {
                 guardedByLatch.await();
                 return supplier.get();
             }
 
             @Override
-            public T get( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException,
-                    TimeoutException
+            public T get( long timeout, TimeUnit unit ) throws InterruptedException, TimeoutException
             {
                 if ( !guardedByLatch.await( timeout, unit ) )
                 {
@@ -153,8 +152,7 @@ public abstract class FutureAdapter<V> implements Future<V>
             }
 
             @Override
-            public Integer get( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException,
-                    TimeoutException
+            public Integer get( long timeout, TimeUnit unit ) throws InterruptedException, TimeoutException
             {
                 long end = System.currentTimeMillis() + unit.toMillis( timeout );
                 while ( System.currentTimeMillis() < end )

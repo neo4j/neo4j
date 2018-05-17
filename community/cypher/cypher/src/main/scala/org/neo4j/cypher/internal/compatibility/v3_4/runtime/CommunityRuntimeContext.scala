@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{ExpressionEvalua
 import org.neo4j.cypher.internal.compiler.v3_4.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
                               override val tracer: CompilationPhaseTracer,
@@ -39,10 +40,11 @@ class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosit
                               override val queryGraphSolver: QueryGraphSolver,
                               override val updateStrategy: UpdateStrategy,
                               override val debugOptions: Set[String],
-                              override val clock: Clock)
+                              override val clock: Clock,
+                              override val logicalPlanIdGen: IdGen)
   extends CompilerContext(exceptionCreator, tracer,
                           notificationLogger, planContext, monitors, metrics,
-                          config, queryGraphSolver, updateStrategy, debugOptions, clock) {
+                          config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen) {
 
   val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
     new PlanFingerprintReference(clock, config.statsDivergenceCalculator, _)
@@ -62,16 +64,17 @@ object CommunityRuntimeContextCreator extends ContextCreator[CommunityRuntimeCon
                       config: CypherCompilerConfiguration,
                       updateStrategy: UpdateStrategy,
                       clock: Clock,
+                      logicalPlanIdGen: IdGen,
                       evaluator: ExpressionEvaluator): CommunityRuntimeContext = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
 
     val metrics: Metrics = if (planContext == null)
       null
     else
-      metricsFactory.newMetrics(planContext.statistics, evaluator)
+      metricsFactory.newMetrics(planContext.statistics, evaluator, config)
 
     new CommunityRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
-                        monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock)
+                        monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen)
   }
 }
 

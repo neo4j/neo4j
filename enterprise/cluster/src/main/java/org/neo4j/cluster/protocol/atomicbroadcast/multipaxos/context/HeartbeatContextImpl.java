@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
@@ -92,7 +95,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         Set<InstanceId> serverSuspicions = suspicionsFor( getMyId() );
         boolean suspected = serverSuspicions.remove( node );
 
-        if ( !isFailed( node ) && failed.remove( node ) )
+        if ( !isFailedBasedOnSuspicions( node ) && failed.remove( node ) )
         {
             getLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is alive" );
             heartBeatListeners.notify( executor, listener -> listener.alive( node ) );
@@ -113,7 +116,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
             getLog( HeartbeatContext.class ).info( getMyId() + "(me) is now suspecting " + node );
         }
 
-        if ( isFailed( node ) && !failed.contains( node ) )
+        if ( isFailedBasedOnSuspicions( node ) && !failed.contains( node ) )
         {
             getLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is failed" );
             failed.add( node );
@@ -188,7 +191,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
          * will be marked as failed (it has gathered enough suspicions) but we still need to process their messages, in
          * order to mark as failed the other half.
          */
-        if ( isFailed( from ) && !failed.contains( from ) )
+        if ( isFailedBasedOnSuspicions( from ) && !failed.contains( from ) )
         {
             getLog( HeartbeatContext.class ).info(
                     "Ignoring suspicions from failed instance " + from + ": " + Iterables.toString( suspicions, "," ) );
@@ -222,7 +225,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         // Check if anyone is considered failed
         for ( InstanceId node : suspicions )
         {
-            if ( isFailed( node ) && !failed.contains( node ) )
+            if ( isFailedBasedOnSuspicions( node ) && !failed.contains( node ) )
             {
                 failed.add( node );
                 heartBeatListeners.notify( executor, listener -> listener.failed( node ) );
@@ -239,7 +242,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     @Override
     public Iterable<InstanceId> getAlive()
     {
-        return Iterables.filter( item -> !isFailed( item ), commonState.configuration().getMemberIds() );
+        return Iterables.filter( item -> !isFailedBasedOnSuspicions( item ), commonState.configuration().getMemberIds() );
     }
 
     @Override
@@ -265,7 +268,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     }
 
     @Override
-    public boolean isFailed( InstanceId node )
+    public boolean isFailedBasedOnSuspicions( InstanceId node )
     {
         List<InstanceId> suspicionsForNode = getSuspicionsOf( node );
         int countOfInstancesSuspectedByMe = getSuspicionsFor( getMyId() ).size();
@@ -318,13 +321,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
 
     private Set<InstanceId> suspicionsFor( InstanceId instanceId )
     {
-        Set<InstanceId> serverSuspicions = nodeSuspicions.get( instanceId );
-        if ( serverSuspicions == null )
-        {
-            serverSuspicions = new HashSet<>();
-            nodeSuspicions.put( instanceId, serverSuspicions );
-        }
-        return serverSuspicions;
+        return nodeSuspicions.computeIfAbsent( instanceId, k -> new HashSet<>() );
     }
 
     @Override
@@ -343,6 +340,12 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     public long getLastLearnedInstanceId()
     {
         return learnerContext.getLastLearnedInstanceId();
+    }
+
+    @Override
+    public void failed( InstanceId instanceId )
+    {
+        failed.add( instanceId );
     }
 
     public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging,

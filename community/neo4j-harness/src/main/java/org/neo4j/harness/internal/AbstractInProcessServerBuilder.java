@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,9 +33,9 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilder;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -58,7 +58,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.Iterables.append;
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 
 public abstract class AbstractInProcessServerBuilder implements TestServerBuilder
 {
@@ -128,10 +128,13 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
+            File userLogFile = new File( serverFolder, "neo4j.log" );
+            File internalLogFile = new File( serverFolder, "debug.log" );
+
             final OutputStream logOutputStream;
             try
             {
-                logOutputStream = createOrOpenAsOuputStream( fileSystem, new File( serverFolder, "neo4j.log" ), true );
+                logOutputStream = createOrOpenAsOutputStream( fileSystem, userLogFile, true );
             }
             catch ( IOException e )
             {
@@ -139,6 +142,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             }
 
             config.put( ServerSettings.third_party_packages.name(), toStringForThirdPartyPackageProperty( extensions.toList() ) );
+            config.put( GraphDatabaseSettings.store_internal_log_path.name(), internalLogFile.getAbsolutePath() );
 
             final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
             GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
@@ -147,7 +151,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             dependencies = dependencies.kernelExtensions( kernelExtensions ).userLogProvider( userLogProvider );
 
             AbstractNeoServer neoServer = createNeoServer( config, dependencies, userLogProvider );
-            InProcessServerControls controls = new InProcessServerControls( serverFolder, neoServer, logOutputStream );
+            InProcessServerControls controls = new InProcessServerControls( serverFolder, userLogFile, internalLogFile, neoServer, logOutputStream );
             controls.start();
 
             try
@@ -157,13 +161,13 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             catch ( Exception e )
             {
                 controls.close();
-                throw Exceptions.launderedException( e );
+                throw e;
             }
             return controls;
         }
         catch ( IOException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
     }
 
@@ -295,7 +299,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
         @Override
         public Lifecycle newInstance( KernelContext context,
-                Dependencies dependencies ) throws Throwable
+                Dependencies dependencies )
         {
             return new LifecycleAdapter()
             {

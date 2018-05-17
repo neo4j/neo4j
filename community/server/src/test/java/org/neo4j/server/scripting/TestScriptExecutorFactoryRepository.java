@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,20 +33,20 @@ public class TestScriptExecutorFactoryRepository
 {
 
     @Test( expected = NoSuchScriptLanguageException.class )
-    public void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages() throws Exception
+    public void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages()
     {
         // Given
-        ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( new HashMap<String, ScriptExecutor.Factory>() );
+        ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( new HashMap<>() );
 
         // When
         repo.getFactory( "Blah" );
     }
 
     @Test
-    public void shouldReturnRegisteredFactory() throws Exception
+    public void shouldReturnRegisteredFactory()
     {
         // Given
-        Map<String, ScriptExecutor.Factory> languages = new HashMap<String, ScriptExecutor.Factory>(  );
+        Map<String, ScriptExecutor.Factory> languages = new HashMap<>();
         languages.put( "js", mock(ScriptExecutor.Factory.class) );
 
         ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( languages );

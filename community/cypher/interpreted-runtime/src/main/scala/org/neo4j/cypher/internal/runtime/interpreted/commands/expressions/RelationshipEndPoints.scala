@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,15 +24,15 @@ import org.neo4j.cypher.internal.runtime.interpreted.CastSupport.castOrFail
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 case class RelationshipEndPoints(relExpression: Expression, start: Boolean) extends Expression {
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = relExpression(ctx, state) match {
     case v if v == Values.NO_VALUE => Values.NO_VALUE
     case value =>
-      val edge = castOrFail[EdgeValue](value)
-      if (start) state.query.edgeGetStartNode(edge)
-      else state.query.edgeGetEndNode(edge)
+      val rel = castOrFail[RelationshipValue](value)
+      if (start) state.query.edgeGetStartNode(rel)
+      else state.query.edgeGetEndNode(rel)
   }
 
   def arguments = Seq(relExpression)

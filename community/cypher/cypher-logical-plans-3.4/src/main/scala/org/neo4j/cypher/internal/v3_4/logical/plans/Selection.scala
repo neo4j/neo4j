@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * For each source row, produce it if all predicates are true.
   */
 case class Selection(predicates: Seq[Expression],
                      source: LogicalPlan
-                    )(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+                    )(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
 
   val lhs = Some(source)
@@ -35,5 +35,5 @@ case class Selection(predicates: Seq[Expression],
 
   def numPredicates: Int = predicates.size
 
-  def availableSymbols: Set[IdName] = source.availableSymbols
+  val availableSymbols: Set[String] = source.availableSymbols
 }

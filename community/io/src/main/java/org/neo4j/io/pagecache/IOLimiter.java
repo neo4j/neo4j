@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -65,7 +65,7 @@ public interface IOLimiter
      * out the IO load on the storage device.
      * @return A new stamp to pass into the next call to this method.
      */
-    long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable ) throws IOException;
+    long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable );
 
     /**
      * Temporarily disable the IOLimiter, to allow IO to proceed at full speed.

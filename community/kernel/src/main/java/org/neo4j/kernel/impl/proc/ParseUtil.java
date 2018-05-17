@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -112,7 +112,7 @@ public final class ParseUtil
         {
             return;
         }
-        int split = keyValue.indexOf( ":" );
+        int split = keyValue.indexOf( ':' );
         if ( split < 0 )
         {
             throw new IllegalArgumentException( "Keys and values must be separated with ':'" );
@@ -203,11 +203,11 @@ public final class ParseUtil
                 String number = s.substring( pos );
                 try
                 {
-                    return Long.parseLong( number );
+                    return Long.valueOf( number );
                 }
                 catch ( NumberFormatException e )
                 {
-                    return Double.parseDouble( number );
+                    return Double.valueOf( number );
                 }
 
                 //deliberate fallthrough
@@ -220,13 +220,13 @@ public final class ParseUtil
             case 't':
                 if ( s.charAt( pos + 1 ) == 'r' && s.charAt( pos + 2 ) == 'u' && s.charAt( pos + 3 ) == 'e' )
                 {
-                    return true;
+                    return Boolean.TRUE;
                 }
             case 'f':
                 if ( s.charAt( pos + 1 ) == 'a' && s.charAt( pos + 2 ) == 'l' && s.charAt( pos + 3 ) == 's' &&
                      s.charAt( pos + 4 ) == 'e' )
                 {
-                    return false;
+                    return Boolean.FALSE;
                 }
 
             default:

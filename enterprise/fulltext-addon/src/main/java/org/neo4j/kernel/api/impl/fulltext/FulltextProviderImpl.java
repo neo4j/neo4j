@@ -1,27 +1,31 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -36,13 +40,21 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
+import org.neo4j.kernel.impl.util.MultiResource;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StoreFileMetadata;
+
+import static org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing.getSnapshotFilesMetadata;
 
 /**
  * Provider class that manages and provides fulltext indices. This is the main entry point for the fulltext addon.
@@ -65,7 +77,6 @@ public class FulltextProviderImpl implements FulltextProvider
     /**
      * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index
      * operations.
-     *
      * @param db Database that this provider should work with.
      * @param log For logging errors.
      * @param availabilityGuard Used for waiting with populating the index until the database is available.
@@ -75,10 +86,8 @@ public class FulltextProviderImpl implements FulltextProvider
      * @param storeDir Store directory of the database.
      * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
      */
-    public FulltextProviderImpl( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard,
-                             JobScheduler scheduler, TransactionIdStore transactionIdStore,
-                             FileSystemAbstraction fileSystem, File storeDir,
-                             String analyzerClassName ) throws IOException
+    public FulltextProviderImpl( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard, JobScheduler scheduler,
+            TransactionIdStore transactionIdStore, FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName )
     {
         this.db = db;
         this.log = log;
@@ -95,7 +104,7 @@ public class FulltextProviderImpl implements FulltextProvider
     }
 
     @Override
-    public void registerTransactionEventHandler() throws IOException
+    public void registerTransactionEventHandler()
     {
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
     }
@@ -320,6 +329,36 @@ public class FulltextProviderImpl implements FulltextProvider
         {
             configurationLock.writeLock().unlock();
         }
+    }
+
+    @Override
+    public void registerFileListing( NeoStoreFileListing fileListing )
+    {
+        fileListing.registerStoreFileProvider( this::snapshotStoreFiles );
+    }
+
+    private Resource snapshotStoreFiles( Collection<StoreFileMetadata> files ) throws IOException
+    {
+        final Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
+        for ( WritableFulltext index : Iterables.concat( writableNodeIndices.values(), writableRelationshipIndices.values() ) )
+        {
+            // Save the last committed transaction, then drain the update queue to make sure that we have applied _at least_ the commits the config claims.
+            index.saveConfiguration( transactionIdStore.getLastCommittedTransactionId() );
+            try
+            {
+                applier.writeBarrier().awaitCompletion();
+            }
+            catch ( ExecutionException e )
+            {
+                throw new IOException( "Unable to prepare index for snapshot." );
+            }
+            index.flush();
+            ResourceIterator<File> snapshot = index.snapshot();
+            snapshots.add( snapshot );
+            files.addAll( getSnapshotFilesMetadata( snapshot ) );
+        }
+        // Intentionally don't close the snapshots here, return them for closing by the consumer of the targetFiles list.
+        return new MultiResource( snapshots );
     }
 
     /**

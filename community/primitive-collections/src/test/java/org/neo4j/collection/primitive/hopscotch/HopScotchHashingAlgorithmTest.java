@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm
 public class HopScotchHashingAlgorithmTest
 {
     @Test
-    public void shouldSupportIteratingThroughResize() throws Exception
+    public void shouldSupportIteratingThroughResize()
     {
         // GIVEN
         int threshold = figureOutGrowthThreshold();
@@ -46,7 +46,7 @@ public class HopScotchHashingAlgorithmTest
         PrimitiveLongSet set = new PrimitiveLongHashSet(
                 new LongKeyTable<>( DEFAULT_H, VALUE_MARKER ), VALUE_MARKER, monitor );
         Set<Long> added = new HashSet<>();
-        for ( int i = 0; i < threshold - 1; i++ )
+        for ( long i = 0; i < threshold - 1; i++ )
         {
             long value = i * 3;
             set.add( value );

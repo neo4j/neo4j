@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -54,20 +54,20 @@ public class TestWhiteListJavaWrapper
     }
 
     @Test( expected = SecurityException.class )
-    public void shouldBlockAttemptsAtAccessingClassLoader() throws Exception
+    public void shouldBlockAttemptsAtAccessingClassLoader()
     {
         // Given
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( new HashSet<String>() ) );
+        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( new HashSet<>() ) );
 
         // When
         wrapper.wrap( null, null, getClass().getClassLoader(), null );
     }
 
     @Test
-    public void shouldDownCastSubclassesToAllowedParentClass() throws Exception
+    public void shouldDownCastSubclassesToAllowedParentClass()
     {
         // Given
-        Set<String> whiteList = new HashSet<String>(  );
+        Set<String> whiteList = new HashSet<>();
         whiteList.add( Object.class.getName() );
 
         WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );
@@ -87,10 +87,10 @@ public class TestWhiteListJavaWrapper
     }
 
     @Test( expected = SecurityException.class )
-    public void shouldThrowSecurityExceptionWhenAccessingLockedClasses() throws Exception
+    public void shouldThrowSecurityExceptionWhenAccessingLockedClasses()
     {
         // Given
-        Set<String> whiteList = new HashSet<String>(  );
+        Set<String> whiteList = new HashSet<>();
         whiteList.add( Object.class.getName() );
 
         WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );
@@ -103,7 +103,7 @@ public class TestWhiteListJavaWrapper
     }
 
     @Test
-    public void shouldAllowAccessToWhiteListedClassMembers() throws Exception
+    public void shouldAllowAccessToWhiteListedClassMembers()
     {
         // XXX: The Rhino security stuff can only be set globally, unfortunately. That means
         // that we need to use a class here that is white-listed in the "real" white list, because

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -120,9 +120,9 @@ public class TestNeo4j extends AbstractNeo4jTestCase
 
     private boolean objectExistsInArray( Object obj, Object[] objArray )
     {
-        for ( int i = 0; i < objArray.length; i++ )
+        for ( Object o : objArray )
         {
-            if ( objArray[i].equals( obj ) )
+            if ( o.equals( obj ) )
             {
                 return true;
             }
@@ -142,7 +142,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testNodeChangePropertyArray() throws Exception
+    public void testNodeChangePropertyArray()
     {
         getTransaction().close();
 

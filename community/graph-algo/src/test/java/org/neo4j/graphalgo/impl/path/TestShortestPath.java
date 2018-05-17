@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -240,7 +240,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void withFilters() throws Exception
+    public void withFilters()
     {
         // Layout:
         //
@@ -264,7 +264,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void filtersTouchesAllIntermediateNodes() throws Exception
+    public void filtersTouchesAllIntermediateNodes()
     {
         // Layout:
         //
@@ -316,7 +316,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureDescentStopsWhenPathIsFound() throws Exception
+    public void makeSureDescentStopsWhenPathIsFound()
     {
         /*
          * (a)==>(b)==>(c)==>(d)==>(e)
@@ -353,7 +353,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureRelationshipNotConnectedIssueNotThere() throws Exception
+    public void makeSureRelationshipNotConnectedIssueNotThere()
     {
         /*
          *                                  (g)
@@ -375,7 +375,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureShortestPathCanBeFetchedEvenIfANodeHasLoops() throws Exception
+    public void makeSureShortestPathCanBeFetchedEvenIfANodeHasLoops()
     {
         // Layout:
         //
@@ -450,7 +450,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldFindShortestPathWhenOneSideFindsLongerPathFirst() throws Exception
+    public void shouldFindShortestPathWhenOneSideFindsLongerPathFirst()
     {
         /*
         The order in which nodes are created matters when reproducing the original problem
@@ -471,7 +471,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldMakeSureResultLimitIsRespectedForMultiPathHits() throws Exception
+    public void shouldMakeSureResultLimitIsRespectedForMultiPathHits()
     {
         /*       _____
          *      /     \

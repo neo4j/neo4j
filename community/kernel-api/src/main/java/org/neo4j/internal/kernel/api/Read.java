@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,12 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
  */
 public interface Read
 {
+    int ANY_LABEL = -1;
+    int ANY_RELATIONSHIP_TYPE = -1;
+
     /**
+     * Seek all nodes matching the provided index query in an index.
+     *
      * @param index {@link IndexReference} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
      * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
@@ -37,6 +42,22 @@ public interface Read
             throws KernelException;
 
     /**
+     * Returns node id of node found in unique index or -1 if no node was found.
+     *
+     * Note that this is a very special method and should be use with caution. It has special locking semantics in
+     * order to facilitate unique creation of nodes. If a node is found; a shared lock for the index entry will be
+     * held whereas if no node is found we will hold onto an exclusive lock until the close of the transaction.
+     *
+     * @param index {@link IndexReference} referencing index to query.
+     *              {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
+     * @param predicates Combination of {@link IndexQuery.ExactPredicate index queries} to run against referenced index.
+     */
+    long lockingNodeUniqueIndexSeek( IndexReference index, IndexQuery.ExactPredicate... predicates )
+            throws KernelException;
+
+    /**
+     * Scan all values in an index.
+     *
      * @param index {@link IndexReference} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
      * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
@@ -60,6 +81,11 @@ public interface Read
 
     Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
 
+    /**
+     * Return all nodes in the graph.
+     *
+     * @param cursor Cursor to initialize for scanning.
+     */
     void allNodesScan( NodeCursor cursor );
 
     Scan<NodeCursor> allNodesScan();
@@ -75,10 +101,145 @@ public interface Read
 
     /**
      * Checks if a node exists in the database
-     * @param id The id of the node to check
-     * @return <tt>true</tt> if the node exists, otherwise <tt>false</tt>
+     *
+     * @param reference The reference of the node to check
+     * @return {@code true} if the node exists, otherwise {@code false}
      */
-    boolean nodeExists( long id );
+    boolean nodeExists( long reference );
+
+    /**
+     * The number of nodes in the graph, including anything changed in the transaction state.
+     *
+     * If the label parameter is {@link #ANY_LABEL}, this method returns the total number of nodes in the graph, i.e.
+     * {@code MATCH (n) RETURN count(n)}.
+     *
+     * If the label parameter is set to any other value, this method returns the number of nodes that has that label,
+     * i.e. {@code MATCH (n:LBL) RETURN count(n)}.
+     *
+     * @param labelId the label to get the count for, or {@link #ANY_LABEL} to get the total number of nodes.
+     * @return the number of matching nodes in the graph.
+     */
+    long countsForNode( int labelId );
+
+    /**
+     * The number of nodes in the graph, without taking into account anything in the transaction state.
+     *
+     * If the label parameter is {@link #ANY_LABEL}, this method returns the total number of nodes in the graph, i.e.
+     * {@code MATCH (n) RETURN count(n)}.
+     *
+     * If the label parameter is set to any other value, this method returns the number of nodes that has that label,
+     * i.e. {@code MATCH (n:LBL) RETURN count(n)}.
+     *
+     * @param labelId the label to get the count for, or {@link #ANY_LABEL} to get the total number of nodes.
+     * @return the number of matching nodes in the graph.
+     */
+    long countsForNodeWithoutTxState( int labelId );
+
+    /**
+     * The number of relationships in the graph, including anything changed in the transaction state.
+     *
+     * Returns the number of relationships in the graph that matches the specified pattern,
+     * {@code (:startLabelId)-[:typeId]->(:endLabelId)}, like so:
+     *
+     * <table>
+     * <thead>
+     * <tr><th>{@code startLabelId}</th><th>{@code typeId}</th>                  <th>{@code endLabelId}</th>
+     * <td></td>                 <th>Pattern</th>                       <td></td></tr>
+     * </thead>
+     * <tdata>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r]->()}</td>            <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@code REL}</td>                     <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r:REL]->()}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@code LHS}</td>             <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code (:LHS)-[r]->()}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@code RHS}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r]->(:RHS)}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@code LHS}</td>             <td>{@code REL}</td>                     <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code (:LHS)-[r:REL]->()}</td>    <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@code REL}</td>                     <td>{@code RHS}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r:REL]->(:RHS)}</td>    <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * </tdata>
+     * </table>
+     *
+     * @param startLabelId the label of the start node of relationships to get the count for, or {@link #ANY_LABEL}.
+     * @param typeId       the type of relationships to get a count for, or {@link #ANY_RELATIONSHIP_TYPE}.
+     * @param endLabelId   the label of the end node of relationships to get the count for, or {@link #ANY_LABEL}.
+     * @return the number of matching relationships in the graph.
+     */
+    long countsForRelationship( int startLabelId, int typeId, int endLabelId );
+
+    /**
+     * The number of relationships in the graph, without taking into account anything in the transaction state.
+     *
+     * Returns the number of relationships in the graph that matches the specified pattern,
+     * {@code (:startLabelId)-[:typeId]->(:endLabelId)}, like so:
+     *
+     * <table>
+     * <thead>
+     * <tr><th>{@code startLabelId}</th><th>{@code typeId}</th>                  <th>{@code endLabelId}</th>
+     * <td></td>                 <th>Pattern</th>                       <td></td></tr>
+     * </thead>
+     * <tdata>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r]->()}</td>            <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@code REL}</td>                     <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r:REL]->()}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@code LHS}</td>             <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code (:LHS)-[r]->()}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@link #ANY_RELATIONSHIP_TYPE}</td>  <td>{@code RHS}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r]->(:RHS)}</td>        <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@code LHS}</td>             <td>{@code REL}</td>                     <td>{@link #ANY_LABEL}</td>
+     * <td>{@code MATCH}</td>    <td>{@code (:LHS)-[r:REL]->()}</td>    <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * <tr>
+     * <td>{@link #ANY_LABEL}</td>      <td>{@code REL}</td>                     <td>{@code RHS}</td>
+     * <td>{@code MATCH}</td>    <td>{@code ()-[r:REL]->(:RHS)}</td>    <td>{@code RETURN count(r)}</td>
+     * </tr>
+     * </tdata>
+     * </table>
+     *
+     * @param startLabelId the label of the start node of relationships to get the count for, or {@link #ANY_LABEL}.
+     * @param typeId       the type of relationships to get a count for, or {@link #ANY_RELATIONSHIP_TYPE}.
+     * @param endLabelId   the label of the end node of relationships to get the count for, or {@link #ANY_LABEL}.
+     * @return the number of matching relationships in the graph.
+     */
+    long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
+
+    /**
+     * Count of the total number of nodes in the database including changes in the current transaction.
+     *
+     * @return the total number of nodes in the database
+     */
+    long nodesGetCount( );
+
+    /**
+     * Count of the total number of relationships in the database including changes in the current transaction.
+     *
+     * @return the total number of relationships in the database
+     */
+    long relationshipsGetCount( );
 
     /**
      * @param reference
@@ -88,13 +249,21 @@ public interface Read
      */
     void singleRelationship( long reference, RelationshipScanCursor cursor );
 
+    /**
+     * Checks if a relationship exists in the database
+     *
+     * @param reference The reference of the relationship to check
+     * @return <tt>true</tt> if the relationship exists, otherwise <tt>false</tt>
+     */
+    boolean relationshipExists( long reference );
+
     void allRelationshipsScan( RelationshipScanCursor cursor );
 
     Scan<RelationshipScanCursor> allRelationshipsScan();
 
-    void relationshipLabelScan( int label, RelationshipScanCursor cursor );
+    void relationshipTypeScan( int type, RelationshipScanCursor cursor );
 
-    Scan<RelationshipScanCursor> relationshipLabelScan( int label );
+    Scan<RelationshipScanCursor> relationshipTypeScan( int type );
 
     /**
      * @param nodeReference
@@ -119,20 +288,24 @@ public interface Read
     void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor );
 
     /**
+     * @param nodeReference
+     *         the owner of the properties.
      * @param reference
      *         a reference from {@link NodeCursor#propertiesReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void nodeProperties( long reference, PropertyCursor cursor );
+    void nodeProperties( long nodeReference, long reference, PropertyCursor cursor );
 
     /**
+     * @param relationshipReference
+     *         the owner of the properties.
      * @param reference
      *         a reference from {@link RelationshipDataAccessor#propertiesReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void relationshipProperties( long reference, PropertyCursor cursor );
+    void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor );
 
     void graphProperties( PropertyCursor cursor );
 

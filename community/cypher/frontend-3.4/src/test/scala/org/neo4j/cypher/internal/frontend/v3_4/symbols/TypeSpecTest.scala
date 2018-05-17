@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -247,8 +247,9 @@ class TypeSpecTest extends CypherFunSuite {
     (CTFloat | CTInteger).coercions should equal(CTFloat.invariant)
     CTList(CTAny).covariant.coercions should equal(CTBoolean.invariant)
     TypeSpec.exact(CTList(CTPath)).coercions should equal(CTBoolean.invariant)
-    TypeSpec.all.coercions should equal(CTBoolean | CTFloat)
     CTList(CTAny).covariant.coercions should equal(CTBoolean.invariant)
+    TypeSpec.all.coercions should equal(TypeSpec.none)
+    CTInteger.contravariant.coercions should equal(TypeSpec.none)
   }
 
   test("should intersect with coercions") {

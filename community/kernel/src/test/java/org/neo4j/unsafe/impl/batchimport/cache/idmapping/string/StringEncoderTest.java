@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 public class StringEncoderTest
 {
     @Test
-    public void shouldEncodeStringWithZeroLength() throws Exception
+    public void shouldEncodeStringWithZeroLength()
     {
         // GIVEN
         Encoder encoder = new StringEncoder();
@@ -42,7 +42,7 @@ public class StringEncoderTest
     }
 
     @Test
-    public void shouldEncodeStringWithAnyLength() throws Exception
+    public void shouldEncodeStringWithAnyLength()
     {
         // GIVEN
         Encoder encoder = new StringEncoder();

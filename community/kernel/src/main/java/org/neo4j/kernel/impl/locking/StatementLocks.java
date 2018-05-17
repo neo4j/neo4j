@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
  * Component used by {@link KernelStatement} to acquire {@link #pessimistic() pessimistic} and
  * {@link #optimistic() optimistic} locks.
  */
-public interface StatementLocks extends AutoCloseable, org.neo4j.internal.kernel.api.Locks
+public interface StatementLocks extends AutoCloseable
 {
     /**
      * Get {@link Locks.Client} responsible for pessimistic locks. Such locks will be grabbed right away.

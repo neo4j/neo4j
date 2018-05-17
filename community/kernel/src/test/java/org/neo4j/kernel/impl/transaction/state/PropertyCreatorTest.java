@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -55,7 +55,7 @@ public class PropertyCreatorTest
     private final MyPrimitiveProxy primitive = new MyPrimitiveProxy();
 
     @Test
-    public void shouldAddPropertyToEmptyChain() throws Exception
+    public void shouldAddPropertyToEmptyChain()
     {
         // GIVEN
         existingChain();
@@ -68,7 +68,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldAddPropertyToChainContainingOtherFullRecords() throws Exception
+    public void shouldAddPropertyToChainContainingOtherFullRecords()
     {
         // GIVEN
         existingChain(
@@ -86,7 +86,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldAddPropertyToChainContainingOtherNonFullRecords() throws Exception
+    public void shouldAddPropertyToChainContainingOtherNonFullRecords()
     {
         // GIVEN
         existingChain(
@@ -103,7 +103,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldAddPropertyToChainContainingOtherNonFullRecordsInMiddle() throws Exception
+    public void shouldAddPropertyToChainContainingOtherNonFullRecordsInMiddle()
     {
         // GIVEN
         existingChain(
@@ -120,7 +120,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangeOnlyProperty() throws Exception
+    public void shouldChangeOnlyProperty()
     {
         // GIVEN
         existingChain( record( property( 0, "one" ) ) );
@@ -133,7 +133,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyInChainWithOthersBeforeIt() throws Exception
+    public void shouldChangePropertyInChainWithOthersBeforeIt()
     {
         // GIVEN
         existingChain(
@@ -150,7 +150,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyInChainWithOthersAfterIt() throws Exception
+    public void shouldChangePropertyInChainWithOthersAfterIt()
     {
         // GIVEN
         existingChain(
@@ -167,7 +167,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyToBiggerInFullChain() throws Exception
+    public void shouldChangePropertyToBiggerInFullChain()
     {
         // GIVEN
         existingChain( record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ) );
@@ -182,7 +182,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyToBiggerInChainWithHoleAfter() throws Exception
+    public void shouldChangePropertyToBiggerInChainWithHoleAfter()
     {
         // GIVEN
         existingChain(
@@ -200,7 +200,7 @@ public class PropertyCreatorTest
 
     // change property so that it gets bigger and fits in a record earlier in the chain
     @Test
-    public void shouldChangePropertyToBiggerInChainWithHoleBefore() throws Exception
+    public void shouldChangePropertyToBiggerInChainWithHoleBefore()
     {
         // GIVEN
         existingChain(

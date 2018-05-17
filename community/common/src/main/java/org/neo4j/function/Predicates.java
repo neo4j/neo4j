@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -41,6 +41,8 @@ import static org.neo4j.function.ThrowingSupplier.throwingSupplier;
  */
 public class Predicates
 {
+    public static final IntPredicate ALWAYS_TRUE_INT = v -> true;
+
     private static final int DEFAULT_POLL_INTERVAL = 20;
 
     private Predicates()
@@ -106,7 +108,7 @@ public class Predicates
 
     public static <T> Predicate<T> instanceOf( @Nonnull final Class<?> clazz )
     {
-        return item -> item != null && clazz.isInstance( item );
+        return clazz::isInstance;
     }
 
     public static <T> Predicate<T> instanceOfAny( final Class<?>... classes )
@@ -261,8 +263,6 @@ public class Predicates
             return false;
         };
     }
-
-    public static IntPredicate ALWAYS_TRUE_INT = v -> true;
 
     public static IntPredicate any( int[] values )
     {

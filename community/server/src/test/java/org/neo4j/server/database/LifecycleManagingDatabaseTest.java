@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 public class LifecycleManagingDatabaseTest
 {
     @Test
-    public void mustIgnoreExceptionsFromPreLoadingCypherQuery() throws Throwable
+    public void mustIgnoreExceptionsFromPreLoadingCypherQuery()
     {
         // Given a lifecycled database that'll try to warm up Cypher when it starts
         final GraphDatabaseFacade mockDb = mock( GraphDatabaseFacade.class );

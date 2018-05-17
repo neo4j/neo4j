@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,7 +29,7 @@ public class SessionTest
     private Session session;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         session = new Session( 1 );
     }
@@ -73,7 +73,7 @@ public class SessionTest
     }
 
     @Test
-    public void canCheckInvalidVariableName() throws ShellException
+    public void canCheckInvalidVariableName()
     {
         assertEquals( false, session.has( "foo bar" ));
     }

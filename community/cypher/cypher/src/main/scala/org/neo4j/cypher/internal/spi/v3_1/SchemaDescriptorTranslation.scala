@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.spi.v3_1
 
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes
-import org.neo4j.kernel.api.schema.SchemaDescriptor
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor
 import org.neo4j.kernel.api.schema.constaints.{ConstraintDescriptorFactory, NodeExistenceConstraintDescriptor, RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor => KernelUniquenessConstraint}
-import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptorFactory, SchemaIndexDescriptor => KernelIndexDescriptor}
 
 trait SchemaDescriptorTranslation {
   implicit def toKernel(index: SchemaTypes.IndexDescriptor): KernelIndexDescriptor =
-    IndexDescriptorFactory.forLabel(index.labelId, index.propertyId)
+    SchemaIndexDescriptorFactory.forLabel(index.labelId, index.propertyId)
 
   implicit def toCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor = {
     assertSingleProperty(index.schema())
-    SchemaTypes.IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyId())
+    SchemaTypes.IndexDescriptor(index.schema().keyId, index.schema().getPropertyId())
   }
 
   implicit def toKernel(constraint: SchemaTypes.UniquenessConstraint): KernelUniquenessConstraint =

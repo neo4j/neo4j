@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.LongFunction;
 
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -45,7 +46,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     protected final RecordStore<RECORD> store;
     private final int recordSize;
     private final PrepareIdSequence prepareIdSequence;
-    private long recordsUpdated;
+    private final LongAdder recordsUpdated = new LongAdder();
 
     public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
             PrepareIdSequence prepareIdSequence )
@@ -57,7 +58,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     }
 
     @Override
-    protected void process( RECORD[] batch, BatchSender sender ) throws Throwable
+    protected void process( RECORD[] batch, BatchSender sender )
     {
         LongFunction<IdSequence> idSequence = prepareIdSequence.apply( store );
         int recordsUpdatedInThisBatch = 0;
@@ -70,7 +71,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
                 recordsUpdatedInThisBatch++;
             }
         }
-        recordsUpdated += recordsUpdatedInThisBatch;
+        recordsUpdated.add( recordsUpdatedInThisBatch );
     }
 
     @Override
@@ -83,7 +84,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     @Override
     public Stat stat( Key key )
     {
-        return key == Keys.io_throughput ? new IoThroughputStat( startTime, endTime, recordSize * recordsUpdated ) : null;
+        return key == Keys.io_throughput ? new IoThroughputStat( startTime, endTime, recordSize * recordsUpdated.sum() ) : null;
     }
 
     @Override

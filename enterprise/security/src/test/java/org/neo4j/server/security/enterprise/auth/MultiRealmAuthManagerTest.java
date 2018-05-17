@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.auth;
 
@@ -27,23 +30,25 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
+import java.util.function.Function;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.PasswordPolicy;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.InitialUserTest;
@@ -78,6 +83,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
     @Rule
     public ExpectedException expect = ExpectedException.none();
 
+    private Function<String, Integer> token = s -> -1;
+
     @Before
     public void setUp() throws Throwable
     {
@@ -108,7 +115,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
                     );
 
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),
-                new MemoryConstrainedCacheManager(), new SecurityLog( log ), logSuccessfulAuthentications );
+                new MemoryConstrainedCacheManager(), new SecurityLog( log ), logSuccessfulAuthentications,
+                false, Collections.emptyMap() );
 
         manager.init();
         return manager;
@@ -556,12 +564,12 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         setMockAuthenticationStrategyResult( "neo4j", "neo4j", AuthenticationResult.SUCCESS );
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) );
+        SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) ).authorize( token );
         userManager.setUserPassword( "neo4j", "1234", false );
         securityContext.subject().logout();
 
         setMockAuthenticationStrategyResult( "neo4j", "1234", AuthenticationResult.SUCCESS );
-        securityContext = manager.login( authToken( "neo4j", "1234" ) );
+        securityContext = manager.login( authToken( "neo4j", "1234" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -577,7 +585,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -593,7 +601,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "trinity", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "trinity", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -609,7 +617,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "tank", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "tank", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( "should allow reads", securityContext.mode().allowsReads() );
@@ -625,7 +633,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "neo", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "neo", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -641,7 +649,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "smith", "abc123" ) );
+        SecurityContext securityContext = manager.login( authToken( "smith", "abc123" ) ).authorize( token );
 
         // Then
         assertFalse( securityContext.mode().allowsReads() );
@@ -657,13 +665,15 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) );
+        LoginContext loginContext = manager.login( authToken( "morpheus", "abc123" ) );
+        SecurityContext securityContext = loginContext.authorize( token );
         assertTrue( securityContext.mode().allowsReads() );
         assertTrue( securityContext.mode().allowsWrites() );
         assertTrue( securityContext.mode().allowsSchemaWrites() );
 
-        securityContext.subject().logout();
+        loginContext.subject().logout();
 
+        securityContext = loginContext.authorize( token );
         // Then
         assertFalse( securityContext.mode().allowsReads() );
         assertFalse( securityContext.mode().allowsWrites() );

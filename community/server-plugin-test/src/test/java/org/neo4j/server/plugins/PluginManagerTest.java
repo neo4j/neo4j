@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,7 +43,7 @@ public class PluginManagerTest
     private static GraphDatabaseAPI graphDb;
 
     @BeforeClass
-    public static void loadExtensionManager() throws Exception
+    public static void loadExtensionManager()
     {
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         manager = new PluginManager( null, NullLogProvider.getInstance() );
@@ -61,7 +61,7 @@ public class PluginManagerTest
     }
 
     @Test
-    public void canGetUrisForNode() throws Exception
+    public void canGetUrisForNode()
     {
         Map<String, List<String>> extensions = manager.getExensionsFor( GraphDatabaseService.class );
         List<String> methods = extensions.get( FunctionalTestPlugin.class.getSimpleName() );

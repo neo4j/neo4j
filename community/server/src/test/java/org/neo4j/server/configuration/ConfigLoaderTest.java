@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -51,7 +51,7 @@ public class ConfigLoaderTest
     public final TemporaryFolder folder = new TemporaryFolder();
 
     @Test
-    public void shouldProvideAConfiguration() throws IOException
+    public void shouldProvideAConfiguration()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
@@ -64,7 +64,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldUseSpecifiedConfigFile() throws Exception
+    public void shouldUseSpecifiedConfigFile()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.getRoot() )
@@ -80,7 +80,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldUseSpecifiedHomeDir() throws Exception
+    public void shouldUseSpecifiedHomeDir()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
@@ -93,7 +93,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldUseWorkingDirForHomeDirIfUnspecified() throws Exception
+    public void shouldUseWorkingDirForHomeDirIfUnspecified()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
@@ -107,7 +107,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldAcceptDuplicateKeysWithSameValue() throws IOException
+    public void shouldAcceptDuplicateKeysWithSameValue()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.getRoot() )
@@ -125,7 +125,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void loadOfflineConfigShouldDisableBolt() throws IOException
+    public void loadOfflineConfigShouldDisableBolt()
     {
         // given
         BoltConnector defaultBoltConf = new BoltConnector( "bolt" );
@@ -143,7 +143,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void loadOfflineConfigAddDisabledBoltConnector() throws IOException
+    public void loadOfflineConfigAddDisabledBoltConnector()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
@@ -182,7 +182,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages() throws IOException
+    public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages()
     {
         // given
         File configFile = ConfigFileBuilder.builder( folder.getRoot() )
@@ -205,7 +205,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist() throws IOException
+    public void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist()
     {
         // Given
         File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );
@@ -218,7 +218,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldDefaultToCorrectValueForAuthStoreLocation() throws IOException
+    public void shouldDefaultToCorrectValueForAuthStoreLocation()
     {
         File configFile = ConfigFileBuilder
                 .builder( folder.getRoot() )
@@ -231,7 +231,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldSetAValueForAuthStoreLocation() throws IOException
+    public void shouldSetAValueForAuthStoreLocation()
     {
         File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" )
@@ -243,7 +243,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldNotOverwriteAuthStoreLocationIfProvided() throws IOException
+    public void shouldNotOverwriteAuthStoreLocationIfProvided()
     {
         File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" )

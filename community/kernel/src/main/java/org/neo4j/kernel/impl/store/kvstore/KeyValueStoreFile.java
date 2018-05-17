@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,8 +28,8 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
-import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.buffer;
 import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.compare;
+import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.newBuffer;
 
 /**
  * Stores Key/Value pairs sorted by the key in unsigned big-endian order.
@@ -75,9 +75,9 @@ public class KeyValueStoreFile implements Closeable
      */
     public boolean scan( SearchKey search, KeyValueVisitor visitor ) throws IOException
     {
-        BigEndianByteArrayBuffer searchKey = buffer( keySize );
-        BigEndianByteArrayBuffer key = buffer( keySize );
-        BigEndianByteArrayBuffer value = buffer( valueSize );
+        BigEndianByteArrayBuffer searchKey = newBuffer( keySize );
+        BigEndianByteArrayBuffer key = newBuffer( keySize );
+        BigEndianByteArrayBuffer value = newBuffer( valueSize );
         search.searchKey( searchKey );
         int page = findPage( searchKey, pageCatalogue );
         if ( page < 0 || (page >= pageCatalogue.length / (keySize * 2)) )
@@ -138,7 +138,7 @@ public class KeyValueStoreFile implements Closeable
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
                 cursor.close();
             }
@@ -299,7 +299,7 @@ public class KeyValueStoreFile implements Closeable
         { // The current page is a full page (either because it has pages after it, or the last page is actually full).
             entryCount = file.pageSize() / entrySize;
         }
-        int entryOffset = findEntryOffset( cursor, searchKey, key, value, firstEntry, /*lastEntry=*/entryCount - 1 );
+        int entryOffset = findEntryOffset( cursor, searchKey, key, value, firstEntry, entryCount - 1 );
         return entryOffset * entrySize;
     }
 

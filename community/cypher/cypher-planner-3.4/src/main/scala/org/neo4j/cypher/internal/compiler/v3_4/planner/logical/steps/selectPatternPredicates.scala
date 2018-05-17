@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,59 +21,65 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.FreshIdNameGenerator
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
-  def apply(lhs: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  def apply(lhs: LogicalPlan, queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Seq[LogicalPlan] = {
     for (
       pattern <- queryGraph.selections.patternPredicatesGiven(lhs.availableSymbols)
-      if applicable(lhs, queryGraph, pattern))
+      if applicable(lhs, queryGraph, pattern, solveds))
       yield {
         pattern match {
           case patternExpression: PatternExpression =>
-            val rhs = rhsPlan(lhs, patternExpression)
-            context.logicalPlanProducer.planSemiApply(lhs, rhs, patternExpression)
+            val rhs = rhsPlan(lhs, patternExpression, context, solveds, cardinalities)
+            context.logicalPlanProducer.planSemiApply(lhs, rhs, patternExpression, context)
           case p@Not(patternExpression: PatternExpression) =>
-            val rhs = rhsPlan(lhs, patternExpression)
-            context.logicalPlanProducer.planAntiSemiApply(lhs, rhs, patternExpression, p)
+            val rhs = rhsPlan(lhs, patternExpression, context, solveds, cardinalities)
+            context.logicalPlanProducer.planAntiSemiApply(lhs, rhs, patternExpression, p, context)
           case p@Ors(exprs) =>
             val (patternExpressions, expressions) = exprs.partition {
               case _: PatternExpression => true
               case Not(_: PatternExpression) => true
               case _ => false
             }
-            val (plan, solvedPredicates) = planPredicates(lhs, patternExpressions, expressions, None)
-            context.logicalPlanProducer.solvePredicate(plan, onePredicate(solvedPredicates))
+            val (plan, solvedPredicates) = planPredicates(lhs, patternExpressions, expressions, None, context, solveds, cardinalities)
+            context.logicalPlanProducer.solvePredicate(plan, onePredicate(solvedPredicates), context)
         }
       }
   }
 
-  private def planPredicates(lhs: LogicalPlan, patternExpressions: Set[Expression], expressions: Set[Expression], letExpression: Option[Expression])
-                            (implicit context: LogicalPlanningContext): (LogicalPlan, Set[Expression]) = {
+  private def planPredicates(lhs: LogicalPlan,
+                             patternExpressions: Set[Expression],
+                             expressions: Set[Expression],
+                             letExpression: Option[Expression],
+                             context: LogicalPlanningContext,
+                             solveds: Solveds,
+                             cardinalities: Cardinalities): (LogicalPlan, Set[Expression]) = {
     patternExpressions.toList match {
       case (patternExpression: PatternExpression) :: Nil =>
-        val rhs = rhsPlan(lhs, patternExpression)
-        val plan = context.logicalPlanProducer.planSelectOrSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet))
+        val rhs = rhsPlan(lhs, patternExpression, context, solveds, cardinalities)
+        val plan = context.logicalPlanProducer.planSelectOrSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet), context)
         (plan, expressions + patternExpression)
 
       case (p@Not(patternExpression: PatternExpression)) :: Nil =>
-        val rhs = rhsPlan(lhs, patternExpression)
-        val plan = context.logicalPlanProducer.planSelectOrAntiSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet))
+        val rhs = rhsPlan(lhs, patternExpression, context, solveds, cardinalities)
+        val plan = context.logicalPlanProducer.planSelectOrAntiSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet), context)
         (plan, expressions + p)
 
       case (patternExpression: PatternExpression) :: tail =>
-        val rhs = rhsPlan(lhs, patternExpression)
-        val (newLhs, newLetExpr) = createLetSemiApply(lhs, rhs, patternExpression, expressions, letExpression)
-        val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr))
+        val rhs = rhsPlan(lhs, patternExpression, context, solveds, cardinalities)
+        val (newLhs, newLetExpr) = createLetSemiApply(lhs, rhs, patternExpression, expressions, letExpression, context)
+        val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr), context, solveds, cardinalities)
         (plan, solvedPredicates ++ Set(patternExpression) ++ expressions)
 
       case (p@Not(patternExpression: PatternExpression)) :: tail =>
-        val rhs = rhsPlan(lhs, patternExpression)
-        val (newLhs, newLetExpr) = createLetAntiSemiApply(lhs, rhs, patternExpression, p, expressions, letExpression)
-        val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr))
+        val rhs = rhsPlan(lhs, patternExpression, context, solveds, cardinalities)
+        val (newLhs, newLetExpr) = createLetAntiSemiApply(lhs, rhs, patternExpression, p, expressions, letExpression, context)
+        val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr), context, solveds, cardinalities)
         (plan, solvedPredicates ++ Set(p) ++ expressions)
 
       case _ =>
@@ -81,27 +87,36 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
     }
   }
 
-  private def createLetSemiApply(lhs: LogicalPlan, rhs: LogicalPlan, patternExpression: PatternExpression, expressions: Set[Expression], letExpression: Option[Expression])
-                                (implicit context: LogicalPlanningContext) = {
+  private def createLetSemiApply(lhs: LogicalPlan,
+                                 rhs: LogicalPlan,
+                                 patternExpression: PatternExpression,
+                                 expressions: Set[Expression],
+                                 letExpression: Option[Expression],
+                                 context: LogicalPlanningContext) = {
     val (idName, ident) = freshId(patternExpression)
     if (expressions.isEmpty && letExpression.isEmpty)
-      (context.logicalPlanProducer.planLetSemiApply(lhs, rhs, idName), ident)
+      (context.logicalPlanProducer.planLetSemiApply(lhs, rhs, idName, context), ident)
     else
-      (context.logicalPlanProducer.planLetSelectOrSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet)), ident)
+      (context.logicalPlanProducer.planLetSelectOrSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet), context), ident)
   }
 
-  private def createLetAntiSemiApply(lhs: LogicalPlan, rhs: LogicalPlan, patternExpression: PatternExpression, predicate: Expression, expressions: Set[Expression], letExpression: Option[Expression])
-                                    (implicit context: LogicalPlanningContext) = {
+  private def createLetAntiSemiApply(lhs: LogicalPlan,
+                                     rhs: LogicalPlan,
+                                     patternExpression: PatternExpression,
+                                     predicate: Expression,
+                                     expressions: Set[Expression],
+                                     letExpression: Option[Expression],
+                                     context: LogicalPlanningContext) = {
     val (idName, ident) = freshId(patternExpression)
     if (expressions.isEmpty && letExpression.isEmpty)
-      (context.logicalPlanProducer.planLetAntiSemiApply(lhs, rhs, idName), ident)
+      (context.logicalPlanProducer.planLetAntiSemiApply(lhs, rhs, idName, context), ident)
     else
-      (context.logicalPlanProducer.planLetSelectOrAntiSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet)), ident)
+      (context.logicalPlanProducer.planLetSelectOrAntiSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet), context), ident)
   }
 
-  private def rhsPlan(lhs: LogicalPlan, pattern: PatternExpression)(implicit ctx: LogicalPlanningContext) = {
-    val context = ctx.recurse(lhs)
-    val (plan, _) = context.strategy.planPatternExpression(lhs.availableSymbols, pattern)(context)
+  private def rhsPlan(lhs: LogicalPlan, pattern: PatternExpression, ctx: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
+    val context = ctx.withUpdatedCardinalityInformation(lhs, solveds, cardinalities)
+    val (plan, _) = context.strategy.planPatternExpression(lhs.availableSymbols, pattern, context, solveds, cardinalities)
     plan
   }
 
@@ -110,15 +125,15 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
   else
     Ors(expressions)(expressions.head.position)
 
-  private def applicable(outerPlan: LogicalPlan, qg: QueryGraph, expression: Expression) = {
+  private def applicable(outerPlan: LogicalPlan, qg: QueryGraph, expression: Expression, solveds: Solveds) = {
     val symbolsAvailable = qg.argumentIds.subsetOf(outerPlan.availableSymbols)
-    val isSolved = outerPlan.solved.exists(_.queryGraph.selections.contains(expression))
+    val isSolved = solveds.get(outerPlan.id).exists(_.queryGraph.selections.contains(expression))
     symbolsAvailable && !isSolved
   }
 
 
   private def freshId(patternExpression: PatternExpression) = {
     val name = FreshIdNameGenerator.name(patternExpression.position)
-    (IdName(name), Variable(name)(patternExpression.position))
+    (name, Variable(name)(patternExpression.position))
   }
 }

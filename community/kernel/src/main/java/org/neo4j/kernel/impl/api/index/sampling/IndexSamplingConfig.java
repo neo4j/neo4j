@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,9 +30,16 @@ public class IndexSamplingConfig
 
     public IndexSamplingConfig( Config config )
     {
-        this.sampleSizeLimit = config.get( GraphDatabaseSettings.index_sample_size_limit );
-        this.updateRatio = ((double) config.get( GraphDatabaseSettings.index_sampling_update_percentage )) / 100.0d;
-        this.backgroundSampling = config.get( GraphDatabaseSettings.index_background_sampling_enabled );
+        this( config.get( GraphDatabaseSettings.index_sample_size_limit ),
+                          config.get( GraphDatabaseSettings.index_sampling_update_percentage ) / 100.0d,
+                          config.get( GraphDatabaseSettings.index_background_sampling_enabled ) );
+    }
+
+    public IndexSamplingConfig( int sampleSizeLimit, double updateRatio, boolean backgroundSampling )
+    {
+        this.sampleSizeLimit = sampleSizeLimit;
+        this.updateRatio = updateRatio;
+        this.backgroundSampling = backgroundSampling;
     }
 
     public int sampleSizeLimit()

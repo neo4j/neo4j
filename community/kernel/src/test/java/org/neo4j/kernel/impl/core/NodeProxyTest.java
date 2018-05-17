@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,10 +34,14 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 
+import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
@@ -65,7 +69,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExistOnNode() throws Exception
+    public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExistOnNode()
     {
         // Given a database with PROPERTY_KEY in it
         createNodeWith( PROPERTY_KEY );
@@ -157,7 +161,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExist() throws Exception
+    public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExist()
     {
         // Given a database without PROPERTY_KEY in it
 
@@ -312,6 +316,54 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         {
             assertEquals( propertiesCount, db.getNodeById( nodeId ).getAllProperties().size() );
             tx.success();
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToForceTypeChangeOfProperty()
+    {
+        // Given
+        Node node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+            node.setProperty( "prop", 1337 );
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.setProperty( "prop", 1337.0 );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction ignore = db.beginTx() )
+        {
+            assertThat( node.getProperty( "prop" ), instanceOf( Double.class ) );
+        }
+    }
+
+    @Test
+    public void shouldOnlyReturnTypeOnce()
+    {
+        // Given
+        Node node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
+            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
+            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( Iterables.asList( node.getRelationshipTypes() ),
+                    equalTo( singletonList( RelationshipType.withName( "R" ) ) ) );
         }
     }
 

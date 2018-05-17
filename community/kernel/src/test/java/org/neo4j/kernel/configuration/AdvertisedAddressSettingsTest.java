@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -41,7 +41,7 @@ public class AdvertisedAddressSettingsTest
             advertisedAddress( "advertised_address", listen_address_setting );
 
     @Test
-    public void shouldParseExplicitSettingValueWhenProvided() throws Exception
+    public void shouldParseExplicitSettingValueWhenProvided()
     {
         // given
         Map<String,String> config = stringMap(
@@ -57,7 +57,7 @@ public class AdvertisedAddressSettingsTest
     }
 
     @Test
-    public void shouldCombineDefaultHostnameWithPortFromListenAddressSettingWhenNoValueProvided() throws Exception
+    public void shouldCombineDefaultHostnameWithPortFromListenAddressSettingWhenNoValueProvided()
     {
         // given
         Map<String,String> config = stringMap(
@@ -72,7 +72,7 @@ public class AdvertisedAddressSettingsTest
     }
 
     @Test
-    public void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided() throws Exception
+    public void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided()
     {
         // given
         Map<String,String> config = stringMap(

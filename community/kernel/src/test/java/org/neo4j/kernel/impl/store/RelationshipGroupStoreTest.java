@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,6 +40,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -75,7 +76,7 @@ public class RelationshipGroupStoreTest
     private ImpermanentGraphDatabase db;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         directory = testDir.graphDbDir();
         fs = new DefaultFileSystemAbstraction();
@@ -93,19 +94,19 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void createWithDefaultThreshold() throws Exception
+    public void createWithDefaultThreshold()
     {
         createAndVerify( null );
     }
 
     @Test
-    public void createWithCustomThreshold() throws Exception
+    public void createWithCustomThreshold()
     {
         createAndVerify( defaultThreshold * 2 );
     }
 
     @Test
-    public void createDenseNodeWithLowThreshold() throws Exception
+    public void createDenseNodeWithLowThreshold()
     {
         newDb( 2 );
 
@@ -170,11 +171,11 @@ public class RelationshipGroupStoreTest
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
         return new StoreFactory( directory, Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
-                fs, NullLogProvider.getInstance() );
+                fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 
     @Test
-    public void makeSureRelationshipGroupsNextAndPrevGetsAssignedCorrectly() throws Exception
+    public void makeSureRelationshipGroupsNextAndPrevGetsAssignedCorrectly()
     {
         newDb( 1 );
 
@@ -198,7 +199,7 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void verifyRecordsForDenseNodeWithOneRelType() throws Exception
+    public void verifyRecordsForDenseNodeWithOneRelType()
     {
         newDb( 2 );
 
@@ -235,7 +236,7 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void verifyRecordsForDenseNodeWithTwoRelTypes() throws Exception
+    public void verifyRecordsForDenseNodeWithTwoRelTypes()
     {
         newDb( 2 );
 
@@ -276,7 +277,7 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void verifyGroupIsDeletedWhenNeeded() throws Exception
+    public void verifyGroupIsDeletedWhenNeeded()
     {
         // TODO test on a lower level instead
 

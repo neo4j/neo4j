@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,11 +33,11 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.kernel.impl.security.User;
-import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -75,14 +75,14 @@ public class SetInitialPasswordCommandTest
     }
 
     @Test
-    public void shouldFailSetPasswordWithNoArguments() throws Exception
+    public void shouldFailSetPasswordWithNoArguments()
     {
         assertException( () -> setPasswordCommand.execute( new String[0] ), IncorrectUsage.class,
                 "not enough arguments" );
     }
 
     @Test
-    public void shouldFailSetPasswordWithTooManyArguments() throws Exception
+    public void shouldFailSetPasswordWithTooManyArguments()
     {
         String[] arguments = {"", "123", "321"};
         assertException( () -> setPasswordCommand.execute( arguments ), IncorrectUsage.class, "unrecognized arguments: '123 321'" );
@@ -143,7 +143,7 @@ public class SetInitialPasswordCommandTest
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
                             "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "    HEAP_SIZE     Set JVM maximum heap size during command execution.%n" +
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "Sets the initial password of the initial admin user ('neo4j').%n" ),

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,7 +46,7 @@ public class IncompleteLogHeaderException extends IOException
         StringBuilder builder = new StringBuilder( "Unable to read log version and last committed tx" );
         if ( file != null )
         {
-            builder.append( " from '" ).append( file.getAbsolutePath() ).append( "'" );
+            builder.append( " from '" ).append( file.getAbsolutePath() ).append( '\'' );
         }
         builder.append( ". Was only able to read " ).append( readSize ).append( " bytes, but was expecting " )
                .append( LOG_HEADER_SIZE );

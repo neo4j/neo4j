@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -65,11 +65,9 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     {
         createGraph();
         PathFinder<Path> finder = newFinder();
-        try ( Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) ) )
-        {
-            assertNotNull( path );
-            assertPathDef( path, "SOURCE", "z", "9", "0", "TARGET" );
-        }
+        Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) );
+        assertNotNull( path );
+        assertPathDef( path, "SOURCE", "z", "9", "0", "TARGET" );
     }
 
     @Test

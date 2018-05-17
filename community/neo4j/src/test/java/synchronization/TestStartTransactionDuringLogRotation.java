@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -134,7 +134,7 @@ public class TestStartTransactionDuringLogRotation
     }
 
     @Test( timeout = 10000 )
-    public void logRotationMustNotObstructStartingReadTransaction() throws InterruptedException
+    public void logRotationMustNotObstructStartingReadTransaction()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -145,7 +145,7 @@ public class TestStartTransactionDuringLogRotation
     }
 
     @Test( timeout = 10000 )
-    public void logRotationMustNotObstructStartingWriteTransaction() throws InterruptedException
+    public void logRotationMustNotObstructStartingWriteTransaction()
     {
         try ( Transaction tx = db.beginTx() )
         {

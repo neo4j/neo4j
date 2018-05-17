@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,7 +34,7 @@ public class ServiceTest
 {
 
     @Test
-    public void shouldLoadServiceInDefaultEnvironment() throws Exception
+    public void shouldLoadServiceInDefaultEnvironment()
     {
         FooService fooService = Service.load( FooService.class, "foo" );
         assertTrue( fooService instanceof BarService );
@@ -57,7 +57,7 @@ public class ServiceTest
     }
 
     @Test
-    public void whenContextClassLoaderOverridesServiceShouldLoadThatClass() throws Exception
+    public void whenContextClassLoaderOverridesServiceShouldLoadThatClass()
     {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         try
@@ -73,7 +73,7 @@ public class ServiceTest
     }
 
     @Test
-    public void whenContextClassLoaderDuplicatesServiceShouldLoadItOnce() throws Exception
+    public void whenContextClassLoaderDuplicatesServiceShouldLoadItOnce()
     {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         try

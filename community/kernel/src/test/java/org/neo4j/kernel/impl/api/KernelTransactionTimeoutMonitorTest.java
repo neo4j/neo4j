@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -56,7 +56,7 @@ public class KernelTransactionTimeoutMonitorTest
     }
 
     @Test
-    public void terminateExpiredTransactions() throws Exception
+    public void terminateExpiredTransactions()
     {
         HashSet<KernelTransactionHandle> transactions = new HashSet<>();
         KernelTransactionImplementation tx1 = prepareTxMock( 1, 3 );
@@ -93,7 +93,7 @@ public class KernelTransactionTimeoutMonitorTest
     }
 
     @Test
-    public void skipTransactionWithoutTimeout() throws Exception
+    public void skipTransactionWithoutTimeout()
     {
         HashSet<KernelTransactionHandle> transactions = new HashSet<>();
         KernelTransactionImplementation tx1 = prepareTxMock( 3, 0 );

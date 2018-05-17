@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 public interface DbStructureVisitor
 {
@@ -31,7 +31,7 @@ public interface DbStructureVisitor
     void visitPropertyKey( int propertyKeyId, String propertyKeyName );
     void visitRelationshipType( int relTypeId, String relTypeName );
 
-    void visitIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size );
+    void visitIndex( SchemaIndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size );
     void visitUniqueConstraint( UniquenessConstraintDescriptor constraint, String userDescription );
     void visitNodePropertyExistenceConstraint( NodeExistenceConstraintDescriptor constraint, String userDescription );
     void visitRelationshipPropertyExistenceConstraint( RelExistenceConstraintDescriptor constraint,

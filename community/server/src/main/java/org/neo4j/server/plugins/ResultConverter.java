@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -168,7 +168,7 @@ abstract class ResultConverter
                 @Override
                 Representation convert( Object obj )
                 {
-                    return new PathRepresentation<Path>( (Path) obj );
+                    return new PathRepresentation<>( (Path) obj );
                 }
             };
     private static final ResultConverter STRING_RESULT = new ValueResult( RepresentationType.STRING )

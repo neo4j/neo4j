@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,6 @@ package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
@@ -138,7 +138,8 @@ public class LogTailScanner
                 monitor.corruptedLogFile( version, t );
                 if ( failOnCorruptedLogFiles )
                 {
-                    throw Exceptions.launderedException( t );
+                    throwIfUnchecked( t );
+                    throw new RuntimeException( t );
                 }
                 corruptedTransactionLogs = true;
             }

@@ -1,21 +1,24 @@
 #
-# Copyright (c) 2002-2017 "Neo Technology,"
-# Network Engine for Objects in Lund AB [http://neotechnology.com]
+# Copyright (c) 2002-2018 "Neo4j,"
+# Neo4j Sweden AB [http://neo4j.com]
 #
-# This file is part of Neo4j.
-#
-# Neo4j is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+# This file is part of Neo4j Enterprise Edition. The included source
+# code can be redistributed and/or modified under the terms of the
+# GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+# (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+# Commons Clause, as found in the associated LICENSE.txt file.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
 #
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# Neo4j object code can be licensed independently from the source
+# under separate terms from the AGPL. Inquiries can be directed to:
+# licensing@neo4j.com
+#
+# More information is also available at:
+# https://neo4j.com/licensing/
 #
 
 Feature: UnwindAcceptance
@@ -30,7 +33,7 @@ Feature: UnwindAcceptance
       """
       MATCH (n:A {prop: 'a'})-[r:R {prop: 'r'}]->()
       WITH *
-      UNWIND [42, 0.7, true, 's', n, r] as i
+      UNWIND [42, 0.7, true, 's', n, r, null] as i
       RETURN i
       ORDER BY "no order"
       """
@@ -42,6 +45,7 @@ Feature: UnwindAcceptance
       | 's'               |
       | (:A {prop: 'a'})  |
       | [:R {prop: 'r'}]  |
+      | null              |
     And no side effects
 
   Scenario: Nested type support in list literal
@@ -54,7 +58,7 @@ Feature: UnwindAcceptance
       """
       MATCH (n:A {prop: 'a'})-[r:R {prop: 'r'}]->()
       WITH *
-      UNWIND [[42],[0.7],[true],[n],[r],[n,42],[r,42]] as i
+      UNWIND [[42],[0.7],[true],[n],[r],[n,42],[r,42],[null]] as i
       RETURN i
       ORDER BY "no order"
       """
@@ -67,6 +71,7 @@ Feature: UnwindAcceptance
       | [[:R {prop: 'r'}]]     |
       | [(:A {prop: 'a'}), 42] |
       | [[:R {prop: 'r'}], 42] |
+      | [null]                 |
     And no side effects
 
   Scenario: Nested type support in map literal
@@ -108,7 +113,7 @@ Feature: UnwindAcceptance
       UNWIND [ {k: [n]},
                {k: [r]},
                {k: [n, r], l: 42},
-               {k: [r], l: 's'},
+               {k: [r, null], l: 's'},
                [ {k: [n, r]} ]
              ] as i
       RETURN i
@@ -119,7 +124,7 @@ Feature: UnwindAcceptance
       | {k: [(:A)]}              |
       | {k: [[:R]]}              |
       | {k: [(:A), [:R]], l: 42} |
-      | {k: [[:R]], l: 's'}      |
+      | {k: [[:R], null], l: 's'}|
       | [{k: [(:A), [:R]]}]      |
     And no side effects
 
@@ -136,7 +141,7 @@ Feature: UnwindAcceptance
       UNWIND [ {k: [n]},
                {k: [r]},
                {k: [n, r], l: 42},
-               {k: [r], l: 's'},
+               {k: [r, null], l: 's'},
                [ {k: [n, r]} ]
              ] as i
       WITH i as j
@@ -148,7 +153,7 @@ Feature: UnwindAcceptance
       | {k: [(:A)]}              |
       | {k: [[:R]]}              |
       | {k: [(:A), [:R]], l: 42} |
-      | {k: [[:R]], l: 's'}     |
+      | {k: [[:R], null], l: 's'}|
       | [{k: [(:A), [:R]]}]      |
     And no side effects
 
@@ -209,3 +214,127 @@ Feature: UnwindAcceptance
       | [3] |
     And no side effects
 
+  Scenario: Unwind on array property
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:L {array:['a', 'b', 'c']})
+      """
+    When executing query:
+      """
+      MATCH (n:L)
+      UNWIND n.array AS array
+      RETURN array
+      """
+    Then the result should be:
+      | array |
+      | 'a'   |
+      | 'b'   |
+      | 'c'   |
+    And no side effects
+
+  Scenario: Nested unwind with longs
+    Given an empty graph
+    When executing query:
+      """
+      WITH [[1, 2], [3, 4], 5] AS nested
+          UNWIND nested AS x
+          UNWIND x AS y
+          RETURN y
+      """
+    Then the result should be:
+        | y |
+        | 1 |
+        | 2 |
+        | 3 |
+        | 4 |
+        | 5 |
+    And no side effects
+
+  Scenario: Nested unwind with doubles
+    Given an empty graph
+    When executing query:
+      """
+      WITH [[1.5, 2.5], [3.5, 4.5], 5.5] AS nested
+          UNWIND nested AS x
+          UNWIND x AS y
+          RETURN y
+      """
+    Then the result should be:
+      | y   |
+      | 1.5 |
+      | 2.5 |
+      | 3.5 |
+      | 4.5 |
+      | 5.5 |
+    And no side effects
+
+  Scenario: Nested unwind with strings
+    Given an empty graph
+    When executing query:
+      """
+      WITH [['a', 'b'], ['c', 'd'], 'e'] AS nested
+          UNWIND nested AS x
+          UNWIND x AS y
+          RETURN y
+      """
+    Then the result should be:
+      | y   |
+      | 'a' |
+      | 'b' |
+      | 'c' |
+      | 'd' |
+      | 'e' |
+    And no side effects
+
+  Scenario: Nested unwind with mixed types
+    Given an empty graph
+    When executing query:
+      """
+      WITH [['a', 'b'], ['1.5', null, 'c'], '2', 'd' ] AS nested
+          UNWIND nested AS x
+          UNWIND x AS y
+          RETURN y
+      """
+    Then the result should be:
+      | y     |
+      | 'a'   |
+      | 'b'   |
+      | '1.5' |
+      | null  |
+      | 'c'   |
+      | '2'   |
+      | 'd'   |
+    And no side effects
+
+  Scenario: Pattern comprehension in unwind with empty db
+    Given an empty graph
+    When executing query:
+      """
+        UNWIND [(a)-->(b) | b ] as c
+        RETURN c
+      """
+    Then the result should be:
+      | c |
+    And no side effects
+
+  Scenario: Pattern comprehension in unwind with hits
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a:A)
+      CREATE (b:B)
+      CREATE (c:C)
+      CREATE (a)-[:T]->(b),
+             (b)-[:T]->(c)
+      """
+    When executing query:
+      """
+        UNWIND [(a)-->(b) | b ] as c
+        RETURN c
+      """
+    Then the result should be:
+      | c     |
+      | (:B)  |
+      | (:C)  |
+    And no side effects

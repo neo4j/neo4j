@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -148,33 +148,28 @@ public class ForkedProcessorStepTest
         AtomicBoolean end = new AtomicBoolean();
         for ( int i = 0; i < submitters.length; i++ )
         {
-            submitters[i] = new Thread()
-            {
-                @Override
-                public void run()
+            submitters[i] = new Thread( () -> {
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+                while ( !end.get() )
                 {
-                    ThreadLocalRandom random = ThreadLocalRandom.current();
-                    while ( !end.get() )
+                    // synchronized block simulating that batches are received in order,
+                    // which is enforced in real environment of a stage.
+                    synchronized ( nextTicket )
                     {
-                        // synchronized block simulating that batches are received in order,
-                        // which is enforced in real environment of a stage.
-                        synchronized ( nextTicket )
+                        // The processor count is changed here in this block simply because otherwise
+                        // it's very hard to know how many processors we expect to see have processed
+                        // a particular batch.
+                        if ( random.nextFloat() < 0.1 )
                         {
-                            // The processor count is changed here in this block simply because otherwise
-                            // it's very hard to know how many processors we expect to see have processed
-                            // a particular batch.
-                            if ( random.nextFloat() < 0.1 )
-                            {
-                                step.processors( random.nextInt( -2, 4 ) );
-                            }
-
-                            long ticket = nextTicket.incrementAndGet();
-                            Batch batch = new Batch( step.processors( 0 ) );
-                            step.receive( ticket, batch );
+                            step.processors( random.nextInt( -2, 4 ) );
                         }
+
+                        long ticket = nextTicket.incrementAndGet();
+                        Batch batch = new Batch( step.processors( 0 ) );
+                        step.receive( ticket, batch );
                     }
                 }
-            };
+            } );
             submitters[i].start();
         }
 
@@ -476,7 +471,7 @@ public class ForkedProcessorStepTest
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
         }
     }

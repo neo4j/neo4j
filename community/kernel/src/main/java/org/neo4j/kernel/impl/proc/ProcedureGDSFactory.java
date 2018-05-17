@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,30 +25,36 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
+import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDatabaseService,ProcedureException>
 {
     private final PlatformModule platform;
+    private final EditionModule editionModule;
     private final DataSourceModule dataSource;
     private final DependencyResolver resolver;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator;
+    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
-    public ProcedureGDSFactory( PlatformModule platform, DataSourceModule dataSource, DependencyResolver resolver,
-            CoreAPIAvailabilityGuard coreAPIAvailabilityGuard )
+    public ProcedureGDSFactory( PlatformModule platform, EditionModule editionModule, DataSourceModule dataSource, DependencyResolver resolver,
+            CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
         this.platform = platform;
+        this.editionModule = editionModule;
         this.dataSource = dataSource;
         this.resolver = resolver;
         this.availability = coreAPIAvailabilityGuard;
+        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.urlValidator = url -> platform.urlAccessRule.validate( platform.config, url );
     }
 
@@ -67,6 +73,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
         }
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
         facade.init(
+            editionModule,
             new ProcedureGDBFacadeSPI(
                 platform,
                 dataSource,
@@ -77,7 +84,8 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
             ),
             dataSource.guard,
             dataSource.threadToTransactionBridge,
-            platform.config
+            platform.config,
+            relationshipTypeTokenHolder
         );
         return facade;
     }

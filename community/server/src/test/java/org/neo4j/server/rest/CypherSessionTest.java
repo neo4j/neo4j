@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.junit.Test;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 public class CypherSessionTest
 {
     @Test
-    public void shouldReturnASingleNode() throws Throwable
+    public void shouldReturnASingleNode()
     {
         GraphDatabaseFacade graphdb = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         Database database = new WrappedDatabase( graphdb );

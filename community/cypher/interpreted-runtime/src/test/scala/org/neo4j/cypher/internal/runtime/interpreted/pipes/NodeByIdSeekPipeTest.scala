@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.mockito.{ArgumentMatchers, Matchers, Mockito}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
@@ -38,14 +38,14 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     // given
     val id = 17
     val node = nodeProxy(17)
-    val nodeOps = when(mock[Operations[Node]].getById(id)).thenReturn(node).getMock[Operations[NodeValue]]
+    val nodeOps = mock[Operations[NodeValue]]
     when(nodeOps.getByIdIfExists(17)).thenAnswer(new Answer[Option[NodeValue]] {
       override def answer(invocation: InvocationOnMock): Option[NodeValue] = Some(fromNodeProxy(node))
     })
 
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.nodeOps).thenReturn(nodeOps)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
     val result = NodeByIdSeekPipe("a", SingleSeekArg(Literal(id)))().createResults(queryState)
@@ -71,9 +71,9 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     })
 
 
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.nodeOps).thenReturn(nodeOps)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // whens
     val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(Literal(42), Literal(21), Literal(11))))().createResults(queryState)

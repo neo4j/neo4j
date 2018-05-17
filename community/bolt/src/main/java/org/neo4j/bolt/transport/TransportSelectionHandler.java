@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,14 +31,14 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.bolt.transport.pipeline.ProtocolHandshaker;
+import org.neo4j.bolt.transport.pipeline.WebSocketFrameTranslator;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.bolt.transport.BoltHandshakeProtocolHandler.BOLT_MAGIC_PREAMBLE;
+import static org.neo4j.bolt.transport.pipeline.ProtocolHandshaker.BOLT_MAGIC_PREAMBLE;
 
 public class TransportSelectionHandler extends ByteToMessageDecoder
 {
@@ -46,27 +46,28 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private static final int MAX_WEBSOCKET_HANDSHAKE_SIZE = 65536;
     private static final int MAX_WEBSOCKET_FRAME_SIZE = 65536;
 
+    private final String connector;
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
     private final boolean isEncrypted;
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
-    private final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions;
+    private final BoltProtocolPipelineInstallerFactory handlerFactory;
 
-    TransportSelectionHandler( SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
-                               Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions,
-                               BoltMessageLogging boltLogging )
+    TransportSelectionHandler( String connector, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
+            BoltProtocolPipelineInstallerFactory handlerFactory, BoltMessageLogging boltLogging )
     {
+        this.connector = connector;
         this.sslCtx = sslCtx;
         this.encryptionRequired = encryptionRequired;
         this.isEncrypted = isEncrypted;
         this.logging = logging;
         this.boltLogging = boltLogging;
-        this.protocolVersions = protocolVersions;
+        this.handlerFactory = handlerFactory;
     }
 
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
+    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {
         // Will use the first five bytes to detect a protocol.
         if ( in.readableBytes() < 5 )
@@ -120,15 +121,14 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     {
         ChannelPipeline p = ctx.pipeline();
         p.addLast( sslCtx.newHandler( ctx.alloc() ) );
-        p.addLast( new TransportSelectionHandler( null, encryptionRequired, true, logging,
-                protocolVersions, boltLogging ) );
+        p.addLast( new TransportSelectionHandler( connector, null, encryptionRequired, true, logging, handlerFactory, boltLogging ) );
         p.remove( this );
     }
 
     private void switchToSocket( ChannelHandlerContext ctx )
     {
         ChannelPipeline p = ctx.pipeline();
-        p.addLast( newSocketTransportHandler() );
+        p.addLast( newHandshaker( ctx ) );
         p.remove( this );
     }
 
@@ -141,14 +141,13 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
                 new WebSocketServerProtocolHandler( "/", null, false, MAX_WEBSOCKET_FRAME_SIZE ),
                 new WebSocketFrameAggregator( MAX_WEBSOCKET_FRAME_SIZE ),
                 new WebSocketFrameTranslator(),
-                newSocketTransportHandler() );
+                newHandshaker( ctx ) );
         p.remove( this );
     }
 
-    private SocketTransportHandler newSocketTransportHandler()
+    private ProtocolHandshaker newHandshaker( ChannelHandlerContext ctx )
     {
-        BoltHandshakeProtocolHandler protocolHandler = new BoltHandshakeProtocolHandler( protocolVersions,
+        return new ProtocolHandshaker( handlerFactory, BoltChannel.open( connector, ctx.channel(), boltLogging.newLogger( ctx.channel() ) ), logging,
                 encryptionRequired, isEncrypted );
-        return new SocketTransportHandler( protocolHandler, logging, boltLogging );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,7 +37,6 @@ import org.neo4j.test.server.SharedServerTestBase;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 public class ExtensionListingFunctionalTestIT extends SharedServerTestBase
@@ -45,7 +44,7 @@ public class ExtensionListingFunctionalTestIT extends SharedServerTestBase
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( SharedServerTestBase.server() );
     }
@@ -62,8 +61,7 @@ public class ExtensionListingFunctionalTestIT extends SharedServerTestBase
         JaxRsResponse response = RestRequest.req().get( functionalTestHelper.dataUri() );
         assertThat( response.getStatus(), equalTo( 200 ) );
         Map<String,Object> json = JsonHelper.jsonToMap( response.getEntity() );
-        String extInfo = (String) json.get( "extensions_info" );
-        assertNotNull( new URI( extInfo ) );
+        new URI( (String) json.get( "extensions_info" ) ); // throws on error
         response.close();
     }
 

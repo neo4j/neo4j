@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,12 +30,14 @@ public enum Uniqueness implements UniquenessFactory
      */
     NODE_GLOBAL
     {
+        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             acceptNull( optionalParameter );
             return new GloballyUnique( PrimitiveTypeFetcher.NODE );
         }
 
+        @Override
         public boolean eagerStartBranches()
         {
             return true;
@@ -46,12 +48,14 @@ public enum Uniqueness implements UniquenessFactory
      */
     NODE_PATH
     {
+        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             acceptNull( optionalParameter );
             return new PathUnique( PrimitiveTypeFetcher.NODE );
         }
 
+        @Override
         public boolean eagerStartBranches()
         {
             return true;
@@ -69,12 +73,14 @@ public enum Uniqueness implements UniquenessFactory
      */
     NODE_RECENT
     {
+        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             acceptIntegerOrNull( optionalParameter );
             return new RecentlyUnique( PrimitiveTypeFetcher.NODE, optionalParameter );
         }
 
+        @Override
         public boolean eagerStartBranches()
         {
             return true;
@@ -92,6 +98,7 @@ public enum Uniqueness implements UniquenessFactory
             return new LevelUnique( PrimitiveTypeFetcher.NODE );
         }
 
+        @Override
         public boolean eagerStartBranches()
         {
             return true;
@@ -110,6 +117,7 @@ public enum Uniqueness implements UniquenessFactory
             return new GloballyUnique( PrimitiveTypeFetcher.RELATIONSHIP );
         }
 
+        @Override
         public boolean eagerStartBranches()
         {
             return true;
@@ -128,6 +136,7 @@ public enum Uniqueness implements UniquenessFactory
             return new PathUnique( PrimitiveTypeFetcher.RELATIONSHIP );
         }
 
+        @Override
         public boolean eagerStartBranches()
         {
             return false;
@@ -145,6 +154,7 @@ public enum Uniqueness implements UniquenessFactory
             return new RecentlyUnique( PrimitiveTypeFetcher.RELATIONSHIP, optionalParameter );
         }
 
+        @Override
         public boolean eagerStartBranches()
         {
             return true;
@@ -162,6 +172,7 @@ public enum Uniqueness implements UniquenessFactory
             return new LevelUnique( PrimitiveTypeFetcher.RELATIONSHIP );
         }
 
+        @Override
         public boolean eagerStartBranches()
         {
             return true;
@@ -180,6 +191,7 @@ public enum Uniqueness implements UniquenessFactory
             return notUniqueInstance;
         }
 
+        @Override
         public boolean eagerStartBranches()
         {
             return true;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -66,7 +66,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
     val tail = RegularPlannerQuery(queryGraph = QueryGraph.empty)
     val firstQueryGraph = QueryGraph.empty
-    val secondQueryGraph = QueryGraph(patternNodes = Set(IdName("a")))
+    val secondQueryGraph = QueryGraph(patternNodes = Set("a"))
     val input = RegularPlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
 
     val result = input.foldMap {

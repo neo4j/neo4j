@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,7 +32,7 @@ import static org.junit.Assert.assertNotEquals;
 public class StatusTest
 {
     @Test
-    public void eachStatusCodeHasAUniqueCode() throws Exception
+    public void eachStatusCodeHasAUniqueCode()
     {
         // given
         Set<Object> codes = new HashSet<>();

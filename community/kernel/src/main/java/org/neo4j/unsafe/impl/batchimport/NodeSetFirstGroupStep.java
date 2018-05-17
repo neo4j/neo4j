@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -66,11 +66,15 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender ) throws Throwable
+    protected void process( RelationshipGroupRecord[] batch, BatchSender sender )
     {
         for ( RelationshipGroupRecord group : batch )
         {
-            assert group.inUse();
+            if ( !group.inUse() )
+            {
+                continue;
+            }
+
             long nodeId = group.getOwningNode();
             if ( cache.getByte( nodeId, 0 ) == 0 )
             {
@@ -88,6 +92,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
                 }
             }
         }
+        control.recycle( batch );
     }
 
     @Override

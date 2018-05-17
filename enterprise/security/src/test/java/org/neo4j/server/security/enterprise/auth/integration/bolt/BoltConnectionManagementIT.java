@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
@@ -33,6 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
@@ -52,7 +56,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,6 +81,7 @@ public class BoltConnectionManagementIT
 
     protected TransportConnection admin;
     protected TransportConnection user;
+    protected TransportTestUtil util;
 
     @Parameterized.Parameter()
     public Factory<TransportConnection> cf;
@@ -101,6 +105,7 @@ public class BoltConnectionManagementIT
         this.admin = cf.newInstance();
         this.user = cf.newInstance();
         this.address = server.lookupDefaultConnector();
+        this.util = new TransportTestUtil( new Neo4jPackV1() );
 
         authenticate( admin, "neo4j", "neo4j", "123" );
         createNewUser( admin, "Igor", "123" );
@@ -140,7 +145,7 @@ public class BoltConnectionManagementIT
     public void shouldListOwnConnection() throws Throwable
     {
         // When
-        admin.send( TransportTestUtil.chunk(
+        admin.send( util.chunk(
                 run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
 
@@ -156,7 +161,7 @@ public class BoltConnectionManagementIT
     {
         // When
         authenticate( user, "Igor", "123", null );
-        admin.send( TransportTestUtil.chunk(
+        admin.send( util.chunk(
                 run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
 
@@ -174,12 +179,12 @@ public class BoltConnectionManagementIT
     {
         // When
         authenticate( user, "Igor", "123", null );
-        user.send( TransportTestUtil.chunk(
+        user.send( util.chunk(
                 run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
-        assertThat( user, eventuallyReceives(
+        assertThat( user, util.eventuallyReceives(
                 msgFailure( Status.Security.Forbidden, PERMISSION_DENIED ) ) );
     }
 
@@ -190,7 +195,7 @@ public class BoltConnectionManagementIT
     {
         // When
         authenticate( user, "Igor", "123", null );
-        admin.send( TransportTestUtil.chunk(
+        admin.send( util.chunk(
                 run( "CALL dbms.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
@@ -199,7 +204,7 @@ public class BoltConnectionManagementIT
         assertTrue( terminationResult.containsKey( "Igor" ) );
         assertTrue( terminationResult.get( "Igor" ) == 1L );
 
-        admin.send( TransportTestUtil.chunk(
+        admin.send( util.chunk(
                 run( "CALL dbms.listConnections() YIELD username, connectionCount" ),
                 pullAll() ) );
         Map<String, Long> listResult = collectConnectionResult( admin, 1 );
@@ -213,7 +218,7 @@ public class BoltConnectionManagementIT
     public void shouldNotFailWhenTerminatingConnectionsForUserWithNoConnections() throws Throwable
     {
         // When
-        admin.send( TransportTestUtil.chunk(
+        admin.send( util.chunk(
                 run( "CALL dbms.terminateConnectionsForUser( 'Igor' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
@@ -227,12 +232,12 @@ public class BoltConnectionManagementIT
     public void shouldFailWhenTerminatingConnectionsForNonExistentUser() throws Throwable
     {
         // When
-        admin.send( TransportTestUtil.chunk(
+        admin.send( util.chunk(
                 run( "CALL dbms.terminateConnectionsForUser( 'NonExistentUser' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
-        assertThat( admin, eventuallyReceives( msgFailure( Status.General.InvalidArguments,
+        assertThat( admin, util.eventuallyReceives( msgFailure( Status.General.InvalidArguments,
                 "User 'NonExistentUser' does not exist." ) ) );
     }
 
@@ -293,10 +298,10 @@ public class BoltConnectionManagementIT
         }
     }
 
-    private static void assertTerminateOwnConnection( TransportConnection conn, String username ) throws Exception
+    private void assertTerminateOwnConnection( TransportConnection conn, String username ) throws Exception
     {
         // Given
-        conn.send( TransportTestUtil.chunk(
+        conn.send( util.chunk(
                 run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
@@ -304,10 +309,9 @@ public class BoltConnectionManagementIT
         verifyConnectionHasTerminated( conn );
     }
 
-    private static void assertTerminateOwnConnections( TransportConnection conn1, TransportConnection conn2, String username ) throws
-            Exception
+    private void assertTerminateOwnConnections( TransportConnection conn1, TransportConnection conn2, String username ) throws Exception
     {
-        conn1.send( TransportTestUtil.chunk(
+        conn1.send( util.chunk(
                 run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
@@ -316,20 +320,20 @@ public class BoltConnectionManagementIT
         verifyConnectionHasTerminated( conn2 );
     }
 
-    private static void assertFailTerminateConnectionForUser( TransportConnection client, String username ) throws Exception
+    private void assertFailTerminateConnectionForUser( TransportConnection client, String username ) throws Exception
     {
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "CALL dbms.terminateConnectionsForUser( '" + username + "' ) YIELD username, connectionCount" ),
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.Forbidden, PERMISSION_DENIED ),
                 msgIgnored()
         ) );
 
-        client.send( TransportTestUtil.chunk( ResetMessage.reset() ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        client.send( util.chunk( ResetMessage.reset() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
     }
 
     private void authenticate( TransportConnection client, String username, String password, String newPassword )
@@ -344,38 +348,38 @@ public class BoltConnectionManagementIT
         }
 
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", authToken ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
     }
 
-    private static void createNewUser( TransportConnection client, String username, String password ) throws Exception
+    private void createNewUser( TransportConnection client, String username, String password ) throws Exception
     {
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "CALL dbms.security.createUser( '" + username + "', '" + password + "', false )" ),
                 pullAll() ) );
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
-    private static Map<String, Long> collectConnectionResult( TransportConnection client, int n )
+    private Map<String,Long> collectConnectionResult( TransportConnection client, int n )
     {
         CollectingMatcher collector = new CollectingMatcher();
 
         // Then
-        assertThat( client, eventuallyReceives(
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry(is("fields"), equalTo(asList( "username", "connectionCount" ) )),
+        assertThat( client, util.eventuallyReceives(
+                msgSuccess( CoreMatchers.allOf( hasEntry(is("fields"), equalTo(asList( "username", "connectionCount" ) )),
                         hasKey( "result_available_after" ) ) )
         ) );
 
         for ( int i = 0; i < n; i++ )
         {
-            assertThat( client, eventuallyReceives( msgRecord( collector ) ) );
+            assertThat( client, util.eventuallyReceives( msgRecord( collector ) ) );
         }
 
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
 
         return collector.result();
 

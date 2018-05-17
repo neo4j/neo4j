@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,7 +40,7 @@ public class LatchMapTest
     LatchMap latches = new LatchMap();
 
     @Test
-    public void takeOrAwaitLatchMustReturnLatchIfAvailable() throws Exception
+    public void takeOrAwaitLatchMustReturnLatchIfAvailable()
     {
         BinaryLatch latch = latches.takeOrAwaitLatch( 0 );
         assertThat( latch, is( notNullValue() ) );
@@ -76,16 +76,13 @@ public class LatchMapTest
         BinaryLatch latch = latches.takeOrAwaitLatch( 42 );
         assertThat( latch, is( notNullValue() ) );
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<BinaryLatch> future = executor.submit( () ->
-        {
-            return latches.takeOrAwaitLatch( 33 );
-        } );
+        Future<BinaryLatch> future = executor.submit( () -> latches.takeOrAwaitLatch( 33 ) );
         assertThat( future.get( 1, TimeUnit.SECONDS ), is( notNullValue() ) );
         latch.release();
     }
 
     @Test
-    public void latchMustBeAvailableAfterRelease() throws Exception
+    public void latchMustBeAvailableAfterRelease()
     {
         latches.takeOrAwaitLatch( 42 ).release();
         latches.takeOrAwaitLatch( 42 ).release();

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,7 +34,7 @@ import static java.lang.System.currentTimeMillis;
  */
 public class IoMonitor implements StatsProvider
 {
-    private volatile long startTime = currentTimeMillis();
+    private volatile long startTime;
     private volatile long endTime;
     private final IoTracer tracer;
     private long resetPoint;
@@ -42,6 +42,7 @@ public class IoMonitor implements StatsProvider
     public IoMonitor( IoTracer tracer )
     {
         this.tracer = tracer;
+        reset();
     }
 
     public void reset()

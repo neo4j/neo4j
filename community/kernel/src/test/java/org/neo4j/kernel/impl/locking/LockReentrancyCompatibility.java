@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
     }
 
     @Test
-    public void shouldAcquireExclusiveIfClientIsOnlyOneHoldingShared() throws Exception
+    public void shouldAcquireExclusiveIfClientIsOnlyOneHoldingShared()
     {
         // When
         clientA.acquireShared( LockTracer.NONE, NODE, 1L );
@@ -61,7 +61,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
     }
 
     @Test
-    public void shouldRetainExclusiveLockAfterReleasingSharedLock() throws Exception
+    public void shouldRetainExclusiveLockAfterReleasingSharedLock()
     {
         // When
         clientA.acquireShared( LockTracer.NONE, NODE, 1L );
@@ -84,7 +84,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
     }
 
     @Test
-    public void shouldRetainSharedLockWhenAcquiredAfterExclusiveLock() throws Exception
+    public void shouldRetainSharedLockWhenAcquiredAfterExclusiveLock()
     {
         // When
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
@@ -107,7 +107,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
     }
 
     @Test
-    public void sharedLocksShouldStack() throws Exception
+    public void sharedLocksShouldStack()
     {
         // When
         clientA.acquireShared( LockTracer.NONE, NODE, 1L );
@@ -132,7 +132,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
     }
 
     @Test
-    public void exclusiveLocksShouldBeReentrantAndBlockOtherExclusiveLocks() throws Exception
+    public void exclusiveLocksShouldBeReentrantAndBlockOtherExclusiveLocks()
     {
         // When
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
@@ -157,7 +157,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
     }
 
     @Test
-    public void exclusiveLocksShouldBeReentrantAndBlockOtherSharedLocks() throws Exception
+    public void exclusiveLocksShouldBeReentrantAndBlockOtherSharedLocks()
     {
         // When
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
@@ -182,7 +182,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
     }
 
     @Test
-    public void sharedLocksShouldNotReplaceExclusiveLocks() throws Exception
+    public void sharedLocksShouldNotReplaceExclusiveLocks()
     {
         // When
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );

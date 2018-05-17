@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,14 +28,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 
 public class IndexProviderImpl implements IndexProvider
 {
-    private final Supplier<Statement> transactionBridge;
+    private final Supplier<KernelTransaction> transactionBridge;
     private final GraphDatabaseService gds;
 
-    public IndexProviderImpl( GraphDatabaseService gds, Supplier<Statement> transactionBridge )
+    public IndexProviderImpl( GraphDatabaseService gds, Supplier<KernelTransaction> transactionBridge )
     {
         this.gds = gds;
         this.transactionBridge = transactionBridge;
@@ -44,16 +45,17 @@ public class IndexProviderImpl implements IndexProvider
     @Override
     public Index<Node> getOrCreateNodeIndex( String indexName, Map<String,String> customConfiguration )
     {
-        try ( Statement statement = transactionBridge.get() )
+        KernelTransaction ktx = transactionBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            if ( !statement.readOperations().nodeExplicitIndexExists( indexName, customConfiguration ) )
+            if ( !ktx.indexRead().nodeExplicitIndexExists( indexName, customConfiguration ) )
             {
                 // There's a sub-o-meta thing here where we create index config,
                 // and the index will itself share the same IndexConfigStore as us and pick up and use
                 // that. We should pass along config somehow with calls.
-                statement.dataWriteOperations().nodeExplicitIndexCreateLazily( indexName, customConfiguration );
+                ktx.indexWrite().nodeExplicitIndexCreateLazily( indexName, customConfiguration );
             }
-            return new ExplicitIndexProxy<>( indexName, ExplicitIndexProxy.Type.NODE, gds, transactionBridge );
+            return new ExplicitIndexProxy<>( indexName, ExplicitIndexProxy.NODE, gds, transactionBridge );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -65,14 +67,15 @@ public class IndexProviderImpl implements IndexProvider
     public RelationshipIndex getOrCreateRelationshipIndex( String indexName, Map<String,
             String> customConfiguration )
     {
-        try ( Statement statement = transactionBridge.get() )
+        KernelTransaction ktx = transactionBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            if ( !statement.readOperations().relationshipExplicitIndexExists( indexName, customConfiguration ) )
+            if ( !ktx.indexRead().relationshipExplicitIndexExists( indexName, customConfiguration ) )
             {
                 // There's a sub-o-meta thing here where we create index config,
                 // and the index will itself share the same IndexConfigStore as us and pick up and use
                 // that. We should pass along config somehow with calls.
-                statement.dataWriteOperations().relationshipExplicitIndexCreateLazily( indexName, customConfiguration );
+                ktx.indexWrite().relationshipExplicitIndexCreateLazily( indexName, customConfiguration );
             }
             return new RelationshipExplicitIndexProxy( indexName, gds, transactionBridge );
         }

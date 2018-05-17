@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,9 +23,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
@@ -49,89 +50,101 @@ public class MessageProcessingHandlerTest
     {
         // Given
         BoltResponseMessageHandler<IOException> msgHandler = newResponseHandlerMock();
-        doThrow( new RuntimeException( "Something went horribly wrong" ) )
-                .when( msgHandler )
-                .onSuccess( any( MapValue.class ) );
+        doThrow( new RuntimeException( "Something went horribly wrong" ) ).when( msgHandler ).onSuccess(
+                any( MapValue.class ) );
 
-        BoltWorker worker = mock( BoltWorker.class );
+        BoltConnection connection = mock( BoltConnection.class );
         MessageProcessingHandler handler =
-                new MessageProcessingHandler( msgHandler, mock( Runnable.class ),
-                        worker, mock( Log.class ) );
+                new MessageProcessingHandler( msgHandler, connection, mock( Log.class ) );
 
         // When
         handler.onFinish();
 
         // Then
-        verify( worker ).halt();
+        verify( connection ).stop();
     }
 
     @Test
     public void shouldLogOriginalErrorWhenOutputIsClosed() throws Exception
     {
-        testLoggingOfOriginalErrorWhenOutputIsClosed( false );
+        testLoggingOfOriginalErrorWhenOutputIsClosed( Neo4jError.from( new RuntimeException( "Non-fatal error" ) ) );
     }
 
     @Test
     public void shouldLogOriginalFatalErrorWhenOutputIsClosed() throws Exception
     {
-        testLoggingOfOriginalErrorWhenOutputIsClosed( true );
+        testLoggingOfOriginalErrorWhenOutputIsClosed( Neo4jError.fatalFrom( new RuntimeException( "Fatal error" ) ) );
     }
 
     @Test
     public void shouldLogWriteErrorAndOriginalErrorWhenUnknownFailure() throws Exception
     {
-        testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure( false );
+        testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(
+                Neo4jError.from( new RuntimeException( "Non-fatal error" ) ) );
     }
 
     @Test
     public void shouldLogWriteErrorAndOriginalFatalErrorWhenUnknownFailure() throws Exception
     {
-        testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure( true );
+        testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(
+                Neo4jError.fatalFrom( new RuntimeException( "Fatal error" ) ) );
     }
 
-    private static void testLoggingOfOriginalErrorWhenOutputIsClosed( boolean fatalError ) throws Exception
+    @Test
+    public void shouldLogShortWarningOnClientDisconnectMidwayThroughQuery() throws Exception
     {
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log = logProvider.getLog( "Test" );
+        // Connections dying is not exceptional per-se, so we don't need to fill the log with
+        // eye-catching stack traces; but it could be indicative of some issue, so log a brief
+        // warning in the debug log at least.
 
-        PackOutputClosedException outputClosed = new PackOutputClosedException( "Output closed" );
-        BoltResponseMessageHandler<IOException> responseHandler = newResponseHandlerMock( fatalError, outputClosed );
+        // Given
+        PackOutputClosedException outputClosed = new PackOutputClosedException( "Output closed", "<client>" );
+        Neo4jError txTerminated =
+                Neo4jError.from( new TransactionTerminatedException( Status.Transaction.Terminated ) );
 
-        MessageProcessingHandler handler = new MessageProcessingHandler( responseHandler, mock( Runnable.class ),
-                mock( BoltWorker.class ), log );
+        // When
+        AssertableLogProvider logProvider = emulateFailureWritingError( txTerminated, outputClosed );
 
-        RuntimeException originalError = new RuntimeException( "Hi, I'm the original error" );
-        markFailed( handler, fatalError, originalError );
-
-        logProvider.assertExactly( inLog( "Test" ).warn(
-                startsWith( "Unable to send error back to the client" ),
-                equalTo( originalError ) ) );
+        // Then
+        logProvider.assertExactly( inLog( "Test" ).warn( equalTo(
+                "Client %s disconnected while query was running. Session has been cleaned up. " +
+                        "This can be caused by temporary network problems, but if you see this often, ensure your " +
+                        "applications are properly waiting for operations to complete before exiting." ),
+                equalTo( "<client>" ) ) );
     }
 
-    private static void testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure( boolean fatalError ) throws Exception
+    private static void testLoggingOfOriginalErrorWhenOutputIsClosed( Neo4jError original ) throws Exception
     {
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log = logProvider.getLog( "Test" );
+        PackOutputClosedException outputClosed = new PackOutputClosedException( "Output closed", "<client>" );
+        AssertableLogProvider logProvider = emulateFailureWritingError( original, outputClosed );
+        logProvider.assertExactly( inLog( "Test" ).warn( startsWith( "Unable to send error back to the client" ),
+                equalTo( original.cause() ) ) );
+    }
 
+    private static void testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure( Neo4jError original )
+            throws Exception
+    {
         RuntimeException outputError = new RuntimeException( "Output failed" );
-        BoltResponseMessageHandler<IOException> responseHandler = newResponseHandlerMock( fatalError, outputError );
-
-        MessageProcessingHandler handler = new MessageProcessingHandler( responseHandler, mock( Runnable.class ),
-                mock( BoltWorker.class ), log );
-
-        RuntimeException originalError = new RuntimeException( "Hi, I'm the original error" );
-        markFailed( handler, fatalError, originalError );
-
-        logProvider.assertExactly( inLog( "Test" ).error(
-                startsWith( "Unable to send error back to the client" ),
-                both( equalTo( outputError ) ).and( hasSuppressed( originalError ) ) ) );
+        AssertableLogProvider logProvider = emulateFailureWritingError( original, outputError );
+        logProvider.assertExactly( inLog( "Test" ).error( startsWith( "Unable to send error back to the client" ),
+                both( equalTo( outputError ) ).and( hasSuppressed( original.cause() ) ) ) );
     }
 
-    private static void markFailed( MessageProcessingHandler handler, boolean fatalError, Throwable error )
+    private static AssertableLogProvider emulateFailureWritingError( Neo4jError error, Throwable errorDuringWrite )
+            throws Exception
     {
-        Neo4jError neo4jError = fatalError ? Neo4jError.fatalFrom( error ) : Neo4jError.from( error );
-        handler.markFailed( neo4jError );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        BoltResponseMessageHandler<IOException> responseHandler =
+                newResponseHandlerMock( error.isFatal(), errorDuringWrite );
+
+        MessageProcessingHandler handler =
+                new MessageProcessingHandler( responseHandler, mock( BoltConnection.class ),
+                        logProvider.getLog( "Test" ) );
+
+        handler.markFailed( error );
         handler.onFinish();
+
+        return logProvider;
     }
 
     private static BoltResponseMessageHandler<IOException> newResponseHandlerMock( boolean fatalError, Throwable error )

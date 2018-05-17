@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering;
 
@@ -27,6 +30,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
@@ -43,9 +47,11 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupCoreIT
@@ -75,7 +81,7 @@ public class BackupCoreIT
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of( createSomeData( cluster ) );
             String[] args = backupArguments( backupAddress( cluster ), backupsDir, "" + db.serverId() );
-            assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( clusterRule.clusterDirectory(), args ) );
+            assertEventually( () -> runBackupToolFromOtherJvmToGetExitCode( clusterRule.clusterDirectory(), args ), equalTo( 0 ), 5, TimeUnit.SECONDS );
 
             // Add some new data
             DbRepresentation afterChange = DbRepresentation.of( createSomeData( cluster ) );
@@ -99,7 +105,7 @@ public class BackupCoreIT
 
     static String backupAddress( Cluster cluster )
     {
-        return cluster.getDbWithRole( Role.LEADER ).settingValue( "causal_clustering.transaction_listen_address" );
+        return cluster.getMemberWithRole( Role.LEADER ).settingValue( "causal_clustering.transaction_listen_address" );
     }
 
     static String[] backupArguments( String from, File backupsDir, String name )
@@ -108,6 +114,7 @@ public class BackupCoreIT
         args.add( "--from=" + from );
         args.add( "--cc-report-dir=" + backupsDir );
         args.add( "--backup-dir=" + backupsDir );
+        args.add( "--protocol=catchup" );
         args.add( "--name=" + name );
         return args.toArray( new String[args.size()] );
     }

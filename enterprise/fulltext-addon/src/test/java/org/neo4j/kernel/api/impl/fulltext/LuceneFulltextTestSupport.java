@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
@@ -24,13 +27,11 @@ import org.junit.Before;
 import org.junit.Rule;
 
 import java.io.File;
-import java.io.IOException;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -46,7 +47,9 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class LuceneFulltextTestSupport
@@ -68,7 +71,7 @@ public class LuceneFulltextTestSupport
     private TransactionIdStore transactionIdStore;
 
     @Before
-    public void setUp() throws Throwable
+    public void setUp()
     {
         db = dbRule.getGraphDatabaseAPI();
         scheduler = dbRule.resolveDependency( JobScheduler.class );
@@ -77,7 +80,7 @@ public class LuceneFulltextTestSupport
         transactionIdStore = dbRule.resolveDependency( TransactionIdStore.class );
     }
 
-    protected FulltextProviderImpl createProvider() throws IOException
+    protected FulltextProviderImpl createProvider()
     {
         return new FulltextProviderImpl( db, LOG, availabilityGuard, scheduler, transactionIdStore,
                 fs, storeDir, analyzer );
@@ -117,13 +120,13 @@ public class LuceneFulltextTestSupport
 
     protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
     {
-        PrimitiveLongIterator result = reader.query( query, matchAll );
+        ScoreEntityIterator result = reader.query( query, matchAll );
         assertQueryResultsMatch( result, ids );
     }
 
     protected void assertExactQueryFindsIdsInOrder( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
     {
-        PrimitiveLongIterator result = reader.query( query, matchAll );
+        ScoreEntityIterator result = reader.query( query, matchAll );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
@@ -139,34 +142,39 @@ public class LuceneFulltextTestSupport
 
     protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
     {
-        PrimitiveLongIterator result = reader.fuzzyQuery( query, matchAll );
+        ScoreEntityIterator result = reader.fuzzyQuery( query, matchAll );
         assertQueryResultsMatch( result, ids );
     }
 
     protected void assertFuzzyQueryFindsIdsInOrder( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
     {
-        PrimitiveLongIterator result = reader.fuzzyQuery( Arrays.asList( query ), matchAll );
+        ScoreEntityIterator result = reader.fuzzyQuery( Arrays.asList( query ), matchAll );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
-    protected void assertQueryResultsMatch( PrimitiveLongIterator result, long[] ids )
+    protected void assertQueryResultsMatch( ScoreEntityIterator result, long[] ids )
     {
         PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
         while ( result.hasNext() )
         {
-            long next = result.next();
+            long next = result.next().entityId();
             assertTrue( String.format( "Result returned node id %d, expected one of %s", next, Arrays.toString( ids ) ), set.remove( next ) );
         }
         assertTrue( "Number of results differ from expected", set.isEmpty() );
     }
 
-    protected void assertQueryResultsMatchInOrder( PrimitiveLongIterator result, long[] ids )
+    protected void assertQueryResultsMatchInOrder( ScoreEntityIterator result, long[] ids )
     {
         int num = 0;
+        float score = Float.MAX_VALUE;
         while ( result.hasNext() )
         {
-            long next = result.next();
-            assertEquals( String.format( "Result returned node id %d, expected %d", next, ids[num] ), ids[num], next );
+            ScoreEntityIterator.ScoreEntry scoredResult = result.next();
+            long nextId = scoredResult.entityId();
+            float nextScore = scoredResult.score();
+            assertThat( nextScore, lessThanOrEqualTo( score ) );
+            score = nextScore;
+            assertEquals( String.format( "Result returned node id %d, expected %d", nextId, ids[num] ), ids[num], nextId );
             num++;
         }
         assertEquals( "Number of results differ from expected", ids.length, num );

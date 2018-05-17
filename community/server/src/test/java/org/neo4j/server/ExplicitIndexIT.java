@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -56,7 +56,7 @@ public class ExplicitIndexIT extends ExclusiveServerTestBase
     }
 
     @Before
-    public void startServer() throws NoSuchAlgorithmException, KeyManagementException, IOException
+    public void startServer() throws IOException
     {
         server = serverOnRandomPorts().withHttpsEnabled()
                 .withProperty( "dbms.shell.enabled", "false" )
@@ -67,7 +67,7 @@ public class ExplicitIndexIT extends ExclusiveServerTestBase
     }
 
     @Theory
-    public void shouldRejectIndexValueLargerThanConfiguredSize( String uniqueness ) throws Exception
+    public void shouldRejectIndexValueLargerThanConfiguredSize( String uniqueness )
     {
         //Given
         server.start();
@@ -90,7 +90,7 @@ public class ExplicitIndexIT extends ExclusiveServerTestBase
     }
 
     @Theory
-    public void shouldNotRejectIndexValueThatIsJustSmallerThanConfiguredSize( String uniqueness ) throws Exception
+    public void shouldNotRejectIndexValueThatIsJustSmallerThanConfiguredSize( String uniqueness )
     {
         //Given
         server.start();

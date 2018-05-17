@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,7 @@ import java.util.Set;
 public class MultiSet<T>
 {
     private final Map<T, Long> inner;
-    private int size;
+    private long size;
 
     public MultiSet()
     {
@@ -102,7 +102,7 @@ public class MultiSet<T>
         return inner.isEmpty();
     }
 
-    public int size()
+    public long size()
     {
         return size;
     }
@@ -121,9 +121,9 @@ public class MultiSet<T>
     @Override
     public boolean equals( Object other )
     {
-        return this == other ||
-                !(other == null || getClass() != other.getClass()) &&
-                inner.equals( ((MultiSet) other).inner );
+        return (this == other) ||
+                (!(other == null || getClass() != other.getClass()) &&
+                        inner.equals( ((MultiSet) other).inner ));
 
     }
 

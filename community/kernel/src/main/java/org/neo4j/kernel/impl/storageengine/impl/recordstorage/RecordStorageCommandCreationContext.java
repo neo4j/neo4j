@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -67,7 +67,7 @@ public class RecordStorageCommandCreationContext implements CommandCreationConte
                 new StandardDynamicRecordAllocator( idBatches.idGenerator( StoreType.PROPERTY_ARRAY ),
                         neoStores.getPropertyStore().getArrayStore().getRecordDataSize() ),
                 idBatches.idGenerator( StoreType.PROPERTY ),
-                propertyTraverser, neoStores.getPropertyStore().allowStorePoints() );
+                propertyTraverser, neoStores.getPropertyStore().allowStorePointsAndTemporal() );
     }
 
     public long nextId( StoreType storeType )
@@ -81,7 +81,7 @@ public class RecordStorageCommandCreationContext implements CommandCreationConte
         this.idBatches.close();
     }
 
-    public TransactionRecordState createTransactionRecordState( IntegrityValidator integrityValidator, long lastTransactionIdWhenStarted,
+    TransactionRecordState createTransactionRecordState( IntegrityValidator integrityValidator, long lastTransactionIdWhenStarted,
             ResourceLocker locks )
     {
         RecordChangeSet recordChangeSet = new RecordChangeSet( loaders );

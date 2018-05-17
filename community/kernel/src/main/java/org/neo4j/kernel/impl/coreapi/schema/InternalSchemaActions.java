@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,8 +27,8 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 
 /**
  * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseNodeConstraintCreator} for re-use
@@ -40,20 +40,13 @@ public interface InternalSchemaActions
 
     void dropIndexDefinitions( IndexDefinition indexDefinition );
 
-    ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition )
-            throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
-            AlreadyConstrainedException, AlreadyIndexedException;
+    ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition );
 
-    ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition )
-            throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
-            AlreadyConstrainedException, AlreadyIndexedException;
+    ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition );
 
-    ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKey )
-            throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
-            AlreadyConstrainedException;
+    ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKey );
 
-    ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
-            throws CreateConstraintFailureException, AlreadyConstrainedException;
+    ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey );
 
     void dropPropertyUniquenessConstraint( Label label, String[] properties );
 

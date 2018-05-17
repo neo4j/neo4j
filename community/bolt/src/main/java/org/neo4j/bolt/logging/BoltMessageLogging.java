@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -65,7 +65,7 @@ public class BoltMessageLogging
             {
                 File boltLogFile = config.get( GraphDatabaseSettings.bolt_log_filename );
                 Executor executor = scheduler.executor( JobScheduler.Groups.boltLogRotation );
-                ZoneId logTimeZoneId = config.get( GraphDatabaseSettings.log_timezone ).getZoneId();
+                ZoneId logTimeZoneId = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
                 return new BoltMessageLog( fs, logTimeZoneId, boltLogFile, executor );
             }
             catch ( Throwable t )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,9 +32,15 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): ListValue = {
     val list = makeTraversable(value)
     val innerContext = m.createClone()
-    VirtualValues.transform(list, new java.util.function.Function[AnyValue, AnyValue]() {
-      override def apply(v1: AnyValue): AnyValue = expression(innerContext.newWith1(id, v1), state)
-    })
+    val extracted = new Array[AnyValue](list.size())
+    val values = list.iterator()
+    var i = 0
+    while (values.hasNext) {
+      val value = values.next()
+      extracted(i) = expression(innerContext.set(id, value), state)
+      i += 1
+    }
+    VirtualValues.list(extracted:_*)
   }
 
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))

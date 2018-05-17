@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -60,7 +60,7 @@ public class BoltMessageLoggerImplTest
     BoltMessageLoggerImpl boltMessageLogger;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         when( channel.remoteAddress() ).thenReturn( new InetSocketAddress( "localhost", 60297 ) );
         when( correlationIdAttribute.get() ).thenReturn( CORRELATION_ID );
@@ -69,7 +69,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void clientEventWithDetails() throws Exception
+    public void clientEventWithDetails()
     {
         // when
         boltMessageLogger.clientEvent( "TEST", () -> "details" );
@@ -78,7 +78,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void getRemoteAddressAsIsIncaseOfNonSocketChannel() throws Exception
+    public void getRemoteAddressAsIsIncaseOfNonSocketChannel()
     {
         // given
         Channel channel = mock( Channel.class );
@@ -93,7 +93,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void serverEvent() throws Exception
+    public void serverEvent()
     {
         // when
         boltMessageLogger.serverEvent( "TEST" );
@@ -102,7 +102,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void serverEventWithDetails() throws Exception
+    public void serverEventWithDetails()
     {
         // when
         boltMessageLogger.serverEvent( "TEST", () -> "details" );
@@ -111,7 +111,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logAckFailure() throws Exception
+    public void logAckFailure()
     {
         // when
         boltMessageLogger.logAckFailure();
@@ -121,7 +121,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logInit() throws Exception
+    public void logInit()
     {
         // when
         boltMessageLogger.logInit( "userAgent" );
@@ -131,7 +131,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logRun() throws Exception
+    public void logRun()
     {
         // when
         boltMessageLogger.logRun();
@@ -140,7 +140,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logPullAll() throws Exception
+    public void logPullAll()
     {
         // when
         boltMessageLogger.logPullAll();
@@ -149,7 +149,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logDiscardAll() throws Exception
+    public void logDiscardAll()
     {
         // when
         boltMessageLogger.logDiscardAll();
@@ -158,7 +158,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logReset() throws Exception
+    public void logReset()
     {
         // when
         boltMessageLogger.logReset();
@@ -167,7 +167,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logSuccess() throws Exception
+    public void logSuccess()
     {
         // when
         boltMessageLogger.logSuccess( () -> asMapValue( map( "key", "value"  ) ) );
@@ -176,7 +176,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logIgnored() throws Exception
+    public void logIgnored()
     {
         // when
         boltMessageLogger.logIgnored();
@@ -185,7 +185,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logFailure() throws Exception
+    public void logFailure()
     {
         // when
         boltMessageLogger.logFailure( error.status() );
@@ -196,7 +196,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logCorrelationIdClientEvent() throws Exception
+    public void logCorrelationIdClientEvent()
     {
         // when
         boltMessageLogger.clientEvent( "TEST" );
@@ -206,7 +206,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logCorrelationIdClientErrorWithDetails() throws Exception
+    public void logCorrelationIdClientErrorWithDetails()
     {
         // given
         when( correlationIdAttribute.get() ).thenReturn( CORRELATION_ID );
@@ -220,7 +220,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logCorrelationIdServerError() throws Exception
+    public void logCorrelationIdServerError()
     {
         // when
         boltMessageLogger.serverError( "TEST", "errorMessage" );
@@ -230,7 +230,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logServerErrorWithStatus() throws Exception
+    public void logServerErrorWithStatus()
     {
         // when
         boltMessageLogger.serverError( "TEST", error.status() );
@@ -241,7 +241,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void logCorrelationIdClientEventWithDetails() throws Exception
+    public void logCorrelationIdClientEventWithDetails()
     {
         // given
         when( correlationIdAttribute.get() ).thenReturn( CORRELATION_ID );
@@ -256,7 +256,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void createCorrelationIdIfNotAvailableInInfoLogger() throws Exception
+    public void createCorrelationIdIfNotAvailableInInfoLogger()
     {
         // given
         when( channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) ).thenReturn( false );
@@ -271,7 +271,7 @@ public class BoltMessageLoggerImplTest
     }
 
     @Test
-    public void createCorrelationIdIfNotAvailableInErrorLogger() throws Exception
+    public void createCorrelationIdIfNotAvailableInErrorLogger()
     {
         // given
         when( channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) ).thenReturn( false );

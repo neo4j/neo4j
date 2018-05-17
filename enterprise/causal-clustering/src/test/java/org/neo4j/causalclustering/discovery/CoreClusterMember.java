@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.discovery;
 
@@ -26,7 +29,6 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.function.IntFunction;
 
-import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
@@ -45,7 +47,6 @@ import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 
@@ -56,7 +57,7 @@ import static org.neo4j.helpers.AdvertisedSocketAddress.advertisedAddress;
 import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
+public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
 {
     private final File neo4jHome;
     protected final DiscoveryServiceFactory discoveryServiceFactory;
@@ -65,11 +66,14 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     private final File raftLogDir;
     private final Map<String,String> config = stringMap();
     private final int serverId;
-    private final Monitors monitors;
     private final String boltAdvertisedSocketAddress;
     private final int discoveryPort;
+    private final String raftListenAddress;
     protected CoreGraphDatabase database;
     private final Config memberConfig;
+    private final ThreadGroup threadGroup;
+    private final Monitors monitors = new Monitors();
+    private final String dbName;
 
     public CoreClusterMember( int serverId,
                               int discoveryPort,
@@ -86,25 +90,25 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
                               Map<String, String> extraParams,
                               Map<String, IntFunction<String>> instanceExtraParams,
                               String listenAddress,
-                              String advertisedAddress,
-                              Monitors monitors )
+                              String advertisedAddress )
     {
         this.serverId = serverId;
-        this.monitors = monitors;
 
         this.discoveryPort = discoveryPort;
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
         boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
+        raftListenAddress = listenAddress( listenAddress, raftPort );
 
         config.put( EnterpriseEditionSettings.mode.name(), EnterpriseEditionSettings.Mode.CORE.name() );
         config.put( GraphDatabaseSettings.default_advertised_address.name(), advertisedAddress );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialMembers );
         config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress( listenAddress, discoveryPort ) );
         config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress( listenAddress, txPort ) );
-        config.put( CausalClusteringSettings.raft_listen_address.name(), listenAddress( listenAddress, raftPort ) );
+        config.put( CausalClusteringSettings.raft_listen_address.name(), raftListenAddress );
         config.put( CausalClusteringSettings.cluster_topology_refresh.name(), "1000ms" );
-        config.put( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
+        config.put( CausalClusteringSettings.minimum_core_cluster_size_at_formation.name(), String.valueOf( clusterSize ) );
+        config.put( CausalClusteringSettings.minimum_core_cluster_size_at_runtime.name(), String.valueOf( clusterSize ) );
         config.put( CausalClusteringSettings.leader_election_timeout.name(), "500ms" );
         config.put( CausalClusteringSettings.raft_messages_log_enable.name(), Settings.TRUE );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
@@ -139,8 +143,11 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         storeDir = new File( new File( dataDir, "databases" ), "graph.db" );
         memberConfig = Config.defaults( config );
 
+        this.dbName = memberConfig.get( CausalClusteringSettings.database );
+
         //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
+        threadGroup = new ThreadGroup( toString() );
     }
 
     public String boltAdvertisedAddress()
@@ -158,6 +165,11 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return String.format( "bolt://%s", boltAdvertisedSocketAddress );
     }
 
+    public String raftListenAddress()
+    {
+        return raftListenAddress;
+    }
+
     @Override
     public void start()
     {
@@ -170,9 +182,21 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     {
         if ( database != null )
         {
-            database.shutdown();
-            database = null;
+            try
+            {
+                database.shutdown();
+            }
+            finally
+            {
+                database = null;
+            }
         }
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return database == null;
     }
 
     @Override
@@ -181,14 +205,10 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return database;
     }
 
+    @Override
     public File storeDir()
     {
         return storeDir;
-    }
-
-    public Config getMemberConfig()
-    {
-        return memberConfig;
     }
 
     public RaftLogPruner raftLogPruner()
@@ -215,6 +235,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         }
     }
 
+    @Override
     public File homeDir()
     {
         return neo4jHome;
@@ -231,6 +252,11 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return serverId;
     }
 
+    public String dbName()
+    {
+        return dbName;
+    }
+
     @Override
     public ClientConnectorAddresses clientConnectorAddresses()
     {
@@ -243,6 +269,24 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return config.get(settingName);
     }
 
+    @Override
+    public Config config()
+    {
+        return memberConfig;
+    }
+
+    @Override
+    public ThreadGroup threadGroup()
+    {
+        return threadGroup;
+    }
+
+    @Override
+    public Monitors monitors()
+    {
+        return monitors;
+    }
+
     public File clusterStateDirectory()
     {
         return clusterStateDir;
@@ -253,9 +297,9 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return raftLogDir;
     }
 
-    public void stopCatchupServer() throws Throwable
+    public void disableCatchupServer() throws Throwable
     {
-        database.getDependencyResolver().resolveDependency( CatchupServer.class).stop();
+        database.disableCatchupServer();
     }
 
     int discoveryPort()

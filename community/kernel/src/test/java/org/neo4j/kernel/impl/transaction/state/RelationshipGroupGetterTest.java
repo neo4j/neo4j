@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,6 +26,7 @@ import org.mockito.InOrder;
 
 import java.io.File;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -47,8 +48,8 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 
 public class RelationshipGroupGetterTest
 {
@@ -58,7 +59,7 @@ public class RelationshipGroupGetterTest
     public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( pageCache );
 
     @Test
-    public void shouldAbortLoadingGroupChainIfComeTooFar() throws Exception
+    public void shouldAbortLoadingGroupChainIfComeTooFar()
     {
         // GIVEN a node with relationship group chain 2-->4-->10-->23
         File dir = new File( "dir" );
@@ -66,22 +67,22 @@ public class RelationshipGroupGetterTest
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory( dir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
                 pageCache.getPageCache( fs.get() ), fs.get(),
-                logProvider );
+                logProvider, EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
         {
             RecordStore<RelationshipGroupRecord> store = spy( stores.getRelationshipGroupStore() );
 
-            RelationshipGroupRecord group_2 = group( 0, 2 );
-            RelationshipGroupRecord group_4 = group( 1, 4 );
-            RelationshipGroupRecord group_10 = group( 2, 10 );
-            RelationshipGroupRecord group_23 = group( 3, 23 );
-            link( group_2, group_4, group_10, group_23 );
-            store.updateRecord( group_2 );
-            store.updateRecord( group_4 );
-            store.updateRecord( group_10 );
-            store.updateRecord( group_23 );
+            RelationshipGroupRecord group2 = group( 0, 2 );
+            RelationshipGroupRecord group4 = group( 1, 4 );
+            RelationshipGroupRecord group10 = group( 2, 10 );
+            RelationshipGroupRecord group23 = group( 3, 23 );
+            link( group2, group4, group10, group23 );
+            store.updateRecord( group2 );
+            store.updateRecord( group4 );
+            store.updateRecord( group10 );
+            store.updateRecord( group23 );
             RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( store );
-            NodeRecord node = new NodeRecord( 0, true, group_2.getId(), -1 );
+            NodeRecord node = new NodeRecord( 0, true, group2.getId(), -1 );
 
             // WHEN trying to find relationship group 7
             RecordAccess<RelationshipGroupRecord, Integer> access =
@@ -90,16 +91,16 @@ public class RelationshipGroupGetterTest
 
             // THEN only groups 2, 4 and 10 should have been loaded
             InOrder verification = inOrder( store );
-            verification.verify( store ).getRecord( eq( group_2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
-            verification.verify( store ).getRecord( eq( group_4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
-            verification.verify( store ).getRecord( eq( group_10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
-            verification.verify( store, times( 0 ) )
-                    .getRecord( eq( group_23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store ).getRecord( eq( group2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store ).getRecord( eq( group4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store ).getRecord( eq( group10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store, never() )
+                    .getRecord( eq( group23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
 
             // it should also be reported as not found
             assertNull( result.group() );
             // with group 4 as closes previous one
-            assertEquals( group_4, result.closestPrevious().forReadingData() );
+            assertEquals( group4, result.closestPrevious().forReadingData() );
         }
     }
 

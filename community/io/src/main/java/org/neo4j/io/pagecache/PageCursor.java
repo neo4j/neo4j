@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * A PageCursor is returned from {@link org.neo4j.io.pagecache.PagedFile#io(long, int)},
@@ -158,6 +159,11 @@ public abstract class PageCursor implements AutoCloseable
      * beginning at the current offset into the page, and then increment the current offset by the length argument.
      */
     public abstract void putBytes( byte[] data, int arrayOffset, int length );
+
+    /**
+     * Set the given number of bytes to the given value, beginning at current offset into the page.
+     */
+    public abstract void putBytes( int bytes, byte value );
 
     /**
      * Get the signed short at the current page offset, and then increment the offset by one.
@@ -300,6 +306,31 @@ public abstract class PageCursor implements AutoCloseable
      * @return The number of bytes actually copied.
      */
     public abstract int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes );
+
+    /**
+     * Copy bytes from the specified offset in this page, into the given buffer, until either the limit of the buffer
+     * is reached, or the end of the page is reached. The actual number of bytes copied is returned.
+     *
+     * @param sourceOffset The offset into this page to copy from.
+     * @param targetBuffer The buffer the data will be copied to.
+     * @return The number of bytes actually copied.
+     */
+    public abstract int copyTo( int sourceOffset, ByteBuffer targetBuffer );
+
+    /**
+     * Shift the specified number of bytes starting from given offset the specified number of bytes to the left or
+     * right. The area
+     * left behind after the shift is not padded and thus is left with garbage.
+     * <p>
+     * Out of bounds flag is raised if either start or end of either source range or target range fall outside end of
+     * this cursor
+     * or if length is negative.
+     *
+     * @param sourceOffset The offset into this page to start moving from.
+     * @param length The number of bytes to move.
+     * @param shift How many steps, in terms of number of bytes, to shift. Can be both positive and negative.
+     */
+    public abstract void shiftBytes( int sourceOffset, int length, int shift );
 
     /**
      * Discern whether an out-of-bounds access has occurred since the last call to {@link #next()} or

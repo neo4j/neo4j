@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,6 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -72,9 +73,10 @@ public class AdversarialPageCacheGraphDatabaseFactory
 
                             @Override
                             protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,
-                                    LogService logging, Tracers tracers )
+                                    LogService logging, Tracers tracers, VersionContextSupplier versionContextSupplier )
                             {
-                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers );
+                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers,
+                                        versionContextSupplier );
                                 return new AdversarialPageCache( pageCache, adversary );
                             }
                         };

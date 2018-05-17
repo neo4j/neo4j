@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.regex.Pattern;
@@ -50,7 +49,7 @@ public class TestTransactionApps
     {
         db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         shellServer = new FakeShellServer( db );
-        shellClient = new SameJvmClient( new HashMap<String, Serializable>(), shellServer, new CollectingOutput() );
+        shellClient = new SameJvmClient( new HashMap<>(), shellServer, new CollectingOutput() );
    }
 
     @After

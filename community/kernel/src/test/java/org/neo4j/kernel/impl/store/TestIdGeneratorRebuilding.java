@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,6 +32,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -66,7 +67,7 @@ public class TestIdGeneratorRebuilding
     }
 
     @Test
-    public void verifyFixedSizeStoresCanRebuildIdGeneratorSlowly() throws IOException
+    public void verifyFixedSizeStoresCanRebuildIdGeneratorSlowly()
     {
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
@@ -123,7 +124,8 @@ public class TestIdGeneratorRebuilding
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), config,
-                new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
+                new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ), fs, NullLogProvider
+                .getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         DynamicStringStore store = neoStores.getPropertyStore().getStringStore();
 
@@ -169,7 +171,7 @@ public class TestIdGeneratorRebuilding
     }
 
     @Test
-    public void rebuildingIdGeneratorMustNotMissOutOnFreeRecordsAtEndOfFilePage() throws IOException
+    public void rebuildingIdGeneratorMustNotMissOutOnFreeRecordsAtEndOfFilePage()
     {
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );

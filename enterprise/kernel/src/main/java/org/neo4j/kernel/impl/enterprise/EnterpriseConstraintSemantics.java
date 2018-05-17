@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.impl.enterprise;
 
@@ -23,13 +26,17 @@ import java.util.Iterator;
 import java.util.function.BiPredicate;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -39,7 +46,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
+import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.kernel.impl.enterprise.PropertyExistenceEnforcer.getOrCreatePropertyExistenceEnforcerFrom;
 
 public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
@@ -86,6 +93,30 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
+    public void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException
+    {
+        while ( allNodes.next() )
+        {
+            allNodes.node( nodeCursor );
+            while ( nodeCursor.next() )
+            {
+                for ( int propertyKey : descriptor.getPropertyIds() )
+                {
+                    nodeCursor.properties( propertyCursor );
+                    if ( !hasProperty( propertyCursor, propertyKey ) )
+                    {
+                        throw createConstraintFailure(
+                                new NodePropertyExistenceException( descriptor, VERIFICATION,
+                                        nodeCursor.nodeReference() ) );
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes,
             LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasPropertyCheck )
             throws CreateConstraintFailureException
@@ -93,15 +124,34 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
         validateNodePropertyExistenceConstraint( allNodes, descriptor, hasPropertyCheck );
     }
 
+    @Override
+    public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException
+    {
+        validateNodePropertyExistenceConstraint( allNodes, nodeCursor, propertyCursor, descriptor );
+    }
+
     private void validateNodePropertyExistenceConstraint( NodeItem node, int propertyKey,
-        LabelSchemaDescriptor descriptor, BiPredicate<NodeItem, Integer> hasPropertyCheck ) throws
+            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasPropertyCheck ) throws
             CreateConstraintFailureException
     {
         if ( !hasPropertyCheck.test( node, propertyKey ) )
         {
             throw createConstraintFailure(
-                new NodePropertyExistenceException( descriptor, VERIFICATION, node.id() ) );
+                    new NodePropertyExistenceException( descriptor, VERIFICATION, node.id() ) );
         }
+    }
+
+    private boolean hasProperty( PropertyCursor propertyCursor, int property )
+    {
+        while ( propertyCursor.next() )
+        {
+            if ( propertyCursor.propertyKey() == property )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -115,10 +165,32 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
             for ( int propertyId : descriptor.getPropertyIds() )
             {
                 if ( relationship.type() == descriptor.getRelTypeId() &&
-                        !hasPropertyCheck.test( relationship, propertyId ) )
+                     !hasPropertyCheck.test( relationship, propertyId ) )
                 {
                     throw createConstraintFailure(
                             new RelationshipPropertyExistenceException( descriptor, VERIFICATION, relationship.id() ) );
+                }
+            }
+        }
+    }
+
+    @Override
+    public void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException
+    {
+        while ( relationshipCursor.next() )
+        {
+            relationshipCursor.properties( propertyCursor );
+
+            for ( int propertyKey : descriptor.getPropertyIds() )
+            {
+                if ( relationshipCursor.type() == descriptor.getRelTypeId() &&
+                     !hasProperty( propertyCursor, propertyKey ) )
+                {
+                    throw createConstraintFailure(
+                            new RelationshipPropertyExistenceException( descriptor, VERIFICATION,
+                                    relationshipCursor.relationshipReference() ) );
                 }
             }
         }

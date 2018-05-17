@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,6 @@ import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.io.File;
 import java.io.IOException;
-import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,7 +31,7 @@ import org.neo4j.jmx.StoreSize;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -67,13 +66,13 @@ public final class StoreSizeBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management )
     {
         return new StoreSizeImpl( management, false );
     }
 
     @Override
-    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management )
     {
         return new StoreSizeImpl( management, true );
     }
@@ -85,10 +84,10 @@ public final class StoreSizeBean extends ManagementBeanProvider
 
         private LogFiles logFiles;
         private ExplicitIndexProviderLookup explicitIndexProviderLookup;
-        private SchemaIndexProviderMap schemaIndexProviderMap;
+        private IndexProviderMap indexProviderMap;
         private LabelScanStore labelScanStore;
 
-        StoreSizeImpl( ManagementData management, boolean isMXBean ) throws NotCompliantMBeanException
+        StoreSizeImpl( ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
 
@@ -103,7 +102,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
                 {
                     logFiles = resolveDependency( ds, LogFiles.class );
                     explicitIndexProviderLookup = resolveDependency( ds, ExplicitIndexProviderLookup.class );
-                    schemaIndexProviderMap = resolveDependency( ds, SchemaIndexProviderMap.class );
+                    indexProviderMap = resolveDependency( ds, IndexProviderMap.class );
                     labelScanStore = resolveDependency( ds, LabelScanStore.class );
                 }
 
@@ -117,7 +116,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
                 {
                     logFiles = null;
                     explicitIndexProviderLookup = null;
-                    schemaIndexProviderMap = null;
+                    indexProviderMap = null;
                     labelScanStore = null;
                 }
             } );
@@ -195,7 +194,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
 
             // Add schema index
             MutableLong schemaSize = new MutableLong();
-            schemaIndexProviderMap.accept( provider ->
+            indexProviderMap.accept( provider ->
             {
                 File rootDirectory = provider.directoryStructure().rootDirectory();
                 if ( rootDirectory != null )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp._
 import org.neo4j.cypher.internal.util.v3_4.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.RegularPlannerQuery
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NodeHashJoin}
 import org.scalacheck.Gen
 
@@ -57,7 +57,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
               |RETURN count(*)""".stripMargin
 
         val plan = logicalPlan(query, solver)
-        joinSymbolsIn(plan) should contain(Set(IdName(joinNode.get)))
+        joinSymbolsIn(plan) should contain(Set(joinNode.get))
       }
     }
   }

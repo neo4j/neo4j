@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,8 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 
 public class SecurityFilter implements Filter
 {
-    private final HashMap<UriPathWildcardMatcher,HashSet<ForbiddingSecurityRule>> rules =
-            new HashMap<UriPathWildcardMatcher,HashSet<ForbiddingSecurityRule>>();
+    private final HashMap<UriPathWildcardMatcher,HashSet<ForbiddingSecurityRule>> rules = new HashMap<>();
 
     public SecurityFilter( SecurityRule rule, SecurityRule... rules )
     {
@@ -55,12 +54,7 @@ public class SecurityFilter implements Filter
             }
 
             UriPathWildcardMatcher uriPathWildcardMatcher = new UriPathWildcardMatcher( rulePath );
-            HashSet<ForbiddingSecurityRule> ruleHashSet = rules.get( uriPathWildcardMatcher );
-            if ( ruleHashSet == null )
-            {
-                ruleHashSet = new HashSet<ForbiddingSecurityRule>();
-                rules.put( uriPathWildcardMatcher, ruleHashSet );
-            }
+            HashSet<ForbiddingSecurityRule> ruleHashSet = rules.computeIfAbsent( uriPathWildcardMatcher, k -> new HashSet<>() );
             ruleHashSet.add( fromSecurityRule( r ) );
         }
     }
@@ -76,7 +70,7 @@ public class SecurityFilter implements Filter
 
     private static Iterable<SecurityRule> merge( SecurityRule rule, SecurityRule[] rules )
     {
-        ArrayList<SecurityRule> result = new ArrayList<SecurityRule>();
+        ArrayList<SecurityRule> result = new ArrayList<>();
 
         result.add( rule );
 
@@ -91,7 +85,7 @@ public class SecurityFilter implements Filter
     }
 
     @Override
-    public void init( FilterConfig filterConfig ) throws ServletException
+    public void init( FilterConfig filterConfig )
     {
     }
 

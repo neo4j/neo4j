@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,6 +32,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.helpers.collection.Iterables.asArray;
@@ -56,10 +59,22 @@ import static org.neo4j.helpers.collection.Iterables.asArray;
  */
 public class Monitors
 {
+    private final Log log;
+
+    public Monitors()
+    {
+        this( NullLogProvider.getInstance() );
+    }
+
+    public Monitors( LogProvider logProvider )
+    {
+        this.log = logProvider.getLog( Monitors.class );
+    }
+
     private static final AtomicBoolean FALSE = new AtomicBoolean( false );
 
     // Concurrency: Mutation of these data structures is always guarded by the monitor lock on this Monitors instance,
-    // while look-ups and reads are performed concurrently. The methodMonitorListerners lists (the map values) are
+    // while look-ups and reads are performed concurrently. The methodMonitorListeners lists (the map values) are
     // read concurrently by the proxies, while changing the listener set always produce new lists that atomically
     // replace the ones already in the methodMonitorListeners map.
 
@@ -269,7 +284,7 @@ public class Monitors
         }
 
         @Override
-        public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
+        public Object invoke( Object proxy, Method method, Object[] args )
         {
             invokeMonitorListeners( proxy, method, args );
             return null;
@@ -289,7 +304,8 @@ public class Monitors
                     }
                     catch ( Throwable e )
                     {
-                        // TODO: something?! Ignore, rethrow etc.
+                        String message = String.format( "Encountered exception while handling listener for monitor method %s", method.getName() );
+                        log.warn( message, e );
                     }
                 }
             }

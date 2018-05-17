@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,6 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -75,7 +74,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
     StoreScan EMPTY_SCAN = new StoreScan()
     {
         @Override
-        public void run() throws Exception
+        public void run()
         {
         }
 
@@ -97,7 +96,9 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         }
     };
 
-    IndexStoreView EMPTY = new IndexStoreView()
+    IndexStoreView EMPTY = new Adaptor();
+
+    class Adaptor implements IndexStoreView
     {
         @Override
         public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
@@ -105,7 +106,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         }
 
         @Override
-        public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+        public Value getPropertyValue( long nodeId, int propertyKeyId )
         {
             return Values.NO_VALUE;
         }

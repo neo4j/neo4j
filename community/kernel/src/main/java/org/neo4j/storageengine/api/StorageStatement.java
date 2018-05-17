@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -116,13 +116,13 @@ public interface StorageStatement extends AutoCloseable
             Direction direction, IntPredicate relTypeFilter );
 
     /**
-     -     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     -     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     -     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     -     * through the selection.
-     -     *
-     -     * @return a {@link Cursor} over all stored relationships.
-     -     */
+     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
+     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
+     * will have to be made to place the cursor over the first item and then more calls to move the cursor
+     * through the selection.
+     *
+     * @return a {@link Cursor} over all stored relationships.
+     */
     Cursor<RelationshipItem> relationshipsGetAllCursor();
 
     Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock, AssertOpen assertOpen );
@@ -143,11 +143,11 @@ public interface StorageStatement extends AutoCloseable
      * Reader returned from this method should not be closed. All such readers will be closed during {@link #close()}
      * of the current statement.
      *
-     * @param index {@link IndexDescriptor} to get reader for.
+     * @param index {@link SchemaIndexDescriptor} to get reader for.
      * @return {@link IndexReader} capable of searching entity ids given property values.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
-    IndexReader getIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
+    IndexReader getIndexReader( SchemaIndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Returns an {@link IndexReader} for searching entity ids given property values. A new reader is allocated
@@ -157,11 +157,11 @@ public interface StorageStatement extends AutoCloseable
      * <b>NOTE:</b>
      * It is caller's responsibility to close the returned reader.
      *
-     * @param index {@link IndexDescriptor} to get reader for.
+     * @param index {@link SchemaIndexDescriptor} to get reader for.
      * @return {@link IndexReader} capable of searching entity ids given property values.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
-    IndexReader getFreshIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
+    IndexReader getFreshIndexReader( SchemaIndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Access to low level record cursors
@@ -196,6 +196,8 @@ public interface StorageStatement extends AutoCloseable
 
     Properties properties();
 
+    long getGraphPropertyReference();
+
     interface RecordReads<RECORD>
     {
         /**
@@ -206,7 +208,7 @@ public interface StorageStatement extends AutoCloseable
          * @param reference the initial node reference to access.
          * @return the opened PageCursor
          */
-        PageCursor openPageCursor( long reference );
+        PageCursor openPageCursorForReading( long reference );
 
         /**
          * Load a node {@code record} with the node corresponding to the given node {@code reference}.
@@ -220,7 +222,7 @@ public interface StorageStatement extends AutoCloseable
          * @param cursor the PageCursor to use for record loading.
          * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
          */
-        void loadRecordByCursor( long reference, RECORD record, RecordLoad mode, PageCursor cursor )
+        void getRecordByCursor( long reference, RECORD record, RecordLoad mode, PageCursor cursor )
                 throws InvalidRecordException;
 
         long getHighestPossibleIdInUse();

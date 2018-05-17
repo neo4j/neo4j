@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.File;
+import java.util.stream.LongStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -44,11 +45,11 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
     }
 
     @Override
-    public void prune( long upToVersion, Monitor monitor )
+    public synchronized LongStream findLogVersionsToDelete( long upToVersion )
     {
         if ( upToVersion == INITIAL_LOG_VERSION )
         {
-            return;
+            return LongStream.empty();
         }
 
         threshold.init();
@@ -60,7 +61,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
             if ( !fileSystem.fileExists( file ) )
             {
                 // There aren't logs to prune anything. Just return
-                return;
+                return LongStream.empty();
             }
 
             if ( fileSystem.getFileSize( file ) > LOG_HEADER_SIZE &&
@@ -74,8 +75,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
 
         if ( !exceeded )
         {
-            monitor.noLogsPruned( upToVersion );
-            return;
+            return LongStream.empty();
         }
 
         // Find out which log is the earliest existing (lower bound to prune)
@@ -89,12 +89,12 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
          * Here we make sure that at least one historical log remains behind, in addition of course to the
          * current one. This is in order to make sure that at least one transaction remains always available for
          * serving to whomever asks for it.
-         * To illustrate, imagine that there is a threshold in place configured so that it enforces prunning of the
+         * To illustrate, imagine that there is a threshold in place configured so that it enforces pruning of the
          * log file that was just rotated out (for example, a file size threshold that is misconfigured to be smaller
          * than the smallest log). In such a case, until the database commits a transaction there will be no
          * transactions present on disk, making impossible to serve any to whichever client might ask, leading to
          * errors on both sides of the conversation.
-         * This if statement does nothing more complicated than checking if the next-to-last log would be prunned
+         * This if statement does nothing more complicated than checking if the next-to-last log would be pruned
          * and simply skipping it if so.
          */
         if ( upper == upToVersion - 1 )
@@ -102,12 +102,10 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
             upper--;
         }
 
-        // The reason we delete from lower to upper is that if it crashes in the middle
-        // we can be sure that no holes are created
-        for ( long version = lower; version <= upper; version++ )
-        {
-            fileSystem.deleteFile( files.getLogFileForVersion( version ) );
-        }
-        monitor.logsPruned( upToVersion, lower, upper );
+        // The reason we delete from lower to upper is that if it crashes in the middle we can be sure that no holes
+        // are created.
+        // We create a closed range because we want to include the 'upper' log version as well. The check above ensures
+        // we don't accidentally leave the database without any logs.
+        return LongStream.rangeClosed( lower, upper );
     }
 }

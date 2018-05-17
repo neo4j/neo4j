@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -58,7 +58,7 @@ public interface UserRepository extends Lifecycle
      * @throws InvalidArgumentsException if any username is not valid
      * @throws IOException if the underlying storage for users fails
      */
-    void setUsers( ListSnapshot<User> users ) throws InvalidArgumentsException, IOException;
+    void setUsers( ListSnapshot<User> users ) throws InvalidArgumentsException;
 
     /**
      * Update a user, given that the users token is unique.
@@ -69,7 +69,7 @@ public interface UserRepository extends Lifecycle
      * @throws InvalidArgumentsException if the existing and updated users have different names
      */
     void update( User existingUser, User updatedUser )
-            throws ConcurrentModificationException, IOException, InvalidArgumentsException;
+            throws ConcurrentModificationException, IOException;
 
     /**
      * Deletes a user.

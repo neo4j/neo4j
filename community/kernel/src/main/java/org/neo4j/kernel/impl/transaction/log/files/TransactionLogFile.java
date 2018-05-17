@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -41,7 +42,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 class TransactionLogFile extends LifecycleAdapter implements LogFile
 {
-    private final long rotateAtSize;
+    private final AtomicLong rotateAtSize;
     private final TransactionLogFiles logFiles;
     private final TransactionLogFilesContext context;
     private final LogVersionBridge readerLogVersionBridge;
@@ -97,13 +98,13 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public boolean rotationNeeded() throws IOException
+    public boolean rotationNeeded()
     {
         /*
          * Whereas channel.size() should be fine, we're safer calling position() due to possibility
          * of this file being memory mapped or whatever.
          */
-        return channel.position() >= rotateAtSize;
+        return channel.position() >= rotateAtSize.get();
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.{Cost, LabelId}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NodeByLabelScan}
 import org.neo4j.cypher.internal.v3_4.expressions._
@@ -39,38 +40,38 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("simple label scan without compile-time label id") {
     // given
-    val idName = IdName("n")
+    val idName = "n"
     val hasLabels = HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: NodeByLabelScan => Cost(1)
       case _                  => Cost(Double.MaxValue)
     })
 
     val semanticTable = new SemanticTable()
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator])
+      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config)
     )
 
     // when
-    val resultPlans = labelScanLeafPlanner(qg)
+    val resultPlans = labelScanLeafPlanner(qg, context, solveds, cardinalities)
 
     // then
     resultPlans should equal(Seq(
-      NodeByLabelScan(idName, lblName("Awesome"), Set.empty)(solved))
+      NodeByLabelScan(idName, lblName("Awesome"), Set.empty))
     )
   }
 
   test("simple label scan with a compile-time label ID") {
     // given
-    val idName = IdName("n")
+    val idName = "n"
     val labelId = LabelId(12)
     val labelName = LabelName("Awesome")(pos)
     val hasLabels = HasLabels(Variable("n")_, Seq(labelName))_
@@ -79,7 +80,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: NodeByLabelScan => Cost(100)
       case _                  => Cost(Double.MaxValue)
     })
@@ -87,17 +88,17 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val semanticTable = newMockedSemanticTable
     when(semanticTable.id(labelName)).thenReturn(Some(labelId))
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator])
+      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config)
     )
 
     // when
-    val resultPlans = labelScanLeafPlanner(qg)
+    val resultPlans = labelScanLeafPlanner(qg, context, solveds, cardinalities)
 
     // then
     resultPlans should equal(
-      Seq(NodeByLabelScan(idName, lblName("Awesome"), Set.empty)(solved)))
+      Seq(NodeByLabelScan(idName, lblName("Awesome"), Set.empty)))
   }
 }

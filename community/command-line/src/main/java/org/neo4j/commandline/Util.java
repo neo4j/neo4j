@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.commandline;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -109,13 +110,21 @@ public class Util
         Properties props = new Properties();
         try
         {
-            props.load( Util.class.getResourceAsStream( "/org/neo4j/commandline/build.properties" ) );
+            loadProperties( props );
             return props.getProperty( "neo4jVersion" );
         }
         catch ( IOException e )
         {
             // This should never happen
             throw new RuntimeException( e );
+        }
+    }
+
+    private static void loadProperties( Properties props ) throws IOException
+    {
+        try ( InputStream resource = Util.class.getResourceAsStream( "/org/neo4j/commandline/build.properties" ) )
+        {
+            props.load( resource );
         }
     }
 }

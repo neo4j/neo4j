@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -292,14 +292,7 @@ public class StartClient
     {
         String configFile = args.get( ARG_CONFIG, null );
         final GraphDatabaseShellServer server = getGraphDatabaseShellServer( path, readOnly, configFile );
-        Runtime.getRuntime().addShutdownHook( new Thread()
-        {
-            @Override
-            public void run()
-            {
-                shutdownIfNecessary( server );
-            }
-        } );
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> shutdownIfNecessary( server ) ) );
 
         if ( !isCommandLine( args ) )
         {
@@ -436,7 +429,7 @@ public class StartClient
         }
     }
 
-    static Map<String,Serializable> getSessionVariablesFromArgs( Args args ) throws RemoteException, ShellException
+    static Map<String,Serializable> getSessionVariablesFromArgs( Args args )
     {
         String profile = args.get( "profile", null );
         Map<String,Serializable> session = new HashMap<>();
@@ -461,7 +454,7 @@ public class StartClient
         return session;
     }
 
-    private static void applyProfileFile( File file, Map<String,Serializable> session ) throws ShellException
+    private static void applyProfileFile( File file, Map<String,Serializable> session )
     {
         try ( FileInputStream fis = new FileInputStream( file ) )
         {

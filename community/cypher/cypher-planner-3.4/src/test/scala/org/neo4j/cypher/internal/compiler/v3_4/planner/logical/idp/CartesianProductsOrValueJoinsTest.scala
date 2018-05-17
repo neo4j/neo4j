@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.v3_4.expressions.Equals
 
@@ -33,69 +34,81 @@ class CartesianProductsOrValueJoinsTest
   val planB = allNodesScan("b")
   val planC = allNodesScan("c")
 
-  private def allNodesScan(n: String): LogicalPlan = {
-    val solved = CardinalityEstimation.lift(RegularPlannerQuery(queryGraph = QueryGraph(patternNodes = Set(IdName(n)))), Cardinality(0))
-    AllNodesScan(n, Set.empty)(solved)
+  private def allNodesScan(n: String, solveds: Solveds = new Solveds, cardinalities: Cardinalities = new Cardinalities): LogicalPlan = {
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph(patternNodes = Set((n))))
+    val cardinality = Cardinality(0)
+    val res = AllNodesScan(n, Set.empty)
+    solveds.set(res.id, solved)
+    cardinalities.set(res.id, cardinality)
+    res
   }
 
   test("should plan cartesian product between 2 pattern nodes") {
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b")),
-      input = Set(
-        PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
-        PlannedComponent(QueryGraph(patternNodes = Set("b")), planB)),
-      expectedPlan = CartesianProduct(
-        planA,
-        planB
-      )(solved)
-    )
+      input = (solveds: Solveds, cardinalities: Cardinalities) => Set(
+          PlannedComponent(QueryGraph(patternNodes = Set("a")), allNodesScan("a", solveds, cardinalities)),
+          PlannedComponent(QueryGraph(patternNodes = Set("b")), allNodesScan("b", solveds, cardinalities))),
+      expectedPlans =
+        List(planA, planB).permutations.map { l =>
+          val (a, b) = (l.head, l(1))
+          CartesianProduct(
+            planA,
+            planB
+          )
+        }.toSeq: _*)
   }
 
   test("should plan cartesian product between 3 pattern nodes") {
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b", "c")),
-      input = Set(
-        PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
-        PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),
-        PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
-      expectedPlan = CartesianProduct(
-        planC,
-        CartesianProduct(
-          planB,
-          planA
-        )(solved)
-      )(solved))
+      input = (solveds: Solveds, cardinalities: Cardinalities) =>  Set(
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), allNodesScan("a", solveds, cardinalities)),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), allNodesScan("b", solveds, cardinalities)),
+        PlannedComponent(QueryGraph(patternNodes = Set("c")), allNodesScan("c", solveds, cardinalities))),
+      expectedPlans =
+        List(planA, planB, planC).permutations.map { l =>
+          val (a, b, c) = (l.head, l(1), l(2))
+          CartesianProduct(
+            b,
+            CartesianProduct(
+              a,
+              c
+            )
+          )
+        }.toSeq : _*)
   }
 
   test("should plan cartesian product between lots of pattern nodes") {
-    val components = ('a' to 'z') map { x =>
-      PlannedComponent(QueryGraph(patternNodes = Set(x.toString)), allNodesScan(x.toString))
-    }
-
-    val includedPlans = components.map(_.plan).toSet
-
+    val chars = 'a' to 'z'
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b", "c")),
-      input = components.toSet,
+      input = (solveds, cardinalities) => (chars map { x =>
+        PlannedComponent(QueryGraph(patternNodes = Set(x.toString)), allNodesScan(x.toString, solveds, cardinalities))
+      }).toSet,
       assertion = (x: LogicalPlan) => {
         val leaves = x.leaves
-        leaves.toSet should equal(includedPlans)
-        leaves.size should equal(components.size)
+        leaves.toSet should equal((chars map { x =>
+          PlannedComponent(QueryGraph(patternNodes = Set(x.toString)), allNodesScan(x.toString))
+        }).map(_.plan).toSet)
+        leaves.size should equal(chars.size)
       }
     )
   }
 
   test("should plan hash join between 2 pattern nodes") {
-    val equality = Equals(prop("a", "id"), prop("b", "id"))(pos)
-
     testThis(
       graph = QueryGraph(
         patternNodes = Set("a", "b"),
-        selections = Selections.from(equality)),
-      input = Set(
-        PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
-        PlannedComponent(QueryGraph(patternNodes = Set("b")), planB)),
-      expectedPlan = ValueHashJoin(planA, planB, equality)(solved))
+        selections = Selections.from(Equals(prop("a", "id"), prop("b", "id"))(pos))),
+      input = (solveds: Solveds, cardinalities: Cardinalities) =>  Set(
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), allNodesScan("a", solveds, cardinalities)),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), allNodesScan("b", solveds, cardinalities))),
+      expectedPlans =
+        List((planA, "a"), (planB, "b")).permutations.map { l =>
+          val ((a, aName), (b, bName)) = (l.head, l(1))
+            ValueHashJoin(a, b, Equals(prop(aName, "id"), prop(bName, "id"))(pos))
+        }.toSeq : _*)
   }
 
   test("should plan hash joins between 3 pattern nodes") {
@@ -107,32 +120,38 @@ class CartesianProductsOrValueJoinsTest
       graph = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         selections = Selections.from(Seq(eq1, eq2, eq3))),
-      input = Set(
-        PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
-        PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),
-        PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
-      expectedPlan =
-        Selection(Seq(eq3),
-          ValueHashJoin(planA,
-            ValueHashJoin(planB, planC, eq2)(solved), eq1.switchSides)(solved))(solved))
+      input = (solveds: Solveds, cardinalities: Cardinalities) =>  Set(
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), allNodesScan("a", solveds, cardinalities)),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), allNodesScan("b", solveds, cardinalities)),
+        PlannedComponent(QueryGraph(patternNodes = Set("c")), allNodesScan("c", solveds, cardinalities))),
+      expectedPlans =
+        List((planA, "a"), (planB, "b"), (planC, "c")).permutations.flatMap { l =>
+          val ((a, aName), (b, bName), (c, cName)) = (l.head, l(1), l(2))
+          // permutate equals order
+          List(prop(bName, "id"), prop(cName, "id")).permutations.map { l2 =>
+            val (prop1, prop2) = (l2.head, l2(1))
+            Selection(Seq(Equals(prop(aName, "id"), prop2)(pos)),
+              ValueHashJoin(a,
+                ValueHashJoin(b, c, Equals(prop(bName, "id"), prop(cName, "id"))(pos)), Equals(prop(aName, "id"), prop1)(pos)))
+          }
+        }.toSeq : _*)
   }
 
-  private def testThis(graph: QueryGraph, input: Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
+  private def testThis(graph: QueryGraph, input: (Solveds, Cardinalities) => Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
     new given {
       qg = graph
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("a")) => 1000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("b")) => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("c")) => 3000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
         case _ => 100.0
       }
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      implicit val x = ctx
-      implicit val kit = ctx.config.toKit()
+    }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val kit = ctx.config.toKit(ctx, solveds, cardinalities)
 
-      var plans: Set[PlannedComponent] = input
+      var plans: Set[PlannedComponent] = input(solveds, cardinalities)
       while (plans.size > 1) {
-        plans = cartesianProductsOrValueJoins(plans, cfg.qg)(ctx, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
+        plans = cartesianProductsOrValueJoins(plans, cfg.qg, ctx, solveds, cardinalities, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
       }
 
       val result = plans.head.plan
@@ -141,6 +160,6 @@ class CartesianProductsOrValueJoinsTest
     }
   }
 
-  private def testThis(graph: QueryGraph, input: Set[PlannedComponent], expectedPlan: LogicalPlan): Unit =
-    testThis(graph, input, (result: LogicalPlan) => result should equal(expectedPlan))
+  private def testThis(graph: QueryGraph, input: (Solveds, Cardinalities) => Set[PlannedComponent], expectedPlans: LogicalPlan*): Unit =
+    testThis(graph, input, (result: LogicalPlan) => expectedPlans should contain(result))
 }

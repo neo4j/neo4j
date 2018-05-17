@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,19 +21,21 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v3_4.AggregatingQueryProjection
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object aggregation {
-  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
 
-    val (step1, groupingExpressions) = PatternExpressionSolver()(plan, aggregation.groupingExpressions)
-    val (rewrittenPlan, aggregations) = PatternExpressionSolver()(step1, aggregation.aggregationExpressions)
+    val (step1, groupingExpressions) = PatternExpressionSolver()(plan, aggregation.groupingExpressions, context, solveds, cardinalities)
+    val (rewrittenPlan, aggregations) = PatternExpressionSolver()(step1, aggregation.aggregationExpressions, context, solveds, cardinalities)
 
     context.logicalPlanProducer.planAggregation(
       rewrittenPlan,
       groupingExpressions,
       aggregations,
       aggregation.groupingExpressions,
-      aggregation.aggregationExpressions)
+      aggregation.aggregationExpressions,
+      context)
   }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,8 +22,6 @@ package org.neo4j.consistency.checking.full;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 
-import org.neo4j.helpers.ProcessFailureException;
-
 public class ConsistencyCheckIncompleteException extends Exception
 {
     public ConsistencyCheckIncompleteException( Exception cause )
@@ -35,21 +33,11 @@ public class ConsistencyCheckIncompleteException extends Exception
     public void printStackTrace( PrintStream s )
     {
         super.printStackTrace( s );
-        printMultiCause( getCause(), new PrintWriter( s, true ) );
     }
 
     @Override
     public void printStackTrace( PrintWriter s )
     {
         super.printStackTrace( s );
-        printMultiCause( getCause(), s );
-    }
-
-    private static void printMultiCause( Throwable cause, PrintWriter writer )
-    {
-        if ( cause instanceof ProcessFailureException )
-        {
-            ((ProcessFailureException) cause).printAllCauses( writer );
-        }
     }
 }

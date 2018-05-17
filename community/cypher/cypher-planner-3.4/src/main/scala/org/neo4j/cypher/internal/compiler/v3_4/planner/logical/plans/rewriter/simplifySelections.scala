@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -32,28 +33,8 @@ case object simplifySelections extends Rewriter {
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case s@Selection(predicates: Seq[Expression], source) if predicates.forall(isFalse) =>
-      DropResult(source)(s.solved)
+    case s@Selection(Seq(False()), source) => DropResult(source)(SameId(s.id))
 
-    case s@Selection(predicates: Seq[Expression], source) if predicates.forall(isTrue) =>
-      source
+    case Selection(Seq(True()), source) => source
   })
-
-  private def isTrue(p: Expression): Boolean = p.treeFold(false) {
-    case _: True => (_) => (true, None)
-    case Or(l, r) => (acc) =>
-      (acc && isTrue(l) || isTrue(r), None)
-    case And(l, r) => (acc) =>
-      (acc && (isTrue(l) || isTrue(r)), None)
-    case _ => (_) => (false, None)
-  }
-
-  private def isFalse(p: Expression): Boolean = p.treeFold(true) {
-    case _: False => (_) => (true, None)
-    case Or(l, r) => (acc) =>
-      (acc && isFalse(l) && isFalse(r), None)
-    case And(l, r) => (acc) =>
-      (acc && (isFalse(l) || isFalse(r)), None)
-    case _ => (_) => (false, None)
-  }
 }

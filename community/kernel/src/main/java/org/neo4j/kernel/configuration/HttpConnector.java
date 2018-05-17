@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -95,8 +95,8 @@ public class HttpConnector extends Connector
     {
         NONE( "http", 7474 ), TLS( "https", 7473 );
 
-        final String uriScheme;
-        final int defaultPort;
+        public final String uriScheme;
+        public final int defaultPort;
 
         Encryption( String uriScheme, int defaultPort )
         {

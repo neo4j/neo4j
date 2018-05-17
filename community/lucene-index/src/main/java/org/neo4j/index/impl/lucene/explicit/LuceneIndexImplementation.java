@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -74,7 +74,7 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         this.dataSource = new LuceneDataSource( storeDir, config, indexStore.get(), fileSystemAbstraction, operationalMode );
         this.dataSource.init();
@@ -120,14 +120,8 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
         if ( analyzer == null )
         {
             // Type is only considered if "analyzer" isn't supplied
-            String type = result.get( KEY_TYPE );
-            if ( type == null )
-            {
-                type = "exact";
-                result.put( KEY_TYPE, type );
-            }
-            if ( type.equals( "fulltext" ) &&
-                 !result.containsKey( LuceneIndexImplementation.KEY_TO_LOWER_CASE ) )
+            String type = result.computeIfAbsent( KEY_TYPE, k -> "exact" );
+            if ( type.equals( "fulltext" ) && !result.containsKey( LuceneIndexImplementation.KEY_TO_LOWER_CASE ) )
             {
                 result.put( KEY_TO_LOWER_CASE, "true" );
             }

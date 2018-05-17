@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -49,7 +49,7 @@ public class IdGeneratorImplTest
     private final File file = new File( "ids" );
 
     @Test
-    public void shouldNotAcceptMinusOne() throws Exception
+    public void shouldNotAcceptMinusOne()
     {
         // GIVEN
         IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
@@ -173,7 +173,7 @@ public class IdGeneratorImplTest
     }
 
     @Test
-    public void constructorShouldCallHighIdSupplierOnNonExistingIdFile() throws Exception
+    public void constructorShouldCallHighIdSupplierOnNonExistingIdFile()
     {
         // Given
         // An empty file (default, nothing to do)
@@ -193,7 +193,7 @@ public class IdGeneratorImplTest
     }
 
     @Test
-    public void constructorShouldNotCallHighIdSupplierOnCleanIdFile() throws Exception
+    public void constructorShouldNotCallHighIdSupplierOnCleanIdFile()
     {
         // Given
         // A non empty, clean id file

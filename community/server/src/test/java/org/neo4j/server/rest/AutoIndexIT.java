@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -110,7 +110,7 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
      */
     @Test
     @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
-    public void items_can_not_be_added_manually_to_an_AutoIndex() throws Exception
+    public void items_can_not_be_added_manually_to_an_AutoIndex()
     {
         data.get();
         String indexName;
@@ -140,7 +140,7 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     @Test
     @Graph( nodes = {@NODE( name = "I" ), @NODE( name = "you" )}, relationships = {@REL( start = "I", end = "you",
             type = "know", properties = {@PROP( key = "since", value = "today" )} )}, autoIndexRelationships = true )
-    public void items_can_not_be_added_manually_to_a_Relationship_AutoIndex() throws Exception
+    public void items_can_not_be_added_manually_to_a_Relationship_AutoIndex()
     {
         data.get();
         String indexName;

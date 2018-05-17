@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,8 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.BigIdTracker;
+
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.Numbers.safeCastIntToUnsignedShort;
 import static org.neo4j.helpers.Numbers.unsignedShortToInt;
 
@@ -52,7 +56,7 @@ import static org.neo4j.helpers.Numbers.unsignedShortToInt;
  * a phase of making changes using {@link #getAndPutRelationship(long, int, Direction, long, boolean)} and e.g
  * {@link #visitChangedNodes(NodeChangeVisitor, int)}.
  */
-public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
+public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, AutoCloseable
 {
     private static final int CHUNK_SIZE = 1_000_000;
     private static final long EMPTY = -1;
@@ -223,13 +227,18 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
      * Done like this since currently it's just overhead trying to maintain a high id in the face
      * of current updates, whereas it's much simpler to do this from the code incrementing the counts.
      *
-     * @param nodeId high node id in the store, e.g. the highest node id + 1
+     * @param nodeCount high node id in the store, e.g. the highest node id + 1
      */
-    public void setNodeCount( long nodeId )
+    public void setNodeCount( long nodeCount )
     {
-        this.highNodeId = nodeId;
+        if ( nodeCount - 1 > BigIdTracker.MAX_ID )
+        {
+            throw new IllegalArgumentException( format( "Invalid number of nodes %d. Max is %d", nodeCount, BigIdTracker.MAX_ID ) );
+        }
+
+        this.highNodeId = nodeCount;
         this.array = arrayFactory.newByteArray( highNodeId, minusOneBytes( ID_AND_COUNT_SIZE ) );
-        this.chunkChangedArray = new byte[chunkOf( nodeId ) + 1];
+        this.chunkChangedArray = new byte[chunkOf( nodeCount ) + 1];
     }
 
     public long getHighNodeId()
@@ -880,8 +889,15 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         return numberOfDenseNodes;
     }
 
-    public long calculateMemoryUsage( long numberOfNodes )
+    public MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes )
     {
-        return ID_AND_COUNT_SIZE * numberOfNodes;
+        return new MemoryStatsVisitor.Visitable()
+        {
+            @Override
+            public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
+            {
+                visitor.offHeapUsage( ID_AND_COUNT_SIZE * numberOfNodes );
+            }
+        };
     }
 }

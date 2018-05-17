@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -78,7 +78,7 @@ public class TestPriorityMap
     }
 
     @Test
-    public void shouldReplaceIfBetter() throws Exception
+    public void shouldReplaceIfBetter()
     {
         // GIVEN
         PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder();
@@ -92,11 +92,11 @@ public class TestPriorityMap
         Entry<Integer, Double> top = map.pop();
         assertNull( map.peek() );
         assertEquals( 1, top.getEntity().intValue() );
-        assertEquals( 1.5d, top.getPriority().doubleValue(), 0d );
+        assertEquals( 1.5d, top.getPriority(), 0d );
     }
 
     @Test
-    public void shouldKeepAllPrioritiesIfToldTo() throws Exception
+    public void shouldKeepAllPrioritiesIfToldTo()
     {
         // GIVEN
         int entity = 5;

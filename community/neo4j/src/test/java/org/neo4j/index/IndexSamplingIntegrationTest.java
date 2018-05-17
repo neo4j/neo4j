@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,8 +31,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -51,7 +52,11 @@ import org.neo4j.register.Registers;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class IndexSamplingIntegrationTest
 {
@@ -60,7 +65,7 @@ public class IndexSamplingIntegrationTest
 
     private final Label label = Label.label( "Person" );
     private final String property = "name";
-    private final int nodes = 1000;
+    private final long nodes = 1000;
     private final String[] names = {"Neo4j", "Neo", "Graph", "Apa"};
 
     @Test
@@ -121,12 +126,12 @@ public class IndexSamplingIntegrationTest
 
         // Then
 
-        // sampling will consider also the delete nodes till the next lucene compaction
+        // lucene will consider also the delete nodes, native won't
         DoubleLongRegister register = fetchIndexSamplingValues( db );
         assertEquals( names.length, register.readFirst() );
-        assertEquals( nodes, register.readSecond() );
+        assertThat( register.readSecond(), allOf( greaterThanOrEqualTo( nodes - deletedNodes ), lessThanOrEqualTo( nodes ) ) );
 
-        // but the deleted nodes should not be considered in the index size value
+        // but regardless, the deleted nodes should not be considered in the index size value
         DoubleLongRegister indexSizeRegister = fetchIndexSizeValues( db );
         assertEquals( 0, indexSizeRegister.readFirst() );
         assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
@@ -194,17 +199,21 @@ public class IndexSamplingIntegrationTest
     {
         ThreadToStatementContextBridge contextBridge =
                 api.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        try ( Transaction tx = api.beginTx();
-              Statement statement = contextBridge.get() )
+        try ( Transaction tx = api.beginTx() )
         {
-            IndexingService indexingService =
-                    api.getDependencyResolver().resolveDependency( IndexingService.class );
-            ReadOperations readOperations = statement.readOperations();
-            int labelId = readOperations.labelGetForName( label.name() );
-            int propertyKeyId = readOperations.propertyKeyGetForName( property );
-            long indexId = indexingService.getIndexId( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
-            tx.success();
-            return indexId;
+            KernelTransaction ktx =
+                    contextBridge.getKernelTransactionBoundToThisThread( true );
+            try ( Statement ignore = ktx.acquireStatement() )
+            {
+                IndexingService indexingService =
+                        api.getDependencyResolver().resolveDependency( IndexingService.class );
+                TokenRead tokenRead = ktx.tokenRead();
+                int labelId = tokenRead.nodeLabel( label.name() );
+                int propertyKeyId = tokenRead.propertyKey( property );
+                long indexId = indexingService.getIndexId( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
+                tx.success();
+                return indexId;
+            }
         }
     }
 

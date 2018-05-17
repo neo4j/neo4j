@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -41,14 +41,13 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       aggregationExpressions = aggregatingMap
     )
 
-    val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(
       planContext = newMockedPlanContext
     )
-
     val startPlan = newMockedLogicalPlan()
 
-    aggregation(startPlan, projection)(context) should equal(
-      Aggregation(startPlan, Map(), aggregatingMap)(solved)
+    aggregation(startPlan, projection, context, new StubSolveds, new StubCardinalities) should equal(
+      Aggregation(startPlan, Map(), aggregatingMap)
     )
   }
 
@@ -59,15 +58,15 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       aggregationExpressions = aggregatingMap2
     )
 
-    implicit val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(
       planContext = newMockedPlanContext
     )
 
     val startPlan = newMockedLogicalPlan()
 
-    aggregation(startPlan, projectionPlan)(context) should equal(
+    aggregation(startPlan, projectionPlan, context, new StubSolveds, new StubCardinalities) should equal(
       Aggregation(
-       startPlan, groupingMap, aggregatingMap2)(solved)
+       startPlan, groupingMap, aggregatingMap2)
     )
   }
 
@@ -80,19 +79,19 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       aggregationExpressions = aggregatingMap
     )
 
-    val context = newMockedLogicalPlanningContext(
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(
       planContext = newMockedPlanContext
     )
 
     val startPlan = newMockedLogicalPlan()
 
-    val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)(solved)
+    val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)
 
     // When
-    val result = aggregation(projectionPlan, projection)(context)
+    val result = aggregation(projectionPlan, projection, context, new StubSolveds, new StubCardinalities)
     // Then
     result should equal(
-      Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)(solved)
+      Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)
     )
   }
 }

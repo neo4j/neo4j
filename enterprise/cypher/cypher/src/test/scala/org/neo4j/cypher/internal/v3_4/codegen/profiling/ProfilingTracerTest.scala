@@ -1,26 +1,29 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher.internal.v3_4.codegen.profiling
 
 import org.neo4j.cypher.internal.planner.v3_4.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 
@@ -35,10 +38,12 @@ class ProfilingTracerTest extends CypherFunSuite {
     }
   }
 
+  val id = Id.INVALID_ID
+
   test("shouldReportExecutionTimeOfQueryExecution") {
     // given
     val clock = new Clock
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val tracer = new ProfilingTracer(clock, EmptyKernelStatisticProvider)
     val event = tracer.executeOperator(operatorId)
 
@@ -53,7 +58,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   test("multiple uses of the same Id should aggregate spent time") {
     // given
     val clock = new Clock
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val tracer = new ProfilingTracer(clock, EmptyKernelStatisticProvider)
 
     // when
@@ -71,7 +76,7 @@ class ProfilingTracerTest extends CypherFunSuite {
 
   test("shouldReportDbHitsOfQueryExecution") {
     // given
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val tracer = new ProfilingTracer(EmptyKernelStatisticProvider)
     val event = tracer.executeOperator(operatorId)
 
@@ -88,7 +93,7 @@ class ProfilingTracerTest extends CypherFunSuite {
 
   test("shouldReportRowsOfQueryExecution") {
     // given
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val tracer = new ProfilingTracer(EmptyKernelStatisticProvider)
     val event = tracer.executeOperator(operatorId)
 
@@ -105,7 +110,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   }
 
   test("report page cache hits as part of profiling statistics") {
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val cursorTracer = new DefaultPageCursorTracer
     val tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
     val event = tracer.executeOperator(operatorId)
@@ -124,7 +129,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   }
 
   test("report page cache misses as part of profiling statistics") {
-    val operatorId = new LogicalPlanId(0)
+    val operatorId = id
     val cursorTracer = new DefaultPageCursorTracer
     val tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
     val event = tracer.executeOperator(operatorId)

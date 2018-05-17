@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -58,7 +58,7 @@ public class LogFilesBuilderTest
     private DefaultFileSystemAbstraction fileSystem;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         storeDirectory = testDirectory.directory();
         fileSystem = fileSystemRule.get();
@@ -73,7 +73,7 @@ public class LogFilesBuilderTest
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
         assertSame( LogFileCreationMonitor.NO_MONITOR, context.getLogFileCreationMonitor() );
-        assertEquals( Long.MAX_VALUE, context.getRotationThreshold() );
+        assertEquals( Long.MAX_VALUE, context.getRotationThreshold().get() );
         assertEquals( 0, context.getLastCommittedTransactionId() );
         assertEquals( 0, context.getLogVersionRepository().getCurrentLogVersion() );
     }
@@ -95,7 +95,7 @@ public class LogFilesBuilderTest
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
         assertSame( LogFileCreationMonitor.NO_MONITOR, context.getLogFileCreationMonitor() );
-        assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold() );
+        assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold().get() );
         assertEquals( 1, context.getLastCommittedTransactionId() );
         assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
     }
@@ -115,7 +115,7 @@ public class LogFilesBuilderTest
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
         assertSame( LogFileCreationMonitor.NO_MONITOR, context.getLogFileCreationMonitor() );
-        assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold() );
+        assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold().get() );
         assertEquals( 1, context.getLastCommittedTransactionId() );
         assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
     }
@@ -132,6 +132,7 @@ public class LogFilesBuilderTest
         logFiles.start();
 
         assertEquals( new File( storeDirectory, customLogLocation ), logFiles.getHighestLogFile().getParentFile() );
+        logFiles.shutdown();
     }
 
     @Test
@@ -146,6 +147,7 @@ public class LogFilesBuilderTest
         logFiles.start();
 
         assertEquals( customLogDirectory, logFiles.getHighestLogFile().getParentFile() );
+        logFiles.shutdown();
     }
 
     @Test( expected = NullPointerException.class )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,20 +19,19 @@
  */
 package org.neo4j.server.rest.management.repr;
 
-import static org.neo4j.server.rest.repr.ValueRepresentation.string;
-
 import java.util.ArrayList;
-
 import javax.management.ObjectName;
 
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.ObjectRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
+import static org.neo4j.server.rest.repr.ValueRepresentation.string;
+
 public class JmxDomainRepresentation extends ObjectRepresentation
 {
 
-    protected ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
+    protected ArrayList<JmxMBeanRepresentation> beans = new ArrayList<>();
     protected String domainName;
 
     public JmxDomainRepresentation( String name )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,8 +20,9 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 
 public class AlreadyIndexedException extends SchemaKernelException
 {
@@ -31,10 +32,10 @@ public class AlreadyIndexedException extends SchemaKernelException
     private static final String CONSTRAINT_CONTEXT_FORMAT = "There already exists an index for label '%s' on %s. " +
                                                             "A constraint cannot be created until the index has been dropped.";
 
-    private final LabelSchemaDescriptor descriptor;
+    private final SchemaDescriptor descriptor;
     private final OperationContext context;
 
-    public AlreadyIndexedException( LabelSchemaDescriptor descriptor, OperationContext context )
+    public AlreadyIndexedException( SchemaDescriptor descriptor, OperationContext context )
     {
         super( Status.Schema.IndexAlreadyExists, constructUserMessage( context, null, descriptor ) );
 
@@ -43,7 +44,7 @@ public class AlreadyIndexedException extends SchemaKernelException
     }
 
     private static String constructUserMessage( OperationContext context, TokenNameLookup tokenNameLookup,
-            LabelSchemaDescriptor descriptor )
+            SchemaDescriptor descriptor )
     {
         switch ( context )
         {

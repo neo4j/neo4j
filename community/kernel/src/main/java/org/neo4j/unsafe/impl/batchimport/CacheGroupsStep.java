@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,13 +40,17 @@ public class CacheGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender ) throws Throwable
+    protected void process( RelationshipGroupRecord[] batch, BatchSender sender )
     {
         // These records are read page-wise forwards, but should be cached in reverse
         // since the records exists in the store in reverse order.
         for ( int i = batch.length - 1; i >= 0; i-- )
         {
-            cache.put( batch[i] );
+            RelationshipGroupRecord record = batch[i];
+            if ( record.inUse() )
+            {
+                cache.put( record );
+            }
         }
     }
 }

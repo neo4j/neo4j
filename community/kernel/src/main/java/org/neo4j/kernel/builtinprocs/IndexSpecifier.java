@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,14 +19,10 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.Pair;
-
-import static java.lang.String.format;
 
 public class IndexSpecifier
 {
@@ -65,7 +61,7 @@ public class IndexSpecifier
         Pattern pattern = Pattern.compile(
                 ":\\s*" + or( identifier(true), qoutedIdentifier(true) ) + // Match the label
                 "\\((" + or( identifier(false), qoutedIdentifier(false) ) + // Match the first property
-                "(?:\\,\\s*" + or( identifier(false), qoutedIdentifier(false) ) + ")*)\\)" // Match following properties
+                "(?:,\\s*" + or( identifier(false), qoutedIdentifier(false) ) + ")*)\\)" // Match following properties
         );
         Matcher matcher = pattern.matcher( specification );
         if ( !matcher.find() )

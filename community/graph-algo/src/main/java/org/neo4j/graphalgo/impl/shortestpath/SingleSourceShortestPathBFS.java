@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -258,13 +258,7 @@ public class SingleSourceShortestPathBFS implements
                 {
                     // Put this into the next layer and the predecessors
                     nextLayer.add( targetNode );
-                    List<Relationship> targetPreds = predecessors
-                        .get( targetNode );
-                    if ( targetPreds == null )
-                    {
-                        targetPreds = new LinkedList<>();
-                        predecessors.put( targetNode, targetPreds );
-                    }
+                    List<Relationship> targetPreds = predecessors.computeIfAbsent( targetNode, k -> new LinkedList<>() );
                     targetPreds.add( relationship );
                 }
             }

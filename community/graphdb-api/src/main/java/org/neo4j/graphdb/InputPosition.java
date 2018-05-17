@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,7 +31,7 @@ public final class InputPosition
     /**
      * The empty position
      */
-    public static InputPosition empty = new InputPosition( -1, -1, -1 );
+    public static final InputPosition empty = new InputPosition( -1, -1, -1 );
 
     /**
      * Creating a position from and offset, line number and a column number.

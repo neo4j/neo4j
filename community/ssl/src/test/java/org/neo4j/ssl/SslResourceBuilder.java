@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -118,6 +118,11 @@ public class SslResourceBuilder
 
     public SslResource install( File targetDirectory ) throws IOException
     {
+        return install( targetDirectory, CA_CERTIFICATE_NAME );
+    }
+
+    public SslResource install( File targetDirectory, String trustedFileName ) throws IOException
+    {
         File targetKey = new File( targetDirectory, PRIVATE_KEY_NAME );
         File targetCertificate = new File( targetDirectory, PUBLIC_CERT_NAME );
         File targetTrusted = new File( targetDirectory, TRUSTED_DIR_NAME );
@@ -140,8 +145,8 @@ public class SslResourceBuilder
 
         if ( trustSignedByCA )
         {
-            File targetTrustedCertificate = new File( targetTrusted, CA_CERTIFICATE_NAME );
-            copy( resource( CA_CERTIFICATE_NAME ), targetTrustedCertificate );
+            File targetTrustedCertificate = new File( targetTrusted, trustedFileName );
+            copy( resource( trustedFileName ), targetTrustedCertificate );
         }
 
         copy( resource( PRIVATE_KEY_NAME, keyId ), targetKey );

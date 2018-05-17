@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,17 +23,17 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.StoreAccess;
 
 public class DirectStoreAccess implements Closeable
 {
     private final StoreAccess nativeStores;
     private final LabelScanStore labelScanStore;
-    private final SchemaIndexProviderMap indexes;
+    private final IndexProviderMap indexes;
 
     public DirectStoreAccess(
-            StoreAccess nativeStores, LabelScanStore labelScanStore, SchemaIndexProviderMap indexes )
+            StoreAccess nativeStores, LabelScanStore labelScanStore, IndexProviderMap indexes )
     {
         this.nativeStores = nativeStores;
         this.labelScanStore = labelScanStore;
@@ -50,7 +50,7 @@ public class DirectStoreAccess implements Closeable
         return labelScanStore;
     }
 
-    public SchemaIndexProviderMap indexes()
+    public IndexProviderMap indexes()
     {
         return indexes;
     }

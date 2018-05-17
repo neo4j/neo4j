@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -76,13 +76,13 @@ public class IndexCreationTest
     private GraphDatabaseAPI db;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         db.shutdown();
     }

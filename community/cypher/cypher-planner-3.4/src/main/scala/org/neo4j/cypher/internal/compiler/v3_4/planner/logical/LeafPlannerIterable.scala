@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,27 +20,29 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 trait LeafPlannerIterable {
-  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )
-                (implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]]
+  def candidates(qg: QueryGraph,
+                 f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
+                 context: LogicalPlanningContext,
+                 solveds: Solveds,
+                 cardinalities: Cardinalities): Iterable[Seq[LogicalPlan]]
 }
 
 case class LeafPlannerList(leafPlanners: IndexedSeq[LeafPlanner]) extends LeafPlannerIterable {
-  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )
-                (implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
-    val logicalPlans = leafPlanners.flatMap(_(qg)).map(f(_,qg))
+  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Iterable[Seq[LogicalPlan]] = {
+    val logicalPlans = leafPlanners.flatMap(_(qg, context, solveds, cardinalities)).map(f(_,qg))
     logicalPlans.groupBy(_.availableSymbols).values
   }
 }
 
 case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: LeafPlannerIterable) extends LeafPlannerIterable {
 
-  override def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan)
-                         (implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
-    val priorityPlans = priority.candidates(qg, f)
+  override def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): Iterable[Seq[LogicalPlan]] = {
+    val priorityPlans = priority.candidates(qg, f, context, solveds, cardinalities)
     if (priorityPlans.nonEmpty) priorityPlans
-    else fallback.candidates(qg, f)
+    else fallback.candidates(qg, f, context, solveds, cardinalities)
   }
 }

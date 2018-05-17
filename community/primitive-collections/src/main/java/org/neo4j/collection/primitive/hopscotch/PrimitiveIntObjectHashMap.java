@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -94,7 +94,7 @@ public class PrimitiveIntObjectHashMap<VALUE> extends AbstractIntHopScotchCollec
         if ( typeAndSizeEqual( other ) )
         {
             PrimitiveIntObjectHashMap<?> that = (PrimitiveIntObjectHashMap<?>) other;
-            IntObjEquality<VALUE> equality = new IntObjEquality<VALUE>( that );
+            IntObjEquality<VALUE> equality = new IntObjEquality<>( that );
             visitEntries( equality );
             return equality.isEqual();
         }
@@ -128,7 +128,7 @@ public class PrimitiveIntObjectHashMap<VALUE> extends AbstractIntHopScotchCollec
     @Override
     public int hashCode()
     {
-        HashCodeComputer<VALUE> hash = new HashCodeComputer<VALUE>();
+        HashCodeComputer<VALUE> hash = new HashCodeComputer<>();
         visitEntries( hash );
         return hash.hashCode();
     }

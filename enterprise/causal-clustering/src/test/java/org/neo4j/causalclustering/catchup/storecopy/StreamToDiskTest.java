@@ -1,30 +1,30 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
@@ -58,28 +58,26 @@ public class StreamToDiskTest
         // GIVEN
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs ) );
         Monitors monitors = new Monitors();
-        try ( StreamToDisk writer = new StreamToDisk( directory.absolutePath(), fs, pageCache, monitors ) )
-        {
-            ByteBuffer tempBuffer = ByteBuffer.allocate( 128 );
+        StreamToDiskProvider writerProvider = new StreamToDiskProvider( directory.absolutePath(), fs, pageCache, monitors );
 
-            // WHEN
-            for ( StoreType type : StoreType.values() )
+        // WHEN
+        for ( StoreType type : StoreType.values() )
+        {
+            if ( type.isRecordStore() )
             {
-                if ( type.isRecordStore() )
-                {
-                    String fileName = type.getStoreFile().fileName( STORE );
-                    writeAndVerifyWrittenThroughPageCache( pageCache, writer, tempBuffer, fileName );
-                }
+                String fileName = type.getStoreFile().fileName( STORE );
+                writeAndVerifyWrittenThroughPageCache( pageCache, writerProvider, fileName );
             }
-            writeAndVerifyWrittenThroughPageCache( pageCache, writer, tempBuffer, NativeLabelScanStore.FILE_NAME );
         }
+        writeAndVerifyWrittenThroughPageCache( pageCache, writerProvider, NativeLabelScanStore.FILE_NAME );
     }
 
-    private void writeAndVerifyWrittenThroughPageCache( PageCache pageCache, StreamToDisk writer,
-            ByteBuffer tempBuffer, String fileName )
-            throws IOException
+    private void writeAndVerifyWrittenThroughPageCache( PageCache pageCache, StreamToDiskProvider writerProvider, String fileName ) throws Exception
     {
-        writer.write( fileName, 16, DATA );
+        try ( StoreFileStream acquire = writerProvider.acquire( fileName, 16 ) )
+        {
+            acquire.write( DATA );
+        }
         verify( pageCache ).map( eq( directory.file( fileName ) ), anyInt(), any() );
     }
 }

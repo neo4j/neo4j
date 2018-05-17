@@ -1,31 +1,33 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.symbols
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualValues._
 
 
 class ProduceResultOperator(slots: SlotConfiguration, fieldNames: Array[String]) extends MiddleOperator {
@@ -50,9 +52,9 @@ class MorselResultRow(var morsel: Morsel,
     case Some(RefSlot(offset, _, _)) => () =>
        morsel.refs(currentPos * slots.numberOfReferences + offset)
     case Some(LongSlot(offset, _, symbols.CTNode)) => () =>
-      node(morsel.longs(currentPos * slots.numberOfLongs + offset))
+      queryContext.nodeOps.getById(morsel.longs(currentPos * slots.numberOfLongs + offset))
     case Some(LongSlot(offset, _, symbols.CTRelationship)) => () =>
-      edge(morsel.longs(currentPos * slots.numberOfLongs + offset))
+      queryContext.relationshipOps.getById(morsel.longs(currentPos * slots.numberOfLongs + offset))
     case _ => throw new IllegalStateException
   })
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,7 +33,7 @@ public class BigEndianByteArrayBufferTest
     BigEndianByteArrayBuffer buffer = new BigEndianByteArrayBuffer( new byte[8] );
 
     @Test
-    public void shouldWriteLong() throws Exception
+    public void shouldWriteLong()
     {
         // when
         buffer.putLong( 0, 0xABCDEF0123456789L );
@@ -51,7 +51,7 @@ public class BigEndianByteArrayBufferTest
     }
 
     @Test
-    public void shouldWriteInt() throws Exception
+    public void shouldWriteInt()
     {
         // when
         buffer.putInt( 0, 0x12345678 );
@@ -64,7 +64,7 @@ public class BigEndianByteArrayBufferTest
     }
 
     @Test
-    public void shouldWriteShort() throws Exception
+    public void shouldWriteShort()
     {
         // when
         buffer.putShort( 0, (short) 0x1234 );
@@ -80,7 +80,7 @@ public class BigEndianByteArrayBufferTest
     }
 
     @Test
-    public void shouldWriteChar() throws Exception
+    public void shouldWriteChar()
     {
         // when
         buffer.putChar( 0, 'H' );
@@ -96,7 +96,7 @@ public class BigEndianByteArrayBufferTest
     }
 
     @Test
-    public void shouldWriteByte() throws Exception
+    public void shouldWriteByte()
     {
         // when
         for ( int i = 0; i < buffer.size(); i++ )
@@ -112,12 +112,12 @@ public class BigEndianByteArrayBufferTest
     }
 
     @Test
-    public void shouldCompareByteArrays() throws Exception
+    public void shouldCompareByteArrays()
     {
         // given
-        Matcher<Integer> LESS_THAN = lessThan( 0 );
-        Matcher<Integer> GREATER_THAN = greaterThan( 0 );
-        Matcher<Integer> EQUAL_TO = equalTo( 0 );
+        final Matcher<Integer> LESS_THAN = lessThan( 0 );
+        final Matcher<Integer> GREATER_THAN = greaterThan( 0 );
+        final Matcher<Integer> EQUAL_TO = equalTo( 0 );
 
         // then
         assertCompare( new byte[0], EQUAL_TO, new byte[0] );

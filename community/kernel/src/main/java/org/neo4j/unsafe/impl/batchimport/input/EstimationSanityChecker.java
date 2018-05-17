@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,20 +22,14 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.util.function.BiConsumer;
 
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.unsafe.impl.batchimport.ImportLogic;
 
 public class EstimationSanityChecker
 {
-    public interface Monitor
-    {
-        void nodeCountCapacity( long capacity, long estimatedCount );
-
-        void relationshipCountCapacity( long capacity, long estimatedCount );
-    }
-
     private final RecordFormats formats;
-    private final Monitor monitor;
+    private final ImportLogic.Monitor monitor;
 
-    public EstimationSanityChecker( RecordFormats formats, Monitor monitor )
+    public EstimationSanityChecker( RecordFormats formats, ImportLogic.Monitor monitor )
     {
         this.formats = formats;
         this.monitor = monitor;
@@ -44,9 +38,9 @@ public class EstimationSanityChecker
     public void sanityCheck( Input.Estimates estimates )
     {
         sanityCheckEstimateWithMaxId( estimates.numberOfNodes(), formats.node().getMaxId(),
-                monitor::nodeCountCapacity );
+                monitor::mayExceedNodeIdCapacity );
         sanityCheckEstimateWithMaxId( estimates.numberOfRelationships(), formats.relationship().getMaxId(),
-                monitor::relationshipCountCapacity );
+                monitor::mayExceedRelationshipIdCapacity );
     }
 
     private void sanityCheckEstimateWithMaxId( long estimate, long max, BiConsumer<Long,Long> reporter )

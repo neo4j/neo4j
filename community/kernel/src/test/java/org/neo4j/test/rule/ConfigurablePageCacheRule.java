@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,8 +23,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.logging.FormattedLogProvider;
@@ -48,11 +48,11 @@ public class ConfigurablePageCacheRule extends PageCacheRule
     {
         PageCacheTracer tracer = selectConfig( baseConfig.tracer, pageCacheConfig.tracer, PageCacheTracer.NULL );
         PageCursorTracerSupplier cursorTracerSupplier = selectConfig( baseConfig.pageCursorTracerSupplier,
-                pageCacheConfig.pageCursorTracerSupplier, DefaultPageCursorTracerSupplier.INSTANCE );
+                pageCacheConfig.pageCursorTracerSupplier, PageCursorTracerSupplier.NULL );
         config.augmentDefaults( GraphDatabaseSettings.pagecache_memory, "8M" );
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
-        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fs, config, tracer, cursorTracerSupplier, logProvider.getLog( PageCache.class ) );
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fs, config, tracer, cursorTracerSupplier,
+                        logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

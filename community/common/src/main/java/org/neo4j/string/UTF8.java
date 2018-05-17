@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,16 +21,12 @@ package org.neo4j.string;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.function.Function;
 
 /**
  * Utilities for working with UTF8 encoding and decoding.
  */
 public class UTF8
 {
-    public static final Function<String, byte[]> encode = UTF8::encode;
-
-    public static final Function<byte[], String> decode = UTF8::decode;
     public static final int MINIMUM_SERIALISED_LENGTH_BYTES = Integer.BYTES;
 
     public static byte[] encode( String string )
@@ -83,6 +79,6 @@ public class UTF8
 
     private UTF8()
     {
-        // No need to instantiate, all methods are static
+        throw new AssertionError( "no instance" );
     }
 }

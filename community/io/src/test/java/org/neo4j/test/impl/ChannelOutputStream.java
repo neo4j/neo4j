@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,7 @@ import org.neo4j.io.fs.StoreChannel;
 public class ChannelOutputStream extends OutputStream
 {
     private final StoreChannel channel;
-    private final ByteBuffer buffer = ByteBuffer.allocateDirect( 8096 );
+    private final ByteBuffer buffer = ByteBuffer.allocate( 8096 );
 
     public ChannelOutputStream( StoreChannel channel, boolean append ) throws IOException
     {
@@ -62,7 +62,7 @@ public class ChannelOutputStream extends OutputStream
         while ( written < len )
         {
             buffer.clear();
-            buffer.put( b, index, Math.min( len - written, buffer.capacity() ) );
+            buffer.put( b, index + written, Math.min( len - written, buffer.capacity() ) );
             buffer.flip();
             written += channel.write( buffer );
         }

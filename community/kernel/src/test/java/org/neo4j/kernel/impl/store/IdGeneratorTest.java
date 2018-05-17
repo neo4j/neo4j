@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -100,26 +100,26 @@ public class IdGeneratorTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void cannotCreateIdGeneratorWithNullFileSystem() throws Exception
+    public void cannotCreateIdGeneratorWithNullFileSystem()
     {
         IdGeneratorImpl.createGenerator( null, idGeneratorFile(), 0, false );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void cannotCreateIdGeneratorWithNullFile() throws Exception
+    public void cannotCreateIdGeneratorWithNullFile()
     {
         IdGeneratorImpl.createGenerator( fs, null, 0, false );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void grabSizeCannotBeZero() throws Exception
+    public void grabSizeCannotBeZero()
     {
         IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
         new IdGeneratorImpl( fs, idGeneratorFile(), 0, 100, false, IdType.NODE, () -> 0L ).close();
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void grabSizeCannotBeNegative() throws Exception
+    public void grabSizeCannotBeNegative()
     {
         IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
         new IdGeneratorImpl( fs, idGeneratorFile(), -1, 100, false, IdType.NODE, () -> 0L ).close();
@@ -166,7 +166,7 @@ public class IdGeneratorTest
     }
 
     @Test
-    public void mustOverwriteExistingFileIfRequested() throws Exception
+    public void mustOverwriteExistingFileIfRequested()
     {
         IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
         IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1008, 1000, false, IdType.NODE, () -> 0L );
@@ -542,7 +542,7 @@ public class IdGeneratorTest
     }
 
     @Test
-    public void makeSureIdCapacityCannotBeExceeded() throws Exception
+    public void makeSureIdCapacityCannotBeExceeded()
     {
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
         List<RecordFormat<? extends AbstractBaseRecord>> recordFormats = Arrays.asList( formats.node(),
@@ -582,7 +582,7 @@ public class IdGeneratorTest
     }
 
     @Test
-    public void makeSureMagicMinusOneIsNotReturnedFromNodeIdGenerator() throws Exception
+    public void makeSureMagicMinusOneIsNotReturnedFromNodeIdGenerator()
     {
         makeSureMagicMinusOneIsSkipped( new NodeRecordFormat() );
         makeSureMagicMinusOneIsSkipped( new RelationshipRecordFormat() );
@@ -606,7 +606,7 @@ public class IdGeneratorTest
     }
 
     @Test
-    public void makeSureMagicMinusOneCannotBeReturnedEvenIfFreed() throws Exception
+    public void makeSureMagicMinusOneCannotBeReturnedEvenIfFreed()
     {
         IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
         IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, new NodeRecordFormat().getMaxId(), false, IdType.NODE, () -> 0L );
@@ -692,7 +692,7 @@ public class IdGeneratorTest
     }
 
     @Test
-    public void delete() throws Exception
+    public void delete()
     {
         IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
         IdGeneratorImpl idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 10, 1000, false, IdType.NODE, () -> 0L );

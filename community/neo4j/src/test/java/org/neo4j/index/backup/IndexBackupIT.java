@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -79,20 +79,20 @@ public class IndexBackupIT
         prepareDatabase( label );
 
         forceCheckpoint( checkPointer );
-        ResourceIterator<File> firstCheckpointSnapshot = indexingService.snapshotStoreFiles();
+        ResourceIterator<File> firstCheckpointSnapshot = indexingService.snapshotIndexFiles();
         generateData( label );
         removeOldNodes( LongStream.range( 1, 20 )  );
         updateOldNodes( LongStream.range( 30, 40 ) );
 
         forceCheckpoint( checkPointer );
-        ResourceIterator<File> secondCheckpointSnapshot = indexingService.snapshotStoreFiles();
+        ResourceIterator<File> secondCheckpointSnapshot = indexingService.snapshotIndexFiles();
 
         generateData( label );
         removeOldNodes( LongStream.range( 50, 60 )  );
         updateOldNodes( LongStream.range( 70, 80 ) );
 
         forceCheckpoint( checkPointer );
-        ResourceIterator<File> thirdCheckpointSnapshot = indexingService.snapshotStoreFiles();
+        ResourceIterator<File> thirdCheckpointSnapshot = indexingService.snapshotIndexFiles();
 
         Set<String> firstSnapshotFileNames =  getFileNames( firstCheckpointSnapshot );
         Set<String> secondSnapshotFileNames = getFileNames( secondCheckpointSnapshot );
@@ -114,11 +114,11 @@ public class IndexBackupIT
         Label label = Label.label( "testLabel" );
         prepareDatabase( label );
 
-        ResourceIterator<File> firstCheckpointSnapshot = indexingService.snapshotStoreFiles();
+        ResourceIterator<File> firstCheckpointSnapshot = indexingService.snapshotIndexFiles();
         generateData( label );
-        ResourceIterator<File> secondCheckpointSnapshot = indexingService.snapshotStoreFiles();
+        ResourceIterator<File> secondCheckpointSnapshot = indexingService.snapshotIndexFiles();
         generateData( label );
-        ResourceIterator<File> thirdCheckpointSnapshot = indexingService.snapshotStoreFiles();
+        ResourceIterator<File> thirdCheckpointSnapshot = indexingService.snapshotIndexFiles();
 
         Set<String> firstSnapshotFileNames =  getFileNames( firstCheckpointSnapshot );
         Set<String> secondSnapshotFileNames = getFileNames( secondCheckpointSnapshot );

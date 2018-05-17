@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -65,15 +65,12 @@ public class DijkstraTest extends Neo4jAlgoTestCase
 
         // WHEN
         PathFinder<WeightedPath> finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        try ( WeightedPath path = finder.findSinglePath( start, start ) )
-        {
-
-            // THEN
-            assertNotNull( path );
-            assertEquals( start, path.startNode() );
-            assertEquals( start, path.endNode() );
-            assertEquals( 0, path.length() );
-        }
+        WeightedPath path = finder.findSinglePath( start, start );
+        // THEN
+        assertNotNull( path );
+        assertEquals( start, path.startNode() );
+        assertEquals( start, path.endNode() );
+        assertEquals( 0, path.length() );
     }
 
     @Test
@@ -203,7 +200,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void canGetPathsInTriangleGraph() throws Exception
+    public void canGetPathsInTriangleGraph()
     {
         /* NODE (NAME/INDEX)
          *
@@ -228,7 +225,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void canContinueGettingPathsByDiminishingCost() throws Exception
+    public void canContinueGettingPathsByDiminishingCost()
     {
         /*
          * NODE (NAME/INDEX)
@@ -262,7 +259,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void canGetMultiplePathsInTriangleGraph() throws Exception
+    public void canGetMultiplePathsInTriangleGraph()
     {
         /* NODE (NAME/INDEX)
          * ==> (two relationships)
@@ -274,7 +271,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         Node nodeA = graph.makeNode( "A" );
         Node nodeB = graph.makeNode( "B" );
         Node nodeC = graph.makeNode( "C" );
-        Set<Relationship> expectedFirsts = new HashSet<Relationship>();
+        Set<Relationship> expectedFirsts = new HashSet<>();
         expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
         expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1 ) );
         Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 2L );
@@ -303,7 +300,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void canGetMultiplePathsInASmallRoadNetwork() throws Exception
+    public void canGetMultiplePathsInASmallRoadNetwork()
     {
         /*    NODE (NAME/INDEX)
          *

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,9 +26,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.procedure.Context;
@@ -94,7 +94,7 @@ public class AuthProcedures
 
     @Description( "Show the current user." )
     @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
-    public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
+    public Stream<UserResult> showCurrentUser()
     {
         return Stream.of( userResultForName( securityContext.subject().username() ) );
     }
@@ -102,14 +102,14 @@ public class AuthProcedures
     @Deprecated
     @Description( "Show the current user. Deprecated by dbms.showCurrentUser." )
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS, deprecatedBy = "dbms.showCurrentUser" )
-    public Stream<UserResult> showCurrentUserDeprecated() throws InvalidArgumentsException, IOException
+    public Stream<UserResult> showCurrentUserDeprecated()
     {
         return showCurrentUser();
     }
 
     @Description( "List all local users." )
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
-    public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
+    public Stream<UserResult> listUsers()
     {
         securityContext.assertCredentialsNotExpired();
         Set<String> usernames = userManager.getAllUsernames();

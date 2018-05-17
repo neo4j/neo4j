@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
@@ -37,7 +38,7 @@ public class PageCursorUtilTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldPutAndGet6BLongs() throws Exception
+    public void shouldPutAndGet6BLongs()
     {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap( 10 );
@@ -59,7 +60,7 @@ public class PageCursorUtilTest
     }
 
     @Test
-    public void shouldFailOnInvalidValues() throws Exception
+    public void shouldFailOnInvalidValues()
     {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap( 10 );

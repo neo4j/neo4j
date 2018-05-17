@@ -1,31 +1,34 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core.consensus.roles;
 
 import java.io.IOException;
-import java.util.Optional;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.function.ThrowingBooleanSupplier;
 import org.neo4j.logging.Log;
 
 public class Voting
@@ -44,10 +47,8 @@ public class Voting
             outcome.setVotedFor( null );
         }
 
-        boolean willVoteForCandidate = shouldVoteFor( voteRequest.candidate(), outcome.getTerm(), voteRequest.term(),
-                state.entryLog().readEntryTerm( state.entryLog().appendIndex() ), voteRequest.lastLogTerm(),
-                state.entryLog().appendIndex(), voteRequest.lastLogIndex(),
-                Optional.ofNullable( outcome.getVotedFor() ), log );
+        boolean votedForAnother = outcome.getVotedFor() != null && !outcome.getVotedFor().equals( voteRequest.candidate() );
+        boolean willVoteForCandidate = shouldVoteFor( state, outcome, voteRequest, votedForAnother, log );
 
         if ( willVoteForCandidate )
         {
@@ -63,25 +64,59 @@ public class Voting
     static void handlePreVoteRequest( ReadableRaftState state, Outcome outcome,
             RaftMessages.PreVote.Request voteRequest, Log log ) throws IOException
     {
+        ThrowingBooleanSupplier<IOException> willVoteForCandidate =
+                () -> shouldVoteFor( state, outcome, voteRequest, false, log );
+        respondToPreVoteRequest( state, outcome, voteRequest, willVoteForCandidate );
+    }
+
+    static void declinePreVoteRequest( ReadableRaftState state, Outcome outcome,
+            RaftMessages.PreVote.Request voteRequest ) throws IOException
+    {
+        respondToPreVoteRequest( state, outcome, voteRequest, () -> false );
+    }
+
+    private static void respondToPreVoteRequest( ReadableRaftState state, Outcome outcome,
+            RaftMessages.PreVote.Request voteRequest, ThrowingBooleanSupplier<IOException> willVoteFor ) throws IOException
+    {
         if ( voteRequest.term() > state.term() )
         {
             outcome.setNextTerm( voteRequest.term() );
         }
 
-        boolean willVoteForCandidate = shouldVoteFor( voteRequest.candidate(), outcome.getTerm(), voteRequest.term(),
-                state.entryLog().readEntryTerm( state.entryLog().appendIndex() ), voteRequest.lastLogTerm(),
-                state.entryLog().appendIndex(), voteRequest.lastLogIndex(),
-                Optional.empty(), log );
-
         outcome.addOutgoingMessage( new RaftMessages.Directed( voteRequest.from(), new RaftMessages.PreVote.Response(
                 state.myself(), outcome.getTerm(),
-                willVoteForCandidate ) ) );
+                willVoteFor.getAsBoolean() ) ) );
+    }
+
+    private static boolean shouldVoteFor( ReadableRaftState state, Outcome outcome, RaftMessages.AnyVote.Request voteRequest,
+            boolean committedToVotingForAnother, Log log )
+            throws IOException
+    {
+        long requestTerm = voteRequest.term();
+        MemberId candidate = voteRequest.candidate();
+        long requestLastLogTerm = voteRequest.lastLogTerm();
+        long requestLastLogIndex = voteRequest.lastLogIndex();
+        long contextTerm = outcome.getTerm();
+        long contextLastAppended = state.entryLog().appendIndex();
+        long contextLastLogTerm = state.entryLog().readEntryTerm( contextLastAppended );
+
+        return shouldVoteFor(
+                candidate,
+                contextTerm,
+                requestTerm,
+                contextLastLogTerm,
+                requestLastLogTerm,
+                contextLastAppended,
+                requestLastLogIndex,
+                committedToVotingForAnother,
+                log
+        );
     }
 
     public static boolean shouldVoteFor( MemberId candidate, long contextTerm, long requestTerm,
                                          long contextLastLogTerm, long requestLastLogTerm,
                                          long contextLastAppended, long requestLastLogIndex,
-                                         Optional<MemberId> votedFor, Log log )
+                                         boolean committedToVotingForAnother, Log log )
     {
         if ( requestTerm < contextTerm )
         {
@@ -96,8 +131,7 @@ public class Voting
         boolean requesterLogUpToDate = requestLogEndsAtHigherTerm ||
                 (logsEndAtSameTerm && requestLogAtLeastAsLongAsMyLog);
 
-        boolean votedForOtherInSameTerm = requestTerm == contextTerm &&
-                votedFor.map( member -> !member.equals( candidate ) ).orElse( false );
+        boolean votedForOtherInSameTerm = requestTerm == contextTerm && committedToVotingForAnother;
 
         boolean shouldVoteFor = requesterLogUpToDate && !votedForOtherInSameTerm;
 
@@ -105,10 +139,10 @@ public class Voting
                         "requester log up to date: %s " +
                         "(request last log term: %s, context last log term: %s, request last log index: %s, context last append: %s) " +
                         "voted for other in same term: %s " +
-                        "(request term: %s, context term: %s, votedFor: %s)",
+                        "(request term: %s, context term: %s, voted for another: %s)",
                 shouldVoteFor,
                 requesterLogUpToDate, requestLastLogTerm, contextLastLogTerm, requestLastLogIndex, contextLastAppended,
-                votedForOtherInSameTerm, requestTerm, contextTerm, votedFor );
+                votedForOtherInSameTerm, requestTerm, contextTerm, committedToVotingForAnother );
 
         return shouldVoteFor;
     }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,16 +19,18 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.utils.ValueMath;
+
 public abstract class FloatingPointValue extends NumberValue
 {
     @Override
-    public boolean equals( long x )
+    public final boolean equals( long x )
     {
         return NumberValues.numbersEqual( doubleValue(), x );
     }
 
     @Override
-    public boolean equals( double x )
+    public final boolean equals( double x )
     {
         return doubleValue() == x;
     }
@@ -42,7 +44,7 @@ public abstract class FloatingPointValue extends NumberValue
     @Override
     public boolean eq( Object other )
     {
-        return other != null && other instanceof Value && equals( (Value) other );
+        return other instanceof Value && equals( (Value) other );
     }
 
     @Override
@@ -92,5 +94,52 @@ public abstract class FloatingPointValue extends NumberValue
     public long longValue()
     {
         return (long) doubleValue();
+    }
+
+    @Override
+    public DoubleValue minus( long b )
+    {
+        return ValueMath.subtract( doubleValue(), b );
+    }
+
+    @Override
+    public DoubleValue minus( double b )
+    {
+        return ValueMath.subtract( doubleValue(), b );
+    }
+
+    @Override
+    public DoubleValue plus( long b )
+    {
+        return ValueMath.add( doubleValue(), b );
+    }
+
+    @Override
+    public DoubleValue plus( double b )
+    {
+        return ValueMath.add( doubleValue(), b );
+    }
+
+    @Override
+    public DoubleValue times( long b )
+    {
+        return ValueMath.multiply( doubleValue(), b );
+    }
+
+    @Override
+    public DoubleValue times( double b )
+    {
+        return ValueMath.multiply( doubleValue(), b );
+    }
+
+    public DoubleValue dividedBy( long b )
+    {
+        return Values.doubleValue( doubleValue() / b );
+    }
+
+    @Override
+    public DoubleValue dividedBy( double b )
+    {
+        return Values.doubleValue( doubleValue() / b );
     }
 }

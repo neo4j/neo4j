@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,15 +30,15 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, Ex
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, ExplainMode => ExplainModev2_3, NormalMode => NormalModev2_3, ProfileMode => ProfileModev2_3, _}
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, FineToReuse, NeedsReplan}
 import org.neo4j.cypher.internal.frontend.v3_4
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.graphdb.{Node, Relationship, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -78,7 +78,7 @@ trait Compatibility {
                                 Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
       def plan(transactionalContext: TransactionalContextWrapper,
-               tracer: v3_4.phases.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandler
+               tracer: v3_4.phases.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any], Seq[String]) = exceptionHandler
         .runSafely {
           val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
           val (planImpl, extractedParameters) = compiler
@@ -87,7 +87,7 @@ trait Compatibility {
           // Log notifications/warnings from planning
           planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-          (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as2_3(preParsedQuery.offset)), extractedParameters)
+          (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as2_3(preParsedQuery.offset)), extractedParameters, Seq.empty[String])
         }
 
       override protected val trier = preparedQueryForV_2_3
@@ -124,8 +124,13 @@ trait Compatibility {
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper) =
-      CacheCheckResult(inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations)), 0)
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): CacheCheckResult = {
+      val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.dataRead, ctx.schemaRead))
+      if (stale)
+        NeedsReplan(0)
+      else
+        FineToReuse
+    }
 
     override val plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
 
@@ -147,8 +152,8 @@ class StringInfoLogger(log: Log) extends InfoLogger {
   }
 }
 
-class EntityAccessorWrapper(nodeManager: NodeManager) extends EntityAccessor {
-  override def newNodeProxyById(id: Long): Node = nodeManager.newNodeProxyById(id)
+class EntityAccessorWrapper(proxySpi: EmbeddedProxySPI) extends EntityAccessor {
+  override def newNodeProxyById(id: Long): Node = proxySpi.newNodeProxy(id)
 
-  override def newRelationshipProxyById(id: Long): Relationship = nodeManager.newRelationshipProxyById(id)
+  override def newRelationshipProxyById(id: Long): Relationship = proxySpi.newRelationshipProxy(id)
 }

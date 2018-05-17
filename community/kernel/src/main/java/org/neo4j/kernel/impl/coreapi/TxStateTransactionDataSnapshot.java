@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,14 +35,14 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -65,11 +65,10 @@ import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 public class TxStateTransactionDataSnapshot implements TransactionData
 {
     private final ReadableTransactionState state;
-    private final NodeProxy.NodeActions nodeActions;
+    private final EmbeddedProxySPI proxySpi;
     private final StorageStatement storeStatement;
-    private final RelationshipActions relationshipActions;
     private final StoreReadLayer store;
-    private KernelTransaction transaction;
+    private final KernelTransaction transaction;
 
     private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> assignedRelationshipProperties = new ArrayList<>();
@@ -81,13 +80,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final PrimitiveLongObjectMap<RelationshipProxy> relationshipsReadFromStore = Primitive.longObjectMap( 16 );
 
     public TxStateTransactionDataSnapshot(
-            ReadableTransactionState state,
-            NodeProxy.NodeActions nodeActions, RelationshipActions relationshipActions,
+            ReadableTransactionState state, EmbeddedProxySPI proxySpi,
             StoreReadLayer storeReadLayer, StorageStatement storageStatement, KernelTransaction transaction )
     {
         this.state = state;
-        this.nodeActions = nodeActions;
-        this.relationshipActions = relationshipActions;
+        this.proxySpi = proxySpi;
         this.storeStatement = storageStatement;
         this.store = storeReadLayer;
         this.transaction = transaction;
@@ -309,7 +306,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
     private Relationship relationship( long relId )
     {
-        RelationshipProxy relationship = new RelationshipProxy( relationshipActions, relId );
+        RelationshipProxy relationship = proxySpi.newRelationshipProxy( relId );
         if ( !state.relationshipVisit( relId, relationship ) )
         {   // This relationship has been created or changed in this transaction
             RelationshipProxy cached = relationshipsReadFromStore.get( relId );
@@ -339,7 +336,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             @Override
             protected Node underlyingObjectToObject( Long id )
             {
-                return new NodeProxy( nodeActions, id );
+                return new NodeProxy( proxySpi, id );
             }
         };
     }
@@ -431,7 +428,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Node entity()
         {
-            return new NodeProxy( nodeActions, nodeId );
+            return new NodeProxy( proxySpi, nodeId );
         }
 
         @Override
@@ -468,7 +465,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
     }
 
-    private class RelationshipPropertyEntryView implements PropertyEntry<Relationship>
+    private static class RelationshipPropertyEntryView implements PropertyEntry<Relationship>
     {
         private final Relationship relationship;
         private final String key;
@@ -543,7 +540,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Node node()
         {
-            return new NodeProxy( nodeActions, nodeId );
+            return new NodeProxy( proxySpi, nodeId );
         }
 
         @Override

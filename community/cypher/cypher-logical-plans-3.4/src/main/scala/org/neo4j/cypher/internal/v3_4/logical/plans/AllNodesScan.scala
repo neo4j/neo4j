@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Produce one row for every node in the graph. Each row contains the contents of argument, and
   * a node assigned to the variable IdName.
   */
-case class AllNodesScan(idName: IdName, argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends NodeLogicalLeafPlan {
+case class AllNodesScan(idName: String, argumentIds: Set[String])(implicit idGen: IdGen)
+  extends NodeLogicalLeafPlan(idGen) {
 
-  def availableSymbols: Set[IdName] = argumentIds + idName
+  override val availableSymbols: Set[String] = argumentIds + idName
 }

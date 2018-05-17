@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,13 +19,14 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public class IntKeyUnsafeTable<VALUE> extends UnsafeTable<VALUE>
 {
-    public IntKeyUnsafeTable( int capacity, VALUE valueMarker )
+    public IntKeyUnsafeTable( int capacity, VALUE valueMarker, MemoryAllocationTracker allocationTracker )
     {
-        super( capacity, 4, valueMarker );
+        super( capacity, 4, valueMarker, allocationTracker );
     }
 
     @Override
@@ -46,6 +47,6 @@ public class IntKeyUnsafeTable<VALUE> extends UnsafeTable<VALUE>
     @Override
     protected Table<VALUE> newInstance( int newCapacity )
     {
-        return new IntKeyUnsafeTable<>( newCapacity, valueMarker );
+        return new IntKeyUnsafeTable<>( newCapacity, valueMarker, allocationTracker );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,22 +19,28 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference}
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
                              propertyKey: PropertyKeyToken)
-                            (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+                            (val id: Id = Id.INVALID_ID) extends Pipe {
 
-  private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  private var reference: IndexReference = CapableIndexReference.NO_INDEX
 
+  private def reference(context: QueryContext): IndexReference = {
+    if (reference == CapableIndexReference.NO_INDEX) {
+      reference = context.indexReference(label.nameId.id, propertyKey.nameId.id)
+    }
+    reference
+  }
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    val resultNodes = state.query.indexScan(descriptor)
-    resultNodes.map(node => baseContext.newWith1(ident, node))
+    val resultNodes = state.query.indexScan(reference(state.query))
+    resultNodes.map(node => executionContextFactory.copyWith(baseContext, ident, node))
   }
-
 }

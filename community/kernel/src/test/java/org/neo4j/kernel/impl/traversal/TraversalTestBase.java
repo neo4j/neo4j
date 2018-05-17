@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -208,14 +208,13 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
     protected <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, String... expected )
     {
-        expect( items, representation, new HashSet<String>(
-                Arrays.asList( expected ) ) );
+        expect( items, representation, new HashSet<>( Arrays.asList( expected ) ) );
     }
 
     protected <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, Set<String> expected )
     {
-        Collection<String> encounteredItems = new ArrayList<String>();
+        Collection<String> encounteredItems = new ArrayList<>();
         try ( Transaction tx = beginTx() )
         {
             for ( T item : items )
@@ -247,7 +246,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
     protected void expectPaths( Traverser traverser, String... paths )
     {
-        expectPaths( traverser, new HashSet<String>( Arrays.asList( paths ) ) );
+        expectPaths( traverser, new HashSet<>( Arrays.asList( paths ) ) );
     }
 
     protected void expectPaths( Traverser traverser, Set<String> expected )
@@ -263,7 +262,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
     public static <E> void assertContains( Iterable<E> actual, E... expected )
     {
-        Set<E> expectation = new HashSet<E>( Arrays.asList( expected ) );
+        Set<E> expectation = new HashSet<>( Arrays.asList( expected ) );
         for ( E element : actual )
         {
             if ( !expectation.remove( element ) )

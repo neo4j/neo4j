@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -48,6 +48,21 @@ public class BufferedChannelOutput implements PackOutput
     public void reset( WritableByteChannel channel )
     {
         this.channel = channel;
+    }
+
+    @Override
+    public void beginMessage()
+    {
+    }
+
+    @Override
+    public void messageSucceeded() throws IOException
+    {
+    }
+
+    @Override
+    public void messageFailed() throws IOException
+    {
     }
 
     @Override
@@ -132,6 +147,17 @@ public class BufferedChannelOutput implements PackOutput
         ensure( 8 );
         buffer.putDouble( value );
         return this;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        buffer.clear();
+
+        if ( channel != null )
+        {
+            channel.close();
+        }
     }
 
     private void ensure( int size ) throws IOException

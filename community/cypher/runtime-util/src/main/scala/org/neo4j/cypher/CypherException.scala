@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -48,6 +48,7 @@ class CypherTypeException(message: String, cause: Throwable = null) extends Cyph
 }
 
 class ParameterNotFoundException(message: String, cause: Throwable) extends CypherException(message, cause) {
+  def this(message: String) = this(message, null)
   val status = Status.Statement.ParameterMissing
 }
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,188 +22,55 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal.util.v3_4.NonEmptyList
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.values.storable.{Value, Values}
 
 class SeekRangeTest extends CypherFunSuite {
 
+  private implicit val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))
+
+  private val numA = Values.longValue(3)
+  private val numB = Values.longValue(4)
+  private val strEmpty = Values.stringValue("")
+  private val strA = Values.stringValue("3")
+  private val strB = Values.stringValue("4")
+
   test("Computes correct limit for numerical less than") {
-    implicit val ordering = CypherOrdering.BY_NUMBER
-
-    RangeLessThan[Number](NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(3)))
-    RangeLessThan[Number](NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(Some(InclusiveBound(3)))
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(Some(ExclusiveBound(3)))
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(3))).limit should equal(Some(ExclusiveBound(3)))
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(null))).limit should equal(None)
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
-  }
-
-  test("Computes inclusion for numerical less than") {
-    implicit val ordering = CypherOrdering.BY_NUMBER
-
-    RangeLessThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](2) should be(right = true)
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](2) should be(right = true)
-    RangeLessThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](3) should be(right = true)
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](3) should be(right = false)
-    RangeLessThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](4) should be(right = false)
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](4) should be(right = false)
-
-    RangeLessThan[Number](NonEmptyList(InclusiveBound(null))).includes[Number](null) should be(right = false)
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(null))).includes[Number](null) should be(right = false)
-    RangeLessThan[Number](NonEmptyList(InclusiveBound(null))).includes[Number](3) should be(right = false)
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(null))).includes[Number](3) should be(right = false)
-    RangeLessThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](null) should be(right = false)
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](null) should be(right = false)
+    RangeLessThan[Value](NonEmptyList(InclusiveBound(numA), InclusiveBound(numB))).limit should equal(Some(InclusiveBound(numA)))
+    RangeLessThan[Value](NonEmptyList(InclusiveBound(numA), ExclusiveBound(numB))).limit should equal(Some(InclusiveBound(numA)))
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numB))).limit should equal(Some(ExclusiveBound(numA)))
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numA))).limit should equal(Some(ExclusiveBound(numA)))
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(null))).limit should equal(None)
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
   test("Computes correct limit for numerical greater than") {
-    implicit val ordering = CypherOrdering.BY_NUMBER
-
-    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(4)))
-    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(Some(ExclusiveBound(4)))
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(4)))
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(3))).limit should equal(Some(ExclusiveBound(3)))
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(null))).limit should equal(None)
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
-  }
-
-  test("Computes inclusion for numerical greater than") {
-    implicit val ordering = CypherOrdering.BY_NUMBER
-
-    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](2) should be(right = false)
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](2) should be(right = false)
-    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](3) should be(right = true)
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](3) should be(right = false)
-    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](4) should be(right = true)
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](4) should be(right = true)
-
-    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(null))).includes[Number](null) should be(right = false)
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(null))).includes[Number](null) should be(right = false)
-    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(null))).includes[Number](3) should be(right = false)
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(null))).includes[Number](3) should be(right = false)
-    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](null) should be(right = false)
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](null) should be(right = false)
-  }
-
-  test("Computes inclusion for numerical range between") {
-    implicit val ordering = CypherOrdering.BY_NUMBER
-
-    val range = RangeBetween(
-      RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))),
-      RangeLessThan[Number](NonEmptyList(ExclusiveBound(5)))
-    )
-
-    range.includes[Number](2) should be(right = false)
-    range.includes[Number](3) should be(right = true)
-    range.includes[Number](4) should be(right = true)
-    range.includes[Number](5) should be(right = false)
-    range.includes[Number](6) should be(right = false)
-
-    RangeBetween(
-      RangeGreaterThan[Number](NonEmptyList(InclusiveBound(null))),
-      RangeLessThan[Number](NonEmptyList(ExclusiveBound(5)))
-    ).includes[Number](4) should be(right = false)
-
-    RangeBetween(
-      RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))),
-      RangeLessThan[Number](NonEmptyList(ExclusiveBound(null)))
-    ).includes[Number](4) should be(right = false)
-
-    range.includes[Number](null) should be(right = false)
+    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(numA), InclusiveBound(numB))).limit should equal(Some(InclusiveBound(numB)))
+    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(numA), ExclusiveBound(numB))).limit should equal(Some(ExclusiveBound(numB)))
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numB))).limit should equal(Some(InclusiveBound(numB)))
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(numA))).limit should equal(Some(ExclusiveBound(numA)))
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(numA), InclusiveBound(null))).limit should equal(None)
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
   test("Computes correct limit for string less than") {
-    implicit val ordering = CypherOrdering.BY_STRING
-
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("")))
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(ExclusiveBound("")))
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("3")))
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"), ExclusiveBound("4"))).limit should equal(Some(InclusiveBound("3")))
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(ExclusiveBound("3")))
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("3"))).limit should equal(Some(ExclusiveBound("3")))
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound(null))).limit should equal(None)
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
-  }
-
-  test("Computes inclusion for string less than") {
-    implicit val ordering = CypherOrdering.BY_STRING
-
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(""))).includes[AnyRef]("") should be(right = true)
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(""))).includes[AnyRef]("2") should be(right = false)
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(""))).includes[AnyRef]("2") should be(right = false)
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("2") should be(right = true)
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("2") should be(right = true)
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("3") should be(right = true)
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("3") should be(right = false)
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("4") should be(right = false)
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("4") should be(right = false)
-
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(null))).includes[AnyRef](null) should be(right = false)
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(null))).includes[AnyRef](null) should be(right = false)
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(null))).includes[AnyRef]("3") should be(right = false)
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(null))).includes[AnyRef]("3") should be(right = false)
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef](null) should be(right = false)
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef](null) should be(right = false)
+    RangeLessThan[Value](NonEmptyList(InclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strEmpty)))
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(Some(ExclusiveBound(strEmpty)))
+    RangeLessThan[Value](NonEmptyList(InclusiveBound(strA), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strA)))
+    RangeLessThan[Value](NonEmptyList(InclusiveBound(strA), ExclusiveBound(strB))).limit should equal(Some(InclusiveBound(strA)))
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strB))).limit should equal(Some(ExclusiveBound(strA)))
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strA))).limit should equal(Some(ExclusiveBound(strA)))
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(null))).limit should equal(None)
+    RangeLessThan[Value](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
   test("Computes correct limit for string greater than") {
-    implicit val ordering = CypherOrdering.BY_STRING
-
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"), ExclusiveBound("4"))).limit should equal(Some(ExclusiveBound("4")))
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("3"))).limit should equal(Some(ExclusiveBound("3")))
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound(null))).limit should equal(None)
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
-  }
-
-  test("Computes inclusion for string greater than") {
-    implicit val ordering = CypherOrdering.BY_STRING
-
-
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(""))).includes[AnyRef]("") should be(right = true)
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(""))).includes[AnyRef]("") should be(right = false)
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(""))).includes[AnyRef]("2") should be(right = true)
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(""))).includes[AnyRef]("2") should be(right = true)
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("2") should be(right = false)
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("2") should be(right = false)
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("3") should be(right = true)
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("3") should be(right = false)
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("4") should be(right = true)
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("4") should be(right = true)
-
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(null))).includes[AnyRef](null) should be(right = false)
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(null))).includes[AnyRef](null) should be(right = false)
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(null))).includes[AnyRef]("3") should be(right = false)
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(null))).includes[AnyRef]("3") should be(right = false)
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef](null) should be(right = false)
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef](null) should be(right = false)
-  }
-
-  test("Computes inclusion for string range between") {
-    implicit val ordering = CypherOrdering.BY_STRING
-
-    val range = RangeBetween(
-      RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))),
-      RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("5")))
-    )
-
-    range.includes[AnyRef]("2") should be(right = false)
-    range.includes[AnyRef]("3") should be(right = true)
-    range.includes[AnyRef]("4") should be(right = true)
-    range.includes[AnyRef]("5") should be(right = false)
-    range.includes[AnyRef]("6") should be(right = false)
-
-    RangeBetween(
-      RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(null))),
-      RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("5")))
-    ).includes[AnyRef]("4") should be(right = false)
-
-    RangeBetween(
-      RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))),
-      RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(null)))
-    ).includes[AnyRef]("4") should be(right = false)
-
-    range.includes[AnyRef](null) should be(right = false)
+    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strB)))
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strEmpty), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strB)))
+    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(strA), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strB)))
+    RangeGreaterThan[Value](NonEmptyList(InclusiveBound(strA), ExclusiveBound(strB))).limit should equal(Some(ExclusiveBound(strB)))
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strB))).limit should equal(Some(InclusiveBound(strB)))
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(strA))).limit should equal(Some(ExclusiveBound(strA)))
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(strA), InclusiveBound(null))).limit should equal(None)
+    RangeGreaterThan[Value](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.function.LongFunction;
+
 public interface PrimitiveLongObjectMap<VALUE> extends PrimitiveLongCollection
 {
     VALUE put( long key, VALUE value );
@@ -33,4 +35,21 @@ public interface PrimitiveLongObjectMap<VALUE> extends PrimitiveLongCollection
      * Visit the entries of this map, until all have been visited or the visitor returns 'true'.
      */
     <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<VALUE, E> visitor ) throws E;
+
+    /**
+     * {@link Iterable} with all map values
+     * @return iterable with all map values
+     */
+    Iterable<VALUE> values();
+
+    default VALUE computeIfAbsent( long key, LongFunction<VALUE> function )
+    {
+        VALUE value = get( key );
+        if ( value == null )
+        {
+            value = function.apply( key );
+            put( key, value );
+        }
+        return value;
+    }
 }

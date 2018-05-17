@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,7 +29,9 @@ import org.mozilla.javascript.Undefined;
 
 import java.util.Map;
 
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.EvaluationException;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.scripting.ScriptExecutor;
 
 public class JavascriptExecutor implements ScriptExecutor
@@ -39,28 +41,27 @@ public class JavascriptExecutor implements ScriptExecutor
 
     public static class Factory implements ScriptExecutor.Factory
     {
+        private final ScriptExecutionMode executionMode;
+
         /**
          * Note that you can set sandbox/no sandbox once, after that it is globally defined
          * for the JVM. If you create a new factory with a different sandboxing setting, an
          * exception will be thrown.
-         *
-         * @param enableSandboxing
          */
-        public Factory( boolean enableSandboxing )
+        public Factory( ScriptExecutionMode executionMode )
         {
-            if ( enableSandboxing )
-            {
-                GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
-            }
-            else
-            {
-                GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.UNSAFE );
-            }
+            this.executionMode = executionMode;
+            GlobalJavascriptInitializer.initialize( executionMode );
         }
 
         @Override
         public ScriptExecutor createExecutorForScript( String script ) throws EvaluationException
         {
+            if ( executionMode == ScriptExecutionMode.DISABLED )
+            {
+                throw new EvaluationException( "Script execution is DISABLED via the " +
+                                               ServerSettings.script_enabled.name() + " setting." );
+            }
             return new JavascriptExecutor( script );
         }
     }

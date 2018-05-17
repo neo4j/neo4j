@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,19 +28,19 @@ import static org.junit.Assert.fail;
 public class IndexPopulationProgressTest
 {
     @Test
-    public void testNone() throws Exception
+    public void testNone()
     {
         assertEquals( 0, IndexPopulationProgress.NONE.getCompletedPercentage(), 0 );
     }
 
     @Test
-    public void testDone() throws Exception
+    public void testDone()
     {
         assertEquals( 100, IndexPopulationProgress.DONE.getCompletedPercentage(), 0 );
     }
 
     @Test
-    public void testNegativeCompleted() throws Exception
+    public void testNegativeCompleted()
     {
         try
         {
@@ -54,7 +54,7 @@ public class IndexPopulationProgressTest
     }
 
     @Test
-    public void testNegativeTotal() throws Exception
+    public void testNegativeTotal()
     {
         try
         {
@@ -68,7 +68,7 @@ public class IndexPopulationProgressTest
     }
 
     @Test
-    public void testAllZero() throws Exception
+    public void testAllZero()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 0, 0 );
         assertEquals( 0, progress.getCompletedCount() );
@@ -77,7 +77,7 @@ public class IndexPopulationProgressTest
     }
 
     @Test
-    public void testCompletedZero() throws Exception
+    public void testCompletedZero()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 0, 1 );
         assertEquals( 1, progress.getTotalCount() );
@@ -86,7 +86,7 @@ public class IndexPopulationProgressTest
     }
 
     @Test
-    public void testCompletedGreaterThanTotal() throws Exception
+    public void testCompletedGreaterThanTotal()
     {
         try
         {
@@ -100,21 +100,21 @@ public class IndexPopulationProgressTest
     }
 
     @Test
-    public void testGetCompletedPercentage() throws Exception
+    public void testGetCompletedPercentage()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
         assertEquals( 50.0f, progress.getCompletedPercentage(), 0.0f );
     }
 
     @Test
-    public void testGetCompleted() throws Exception
+    public void testGetCompleted()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
         assertEquals( 1L, progress.getCompletedCount() );
     }
 
     @Test
-    public void testGetTotal() throws Exception
+    public void testGetTotal()
     {
         IndexPopulationProgress progress = new IndexPopulationProgress( 1, 2 );
         assertEquals( 2L, progress.getTotalCount() );

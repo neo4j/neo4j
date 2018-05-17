@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,17 +21,16 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, Variable}
 
 object DynamicPropertyNotifier {
 
-  def process(variables: Set[Variable], notification: Set[String] => InternalNotification, qg: QueryGraph)
-             (implicit context: LogicalPlanningContext) = {
+  def process(variables: Set[Variable], notification: Set[String] => InternalNotification, qg: QueryGraph, context: LogicalPlanningContext) = {
 
     val indexedLabels = variables.flatMap { variable =>
-      val labels = qg.selections.labelsOnNode(IdName(variable.name))
-      labels.filter(withIndex)
+      val labels = qg.selections.labelsOnNode(variable.name)
+      labels.filter(withIndex(_, context))
     }
 
     if (indexedLabels.nonEmpty) {
@@ -40,6 +39,6 @@ object DynamicPropertyNotifier {
     }
   }
 
-  private def withIndex(labelName: LabelName)(implicit context: LogicalPlanningContext) =
+  private def withIndex(labelName: LabelName, context: LogicalPlanningContext) =
     context.planContext.indexExistsForLabel(labelName.name)
 }

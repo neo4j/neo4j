@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,18 +19,22 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import java.util.function.LongFunction;
+
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.LongCollisionValues;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.LongEncoder;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Radix;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringCollisionValues;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringEncoder;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.TrackerFactories.dynamic;
@@ -54,14 +58,14 @@ public class IdMappers
         }
 
         @Override
-        public void prepare( InputIterable<Object> nodeData, Collector collector, ProgressListener progress )
+        public void prepare( LongFunction<Object> inputIdLookup, Collector collector, ProgressListener progress )
         {   // No need to prepare anything
         }
 
         @Override
         public long get( Object inputId, Group group )
         {
-            return ((Long)inputId).longValue();
+            return (Long) inputId;
         }
 
         @Override
@@ -81,9 +85,15 @@ public class IdMappers
         }
 
         @Override
-        public long calculateMemoryUsage( long numberOfNodes )
+        public MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes )
         {
-            return 0;
+            return MemoryStatsVisitor.NONE;
+        }
+
+        @Override
+        public PrimitiveLongIterator leftOverDuplicateNodesIds()
+        {
+            return PrimitiveLongCollections.emptyIterator();
         }
     }
 
@@ -105,23 +115,25 @@ public class IdMappers
      * An {@link IdMapper} capable of mapping {@link String strings} to long ids.
      *
      * @param cacheFactory {@link NumberArrayFactory} for allocating memory for the cache used by this index.
-     * @return {@link IdMapper} for when node ids given to {@link InputNode} and {@link InputRelationship} are
-     * strings with o association with the actual ids in the database.
+     * @param groups {@link Groups} containing all id groups.
+     * @return {@link IdMapper} for when input ids are strings.
      */
-    public static IdMapper strings( NumberArrayFactory cacheFactory )
+    public static IdMapper strings( NumberArrayFactory cacheFactory, Groups groups )
     {
-        return new EncodingIdMapper( cacheFactory, new StringEncoder(), Radix.STRING, NO_MONITOR, dynamic() );
+        return new EncodingIdMapper( cacheFactory, new StringEncoder(), Radix.STRING, NO_MONITOR, dynamic(), groups,
+                numberOfCollisions -> new StringCollisionValues( cacheFactory, numberOfCollisions ) );
     }
 
     /**
      * An {@link IdMapper} capable of mapping {@link Long arbitrary longs} to long ids.
      *
      * @param cacheFactory {@link NumberArrayFactory} for allocating memory for the cache used by this index.
-     * @return {@link IdMapper} for when node ids given to {@link InputNode} and {@link InputRelationship} are
-     * strings with o association with the actual ids in the database.
+     * @param groups {@link Groups} containing all id groups.
+     * @return {@link IdMapper} for when input ids are numbers.
      */
-    public static IdMapper longs( NumberArrayFactory cacheFactory )
+    public static IdMapper longs( NumberArrayFactory cacheFactory, Groups groups )
     {
-        return new EncodingIdMapper( cacheFactory, new LongEncoder(), Radix.LONG, NO_MONITOR, dynamic() );
+        return new EncodingIdMapper( cacheFactory, new LongEncoder(), Radix.LONG, NO_MONITOR, dynamic(), groups,
+                numberOfCollisions -> new LongCollisionValues( cacheFactory, numberOfCollisions ) );
     }
 }

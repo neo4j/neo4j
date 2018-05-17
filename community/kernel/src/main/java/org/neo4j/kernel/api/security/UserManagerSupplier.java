@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,39 +19,39 @@
  */
 package org.neo4j.kernel.api.security;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface UserManagerSupplier extends Lifecycle
 {
-    UserManager getUserManager( SecurityContext securityContext );
+    UserManager getUserManager( AuthSubject authSubject, boolean isUserManager );
 
     UserManager getUserManager();
 
     UserManagerSupplier NO_AUTH = new UserManagerSupplier()
     {
         @Override
-        public void init() throws Throwable
+        public void init()
         {
         }
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
         }
 
         @Override
-        public void stop() throws Throwable
+        public void stop()
         {
         }
 
         @Override
-        public void shutdown() throws Throwable
+        public void shutdown()
         {
         }
 
         @Override
-        public UserManager getUserManager( SecurityContext securityContext )
+        public UserManager getUserManager( AuthSubject authSubject, boolean isUserManager )
         {
             return UserManager.NO_AUTH;
         }

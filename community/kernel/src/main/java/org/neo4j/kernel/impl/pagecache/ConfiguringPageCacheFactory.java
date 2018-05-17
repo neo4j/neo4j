@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,15 +23,17 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Log;
+import org.neo4j.memory.GlobalMemoryTracker;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
@@ -45,6 +47,7 @@ public class ConfiguringPageCacheFactory
     private final Config config;
     private final PageCacheTracer pageCacheTracer;
     private final Log log;
+    private final VersionContextSupplier versionContextSupplier;
     private PageCache pageCache;
     private PageCursorTracerSupplier pageCursorTracerSupplier;
 
@@ -56,11 +59,14 @@ public class ConfiguringPageCacheFactory
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
      * @param log page cache factory log
+     * @param versionContextSupplier cursor context factory
      */
     public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier, Log log )
+            PageCursorTracerSupplier pageCursorTracerSupplier, Log log,
+            VersionContextSupplier versionContextSupplier )
     {
         this.fs = fs;
+        this.versionContextSupplier = versionContextSupplier;
         this.config = config;
         this.pageCacheTracer = pageCacheTracer;
         this.log = log;
@@ -81,7 +87,8 @@ public class ConfiguringPageCacheFactory
     {
         checkPageSize( config );
         MemoryAllocator memoryAllocator = buildMemoryAllocator( config );
-        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, pageCursorTracerSupplier );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, pageCursorTracerSupplier,
+                versionContextSupplier );
     }
 
     private MemoryAllocator buildMemoryAllocator( Config config )
@@ -92,21 +99,12 @@ public class ConfiguringPageCacheFactory
             long heuristic = defaultHeuristicPageCacheMemory();
             log.warn( "The " + pagecache_memory.name() + " setting has not been configured. It is recommended that this " +
                       "setting is always explicitly configured, to ensure the system has a balanced configuration. " +
-                      "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " );
+                      "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " +
+                      "Run `neo4j-admin memrec` for memory configuration suggestions." );
             pageCacheMemorySetting = "" + heuristic;
         }
 
-        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( pageCacheMemorySetting );
-        long pageCacheMemory = memoryAllocator.availableMemory();
-        long maxHeap = Runtime.getRuntime().maxMemory();
-        if ( pageCacheMemory / maxHeap > 100 )
-        {
-            log.warn( "The memory configuration looks unbalanced. It is generally recommended to have at least " +
-                      "10 KiB of heap memory, for every 1 MiB of page cache memory. The current configuration is " +
-                      "allocating %s bytes for the page cache, and %s bytes for the heap.", pageCacheMemory, maxHeap );
-        }
-
-        return memoryAllocator;
+        return MemoryAllocator.createAllocator( pageCacheMemorySetting, GlobalMemoryTracker.INSTANCE );
     }
 
     public static long defaultHeuristicPageCacheMemory()

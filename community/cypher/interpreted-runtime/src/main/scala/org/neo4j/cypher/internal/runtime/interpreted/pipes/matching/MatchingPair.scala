@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.Map
 
@@ -34,8 +34,8 @@ case class MatchingPair(patternElement: PatternElement, entity: Any) {
   match {
     case Some(pinnedNodeSet) => pinnedNodeSet.forall(pinnedNode => (entity, pinnedNode.entity) match {
       case (a: NodeValue, b: NodeValue)                                                       => a == b
-      case (a: SingleGraphRelationship, b: EdgeValue)                            => a.rel == b
-      case (a: EdgeValue, b: SingleGraphRelationship)                            => a == b.rel
+      case (a: SingleGraphRelationship, b: RelationshipValue)                            => a.rel == b
+      case (a: RelationshipValue, b: SingleGraphRelationship)                            => a == b.rel
       case (a: VariableLengthGraphRelationship, b: VariableLengthGraphRelationship) => a.path == b.path
       case (a: VariableLengthGraphRelationship, _)                                  => false
       case (a, _: VariableLengthGraphRelationship)                                  => false

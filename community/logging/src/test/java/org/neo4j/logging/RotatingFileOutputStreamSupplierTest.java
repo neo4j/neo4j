@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -58,6 +58,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -72,6 +73,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
+import static org.neo4j.logging.RotatingFileOutputStreamSupplier.getAllArchives;
 
 public class RotatingFileOutputStreamSupplierTest
 {
@@ -278,6 +280,24 @@ public class RotatingFileOutputStreamSupplierTest
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile2 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile3 ), is( false ) );
+    }
+
+    @Test
+    public void shouldFindAllArchives() throws Exception
+    {
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 2,
+                DIRECT_EXECUTOR );
+
+        write( supplier, "A string longer than 10 bytes" );
+        write( supplier, "A string longer than 10 bytes" );
+
+        assertThat( fileSystem.fileExists( logFile ), is( true ) );
+        assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
+        assertThat( fileSystem.fileExists( archiveLogFile2 ), is( false ) );
+
+        List<File> allArchives = getAllArchives( fileSystem, logFile );
+        assertThat( allArchives.size(), is( 1 ) );
+        assertThat( allArchives, hasItem( archiveLogFile1 ) );
     }
 
     @Test
@@ -502,6 +522,7 @@ public class RotatingFileOutputStreamSupplierTest
         try
         {
             supplier.close();
+            fail();
         }
         catch ( IOException e )
         {
@@ -547,7 +568,7 @@ public class RotatingFileOutputStreamSupplierTest
         writer.flush();
     }
 
-    private void writeLines( Supplier<OutputStream> outputStreamSupplier, int count ) throws InterruptedException
+    private void writeLines( Supplier<OutputStream> outputStreamSupplier, int count )
     {
         Supplier<PrintWriter> printWriterSupplier = Suppliers.adapted( outputStreamSupplier, OUTPUT_STREAM_CONVERTER );
         for ( ; count >= 0; --count )

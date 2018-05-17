@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.graphdb.Path
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.JavaConverters._
 
@@ -103,7 +103,7 @@ class PatternRelationship(key: String,
     }
   }
 
-  protected def canUseThis(rel: EdgeValue, state: QueryState, f: => ExecutionContext): Boolean =
+  protected def canUseThis(rel: RelationshipValue, state: QueryState, f: => ExecutionContext): Boolean =
     if (properties.isEmpty) {
       true
     } else {
@@ -150,7 +150,7 @@ class VariableLengthPatternRelationship(pathName: String,
       }
     }
 
-    filteredPaths.toStream.map(p => VariableLengthGraphRelationship(ValueUtils.asPathValue(p)))
+    filteredPaths.toStream.map(p => VariableLengthGraphRelationship(ValueUtils.fromPath(p)))
   }
 }
 

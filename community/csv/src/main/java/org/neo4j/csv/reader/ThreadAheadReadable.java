@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -71,7 +71,7 @@ public class ThreadAheadReadable extends ThreadAhead implements CharReadable
     }
 
     @Override
-    public int read( char[] into, int offset, int length ) throws IOException
+    public int read( char[] into, int offset, int length )
     {
         throw new UnsupportedOperationException( "Unsupported for now" );
     }
@@ -100,13 +100,6 @@ public class ThreadAheadReadable extends ThreadAhead implements CharReadable
     {   // Returns the source information of where this reader is perceived to be. The fact that this
         // thing reads ahead should be visible in this description.
         return sourceDescription;
-    }
-
-    @Override
-    public long lineNumber()
-    {   // Generally line numbers aren't tracked at this level of the reading process, let's leave that
-        // to CharSeeker for the time being.
-        return 1;
     }
 
     public static CharReadable threadAhead( CharReadable actual, int bufferSize )

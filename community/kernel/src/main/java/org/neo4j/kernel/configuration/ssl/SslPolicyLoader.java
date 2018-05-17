@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,8 +24,9 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -57,6 +58,8 @@ import org.neo4j.ssl.SslPolicy;
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
+import static org.neo4j.kernel.configuration.ssl.SslPolicyConfig.CIPHER_SUITES_DEFAULTS;
+import static org.neo4j.kernel.configuration.ssl.SslPolicyConfig.TLS_VERSION_DEFAULTS;
 
 /**
  * Each component which utilises SSL policies is recommended to provide a component
@@ -125,7 +128,7 @@ public class SslPolicyLoader
         return sslPolicy;
     }
 
-    private SslPolicy getOrCreateLegacyPolicy()
+    private synchronized SslPolicy getOrCreateLegacyPolicy()
     {
         if ( legacyPolicy != null )
         {
@@ -157,7 +160,7 @@ public class SslPolicyLoader
         PrivateKey privateKey = loadPrivateKey( privateKeyFile, null );
         X509Certificate[] keyCertChain = loadCertificateChain( certficateFile );
 
-        return new SslPolicy( privateKey, keyCertChain, null, null,
+        return new SslPolicy( privateKey, keyCertChain, TLS_VERSION_DEFAULTS, CIPHER_SUITES_DEFAULTS,
                 ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE, sslProvider );
     }
 
@@ -193,7 +196,7 @@ public class SslPolicyLoader
             X509Certificate[] keyCertChain;
             File keyCertChainFile = config.get( policyConfig.public_certificate );
 
-            if ( !privateKeyFile.exists() && !keyCertChainFile.exists() && allowKeyGeneration )
+            if ( allowKeyGeneration && !privateKeyFile.exists() && !keyCertChainFile.exists() )
             {
                 log.info( format( "Generating key and self-signed certificate for SSL policy '%s'", policyName ) );
                 String hostname = config.get( default_advertised_address );
@@ -266,7 +269,7 @@ public class SslPolicyLoader
 
         for ( File crl : revocationFiles )
         {
-            try ( FileInputStream input = new FileInputStream( crl ) )
+            try ( InputStream input = Files.newInputStream( crl.toPath() ) )
             {
                 crls.addAll( (Collection<X509CRL>) certificateFactory.generateCRLs( input ) );
             }
@@ -336,7 +339,7 @@ public class SslPolicyLoader
         for ( File trustedCertFile : trustedCertFiles )
         {
             CertificateFactory certificateFactory = CertificateFactory.getInstance( "X.509" );
-            try ( FileInputStream input = new FileInputStream( trustedCertFile ) )
+            try ( InputStream input = Files.newInputStream( trustedCertFile.toPath() ) )
             {
                 while ( input.available() > 0 )
                 {

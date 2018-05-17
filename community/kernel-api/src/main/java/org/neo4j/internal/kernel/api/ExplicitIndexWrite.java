@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import java.util.Map;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 
 /**
@@ -39,7 +39,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
-            throws KernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * Removes a node from an explicit index
@@ -74,6 +74,33 @@ public interface ExplicitIndexWrite
     void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException;
 
     /**
+     * Drops the explicit index with the given name
+     * @param indexName the index to drop
+     */
+    void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException;
+
+    /**
+     * Updates configuration of the given index
+     * @param indexName the name of the index
+     * @param key the configuration key
+     * @param value the value to be associated with the key
+     * @return The old value associated with the key or <tt>null</tt> if nothing associated with the key.
+     * @throws ExplicitIndexNotFoundKernelException if no such index exists
+     */
+    String nodeExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException;
+
+    /**
+     * Remove a configuration of the given index
+     * @param indexName the name of the index
+     * @param key the configuration key
+     * @return The old value associated with the key or <tt>null</tt> if nothing associated with the key.
+     * @throws ExplicitIndexNotFoundKernelException if no such index exists
+     */
+    String nodeExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException;
+
+    /**
      * Adds relationship to explicit index.
      *
      * @param indexName The name of the index
@@ -83,7 +110,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws KernelException;
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
     /**
      * Removes relationship from explicit index.
@@ -95,7 +122,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws KernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * Removes relationship to explicit index.
@@ -106,7 +133,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
-            throws KernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * Removes relationship to explicit index.
@@ -116,7 +143,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
-            throws KernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * Creates an explicit index in a separate transaction if not yet available.
@@ -149,4 +176,32 @@ public interface ExplicitIndexWrite
      * @param customConfig The configuration of the explicit index.
      */
     void relationshipExplicitIndexCreate( String indexName, Map<String,String> customConfig );
+
+    /**
+     * Drops the explicit index with the given name
+     * @param indexName the index to drop
+     */
+    void relationshipExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException;
+
+    /**
+     * Updates configuration of the given index
+     * @param indexName the name of the index
+     * @param key the configuration key
+     * @param value the value to be associated with the key
+     * @return The old value associated with the key or <tt>null</tt> if nothing associated with the key.
+     * @throws ExplicitIndexNotFoundKernelException if no such index exists
+     */
+    String relationshipExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException;
+
+    /**
+     * Remove a configuration of the given index
+     * @param indexName the name of the index
+     * @param key the configuration key
+     * @return The old value associated with the key or <tt>null</tt> if nothing associated with the key.
+     * @throws ExplicitIndexNotFoundKernelException if no such index exists
+     */
+    String relationshipExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException;
+
 }

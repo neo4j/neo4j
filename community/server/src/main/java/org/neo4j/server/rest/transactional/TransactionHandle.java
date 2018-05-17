@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,13 +30,12 @@ import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
-import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -74,7 +73,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
     private final Type type;
-    private final SecurityContext securityContext;
+    private final LoginContext loginContext;
     private long customTransactionTimeout;
     private final Log log;
     private final long id;
@@ -83,7 +82,7 @@ public class TransactionHandle implements TransactionTerminationHandle
 
     TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
             GraphDatabaseQueryService queryService, TransactionRegistry registry, TransactionUriScheme uriScheme,
-            boolean implicitTransaction, SecurityContext securityContext, long customTransactionTimeout,
+            boolean implicitTransaction, LoginContext loginContext, long customTransactionTimeout,
             LogProvider logProvider )
     {
         this.txManagerFacade = txManagerFacade;
@@ -92,7 +91,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         this.registry = registry;
         this.uriScheme = uriScheme;
         this.type = implicitTransaction ? Type.implicit : Type.explicit;
-        this.securityContext = securityContext;
+        this.loginContext = loginContext;
         this.customTransactionTimeout = customTransactionTimeout;
         this.log = logProvider.getLog( getClass() );
         this.id = registry.begin( this );
@@ -198,7 +197,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         }
     }
 
-    void forceRollback() throws TransactionFailureException
+    void forceRollback()
     {
         context.resumeSinceTransactionsAreStillThreadBound();
         context.rollback();
@@ -210,7 +209,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             try
             {
-                context = txManagerFacade.newTransaction( type, securityContext, customTransactionTimeout );
+                context = txManagerFacade.newTransaction( type, loginContext, customTransactionTimeout );
             }
             catch ( RuntimeException e )
             {
@@ -318,7 +317,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                     }
 
                     hasPrevious = true;
-                    TransactionalContext tc = txManagerFacade.create( request, queryService, type, securityContext,
+                    TransactionalContext tc = txManagerFacade.create( request, queryService, type, loginContext,
                             statement.statement(), statement.parameters() );
                     Result result = safelyExecute( statement, hasPeriodicCommit, tc );
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );

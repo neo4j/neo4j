@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -60,7 +60,7 @@ public class ProgressMonitorTest
     public final SingleIndicator factory = new SingleIndicator();
 
     @Test
-    public void shouldReportProgressInTheSpecifiedIntervals() throws Exception
+    public void shouldReportProgressInTheSpecifiedIntervals()
     {
         // given
         Indicator indicator = indicatorMock();
@@ -86,7 +86,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldAggregateProgressFromMultipleProcesses() throws Exception
+    public void shouldAggregateProgressFromMultipleProcesses()
     {
         // given
         Indicator indicator = indicatorMock();
@@ -135,7 +135,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldNotAllowAddingPartsAfterCompletingMultiPartBuilder() throws Exception
+    public void shouldNotAllowAddingPartsAfterCompletingMultiPartBuilder()
     {
         ProgressMonitorFactory.MultiPartBuilder builder = factory.mock( indicatorMock(), 10 )
                                                    .multipleParts( testName.getMethodName() );
@@ -148,7 +148,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldNotAllowAddingMultiplePartsWithSameIdentifier() throws Exception
+    public void shouldNotAllowAddingMultiplePartsWithSameIdentifier()
     {
         ProgressMonitorFactory.MultiPartBuilder builder = Mockito.mock( ProgressMonitorFactory.class )
                                                    .multipleParts( testName.getMethodName() );
@@ -160,7 +160,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldStartProcessAutomaticallyIfNotDoneBefore() throws Exception
+    public void shouldStartProcessAutomaticallyIfNotDoneBefore()
     {
         // given
         Indicator indicator = indicatorMock();
@@ -185,7 +185,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldStartMultiPartProcessAutomaticallyIfNotDoneBefore() throws Exception
+    public void shouldStartMultiPartProcessAutomaticallyIfNotDoneBefore()
     {
         // given
         Indicator indicator = indicatorMock();
@@ -232,7 +232,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldCompleteMultiPartProgressWithNoPartsImmediately() throws Exception
+    public void shouldCompleteMultiPartProgressWithNoPartsImmediately()
     {
         // given
         Indicator indicator = indicatorMock();
@@ -292,7 +292,6 @@ public class ProgressMonitorTest
 
     @Test
     public void shouldPrintADotEveryHalfPercentAndFullPercentageEveryTenPercentEvenWhenStepResolutionIsLower()
-            throws Exception
     {
         // given
         StringWriter writer = new StringWriter();
@@ -310,7 +309,7 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldAllowStartingAPartBeforeCompletionOfMultiPartBuilder() throws Exception
+    public void shouldAllowStartingAPartBeforeCompletionOfMultiPartBuilder()
     {
         // given
         Indicator indicator = mock( Indicator.class );

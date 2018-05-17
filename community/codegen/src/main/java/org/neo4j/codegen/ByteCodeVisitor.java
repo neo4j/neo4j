@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -106,11 +106,9 @@ interface ByteCodeVisitor
 
     abstract class Printer extends ClassVisitor implements ByteCodeVisitor, CodeGeneratorOption
     {
-        private static final int API = Opcodes.ASM4;
-
         private Printer()
         {
-            super( API );
+            super( Opcodes.ASM4 );
         }
 
         @Override
@@ -159,7 +157,7 @@ interface ByteCodeVisitor
         public MethodVisitor visitMethod( int access, String name, String desc, String signature, String[] exceptions )
         {
             printf( "  %s %s%s%n  {%n", Modifier.toString( access ), name, desc );
-            return new MethodVisitor( API )
+            return new MethodVisitor( api )
             {
                 int offset;
 

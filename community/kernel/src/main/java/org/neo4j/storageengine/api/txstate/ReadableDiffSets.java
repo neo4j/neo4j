@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,13 +24,13 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 
 /**
  * {@link SuperReadableDiffSets} with added method for filtering added items.
  */
-public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLongIterator>
+public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T>
 {
     @Override
     ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter );
@@ -110,13 +110,13 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLo
         }
 
         @Override
-        public PrimitiveIntIterator augment( PrimitiveIntIterator source )
+        public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
         {
             return source;
         }
 
         @Override
-        public PrimitiveLongIterator augmentWithRemovals( PrimitiveLongIterator source )
+        public PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongResourceIterator source )
         {
             return source;
         }

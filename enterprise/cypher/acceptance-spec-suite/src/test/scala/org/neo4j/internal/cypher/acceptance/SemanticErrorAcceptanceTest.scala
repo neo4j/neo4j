@@ -1,27 +1,31 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
 import java.util
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CompiledRuntimeName, InterpretedRuntimeName, SlottedRuntimeName}
 import org.neo4j.graphdb.QueryExecutionException
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
@@ -126,7 +130,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("cant use toString() on nodes") {
     executeAndEnsureError(
       "MATCH (n) RETURN toString(n)",
-      "Type mismatch: expected Boolean, Float, Integer or String but was Node (line 1, column 27 (offset: 26))"
+      "Type mismatch: expected Boolean, Float, Integer, Point, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Node (line 1, column 27 (offset: 26))"
     )
   }
 
@@ -426,9 +430,9 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should fail nicely when addition overflows in runtime") {
-    executeAndEnsureError(
+    executeAndEnsureErrorForAllRuntimes(
       s"RETURN {t1} + {t2}",
-      "result of 9223372036854775807 + 1 cannot be represented as an integer",
+      "long overflow", // "result of 9223372036854775807 + 1 cannot be represented as an integer",
       "t1" -> Long.MaxValue, "t2" -> 1
     )
   }
@@ -441,9 +445,9 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should fail nicely when subtraction underflows in runtime") {
-    executeAndEnsureError(
+    executeAndEnsureErrorForAllRuntimes(
       s"RETURN {t1} - {t2}",
-      "result of -9223372036854775808 - 1 cannot be represented as an integer",
+      "long overflow", // "result of -9223372036854775808 - 1 cannot be represented as an integer",
       "t1" -> Long.MinValue, "t2" -> 1
     )
   }
@@ -456,10 +460,26 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should fail nicely when multiplication overflows in runtime") {
-    executeAndEnsureError(
-      s"RETURN {t1} + {t2}",
-      "result of 9223372036854775807 + 1 cannot be represented as an integer",
-      "t1" -> Long.MaxValue, "t2" -> 1
+    executeAndEnsureErrorForAllRuntimes(
+      s"RETURN {t1} * {t2}",
+      "long overflow", //"result of 9223372036854775807 * 10 cannot be represented as an integer",
+      "t1" -> Long.MaxValue, "t2" -> 10
+    )
+  }
+
+  test("should fail nicely when divide integer by zero in runtime") {
+    executeAndEnsureErrorForAllRuntimes(
+      s"RETURN {t1} / {t2}",
+      List("/ by zero", "divide by zero"),
+      "t1" -> 1, "t2" -> 0
+    )
+  }
+
+  test("should fail nicely when modulo integer by zero in runtime") {
+    executeAndEnsureErrorForAllRuntimes(
+      s"RETURN {t1} % {t2}",
+      List("/ by zero", "divide by zero"),
+      "t1" -> 1, "t2" -> 0
     )
   }
 
@@ -469,21 +489,50 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "integer, 10508455564958384115, is too large")
   }
 
-  private def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
-    import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
+  test("should not be able to use more then Long.MaxValue for LIMIT in interpreted runtime") {
+    val expectedErrorMessage = "Invalid input for LIMIT. Either the string does not have the appropriate format or the" +
+      " provided number is bigger then 2^63-1 (line 1, column 55 (offset: 54))"
+    val limit = "9223372036854775808" // this equals Long.MaxValue +1
+    executeAndEnsureError(
+      "CYPHER runtime = interpreted MATCH (n) RETURN n LIMIT " + limit,
+      expectedErrorMessage)
+  }
 
+  private def executeAndEnsureErrorForAllRuntimes(query: String, expected: String, params: (String,Any)*): Unit = {
+    executeAndEnsureErrorForAllRuntimes(query, List(expected), params:_*)
+  }
+
+  private def executeAndEnsureErrorForAllRuntimes(query: String, expected: Seq[String], params: (String,Any)*): Unit = {
+    val runtimes = List(CompiledRuntimeName.name, SlottedRuntimeName.name, InterpretedRuntimeName.name) // Non-experimental runtimes that support arithmetics
+    runtimes.foreach( r => executeAndEnsureError(s"CYPHER runtime=$r $query", expected, params: _*) )
+  }
+
+  private def executeAndEnsureError(query: String, expected: String, params: (String,Any)*): Unit = {
+    executeAndEnsureError(query, List(expected), params: _*)
+  }
+
+  private def executeAndEnsureError(query: String, expected: Seq[String], params: (String,Any)*) {
+    import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
     import scala.collection.JavaConverters._
+
+    val expectedErrorString = expected.map(e => s"'$e'").mkString(" or ")
 
     try {
       val jParams = new util.HashMap[String, Object]()
       params.foreach(kv => jParams.put(kv._1, kv._2.asInstanceOf[AnyRef]))
 
       graph.execute(query.fixNewLines, jParams).asScala.size
-      fail(s"Did not get the expected syntax error, expected: $expected")
+      fail(s"Did not get the expected error, expected: $expectedErrorString")
     } catch {
       case x: QueryExecutionException =>
         val actual = x.getMessage.lines.next().trim
-        actual should equal(expected)
+        if (!correctError(actual, expected)) {
+          fail(s"Did not get the expected error, expected: $expectedErrorString actual: '$actual'")
+        }
     }
+  }
+
+  private def correctError(actualError: String, possibleErrors: Seq[String]): Boolean = {
+    possibleErrors == Seq.empty || (actualError != null && possibleErrors.exists(s => actualError.replaceAll("\\r", "").contains(s.replaceAll("\\r", ""))))
   }
 }

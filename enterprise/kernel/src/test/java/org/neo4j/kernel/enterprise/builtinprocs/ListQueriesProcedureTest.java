@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
@@ -31,7 +34,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Node;
@@ -56,7 +58,9 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -64,6 +68,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.track_query_allocation;
@@ -92,7 +97,7 @@ public class ListQueriesProcedureTest
     public VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( SECONDS_TIMEOUT - 2, TimeUnit.SECONDS ).build();
 
     @Test
-    public void shouldContainTheQueryItself() throws Exception
+    public void shouldContainTheQueryItself()
     {
         // given
         String query = "CALL dbms.listQueries";
@@ -107,7 +112,7 @@ public class ListQueriesProcedureTest
     }
 
     @Test
-    public void shouldNotIncludeDeprecatedFields() throws Exception
+    public void shouldNotIncludeDeprecatedFields()
     {
         // when
         Result result = db.execute( "CALL dbms.listQueries" );
@@ -271,6 +276,70 @@ public class ListQueriesProcedureTest
     }
 
     @Test
+    public void shouldOnlyGetActiveLockCountFromCurrentQuery() throws Exception
+    {
+        // given
+        String query1 = "MATCH (x:X) SET x.v = 1";
+        String query2 = "MATCH (y:Y) SET y.v = 2 WITH count(y) AS y MATCH (z:Z) SET z.v = y";
+        try ( Resource<Node> test = test( () ->
+        {
+            for ( int i = 0; i < 5; i++ )
+            {
+                db.createNode( label( "X" ) );
+            }
+            db.createNode( label( "Y" ) );
+            return db.createNode( label( "Z" ) );
+        }, query1, query2 ) )
+        {
+            // when
+            try ( Result rows = db.execute( "CALL dbms.listQueries() "
+                    + "YIELD query AS queryText, queryId, activeLockCount "
+                    + "WHERE queryText = $queryText "
+                    + "CALL dbms.listActiveLocks(queryId) YIELD resourceId "
+                    + "WITH queryText, queryId, activeLockCount, count(resourceId) AS allLocks "
+                    + "RETURN *", singletonMap( "queryText", query2 ) ) )
+            {
+                assertTrue( "should have at least one row", rows.hasNext() );
+                Map<String,Object> row = rows.next();
+                Object activeLockCount = row.get( "activeLockCount" );
+                Object allLocks = row.get( "allLocks" );
+                assertFalse( "should have at most one row", rows.hasNext() );
+                assertThat( "activeLockCount", activeLockCount, instanceOf( Long.class ) );
+                assertThat( "allLocks", allLocks, instanceOf( Long.class ) );
+                assertThat( (Long) activeLockCount, lessThan( (Long) allLocks ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldContainSpecificConnectionDetails()
+    {
+        // when
+        Map<String,Object> data = getQueryListing( "CALL dbms.listQueries" );
+
+        // then
+        assertThat( data, hasKey( "protocol" ) );
+        assertThat( data, hasKey( "clientAddress" ) );
+        assertThat( data, hasKey( "requestUri" ) );
+    }
+
+    @Test
+    public void shouldContainPageHitsAndPageFaults() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            // when
+            Map<String,Object> data = getQueryListing( query );
+
+            // then
+            assertThat( data, hasEntry( equalTo( "pageHits" ), instanceOf( Long.class ) ) );
+            assertThat( data, hasEntry( equalTo( "pageFaults" ), instanceOf( Long.class ) ) );
+        }
+    }
+
+    @Test
     public void shouldListUsedIndexes() throws Exception
     {
         // given
@@ -313,7 +382,7 @@ public class ListQueriesProcedureTest
     public void shouldListIndexesUsedForScans() throws Exception
     {
         // given
-        String QUERY = "MATCH (n:Node) USING INDEX n:Node(value) WHERE 1 < n.value < 10 SET n.value = 2";
+        final String QUERY = "MATCH (n:Node) USING INDEX n:Node(value) WHERE 1 < n.value < 10 SET n.value = 2";
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label( "Node" ) ).on( "value" ).create();
@@ -361,6 +430,40 @@ public class ListQueriesProcedureTest
     }
 
     @Test
+    public void cpuTimeTrackingShouldBeADynamicSetting() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        Map<String,Object> data;
+
+        // when
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "cpuTimeMillis" ), notNullValue() ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_cpu_time.name() + "', 'false')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "cpuTimeMillis" ), nullValue() ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_cpu_time.name() + "', 'true')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "cpuTimeMillis" ), notNullValue() ) );
+    }
+
+    @Test
     public void shouldDisableHeapAllocationTracking() throws Exception
     {
         // given
@@ -378,10 +481,46 @@ public class ListQueriesProcedureTest
         assertThat( data, hasEntry( equalTo( "allocatedBytes" ), nullValue() ) );
     }
 
+    @Test
+    public void heapAllocationTrackingShouldBeADynamicSetting() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        Map<String,Object> data;
+
+        // when
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "allocatedBytes" ), anyOf( nullValue(), (Matcher) allOf(
+                instanceOf( Long.class ), greaterThan( 0L ) ) ) ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_allocation.name() + "', 'false')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "allocatedBytes" ), nullValue() ) );
+
+        // when
+        db.execute( "call dbms.setConfigValue('" + track_query_allocation.name() + "', 'true')" );
+        try ( Resource<Node> test = test( db::createNode, query ) )
+        {
+            data = getQueryListing( query );
+        }
+        // then
+        assertThat( data, hasEntry( equalTo( "allocatedBytes" ), anyOf( nullValue(), (Matcher) allOf(
+                instanceOf( Long.class ), greaterThan( 0L ) ) ) ) );
+    }
+
     private void shouldListUsedIndexes( String label, String property ) throws Exception
     {
         // given
-        String QUERY1 = "MATCH (n:" + label + "{" + property + ":5}) USING INDEX n:" + label + "(" + property +
+        final String QUERY1 = "MATCH (n:" + label + "{" + property + ":5}) USING INDEX n:" + label + "(" + property +
                 ") SET n." + property + " = 3";
         try ( Resource<Node> test = test( () ->
         {
@@ -405,7 +544,7 @@ public class ListQueriesProcedureTest
         }
 
         // given
-        String QUERY2 = "MATCH (n:" + label + "{" + property + ":3}) USING INDEX n:" + label + "(" + property +
+        final String QUERY2 = "MATCH (n:" + label + "{" + property + ":3}) USING INDEX n:" + label + "(" + property +
                 ") MATCH (u:" + label + "{" + property + ":4}) USING INDEX u:" + label + "(" + property +
                 ") CREATE (n)-[:KNOWS]->(u)";
         try ( Resource<Node> test = test( () ->
@@ -478,8 +617,8 @@ public class ListQueriesProcedureTest
         }
     }
 
-    private <T extends PropertyContainer> Resource<T> test( Supplier<T> setup, String query )
-            throws TimeoutException, InterruptedException, ExecutionException
+    private <T extends PropertyContainer> Resource<T> test( Supplier<T> setup, String... queries )
+            throws InterruptedException, ExecutionException
     {
         CountDownLatch resourceLocked = new CountDownLatch( 1 );
         CountDownLatch listQueriesLatch = new CountDownLatch( 1 );
@@ -506,7 +645,10 @@ public class ListQueriesProcedureTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.execute( query ).close();
+                for ( String query : queries )
+                {
+                    db.execute( query ).close();
+                }
                 tx.success();
             }
             catch ( Throwable t )

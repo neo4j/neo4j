@@ -1,91 +1,139 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.SocketAddressParser.socketAddress;
 
-class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements TopologyService
+class SharedDiscoveryReadReplicaClient implements TopologyService, Lifecycle
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final ReadReplicaInfo addresses;
     private final MemberId memberId;
     private final Log log;
+    private final String dbName;
 
     SharedDiscoveryReadReplicaClient( SharedDiscoveryService sharedDiscoveryService, Config config, MemberId memberId,
             LogProvider logProvider )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
+        this.dbName = config.get( CausalClusteringSettings.database );
         this.addresses = new ReadReplicaInfo( ClientConnectorAddresses.extractFromConfig( config ),
                 socketAddress( config.get( CausalClusteringSettings.transaction_advertised_address ).toString(),
-                        AdvertisedSocketAddress::new ) );
+                        AdvertisedSocketAddress::new ), dbName );
         this.memberId = memberId;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public void start() throws Throwable
+    public void init()
     {
-        sharedDiscoveryService.registerReadReplica( memberId, addresses );
+        // nothing to do
+    }
+
+    @Override
+    public void start()
+    {
+        sharedDiscoveryService.registerReadReplica( this );
         log.info( "Registered read replica member id: %s at %s", memberId, addresses );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
-        sharedDiscoveryService.unRegisterReadReplica( memberId);
+        sharedDiscoveryService.unRegisterReadReplica( this );
     }
 
     @Override
-    public CoreTopology coreServers()
+    public void shutdown()
     {
-        CoreTopology topology = sharedDiscoveryService.coreTopology( null );
-        log.info( "Core topology is %s", topology );
-        return topology;
+        // nothing to do
     }
 
     @Override
-    public ReadReplicaTopology readReplicas()
+    public CoreTopology allCoreServers()
     {
-        ReadReplicaTopology topology = sharedDiscoveryService.readReplicaTopology();
-        log.info( "Read replica topology is %s", topology );
-        return topology;
+        return sharedDiscoveryService.getCoreTopology( dbName, false );
+    }
+
+    @Override
+    public CoreTopology localCoreServers()
+    {
+        return allCoreServers().filterTopologyByDb( dbName );
+    }
+
+    @Override
+    public ReadReplicaTopology allReadReplicas()
+    {
+        return sharedDiscoveryService.getReadReplicaTopology();
+    }
+
+    @Override
+    public ReadReplicaTopology localReadReplicas()
+    {
+        return allReadReplicas().filterTopologyByDb( dbName );
     }
 
     @Override
     public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
     {
-        return sharedDiscoveryService.coreTopology( null )
+        return sharedDiscoveryService.getCoreTopology( dbName, false )
                 .find( upstream )
                 .map( info -> Optional.of( info.getCatchupServer() ) )
-                .orElseGet( () -> sharedDiscoveryService.readReplicaTopology()
+                .orElseGet( () -> sharedDiscoveryService.getReadReplicaTopology()
                         .find( upstream )
                         .map( ReadReplicaInfo::getCatchupServer ) );
+    }
+
+    @Override
+    public String localDBName()
+    {
+        return dbName;
+    }
+
+    @Override
+    public Map<MemberId,RoleInfo> allCoreRoles()
+    {
+        return sharedDiscoveryService.getCoreRoles();
+    }
+
+    public MemberId getMemberId()
+    {
+        return memberId;
+    }
+
+    public ReadReplicaInfo getReadReplicainfo()
+    {
+        return addresses;
     }
 }

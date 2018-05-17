@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -65,11 +65,6 @@ public interface Source extends Closeable
          * and so those characters are transfered over to this data array before {@link #startPosition()}
          */
         int backPosition();
-
-        /**
-         * Close this chunk and any resources attached to it
-         */
-        void close();
     }
 
     Chunk EMPTY_CHUNK = new Chunk()
@@ -105,11 +100,6 @@ public interface Source extends Closeable
         }
 
         @Override
-        public void close()
-        {
-        }
-
-        @Override
         public int backPosition()
         {
             return 0;
@@ -123,12 +113,12 @@ public interface Source extends Closeable
             private boolean returned;
 
             @Override
-            public void close() throws IOException
+            public void close()
             {   // Nothing to close
             }
 
             @Override
-            public Chunk nextChunk( int seekStartPos ) throws IOException
+            public Chunk nextChunk( int seekStartPos )
             {
                 if ( !returned )
                 {

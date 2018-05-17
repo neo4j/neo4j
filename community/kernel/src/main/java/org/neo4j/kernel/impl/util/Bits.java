@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -168,7 +168,7 @@ public final class Bits implements Cloneable
             long value = longs[longIndex];
             if ( builder.length() > 0 )
             {
-                builder.append( "\n" );
+                builder.append( '\n' );
             }
             builder.append( longIndex );
             builder.append( ':' );
@@ -181,20 +181,19 @@ public final class Bits implements Cloneable
         return builder.toString();
     }
 
-    public static StringBuilder numberToString( StringBuilder builder, long value, int numberOfBytes )
+    public static void numberToString( StringBuilder builder, long value, int numberOfBytes )
     {
-        builder.append( "[" );
+        builder.append( '[' );
         for ( int i = 8 * numberOfBytes - 1; i >= 0; i-- )
         {
             boolean isSet = (value & (1L << i)) != 0;
             builder.append( isSet ? "1" : "0" );
             if ( i > 0 && i % 8 == 0 )
             {
-                builder.append( "," );
+                builder.append( ',' );
             }
         }
-        builder.append( "]" );
-        return builder;
+        builder.append( ']' );
     }
 
     public static String numbersToBitString( byte[] values )

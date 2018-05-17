@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -45,15 +45,14 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
     @Override
     protected void process( T[] batch, BatchSender sender )
     {
-        for ( int i = 0; i < batch.length; i++ )
+        for ( T item : batch )
         {
-            T item = batch[i];
             if ( item != null && item.inUse() )
             {
                 if ( !processor.process( item ) )
                 {
                     // No change for this record
-                    batch[i] = null;
+                    item.setInUse( false );
                 }
             }
         }

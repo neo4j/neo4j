@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,16 +24,17 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.Procedures;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -45,7 +46,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 
 public class SchemaProcedureIT extends KernelIntegrationTest
 {
@@ -59,8 +60,9 @@ public class SchemaProcedureIT extends KernelIntegrationTest
         // Given the database is empty
 
         // When
+        Procedures procs = procs();
         RawIterator<Object[],ProcedureException> stream =
-                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
+               procs.procedureCallRead( procs.procedureGet( procedureName( "db", "schema" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{new ArrayList<>(), new ArrayList<>()} ) ) );
@@ -71,24 +73,25 @@ public class SchemaProcedureIT extends KernelIntegrationTest
     public void testLabelIndex() throws Throwable
     {
         // Given there is label with index and a constraint
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        long nodeId = statement.dataWriteOperations().nodeCreate();
-        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
-        statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
-        int propertyIdName = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "name" );
-        int propertyIdAge = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "age" );
-        statement.dataWriteOperations()
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId = transaction.dataWrite().nodeCreate();
+        int labelId = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
+        transaction.dataWrite().nodeAddLabel( nodeId, labelId );
+        int propertyIdName = transaction.tokenWrite().propertyKeyGetOrCreateForName( "name" );
+        int propertyIdAge = transaction.tokenWrite().propertyKeyGetOrCreateForName( "age" );
+        transaction.dataWrite()
                 .nodeSetProperty( nodeId, propertyIdName, Values.of( "Emil" ) );
         commit();
 
-        SchemaWriteOperations schemaOps = schemaWriteOperationsInNewTransaction();
+        SchemaWrite schemaOps = schemaWriteInNewTransaction();
         schemaOps.indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyIdName ) );
         schemaOps.uniquePropertyConstraintCreate( SchemaDescriptorFactory.forLabel( labelId, propertyIdAge ) );
         commit();
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schema" ) ).id(),
+                        new Object[0] );
 
         // Then
         while ( stream.hasNext() )
@@ -98,9 +101,9 @@ public class SchemaProcedureIT extends KernelIntegrationTest
             ArrayList<Node> nodes = (ArrayList<Node>) next[0];
             assertTrue( nodes.size() == 1 );
             assertThat( nodes.get( 0 ).getLabels(), contains( equalTo( Label.label( "Person" ) ) ) );
-            assertEquals( new String( "Person" ), nodes.get( 0 ).getAllProperties().get( "name" ) );
-            assertEquals( Arrays.asList( "name" ), nodes.get( 0 ).getAllProperties().get( "indexes" ) );
-            assertEquals( Arrays.asList( "CONSTRAINT ON ( person:Person ) ASSERT person.age IS UNIQUE" ),
+            assertEquals( "Person", nodes.get( 0 ).getAllProperties().get( "name" ) );
+            assertEquals( Collections.singletonList( "name" ), nodes.get( 0 ).getAllProperties().get( "indexes" ) );
+            assertEquals( Collections.singletonList( "CONSTRAINT ON ( person:Person ) ASSERT person.age IS UNIQUE" ),
                     nodes.get( 0 ).getAllProperties().get( "constraints" ) );
         }
         commit();
@@ -110,20 +113,21 @@ public class SchemaProcedureIT extends KernelIntegrationTest
     public void testRelationShip() throws Throwable
     {
         // Given there ar
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        long nodeIdPerson = statement.dataWriteOperations().nodeCreate();
-        int labelIdPerson = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
-        statement.dataWriteOperations().nodeAddLabel( nodeIdPerson, labelIdPerson );
-        long nodeIdLocation = statement.dataWriteOperations().nodeCreate();
-        int labelIdLocation = statement.tokenWriteOperations().labelGetOrCreateForName( "Location" );
-        statement.dataWriteOperations().nodeAddLabel( nodeIdLocation, labelIdLocation );
-        int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "LIVES_IN" );
-        statement.dataWriteOperations().relationshipCreate( relationshipTypeId, nodeIdPerson, nodeIdLocation );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeIdPerson = transaction.dataWrite().nodeCreate();
+        int labelIdPerson = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
+        transaction.dataWrite().nodeAddLabel( nodeIdPerson, labelIdPerson );
+        long nodeIdLocation = transaction.dataWrite().nodeCreate();
+        int labelIdLocation = transaction.tokenWrite().labelGetOrCreateForName( "Location" );
+        transaction.dataWrite().nodeAddLabel( nodeIdLocation, labelIdLocation );
+        int relationshipTypeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "LIVES_IN" );
+        transaction.dataWrite().relationshipCreate(  nodeIdPerson, relationshipTypeId, nodeIdLocation );
         commit();
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "schema" ), new Object[0] );
+                procs().procedureCallRead( procs().procedureGet(  procedureName( "db", "schema" ) ).id(),
+                        new Object[0] );
 
         // Then
         while ( stream.hasNext() )

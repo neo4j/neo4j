@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,7 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 public abstract class KernelData
 {
     public static final Setting<String> forced_id = GraphDatabaseSettings.forced_kernel_id;
-    private static final Map<String, KernelData> instances = new ConcurrentHashMap<String, KernelData>();
+    private static final Map<String, KernelData> instances = new ConcurrentHashMap<>();
 
     private static synchronized String newInstance( KernelData instance )
     {

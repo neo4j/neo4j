@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -64,7 +64,7 @@ public class PropertyRecordTest
     }
 
     @Test
-    public void shouldIterateOverBlocks() throws Exception
+    public void shouldIterateOverBlocks()
     {
         // GIVEN
         PropertyRecord record = new PropertyRecord( 0 );
@@ -79,16 +79,16 @@ public class PropertyRecordTest
         Iterator<PropertyBlock> iterator = record.iterator();
 
         // THEN
-        for ( int i = 0; i < blocks.length; i++ )
+        for ( PropertyBlock block : blocks )
         {
             assertTrue( iterator.hasNext() );
-            assertEquals( blocks[i], iterator.next() );
+            assertEquals( block, iterator.next() );
         }
         assertFalse( iterator.hasNext() );
     }
 
     @Test
-    public void shouldBeAbleToRemoveBlocksDuringIteration() throws Exception
+    public void shouldBeAbleToRemoveBlocksDuringIteration()
     {
         // GIVEN
         PropertyRecord record = new PropertyRecord( 0 );
@@ -149,14 +149,16 @@ public class PropertyRecordTest
         addBlock( record, 5, 6 );
         addBlock( record, 7, 8 );
 
+        boolean validationErrorDetected = false;
         try
         {
             addBlock( record, 9, 10 );
-            fail( "Exception expected " );
         }
-        catch ( Throwable ignored )
+        catch ( AssertionError ignored )
         {
+            validationErrorDetected = true;
         }
+        assertTrue( "Assertion failure expected", validationErrorDetected );
     }
 
     private void assertIteratorRemoveThrowsIllegalState( Iterator<PropertyBlock> iterator )

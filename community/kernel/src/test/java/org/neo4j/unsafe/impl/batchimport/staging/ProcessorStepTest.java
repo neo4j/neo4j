@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,8 +31,10 @@ import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
@@ -59,7 +61,7 @@ public class ProcessorStepTest
         step.endOfUpstream();
         while ( !step.isCompleted() )
         {
-            verifyNoMoreInteractions( control );
+            Thread.sleep( 10 );
         }
 
         // THEN
@@ -101,6 +103,31 @@ public class ProcessorStepTest
         receiveFuture.get();
     }
 
+    @Test
+    public void shouldRecycleDoneBatches() throws Exception
+    {
+        // GIVEN
+        StageControl control = mock( StageControl.class );
+        MyProcessorStep step = new MyProcessorStep( control, 0 );
+        step.start( ORDER_SEND_DOWNSTREAM );
+
+        // WHEN
+        int batches = 10;
+        for ( int i = 0; i < batches; i++ )
+        {
+            step.receive( i, i );
+        }
+        step.endOfUpstream();
+        while ( !step.isCompleted() )
+        {
+            Thread.sleep( 10 );
+        }
+
+        // THEN
+        verify( control, times( batches ) ).recycle( any() );
+        step.close();
+    }
+
     private static class BlockingProcessorStep extends ProcessorStep<Void>
     {
         private final CountDownLatch latch;
@@ -129,7 +156,7 @@ public class ProcessorStepTest
         }
 
         @Override
-        protected void process( Integer batch, BatchSender sender ) throws Throwable
+        protected void process( Integer batch, BatchSender sender )
         {   // No processing in this test
             nextExpected.incrementAndGet();
         }

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.ha;
 
@@ -34,7 +37,6 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
@@ -42,7 +44,7 @@ import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.logging.NullLog;
@@ -72,7 +74,7 @@ public class TestMasterCommittingAtSlave
             containsString( "communication" ), any( Object[].class ), any( Throwable.class ) );
 
     @Test
-    public void commitSuccessfullyToTheFirstOne() throws Exception
+    public void commitSuccessfullyToTheFirstOne()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
         propagator.committed( 2, MasterServerId );
@@ -81,7 +83,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitACoupleOfTransactionsSuccessfully() throws Exception
+    public void commitACoupleOfTransactionsSuccessfully()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
         propagator.committed( 2, MasterServerId );
@@ -92,7 +94,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitFailureAtFirstOneShouldMoveOnToNext() throws Exception
+    public void commitFailureAtFirstOneShouldMoveOnToNext()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder(), true );
         propagator.committed( 2, MasterServerId );
@@ -103,7 +105,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitSuccessfullyAtThreeSlaves() throws Exception
+    public void commitSuccessfullyAtThreeSlaves()
     {
         TransactionPropagator propagator = newPropagator( 5, 3, givenOrder() );
         propagator.committed( 2, MasterServerId );
@@ -121,7 +123,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void commitSuccessfullyOnSomeOfThreeSlaves() throws Exception
+    public void commitSuccessfullyOnSomeOfThreeSlaves()
     {
         TransactionPropagator propagator = newPropagator( 5, 3, givenOrder(), false, true, true );
         propagator.committed( 2, MasterServerId );
@@ -135,7 +137,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void roundRobinSingleSlave() throws Exception
+    public void roundRobinSingleSlave()
     {
         TransactionPropagator propagator = newPropagator( 3, 1, roundRobin() );
         for ( long tx = 2; tx <= 6; tx++ )
@@ -150,7 +152,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void roundRobinSomeFailing() throws Exception
+    public void roundRobinSomeFailing()
     {
         TransactionPropagator propagator = newPropagator( 4, 2, roundRobin(), false, true );
         for ( long tx = 2; tx <= 6; tx++ )
@@ -174,7 +176,7 @@ public class TestMasterCommittingAtSlave
     }
 
     @Test
-    public void notEnoughSlavesSuccessful() throws Exception
+    public void notEnoughSlavesSuccessful()
     {
         TransactionPropagator propagator = newPropagator( 3, 2, givenOrder(), true, true );
         propagator.committed( 2, MasterServerId );
@@ -213,13 +215,13 @@ public class TestMasterCommittingAtSlave
     }
 
     private TransactionPropagator newPropagator( int slaveCount, int replication, SlavePriority slavePriority,
-                                                 boolean... failingSlaves ) throws Exception
+                                                 boolean... failingSlaves )
     {
         slaves = instantiateSlaves( slaveCount, failingSlaves );
 
         Config config = Config.defaults( MapUtil.stringMap(
                 HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
-        Neo4jJobScheduler scheduler = cleanup.add( new Neo4jJobScheduler() );
+        CentralJobScheduler scheduler = cleanup.add( new CentralJobScheduler() );
         TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
                 NullLog.getInstance(), () -> slaves, new CommitPusher( scheduler ) );
         // Life
@@ -233,14 +235,14 @@ public class TestMasterCommittingAtSlave
         }
         catch ( Throwable e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
         return result;
     }
 
     private Iterable<Slave> instantiateSlaves( int count, boolean[] failingSlaves )
     {
-        List<Slave> slaves = new ArrayList<Slave>();
+        List<Slave> slaves = new ArrayList<>();
         for ( int i = 0; i < count; i++ )
         {
             slaves.add( new FakeSlave( i < failingSlaves.length && failingSlaves[i], i + MasterServerId + 1 ) );
@@ -250,7 +252,7 @@ public class TestMasterCommittingAtSlave
 
     private static class FakeSlave implements Slave
     {
-        private volatile Queue<Long> calledWithTxId = new LinkedList<Long>();
+        private volatile Queue<Long> calledWithTxId = new LinkedList<>();
         private final boolean failing;
         private final int serverId;
 

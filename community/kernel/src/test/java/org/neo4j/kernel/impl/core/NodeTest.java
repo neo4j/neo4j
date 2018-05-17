@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -53,7 +53,7 @@ public class NodeTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels() throws Exception
+    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
     {
         // Given
         Node node;
@@ -241,12 +241,12 @@ public class NodeTest
         String key1 = "key1";
         String key2 = "key2";
         String key3 = "key3";
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
-        Boolean bool1 = new Boolean( true );
-        Boolean bool2 = new Boolean( false );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
+        Boolean bool1 = Boolean.TRUE;
+        Boolean bool2 = Boolean.FALSE;
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -283,12 +283,12 @@ public class NodeTest
     public void testNodeChangeProperty2()
     {
         String key1 = "key1";
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
-        Boolean bool1 = new Boolean( true );
-        Boolean bool2 = new Boolean( false );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
+        Boolean bool1 = Boolean.TRUE;
+        Boolean bool2 = Boolean.FALSE;
         Node node1 = getGraphDb().createNode();
         node1.setProperty( key1, int1 );
         node1.setProperty( key1, int2 );
@@ -311,9 +311,9 @@ public class NodeTest
         String key1 = "key1";
         String key2 = "key2";
         String key3 = "key3";
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string = new String( "3" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string = "3";
 
         Node node1 = getGraphDb().createNode();
         try

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,7 @@ public class SchemaIndexUsage extends IndexUsage
     private final String[] propertyKeys;
     private final int labelId;
 
-    SchemaIndexUsage( String identifier, int labelId, String label, String[] propertyKeys )
+    public SchemaIndexUsage( String identifier, int labelId, String label, String... propertyKeys )
     {
         super( identifier );
         this.label = label;

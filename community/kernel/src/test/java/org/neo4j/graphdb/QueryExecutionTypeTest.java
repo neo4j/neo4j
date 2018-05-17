@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -100,7 +100,7 @@ public class QueryExecutionTypeTest
     private final Assumptions expected;
 
     @Test
-    public void verify() throws Exception
+    public void verify()
     {
         QueryExecutionType executionType = expected.type();
         assertEquals( expected.isProfiled, executionType.isProfiled() );
@@ -112,7 +112,7 @@ public class QueryExecutionTypeTest
     }
 
     @Test
-    public void noneOtherLikeIt() throws Exception
+    public void noneOtherLikeIt()
     {
         for ( QueryExecutionType.QueryType queryType : QueryExecutionType.QueryType.values() )
         {

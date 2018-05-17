@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,21 +40,21 @@ public class PropertyCreator
     private final DynamicRecordAllocator arrayRecordAllocator;
     private final IdSequence propertyRecordIdGenerator;
     private final PropertyTraverser traverser;
-    private final boolean allowStorePoints;
+    private final boolean allowStorePointsAndTemporal;
 
     public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser )
     {
-        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, propertyStore.allowStorePoints() );
+        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, propertyStore.allowStorePointsAndTemporal() );
     }
 
     public PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator, IdSequence propertyRecordIdGenerator,
-            PropertyTraverser traverser, boolean allowStorePoints )
+            PropertyTraverser traverser, boolean allowStorePointsAndTemporal )
     {
         this.stringRecordAllocator = stringRecordAllocator;
         this.arrayRecordAllocator = arrayRecordAllocator;
         this.propertyRecordIdGenerator = propertyRecordIdGenerator;
         this.traverser = traverser;
-        this.allowStorePoints = allowStorePoints;
+        this.allowStorePointsAndTemporal = allowStorePointsAndTemporal;
     }
 
     public <P extends PrimitiveRecord> void primitiveSetProperty(
@@ -194,8 +194,7 @@ public class PropertyCreator
 
     public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Value value )
     {
-        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator,
-                allowStorePoints );
+        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, allowStorePointsAndTemporal );
         return block;
     }
 

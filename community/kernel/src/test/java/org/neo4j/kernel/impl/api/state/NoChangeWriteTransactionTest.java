@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,7 +43,7 @@ public class NoChangeWriteTransactionTest
     public final DatabaseRule dbr = new ImpermanentDatabaseRule();
 
     @Test
-    public void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly() throws Exception
+    public void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly()
     {
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.
@@ -64,7 +64,7 @@ public class NoChangeWriteTransactionTest
     }
 
     @Test
-    public void shouldDetectNoChangesInCommitsAlsoForTheIndexes() throws Exception
+    public void shouldDetectNoChangesInCommitsAlsoForTheIndexes()
     {
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.

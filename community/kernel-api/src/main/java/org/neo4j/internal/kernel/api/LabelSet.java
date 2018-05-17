@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,9 @@ import java.util.NoSuchElementException;
 
 /**
  * Set of label ids.
+ *
+ * Modifications are not reflected in the LabelSet and there is no guaranteed
+ * order.
  */
 public interface LabelSet
 {
@@ -32,8 +35,12 @@ public interface LabelSet
 
     boolean contains( int labelToken );
 
+    long[] all();
+
     LabelSet NONE = new LabelSet()
     {
+        private final long[] EMPTY = new long[0];
+
         @Override
         public int numberOfLabels()
         {
@@ -50,6 +57,12 @@ public interface LabelSet
         public boolean contains( int labelToken )
         {
             return false;
+        }
+
+        @Override
+        public long[] all()
+        {
+            return EMPTY;
         }
     };
 }

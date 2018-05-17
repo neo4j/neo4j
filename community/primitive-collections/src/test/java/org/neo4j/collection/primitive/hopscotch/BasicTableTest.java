@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,12 +28,11 @@ import java.util.Collection;
 import java.util.Random;
 
 import org.neo4j.collection.primitive.Primitive;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
+import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.lang.System.currentTimeMillis;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 
 @RunWith( Parameterized.class )
@@ -93,7 +92,7 @@ public class BasicTableTest
             @Override
             public Table newTable( int capacity )
             {
-                return new IntKeyUnsafeTable( capacity, VALUE_MARKER );
+                return new IntKeyUnsafeTable( capacity, VALUE_MARKER, GlobalMemoryTracker.INSTANCE );
             }
 
             @Override
@@ -113,7 +112,7 @@ public class BasicTableTest
             @Override
             public Table newTable( int capacity )
             {
-                return new LongKeyUnsafeTable( capacity, VALUE_MARKER );
+                return new LongKeyUnsafeTable( capacity, VALUE_MARKER, GlobalMemoryTracker.INSTANCE );
             }
 
             @Override
@@ -193,7 +192,7 @@ public class BasicTableTest
             @Override
             public Table newTable( int capacity )
             {
-                return new LongKeyLongValueUnsafeTable( capacity );
+                return new LongKeyLongValueUnsafeTable( capacity, GlobalMemoryTracker.INSTANCE );
             }
 
             @Override
@@ -217,7 +216,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldSetAndGetSmallKey() throws Exception
+    public void shouldSetAndGetSmallKey()
     {
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -240,7 +239,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldSetAndGetBigKey() throws Exception
+    public void shouldSetAndGetBigKey()
     {
         assumeTrue( factory.supportsLongs() );
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
@@ -260,7 +259,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldRemoveBigKey() throws Exception
+    public void shouldRemoveBigKey()
     {
         assumeTrue( factory.supportsLongs() );
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
@@ -281,7 +280,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldSetHopBits() throws Exception
+    public void shouldSetHopBits()
     {
         try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -300,7 +299,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldMoveHopBit() throws Exception
+    public void shouldMoveHopBit()
     {
         try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -318,7 +317,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldClearTable() throws Exception
+    public void shouldClearTable()
     {
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {

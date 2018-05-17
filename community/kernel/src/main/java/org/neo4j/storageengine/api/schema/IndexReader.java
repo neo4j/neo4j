@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -56,34 +56,18 @@ public interface IndexReader extends Resource
      * @param client the client which will control the progression though query results.
      * @param query the query so serve.
      */
-    default void query(
+    void query(
             IndexProgressor.NodeValueClient client,
             IndexOrder indexOrder,
-            IndexQuery... query ) throws IndexNotApplicableKernelException
-    {
-        if ( indexOrder != IndexOrder.NONE )
-        {
-            throw new UnsupportedOperationException(
-                    String.format( "This reader only have support for index order %s. Provided index order was %s.",
-                            IndexOrder.NONE, indexOrder ) );
-        }
-        int[] keys = new int[query.length];
-        for ( int i = 0; i < query.length; i++ )
-        {
-            keys[i] = query[i].propertyKeyId();
-        }
-        client.initialize( new NodeValueIndexProgressor( query( query ), client ), keys );
-    }
+            IndexQuery... query ) throws IndexNotApplicableKernelException;
 
     /**
-     * @param predicates query to determine whether or not index has full number precision for.
-     * @return whether or not this reader will only return 100% matching results from {@link #query(IndexQuery...)}
-     * when calling with predicates involving numbers, such as {@link IndexQuery#exact(int, Object)}
-     * w/ a {@link Number} or {@link IndexQuery#range(int, Number, boolean, Number, boolean)}.
+     * @param predicates query to determine whether or not index has full value precision for.
+     * @return whether or not this reader will only return 100% matching results from {@link #query(IndexQuery...)}.
      * If {@code false} is returned this means that the caller of {@link #query(IndexQuery...)} will have to
      * do additional filtering, double-checking of actual property values, externally.
      */
-    boolean hasFullNumberPrecision( IndexQuery... predicates );
+    boolean hasFullValuePrecision( IndexQuery... predicates );
 
     IndexReader EMPTY = new IndexReader()
     {
@@ -107,12 +91,18 @@ public interface IndexReader extends Resource
         }
 
         @Override
+        public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, IndexQuery... query )
+        {
+            //do nothing
+        }
+
+        @Override
         public void close()
         {
         }
 
         @Override
-        public boolean hasFullNumberPrecision( IndexQuery... predicates )
+        public boolean hasFullValuePrecision( IndexQuery... predicates )
         {
             return true;
         }

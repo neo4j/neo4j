@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher.internal.compiled_runtime.spi.v3_4
 
@@ -24,23 +27,23 @@ import java.util
 import org.neo4j.codegen.bytecode.ByteCode
 import org.neo4j.codegen.source.SourceCode
 import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.util.v3_4.{TaskCloser, symbols}
+import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext}
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure.typeRef
 import org.neo4j.cypher.internal.spi.v3_4.codegen.{GeneratedMethodStructure, Methods, _}
+import org.neo4j.cypher.internal.util.v3_4.symbols
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read, _}
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 
 /**
   * These are not test in the normal sense that they assert on some result,
@@ -51,7 +54,6 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
 
   val modes = Seq(SourceCode.SOURCECODE, ByteCode.BYTECODE)
   val ops = Seq(
-        Operation("create rel extractor", _.createRelExtractor("foo")),
         Operation("nullable object", m => {
           m.declareAndInitialize("foo", CodeGenType.Any)
           m.generator.assign(typeRef[Object], "bar",
@@ -150,7 +152,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
           m.lookupPropertyKey("prop", "prop")
           m.declareAndInitialize("rel", CodeGenType.primitiveRel)
           m.declareProperty("propVar")
-          m.relationshipGetPropertyForVar("rel", "prop", "propVar")
+          m.relationshipGetPropertyForVar("rel", CodeGenType.primitiveNode, "prop", "propVar")
         }),
         Operation("property by id for relationship", m => {
           m.declareAndInitialize("rel", CodeGenType.primitiveRel)
@@ -158,8 +160,9 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
           m.nodeGetPropertyById("rel", CodeGenType.primitiveNode, 13, "propVar")
         }),
         Operation("rel type", m => {
-          m.createRelExtractor("bar")
           m.declareAndInitialize("foo", CypherCodeGenType(symbols.CTString, ReferenceType))
+          m.declareAndInitialize("node", CodeGenType.primitiveNode)
+          m.nodeGetRelationshipsWithDirection("barIter", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
           m.relType("bar", "foo")
         }),
         Operation("all relationships for node and types", (m) => {
@@ -169,42 +172,42 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
           m.nodeGetRelationshipsWithDirectionAndTypes("foo", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING, Seq("a", "b"))
         }),
         Operation("next relationship", (m) => {
-          m.createRelExtractor("r")
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
-          m.nodeGetRelationshipsWithDirection("foo", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
-          m.nextRelationshipAndNode("nextNode", "foo", SemanticDirection.OUTGOING, "node", "r")
+          m.nodeGetRelationshipsWithDirection("fooIter", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
+          m.nextRelationshipAndNode("nextNode", "fooIter", SemanticDirection.OUTGOING, "node", "foo")
         }),
     Operation("expand into", (m) => {
       m.declareAndInitialize("from", CodeGenType.primitiveNode)
       m.declareAndInitialize("to", CodeGenType.primitiveNode)
-      val local = m.generator.declare(typeRef[RelationshipIterator], "iter")
-      Templates.handleKernelExceptions(m.generator, m.fields, m.finalizers) { body =>
-        body.assign(local, Expression.invoke(Methods.allConnectingRelationships,
-                                             Expression.get(m.generator.self(), m.fields.ro), body.load("from"),
+      val local = m.generator.declare(typeRef[RelationshipSelectionCursor], "iter")
+      m.generator.assign(local, Expression.invoke(Methods.allConnectingRelationships,
+                                             Expression.get(m.generator.self(), m.fields.dataRead),
+                                             Expression.get(m.generator.self(), m.fields.cursors),
+                                             Expression.get(m.generator.self(), m.fields.nodeCursor),
+                                             m.generator.load("from"),
                                              Templates.outgoing,
-                                             body.load("to")))
-      }
+                                             m.generator.load("to")))
     }),
     Operation("expand into with types", (m) => {
       m.declareAndInitialize("from", CodeGenType.primitiveNode)
       m.declareAndInitialize("to", CodeGenType.primitiveNode)
-      val local = m.generator.declare(typeRef[RelationshipIterator], "iter")
-      Templates.handleKernelExceptions(m.generator, m.fields, m.finalizers) { body =>
-        body.assign(local, Expression.invoke(Methods.connectingRelationships,
-                                             Expression.get(m.generator.self(), m.fields.ro), body.load("from"),
-                                             Templates.outgoing,
-                                             body.load("to"),
+      val local = m.generator.declare(typeRef[RelationshipSelectionCursor], "iter")
+      m.generator.assign(local, Expression.invoke(Methods.connectingRelationships,
+                                                  Expression.get(m.generator.self(), m.fields.dataRead),
+                                                  Expression.get(m.generator.self(), m.fields.cursors),
+                                                  Expression.get(m.generator.self(), m.fields.nodeCursor),
+                                                  m.generator.load("from"),
+                                                  Templates.outgoing,
+                                                  m.generator.load("to"),
                                              Expression.newArray(typeRef[Int], Expression.constant(1))))
-      }
     }),
     Operation("expand from all node", (m) => {
-      m.createRelExtractor("r")
       m.allNodesScan("nodeIter")
-      m.whileLoop(m.hasNextNode("nodeIter")) { b1 =>
-        b1.nextNode("node", "nodeIter")
+      m.whileLoop(m.advanceNodeCursor("nodeIter")) { b1 =>
+        b1.nodeFromNodeCursor("node", "nodeIter")
         b1.nodeGetRelationshipsWithDirection("relIter", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
-        b1.whileLoop(b1.hasNextRelationship("relIter")) { b2 =>
-          b2.nextRelationshipAndNode("nextNode", "relIter", SemanticDirection.OUTGOING, "node", "r")
+        b1.whileLoop(b1.advanceRelationshipSelectionCursor("relIter")) { b2 =>
+          b2.nextRelationshipAndNode("nextNode", "relIter", SemanticDirection.OUTGOING, "node", "rel")
         }
       }
     }),
@@ -228,22 +231,34 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
     implicit val context = new CodeGenContext(SemanticTable(), Map.empty)
     val clazz = using(codeGen.generateClass(packageName, "Test")) { body =>
       val fields = Fields(
-        closer = body.field(typeRef[TaskCloser], "closer"),
-        ro = body.field(typeRef[ReadOperations], "ro"),
-        entityAccessor = body.field(typeRef[NodeManager], "nodeManager"),
+        entityAccessor = body.field(typeRef[EmbeddedProxySPI], "proxySpi"),
         executionMode = body.field(typeRef[ExecutionMode], "executionMode"),
         description = body.field(typeRef[Provider[InternalPlanDescription]], "description"),
         tracer = body.field(typeRef[QueryExecutionTracer], "tracer"),
         params = body.field(typeRef[util.Map[String, Object]], "params"),
         closeable = body.field(typeRef[Completable], "closeable"),
         queryContext = body.field(typeRef[QueryContext], "queryContext"),
-        skip = body.field(typeRef[Boolean], "skip"))
+        skip = body.field(typeRef[Boolean], "skip"),
+        cursors = body.field(typeRef[CursorFactory], "cursors"),
+        nodeCursor = body.field(typeRef[NodeCursor], "nodeCursor"),
+        relationshipScanCursor = body.field(typeRef[RelationshipScanCursor], "relationshipScanCursor"),
+        propertyCursor = body.field(typeRef[PropertyCursor], "propertyCursor"),
+        dataRead = body.field(typeRef[Read], "dataRead"),
+        tokenRead = body.field(typeRef[TokenRead], "tokenRead"),
+        schemaRead = body.field(typeRef[SchemaRead], "schemaRead")
+      )
       // the "COLUMNS" static field
       body.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](Seq.empty))
       using(body.generate(MethodDeclaration.method(typeRef[Unit], "foo"))) { methodBody =>
         block(new GeneratedMethodStructure(fields, methodBody, new AuxGenerator(packageName, codeGen)))
       }
-      Templates.getOrLoadReadOperations(body, fields)
+      Templates.getOrLoadDataRead(body, fields)
+      Templates.getOrLoadCursors(body, fields)
+      Templates.getOrLoadTokenRead(body, fields)
+      Templates.getOrLoadSchemaRead(body, fields)
+      Templates.nodeCursor(body, fields)
+      Templates.relationshipScanCursor(body, fields)
+      Templates.propertyCursor(body, fields)
       body.handle()
     }
     clazz.newInstance()

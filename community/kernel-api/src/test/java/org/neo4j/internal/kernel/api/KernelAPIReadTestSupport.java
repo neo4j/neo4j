@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,7 +39,7 @@ public interface KernelAPIReadTestSupport
      * @param create Method which populates the database.
      * @throws IOException If database creation failed due to IO problems.
      */
-    void setup( File storeDir, Consumer<GraphDatabaseService> create ) throws IOException;
+    void setup( File storeDir, Consumer<GraphDatabaseService> create );
 
     /**
      * The Kernel to test. Called before every test.

@@ -1,35 +1,39 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
-import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.BooleanSupplier;
-
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -68,14 +72,24 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     private ExposedRaftState state = mock( ExposedRaftState.class );
     private final CommandIndexTracker commandIndexTracker = mock( CommandIndexTracker.class );
     private IdReusabilityCondition idReusabilityCondition;
+    private ReplicatedIdGenerator idGenerator;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         file = testDirectory.file( "idgen" );
         fs = fileSystemRule.get();
         when( raftMachine.state() ).thenReturn( state );
         idReusabilityCondition = getIdReusabilityCondition();
+    }
+
+    @After
+    public void tearDown()
+    {
+        if ( idGenerator != null )
+        {
+            idGenerator.close();
+        }
     }
 
     @Override
@@ -93,22 +107,22 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test
-    public void shouldCreateIdFileForPersistence() throws Exception
+    public void shouldCreateIdFileForPersistence()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
-        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 0L, rangeAcquirer, logProvider,
+        idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 0L, rangeAcquirer, logProvider,
                 10, true );
 
         assertTrue( fs.fileExists( file ) );
     }
 
     @Test
-    public void shouldNotStepBeyondAllocationBoundaryWithoutBurnedId() throws Exception
+    public void shouldNotStepBeyondAllocationBoundaryWithoutBurnedId()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
-        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 0L, rangeAcquirer, logProvider,
+        idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 0L, rangeAcquirer, logProvider,
                 10, true );
 
         Set<Long> idsGenerated = collectGeneratedIds( idGenerator, 1024 );
@@ -121,12 +135,12 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test
-    public void shouldNotStepBeyondAllocationBoundaryWithBurnedId() throws Exception
+    public void shouldNotStepBeyondAllocationBoundaryWithBurnedId()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
         long burnedIds = 23L;
-        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider,
+        idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider,
                 10, true );
 
         Set<Long> idsGenerated = collectGeneratedIds( idGenerator, 1024 - burnedIds );
@@ -139,11 +153,11 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test( expected = IllegalStateException.class )
-    public void shouldThrowIfAdjustmentFailsDueToInconsistentValues() throws Exception
+    public void shouldThrowIfAdjustmentFailsDueToInconsistentValues()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = mock( ReplicatedIdRangeAcquirer.class );
         when( rangeAcquirer.acquireIds( IdType.NODE ) ).thenReturn( allocation( 3, 21, 21 ) );
-        ReplicatedIdGenerator idGenerator =
+        idGenerator =
                 new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 42L, rangeAcquirer, logProvider, 10,
                         true );
 
@@ -151,36 +165,37 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test
-    public void shouldReuseIdOnlyWhenLeader() throws Exception
+    public void shouldReuseIdOnlyWhenLeader()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
         long burnedIds = 23L;
-        IdGenerator idGenerator = new FreeIdFilteredIdGenerator(
-                new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider, 10, true ),
-                idReusabilityCondition );
+        try ( FreeIdFilteredIdGenerator idGenerator = new FreeIdFilteredIdGenerator(
+                new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider, 10, true ), idReusabilityCondition ) )
+        {
 
-        idGenerator.freeId( 10 );
-        assertEquals( 0, idGenerator.getDefragCount() );
-        assertEquals( 23, idGenerator.nextId() );
+            idGenerator.freeId( 10 );
+            assertEquals( 0, idGenerator.getDefragCount() );
+            assertEquals( 23, idGenerator.nextId() );
 
-        when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 6L ); // gap-free
-        when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
-        idReusabilityCondition.receive( myself );
+            when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 6L ); // gap-free
+            when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
+            idReusabilityCondition.onLeaderSwitch( new LeaderInfo( myself, 1 ) );
 
-        idGenerator.freeId( 10 );
-        assertEquals( 1, idGenerator.getDefragCount() );
-        assertEquals( 10, idGenerator.nextId() );
-        assertEquals( 0, idGenerator.getDefragCount() );
+            idGenerator.freeId( 10 );
+            assertEquals( 1, idGenerator.getDefragCount() );
+            assertEquals( 10, idGenerator.nextId() );
+            assertEquals( 0, idGenerator.getDefragCount() );
+        }
     }
 
     @Test
-    public void shouldReuseIdBeforeHighId() throws Exception
+    public void shouldReuseIdBeforeHighId()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
         long burnedIds = 23L;
-        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider,
+        idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider,
                 10, true );
 
         assertEquals( 23, idGenerator.nextId() );
@@ -194,30 +209,31 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     }
 
     @Test
-    public void freeIdOnlyWhenReusabilityConditionAllows() throws Exception
+    public void freeIdOnlyWhenReusabilityConditionAllows()
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
         IdReusabilityCondition idReusabilityCondition = getIdReusabilityCondition();
 
         long burnedIds = 23L;
-        FreeIdFilteredIdGenerator idGenerator = new FreeIdFilteredIdGenerator(
-                new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider, 10, true ),
-                idReusabilityCondition );
+        try ( FreeIdFilteredIdGenerator idGenerator = new FreeIdFilteredIdGenerator(
+                new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> burnedIds, rangeAcquirer, logProvider, 10, true ), idReusabilityCondition ) )
+        {
 
-        idGenerator.freeId( 10 );
-        assertEquals( 0, idGenerator.getDefragCount() );
-        assertEquals( 23, idGenerator.nextId() );
+            idGenerator.freeId( 10 );
+            assertEquals( 0, idGenerator.getDefragCount() );
+            assertEquals( 23, idGenerator.nextId() );
 
-        when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 4L, 6L ); // gap-free
-        when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
-        idReusabilityCondition.receive( myself );
+            when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 4L, 6L ); // gap-free
+            when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
+            idReusabilityCondition.onLeaderSwitch( new LeaderInfo( myself, 1 ) );
 
-        assertEquals( 24, idGenerator.nextId() );
-        idGenerator.freeId( 11 );
-        assertEquals( 25, idGenerator.nextId() );
-        idGenerator.freeId( 6 );
-        assertEquals( 6, idGenerator.nextId() );
+            assertEquals( 24, idGenerator.nextId() );
+            idGenerator.freeId( 11 );
+            assertEquals( 25, idGenerator.nextId() );
+            idGenerator.freeId( 6 );
+            assertEquals( 6, idGenerator.nextId() );
+        }
     }
 
     private IdReusabilityCondition getIdReusabilityCondition()

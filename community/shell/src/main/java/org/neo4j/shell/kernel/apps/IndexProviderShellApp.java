@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -123,7 +123,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         if ( get )
         {
             String commandToRun = parser.options().get( "c" );
-            Collection<String> commandsToRun = new ArrayList<String>();
+            Collection<String> commandsToRun = new ArrayList<>();
             boolean specialCommand = false;
             if ( doCd || doLs )
             {
@@ -147,18 +147,13 @@ public class IndexProviderShellApp extends TransactionProvidingApp
                 return Continuation.INPUT_COMPLETE;
             }
 
-            IndexHits<PropertyContainer> result = query ? query( parser, out ) : get( parser, out );
-            try
+            try ( IndexHits<PropertyContainer> result = query ? query( parser, out ) : get( parser, out ) )
             {
                 for ( PropertyContainer hit : result )
                 {
-                    printAndInterpretTemplateLines( commandsToRun, false, !specialCommand, NodeOrRelationship.wrap( hit ),
-                            getServer(), session, out );
+                    printAndInterpretTemplateLines( commandsToRun, !specialCommand,
+                            NodeOrRelationship.wrap( hit ), getServer(), session, out );
                 }
-            }
-            finally
-            {
-                result.close();
             }
         }
         else if ( index )
@@ -256,7 +251,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         Class<? extends PropertyContainer> entityType = getEntityType( parser );
         if ( getIndex( indexName, entityType, null ) != null )
         {
-            out.println( entityType.getClass().getSimpleName() + " index '" + indexName + "' already exists" );
+            out.println( entityType.getSimpleName() + " index '" + indexName + "' already exists" );
             return;
         }
 
@@ -364,7 +359,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         return query2 != null ? theIndex.query( query1, query2 ) : theIndex.query( query1 );
     }
 
-    private void index( AppCommandParser parser, Session session, Output out ) throws ShellException, RemoteException
+    private void index( AppCommandParser parser, Session session, Output out ) throws ShellException
     {
         NodeOrRelationship current = getCurrent( session );
         String index = getIndexName( parser );

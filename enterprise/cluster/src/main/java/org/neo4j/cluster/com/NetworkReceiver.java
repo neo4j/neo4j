@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.com;
 
@@ -43,7 +46,6 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -124,14 +126,12 @@ public class NetworkReceiver
 
     @Override
     public void init()
-            throws Throwable
     {
         ThreadRenamingRunnable.setThreadNameDeterminer( ThreadNameDeterminer.CURRENT );
     }
 
     @Override
     public void start()
-            throws Throwable
     {
         channels = new DefaultChannelGroup();
 
@@ -140,7 +140,7 @@ public class NetworkReceiver
                 Executors.newCachedThreadPool( daemon( "Cluster boss", monitor ) ),
                 Executors.newFixedThreadPool( 2, daemon( "Cluster worker", monitor ) ), 2 );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
-        serverBootstrap.setOption( "child.tcpNoDelay", true );
+        serverBootstrap.setOption( "child.tcpNoDelay", Boolean.TRUE );
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         int[] ports = config.clusterServer().getPorts();
@@ -167,7 +167,6 @@ public class NetworkReceiver
 
     @Override
     public void shutdown()
-            throws Throwable
     {
     }
 
@@ -177,7 +176,7 @@ public class NetworkReceiver
     }
 
     private int listen( int minPort, int maxPort )
-            throws URISyntaxException, ChannelException
+            throws ChannelException
     {
         ChannelException ex = null;
         for ( int checkPort = minPort; checkPort <= maxPort; checkPort++ )
@@ -303,7 +302,7 @@ public class NetworkReceiver
             implements ChannelPipelineFactory
     {
         @Override
-        public ChannelPipeline getPipeline() throws Exception
+        public ChannelPipeline getPipeline()
         {
             ChannelPipeline pipeline = Channels.pipeline();
             pipeline.addLast( "frameDecoder",
@@ -318,7 +317,7 @@ public class NetworkReceiver
             extends SimpleChannelHandler
     {
         @Override
-        public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             Channel ctxChannel = ctx.getChannel();
             openedChannel( getURI( (InetSocketAddress) ctxChannel.getRemoteAddress() ), ctxChannel );
@@ -326,7 +325,7 @@ public class NetworkReceiver
         }
 
         @Override
-        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
+        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
         {
             if ( !bindingDetected )
             {
@@ -337,16 +336,16 @@ public class NetworkReceiver
 
             final Message message = (Message) event.getMessage();
 
-            // Fix FROM header since sender cannot know it's correct IP/hostname
+            // Fix HEADER_FROM header since sender cannot know it's correct IP/hostname
             InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
             String remoteAddress = remote.getAddress().getHostAddress();
-            URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
+            URI fromHeader = URI.create( message.getHeader( Message.HEADER_FROM ) );
             if ( remote.getAddress() instanceof Inet6Address )
             {
                 remoteAddress = wrapAddressForIPv6Uri( remoteAddress );
             }
             fromHeader = URI.create( fromHeader.getScheme() + "://" + remoteAddress + ":" + fromHeader.getPort() );
-            message.setHeader( Message.FROM, fromHeader.toASCIIString() );
+            message.setHeader( Message.HEADER_FROM, fromHeader.toASCIIString() );
 
             msgLog.debug( "Received:" + message );
             monitor.receivedMessage( message );
@@ -354,20 +353,20 @@ public class NetworkReceiver
         }
 
         @Override
-        public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             closedChannel( getURI( (InetSocketAddress) ctx.getChannel().getRemoteAddress() ) );
         }
 
         @Override
-        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             closedChannel( getURI( (InetSocketAddress) ctx.getChannel().getRemoteAddress() ) );
             channels.remove( ctx.getChannel() );
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e )
         {
             if ( !(e.getCause() instanceof ConnectException) )
             {

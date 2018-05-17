@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,13 +21,15 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.neo4j.index.internal.gbptree.ByteArrayPageCursor.wrap;
+import static java.lang.String.format;
+import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
 
 class PageAwareByteArrayCursor extends PageCursor
 {
@@ -99,7 +101,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         currentPageId = nextPageId;
         nextPageId++;
@@ -111,7 +113,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
+    public boolean next( long pageId )
     {
         currentPageId = pageId;
         assertPages();
@@ -124,9 +126,10 @@ class PageAwareByteArrayCursor extends PageCursor
     @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
-        if ( sourceOffset < 0 || targetOffset < 0 || lengthInBytes < 1 )
+        if ( sourceOffset < 0 || targetOffset < 0 || lengthInBytes < 0 )
         {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException( format( "sourceOffset=%d, targetOffset=%d, lengthInBytes=%d, currenPageId=%d",
+                    sourceOffset, targetOffset, lengthInBytes, currentPageId ) );
         }
         int bytesToCopy = Math.min( lengthInBytes,
                 Math.min( current.getCurrentPageSize() - sourceOffset,
@@ -137,6 +140,24 @@ class PageAwareByteArrayCursor extends PageCursor
             targetCursor.putByte( targetOffset + i, getByte( sourceOffset + i ) );
         }
         return bytesToCopy;
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer buf )
+    {
+        int bytesToCopy = Math.min( buf.limit() - buf.position(), pageSize - sourceOffset );
+        for ( int i = 0; i < bytesToCopy; i++ )
+        {
+            byte b = getByte( sourceOffset + i );
+            buf.put( b );
+        }
+        return bytesToCopy;
+    }
+
+    @Override
+    public void shiftBytes( int sourceOffset, int length, int shift )
+    {
+        current.shiftBytes( sourceOffset, length, shift );
     }
 
     private void assertPages()
@@ -260,6 +281,12 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
+    public void putBytes( int bytes, byte value )
+    {
+        current.putBytes( bytes, value );
+    }
+
+    @Override
     public short getShort()
     {
         return current.getShort();
@@ -365,7 +392,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId ) throws IOException
+    public PageCursor openLinkedCursor( long pageId )
     {
         PageCursor toReturn = new PageAwareByteArrayCursor( pages, pageSize, pageId );
         if ( linkedCursor != null )

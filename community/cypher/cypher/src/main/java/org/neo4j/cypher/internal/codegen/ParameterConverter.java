@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,11 @@
 package org.neo4j.cypher.internal.codegen;
 
 import java.lang.reflect.Array;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,15 +38,17 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
@@ -51,11 +58,11 @@ import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 class ParameterConverter implements AnyValueWriter<RuntimeException>
 {
     private final Deque<Writer> stack = new ArrayDeque<>();
-    private final NodeManager nodeManager;
+    private final EmbeddedProxySPI proxySpi;
 
-    ParameterConverter( NodeManager manager )
+    ParameterConverter( EmbeddedProxySPI proxySpi )
     {
-        this.nodeManager = manager;
+        this.proxySpi = proxySpi;
         stack.push( new ObjectWriter() );
     }
 
@@ -73,73 +80,72 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeNodeReference( long nodeId ) throws RuntimeException
+    public void writeNodeReference( long nodeId )
     {
-        writeValue( new NodeIdWrapperImpl( nodeId ) );
+        writeValue( VirtualValues.node( nodeId ) );
     }
 
     @Override
-    public void writeNode( long nodeId, TextArray ignore, MapValue properties ) throws RuntimeException
+    public void writeNode( long nodeId, TextArray ignore, MapValue properties )
     {
-        writeValue( new NodeIdWrapperImpl( nodeId ) );
+        writeValue( VirtualValues.node( nodeId ) );
     }
 
     @Override
-    public void writeEdgeReference( long edgeId ) throws RuntimeException
+    public void writeRelationshipReference( long relId )
     {
-        writeValue( new RelationshipIdWrapperImpl( edgeId ) );
+        writeValue( VirtualValues.relationship( relId ) );
     }
 
     @Override
-    public void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
-            throws RuntimeException
+    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
     {
-        writeValue( new RelationshipIdWrapperImpl( edgeId ) );
+        writeValue( VirtualValues.relationship( relId ) );
     }
 
     @Override
-    public void beginMap( int size ) throws RuntimeException
+    public void beginMap( int size )
     {
         stack.push( new MapWriter( size ) );
     }
 
     @Override
-    public void endMap() throws RuntimeException
+    public void endMap()
     {
         assert !stack.isEmpty();
         writeValue( stack.pop().value() );
     }
 
     @Override
-    public void beginList( int size ) throws RuntimeException
+    public void beginList( int size )
     {
         stack.push( new ListWriter( size ) );
     }
 
     @Override
-    public void endList() throws RuntimeException
+    public void endList()
     {
         assert !stack.isEmpty();
         writeValue( stack.pop().value() );
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, EdgeValue[] edges ) throws RuntimeException
+    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships )
     {
         assert nodes != null;
         assert nodes.length > 0;
-        assert edges != null;
-        assert nodes.length == edges.length + 1;
+        assert relationships != null;
+        assert nodes.length == relationships.length + 1;
 
         Node[] nodeProxies = new Node[nodes.length];
         for ( int i = 0; i < nodes.length; i++ )
         {
-            nodeProxies[i] = nodeManager.newNodeProxyById( nodes[i].id() );
+            nodeProxies[i] = proxySpi.newNodeProxy( nodes[i].id() );
         }
-        Relationship[] relationship = new Relationship[edges.length];
-        for ( int i = 0; i < edges.length; i++ )
+        Relationship[] relationship = new Relationship[relationships.length];
+        for ( int i = 0; i < relationships.length; i++ )
         {
-            relationship[i] = nodeManager.newRelationshipProxyById( edges[i].id() );
+            relationship[i] = proxySpi.newRelationshipProxy( relationships[i].id() );
         }
         writeValue( new Path()
         {
@@ -232,11 +238,13 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
                     Iterator<? extends PropertyContainer> current = nodes().iterator();
                     Iterator<? extends PropertyContainer> next = relationships().iterator();
 
+                    @Override
                     public boolean hasNext()
                     {
                         return current.hasNext();
                     }
 
+                    @Override
                     public PropertyContainer next()
                     {
                         try
@@ -251,6 +259,7 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
                         }
                     }
 
+                    @Override
                     public void remove()
                     {
                         next.remove();
@@ -261,88 +270,124 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeNull() throws RuntimeException
+    public void writeNull()
     {
         writeValue( null );
     }
 
     @Override
-    public void writeBoolean( boolean value ) throws RuntimeException
+    public void writeBoolean( boolean value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeInteger( byte value ) throws RuntimeException
+    public void writeInteger( byte value )
     {
         writeValue( (long) value );
     }
 
     @Override
-    public void writeInteger( short value ) throws RuntimeException
+    public void writeInteger( short value )
     {
         writeValue( (long) value );
     }
 
     @Override
-    public void writeInteger( int value ) throws RuntimeException
+    public void writeInteger( int value )
     {
         writeValue( (long) value );
     }
 
     @Override
-    public void writeInteger( long value ) throws RuntimeException
+    public void writeInteger( long value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeFloatingPoint( float value ) throws RuntimeException
+    public void writeFloatingPoint( float value )
     {
         writeValue( (double) value );
     }
 
     @Override
-    public void writeFloatingPoint( double value ) throws RuntimeException
+    public void writeFloatingPoint( double value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeString( String value ) throws RuntimeException
+    public void writeString( String value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeString( char value ) throws RuntimeException
+    public void writeString( char value )
     {
         writeValue( value );
     }
 
     @Override
-    public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
+    public void beginArray( int size, ArrayType arrayType )
     {
         stack.push( new ArrayWriter( size, arrayType ) );
     }
 
     @Override
-    public void endArray() throws RuntimeException
+    public void endArray()
     {
         assert !stack.isEmpty();
         writeValue( stack.pop().value() );
     }
 
     @Override
-    public void writeByteArray( byte[] value ) throws RuntimeException
+    public void writeByteArray( byte[] value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
+    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
         writeValue( Values.pointValue( crs, coordinate ) );
+    }
+
+    @Override
+    public void writeDuration( long months, long days, long seconds, int nanos )
+    {
+        writeValue( DurationValue.duration( months, days, seconds, nanos ) );
+    }
+
+    @Override
+    public void writeDate( LocalDate localDate )
+    {
+        writeValue( localDate );
+    }
+
+    @Override
+    public void writeLocalTime( LocalTime localTime )
+    {
+        writeValue( localTime );
+    }
+
+    @Override
+    public void writeTime( OffsetTime offsetTime )
+    {
+        writeValue( offsetTime );
+    }
+
+    @Override
+    public void writeLocalDateTime( LocalDateTime localDateTime )
+    {
+        writeValue( localDateTime );
+    }
+
+    @Override
+    public void writeDateTime( ZonedDateTime zonedDateTime )
+    {
+        writeValue( zonedDateTime );
     }
 
     private interface Writer
@@ -446,7 +491,8 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
         @Override
         public void write( Object value )
         {
-            Array.set( array, index++, value );
+            Array.set( array, index, value );
+            index++;
         }
 
         @Override

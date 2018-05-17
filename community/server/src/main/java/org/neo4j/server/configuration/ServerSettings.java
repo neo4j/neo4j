@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -130,6 +130,12 @@ public class ServerSettings implements LoadableConfig
             },
             EMPTY );
 
+    @Description( "Value of the Access-Control-Allow-Origin header sent over any HTTP or HTTPS " +
+            "connector. This defaults to '*', which allows broadest compatibility. Note " +
+            "that any URI provided here limits HTTP/HTTPS access to that URI only." )
+    public static final Setting<String> http_access_control_allow_origin =
+            setting( "dbms.security.http_access_control_allow_origin", STRING, "*" );
+
     @Description( "Enable HTTP request logging." )
     public static final Setting<Boolean> http_logging_enabled = setting( "dbms.logs.http.enabled", BOOLEAN, FALSE );
 
@@ -203,6 +209,14 @@ public class ServerSettings implements LoadableConfig
     @Internal
     public static final Setting<URI> browser_path = setting( "unsupported.dbms.uris.browser", Settings.URI, "/browser/" );
 
+    @Deprecated
+    @Description( "Whether to allow executing scripts inside the server, from external sources, e.g. via traversal " +
+                  "endpoints. This setting is in the 'unsupported' namespace, because the scripting feature will be " +
+                  "removed entirely in a future release." )
+    public static final Setting<Boolean> script_enabled =
+            setting( "unsupported.dbms.security.script_enabled", BOOLEAN, FALSE );
+
+    @Deprecated
     @Internal
     public static final Setting<Boolean> script_sandboxing_enabled =
             setting( "unsupported.dbms.security.script_sandboxing_enabled", BOOLEAN, TRUE );

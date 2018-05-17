@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,24 +27,32 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relationship> implements RelationshipIndex
 {
     public RelationshipExplicitIndexProxy( String name, GraphDatabaseService gds,
-                                         Supplier<Statement> statementContextBridge )
+                                         Supplier<KernelTransaction> txBridge )
     {
-        super( name, Type.RELATIONSHIP, gds, statementContextBridge );
+        super( name, RELATIONSHIP, gds, txBridge );
     }
 
     @Override
     public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull, Node endNodeOrNull )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            return wrapIndexHits( statement.readOperations().relationshipExplicitIndexGet( name, key, valueOrNull,
-                    entityId( startNodeOrNull ), entityId( endNodeOrNull ) ) );
+            RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
+            long source = startNodeOrNull == null ? NO_SUCH_NODE : startNodeOrNull.getId();
+            long target = endNodeOrNull == null ? NO_SUCH_NODE : endNodeOrNull.getId();
+            ktx.indexRead().relationshipExplicitIndexLookup( cursor, name, key, valueOrNull, source, target );
+            return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase(), ktx, name );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
@@ -56,10 +64,14 @@ public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relations
     public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull, Node startNodeOrNull,
             Node endNodeOrNull )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            return wrapIndexHits( statement.readOperations().relationshipExplicitIndexQuery( name, key,
-                    queryOrQueryObjectOrNull, entityId( startNodeOrNull ), entityId( endNodeOrNull ) ) );
+            RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
+            long source = startNodeOrNull == null ? NO_SUCH_NODE : startNodeOrNull.getId();
+            long target = endNodeOrNull == null ? NO_SUCH_NODE : endNodeOrNull.getId();
+            ktx.indexRead().relationshipExplicitIndexQuery( cursor, name, key, queryOrQueryObjectOrNull, source, target );
+            return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase(), ktx, name );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
@@ -70,19 +82,18 @@ public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relations
     @Override
     public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull, Node startNodeOrNull, Node endNodeOrNull )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            return wrapIndexHits( statement.readOperations().relationshipExplicitIndexQuery( name,
-                    queryOrQueryObjectOrNull, entityId( startNodeOrNull ), entityId( endNodeOrNull ) ) );
+            RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
+            long source = startNodeOrNull == null ? NO_SUCH_NODE : startNodeOrNull.getId();
+            long target = endNodeOrNull == null ? NO_SUCH_NODE : endNodeOrNull.getId();
+            ktx.indexRead().relationshipExplicitIndexQuery( cursor, name, queryOrQueryObjectOrNull, source, target );
+            return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase(), ktx, name );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
         }
-    }
-
-    private long entityId( Node nodeOrNull )
-    {
-        return nodeOrNull == null ? -1L : nodeOrNull.getId();
     }
 }

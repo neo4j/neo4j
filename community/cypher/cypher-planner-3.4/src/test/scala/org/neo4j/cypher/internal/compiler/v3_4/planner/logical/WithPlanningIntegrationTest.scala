@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ir.v3_4.{SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, DoNotIncludeTies, Limit, Projection}
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   implicit val windowsSafe = WindowsStringSafe
@@ -32,146 +34,172 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected =
       Projection(
         Limit(
-          AllNodesScan("a", Set.empty)(solved),
+          AllNodesScan("a", Set.empty),
           SignedDecimalIntegerLiteral("1")(pos),
           DoNotIncludeTies
-        )(solved),
+        ),
         Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1") _)
-      )(solved)
+      )
 
     result should equal(expected)
   }
 
   test("should build plans that contain multiple WITH") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b, r1 LIMIT 1 RETURN b as `b`")._2
+    val expected = Limit(
+      Expand(
+        Limit(
+          AllNodesScan("a", Set()),
+          SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+        ),
+        "a", OUTGOING, List(), "b", "r1", ExpandAll
+      ),
+      SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+    )
 
-    result.toString should equal(
-      """Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
-        |    LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |      LHS -> AllNodesScan(IdName(a), Set()) {}
-        |    }
-        |  }
-        |}""".stripMargin)
+    result should equal(expected)
   }
 
   test("should build plans with WITH and selections") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1")._2
+    val expected = Selection(
+      Seq(In(Property(Variable("r1")(pos), PropertyKeyName("prop")(pos))(pos), ListLiteral(List(SignedDecimalIntegerLiteral("42")(pos)))(pos))(pos)),
+      Expand(
+        Limit(
+          AllNodesScan("a", Set()),
+          SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+        ),
+        "a", OUTGOING, List(), "b", "r1", ExpandAll
+      )
+    )
 
-    result.toString should equal(
-      """Selection(MutableList(In(Property(Variable(r1),PropertyKeyName(prop)),ListLiteral(List(SignedDecimalIntegerLiteral(42)))))) {
-        |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
-        |    LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |      LHS -> AllNodesScan(IdName(a), Set()) {}
-        |    }
-        |  }
-        |}""".stripMargin)
+    result should equal(expected)
   }
 
   test("should build plans for two matches separated by WITH") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b")._2
+    val expected = Expand(
+      Limit(
+        AllNodesScan("a", Set()),
+        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+      ),
+      "a", OUTGOING, List(), "b", "r", ExpandAll
+    )
 
-    result.toString should equal(
-      """Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r), ExpandAll) {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> AllNodesScan(IdName(a), Set()) {}
-        |  }
-        |}""".stripMargin)
+    result should equal(expected)
   }
 
   test("should build plans that project endpoints of re-matched directed relationship arguments") {
-    val plan = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r")._2
+    val result = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r")._2
+    val expected = Apply(
+      Limit(
+        Expand(
+          AllNodesScan("a", Set()),
+          "a", OUTGOING, List(), "b", "r", ExpandAll
+        ),
+        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+      ),
+      ProjectEndpoints(
+        Argument(Set("r")),
+        "r", "u", startInScope = false, "v", endInScope = false, None, directed = true, SimplePatternLength
+      )
+    )
 
-    plan.toString should equal(
-      """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
-        |    }
-        |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(u), false, IdName(v), false, None, true, SimplePatternLength) {
-        |    LHS -> Argument(Set(IdName(r))) {}
-        |  }
-        |}""".stripMargin)
+    result should equal(expected)
   }
 
   test("should build plans that project endpoints of re-matched reversed directed relationship arguments") {
-    val plan = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r")._2
+    val result = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r")._2
+    val expected = Apply(
+      Limit(
+        Expand(
+          AllNodesScan("a", Set()),
+          "a", OUTGOING, List(), "b", "r", ExpandAll
+        ),
+        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+      ),
+      ProjectEndpoints(
+        Argument(Set("a", "r")),
+        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = true, SimplePatternLength
+      )
+    )
 
-    plan.toString should equal(
-      """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
-        |    }
-        |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, SimplePatternLength) {
-        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
-        |  }
-        |}""".stripMargin)
+    result should equal(expected)
   }
 
   test("should build plans that verify endpoints of re-matched directed relationship arguments") {
-    val plan = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r")._2
+    val result = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r")._2
+    val expected = Apply(
+      Limit(
+        Expand(
+          AllNodesScan("a", Set()),
+          "a", OUTGOING, List(), "b", "r", ExpandAll
+        ),
+        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+      ),
+      ProjectEndpoints(
+        Argument(Set("a", "b", "r")),
+        "r", "a", startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength
+      )
+    )
 
-    plan.toString should equal(
-      """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
-        |    }
-        |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b), true, None, true, SimplePatternLength) {
-        |    LHS -> Argument(Set(IdName(a), IdName(b), IdName(r))) {}
-        |  }
-        |}""".stripMargin)
+    result should equal(expected)
   }
 
   test("should build plans that project and verify endpoints of re-matched directed relationship arguments") {
-    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r")._2
+    val result = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r")._2
+    val expected = Apply(
+      Limit(
+        Expand(
+          AllNodesScan("a", Set()),
+          "a", OUTGOING, List(), "b", "r", ExpandAll
+        ),
+        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+      ),
+      ProjectEndpoints(
+        Argument(Set("a", "r")),
+        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = true, SimplePatternLength
+      )
+    )
 
-    plan.toString should equal(
-      """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
-        |    }
-        |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, SimplePatternLength) {
-        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
-        |  }
-        |}""".stripMargin)
+    result should equal(expected)
   }
 
   test("should build plans that project and verify endpoints of re-matched undirected relationship arguments") {
-    val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r")._2
+    val result = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r")._2
+    val expected = Apply(
+      Limit(
+        Expand(
+          AllNodesScan("a", Set()),
+          "a", OUTGOING, List(), "b", "r", ExpandAll
+        ),
+        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+      ),
+      ProjectEndpoints(
+        Argument(Set("a", "r")),
+        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = false, SimplePatternLength
+      )
+    )
 
-    plan.toString should equal(
-      """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
-        |    }
-        |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, false, SimplePatternLength) {
-        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
-        |  }
-        |}""".stripMargin)
+    result should equal(expected)
   }
 
   test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
-    val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r")._2
+    val result = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r")._2
+    val expected = Apply(
+      Limit(
+        VarExpand(
+          AllNodesScan("a", Set()),
+          "a", OUTGOING, OUTGOING, List(), "b", "r", VarPatternLength(1, None), ExpandAll, "r_NODES", "r_RELS", True()(pos), True()(pos), Seq()
+        ),
+        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+      ),
+      ProjectEndpoints(
+        Argument(Set("a", "r")),
+        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = true, VarPatternLength(1, None)
+      )
+    )
 
-    plan.toString should equal(
-      """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
-        |    LHS -> VarExpand(IdName(b), INCOMING, OUTGOING, List(), IdName(a), IdName(r), VarPatternLength(1,None), ExpandAll, IdName(r_NODES), IdName(r_RELS), True(), True(), Vector()) {
-        |      LHS -> AllNodesScan(IdName(b), Set()) {}
-        |    }
-        |  }
-        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, VarPatternLength(1,None)) {
-        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
-        |  }
-        |}""".stripMargin)
+    result should equal(expected)
   }
 }

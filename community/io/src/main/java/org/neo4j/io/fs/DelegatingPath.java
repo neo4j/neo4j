@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -185,13 +185,13 @@ public abstract class DelegatingPath implements Path
     }
 
     @Override
-    public WatchKey register( WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers ) throws IOException
+    public WatchKey register( WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public WatchKey register( WatchService watcher, WatchEvent.Kind<?>... events ) throws IOException
+    public WatchKey register( WatchService watcher, WatchEvent.Kind<?>... events )
     {
         throw new UnsupportedOperationException();
     }

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.discovery;
 
@@ -29,21 +32,23 @@ import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP_NAME;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_MEMBER_ID_MAP_NAME;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICAS_DB_NAME_MAP;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_MEMBER_ID_MAP;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-class HazelcastClient extends LifecycleAdapter implements TopologyService
+public class HazelcastClient implements TopologyService, Lifecycle
 {
     private final Log log;
     private final ClientConnectorAddresses connectorAddresses;
@@ -57,15 +62,22 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private final List<String> groups;
     private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
 
+    //TODO: Work out error handling in case cluster hosts change their dbName unexpectedly
+    private final String dbName;
+
     private JobScheduler.JobHandle keepAliveJob;
     private JobScheduler.JobHandle refreshTopologyJob;
 
-    private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
+    /* cached data updated during each refresh */
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
-    private volatile ReadReplicaTopology rrTopology = ReadReplicaTopology.EMPTY;
+    private volatile CoreTopology localCoreTopology = CoreTopology.EMPTY;
+    private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
+    private volatile ReadReplicaTopology localReadReplicaTopology = ReadReplicaTopology.EMPTY;
+    private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
+    private volatile Map<MemberId,RoleInfo> coreRoles;
 
-    HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider, Config config,
-            MemberId myself, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
+    public HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider,
+            Config config, MemberId myself )
     {
         this.hzInstance = new RobustHazelcastWrapper( connector );
         this.config = config;
@@ -77,27 +89,53 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.myself = myself;
         this.groups = config.get( CausalClusteringSettings.server_groups );
-        this.topologyServiceRetryStrategy = resolveStrategy( refreshPeriod );
+        this.topologyServiceRetryStrategy = resolveStrategy( refreshPeriod, logProvider );
+        this.dbName = config.get( CausalClusteringSettings.database );
+        this.coreRoles = emptyMap();
     }
 
-    private static TopologyServiceRetryStrategy resolveStrategy( long refreshPeriodMillis )
+    private static TopologyServiceRetryStrategy resolveStrategy( long refreshPeriodMillis, LogProvider logProvider )
     {
         int pollingFrequencyWithinRefreshWindow = 2;
         int numberOfRetries =
                 pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
-        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries, logProvider );
     }
 
     @Override
-    public CoreTopology coreServers()
+    public Map<MemberId,RoleInfo> allCoreRoles()
+    {
+        return coreRoles;
+    }
+
+    @Override
+    public String localDBName()
+    {
+        return dbName;
+    }
+
+    @Override
+    public CoreTopology allCoreServers()
     {
         return coreTopology;
     }
 
     @Override
-    public ReadReplicaTopology readReplicas()
+    public CoreTopology localCoreServers()
     {
-        return rrTopology;
+        return localCoreTopology;
+    }
+
+    @Override
+    public ReadReplicaTopology allReadReplicas()
+    {
+        return readReplicaTopology;
+    }
+
+    @Override
+    public ReadReplicaTopology localReadReplicas()
+    {
+        return localReadReplicaTopology;
     }
 
     @Override
@@ -116,24 +154,50 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
      */
     private void refreshTopology() throws HazelcastInstanceNotActiveException
     {
-        coreTopology = hzInstance.apply( hz -> getCoreTopology( hz, config, log ) );
-        rrTopology = hzInstance.apply( hz -> getReadReplicaTopology( hz, log ) );
-        catchupAddressMap = extractCatchupAddressesMap( coreTopology, rrTopology );
+        CoreTopology newCoreTopology = hzInstance.apply( hz -> getCoreTopology( hz, config, log ) );
+        coreTopology = newCoreTopology;
+        localCoreTopology = newCoreTopology.filterTopologyByDb( dbName );
+
+        ReadReplicaTopology newReadReplicaTopology = hzInstance.apply( hz -> getReadReplicaTopology( hz, log ) );
+        readReplicaTopology = newReadReplicaTopology;
+        localReadReplicaTopology = newReadReplicaTopology.filterTopologyByDb( dbName );
+
+        catchupAddressMap = extractCatchupAddressesMap( localCoreServers(), localReadReplicas() );
+    }
+
+    private void refreshRoles() throws HazelcastInstanceNotActiveException
+    {
+        coreRoles = hzInstance.apply(hz -> HazelcastClusterTopology.getCoreRoles( hz, allCoreServers().members().keySet() ) );
     }
 
     @Override
-    public void start() throws Throwable
+    public void init()
+    {
+        // nothing to do
+    }
+
+    @Override
+    public void start()
     {
         keepAliveJob = scheduler.scheduleRecurring( "KeepAlive", timeToLive / 3, this::keepReadReplicaAlive );
-        refreshTopologyJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, this::refreshTopology );
+        refreshTopologyJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, () -> {
+            this.refreshTopology();
+            this.refreshRoles();
+        } );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         keepAliveJob.cancel( true );
         refreshTopologyJob.cancel( true );
         disconnectFromCore();
+    }
+
+    @Override
+    public void shutdown()
+    {
+        // nothing to do
     }
 
     private void disconnectFromCore()
@@ -141,7 +205,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         try
         {
             String uuid = hzInstance.apply( hzInstance -> hzInstance.getLocalEndpoint().getUuid() );
-            hzInstance.apply( hz -> hz.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME ).remove( uuid ) );
+            hzInstance.apply( hz -> hz.getMap( READ_REPLICA_BOLT_ADDRESS_MAP ).remove( uuid ) );
             hzInstance.shutdown();
         }
         catch ( Throwable e )
@@ -160,15 +224,17 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
             String addresses = connectorAddresses.toString();
             log.debug( "Adding read replica into cluster (%s -> %s)", uuid, addresses );
 
-            hazelcastInstance.getMap( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME ).put( uuid, transactionSource.toString(), timeToLive, MILLISECONDS );
+            hazelcastInstance.getMap( READ_REPLICAS_DB_NAME_MAP ).put( uuid, dbName, timeToLive, MILLISECONDS);
 
-            hazelcastInstance.getMap( READ_REPLICA_MEMBER_ID_MAP_NAME ).put( uuid, myself.getUuid().toString(), timeToLive, MILLISECONDS );
+            hazelcastInstance.getMap( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP ).put( uuid, transactionSource.toString(), timeToLive, MILLISECONDS );
+
+            hazelcastInstance.getMap( READ_REPLICA_MEMBER_ID_MAP ).put( uuid, myself.getUuid().toString(), timeToLive, MILLISECONDS );
 
             refreshGroups( hazelcastInstance, uuid, groups );
 
             // this needs to be last as when we read from it in HazelcastClusterTopology.readReplicas
             // we assume that all the other maps have been populated if an entry exists in this one
-            hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME ).put( uuid, addresses, timeToLive, MILLISECONDS );
+            hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP ).put( uuid, addresses, timeToLive, MILLISECONDS );
         } );
     }
 }

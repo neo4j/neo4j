@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,8 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.values.storable.Value;
+
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * Cursor for scanning the property values of nodes in a schema index.
@@ -65,4 +67,64 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
     boolean hasValue();
 
     Value propertyValue( int offset );
+
+    class Empty implements NodeValueIndexCursor
+    {
+
+        @Override
+        public void node( NodeCursor cursor )
+        {
+
+        }
+
+        @Override
+        public long nodeReference()
+        {
+            return -1L;
+        }
+
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+        @Override
+        public boolean isClosed()
+        {
+            return false;
+        }
+
+        @Override
+        public int numberOfProperties()
+        {
+            return 0;
+        }
+
+        @Override
+        public int propertyKey( int offset )
+        {
+            return -1;
+        }
+
+        @Override
+        public boolean hasValue()
+        {
+            return false;
+        }
+
+        @Override
+        public Value propertyValue( int offset )
+        {
+            return NO_VALUE;
+        }
+    }
+
+    NodeValueIndexCursor EMPTY = new Empty();
 }

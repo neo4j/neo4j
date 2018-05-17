@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,6 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.RECYCLE_BATCHES;
 
 /**
  * Reads all records from {@link NodeStore} and process the counts in them, populating {@link NodeLabelsCache}
@@ -42,9 +43,9 @@ public class NodeCountsStage extends Stage
             CountsAccessor.Updater countsUpdater, ProgressReporter progressReporter,
             StatsProvider... additionalStatsProviders )
     {
-        super( NAME, null, config, 0 );
+        super( NAME, null, config, RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, nodeStore, null ) );
+        add( new ReadRecordsStep<>( control(), config, false, nodeStore ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config,
                 new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true,
                 additionalStatsProviders ) );

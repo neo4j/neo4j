@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -95,7 +95,7 @@ public interface PageSwapperFactory
      * mapped files, then call <code>syncDevice</code> on the PageSwapperFactory. This way, the writes are always made
      * durable regardless of which method that does the forcing.
      */
-    void syncDevice() throws IOException;
+    void syncDevice();
 
     /**
      * Close and release any resources associated with this PageSwapperFactory, that it may have opened or acquired

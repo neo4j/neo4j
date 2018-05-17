@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,7 @@ import static org.junit.Assert.fail;
 public class ThresholdConfigValueTest
 {
     @Test
-    public void shouldParseCorrectly() throws Exception
+    public void shouldParseCorrectly()
     {
         ThresholdConfigParser.ThresholdConfigValue value = ThresholdConfigParser.parse( "25 files" );
         assertEquals( "files", value.type );
@@ -40,7 +40,7 @@ public class ThresholdConfigValueTest
     }
 
     @Test
-    public void shouldThrowExceptionOnUnknownType() throws Exception
+    public void shouldThrowExceptionOnUnknownType()
     {
         try
         {
@@ -54,14 +54,14 @@ public class ThresholdConfigValueTest
     }
 
     @Test
-    public void shouldReturnNoPruningForTrue() throws Exception
+    public void shouldReturnNoPruningForTrue()
     {
         ThresholdConfigParser.ThresholdConfigValue value = ThresholdConfigParser.parse( "true" );
         assertSame( ThresholdConfigParser.ThresholdConfigValue.NO_PRUNING, value );
     }
 
     @Test
-    public void shouldReturnKeepOneEntryForFalse() throws Exception
+    public void shouldReturnKeepOneEntryForFalse()
     {
         ThresholdConfigParser.ThresholdConfigValue value = ThresholdConfigParser.parse( "false" );
         assertEquals( "entries", value.type );

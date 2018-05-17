@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,6 +24,7 @@ import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException
 import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException}
 import org.neo4j.internal.kernel.api.TokenNameLookup
 import org.neo4j.internal.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException
 
 trait ExceptionTranslationSupport {
   inner: TokenContext =>
@@ -39,6 +40,7 @@ trait ExceptionTranslationSupport {
       def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
     }), e)
     case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
+    case e : ResourceCloseFailureException => throw new CypherExecutionException(e.getMessage, e)
   }
 
   protected def translateIterator[A](iteratorFactory: => Iterator[A]): Iterator[A] = {

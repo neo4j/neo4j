@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
@@ -36,7 +39,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.api.OperationsFacade;
+import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -49,8 +52,10 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Suite.SuiteClasses;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.NodePropertyExistenceExistenceConstrainVerificationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.RelationshipPropertyExistenceExistenceConstrainVerificationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT
+        .NodePropertyExistenceExistenceConstrainVerificationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT
+        .RelationshipPropertyExistenceExistenceConstrainVerificationIT;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Suite.class )
@@ -91,6 +96,12 @@ public class PropertyExistenceConstraintVerificationIT
             return "nodeAddLabel"; // takes schema read lock to enforce constraints
         }
 
+        @Override
+        Class<?> getOwner()
+        {
+            return Operations.class;
+        }
+
     }
 
     public static class RelationshipPropertyExistenceExistenceConstrainVerificationIT
@@ -123,6 +134,12 @@ public class PropertyExistenceConstraintVerificationIT
             return "relationshipCreate"; // takes schema read lock to enforce constraints
         }
 
+        @Override
+        Class<?> getOwner()
+        {
+            return Operations.class;
+        }
+
     }
 
     public abstract static class AbstractPropertyExistenceConstraintVerificationIT
@@ -142,9 +159,10 @@ public class PropertyExistenceConstraintVerificationIT
         abstract long createOffender( DatabaseRule db, String key );
 
         abstract String offenderCreationMethodName();
+        abstract Class<?> getOwner();
 
         @Test
-        public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty() throws Exception
+        public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty()
         {
             // given
             try ( Transaction tx = db.beginTx() )
@@ -182,7 +200,7 @@ public class PropertyExistenceConstraintVerificationIT
                     createConstraint( db, KEY, PROPERTY );
 
                     nodeCreation = thread.executeAndAwait( createOffender(), null,
-                            waitingWhileIn( OperationsFacade.class, offenderCreationMethodName() ),
+                            waitingWhileIn( getOwner(), offenderCreationMethodName() ),
                             WAIT_TIMEOUT_SECONDS, SECONDS );
 
                     tx.success();
@@ -217,7 +235,7 @@ public class PropertyExistenceConstraintVerificationIT
                     createOffender( db, KEY );
 
                     constraintCreation = thread.executeAndAwait( createConstraint(), null,
-                            waitingWhileIn( OperationsFacade.class, constraintCreationMethodName() ),
+                            waitingWhileIn( Operations.class, constraintCreationMethodName() ),
                             WAIT_TIMEOUT_SECONDS, SECONDS );
 
                     tx.success();

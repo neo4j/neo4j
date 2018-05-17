@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,7 +43,7 @@ public class ActiveLocksListingCompatibility extends LockingCompatibilityTestSui
     }
 
     @Test
-    public void shouldListLocksHeldByTheCurrentClient() throws Exception
+    public void shouldListLocksHeldByTheCurrentClient()
     {
         // given
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1, 2, 3 );
@@ -65,7 +65,7 @@ public class ActiveLocksListingCompatibility extends LockingCompatibilityTestSui
     }
 
     @Test
-    public void shouldCountNumberOfActiveLocks() throws Exception
+    public void shouldCountNumberOfActiveLocks()
     {
         // given
         clientA.acquireShared( LockTracer.NONE, LABEL, 0 );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -63,6 +63,22 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with As
       """match (n)
         |with n as `  FRESHID17`, count(*) as `  FRESHID20` order by `  FRESHID20`
         |return `  FRESHID17` as n, `  FRESHID20` as c""".stripMargin)
+  }
+
+  test("match (n),(m) return n as m, m as m2 order by m") {
+    assertRewrite(
+      "match (n),(m) return n as m, m as m2 order by m",
+      """match (n), (m)
+        |with n as `  FRESHID21`, m as `  FRESHID29` order by `  FRESHID21`
+        |return `  FRESHID21` as m, `  FRESHID29` as m2""".stripMargin)
+  }
+
+  test("match (n),(m) return m as m2, n as m order by m") {
+    assertRewrite(
+      "match (n),(m) return m as m2, n as m order by m",
+      """match (n), (m)
+        |with m as `  FRESHID21`, n as `  FRESHID30` order by `  FRESHID30`
+        |return `  FRESHID21` as m2, `  FRESHID30` as m""".stripMargin)
   }
 
   test("rejects use of aggregation in ORDER BY if aggregation is not used in associated RETURN") {

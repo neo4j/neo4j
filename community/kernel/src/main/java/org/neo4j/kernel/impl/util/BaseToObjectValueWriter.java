@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,11 @@
 package org.neo4j.kernel.impl.util;
 
 import java.lang.reflect.Array;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,12 +43,13 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
@@ -106,23 +112,23 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeEdgeReference( long edgeId ) throws RuntimeException
+    public void writeRelationshipReference( long relId ) throws RuntimeException
     {
         throw new UnsupportedOperationException( "Cannot write a raw edge reference" );
     }
 
     @Override
-    public void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
             throws RuntimeException
     {
-        if ( edgeId >= 0 )
+        if ( relId >= 0 )
         {
-            writeValue( newRelationshipProxyById( edgeId ) );
+            writeValue( newRelationshipProxyById( relId ) );
         }
     }
 
     @Override
-    public void writeVirtualEdgeHack( Object relationship )
+    public void writeVirtualRelationshipHack( Object relationship )
     {
         writeValue( relationship );
     }
@@ -154,22 +160,22 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, EdgeValue[] edges ) throws RuntimeException
+    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws RuntimeException
     {
         assert nodes != null;
         assert nodes.length > 0;
-        assert edges != null;
-        assert nodes.length == edges.length + 1;
+        assert relationships != null;
+        assert nodes.length == relationships.length + 1;
 
         Node[] nodeProxies = new Node[nodes.length];
         for ( int i = 0; i < nodes.length; i++ )
         {
             nodeProxies[i] = newNodeProxyById( nodes[i].id() );
         }
-        Relationship[] relationship = new Relationship[edges.length];
-        for ( int i = 0; i < edges.length; i++ )
+        Relationship[] relationship = new Relationship[relationships.length];
+        for ( int i = 0; i < relationships.length; i++ )
         {
-            relationship[i] = newRelationshipProxyById( edges[i].id() );
+            relationship[i] = newRelationshipProxyById( relationships[i].id() );
         }
         writeValue( new Path()
         {
@@ -291,32 +297,13 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
             @Override
             public String toString()
             {
-                try
-                {
-                    return Paths.defaultPathToString( this );
-                }
-                catch ( NotInTransactionException | DatabaseShutdownException e )
-                {
-                    // We don't keep the rel-name lookup if the database is shut down. Source ID and target ID also requires
-                    // database access in a transaction. However, failing on toString would be uncomfortably evil, so we fall
-                    // back to noting the relationship type id.
-                }
-                StringBuilder sb = new StringBuilder();
-                for ( Relationship rel : this.relationships() )
-                {
-                    if ( sb.length() == 0 )
-                    {
-                        sb.append( "(?)" );
-                    }
-                    sb.append( "-[?," ).append( rel.getId() ).append( "]-(?)" );
-                }
-                return sb.toString();
+                return Paths.defaultPathToStringWithNotInTransactionFallback( this );
             }
         } );
     }
 
     @Override
-    public final void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
+    public final void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
         writeValue( newPoint( crs, coordinate ) );
     }
@@ -398,6 +385,42 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     public void writeByteArray( byte[] value ) throws RuntimeException
     {
         writeValue( value );
+    }
+
+    @Override
+    public void writeDuration( long months, long days, long seconds, int nanos )
+    {
+        writeValue( DurationValue.duration( months, days, seconds, nanos ) );
+    }
+
+    @Override
+    public void writeDate( LocalDate localDate ) throws RuntimeException
+    {
+        writeValue( localDate );
+    }
+
+    @Override
+    public void writeLocalTime( LocalTime localTime ) throws RuntimeException
+    {
+        writeValue( localTime );
+    }
+
+    @Override
+    public void writeTime( OffsetTime offsetTime ) throws RuntimeException
+    {
+        writeValue( offsetTime );
+    }
+
+    @Override
+    public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
+    {
+        writeValue( localDateTime );
+    }
+
+    @Override
+    public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
+    {
+        writeValue( zonedDateTime );
     }
 
     private interface Writer

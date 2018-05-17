@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -55,7 +55,7 @@ public class XForwardFilterTest
     private static final String X_FORWARD_PROTO_HEADER_KEY = "X-Forwarded-Proto";
 
     @Test
-    public void shouldSetTheBaseUriToTheSameValueAsTheXForwardHostHeader() throws Exception
+    public void shouldSetTheBaseUriToTheSameValueAsTheXForwardHostHeader()
     {
         // given
         final String xForwardHostAndPort = "jimwebber.org:1234";
@@ -77,7 +77,7 @@ public class XForwardFilterTest
     }
 
     @Test
-    public void shouldSetTheRequestUriToTheSameValueAsTheXForwardHostHeader() throws Exception
+    public void shouldSetTheRequestUriToTheSameValueAsTheXForwardHostHeader()
     {
         // given
         final String xForwardHostAndPort = "jimwebber.org:1234";
@@ -99,7 +99,7 @@ public class XForwardFilterTest
     }
 
     @Test
-    public void shouldSetTheBaseUriToTheSameProtocolAsTheXForwardProtoHeader() throws Exception
+    public void shouldSetTheBaseUriToTheSameProtocolAsTheXForwardProtoHeader()
     {
         // given
         final String theProtocol = "https";
@@ -121,7 +121,7 @@ public class XForwardFilterTest
     }
 
     @Test
-    public void shouldSetTheRequestUriToTheSameProtocolAsTheXForwardProtoHeader() throws Exception
+    public void shouldSetTheRequestUriToTheSameProtocolAsTheXForwardProtoHeader()
     {
         // given
         final String theProtocol = "https";
@@ -234,14 +234,12 @@ public class XForwardFilterTest
 
         @Override
         public void handleRequest( ContainerRequest containerRequest, ContainerResponseWriter containerResponseWriter )
-                throws IOException
         {
 
         }
 
         @Override
         public void handleRequest( ContainerRequest containerRequest, ContainerResponse containerResponse )
-                throws IOException
         {
 
         }
@@ -270,7 +268,7 @@ public class XForwardFilterTest
     private static final InputStream INPUT_STREAM = new InputStream()
     {
         @Override
-        public int read() throws IOException
+        public int read()
         {
             return 0;
         }

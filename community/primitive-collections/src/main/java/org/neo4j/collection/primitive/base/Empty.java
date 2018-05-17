@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.collection.primitive.base;
+
+import java.util.Collections;
 
 import org.neo4j.collection.primitive.PrimitiveCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
@@ -39,6 +41,7 @@ public class Empty
     public static final PrimitiveLongObjectMap EMPTY_PRIMITIVE_LONG_OBJECT_MAP = new EmptyPrimitiveLongObjectMap<>();
     public static final PrimitiveIntSet EMPTY_PRIMITIVE_INT_SET = new EmptyPrimitiveIntSet();
     public static final PrimitiveLongCollection EMPTY_PRIMITIVE_LONG_COLLECTION = new EmptyPrimitiveLongCollection();
+    public static final PrimitiveLongSet EMPTY_PRIMITIVE_LONG_SET = new EmptyPrimitiveLongSet();
 
     private Empty()
     {
@@ -117,8 +120,6 @@ public class Empty
         }
     }
 
-    public static final PrimitiveLongSet EMPTY_PRIMITIVE_LONG_SET = new EmptyPrimitiveLongSet();
-
     public static class EmptyPrimitiveIntCollection extends EmptyPrimitiveCollection
         implements PrimitiveIntCollection
     {
@@ -196,6 +197,12 @@ public class Empty
         @Override
         public <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<T,E> visitor ) throws E
         {   // No entries to visit
+        }
+
+        @Override
+        public Iterable<T> values()
+        {
+            return Collections.emptyList();
         }
 
         @Override

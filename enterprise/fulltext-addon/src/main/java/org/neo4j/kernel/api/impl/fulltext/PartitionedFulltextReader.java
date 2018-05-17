@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
@@ -27,8 +30,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
@@ -56,26 +57,24 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( Collection<String> terms, boolean matchAll )
+    public ScoreEntityIterator query( Collection<String> terms, boolean matchAll )
     {
         return partitionedOperation( reader -> innerQuery( reader, matchAll, terms ) );
     }
 
     @Override
-    public PrimitiveLongIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
+    public ScoreEntityIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
     {
         return partitionedOperation( reader -> innerFuzzyQuery( reader, matchAll, terms ) );
     }
 
-    private PrimitiveLongIterator innerQuery( ReadOnlyFulltext reader, boolean matchAll, Collection<String> query )
+    private ScoreEntityIterator innerQuery( ReadOnlyFulltext reader, boolean matchAll, Collection<String> query )
     {
-
         return reader.query( query, matchAll );
     }
 
-    private PrimitiveLongIterator innerFuzzyQuery( ReadOnlyFulltext reader, boolean matchAll, Collection<String> query )
+    private ScoreEntityIterator innerFuzzyQuery( ReadOnlyFulltext reader, boolean matchAll, Collection<String> query )
     {
-
         return reader.fuzzyQuery( query, matchAll );
     }
 
@@ -106,8 +105,8 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
         return null;
     }
 
-    private PrimitiveLongIterator partitionedOperation( Function<ReadOnlyFulltext,PrimitiveLongIterator> readerFunction )
+    private ScoreEntityIterator partitionedOperation( Function<ReadOnlyFulltext,ScoreEntityIterator> readerFunction )
     {
-        return PrimitiveLongCollections.concat( indexReaders.parallelStream().map( readerFunction ).collect( Collectors.toList() ) );
+        return ScoreEntityIterator.concat( indexReaders.parallelStream().map( readerFunction ).collect( Collectors.toList() ) );
     }
 }

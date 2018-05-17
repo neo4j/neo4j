@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.Ind
     @Override
     public void check( IndexEntry record, CheckerEngine<IndexEntry, ConsistencyReport.IndexConsistencyReport> engine, RecordAccess records )
     {
-        int labelId = indexRule.schema().getLabelId();
+        int labelId = indexRule.schema().keyId();
         engine.comparativeCheck( records.node( record.getId() ),
                 new NodeInUseWithCorrectLabelsCheck<>( new long[]{labelId}, false ) );
     }

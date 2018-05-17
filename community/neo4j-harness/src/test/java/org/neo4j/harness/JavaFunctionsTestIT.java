@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,9 +23,11 @@ import org.codehaus.jackson.JsonNode;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
@@ -90,12 +92,19 @@ public class JavaFunctionsTestIT
         }
     }
 
+    private TestServerBuilder createServer( Class<?> functionClass )
+    {
+        return TestServerBuilders.newInProcessBuilder()
+                                 .withConfig( ServerSettings.script_enabled, Settings.TRUE )
+                                 .withFunction( functionClass );
+    }
+
     @Test
     public void shouldLaunchWithDeclaredFunctions() throws Exception
     {
         // When
-        try ( ServerControls server = TestServerBuilders.newInProcessBuilder().withFunction( MyFunctions.class )
-                .newServer() )
+        Class<MyFunctions> functionClass = MyFunctions.class;
+        try ( ServerControls server = createServer( functionClass ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -114,8 +123,7 @@ public class JavaFunctionsTestIT
     public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try ( ServerControls server = TestServerBuilders.newInProcessBuilder().withFunction( MyFunctions.class )
-                .newServer() )
+        try ( ServerControls server = createServer( MyFunctions.class ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -134,8 +142,7 @@ public class JavaFunctionsTestIT
     public void shouldWorkWithInjectableFromKernelExtension() throws Throwable
     {
         // When
-        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
-                .withFunction( MyFunctionsUsingMyService.class ).newServer() )
+        try ( ServerControls server = createServer( MyFunctionsUsingMyService.class ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -152,8 +159,7 @@ public class JavaFunctionsTestIT
     public void shouldWorkWithInjectableFromKernelExtensionWithMorePower() throws Throwable
     {
         // When
-        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
-                .withFunction( MyFunctionsUsingMyCoreAPI.class ).newServer() )
+        try ( ServerControls server = createServer( MyFunctionsUsingMyCoreAPI.class ).newServer() )
         {
             HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
                     quotedJson( "{ 'statements': [ { 'statement': 'CREATE (), (), ()' } ] }" ) );

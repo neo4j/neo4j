@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,6 +25,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
@@ -50,13 +51,13 @@ public class FreeIdsAfterRecoveryTest
             .around( pageCacheRule );
 
     @Test
-    public void shouldCompletelyRebuildIdGeneratorsAfterCrash() throws Exception
+    public void shouldCompletelyRebuildIdGeneratorsAfterCrash()
     {
         // GIVEN
         StoreFactory storeFactory = new StoreFactory(
                 directory.directory(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(),
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         long highId;
         try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
         {
@@ -69,26 +70,27 @@ public class FreeIdsAfterRecoveryTest
 
         // populating its .id file with a bunch of ids
         File nodeIdFile = new File( directory.directory(), StoreFile.NODE_STORE.fileName( StoreFileType.ID ) );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fileSystemRule.get(), nodeIdFile, 10, 10_000, false,
-                IdType.NODE, () -> highId );
-        for ( long id = 0; id < 15; id++ )
+        try ( IdGeneratorImpl idGenerator = new IdGeneratorImpl( fileSystemRule.get(), nodeIdFile, 10, 10_000, false, IdType.NODE, () -> highId ) )
         {
-            idGenerator.freeId( id );
-        }
+            for ( long id = 0; id < 15; id++ )
+            {
+                idGenerator.freeId( id );
+            }
 
-        // WHEN
-        try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
-        {
-            NodeStore nodeStore = stores.getNodeStore();
-            assertFalse( nodeStore.getStoreOk() );
+            // WHEN
+            try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
+            {
+                NodeStore nodeStore = stores.getNodeStore();
+                assertFalse( nodeStore.getStoreOk() );
 
-            // simulating what recovery does
-            nodeStore.deleteIdGenerator();
-            // recovery happens here...
-            nodeStore.makeStoreOk();
+                // simulating what recovery does
+                nodeStore.deleteIdGenerator();
+                // recovery happens here...
+                nodeStore.makeStoreOk();
 
-            // THEN
-            assertEquals( highId, nodeStore.nextId() );
+                // THEN
+                assertEquals( highId, nodeStore.nextId() );
+            }
         }
     }
 

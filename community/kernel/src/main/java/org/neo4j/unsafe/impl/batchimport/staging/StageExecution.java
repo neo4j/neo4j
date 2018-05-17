@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,9 +21,10 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -32,12 +33,12 @@ import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
 /**
  * Default implementation of {@link StageControl}
  */
-public class StageExecution implements StageControl
+public class StageExecution implements StageControl, AutoCloseable
 {
     private final String stageName;
     private final String part;
@@ -46,6 +47,8 @@ public class StageExecution implements StageControl
     private long startTime;
     private final int orderingGuarantees;
     private volatile Throwable panic;
+    private final boolean shouldRecycle;
+    private final ConcurrentLinkedQueue<Object> recycled;
 
     public StageExecution( String stageName, String part, Configuration config, Collection<Step<?>> pipeline,
             int orderingGuarantees )
@@ -55,6 +58,8 @@ public class StageExecution implements StageControl
         this.config = config;
         this.pipeline = pipeline;
         this.orderingGuarantees = orderingGuarantees;
+        this.shouldRecycle = (orderingGuarantees & Step.RECYCLE_BATCHES) != 0;
+        this.recycled = shouldRecycle ? new ConcurrentLinkedQueue<>() : null;
     }
 
     public boolean stillExecuting()
@@ -114,13 +119,10 @@ public class StageExecution implements StageControl
     public Iterable<Pair<Step<?>,Float>> stepsOrderedBy( final Key stat, final boolean trueForAscending )
     {
         final List<Step<?>> steps = new ArrayList<>( pipeline );
-        Collections.sort( steps, ( o1, o2 ) ->
-        {
+        steps.sort( ( o1, o2 ) -> {
             Long stat1 = o1.stats().stat( stat ).asLong();
             Long stat2 = o2.stats().stat( stat ).asLong();
-            return trueForAscending
-                    ? stat1.compareTo( stat2 )
-                    : stat2.compareTo( stat1 );
+            return trueForAscending ? stat1.compareTo( stat2 ) : stat2.compareTo( stat1 );
         } );
 
         return () -> new PrefetchingIterator<Pair<Step<?>,Float>>()
@@ -181,7 +183,8 @@ public class StageExecution implements StageControl
     {
         if ( panic != null )
         {
-            throw launderedException( panic );
+            throwIfUnchecked( panic );
+            throw new RuntimeException( panic );
         }
     }
 
@@ -189,5 +192,39 @@ public class StageExecution implements StageControl
     public String toString()
     {
         return getClass().getSimpleName() + "[" + name() + "]";
+    }
+
+    @Override
+    public void recycle( Object batch )
+    {
+        if ( shouldRecycle )
+        {
+            recycled.offer( batch );
+        }
+    }
+
+    @Override
+    public <T> T reuse( Supplier<T> fallback )
+    {
+        if ( shouldRecycle )
+        {
+            @SuppressWarnings( "unchecked" )
+            T result = (T) recycled.poll();
+            if ( result != null )
+            {
+                return result;
+            }
+        }
+
+        return fallback.get();
+    }
+
+    @Override
+    public void close()
+    {
+        if ( shouldRecycle )
+        {
+            recycled.clear();
+        }
     }
 }

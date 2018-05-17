@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,14 +24,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 
 /**
  * Utility for running a handful of {@link Runnable} in parallel, each in its own thread.
  * {@link Runnable} instances are {@link #start(Runnable) added and started} and the caller can
  * {@link #await()} them all to finish, returning a {@link Throwable error} if any thread encountered one so
- * that the caller can decide how to handle that error. Or caller can use {@link #awaitAndThrowOnError(Class)}
+ * that the caller can decide how to handle that error. Or caller can use {@link #awaitAndThrowOnError()}
  * where error from any worker would be thrown from that method.
  *
  * It's basically like using an {@link ExecutorService}, but without that "baggage" and an easier usage
@@ -87,22 +86,20 @@ public class Workers<R extends Runnable> implements Iterable<R>
         }
     }
 
-    public <EXCEPTION extends Throwable> void awaitAndThrowOnError( Class<EXCEPTION> launderingException )
-            throws EXCEPTION, InterruptedException
+    public void awaitAndThrowOnError() throws InterruptedException
     {
         Throwable error = await();
         if ( error != null )
         {
-            throw Exceptions.launderedException( launderingException, error );
+            throw new RuntimeException( error );
         }
     }
 
-    public <EXCEPTION extends Throwable> void awaitAndThrowOnErrorStrict( Class<EXCEPTION> launderingException )
-            throws EXCEPTION
+    public void awaitAndThrowOnErrorStrict( )
     {
         try
         {
-            awaitAndThrowOnError( launderingException );
+            awaitAndThrowOnError();
         }
         catch ( InterruptedException e )
         {
@@ -143,7 +140,7 @@ public class Workers<R extends Runnable> implements Iterable<R>
             catch ( Throwable t )
             {
                 error = t;
-                throw Exceptions.launderedException( t );
+                throw new RuntimeException( t );
             }
         }
 

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core.consensus.explorer;
 
@@ -24,6 +27,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
@@ -47,6 +51,7 @@ public class ComparableRaftState implements ReadableRaftState
     private final Log log;
     protected long term;
     protected MemberId leader;
+    private LeaderInfo leaderInfo = LeaderInfo.INITIAL;
     private long leaderCommit = -1;
     private MemberId votedFor;
     private Set<MemberId> votesForMe = new HashSet<>();
@@ -58,8 +63,9 @@ public class ComparableRaftState implements ReadableRaftState
     private final InFlightCache inFlightCache;
     private long commitIndex = -1;
     private boolean isPreElection;
+    private final boolean refusesToBeLeader;
 
-    ComparableRaftState( MemberId myself, Set<MemberId> votingMembers, Set<MemberId> replicationMembers,
+    ComparableRaftState( MemberId myself, Set<MemberId> votingMembers, Set<MemberId> replicationMembers, boolean refusesToBeLeader,
                          RaftLog entryLog, InFlightCache inFlightCache, LogProvider logProvider )
     {
         this.myself = myself;
@@ -68,11 +74,12 @@ public class ComparableRaftState implements ReadableRaftState
         this.entryLog = entryLog;
         this.inFlightCache = inFlightCache;
         this.log = logProvider.getLog( getClass() );
+        this.refusesToBeLeader = refusesToBeLeader;
     }
 
     ComparableRaftState( ReadableRaftState original ) throws IOException
     {
-        this( original.myself(), original.votingMembers(), original.replicationMembers(),
+        this( original.myself(), original.votingMembers(), original.replicationMembers(), original.refusesToBeLeader(),
                 new ComparableRaftLog( original.entryLog() ), new ConsecutiveInFlightCache(), NullLogProvider.getInstance() );
     }
 
@@ -104,6 +111,12 @@ public class ComparableRaftState implements ReadableRaftState
     public MemberId leader()
     {
         return leader;
+    }
+
+    @Override
+    public LeaderInfo leaderInfo()
+    {
+        return leaderInfo;
     }
 
     @Override
@@ -170,6 +183,12 @@ public class ComparableRaftState implements ReadableRaftState
     public Set<MemberId> preVotesForMe()
     {
         return preVotesForMe;
+    }
+
+    @Override
+    public boolean refusesToBeLeader()
+    {
+        return refusesToBeLeader;
     }
 
     public void update( Outcome outcome ) throws IOException

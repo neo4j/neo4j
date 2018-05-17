@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
@@ -35,7 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,7 +49,7 @@ import static org.neo4j.kernel.impl.util.Cursors.rawCursorOf;
 public class StoreStreamingProcessTest
 {
     // mocks
-    private final StoreStreamingProtocol protocol = mock( StoreStreamingProtocol.class );
+    private final StoreFileStreamingProtocol protocol = mock( StoreFileStreamingProtocol.class );
     private final CheckPointer checkPointer = mock( CheckPointer.class );
     private final StoreResourceStreamFactory resourceStream = mock( StoreResourceStreamFactory.class );
     private final ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
@@ -69,7 +72,7 @@ public class StoreStreamingProcessTest
 
         when( checkPointer.tryCheckPoint( any() ) ).thenReturn( lastCheckpointedTxId );
         when( checkPointer.lastCheckPointedTransactionId() ).thenReturn( lastCheckpointedTxId );
-        when( protocol.end( ctx, SUCCESS, lastCheckpointedTxId ) ).thenReturn( completionPromise );
+        when( protocol.end( ctx, SUCCESS ) ).thenReturn( completionPromise );
         when( resourceStream.create() ).thenReturn( resources );
 
         // when
@@ -78,8 +81,7 @@ public class StoreStreamingProcessTest
         // then
         InOrder inOrder = Mockito.inOrder( protocol, checkPointer );
         inOrder.verify( checkPointer ).tryCheckPoint( any() );
-        inOrder.verify( protocol ).stream( ctx, resources );
-        inOrder.verify( protocol ).end( ctx, SUCCESS, lastCheckpointedTxId );
+        inOrder.verify( protocol ).end( ctx, SUCCESS );
         inOrder.verifyNoMoreInteractions();
 
         assertEquals( 1, lock.getReadLockCount() );
@@ -92,7 +94,7 @@ public class StoreStreamingProcessTest
     }
 
     @Test
-    public void shouldSignalFailure() throws Exception
+    public void shouldSignalFailure()
     {
         // given
         StoreStreamingProcess process = new StoreStreamingProcess( protocol, checkPointerSupplier, mutex, resourceStream );
@@ -101,6 +103,6 @@ public class StoreStreamingProcessTest
         process.fail( ctx, E_STORE_ID_MISMATCH );
 
         // then
-        verify( protocol ).end( ctx, E_STORE_ID_MISMATCH, -1 );
+        verify( protocol ).end( ctx, E_STORE_ID_MISMATCH );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -234,7 +234,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterable<Relationship> relationships()
     {
-        LinkedList<Relationship> relationships = new LinkedList<Relationship>();
+        LinkedList<Relationship> relationships = new LinkedList<>();
         TraversalBranch branch = this;
         while ( branch.length() > 0 )
         {
@@ -269,7 +269,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterable<Node> nodes()
     {
-        LinkedList<Node> nodes = new LinkedList<Node>();
+        LinkedList<Node> nodes = new LinkedList<>();
         TraversalBranch branch = this;
         while ( branch.length() > 0 )
         {
@@ -305,7 +305,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterator<PropertyContainer> iterator()
     {
-        LinkedList<PropertyContainer> entities = new LinkedList<PropertyContainer>();
+        LinkedList<PropertyContainer> entities = new LinkedList<>();
         TraversalBranch branch = this;
         while ( branch.length() > 0 )
         {

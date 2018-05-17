@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -63,7 +63,7 @@ public class StreamingBatchOperations extends BatchOperations
 
     @Override
     protected void invoke( String method, String path, String body, Integer id, URI targetUri,
-            InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException
+            InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException
     {
         results.startOperation( path, id );
         try
@@ -109,13 +109,13 @@ public class StreamingBatchOperations extends BatchOperations
         }
 
         @Override
-        public ServletOutputStream getOutputStream() throws IOException
+        public ServletOutputStream getOutputStream()
         {
             return output;
         }
 
         @Override
-        public PrintWriter getWriter() throws IOException
+        public PrintWriter getWriter()
         {
             return new PrintWriter( new OutputStreamWriter( output, StandardCharsets.UTF_8 ) );
         }

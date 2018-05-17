@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,17 +37,18 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.helpers.collection.CollectorsUtil;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.QualifiedName;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.Pair.pair;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
 {
@@ -66,7 +67,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         String query = input[0].toString();
         try
@@ -199,7 +200,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         // through `toNeo4jValue`
         return attributeValue.entrySet().stream()
                 .map( e -> pair( e.getKey().toString(), toNeo4jValue( e.getValue() ) ) )
-                .collect( Collectors.toMap( Pair::first, Pair::other ) );
+                .collect( CollectorsUtil.pairsToMap() );
     }
 
     private List<Object> toNeo4jValue( Object[] array )

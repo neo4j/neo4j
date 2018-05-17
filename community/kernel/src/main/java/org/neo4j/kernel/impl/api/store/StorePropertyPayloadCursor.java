@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.ShortArray;
+import org.neo4j.kernel.impl.store.TemporalType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -57,6 +58,7 @@ import static org.neo4j.kernel.impl.store.PropertyType.SHORT;
 import static org.neo4j.kernel.impl.store.PropertyType.SHORT_ARRAY;
 import static org.neo4j.kernel.impl.store.PropertyType.SHORT_STRING;
 import static org.neo4j.kernel.impl.store.PropertyType.STRING;
+import static org.neo4j.kernel.impl.store.PropertyType.TEMPORAL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
@@ -234,6 +236,12 @@ class StorePropertyPayloadCursor
         return GeometryType.decode( data, position );
     }
 
+    Value temporalValue()
+    {
+        assertOfType( TEMPORAL );
+        return TemporalType.decode( data, position );
+    }
+
     Value value()
     {
         switch ( type() )
@@ -264,6 +272,8 @@ class StorePropertyPayloadCursor
             return arrayValue();
         case GEOMETRY:
             return geometryValue();
+        case TEMPORAL:
+            return temporalValue();
         default:
             throw new IllegalStateException( "No such type:" + type() );
         }

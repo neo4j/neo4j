@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,29 +31,29 @@ import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.SimpleDataGenerator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
+import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
-import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.defaultVisible;
 
 /**
@@ -79,19 +79,20 @@ public class QuickImport
     public static void main( String[] arguments ) throws IOException
     {
         Args args = Args.parse( arguments );
-        long nodeCount = parseLongWithUnit( args.get( "nodes", null ) );
-        long relationshipCount = parseLongWithUnit( args.get( "relationships", null ) );
+        long nodeCount = Settings.parseLongWithUnit( args.get( "nodes", null ) );
+        long relationshipCount = Settings.parseLongWithUnit( args.get( "relationships", null ) );
         int labelCount = args.getNumber( "labels", 4 ).intValue();
         int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
         File dir = new File( args.get( ImportTool.Options.STORE_DIR.key() ) );
         long randomSeed = args.getNumber( "random-seed", currentTimeMillis() ).longValue();
-        Configuration config = COMMAS;
+        Configuration config = Configuration.COMMAS;
 
         Extractors extractors = new Extractors( config.arrayDelimiter() );
         IdType idType = IdType.valueOf( args.get( "id-type", IdType.INTEGER.name() ) );
 
-        Header nodeHeader = parseNodeHeader( args, idType, extractors );
-        Header relationshipHeader = parseRelationshipHeader( args, idType, extractors );
+        Groups groups = new Groups();
+        Header nodeHeader = parseNodeHeader( args, idType, extractors, groups );
+        Header relationshipHeader = parseRelationshipHeader( args, idType, extractors, groups );
 
         Config dbConfig;
         String dbConfigFileName = args.get( ImportTool.Options.DATABASE_CONFIG.key(), null );
@@ -125,7 +126,7 @@ public class QuickImport
             }
 
             @Override
-            public boolean parallelRecordReadsWhenWriting()
+            public boolean highIO()
             {
                 return highIo;
             }
@@ -147,12 +148,11 @@ public class QuickImport
         float factorBadNodeData = args.getNumber( "factor-bad-node-data", 0 ).floatValue();
         float factorBadRelationshipData = args.getNumber( "factor-bad-relationship-data", 0 ).floatValue();
 
-        SimpleDataGenerator generator = new SimpleDataGenerator( nodeHeader, relationshipHeader, randomSeed,
-                nodeCount, labelCount, relationshipTypeCount, idType, factorBadNodeData, factorBadRelationshipData );
         Input input = new DataGeneratorInput(
                 nodeCount, relationshipCount,
-                generator.nodes(), generator.relationships(),
-                idType, Collector.EMPTY );
+                idType, Collector.EMPTY, randomSeed,
+                0, nodeHeader, relationshipHeader, labelCount, relationshipTypeCount,
+                factorBadNodeData, factorBadRelationshipData );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
@@ -163,37 +163,40 @@ public class QuickImport
             }
             else
             {
-                consumer = new ParallelBatchImporter( dir, fileSystem, null, importConfig,
-                        new SimpleLogService( logging, logging ), defaultVisible(), EMPTY, dbConfig,
-                        RecordFormatSelector.selectForConfig( dbConfig, logging ) );
+                System.out.println( "Seed " + randomSeed );
+                final JobScheduler jobScheduler = new CentralJobScheduler();
+                consumer = BatchImporterFactory.withHighestPriority().instantiate( dir, fileSystem, null, importConfig,
+                        new SimpleLogService( logging, logging ), defaultVisible( jobScheduler ), EMPTY, dbConfig,
+                        RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR );
                 ImportTool.printOverview( dir, Collections.emptyList(), Collections.emptyList(), importConfig, System.out );
             }
             consumer.doImport( input );
         }
     }
 
-    private static Header parseNodeHeader( Args args, IdType idType, Extractors extractors )
+    private static Header parseNodeHeader( Args args, IdType idType, Extractors extractors, Groups groups )
     {
         String definition = args.get( "node-header", null );
         if ( definition == null )
         {
-            return bareboneNodeHeader( idType, extractors );
+            return DataGeneratorInput.bareboneNodeHeader( idType, extractors );
         }
 
         Configuration config = Configuration.COMMAS;
-        return defaultFormatNodeFileHeader().create( seeker( definition, config ), config, idType );
+        return DataFactories.defaultFormatNodeFileHeader().create( seeker( definition, config ), config, idType, groups );
     }
 
-    private static Header parseRelationshipHeader( Args args, IdType idType, Extractors extractors )
+    private static Header parseRelationshipHeader( Args args, IdType idType, Extractors extractors, Groups groups )
     {
         String definition = args.get( "relationship-header", null );
         if ( definition == null )
         {
-            return bareboneRelationshipHeader( idType, extractors );
+            return DataGeneratorInput.bareboneRelationshipHeader( idType, extractors );
         }
 
         Configuration config = Configuration.COMMAS;
-        return defaultFormatRelationshipFileHeader().create( seeker( definition, config ), config, idType );
+        return DataFactories.defaultFormatRelationshipFileHeader().create( seeker( definition, config ), config,
+                idType, groups );
     }
 
     private static CharSeeker seeker( String definition, Configuration config )

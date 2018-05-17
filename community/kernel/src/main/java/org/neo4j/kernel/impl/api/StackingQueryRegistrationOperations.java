@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -34,17 +35,17 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
 {
     private final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
     private final SystemNanoClock clock;
-    private final CpuClock cpuClock;
-    private final HeapAllocation heapAllocation;
+    private final AtomicReference<CpuClock> cpuClockRef;
+    private final AtomicReference<HeapAllocation> heapAllocationRef;
 
     public StackingQueryRegistrationOperations(
             SystemNanoClock clock,
-            CpuClock cpuClock,
-            HeapAllocation heapAllocation )
+            AtomicReference<CpuClock> cpuClockRef,
+            AtomicReference<HeapAllocation> heapAllocationRef )
     {
         this.clock = clock;
-        this.cpuClock = cpuClock;
-        this.heapAllocation = heapAllocation;
+        this.cpuClockRef = cpuClockRef;
+        this.heapAllocationRef = heapAllocationRef;
     }
 
     @Override
@@ -75,7 +76,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
                 new ExecutingQuery( queryId, clientConnection, statement.username(), queryText, queryParameters,
                         statement.getTransaction().getMetaData(), () -> statement.locks().activeLockCount(),
                         statement.getPageCursorTracer(),
-                        threadId, threadName, clock, cpuClock, heapAllocation );
+                        threadId, threadName, clock, cpuClockRef.get(), heapAllocationRef.get() );
         registerExecutingQuery( statement, executingQuery );
         return executingQuery;
     }

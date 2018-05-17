@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,7 +30,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
@@ -51,14 +50,14 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
 
                     @Override
                     public void remove( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         ops.nodeRemoveFromExplicitIndex( InternalAutoIndexing.NODE_AUTO_INDEX, entityId, keyName, value );
                     }
 
                     @Override
                     public void remove( ExplicitIndexWrite ops, long entityId, String keyName )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         ops.nodeRemoveFromExplicitIndex( InternalAutoIndexing.NODE_AUTO_INDEX, entityId, keyName );
                     }
@@ -71,8 +70,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                     }
 
                     @Override
-                    public void ensureIndexExists( ExplicitIndexWrite ops ) throws
-                            ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                    public void ensureIndexExists( ExplicitIndexWrite ops )
 
                     {
                         ops.nodeExplicitIndexCreateLazily( InternalAutoIndexing.NODE_AUTO_INDEX, null );
@@ -113,7 +111,6 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
 
                     @Override
                     public void ensureIndexExists( ExplicitIndexWrite ops )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
                     {
                         ops.relationshipExplicitIndexCreateLazily( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, null );
                     }
@@ -131,8 +128,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
         public abstract void remove( ExplicitIndexWrite ops, long entityId )
                 throws KernelException;
 
-        public abstract void ensureIndexExists( ExplicitIndexWrite write )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+        public abstract void ensureIndexExists( ExplicitIndexWrite write );
     }
 
     private AtomicReference<Set<String>> propertyKeysToInclude = new AtomicReference<>( Collections.emptySet() );
@@ -302,8 +298,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
         return Collections.unmodifiableSet( propertyKeysToInclude.get() );
     }
 
-    private void ensureIndexExists( ExplicitIndexWrite ops ) throws ExplicitIndexNotFoundKernelException,
-            EntityNotFoundException
+    private void ensureIndexExists( ExplicitIndexWrite ops )
     {
         // Known racy, but this is safe because ensureIndexExists is concurrency safe, we just want to avoid calling it
         // for every single write we make.

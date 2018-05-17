@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,140 +22,120 @@ package org.neo4j.values.storable;
 import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
-public abstract class FloatArray extends FloatingPointArray
+public class FloatArray extends FloatingPointArray
 {
-    abstract float[] value();
+    private final float[] value;
+
+    FloatArray( float[] value )
+    {
+        assert value != null;
+        this.value = value;
+    }
 
     @Override
     public int length()
     {
-        return value().length;
+        return value.length;
     }
 
     @Override
     public double doubleValue( int index )
     {
-        return value()[index];
+        return value[index];
     }
 
     @Override
     public int computeHash()
     {
-        return NumberValues.hash( value() );
+        return NumberValues.hash( value );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapFloatArray( this );
     }
 
     @Override
     public boolean equals( Value other )
     {
-        return other.equals( value() );
+        return other.equals( value );
     }
 
     @Override
     public boolean equals( byte[] x )
     {
-        return PrimitiveArrayValues.equals( x, value() );
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     public boolean equals( short[] x )
     {
-        return PrimitiveArrayValues.equals( x, value() );
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     public boolean equals( int[] x )
     {
-        return PrimitiveArrayValues.equals( x, value() );
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     public boolean equals( long[] x )
     {
-        return PrimitiveArrayValues.equals( x, value() );
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     public boolean equals( float[] x )
     {
-        return Arrays.equals( value(), x );
+        return Arrays.equals( value, x );
     }
 
     @Override
     public boolean equals( double[] x )
     {
-        return PrimitiveArrayValues.equals( value(), x  );
-    }
-
-    @Override
-    public final boolean eq( Object other )
-    {
-        if ( other == null )
-        {
-            return false;
-        }
-
-        if ( other instanceof SequenceValue )
-        {
-            return this.equals( (SequenceValue) other );
-        }
-        return other instanceof Value && equals( (Value) other );
+        return PrimitiveArrayValues.equals( value, x  );
     }
 
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        PrimitiveArrayWriting.writeTo( writer, value() );
+        PrimitiveArrayWriting.writeTo( writer, value );
     }
 
     @Override
-    public Object asObjectCopy()
+    public float[] asObjectCopy()
     {
-        return value().clone();
+        return value.clone();
     }
 
     @Override
     @Deprecated
-    public Object asObject()
+    public float[] asObject()
     {
-        return value();
+        return value;
     }
 
     @Override
     public String prettyPrint()
     {
-        return Arrays.toString( value() );
+        return Arrays.toString( value );
     }
 
     @Override
     public AnyValue value( int offset )
     {
-        return Values.floatValue( value()[offset] );
+        return Values.floatValue( value[offset] );
     }
 
-    static final class Direct extends FloatArray
+    @Override
+    public String toString()
     {
-        final float[] value;
-
-        Direct( float[] value )
-        {
-            assert value != null;
-            this.value = value;
-        }
-
-        @Override
-        float[] value()
-        {
-            return value;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "FloatArray%s", Arrays.toString( value() ) );
-        }
+        return format( "FloatArray%s", Arrays.toString( value ) );
     }
 }

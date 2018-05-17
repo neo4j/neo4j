@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,7 +33,7 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.withBatchSize;
 public class RecordIdIteratorTest
 {
     @Test
-    public void shouldGoPageWiseBackwards() throws Exception
+    public void shouldGoPageWiseBackwards()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 0, 33, withBatchSize( DEFAULT, 10 ) );
@@ -47,7 +47,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoPageWiseBackwardsOnCleanBreak() throws Exception
+    public void shouldGoPageWiseBackwardsOnCleanBreak()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 0, 20, withBatchSize( DEFAULT, 10 ) );
@@ -59,7 +59,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoPageWiseBackwardsOnSingleBatch() throws Exception
+    public void shouldGoPageWiseBackwardsOnSingleBatch()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 0, 8, withBatchSize( DEFAULT, 10 ) );
@@ -69,7 +69,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoBackwardsToNonZero() throws Exception
+    public void shouldGoBackwardsToNonZero()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 12, 34, withBatchSize( DEFAULT, 10 ) );
@@ -82,7 +82,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoForwardsWhenStartingFromNonZero() throws Exception
+    public void shouldGoForwardsWhenStartingFromNonZero()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.forwards( 1, 12, withBatchSize( DEFAULT, 10 ) );
@@ -94,7 +94,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoForwardsWhenStartingFromNonZero2() throws Exception
+    public void shouldGoForwardsWhenStartingFromNonZero2()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.forwards( 34, 66, withBatchSize( DEFAULT, 10 ) );

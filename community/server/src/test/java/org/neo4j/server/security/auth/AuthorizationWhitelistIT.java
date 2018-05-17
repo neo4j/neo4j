@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -93,7 +93,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
         }
     }
 
-    private boolean browserIsLoaded() throws IOException
+    private boolean browserIsLoaded()
     {
         // In some automatic builds, the Neo4j browser is not built, and it is subsequently not present for these
         // tests. So - only run these tests if the browser artifact is on the classpath

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.configuration;
 
@@ -123,7 +126,7 @@ public class SecuritySettings implements LoadableConfig
                   "required field. The supported values for protocol are `ldap` (default) and `ldaps`. " +
                   "The default port for `ldap` is 389 and for `ldaps` 636. For example: " +
                   "`ldaps://ldap.example.com:10389`.\n\n" +
-                  "NOTE: You may want to consider using STARTTLS (`dbms.security.ldap.use_starttls`) instead of LDAPS " +
+                  "You may want to consider using STARTTLS (`dbms.security.ldap.use_starttls`) instead of LDAPS " +
                   "for secure connections, in which case the correct protocol is `ldap`." )
     public static final Setting<String> ldap_server =
             setting( "dbms.security.ldap.host", STRING, "localhost" );
@@ -136,6 +139,7 @@ public class SecuritySettings implements LoadableConfig
 
     @Description(
             "The LDAP referral behavior when creating a connection. This is one of `follow`, `ignore` or `throw`.\n" +
+            "\n" +
             "* `follow` automatically follows any referrals\n" +
             "* `ignore` ignores any referrals\n" +
             "* `throw` throws an exception, which will lead to authentication failure" )
@@ -145,12 +149,12 @@ public class SecuritySettings implements LoadableConfig
     @Description( "The timeout for establishing an LDAP connection. If a connection with the LDAP server cannot be " +
                   "established within the given time the attempt is aborted. " +
                   "A value of 0 means to use the network protocol's (i.e., TCP's) timeout value." )
-    public static Setting<Duration> ldap_connection_timeout =
+    public static final Setting<Duration> ldap_connection_timeout =
             setting( "dbms.security.ldap.connection_timeout", DURATION, "30s" );
 
     @Description( "The timeout for an LDAP read request (i.e. search). If the LDAP server does not respond within " +
                   "the given time the request will be aborted. A value of 0 means wait for a response indefinitely." )
-    public static Setting<Duration> ldap_read_timeout =
+    public static final Setting<Duration> ldap_read_timeout =
             setting( "dbms.security.ldap.read_timeout", DURATION, "30s" );
 
     //-----------------------------------------------------
@@ -250,13 +254,18 @@ public class SecuritySettings implements LoadableConfig
     @Description( "An authorization mapping from LDAP group names to Neo4j role names. " +
                   "The map should be formatted as a semicolon separated list of key-value pairs, where the " +
                   "key is the LDAP group name and the value is a comma separated list of corresponding role names. " +
-                  "For example: group1=role1;group2=role2;group3=role3,role4,role5\n\n" +
+                  "For example: group1=role1;group2=role2;group3=role3,role4,role5\n" +
+                  "\n" +
                   "You could also use whitespaces and quotes around group names to make this mapping more readable, " +
-                  "for example: dbms.security.ldap.authorization.group_to_role_mapping=\\\n" +
+                  "for example: \n" +
+                  "\n" +
+                  "----\n" +
+                  "+dbms.security.ldap.authorization.group_to_role_mapping+=\\\n" +
                   "         \"cn=Neo4j Read Only,cn=users,dc=example,dc=com\"      = reader;    \\\n" +
                   "         \"cn=Neo4j Read-Write,cn=users,dc=example,dc=com\"     = publisher; \\\n" +
                   "         \"cn=Neo4j Schema Manager,cn=users,dc=example,dc=com\" = architect; \\\n" +
-                  "         \"cn=Neo4j Administrator,cn=users,dc=example,dc=com\"  = admin" )
+                  "         \"cn=Neo4j Administrator,cn=users,dc=example,dc=com\"  = admin\n" +
+                  "----" )
     public static final Setting<String> ldap_authorization_group_to_role_mapping =
             setting( "dbms.security.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
 
@@ -325,8 +334,8 @@ public class SecuritySettings implements LoadableConfig
     public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" );
 
     @Description( "This provides a finer level of control over which roles can execute procedures than the " +
-                  "`" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting. For example: `dbms.security.procedures.roles=" +
-                  "apoc.convert.*:reader;apoc.load.json*:writer;apoc.trigger.add:TriggerHappy` will allow the role " +
+                  "`" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting. For example: `+dbms.security.procedures.roles=" +
+                  "apoc.convert.*:reader;apoc.load.json*:writer;apoc.trigger.add:TriggerHappy+` will allow the role " +
                   "`reader` to execute all procedures in the `apoc.convert` namespace, the role `writer` to execute " +
                   "all procedures in the `apoc.load` namespace that starts with `json` and the role `TriggerHappy` " +
                   "to execute the specific procedure `apoc.trigger.add`. Procedures not matching any of these " +
@@ -342,4 +351,23 @@ public class SecuritySettings implements LoadableConfig
                   "system account." )
     public static final Setting<Boolean> ldap_authorization_connection_pooling =
             setting( "unsupported.dbms.security.ldap.authorization.connection_pooling", BOOLEAN, "true" );
+
+    //=========================================================================
+    // Property level security settings
+    //=========================================================================
+
+    @Description( "Set to true to enable property level security." )
+    public static final Setting<Boolean> property_level_authorization_enabled =
+            setting( "dbms.security.property_level.enabled", BOOLEAN, "false" );
+
+    @Description( "An authorization mapping for property level access for roles. " +
+            "The map should be formatted as a semicolon separated list of key-value pairs, where the " +
+            "key is the role name and the value is a comma separated list of blacklisted properties. " +
+            "For example: role1=prop1;role2=prop2;role3=prop3,prop4,prop5\n\n" +
+            "You could also use whitespaces and quotes around group names to make this mapping more readable, " +
+            "for example: dbms.security.property_level.blacklist=\\\n" +
+            "         \"role1\"      = ssn;    \\\n" +
+            "         \"role2\"      = ssn,income; \\\n" )
+    public static final Setting<String> property_level_authorization_permissions =
+            setting( "dbms.security.property_level.blacklist", STRING, NO_DEFAULT );
 }

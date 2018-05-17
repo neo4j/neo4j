@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -45,13 +45,13 @@ public class BatchOperationsTest
     {
         @Override
         protected void invoke( String method, String path, String body, Integer id, URI targetUri,
-                InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException
+                InternalJettyServletRequest req, InternalJettyServletResponse res )
         {
         }
     };
 
     @Test
-    public void testReplaceLocations() throws Exception
+    public void testReplaceLocations()
     {
         Map<Integer,String> map = new HashMap<>();
         map.put(100,"bar");
@@ -99,7 +99,7 @@ public class BatchOperationsTest
 
         // When & then
         assertEquals( "127.0.0.1", req.getRemoteAddr());
-        assertException( () -> req.getRemoteHost(), UnsupportedOperationException.class,
+        assertException( req::getRemoteHost, UnsupportedOperationException.class,
                 "Remote host-name lookup might prove expensive, this should be explicitly considered." );
         assertTrue( req.isSecure() );
         assertEquals( 1, req.getRemotePort());
@@ -111,7 +111,7 @@ public class BatchOperationsTest
     }
 
     @Test
-    public void shouldIgnoreUnknownAndUnparseablePlaceholders() throws Throwable
+    public void shouldIgnoreUnknownAndUnparseablePlaceholders()
     {
         // When/then
         assertEquals("foo {00000000010001010001001100111000100101010111001101110111}",

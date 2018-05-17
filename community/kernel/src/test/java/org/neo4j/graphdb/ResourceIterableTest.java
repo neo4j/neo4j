@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,15 +27,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIterator;
 
 public class ResourceIterableTest
 {
     @Test
-    public void streamShouldCloseSingleOnCompleted() throws Throwable
+    public void streamShouldCloseSingleOnCompleted()
     {
         // Given
         AtomicBoolean closed = new AtomicBoolean( false );
@@ -52,7 +52,7 @@ public class ResourceIterableTest
     }
 
     @Test
-    public void streamShouldCloseMultipleOnCompleted() throws Throwable
+    public void streamShouldCloseMultipleOnCompleted()
     {
         // Given
         AtomicInteger closed = new AtomicInteger();

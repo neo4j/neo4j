@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -47,9 +50,7 @@ import scala.collection.mutable
 
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport {
 
-  val createConf = Configs.Interpreted - Configs.Cost2_3
-  val startConf = TestConfiguration(Versions(V3_4, Versions.Default), Planners(Planners.Rule, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
-                  TestConfiguration(Versions(V2_3, V3_1), Planners.all, Runtimes.Default)
+  val startConf = Configs.CommunityInterpreted - Configs.Version3_3
 
   test("shouldGetRelationshipById") {
     val n = createNode()
@@ -294,7 +295,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode()
     val query = "match (pA) where id(pA) = {a} return pA"
 
-    executeWith(Configs.All + Configs.Morsel, query, params = Map("a" -> "Andres")) should be (empty)
+    executeWith(Configs.Interpreted + Configs.Morsel, query, params = Map("a" -> "Andres")) should be (empty)
   }
 
   test("shouldBeAbleToTakeParamsFromParsedStuff") {
@@ -327,7 +328,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   test("shouldComplainWhenMissingParams") {
     createNode()
-    failWithError(Configs.AbsolutelyAll, "match (pA) where id(pA) = {a} return pA", List("Expected a parameter named a"))
+    failWithError(Configs.AbsolutelyAll - Configs.Compiled, "match (pA) where id(pA) = {a} return pA", List("Expected a parameter named a", "Expected parameter(s): a"))
   }
 
   test("shouldSupportMultipleRegexes") {
@@ -533,7 +534,7 @@ order by a.COL1""".format(a, b))
   }
 
   test("with should not forget original type") {
-    val result = executeWith(createConf, "create (a{x:8}) with a.x as foo return sum(foo)")
+    val result = executeWith(Configs.UpdateConf, "create (a{x:8}) with a.x as foo return sum(foo)")
 
     result.toList should equal(List(Map("sum(foo)" -> 8)))
   }
@@ -550,7 +551,7 @@ order by a.COL1""".format(a, b))
 
   test("with should not forget parameters2") {
     val id = createNode().getId
-    val result = executeWith(createConf, "match (n) where id(n) = {id} with n set n.foo={id} return n", params = Map("id" -> id)).toList
+    val result = executeWith(Configs.UpdateConf, "match (n) where id(n) = {id} with n set n.foo={id} return n", params = Map("id" -> id)).toList
 
     result should have size 1
     graph.inTx {
@@ -596,7 +597,7 @@ order by a.COL1""".format(a, b))
 
   test("can use variables created inside the foreach") {
     createNode()
-    val result = executeWith(createConf, "match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
+    val result = executeWith(Configs.UpdateConf, "match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
 
     result.toList shouldBe empty
   }
@@ -654,28 +655,28 @@ order by a.COL1""".format(a, b))
 
   test("should add label to node") {
     val a = createNode()
-    val result = executeWith(createConf, "match (a) where id(a) = 0 SET a :foo RETURN a")
+    val result = executeWith(Configs.UpdateConf, "match (a) where id(a) = 0 SET a :foo RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should add multiple labels to node") {
     val a = createNode()
-    val result = executeWith(createConf, "match (a) where id(a) = 0 SET a :foo:bar RETURN a")
+    val result = executeWith(Configs.UpdateConf, "match (a) where id(a) = 0 SET a :foo:bar RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should set label on node") {
     val a = createNode()
-    val result = executeWith(createConf, "match (a) SET a:foo RETURN a")
+    val result = executeWith(Configs.UpdateConf, "match (a) SET a:foo RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should set multiple labels on node") {
     val a = createNode()
-    val result = executeWith(createConf, "match (a) where id(a) = 0 SET a:foo:bar RETURN a")
+    val result = executeWith(Configs.UpdateConf, "match (a) where id(a) = 0 SET a:foo:bar RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
@@ -801,7 +802,7 @@ order by a.COL1""".format(a, b))
     relate(a,b,"FOO")
 
     //WHEN
-    val result = executeWith(createConf,
+    val result = executeWith(Configs.UpdateConf,
       """MATCH (a), (b)
          WHERE id(a) = 0 AND id(b) = 1
          AND not (a)-[:FOO]->(b)
@@ -859,10 +860,10 @@ order by a.COL1""".format(a, b))
 
   test("doctest gone wild") {
     // given
-    executeWith(createConf, "CREATE (n:Actor {name:'Tom Hanks'})")
+    executeWith(Configs.UpdateConf, "CREATE (n:Actor {name:'Tom Hanks'})")
 
     // when
-    val result = executeWith(createConf, """MATCH (actor:Actor)
+    val result = executeWith(Configs.UpdateConf, """MATCH (actor:Actor)
                                WHERE actor.name = "Tom Hanks"
                                CREATE (movie:Movie {title:'Sleepless in Seattle'})
                                CREATE (actor)-[:ACTED_IN]->(movie)""")
@@ -890,14 +891,14 @@ order by a.COL1""".format(a, b))
 
   test("merge should support single parameter") {
     //WHEN
-    val result = executeWith(createConf, "MERGE (n:User {foo: {single_param}})", params = Map("single_param" -> 42))
+    val result = executeWith(Configs.UpdateConf, "MERGE (n:User {foo: {single_param}})", params = Map("single_param" -> 42))
 
     //THEN DOESN'T THROW EXCEPTION
     result.toList shouldBe empty
   }
 
   test("merge should not support map parameters for defining properties") {
-    failWithError(Configs.AbsolutelyAll, "MERGE (n:User {merge_map})", List("Parameter maps cannot be used in MERGE patterns"), params = ("merge_map", Map("email" -> "test")) )
+    failWithError(Configs.AbsolutelyAll, "MERGE (n:User {merge_map})", List("Parameter maps cannot be used in MERGE patterns"), params = Map("merge_map" -> Map("email" -> "test")))
   }
 
   test("should return null on all comparisons against null") {
@@ -947,7 +948,7 @@ order by a.COL1""".format(a, b))
   }
 
   test("should not mind rewriting NOT queries") {
-    val result = executeWith(createConf, " create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
+    val result = executeWith(Configs.UpdateConf, " create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
     result.toList should equal(List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
   }
 
@@ -958,10 +959,6 @@ order by a.COL1""".format(a, b))
     }
     val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x", Map.empty[String, Any])
     result.asScala should have size 2
-  }
-
-  override protected def createGraphDatabase(config: collection.Map[Setting[_], String]): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
   }
 
   override def databaseConfig(): collection.Map[Setting[_], String] = super.databaseConfig() ++ Map(

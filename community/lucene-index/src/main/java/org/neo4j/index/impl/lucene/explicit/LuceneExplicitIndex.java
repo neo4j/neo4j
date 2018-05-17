@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -52,8 +52,8 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
+import org.neo4j.kernel.impl.api.ExplicitIndexValueValidator;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.spi.explicitindex.IndexCommandFactory;
 
 import static org.neo4j.collection.primitive.Primitive.longSet;
@@ -141,7 +141,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
 
     private static void assertValidValue( Object value )
     {
-        Validators.EXPLICIT_INDEX_VALUE_VALIDATOR.validate( value );
+        ExplicitIndexValueValidator.INSTANCE.validate( value );
     }
 
     /**

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-public class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
+class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
 {
     private final int notificationThreshold;
 
     private volatile long nextTransactionIdTarget;
 
-    public CountCommittedTransactionThreshold( int notificationThreshold )
+    CountCommittedTransactionThreshold( int notificationThreshold )
     {
+        super( "tx count threshold" );
         this.notificationThreshold = notificationThreshold;
     }
 
@@ -43,14 +44,16 @@ public class CountCommittedTransactionThreshold extends AbstractCheckPointThresh
     }
 
     @Override
-    protected String description()
-    {
-        return "tx count threshold";
-    }
-
-    @Override
     public void checkPointHappened( long transactionId )
     {
         nextTransactionIdTarget = transactionId + notificationThreshold;
+    }
+
+    @Override
+    public long checkFrequencyMillis()
+    {
+        // Transaction counts can change at any time, so we need to check fairly regularly to see if a checkpoint
+        // should be triggered.
+        return DEFAULT_CHECKING_FREQUENCY_MILLIS;
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 public class HexPrinterTest
 {
     @Test
-    public void shouldPrintACoupleOfLines() throws Exception
+    public void shouldPrintACoupleOfLines()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -54,7 +54,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldPrintUserSpecifiedBytesGroupingFormat() throws Exception
+    public void shouldPrintUserSpecifiedBytesGroupingFormat()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -77,7 +77,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldNotGroupingWhenBytesPerGroupIsGreaterThanBytesPerLine() throws Exception
+    public void shouldNotGroupingWhenBytesPerGroupIsGreaterThanBytesPerLine()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -100,7 +100,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldPrintUserSpecifiedLineNumberFormat() throws Exception
+    public void shouldPrintUserSpecifiedLineNumberFormat()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -125,7 +125,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldStartFromUserSpecifiedLineNumber() throws Exception
+    public void shouldStartFromUserSpecifiedLineNumber()
     {
         // GIVEN
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -150,7 +150,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldPrintPartOfByteBuffer() throws Exception
+    public void shouldPrintPartOfByteBuffer()
     {
         ByteBuffer bytes = ByteBuffer.allocate( 1024 );
         for ( byte value = 0; value < 33; value++ )
@@ -162,7 +162,7 @@ public class HexPrinterTest
     }
 
     @Test
-    public void shouldOnlyPrintBytesWrittenToBuffer() throws Exception
+    public void shouldOnlyPrintBytesWrittenToBuffer()
     {
         // Given
         ByteBuffer bytes = ByteBuffer.allocate( 1024 );

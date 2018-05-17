@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -122,7 +121,7 @@ public class StoreUpgrader
         {
             migrateStore( storeDirectory, migrationDirectory, migrationStateFile );
         }
-        else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, storeDirectory, fileSystem, pageCache, logProvider ) )
+        else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, storeDirectory, pageCache, logProvider ) )
         {
             throw new UpgradeNotAllowedByConfigurationException();
         }
@@ -230,10 +229,6 @@ public class StoreUpgrader
         catch ( IOException | UncheckedIOException e )
         {
             throw new UnableToUpgradeException( "Failure doing migration", e );
-        }
-        catch ( Exception e )
-        {
-            throw Exceptions.launderedException( e );
         }
     }
 

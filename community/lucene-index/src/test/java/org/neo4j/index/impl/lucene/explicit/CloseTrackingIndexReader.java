@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -41,7 +41,7 @@ public class CloseTrackingIndexReader extends CompositeReader
     }
 
     @Override
-    public Fields getTermVectors( int docID ) throws IOException
+    public Fields getTermVectors( int docID )
     {
         return null;
     }
@@ -59,43 +59,43 @@ public class CloseTrackingIndexReader extends CompositeReader
     }
 
     @Override
-    public void document( int docID, StoredFieldVisitor visitor ) throws IOException
+    public void document( int docID, StoredFieldVisitor visitor )
     {
 
     }
 
     @Override
-    protected void doClose() throws IOException
+    protected void doClose()
     {
         closed = true;
     }
 
     @Override
-    public int docFreq( Term term ) throws IOException
+    public int docFreq( Term term )
     {
         return 0;
     }
 
     @Override
-    public long totalTermFreq( Term term ) throws IOException
+    public long totalTermFreq( Term term )
     {
         return 0;
     }
 
     @Override
-    public long getSumDocFreq( String field ) throws IOException
+    public long getSumDocFreq( String field )
     {
         return 0;
     }
 
     @Override
-    public int getDocCount( String field ) throws IOException
+    public int getDocCount( String field )
     {
         return 0;
     }
 
     @Override
-    public long getSumTotalTermFreq( String field ) throws IOException
+    public long getSumTotalTermFreq( String field )
     {
         return 0;
     }

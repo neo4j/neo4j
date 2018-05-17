@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -70,7 +70,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
     }
 
     @Test
-    public void shouldManageRandomTraversals() throws Exception
+    public void shouldManageRandomTraversals()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -112,8 +112,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
         }
         catch ( Throwable t )
         {
-            System.err.println( "\nFailed with random seed " + seed );
-            throw t;
+            throw new RuntimeException( "Failed with random seed " + seed, t );
         }
     }
 }

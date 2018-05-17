@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,13 +19,16 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Implementation of StringValue that wraps a `java.lang.String` and
  * delegates methods to that instance.
  */
 final class StringWrappingStringValue extends StringValue
 {
-    final String value;
+    private final String value;
 
     StringWrappingStringValue( String value )
     {
@@ -100,6 +103,12 @@ final class StringWrappingStringValue extends StringValue
     {
         StringBuilder stringBuilder = new StringBuilder( value() );
         return Values.stringValue( stringBuilder.reverse().toString() );
+    }
+
+    @Override
+    Matcher matcher( Pattern pattern )
+    {
+        return pattern.matcher( value );
     }
 
     private int ltrimIndex( String value )

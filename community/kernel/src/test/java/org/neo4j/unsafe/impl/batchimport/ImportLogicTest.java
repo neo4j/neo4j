@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,26 +22,63 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
+import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.configuration.Config.defaults;
+import static org.neo4j.kernel.impl.logging.NullLogService.getInstance;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
+import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
 
 public class ImportLogicTest
 {
     @Rule
+    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
+
+    @Rule
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldSplitUpRelationshipTypesInBatches() throws Exception
+    public void closeImporterWithoutDiagnosticState() throws IOException
+    {
+        ExecutionMonitor monitor = mock( ExecutionMonitor.class );
+        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( storage.fileSystem(), storage.pageCache(), NULL,
+                storage.directory().directory(), defaultFormat(), DEFAULT, getInstance(), EMPTY, defaults() ) )
+        {
+            //noinspection EmptyTryBlock
+            try ( ImportLogic ignored = new ImportLogic( storage.directory().directory(), storage.fileSystem(), stores, DEFAULT, getInstance(), monitor,
+                    defaultFormat(), NO_MONITOR ) )
+            {
+                // nothing to run in this import
+            }
+        }
+
+        verify( monitor ).done( anyLong(), contains( "Data statistics is not available." ) );
+    }
+
+    @Test
+    public void shouldSplitUpRelationshipTypesInBatches()
     {
         // GIVEN
         int denseNodeThreshold = 5;
@@ -56,16 +93,17 @@ public class ImportLogicTest
             cache.setCount( i, count, random.nextInt( numberOfTypes ), random.among( directions ) );
         }
         cache.countingCompleted();
-        List<Pair<Object,Long>> types = new ArrayList<>();
+        List<RelationshipTypeCount> types = new ArrayList<>();
         int numberOfRelationships = 0;
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             int count = random.nextInt( 1, 100 );
-            types.add( Pair.of( "TYPE" + i, (long) count ) );
+            types.add( new RelationshipTypeCount( i, count ) );
             numberOfRelationships += count;
         }
-        types.sort( ( t1, t2 ) -> Long.compare( t2.other(), t1.other() ) );
-        DataStatistics typeDistribution = new DataStatistics( 0, 0, types.stream().toArray( Pair[]::new ) );
+        types.sort( ( t1, t2 ) -> Long.compare( t2.getCount(), t1.getCount() ) );
+        DataStatistics typeDistribution =
+                new DataStatistics( 0, 0, types.toArray( new RelationshipTypeCount[types.size()] ) );
 
         // WHEN enough memory for all types
         {
@@ -89,6 +127,32 @@ public class ImportLogicTest
             }
             assertEquals( types.size(), startingFromType );
             assertThat( rounds, greaterThan( 1 ) );
+        }
+    }
+
+    @Test
+    public void shouldUseDataStatisticsCountsForPrintingFinalStats() throws IOException
+    {
+        // given
+        ExecutionMonitor monitor = mock( ExecutionMonitor.class );
+        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( storage.fileSystem(), storage.pageCache(), NULL,
+                storage.directory().directory(), defaultFormat(), DEFAULT, getInstance(), EMPTY, defaults() ) )
+        {
+            // when
+            RelationshipTypeCount[] relationshipTypeCounts = new RelationshipTypeCount[]
+                    {
+                            new RelationshipTypeCount( 0, 33 ),
+                            new RelationshipTypeCount( 1, 66 )
+                    };
+            DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
+            try ( ImportLogic logic = new ImportLogic( storage.directory().directory(), storage.fileSystem(), stores, DEFAULT, getInstance(), monitor,
+                    defaultFormat(), NO_MONITOR ) )
+            {
+                logic.putState( dataStatistics );
+            }
+
+            // then
+            verify( monitor ).done( anyLong(), contains( dataStatistics.toString() ) );
         }
     }
 }

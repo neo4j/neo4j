@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Aggregation is a more advanced version of Distinct, where source rows are grouped by the
@@ -33,13 +33,14 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
 case class Aggregation(source: LogicalPlan,
                        groupingExpressions: Map[String, Expression],
                        aggregationExpression: Map[String, Expression])
-                      (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with EagerLogicalPlan {
+                      (implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with EagerLogicalPlan {
 
   val lhs = Some(source)
 
   def rhs = None
 
-  val groupingKeys: Set[IdName] = groupingExpressions.keySet.map(IdName(_))
+  val groupingKeys: Set[String] = groupingExpressions.keySet
 
-  val availableSymbols: Set[IdName] = groupingKeys ++ aggregationExpression.keySet.map(IdName(_))
+  val availableSymbols: Set[String] = groupingKeys ++ aggregationExpression.keySet
 }

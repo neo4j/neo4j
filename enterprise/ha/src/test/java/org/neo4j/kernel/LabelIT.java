@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel;
 
@@ -26,8 +29,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -44,13 +46,13 @@ public class LabelIT
     protected ClusterManager.ManagedCluster cluster;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule.startCluster();
     }
 
     @Test
-    public void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell() throws Throwable
+    public void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell()
     {
         // GIVEN
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
@@ -74,14 +76,11 @@ public class LabelIT
         try ( Transaction ignore = db.beginTx() )
         {
             ThreadToStatementContextBridge bridge = threadToStatementContextBridgeFrom( db );
-            try ( Statement statement = bridge.get() )
-            {
-                return statement.readOperations().labelGetForName( label.name() );
-            }
+            return bridge.getKernelTransactionBoundToThisThread( true ).tokenRead().nodeLabel( label.name() );
         }
     }
 
-    private static void commit( TransactionContinuation txc ) throws Exception
+    private static void commit( TransactionContinuation txc )
     {
         txc.resume();
         txc.commit();
@@ -125,7 +124,7 @@ public class LabelIT
             bridge.unbindTransactionFromCurrentThread();
         }
 
-        public void resume() throws Exception
+        public void resume()
         {
             bridge.bindTransactionToCurrentThread( graphDbTx );
         }

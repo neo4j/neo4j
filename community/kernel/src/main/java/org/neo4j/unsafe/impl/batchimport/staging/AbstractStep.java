@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
@@ -48,7 +47,7 @@ public abstract class AbstractStep<T> implements Step<T>
 {
     public static final ParkStrategy PARK = new ParkStrategy.Park( IS_OS_WINDOWS ? 10_000 : 500, MICROSECONDS );
 
-    private final StageControl control;
+    protected final StageControl control;
     private volatile String name;
     @SuppressWarnings( "rawtypes" )
     protected volatile Step downstream;
@@ -148,7 +147,7 @@ public abstract class AbstractStep<T> implements Step<T>
         control.panic( cause );
         if ( rethrow )
         {
-            throw Exceptions.launderedException( cause );
+            throw new RuntimeException( cause );
         }
     }
 
@@ -156,7 +155,7 @@ public abstract class AbstractStep<T> implements Step<T>
     {
         if ( isPanic() )
         {
-            throw Exceptions.launderedException( panic );
+            throw new RuntimeException( panic );
         }
     }
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.helpers.Exceptions;
+import java.util.function.Supplier;
+
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
 /**
  * A simple {@link StageControl} for tests with multiple steps and where an error or assertion failure
@@ -51,7 +53,19 @@ public class SimpleStageControl implements StageControl
     {
         if ( panic != null )
         {
-            throw Exceptions.launderedException( panic );
+            throwIfUnchecked( panic );
+            throw new RuntimeException( panic );
         }
+    }
+
+    @Override
+    public void recycle( Object batch )
+    {
+    }
+
+    @Override
+    public <T> T reuse( Supplier<T> fallback )
+    {
+        return fallback.get();
     }
 }

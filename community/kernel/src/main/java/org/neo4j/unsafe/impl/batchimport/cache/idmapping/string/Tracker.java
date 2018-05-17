@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,8 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import java.util.function.LongFunction;
+
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -30,7 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Group;
  * {@link EncodingIdMapper} is an index where arbitrary ids, be it {@link String} or {@code long} or whatever
  * can be added and mapped to an internal (node) {@code long} id. The order in which ids are added can be
  * any order and so in the end when all ids have been added the index goes through a
- * {@link IdMapper#prepare(InputIterable, Collector, ProgressListener) prepare phase} where these ids are sorted
+ * {@link IdMapper#prepare(LongFunction, Collector, ProgressListener) prepare phase} where these ids are sorted
  * so that {@link IdMapper#get(Object, Group)} can execute efficiently later on.
  * <p>
  * In that sorting the ids aren't moved, but instead a {@link Tracker} created where these moves are recorded
@@ -62,6 +63,10 @@ public interface Tracker extends MemoryStatsVisitor.Visitable, AutoCloseable
      * @param value value to set at that index.
      */
     void set( long index, long value );
+
+    void markAsDuplicate( long index );
+
+    boolean isMarkedAsDuplicate( long index );
 
     @Override
     void close();

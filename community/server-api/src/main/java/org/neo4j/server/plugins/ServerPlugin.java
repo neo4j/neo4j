@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -167,7 +167,7 @@ public abstract class ServerPlugin
      */
     protected Collection<PluginPoint> getDefaultExtensionPoints( PluginPointFactory pluginPointFactory )
     {
-        List<PluginPoint> result = new ArrayList<PluginPoint>();
+        List<PluginPoint> result = new ArrayList<>();
         for ( Method method : getClass().getMethods() )
         {
             PluginTarget target = method.getAnnotation( PluginTarget.class );

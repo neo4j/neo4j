@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,15 +19,29 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import java.util.stream.LongStream;
+
+/**
+ * The LogPruneStrategy examines the current population of transaction logs, and decides which ones can be deleted,
+ * up to some version.
+ * <p>
+ * Implementations of this class must be thread-safe, since they might experience multiple concurrent calls to
+ * {@link #findLogVersionsToDelete(long)} from different threads.
+ */
 @FunctionalInterface
 public interface LogPruneStrategy
 {
-    interface Monitor
-    {
-        void logsPruned( long upToVersion, long fromVersion, long toVersion );
-
-        void noLogsPruned( long upToVersion );
-    }
-
-    void prune( long upToVersion, Monitor monitor );
+    /**
+     * Produce a stream of log versions which can be deleted, up to and <em>excluding</em> the given
+     * {@code upToLogVersion}.
+     * <p>
+     * <strong>Note:</strong> It is important to delete the log files in the order specified by the stream,
+     * which must be from the oldest version towards the newest. This way, no gaps are left behind if there is a crash
+     * in the middle of log pruning.
+     *
+     * @param upToLogVersion Never suggest deleting log files at or greater than this version.
+     * @return The, possibly empty, stream of log versions whose files can be deleted, according to this log pruning
+     * strategy.
+     */
+    LongStream findLogVersionsToDelete( long upToLogVersion );
 }

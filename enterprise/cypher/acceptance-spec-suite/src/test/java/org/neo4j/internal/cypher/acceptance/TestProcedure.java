@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance;
 
@@ -23,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -61,15 +65,22 @@ public class TestProcedure
 
     @Procedure( "org.neo4j.aNodeWithLabel" )
     @Description( "org.neo4j.aNodeWithLabel" )
-    public Stream<NodeResult> aNodeWithLabel( @Name( "label" ) String label ) throws Exception
+    public Stream<NodeResult> aNodeWithLabel( @Name( "label" ) String label )
     {
         Result result = db.execute( "MATCH (n:" + label + ") RETURN n LIMIT 1" );
         return result.stream().map( row -> new NodeResult( (Node)row.get( "n" ) ) );
     }
 
+    @Procedure( "org.neo4j.stream123" )
+    @Description( "org.neo4j.stream123" )
+    public Stream<CountResult> stream123()
+    {
+        return IntStream.of( 1, 2, 3 ).mapToObj( i -> new CountResult( i, "count" + i ) );
+    }
+
     @Procedure( "org.neo4j.recurseN" )
     @Description( "org.neo4j.recurseN" )
-    public Stream<NodeResult> recurseN( @Name( "n" ) Long n ) throws Exception
+    public Stream<NodeResult> recurseN( @Name( "n" ) Long n )
     {
         Result result;
         if ( n == 0 )
@@ -85,7 +96,7 @@ public class TestProcedure
 
     @Procedure( "org.neo4j.findNodesWithLabel" )
     @Description( "org.neo4j.findNodesWithLabel" )
-    public Stream<NodeResult> findNodesWithLabel( @Name( "label" ) String label ) throws Exception
+    public Stream<NodeResult> findNodesWithLabel( @Name( "label" ) String label )
     {
         ResourceIterator<Node> nodes = db.findNodes( Label.label( label ) );
         return nodes.stream().map( NodeResult::new );
@@ -93,7 +104,7 @@ public class TestProcedure
 
     @Procedure( "org.neo4j.expandNode" )
     @Description( "org.neo4j.expandNode" )
-    public Stream<NodeResult> expandNode( @Name( "nodeId" ) Long nodeId ) throws Exception
+    public Stream<NodeResult> expandNode( @Name( "nodeId" ) Long nodeId )
     {
         Node node = db.getNodeById( nodeId );
         List<Node> result = new ArrayList<>();
@@ -108,7 +119,7 @@ public class TestProcedure
     @Procedure( name = "org.neo4j.createNodeWithLoop", mode = WRITE )
     @Description( "org.neo4j.createNodeWithLoop" )
     public Stream<NodeResult> createNodeWithLoop(
-            @Name( "nodeLabel" ) String label, @Name( "relType" ) String relType ) throws Exception
+            @Name( "nodeLabel" ) String label, @Name( "relType" ) String relType )
     {
         Node node = db.createNode( Label.label( label ) );
         node.createRelationshipTo( node, RelationshipType.withName( relType ) );
@@ -121,7 +132,7 @@ public class TestProcedure
             @Name( "startNode" ) Node start,
             @Name( "endNode" ) Node end,
             @Name( "relType" ) String relType,
-            @Name( "weightProperty" ) String weightProperty ) throws Exception
+            @Name( "weightProperty" ) String weightProperty )
     {
         PathFinder<WeightedPath> pathFinder =
                 GraphAlgoFactory.dijkstra(
@@ -143,9 +154,21 @@ public class TestProcedure
         }
     }
 
+    public static class CountResult
+    {
+        public long count;
+        public String name;
+
+        CountResult( long count, String name )
+        {
+            this.count = count;
+            this.name = name;
+        }
+    }
+
     @Procedure( "org.neo4j.movieTraversal" )
     @Description( "org.neo4j.movieTraversal" )
-    public Stream<PathResult> movieTraversal( @Name( "start" ) Node start ) throws Exception
+    public Stream<PathResult> movieTraversal( @Name( "start" ) Node start )
     {
         TraversalDescription td =
                 db.traversalDescription()

@@ -1,36 +1,39 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
 import org.neo4j.cypher.internal.util.v3_4.AssertionUtils.ifAssertionsEnabled
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
+import org.neo4j.cypher.internal.util.v3_4.attribution.SameId
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.{InternalException, Rewriter, topDown}
 import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, _}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId, NestedPlanExpression, Projection, VarExpand, _}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NestedPlanExpression, Projection, VarExpand, _}
 import org.neo4j.cypher.internal.v3_4.{expressions, functions => frontendFunctions}
-
-import scala.collection.mutable
 
 /**
   * This class rewrites logical plans so they use slotted variable access instead of using key-based. It will also
@@ -47,23 +50,21 @@ class SlottedRewriter(tokenContext: TokenContext) {
     case _ => false
   }
 
-  def apply(in: LogicalPlan, slotConfigurations: Map[LogicalPlanId, SlotConfiguration]): LogicalPlan = {
-    val newSlotConfigurations = mutable.HashMap[LogicalPlan, SlotConfiguration]()
+  def apply(in: LogicalPlan, slotConfigurations: SlotConfigurations): LogicalPlan = {
     val rewritePlanWithSlots = topDown(Rewriter.lift {
       /*
       Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
       would just write to the row the data that is already in it, we can just skip them
        */
       case oldPlan@Projection(_, expressions) =>
-        val slotConfiguration = slotConfigurations(oldPlan.assignedId)
-        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations)
+        val slotConfiguration = slotConfigurations(oldPlan.id)
+        val rewriter = rewriteCreator(slotConfiguration, oldPlan.selfThis, slotConfigurations)
 
         val newExpressions = expressions collect {
           case (column, expression) => column -> expression.endoRewrite(rewriter)
         }
 
-        val newPlan = oldPlan.copy(expressions = newExpressions)(oldPlan.solved)
-        newSlotConfigurations += (newPlan -> slotConfiguration)
+        val newPlan = oldPlan.copy(expressions = newExpressions)(SameId(oldPlan.id))
 
         newPlan
 
@@ -72,7 +73,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
         The node and edge predicates will be set and evaluated on the incoming rows, not on the outgoing ones.
         We need to use the incoming slot configuration for predicate rewriting
          */
-        val incomingSlotConfiguration = slotConfigurations(oldPlan.source.assignedId)
+        val incomingSlotConfiguration = slotConfigurations(oldPlan.source.id)
         val rewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations)
 
         val newNodePredicate = oldPlan.nodePredicate.endoRewrite(rewriter)
@@ -82,27 +83,26 @@ class SlottedRewriter(tokenContext: TokenContext) {
           nodePredicate = newNodePredicate,
           edgePredicate = newEdgePredicate,
           legacyPredicates = Seq.empty // If we use the legacy predicates, we are not on the slotted runtime
-        )(oldPlan.solved)
+        )(SameId(oldPlan.id))
 
         /*
         Since the logical plan SlotConfiguration is about the output rows we still need to remember the
         outgoing slot configuration here
          */
-        val outgoingSlotConfiguration = slotConfigurations(oldPlan.assignedId)
-        newSlotConfigurations += (newPlan -> outgoingSlotConfiguration)
+        val outgoingSlotConfiguration = slotConfigurations(oldPlan.id)
 
         newPlan
 
       case plan@ValueHashJoin(lhs, rhs, e@Equals(lhsExp, rhsExp)) =>
-        val lhsRewriter = rewriteCreator(slotConfigurations(lhs.assignedId), plan, slotConfigurations)
-        val rhsRewriter = rewriteCreator(slotConfigurations(rhs.assignedId), plan, slotConfigurations)
+        val lhsRewriter = rewriteCreator(slotConfigurations(lhs.id), plan.selfThis, slotConfigurations)
+        val rhsRewriter = rewriteCreator(slotConfigurations(rhs.id), plan.selfThis, slotConfigurations)
         val lhsExpAfterRewrite = lhsExp.endoRewrite(lhsRewriter)
         val rhsExpAfterRewrite = rhsExp.endoRewrite(rhsRewriter)
-        plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(plan.solved)
+        plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(SameId(plan.id))
 
       case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
         val leftPlan = oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way"))
-        val incomingSlotConfiguration = slotConfigurations(leftPlan.assignedId)
+        val incomingSlotConfiguration = slotConfigurations(leftPlan.id)
         val rewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations)
         val newPlan = oldPlan.endoRewrite(rewriter)
 
@@ -110,15 +110,13 @@ class SlottedRewriter(tokenContext: TokenContext) {
         Since the logical plan SlotConfiguration is about the output rows we still need to remember the
         outgoing slot configuration here
          */
-        val outgoingSlotConfiguration = slotConfigurations(oldPlan.assignedId)
-        newSlotConfigurations += (newPlan -> outgoingSlotConfiguration)
+        val outgoingSlotConfiguration = slotConfigurations(oldPlan.id)
         newPlan
 
       case oldPlan: LogicalPlan =>
-        val slotConfiguration = slotConfigurations(oldPlan.assignedId)
+        val slotConfiguration = slotConfigurations(oldPlan.id)
         val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations)
         val newPlan = oldPlan.endoRewrite(rewriter)
-        newSlotConfigurations += (newPlan -> slotConfiguration)
 
         newPlan
     })
@@ -134,14 +132,14 @@ class SlottedRewriter(tokenContext: TokenContext) {
     resultPlan
   }
 
-  private def rewriteCreator(slotConfiguration: SlotConfiguration, thisPlan: LogicalPlan, slotConfigurations: Map[LogicalPlanId, SlotConfiguration]): Rewriter = {
+  private def rewriteCreator(slotConfiguration: SlotConfiguration, thisPlan: LogicalPlan, slotConfigurations: SlotConfigurations): Rewriter = {
     val innerRewriter = Rewriter.lift {
       case e: NestedPlanExpression =>
         // Rewrite expressions within the nested plan
         val rewrittenPlan = this.apply(e.plan, slotConfigurations)
-        val slotConfiguration = slotConfigurations.getOrElse(e.plan.assignedId,
-          throw new InternalException(s"Missing slot configuration for plan with ${e.plan.assignedId}"))
-        val rewriter = rewriteCreator(slotConfiguration, thisPlan, slotConfigurations)
+        val innerSlotConf = slotConfigurations.getOrElse(e.plan.id,
+          throw new InternalException(s"Missing slot configuration for plan with ${e.plan.id}"))
+        val rewriter = rewriteCreator(innerSlotConf, thisPlan, slotConfigurations)
         val rewrittenProjection = e.projection.endoRewrite(rewriter)
         e.copy(plan = rewrittenPlan, projection = rewrittenProjection)(e.position)
 
@@ -331,17 +329,15 @@ class SlottedRewriter(tokenContext: TokenContext) {
       propExpression
   }
 
-  private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = { lp =>
-    lp match {
-      case _: LogicalPlan =>
-        lp != thisPlan
+  private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = {
+    case lp@(_: LogicalPlan) =>
+      lp.id != thisPlan.id
 
-      // Do not traverse into slotted runtime variables or properties
-      case _: RuntimeVariable | _: RuntimeProperty =>
-        true
+    // Do not traverse into slotted runtime variables or properties
+    case _: RuntimeVariable | _: RuntimeProperty =>
+      true
 
-      case _ =>
-        false
-    }
+    case _ =>
+      false
   }
 }

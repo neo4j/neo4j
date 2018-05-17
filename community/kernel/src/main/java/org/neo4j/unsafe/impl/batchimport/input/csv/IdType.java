@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,16 +22,13 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
 /**
  * Defines different types that input ids can come in. Enum names in here are user facing.
  *
- * @see InputNode#id()
  * @see Header.Entry#extractor()
  */
 public enum IdType
@@ -48,15 +45,9 @@ public enum IdType
         }
 
         @Override
-        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory, Groups groups )
         {
-            return IdMappers.strings( numberArrayFactory );
-        }
-
-        @Override
-        public IdGenerator idGenerator()
-        {
-            return IdGenerators.startingFromTheBeginning();
+            return IdMappers.strings( numberArrayFactory, groups );
         }
     },
 
@@ -73,15 +64,9 @@ public enum IdType
         }
 
         @Override
-        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory, Groups groups )
         {
-            return IdMappers.longs( numberArrayFactory );
-        }
-
-        @Override
-        public IdGenerator idGenerator()
-        {
-            return IdGenerators.startingFromTheBeginning();
+            return IdMappers.longs( numberArrayFactory, groups );
         }
     },
 
@@ -98,15 +83,9 @@ public enum IdType
         }
 
         @Override
-        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory, Groups groups )
         {
             return IdMappers.actual();
-        }
-
-        @Override
-        public IdGenerator idGenerator()
-        {
-            return IdGenerators.fromInput();
         }
     };
 
@@ -117,9 +96,7 @@ public enum IdType
         this.idsAreExternal = idsAreExternal;
     }
 
-    public abstract IdMapper idMapper( NumberArrayFactory numberArrayFactory );
-
-    public abstract IdGenerator idGenerator();
+    public abstract IdMapper idMapper( NumberArrayFactory numberArrayFactory, Groups groups );
 
     public boolean idsAreExternal()
     {

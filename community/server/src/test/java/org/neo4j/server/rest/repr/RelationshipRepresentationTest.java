@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,7 +36,7 @@ import static org.neo4j.test.mockito.mock.Properties.properties;
 public class RelationshipRepresentationTest
 {
     @Test
-    public void shouldHaveSelfLink() throws BadInputException
+    public void shouldHaveSelfLink()
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN, relrep( 1234 ).selfUri() );
     }
@@ -48,25 +48,25 @@ public class RelationshipRepresentationTest
     }
 
     @Test
-    public void shouldHaveStartNodeLink() throws BadInputException
+    public void shouldHaveStartNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, relrep( 1234 ).startNodeUri() );
     }
 
     @Test
-    public void shouldHaveEndNodeLink() throws BadInputException
+    public void shouldHaveEndNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, relrep( 1234 ).endNodeUri() );
     }
 
     @Test
-    public void shouldHavePropertiesLink() throws BadInputException
+    public void shouldHavePropertiesLink()
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties", relrep( 1234 ).propertiesUri() );
     }
 
     @Test
-    public void shouldHavePropertyLinkTemplate() throws BadInputException
+    public void shouldHavePropertyLinkTemplate()
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", relrep( 1234 ).propertyUriTemplate() );
     }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -151,13 +151,13 @@ public class SimpleIndexReaderTest
 
     private SimpleIndexReader getNonUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, IndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
+        return new SimpleIndexReader( partitionSearcher, SchemaIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
                 taskCoordinator );
     }
 
     private SimpleIndexReader getUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, IndexDescriptorFactory.uniqueForLabel( 0, 0 ),
+        return new SimpleIndexReader( partitionSearcher, SchemaIndexDescriptorFactory.uniqueForLabel( 0, 0 ),
                 samplingConfig, taskCoordinator );
     }
 }

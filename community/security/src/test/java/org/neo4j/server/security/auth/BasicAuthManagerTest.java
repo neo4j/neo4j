@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,21 +19,20 @@
  */
 package org.neo4j.server.security.auth;
 
-import junit.framework.TestCase;
 import org.hamcrest.core.IsEqual;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.PasswordPolicy;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.containsString;
@@ -176,7 +175,7 @@ public class BasicAuthManagerTest extends InitialUserTest
         {
             // When
             manager.deleteUser( "nonExistentUser" );
-            TestCase.fail("User 'nonExistentUser' should no longer exist, expected exception.");
+            fail("User 'nonExistentUser' should no longer exist, expected exception.");
         }
         catch ( InvalidArgumentsException e )
         {
@@ -259,7 +258,7 @@ public class BasicAuthManagerTest extends InitialUserTest
     private void assertLoginGivesResult( String username, String password, AuthenticationResult expectedResult )
             throws InvalidAuthTokenException
     {
-        SecurityContext securityContext = manager.login( authToken( username, password ) );
+        LoginContext securityContext = manager.login( authToken( username, password ) );
         assertThat( securityContext.subject().getAuthenticationResult(), equalTo( expectedResult ) );
     }
 

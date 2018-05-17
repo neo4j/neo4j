@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,9 +30,9 @@ import static org.neo4j.kernel.impl.traversal.TraversalTestBase.assertContains;
 public class TestCopyOnWriteHashMap
 {
     @Test
-    public void keySetUnaffectedByChanges() throws Exception
+    public void keySetUnaffectedByChanges()
     {
-        Map<Integer, String> map = new CopyOnWriteHashMap<Integer, String>();
+        Map<Integer, String> map = new CopyOnWriteHashMap<>();
         map.put( 0, "0" );
         map.put( 1, "1" );
         map.put( 2, "2" );
@@ -45,9 +45,9 @@ public class TestCopyOnWriteHashMap
     }
 
     @Test
-    public void entrySetUnaffectedByChanges() throws Exception
+    public void entrySetUnaffectedByChanges()
     {
-        Map<Integer, String> map = new CopyOnWriteHashMap<Integer, String>();
+        Map<Integer, String> map = new CopyOnWriteHashMap<>();
         map.put( 0, "0" );
         map.put( 1, "1" );
         map.put( 2, "2" );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,6 +38,8 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 
 public class DiffSetsTest
 {
+    private static final Predicate<Long> ODD_FILTER = item -> item % 2 == 1L;
+
     @Test
     public void testAdd()
     {
@@ -147,7 +149,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testReturnSourceFromApplyWithEmptyDiffSets() throws Exception
+    public void testReturnSourceFromApplyWithEmptyDiffSets()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets();
@@ -161,7 +163,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testAppendAddedToSourceInApply() throws Exception
+    public void testAppendAddedToSourceInApply()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
@@ -177,7 +179,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testFilterRemovedFromSourceInApply() throws Exception
+    public void testFilterRemovedFromSourceInApply()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
@@ -192,7 +194,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testFilterAddedFromSourceInApply() throws Exception
+    public void testFilterAddedFromSourceInApply()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
@@ -209,7 +211,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void replaceMultipleTimesWithAnInitialValue() throws Exception
+    public void replaceMultipleTimesWithAnInitialValue()
     {
         // GIVEN
         // an initial value, meaning an added value in "this transaction"
@@ -228,7 +230,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void replaceMultipleTimesWithNoInitialValue() throws Exception
+    public void replaceMultipleTimesWithNoInitialValue()
     {
         // GIVEN
         // no initial value, meaning a value existing before "this transaction"
@@ -244,6 +246,4 @@ public class DiffSetsTest
         assertEquals( asSet( 2 ), diff.getAdded() );
         assertEquals( asSet( 0 ), diff.getRemoved() );
     }
-
-    private static final Predicate<Long> ODD_FILTER = item -> item % 2 == 1L;
 }

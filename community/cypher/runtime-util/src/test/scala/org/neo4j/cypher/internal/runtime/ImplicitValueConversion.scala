@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -76,11 +76,11 @@ object ImplicitValueConversion {
 
   implicit def toNodeValue(n: Node): NodeValue = ValueUtils.fromNodeProxy(n)
 
-  implicit def toEdgeValue(r: Relationship): EdgeValue = ValueUtils.fromRelationshipProxy(r)
+  implicit def toRelationshipValue(r: Relationship): RelationshipValue = ValueUtils.fromRelationshipProxy(r)
 
-  implicit def toPathValue(p: Path): PathValue = ValueUtils.asPathValue(p)
+  implicit def toPathValue(p: Path): PathValue = ValueUtils.fromPath(p)
 
-  implicit def toPathValue(p: PathImpl): PathValue = ValueUtils.asPathValue(p)
+  implicit def toPathValue(p: PathImpl): PathValue = ValueUtils.fromPath(p)
 
   implicit def toListValue(t: TraversableOnce[_]): ListValue =
     ValueUtils.asListValue(t.toIterable.asJava)

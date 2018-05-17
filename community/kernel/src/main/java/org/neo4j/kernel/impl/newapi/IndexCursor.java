@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
-abstract class IndexCursor
+abstract class IndexCursor<T extends IndexProgressor>
 {
-    private IndexProgressor progressor;
+    private T progressor;
 
-    final void initialize( IndexProgressor progressor )
+    final void initialize( T progressor )
     {
         if ( this.progressor != null )
         {
@@ -34,14 +34,9 @@ abstract class IndexCursor
         this.progressor = progressor;
     }
 
-    public final boolean next()
+    final boolean innerNext()
     {
         return progressor != null && progressor.next();
-    }
-
-    public final boolean shouldRetry()
-    {
-        return false;
     }
 
     void close()

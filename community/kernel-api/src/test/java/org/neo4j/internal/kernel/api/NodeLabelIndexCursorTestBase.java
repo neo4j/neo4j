@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,102 +23,120 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
-import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodeCount;
+import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodes;
 
-public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSupport>
-        extends KernelAPIReadTestBase<G>
+public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestSupport>
+        extends KernelAPIWriteTestBase<G>
 {
-    @Override
-    void createTestGraph( GraphDatabaseService graphDb )
-    {
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            graphDb.createNode( label( "One" ), label( "First" ) );
-            graphDb.createNode( label( "Two" ), label( "First" ) );
-            graphDb.createNode( label( "Three" ), label( "First" ) );
-            graphDb.createNode( label( "Two" ) );
-            graphDb.createNode( label( "Three" ) );
-            graphDb.createNode( label( "Three" ) );
-
-            tx.success();
-        }
-    }
+    private int labelOne = 1;
+    private int labelTwo = 2;
+    private int labelThree = 3;
+    private int labelFirst = 4;
 
     @Test
     public void shouldFindNodesByLabel() throws Exception
     {
-        // given
-        int one = token.nodeLabel( "One" );
-        int two = token.nodeLabel( "Two" );
-        int three = token.nodeLabel( "Three" );
-        int first = token.nodeLabel( "First" );
-        try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        // GIVEN
+        long toDelete;
+        try ( Transaction tx = session.beginTransaction() )
         {
-            // when
-            read.nodeLabelScan( one, cursor );
+            createNode( tx.dataWrite(), labelOne, labelFirst );
+            createNode( tx.dataWrite(), labelTwo, labelFirst );
+            createNode( tx.dataWrite(), labelThree, labelFirst );
+            toDelete = createNode( tx.dataWrite(), labelOne );
+            createNode( tx.dataWrite(), labelTwo );
+            createNode( tx.dataWrite(), labelThree );
+            createNode( tx.dataWrite(), labelThree );
+            tx.success();
+        }
 
-            // then
-            assertNodeCount( cursor, 1, uniqueIds );
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.dataWrite().nodeDelete( toDelete );
+            tx.success();
+        }
 
-            // when
-            read.nodeLabelScan( two, cursor );
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Read read = tx.dataRead();
 
-            // then
-            assertNodeCount( cursor, 2, uniqueIds );
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor();
+                  PrimitiveLongSet uniqueIds = Primitive.longSet() )
+            {
+                // WHEN
+                read.nodeLabelScan( labelOne, cursor );
 
-            // when
-            read.nodeLabelScan( three, cursor );
+                // THEN
+                assertNodeCount( cursor, 1, uniqueIds );
 
-            // then
-            assertNodeCount( cursor, 3, uniqueIds );
+                // WHEN
+                read.nodeLabelScan( labelTwo, cursor );
 
-            // when
-            uniqueIds.clear();
-            read.nodeLabelScan( first, cursor );
+                // THEN
+                assertNodeCount( cursor, 2, uniqueIds );
 
-            // then
-            assertNodeCount( cursor, 3, uniqueIds );
+                // WHEN
+                read.nodeLabelScan( labelThree, cursor );
+
+                // THEN
+                assertNodeCount( cursor, 3, uniqueIds );
+
+                // WHEN
+                uniqueIds.clear();
+                read.nodeLabelScan( labelFirst, cursor );
+
+                // THEN
+                assertNodeCount( cursor, 3, uniqueIds );
+            }
         }
     }
 
     @Test
-    public void shouldFindNodesByDisjunction() throws Exception
+    public void shouldFindNodesByLabelInTx() throws Exception
     {
-        // given
-        int first = token.nodeLabel( "First" );
-        int two = token.nodeLabel( "Two" );
-        /// find nodes with the First Two labels...
-        try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
-        {
-            // when
-            read.nodeLabelUnionScan( cursor, first, two );
+        long inStore;
+        long deletedInTx;
+        long createdInTx;
 
-            // then
-            assertNodeCount( cursor, 4, uniqueIds );
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            inStore = createNode( tx.dataWrite(), labelOne );
+            createNode( tx.dataWrite(), labelTwo );
+            deletedInTx = createNode( tx.dataWrite(), labelOne );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.dataWrite().nodeDelete( deletedInTx );
+            createdInTx = createNode( tx.dataWrite(), labelOne );
+
+            createNode( tx.dataWrite(), labelTwo );
+
+            Read read = tx.dataRead();
+
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor();
+                  PrimitiveLongSet uniqueIds = Primitive.longSet() )
+            {
+                // when
+                read.nodeLabelScan( labelOne, cursor );
+
+                // then
+                assertNodes( cursor, uniqueIds, inStore, createdInTx );
+            }
         }
     }
 
-    @Test
-    public void shouldFindNodesByConjunction() throws Exception
+    private long createNode( Write write, int... labels ) throws KernelException
     {
-        // given
-        int first = token.nodeLabel( "First" );
-        int two = token.nodeLabel( "Two" );
-        // find the First node with label Two...
-        try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        long nodeId = write.nodeCreate();
+        for ( int label : labels )
         {
-            // when
-            read.nodeLabelIntersectionScan( cursor, first, two );
-
-            // then
-            assertNodeCount( cursor, 1, uniqueIds );
+            write.nodeAddLabel( nodeId, label );
         }
+        return nodeId;
     }
 }

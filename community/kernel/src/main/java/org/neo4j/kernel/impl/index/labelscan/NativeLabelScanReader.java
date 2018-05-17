@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,6 +32,7 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**
@@ -106,6 +107,23 @@ class NativeLabelScanReader implements LabelScanReader
     {
         List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( labelIds );
         return new CompositeLabelScanValueIterator( iterators, true );
+    }
+
+    @Override
+    public void nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId )
+    {
+        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
+        try
+        {
+            cursor = seekerForLabel( labelId );
+            openCursors.add( cursor );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+
+        client.scan( new LabelScanValueIndexProgressor( cursor, openCursors, client ), false, labelId );
     }
 
     private List<PrimitiveLongResourceIterator> iteratorsForLabels( int[] labelIds )

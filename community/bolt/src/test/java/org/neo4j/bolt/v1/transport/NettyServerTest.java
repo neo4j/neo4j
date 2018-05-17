@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,6 +35,7 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.logging.NullLog;
 
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
@@ -59,7 +60,7 @@ public class NettyServerTest
             Map<BoltConnector,NettyServer.ProtocolInitializer> initializersMap =
                     genericMap( new BoltConnector( "test" ), protocolOnAddress( address ) );
             new NettyServer( new NamedThreadFactory( "mythreads" ), initializersMap,
-                    new ConnectorPortRegister() ).start();
+                             new ConnectorPortRegister(), NullLog.getInstance() ).start();
 
         }
     }
@@ -74,7 +75,7 @@ public class NettyServerTest
                 return new ChannelInitializer<SocketChannel>()
                 {
                     @Override
-                    public void initChannel( SocketChannel ch ) throws Exception
+                    public void initChannel( SocketChannel ch )
                     {
                     }
                 };

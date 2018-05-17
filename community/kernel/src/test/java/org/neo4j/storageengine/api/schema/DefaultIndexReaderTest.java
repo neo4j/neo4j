@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -51,7 +51,7 @@ public class DefaultIndexReaderTest
 
     private IndexReader stubIndexReader()
     {
-        return new IndexReader()
+        return new AbstractIndexReader( null )
         {
             @Override
             public long countIndexedNodes( long nodeId, Value... propertyValues )
@@ -66,13 +66,13 @@ public class DefaultIndexReaderTest
             }
 
             @Override
-            public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+            public PrimitiveLongResourceIterator query( IndexQuery... predicates )
             {
                 return null;
             }
 
             @Override
-            public boolean hasFullNumberPrecision( IndexQuery... predicates )
+            public boolean hasFullValuePrecision( IndexQuery... predicates )
             {
                 return false;
             }

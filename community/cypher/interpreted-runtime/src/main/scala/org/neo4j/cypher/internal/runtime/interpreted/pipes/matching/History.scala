@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExecutionContextFactory
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
 
 import scala.collection.Set
 
@@ -52,30 +53,30 @@ abstract class History {
 
 }
 
-class InitialHistory(source: ExecutionContext, alreadySeen: Seq[EdgeValue]) extends History {
+class InitialHistory(source: ExecutionContext, alreadySeen: Seq[RelationshipValue], exFactory: ExecutionContextFactory) extends History {
 
   def hasSeen(p: Any) = p match {
-    case r: EdgeValue => alreadySeen.contains(r)
+    case r: RelationshipValue => alreadySeen.contains(r)
     case _ => false
   }
 
   def contains(p: MatchingPair) = false
 
-  def add(pair: MatchingPair) = new AddedHistory(this, pair)
+  def add(pair: MatchingPair) = new AddedHistory(this, pair, exFactory)
 
   val toMap = source
 }
 
-class AddedHistory(val parent: History, val pair: MatchingPair) extends History {
+class AddedHistory(val parent: History, val pair: MatchingPair, exFactory: ExecutionContextFactory) extends History {
 
   def hasSeen(p: Any) = pair.matches(p) || parent.hasSeen(p)
 
   def contains(p: MatchingPair) = pair == p || parent.contains(p)
 
-  def add(pair: MatchingPair) = if (contains(pair)) this else new AddedHistory(this, pair)
+  def add(pair: MatchingPair) = if (contains(pair)) this else new AddedHistory(this, pair, exFactory)
 
   lazy val toMap = {
-    parent.toMap.newWith(toIndexedSeq(pair))
+    exFactory.copyWith(parent.toMap, toIndexedSeq(pair))
   }
 
   def toIndexedSeq(p: MatchingPair): Seq[(String, AnyValue)] = {

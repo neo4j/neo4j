@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,10 +43,8 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.util.Arrays.asList;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
 public class CountsStoreRecoveryTest
@@ -84,7 +82,7 @@ public class CountsStoreRecoveryTest
         assertEquals( 3, number.get() );
     }
 
-    private void flushNeoStoreOnly() throws Exception
+    private void flushNeoStoreOnly()
     {
         NeoStores neoStores = ((GraphDatabaseAPI) db).getDependencyResolver()
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
@@ -99,7 +97,6 @@ public class CountsStoreRecoveryTest
                                       .getCounts();
     }
 
-    @SuppressWarnings( "deprecated" )
     private void checkPoint() throws IOException
     {
         ((GraphDatabaseAPI) db).getDependencyResolver()
@@ -111,7 +108,7 @@ public class CountsStoreRecoveryTest
     private void crashAndRestart() throws Exception
     {
         final GraphDatabaseService db1 = db;
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( () -> db1.shutdown() );
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( db1::shutdown );
         db = databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
     }
 

@@ -1,25 +1,27 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -31,15 +33,13 @@ import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 
-class StoreResource implements Closeable
+class StoreResource
 {
     private final File file;
     private final String path;
     private final int recordSize;
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
-
-    private ReadableByteChannel channel;
 
     StoreResource( File file, String relativePath, int recordSize, PageCache pageCache, FileSystemAbstraction fs )
     {
@@ -52,29 +52,19 @@ class StoreResource implements Closeable
 
     ReadableByteChannel open() throws IOException
     {
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
-        if ( existingMapping.isPresent() )
+        if ( !pageCache.fileSystemSupportsFileOperations() )
         {
-            try ( PagedFile pagedFile = existingMapping.get() )
+            Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
+            if ( existingMapping.isPresent() )
             {
-                channel = pagedFile.openReadableByteChannel();
+                try ( PagedFile pagedFile = existingMapping.get() )
+                {
+                    return pagedFile.openReadableByteChannel();
+                }
             }
         }
-        else
-        {
-            channel = fs.open( file, OpenMode.READ );
-        }
-        return channel;
-    }
 
-    @Override
-    public void close() throws IOException
-    {
-        if ( channel != null )
-        {
-            channel.close();
-            channel = null;
-        }
+        return fs.open( file, OpenMode.READ );
     }
 
     public String path()
@@ -111,6 +101,6 @@ class StoreResource implements Closeable
     @Override
     public String toString()
     {
-        return "StoreResource{" + "path='" + path + '\'' + ", channel=" + channel + ", recordSize=" + recordSize + '}';
+        return "StoreResource{" + "path='" + path + '\'' + ", recordSize=" + recordSize + '}';
     }
 }

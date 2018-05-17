@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -45,7 +45,7 @@ public class Pwd extends TransactionProvidingApp
 
     @Override
     protected Continuation exec( AppCommandParser parser, Session session,
-        Output out ) throws ShellException, RemoteException
+        Output out ) throws RemoteException
     {
         String current = null;
         try
@@ -67,7 +67,6 @@ public class Pwd extends TransactionProvidingApp
     }
 
     private String stringifyPath( List<TypedId> pathIds, Session session )
-        throws ShellException
     {
         if ( pathIds.isEmpty() )
         {

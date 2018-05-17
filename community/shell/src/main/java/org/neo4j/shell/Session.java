@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,8 +30,8 @@ import java.util.Set;
 public class Session
 {
     private final Serializable id;
-    private final Map<String, Object> properties = new HashMap<String, Object>();
-    private final Map<String, String> aliases = new HashMap<String, String>();
+    private final Map<String, Object> properties = new HashMap<>();
+    private final Map<String, String> aliases = new HashMap<>();
     private final InterruptSignalHandler signalHandler = InterruptSignalHandler.getHandler();
 
     public Session( Serializable id )

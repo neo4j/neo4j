@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compiler.v3_4.{CacheCheckResult, FineToReuse}
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CacheCheckResult
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, ProcedurePlannerName}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.runtime.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.virtual.MapValue
 
 /**
@@ -58,7 +58,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
     }
   }
 
-  private def description = PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, NoChildren,
+  private def description = PlanDescriptionImpl(Id.INVALID_ID, name, NoChildren,
                                                 Seq(Planner(plannerUsed.toTextOutput),
                                                     PlannerImpl(plannerUsed.name),
                                                     PlannerVersion(plannerUsed.version),
@@ -70,7 +70,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
 
   override def runtimeUsed: RuntimeName = ProcedureRuntimeName
 
-  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = CacheCheckResult.empty
+  override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = FineToReuse // TODO: Should this really always be reused?
 
   override def plannerUsed: PlannerName = ProcedurePlannerName
 

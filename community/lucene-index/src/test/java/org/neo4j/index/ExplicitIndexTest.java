@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -283,7 +283,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void relationshipIndexShouldBeAbleToReindexInSameTransaction() throws Exception
+    public void relationshipIndexShouldBeAbleToReindexInSameTransaction()
     {
         // Create relationship and index
         Node startNode;
@@ -320,7 +320,7 @@ public class ExplicitIndexTest
     }
 
     @Test
-    public void getSingleMustNotCloseStatementTwice() throws Exception
+    public void getSingleMustNotCloseStatementTwice()
     {
         // given
         String indexName = "index";

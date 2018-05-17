@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -235,12 +235,12 @@ case class Match(
 
   private def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
-      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties)
+      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties, _)
         if !containsLabelPredicate(variable, labelName) =>
         SemanticError(
           """|Cannot use index hint in this context.
             | Must use label on node that hint is referring to.""".stripLinesAndMargins, hint.position)
-      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties)
+      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties, _)
         if !containsPropertyPredicates(variable, properties) =>
         SemanticError(
           """|Cannot use index hint in this context.
@@ -340,7 +340,7 @@ case class Match(
   }
 }
 
-case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: InputPosition) extends UpdateClause {
+case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition) extends UpdateClause {
   override def name = "MERGE"
 
   override def semanticCheck: SemanticCheck =

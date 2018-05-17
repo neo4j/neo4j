@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.readreplica;
 
@@ -33,17 +36,20 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionStrategy;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
@@ -75,7 +81,7 @@ public class ReadReplicaStartupProcessTest
     private File storeDir = new File( "store-dir" );
 
     @Before
-    public void commonMocking() throws StoreIdDownloadFailedException, IOException
+    public void commonMocking() throws IOException
     {
         Map<MemberId,CoreServerInfo> members = new HashMap<>();
         members.put( memberId, mock( CoreServerInfo.class ) );
@@ -85,7 +91,7 @@ public class ReadReplicaStartupProcessTest
         when( pageCache.getCachedFileSystem() ).thenReturn( fileSystemAbstraction );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
-        when( topologyService.coreServers() ).thenReturn( clusterTopology );
+        when( topologyService.allCoreServers() ).thenReturn( clusterTopology );
         when( clusterTopology.members() ).thenReturn( members );
         when( topologyService.findCatchupAddress( memberId ) ).thenReturn( Optional.of( fromAddress ) );
     }
@@ -114,7 +120,9 @@ public class ReadReplicaStartupProcessTest
     private UpstreamDatabaseStrategySelector chooseFirstMember()
     {
         AlwaysChooseFirstMember firstMember = new AlwaysChooseFirstMember();
-        firstMember.inject( topologyService, null, NullLogProvider.getInstance(), null);
+        Config config = mock( Config.class );
+        when( config.get( CausalClusteringSettings.database ) ).thenReturn( "default" );
+        firstMember.inject( topologyService, config, NullLogProvider.getInstance(), null);
 
         return new UpstreamDatabaseStrategySelector( firstMember );
     }
@@ -196,9 +204,9 @@ public class ReadReplicaStartupProcessTest
         }
 
         @Override
-        public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+        public Optional<MemberId> upstreamDatabase()
         {
-            CoreTopology coreTopology = topologyService.coreServers();
+            CoreTopology coreTopology = topologyService.allCoreServers();
             return Optional.ofNullable( coreTopology.members().keySet().iterator().next() );
         }
     }

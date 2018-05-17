@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -47,6 +47,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -54,6 +55,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -494,6 +497,22 @@ public class FileUtils
         return toDir.resolve( fromDir.relativize( fileToMove ) );
     }
 
+    /**
+     * Count the number of files and directories, contained in the given {@link Path}, which must be a directory.
+     * @param dir The directory whose contents to count.
+     * @return The number of files and directories in the given directory.
+     * @throws NotDirectoryException If the given {@link Path} is not a directory. This exception is an optionally
+     * specific exception. {@link IOException} might be thrown instead.
+     * @throws IOException If the given directory could not be opened for some reason.
+     */
+    public static long countFilesInDirectoryPath( Path dir ) throws IOException
+    {
+        try ( Stream<Path> listing = Files.list( dir ) )
+        {
+            return listing.count();
+        }
+    }
+
     public interface FileOperation
     {
         void perform() throws IOException;
@@ -515,7 +534,7 @@ public class FileUtils
                 System.gc();
             }
         }
-        throw storedIoe;
+        throw Objects.requireNonNull( storedIoe );
     }
 
     public interface LineListener

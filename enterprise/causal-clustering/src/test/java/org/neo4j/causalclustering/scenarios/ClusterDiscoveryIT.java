@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.scenarios;
 
@@ -30,12 +33,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Transaction.Type;
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -47,9 +50,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
-import static org.neo4j.causalclustering.load_balancing.procedure.ProcedureNames.GET_SERVERS_V1;
+import static org.neo4j.causalclustering.routing.load_balancing.procedure.ProcedureNames.GET_SERVERS_V1;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 
 @RunWith( Parameterized.class )
 public class ClusterDiscoveryIT
@@ -120,19 +123,18 @@ public class ClusterDiscoveryIT
     }
 
     @SuppressWarnings( "unchecked" )
-    private List<Map<String,Object>> getMembers( GraphDatabaseFacade db ) throws TransactionFailureException, org
-            .neo4j.kernel.api.exceptions.ProcedureException
+    private List<Map<String,Object>> getMembers( GraphDatabaseFacade db ) throws TransactionFailureException,
+            ProcedureException
     {
-        InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
-        KernelTransaction transaction = kernel.newTransaction( Type.implicit, AnonymousContext.read() );
-        try ( Statement statement = transaction.acquireStatement() )
+        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+        try ( Session session = kernel.beginSession( AnonymousContext.read() );
+              Transaction tx = session.beginTransaction( Type.implicit ) )
         {
             // when
-            List<Object[]> currentMembers = asList( statement.procedureCallOperations()
-                    .procedureCallRead( procedureName( GET_SERVERS_V1.fullyQualifiedProcedureName() ),
-                            new Object[0] ) );
+            List<Object[]> currentMembers =
+                    asList( tx.procedures().procedureCallRead( procedureName( GET_SERVERS_V1.fullyQualifiedProcedureName() ), new Object[0] ) );
 
-            return (List<Map<String, Object>>) currentMembers.get( 0 )[1];
+            return (List<Map<String,Object>>) currentMembers.get( 0 )[1];
         }
     }
 }

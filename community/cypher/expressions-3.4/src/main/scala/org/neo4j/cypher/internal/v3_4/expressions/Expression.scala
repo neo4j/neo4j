@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v3_4.expressions
 
 import org.neo4j.cypher.internal.util.v3_4.Foldable._
-import org.neo4j.cypher.internal.util.v3_4.{ASTNode, Ref, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.util.v3_4._
 
 import scala.collection.immutable.Stack
 
@@ -33,7 +33,7 @@ object Expression {
   final case class TreeAcc[A](data: A, stack: Stack[Set[LogicalVariable]] = Stack.empty) {
     def mapData(f: A => A): TreeAcc[A] = copy(data = f(data))
 
-    def inScope(variable: Variable) = stack.exists(_.contains(variable))
+    def inScope(variable: LogicalVariable) = stack.exists(_.contains(variable))
     def variablesInScope: Set[LogicalVariable] = stack.toSet.flatten
 
     def pushScope(newVariable: LogicalVariable): TreeAcc[A] = pushScope(Set(newVariable))
@@ -87,7 +87,7 @@ abstract class Expression extends ASTNode {
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
           (newAcc, Some((x) => x.popScope))
-      case id: Variable => acc => {
+      case id: LogicalVariable => acc => {
         val newAcc = if (acc.inScope(id)) acc else acc.mapData(_ + id)
         (newAcc, Some(identity))
       }

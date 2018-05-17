@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,17 +24,16 @@ import java.net.URL;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -160,6 +159,12 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
+    public Kernel kernel()
+    {
+        return resolver().resolveDependency( Kernel.class );
+    }
+
+    @Override
     public String name()
     {
         return platform.databaseInfo.toString();
@@ -182,12 +187,12 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
+    public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout )
     {
         try
         {
             availability.assertDatabaseAvailable();
-            KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction( type, securityContext, timeout );
+            KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction( type, loginContext, timeout );
             kernelTx.registerCloseListener(
                     txId -> dataSource.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             dataSource.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
@@ -197,29 +202,5 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         {
             throw new org.neo4j.graphdb.TransactionFailureException( e.getMessage(), e );
         }
-    }
-
-    @Override
-    public KernelTransaction currentTransaction()
-    {
-        availability.assertDatabaseAvailable();
-        KernelTransaction tx = dataSource.threadToTransactionBridge.getKernelTransactionBoundToThisThread( false );
-        if ( tx == null )
-        {
-            throw new NotInTransactionException();
-        }
-        return tx;
-    }
-
-    @Override
-    public boolean isInOpenTransaction()
-    {
-        return dataSource.threadToTransactionBridge.hasTransaction();
-    }
-
-    @Override
-    public Statement currentStatement()
-    {
-        return dataSource.threadToTransactionBridge.get();
     }
 }

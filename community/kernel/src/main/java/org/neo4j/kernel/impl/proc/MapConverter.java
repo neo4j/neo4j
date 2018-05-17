@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.proc;
 
 import java.util.function.Function;
 
-import static org.neo4j.kernel.impl.proc.Neo4jValue.ntMap;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap;
 import static org.neo4j.kernel.impl.proc.ParseUtil.parseMap;
 
 /**
@@ -29,10 +31,10 @@ import static org.neo4j.kernel.impl.proc.ParseUtil.parseMap;
  * for parsing huge json-document in a place where performance matters - you probably need
  * to rethink your decision.
  */
-public class MapConverter implements Function<String,Neo4jValue>
+public class MapConverter implements Function<String,DefaultParameterValue>
 {
     @Override
-    public Neo4jValue apply( String s )
+    public DefaultParameterValue apply( String s )
     {
         String value = s.trim();
         if ( value.equalsIgnoreCase( "null" ) )

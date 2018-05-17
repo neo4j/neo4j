@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -441,6 +444,30 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     emptyResult should equal(List.empty)
   }
 
+  test("Should able to add and remove a node from manual index using default parameter") {
+    val node = createNode(Map("name" -> "Neo"))
+
+    val addResult = execute(
+      """MATCH (n) WITH n CALL db.index.explicit.addNode('usernames', n, 'name', 'Neo') YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    addResult should be(List(Map("s" -> true)))
+
+    val seekResult = execute("CALL db.index.explicit.seekNodes('usernames', 'name', 'Neo') YIELD node AS n ").toList
+
+    seekResult should equal(List(Map("n" -> node)))
+
+    val result = execute(
+      """MATCH (n) WITH n CALL db.index.explicit.removeNode('usernames', n) YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    result should equal(List(Map("s" -> true)))
+
+    val emptyResult = execute("CALL db.index.explicit.seekNodes('usernames', 'name', 'Neo') YIELD node AS n ").toList
+
+    emptyResult should equal(List.empty)
+  }
+
   test("Should able to add and remove a relationship from manual index") {
     val a = createNode(Map("name" -> "Neo"))
     val b = createNode()
@@ -458,6 +485,32 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
     val result = execute(
       """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.index.explicit.removeRelationship('relIndex', r, 'distance') YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    result should equal(List(Map("s" -> true)))
+
+    val emptyResult = execute("CALL db.index.explicit.seekRelationships('relIndex', 'distance', '12') YIELD relationship AS r ").toList
+
+    emptyResult should equal(List.empty)
+  }
+
+  test("Should able to add and remove a relationship from manual index using default parameter") {
+    val a = createNode(Map("name" -> "Neo"))
+    val b = createNode()
+    val rel = relate(a, b, "distance" -> 12)
+
+    val addResult = execute(
+      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.index.explicit.addRelationship('relIndex', r, 'distance', 12) YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    addResult should be(List(Map("s" -> true)))
+
+    val seekResult = execute("CALL db.index.explicit.seekRelationships('relIndex', 'distance', '12') YIELD relationship AS r ").toList
+
+    seekResult should equal(List(Map("r" -> rel)))
+
+    val result = execute(
+      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.index.explicit.removeRelationship('relIndex', r) YIELD success as s RETURN s"""
         .stripMargin).toList
 
     result should equal(List(Map("s" -> true)))
@@ -515,12 +568,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     result1.head("config").asInstanceOf[Map[String, String]] should contain("provider" -> "lucene")
     intercept[Exception] {
       execute("CALL db.index.explicit.forNodes('usernames', {type: 'fulltext', provider: 'lucene'}) YIELD type, name, config").toList
-    }.getMessage should be(
-      """Failed to invoke procedure `db.index.explicit.forNodes`: Caused by: java.lang.IllegalArgumentException: Supplied index configuration:
-        |{type=fulltext, provider=lucene}
-        |doesn't match stored config in a valid way:
-        |{type=exact, provider=lucene}
-        |for 'usernames'""".stripMargin)
+    }.getMessage should include("doesn't match stored config in a valid way")
 
     //And Then
     assertNodeIndexExists("usernames", true)
@@ -593,12 +641,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     result1.head("config").asInstanceOf[Map[String, String]] should contain("provider" -> "lucene")
     intercept[Exception] {
       execute("CALL db.index.explicit.forRelationships('relIndex', {type: 'fulltext', provider: 'lucene'}) YIELD type, name, config").toList
-    }.getMessage should be(
-      """Failed to invoke procedure `db.index.explicit.forRelationships`: Caused by: java.lang.IllegalArgumentException: Supplied index configuration:
-        |{type=fulltext, provider=lucene}
-        |doesn't match stored config in a valid way:
-        |{type=exact, provider=lucene}
-        |for 'relIndex'""".stripMargin)
+    }.getMessage should include("doesn't match stored config in a valid way")
 
     //And Then
     assertRelationshipIndexExists("relIndex", true)

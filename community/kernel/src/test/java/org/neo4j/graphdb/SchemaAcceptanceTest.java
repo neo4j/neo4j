@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,7 +32,6 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -74,7 +73,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingAnIndexingRuleShouldSucceed() throws Exception
+    public void addingAnIndexingRuleShouldSucceed()
     {
         // WHEN
         IndexDefinition index = createIndex( db, label, propertyKey );
@@ -84,7 +83,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingACompositeIndexingRuleShouldSucceed() throws Exception
+    public void addingACompositeIndexingRuleShouldSucceed()
     {
         // WHEN
         IndexDefinition index = createIndex( db, label, propertyKey, secondPropertyKey );
@@ -94,7 +93,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingAnIndexingRuleInNestedTxShouldSucceed() throws Exception
+    public void addingAnIndexingRuleInNestedTxShouldSucceed()
     {
         IndexDefinition index;
 
@@ -118,7 +117,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldThrowConstraintViolationIfAskedToIndexSamePropertyAndLabelTwiceInSameTx() throws Exception
+    public void shouldThrowConstraintViolationIfAskedToIndexSamePropertyAndLabelTwiceInSameTx()
     {
         // WHEN
         try ( Transaction tx = db.beginTx() )
@@ -140,7 +139,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldThrowConstraintViolationIfAskedToIndexPropertyThatIsAlreadyIndexed() throws Exception
+    public void shouldThrowConstraintViolationIfAskedToIndexPropertyThatIsAlreadyIndexed()
     {
         // GIVEN
         Schema schema;
@@ -168,7 +167,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldThrowConstraintViolationIfAskedToCreateCompoundConstraint() throws Exception
+    public void shouldThrowConstraintViolationIfAskedToCreateCompoundConstraint()
     {
         // WHEN
         try ( Transaction tx = db.beginTx() )
@@ -187,7 +186,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void droppingExistingIndexRuleShouldSucceed() throws Exception
+    public void droppingExistingIndexRuleShouldSucceed()
     {
         // GIVEN
         IndexDefinition index = createIndex( db, label, propertyKey );
@@ -200,7 +199,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSameTransaction() throws Exception
+    public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSameTransaction()
     {
         // GIVEN
         IndexDefinition index = createIndex( db, label, propertyKey );
@@ -226,7 +225,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions() throws Exception
+    public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions()
     {
         // GIVEN
         IndexDefinition index = createIndex( db, label, propertyKey );
@@ -286,7 +285,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldPopulateIndex() throws Exception
+    public void shouldPopulateIndex()
     {
         // GIVEN
         Node node = createNode( db, propertyKey, "Neo", label );
@@ -300,7 +299,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldRecreateDroppedIndex() throws Exception
+    public void shouldRecreateDroppedIndex()
     {
         // GIVEN
         Node node = createNode( db, propertyKey, "Neo", label );
@@ -322,7 +321,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldCreateUniquenessConstraint() throws Exception
+    public void shouldCreateUniquenessConstraint()
     {
         // WHEN
         ConstraintDefinition constraint = createUniquenessConstraint( label, propertyKey );
@@ -339,7 +338,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldListAddedConstraintsByLabel() throws Exception
+    public void shouldListAddedConstraintsByLabel()
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
@@ -350,7 +349,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldListAddedConstraints() throws Exception
+    public void shouldListAddedConstraints()
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( Labels.MY_LABEL, propertyKey );
@@ -361,7 +360,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldDropUniquenessConstraint() throws Exception
+    public void shouldDropUniquenessConstraint()
     {
         // GIVEN
         ConstraintDefinition constraint = createUniquenessConstraint( label, propertyKey );
@@ -374,7 +373,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingConstraintWhenIndexAlreadyExistsGivesNiceError() throws Exception
+    public void addingConstraintWhenIndexAlreadyExistsGivesNiceError()
     {
         // GIVEN
         createIndex( db, label, propertyKey );
@@ -393,7 +392,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingUniquenessConstraintWhenDuplicateDataExistsGivesNiceError() throws Exception
+    public void addingUniquenessConstraintWhenDuplicateDataExistsGivesNiceError()
     {
         // GIVEN
         try ( Transaction transaction = db.beginTx() )
@@ -417,7 +416,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingConstraintWhenAlreadyConstrainedGivesNiceError() throws Exception
+    public void addingConstraintWhenAlreadyConstrainedGivesNiceError()
     {
         // GIVEN
         createUniquenessConstraint( label, propertyKey );
@@ -438,7 +437,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingIndexWhenAlreadyConstrained() throws Exception
+    public void addingIndexWhenAlreadyConstrained()
     {
         // GIVEN
         createUniquenessConstraint( label, propertyKey );
@@ -458,7 +457,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void addingIndexWhenAlreadyIndexed() throws Exception
+    public void addingIndexWhenAlreadyIndexed()
     {
         // GIVEN
         createIndex( db, label, propertyKey );

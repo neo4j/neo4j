@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -68,11 +68,11 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager()
         {
-            public void checkClientTrusted( X509Certificate[] arg0, String arg1 ) throws CertificateException
+            public void checkClientTrusted( X509Certificate[] arg0, String arg1 )
             {
             }
 
-            public void checkServerTrusted( X509Certificate[] arg0, String arg1 ) throws CertificateException
+            public void checkServerTrusted( X509Certificate[] arg0, String arg1 )
             {
             }
 
@@ -90,7 +90,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void serverShouldSupportSsl() throws Exception
+    public void serverShouldSupportSsl()
     {
         // When
         server.start();

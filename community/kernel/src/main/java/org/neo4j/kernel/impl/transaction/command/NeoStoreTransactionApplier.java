@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -63,13 +63,13 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
         lockGroup.close();
     }
 
     @Override
-    public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
+    public boolean visitNodeCommand( Command.NodeCommand command )
     {
         // acquire lock
         lockGroup.add( lockService.acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
@@ -80,7 +80,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
+    public boolean visitRelationshipCommand( Command.RelationshipCommand command )
     {
         lockGroup.add( lockService.acquireRelationshipLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
 
@@ -89,7 +89,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException
+    public boolean visitPropertyCommand( Command.PropertyCommand command )
     {
         // acquire lock
         if ( command.getNodeId() != -1 )
@@ -106,35 +106,35 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
+    public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command )
     {
         updateStore( neoStores.getRelationshipGroupStore(), command );
         return false;
     }
 
     @Override
-    public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
+    public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command )
     {
         updateStore( neoStores.getRelationshipTypeTokenStore(), command );
         return false;
     }
 
     @Override
-    public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
+    public boolean visitLabelTokenCommand( Command.LabelTokenCommand command )
     {
         updateStore( neoStores.getLabelTokenStore(), command );
         return false;
     }
 
     @Override
-    public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
+    public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command )
     {
         updateStore( neoStores.getPropertyKeyTokenStore(), command );
         return false;
     }
 
     @Override
-    public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
+    public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command )
     {
         // schema rules. Execute these after generating the property updates so. If executed
         // before and we've got a transaction that sets properties/labels as well as creating an index
@@ -179,7 +179,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
+    public boolean visitNeoStoreCommand( Command.NeoStoreCommand command )
     {
         neoStores.getMetaDataStore().setGraphNextProp( version.select( command ).getNextProp() );
         return false;

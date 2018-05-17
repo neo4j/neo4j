@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -113,12 +113,27 @@ public class DefaultPageCacheTracerTest
     }
 
     @Test
-    public void shouldCalculateHitRatio() throws Exception
+    public void shouldCalculateHitRatio()
     {
         assertThat( "hitRation", tracer.hitRatio(), closeTo( 0d, 0.0001 ) );
         tracer.hits( 3 );
         tracer.faults( 7 );
         assertThat( "hitRation", tracer.hitRatio(), closeTo( 3.0 / 10, 0.0001 ) );
+    }
+
+    @Test
+    public void usageRatio()
+    {
+        assertThat( tracer.usageRatio(), is( Double.NaN ) );
+        tracer.maxPages( 10 );
+        assertThat( tracer.usageRatio(), closeTo( 0d, 0.0001 ) );
+        tracer.faults( 5 );
+        assertThat( tracer.usageRatio(), closeTo( 0.5, 0.0001 ) );
+        tracer.faults( 5 );
+        tracer.evictions( 5 );
+        assertThat( tracer.usageRatio(), closeTo( 0.5, 0.0001 ) );
+        tracer.faults( 5 );
+        assertThat( tracer.usageRatio(), closeTo( 1d, 0.0001 ) );
     }
 
     private void assertCounts( long pins, long unpins, long hits, long faults, long evictions, long evictionExceptions,

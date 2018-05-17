@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -62,7 +62,7 @@ public class UserAggregationFunctionProcessorTest extends ExtensionTestBase
         assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile()
                 .withErrorCount( 1 )
                 .withErrorContaining( "Unsupported return type <void> of aggregation function." )
-                .in( function ).onLine( 31 );
+                .in( function ).onLine( 27 );
     }
 
     @Test

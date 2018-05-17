@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,7 +33,7 @@ import java.io.PrintStream;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 
-import org.neo4j.bolt.v1.runtime.WorkerFactory;
+import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.AssertableLogProvider;
@@ -64,7 +64,7 @@ public class StartClientIT extends AbstractShellIT
     private GraphDatabaseShellServer shellServer;
 
     @Before
-    public void startDatabase() throws Exception
+    public void startDatabase()
     {
         makeServerRemotelyAvailable();
     }
@@ -83,7 +83,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void givenShellClientWhenReadFromStdinThenExecutePipedCommands() throws IOException
+    public void givenShellClientWhenReadFromStdinThenExecutePipedCommands()
     {
         // Given
         // an empty database
@@ -145,7 +145,7 @@ public class StartClientIT extends AbstractShellIT
         {
             @Override
             protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly,
-                                                                            String configFile ) throws RemoteException
+                                                                            String configFile )
             {
                 return databaseShellServer;
             }
@@ -160,7 +160,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldReportEditionThroughDbInfoApp() throws Exception
+    public void shouldReportEditionThroughDbInfoApp()
     {
         // given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -178,7 +178,7 @@ public class StartClientIT extends AbstractShellIT
     }
 
     @Test
-    public void shouldPrintVersionAndExit() throws Exception
+    public void shouldPrintVersionAndExit()
     {
         // given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -216,7 +216,7 @@ public class StartClientIT extends AbstractShellIT
                 getClass().getResource( "/config-with-bolt-connector.conf" ).getFile()}, mock( CtrlCHandler.class ) );
         try
         {
-            log.assertNone( inLog( startsWith( WorkerFactory.class.getPackage().getName() ) ).any() );
+            log.assertNone( inLog( startsWith( BoltKernelExtension.class.getPackage().getName() ) ).any() );
         }
         finally
         {

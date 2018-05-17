@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,9 +27,9 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.concurrent.Work;
 import org.neo4j.helpers.collection.NestingIterator;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -73,12 +73,12 @@ public class IndexUpdatesWork implements Work<IndexingUpdateService,IndexUpdates
         return new IndexUpdates()
         {
             @Override
-            public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
+            public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
             {
-                return new NestingIterator<IndexEntryUpdate<LabelSchemaDescriptor>,IndexUpdates>( updates.iterator() )
+                return new NestingIterator<IndexEntryUpdate<SchemaDescriptor>,IndexUpdates>( updates.iterator() )
                 {
                     @Override
-                    protected Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> createNestedIterator( IndexUpdates item )
+                    protected Iterator<IndexEntryUpdate<SchemaDescriptor>> createNestedIterator( IndexUpdates item )
                     {
                         return item.iterator();
                     }

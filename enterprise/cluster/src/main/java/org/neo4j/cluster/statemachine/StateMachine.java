@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.statemachine;
 
@@ -32,16 +35,16 @@ import org.neo4j.logging.LogProvider;
  * Incoming messages must be of the particular type that the state understands.
  * A state machine can only handle one message at a time, so the handle message is synchronized.
  */
-public class StateMachine
+public class StateMachine<CONTEXT, MESSAGETYPE extends MessageType>
 {
-    private Object context;
-    private Class<? extends MessageType> messageEnumType;
-    private State<?, ?> state;
+    private CONTEXT context;
+    private Class<MESSAGETYPE> messageEnumType;
+    private State<CONTEXT, MESSAGETYPE> state;
     private LogProvider logProvider;
 
-    private List<StateTransitionListener> listeners = new ArrayList<StateTransitionListener>();
+    private List<StateTransitionListener> listeners = new ArrayList<>();
 
-    public StateMachine( Object context, Class<? extends MessageType> messageEnumType, State<?, ?> state,
+    public StateMachine( CONTEXT context, Class<MESSAGETYPE> messageEnumType, State<CONTEXT, MESSAGETYPE> state,
                          LogProvider logProvider )
     {
         this.context = context;
@@ -50,12 +53,12 @@ public class StateMachine
         this.logProvider = logProvider;
     }
 
-    public Class<? extends MessageType> getMessageType()
+    public Class<MESSAGETYPE> getMessageType()
     {
         return messageEnumType;
     }
 
-    public State<?, ?> getState()
+    public State<CONTEXT, MESSAGETYPE> getState()
     {
         return state;
     }
@@ -67,25 +70,25 @@ public class StateMachine
 
     public void addStateTransitionListener( StateTransitionListener listener )
     {
-        List<StateTransitionListener> newlisteners = new ArrayList<StateTransitionListener>( listeners );
+        List<StateTransitionListener> newlisteners = new ArrayList<>( listeners );
         newlisteners.add( listener );
         listeners = newlisteners;
     }
 
     public void removeStateTransitionListener( StateTransitionListener listener )
     {
-        List<StateTransitionListener> newlisteners = new ArrayList<StateTransitionListener>( listeners );
-        newlisteners.remove( listener );
-        listeners = newlisteners;
+        List<StateTransitionListener> newListeners = new ArrayList<>( listeners );
+        newListeners.remove( listener );
+        listeners = newListeners;
     }
 
-    public synchronized void handle( Message<? extends MessageType> message, MessageHolder outgoing )
+    public synchronized void handle( Message<MESSAGETYPE> message, MessageHolder outgoing )
     {
         try
         {
             // Let the old state handle the incoming message and tell us what the new state should be
-            State<Object, MessageType> oldState = (State<Object, MessageType>) state;
-            State<?, ?> newState = oldState.handle( context, (Message<MessageType>) message, outgoing );
+            State<CONTEXT, MESSAGETYPE> oldState = state;
+            State<CONTEXT, MESSAGETYPE> newState = oldState.handle( context, message, outgoing );
             state = newState;
 
             // Notify any listeners of the new state

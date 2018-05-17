@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -45,12 +45,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 
@@ -92,7 +92,7 @@ class FullTxData extends TxData
     private boolean modified;
     private IndexReader reader;
     private IndexSearcher searcher;
-    private final Map<Long, Document> cachedDocuments = new HashMap<Long, Document>();
+    private final PrimitiveLongObjectMap<Document> cachedDocuments = Primitive.longObjectMap();
     private Set<String> orphans;
 
     FullTxData( LuceneExplicitIndex index )
@@ -336,7 +336,7 @@ class FullTxData extends TxData
 
     private String getFieldFromExtractTerms( Query query )
     {
-        Set<Term> terms = new HashSet<Term>();
+        Set<Term> terms = new HashSet<>();
         try
         {
             searcher.createNormalizedWeight( query, false ).extractTerms( terms );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -59,7 +59,7 @@ public class DiscoveryService
 
     @GET
     @Produces( MediaType.APPLICATION_JSON )
-    public Response getDiscoveryDocument( @Context UriInfo uriInfo ) throws URISyntaxException
+    public Response getDiscoveryDocument( @Context UriInfo uriInfo )
     {
         String managementUri = config.get( ServerSettings.management_api_path ).getPath() + "/";
         String dataUri = config.get( ServerSettings.rest_api_path ).getPath() + "/";

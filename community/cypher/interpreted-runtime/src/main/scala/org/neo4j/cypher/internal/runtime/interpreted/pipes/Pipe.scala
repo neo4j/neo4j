@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.Unchangeable
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 /**
   * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -36,8 +37,11 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 trait Pipe {
   self: Pipe =>
 
+  val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
+
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)
+    decoratedState.setExecutionContextFactory(executionContextFactory)
     val innerResult = internalCreateResults(decoratedState)
     state.decorator.decorate(self, innerResult)
   }
@@ -45,7 +49,7 @@ trait Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
 
   // Used by profiling to identify where to report dbhits and rows
-  def id: LogicalPlanId
+  def id(): Id
 
   // TODO: Alternatively we could pass the logicalPlanId when we create contexts, and in the SlottedQueryState use the
   // SlotConfigurations map to get the slot configuration needed for the context creation,
@@ -57,7 +61,7 @@ trait Pipe {
   }
 }
 
-case class ArgumentPipe()(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
+case class ArgumentPipe()(val id: Id = Id.INVALID_ID) extends Pipe {
 
   def internalCreateResults(state: QueryState) =
     Iterator(state.createOrGetInitialContext(executionContextFactory))
@@ -68,6 +72,7 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     val sourceResult = source.createResults(state)
 
     val decoratedState = state.decorator.decorate(this, state)
+    decoratedState.setExecutionContextFactory(executionContextFactory)
     val result = internalCreateResults(sourceResult, decoratedState)
     state.decorator.decorate(this, result)
   }

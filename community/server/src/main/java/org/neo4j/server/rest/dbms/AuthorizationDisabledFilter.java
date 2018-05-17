@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 
@@ -47,7 +47,7 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter
         try
         {
             filterChain.doFilter(
-                    new AuthorizedRequestWrapper( BASIC_AUTH, "neo4j", request, getAuthDisabledSecurityContext() ),
+                    new AuthorizedRequestWrapper( BASIC_AUTH, "neo4j", request, getAuthDisabledLoginContext() ),
                     servletResponse );
         }
         catch ( AuthorizationViolationException e )
@@ -56,8 +56,8 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter
         }
     }
 
-    protected SecurityContext getAuthDisabledSecurityContext()
+    protected LoginContext getAuthDisabledLoginContext()
     {
-        return SecurityContext.AUTH_DISABLED;
+        return LoginContext.AUTH_DISABLED;
     }
 }

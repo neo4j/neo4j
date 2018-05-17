@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.harness;
 
@@ -26,7 +29,6 @@ import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.neo4j.harness.CausalClusterInProcessRunner.CausalCluster;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
@@ -40,12 +42,12 @@ public class CausalClusterInProcessRunnerIT
     public void shouldBootAndShutdownCluster() throws Exception
     {
         Path clusterPath = testDirectory.absolutePath().toPath();
-        CausalClusterInProcessRunner.PortPickingStrategy portPickingStrategy = new CausalClusterInProcessRunner.PortPickingStrategy()
+        CausalClusterInProcessBuilder.PortPickingStrategy portPickingStrategy = new CausalClusterInProcessBuilder.PortPickingStrategy()
         {
             Map<Integer, Integer> cache = new HashMap<>();
 
             @Override
-            int port( int offset, int id )
+            public int port( int offset, int id )
             {
                 int key = offset + id;
                 if ( ! cache.containsKey( key ) )
@@ -56,7 +58,15 @@ public class CausalClusterInProcessRunnerIT
                 return cache.get( key );
             }
         };
-        CausalCluster cluster = new CausalCluster( 3, 3, clusterPath, NullLogProvider.getInstance(), portPickingStrategy );
+
+        CausalClusterInProcessBuilder.CausalCluster cluster =
+                CausalClusterInProcessBuilder.init()
+                        .withCores( 3 )
+                        .withReplicas( 3 )
+                        .withLogger( NullLogProvider.getInstance() )
+                        .atPath( clusterPath )
+                        .withOptionalPortsStrategy( portPickingStrategy )
+                        .build();
 
         cluster.boot();
         cluster.shutdown();

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.catchup;
 
@@ -28,19 +31,19 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 
-class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
+public class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
 {
     private final Log log;
     private final CatchupServerProtocol protocol;
 
-    ServerMessageTypeHandler( CatchupServerProtocol protocol, LogProvider logProvider )
+    public ServerMessageTypeHandler( CatchupServerProtocol protocol, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
+    public void channelRead( ChannelHandlerContext ctx, Object msg )
     {
         if ( protocol.isExpecting( CatchupServerProtocol.State.MESSAGE_TYPE ) )
         {
@@ -50,10 +53,6 @@ class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
             {
                 protocol.expect( CatchupServerProtocol.State.TX_PULL );
             }
-            else if ( requestMessageType.equals( RequestMessageType.STORE ) )
-            {
-                protocol.expect( CatchupServerProtocol.State.GET_STORE );
-            }
             else if ( requestMessageType.equals( RequestMessageType.STORE_ID ) )
             {
                 protocol.expect( CatchupServerProtocol.State.GET_STORE_ID );
@@ -61,6 +60,18 @@ class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
             else if ( requestMessageType.equals( RequestMessageType.CORE_SNAPSHOT ) )
             {
                 protocol.expect( CatchupServerProtocol.State.GET_CORE_SNAPSHOT );
+            }
+            else if ( requestMessageType.equals( RequestMessageType.PREPARE_STORE_COPY ) )
+            {
+                protocol.expect( CatchupServerProtocol.State.PREPARE_STORE_COPY );
+            }
+            else if ( requestMessageType.equals( RequestMessageType.STORE_FILE ) )
+            {
+                protocol.expect( CatchupServerProtocol.State.GET_STORE_FILE );
+            }
+            else if ( requestMessageType.equals( RequestMessageType.INDEX_SNAPSHOT ) )
+            {
+                protocol.expect( CatchupServerProtocol.State.GET_INDEX_SNAPSHOT );
             }
             else
             {

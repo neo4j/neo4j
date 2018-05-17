@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,13 +20,15 @@
 package org.neo4j.kernel.impl.api.dbms;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.values.AnyValue;
 
 public class NonTransactionalDbmsOperations implements DbmsOperations
 {
@@ -42,18 +44,32 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     public RawIterator<Object[],ProcedureException> procedureCallDbms(
             QualifiedName name,
             Object[] input,
-            SecurityContext securityContext
+            SecurityContext securityContext,
+            ResourceTracker resourceTracker
     ) throws ProcedureException
     {
         BasicContext ctx = new BasicContext();
         ctx.put( Context.SECURITY_CONTEXT, securityContext );
-        return procedures.callProcedure( ctx, name, input );
+        return procedures.callProcedure( ctx, name, input, resourceTracker );
     }
 
     @Override
-    public Object functionCallDbms(
-            QualifiedName name,
+    public RawIterator<Object[],ProcedureException> procedureCallDbms(
+            int id,
             Object[] input,
+            SecurityContext securityContext,
+            ResourceTracker resourceTracker
+    ) throws ProcedureException
+    {
+        BasicContext ctx = new BasicContext();
+        ctx.put( Context.SECURITY_CONTEXT, securityContext );
+        return procedures.callProcedure( ctx, id, input, resourceTracker );
+    }
+
+    @Override
+    public AnyValue functionCallDbms(
+            QualifiedName name,
+            AnyValue[] input,
             SecurityContext securityContext
     ) throws ProcedureException
     {

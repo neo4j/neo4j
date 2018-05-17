@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
@@ -40,7 +41,7 @@ public class GenerationSafePointerTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldWriteAndReadGsp() throws Exception
+    public void shouldWriteAndReadGsp()
     {
         // GIVEN
         int offset = 3;
@@ -56,7 +57,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldReadGspWithZeroValues() throws Exception
+    public void shouldReadGspWithZeroValues()
     {
         // GIVEN
         int offset = 3;
@@ -69,7 +70,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldDetectInvalidChecksumOnReadDueToChangedGeneration() throws Exception
+    public void shouldDetectInvalidChecksumOnReadDueToChangedGeneration()
     {
         // GIVEN
         int offset = 0;
@@ -85,7 +86,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldDetectInvalidChecksumOnReadDueToChangedChecksum() throws Exception
+    public void shouldDetectInvalidChecksumOnReadDueToChangedChecksum()
     {
         // GIVEN
         int offset = 0;
@@ -102,7 +103,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldWriteAndReadGspCloseToGenerationMax() throws Exception
+    public void shouldWriteAndReadGspCloseToGenerationMax()
     {
         // GIVEN
         long generation = GenerationSafePointer.MAX_GENERATION;
@@ -120,7 +121,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldWriteAndReadGspCloseToPointerMax() throws Exception
+    public void shouldWriteAndReadGspCloseToPointerMax()
     {
         // GIVEN
         long pointer = GenerationSafePointer.MAX_POINTER;
@@ -138,7 +139,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldWriteAndReadGspCloseToGenerationAndPointerMax() throws Exception
+    public void shouldWriteAndReadGspCloseToGenerationAndPointerMax()
     {
         // GIVEN
         long generation = GenerationSafePointer.MAX_GENERATION;
@@ -158,7 +159,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldThrowIfPointerToLarge() throws Exception
+    public void shouldThrowIfPointerToLarge()
     {
         // GIVEN
         long generation = GenerationSafePointer.MIN_GENERATION;
@@ -179,7 +180,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldThrowIfPointerToSmall() throws Exception
+    public void shouldThrowIfPointerToSmall()
     {
         // GIVEN
         long generation = GenerationSafePointer.MIN_GENERATION;
@@ -200,7 +201,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldThrowIfGenerationToLarge() throws Exception
+    public void shouldThrowIfGenerationToLarge()
     {
         // GIVEN
         long generation = GenerationSafePointer.MAX_GENERATION + 1;
@@ -221,7 +222,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldThrowIfGenerationToSmall() throws Exception
+    public void shouldThrowIfGenerationToSmall()
     {
         // GIVEN
         long generation = GenerationSafePointer.MIN_GENERATION - 1;
@@ -242,7 +243,7 @@ public class GenerationSafePointerTest
     }
 
     @Test
-    public void shouldHaveLowAccidentalChecksumCollision() throws Exception
+    public void shouldHaveLowAccidentalChecksumCollision()
     {
         // GIVEN
         int count = 100_000;

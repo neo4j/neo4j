@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 public class AbstractCheckPointThresholdTest
 {
     @Test
-    public void shouldCallConsumerProvidingTheDescriptionWhenThresholdIsTrue() throws Throwable
+    public void shouldCallConsumerProvidingTheDescriptionWhenThresholdIsTrue()
     {
         // Given
         String description = "description";
@@ -43,7 +43,7 @@ public class AbstractCheckPointThresholdTest
     }
 
     @Test
-    public void shouldNotCallConsumerProvidingTheDescriptionWhenThresholdIsFalse() throws Throwable
+    public void shouldNotCallConsumerProvidingTheDescriptionWhenThresholdIsFalse()
     {
         // Given
         AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold( false, null );
@@ -61,12 +61,11 @@ public class AbstractCheckPointThresholdTest
     private static class TheAbstractCheckPointThreshold extends AbstractCheckPointThreshold
     {
         private final boolean reached;
-        private final String description;
 
         TheAbstractCheckPointThreshold( boolean reached, String description )
         {
+            super( description );
             this.reached = reached;
-            this.description = description;
         }
 
         @Override
@@ -82,15 +81,15 @@ public class AbstractCheckPointThresholdTest
         }
 
         @Override
-        protected boolean thresholdReached( long lastCommittedTransactionId )
+        public long checkFrequencyMillis()
         {
-            return reached;
+            return DEFAULT_CHECKING_FREQUENCY_MILLIS;
         }
 
         @Override
-        protected String description()
+        protected boolean thresholdReached( long lastCommittedTransactionId )
         {
-            return description;
+            return reached;
         }
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -83,11 +83,8 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
         }
         String providerName = configuration.get( IndexManager.PROVIDER );
         IndexImplementation provider = providerLookup.apply( providerName );
-        ExplicitIndexProviderTransaction transaction = transactions.get( providerName );
-        if ( transaction == null )
-        {
-            transactions.put( providerName, transaction = provider.newTransaction( this ) );
-        }
+        ExplicitIndexProviderTransaction transaction =
+                transactions.computeIfAbsent( providerName, k -> provider.newTransaction( this ) );
         return transaction.nodeIndex( indexName, configuration );
     }
 
@@ -156,19 +153,11 @@ public class ExplicitIndexTransactionStateImpl implements ExplicitIndexTransacti
         List<IndexCommand> commands = null;
         if ( command.getEntityType() == IndexEntityType.Node.id() )
         {
-            commands = nodeCommands.get( indexName );
-            if ( commands == null )
-            {
-                nodeCommands.put( indexName, commands = new ArrayList<>() );
-            }
+            commands = nodeCommands.computeIfAbsent( indexName, k -> new ArrayList<>() );
         }
         else if ( command.getEntityType() == IndexEntityType.Relationship.id() )
         {
-            commands = relationshipCommands.get( indexName );
-            if ( commands == null )
-            {
-                relationshipCommands.put( indexName, commands = new ArrayList<>() );
-            }
+            commands = relationshipCommands.computeIfAbsent( indexName, k -> new ArrayList<>() );
         }
         else
         {

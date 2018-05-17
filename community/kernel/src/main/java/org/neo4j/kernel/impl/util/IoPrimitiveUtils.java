@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -142,7 +142,7 @@ public abstract class IoPrimitiveUtils
     public static Map<String, String> read2bMap( ReadableChannel channel ) throws IOException
     {
         short size = channel.getShort();
-        Map<String, String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>( size );
         for ( int i = 0; i < size; i++ )
         {
             String key = read2bLengthAndString( channel );

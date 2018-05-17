@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,8 +19,7 @@
  */
 package org.neo4j.scheduler;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -33,23 +32,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
- * To be expanded, the idea here is to have a database-global service for running jobs, handling jobs crashing and so on.
+ * To be expanded, the idea here is to have a database-global service for running jobs, handling jobs crashing and so
+ * on.
  */
 public interface JobScheduler extends Lifecycle
 {
     /**
      * Represents a common group of jobs, defining how they should be scheduled.
      */
-    class Group
+    final class Group
     {
-        public static final String THREAD_ID = "thread-id";
-        public static final Map<String, String> NO_METADATA = Collections.emptyMap();
-
         private final AtomicInteger threadCounter = new AtomicInteger();
         private final String name;
 
         public Group( String name )
         {
+            Objects.requireNonNull( name, "Group name cannot be null." );
             this.name = name;
         }
 
@@ -61,30 +59,45 @@ public interface JobScheduler extends Lifecycle
         /**
          * Name a new thread. This method may or may not be used, it is up to the scheduling strategy to decide
          * to honor this.
-         * @param metadata comes from {@link #schedule(Group, Runnable, Map)}
          */
-        public String threadName( Map<String, String> metadata )
+        public String threadName()
         {
-            if ( metadata.containsKey( THREAD_ID ) )
-            {
-                return "neo4j." + name() + "-" + metadata.get( THREAD_ID );
-            }
             return "neo4j." + name() + "-" + threadCounter.incrementAndGet();
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            Group group = (Group) o;
+
+            return name.equals( group.name );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return name.hashCode();
         }
     }
 
     /**
      * This is an exhaustive list of job types that run in the database. It should be expanded as needed for new groups
      * of jobs.
-     *
+     * <p>
      * For now, this does minimal configuration, but opens up for things like common
      * failure handling, shared threads and affinity strategies.
      */
     class Groups
     {
-        /** Session workers, these perform the work of actually executing client queries.  */
-        public static final Group sessionWorker = new Group( "Session" );
-
         /** Background index population */
         public static final Group indexPopulation = new Group( "IndexPopulation" );
 
@@ -160,42 +173,57 @@ public interface JobScheduler extends Lifecycle
         /**
          * UDC timed events.
          */
-        public static Group udc  = new Group( "UsageDataCollection" );
+        public static final Group udc = new Group( "UsageDataCollection" );
 
         /**
          * Storage maintenance.
          */
-        public static Group storageMaintenance = new Group( "StorageMaintenance" );
+        public static final Group storageMaintenance = new Group( "StorageMaintenance" );
 
         /**
          * Raft timers.
          */
-        public static Group raft = new Group( "RaftTimer" );
+        public static final Group raft = new Group( "RaftTimer" );
 
         /**
          * Native security.
          */
-        public static Group nativeSecurity = new Group( "NativeSecurity" );
+        public static final Group nativeSecurity = new Group( "NativeSecurity" );
 
         /**
          * File watch service group
          */
-        public static Group fileWatch = new Group( "FileWatcher" );
+        public static final Group fileWatch = new Group( "FileWatcher" );
 
         /**
          * Recovery cleanup.
          */
-        public static Group recoveryCleanup = new Group( "RecoveryCleanup" );
+        public static final Group recoveryCleanup = new Group( "RecoveryCleanup" );
 
         /**
          * Kernel transaction timeout monitor.
          */
-        public static Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor" );
+        public static final Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor" );
 
         /**
          * Kernel transaction timeout monitor.
          */
-        public static Group cypherWorker = new Group( "CypherWorker" );
+        public static final Group cypherWorker = new Group( "CypherWorker" );
+
+        /**
+         * VM pause monitor
+         */
+        public static final Group vmPauseMonitor = new Group( "VmPauseMonitor" );
+
+        /**
+         * IO helper threads for page cache and IO related stuff.
+         */
+        public static final Group pageCacheIOHelper = new Group( "PageCacheIOHelper" );
+
+        /**
+         * Bolt scheduler worker
+         */
+        public static Group boltWorker = new Group( "BoltWorker" );
 
         private Groups()
         {
@@ -227,20 +255,30 @@ public interface JobScheduler extends Lifecycle
         void cancelled( boolean mayInterruptIfRunning );
     }
 
+    /**
+     * Assign a specific name to the top-most scheduler group.
+     * <p>
+     * This is just a suggestion for debugging purpose. The specific scheduler implementation is free to ignore calls
+     * to this method.
+     */
+    void setTopLevelGroupName( String name );
+
     /** Expose a group scheduler as an {@link Executor} */
     Executor executor( Group group );
 
-    /** Creates an {@link ExecutorService} that does works-stealing - read more about this in {@link ForkJoinPool}*/
+    /**
+     * Creates an {@link ExecutorService} that does works-stealing - read more about this in {@link ForkJoinPool}
+     */
     ExecutorService workStealingExecutor( Group group, int parallelism );
 
     /**
      * Expose a group scheduler as a {@link java.util.concurrent.ThreadFactory}.
      * This is a lower-level alternative than {@link #executor(Group)}, where you are in control of when to spin
      * up new threads for your jobs.
-     *
+     * <p>
      * The lifecycle of the threads you get out of here are not managed by the JobScheduler, you own the lifecycle and
      * must start the thread before it can be used.
-     *
+     * <p>
      * This mechanism is strongly preferred over manually creating threads, as it allows a central place for record
      * keeping of thread creation, central place for customizing the threads based on their groups, and lays a
      * foundation for controlling things like thread affinity and priorities in a coordinated manner in the future.
@@ -249,9 +287,6 @@ public interface JobScheduler extends Lifecycle
 
     /** Schedule a new job in the specified group. */
     JobHandle schedule( Group group, Runnable job );
-
-    /** Schedule a new job in the specified group, passing in metadata for the scheduling strategy to use. */
-    JobHandle schedule( Group group, Runnable job, Map<String, String> metadata );
 
     /** Schedule a new job in the specified group with the given delay */
     JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit );

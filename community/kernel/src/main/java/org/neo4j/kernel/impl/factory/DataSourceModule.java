@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,11 +26,10 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -42,7 +41,6 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
@@ -53,15 +51,12 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
@@ -69,12 +64,12 @@ import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
-import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -86,13 +81,13 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.ProcedureTransaction;
 
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTGeometry;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTGeometry;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPoint;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 
 /**
  * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
@@ -104,8 +99,6 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 public class DataSourceModule
 {
     public final ThreadToStatementContextBridge threadToTransactionBridge;
-
-    public final NodeManager nodeManager;
 
     public final NeoStoreDataSource neoStoreDataSource;
 
@@ -140,16 +133,8 @@ public class DataSourceModule
 
         threadToTransactionBridge = deps.satisfyDependency( life.add( new ThreadToStatementContextBridge() ) );
 
-        nodeManager = deps.satisfyDependency( new NodeManager( graphDatabaseFacade,
-                threadToTransactionBridge, relationshipTypeTokenHolder ) );
-
-        NodeProxy.NodeActions nodeActions = deps.satisfyDependency( createNodeActions( graphDatabaseFacade,
-                threadToTransactionBridge, nodeManager ) );
-        RelationshipProxy.RelationshipActions relationshipActions = deps.satisfyDependency(
-                createRelationshipActions( graphDatabaseFacade, threadToTransactionBridge, nodeManager,
-                        relationshipTypeTokenHolder ) );
-
-        transactionEventHandlers = new TransactionEventHandlers( nodeActions, relationshipActions );
+        deps.satisfyDependency( graphDatabaseFacade );
+        transactionEventHandlers = new TransactionEventHandlers( graphDatabaseFacade );
 
         diagnosticsManager.prependProvider( config );
 
@@ -185,6 +170,7 @@ public class DataSourceModule
                 editionModule.relationshipTypeTokenHolder,
                 editionModule.propertyKeyTokenHolder );
 
+        final CollectionsFactorySupplier collectionsFactorySupplier = createCollectionsFactorySupplier( config );
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
                 storeDir,
                 config,
@@ -218,13 +204,13 @@ public class DataSourceModule
                 platformModule.storeCopyCheckPointMutex,
                 platformModule.recoveryCleanupWorkCollector,
                 editionModule.idController,
-                platformModule.databaseInfo.operationalMode ) );
+                platformModule.databaseInfo.operationalMode,
+                platformModule.versionContextSupplier,
+                collectionsFactorySupplier ) );
 
         dataSourceManager.register( neoStoreDataSource );
 
-        life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );
-
-        life.add( nodeManager );
+        life.add( new VmPauseMonitorComponent( config, logging.getInternalLog( VmPauseMonitorComponent.class ), platformModule.jobScheduler ) );
 
         life.add( new PublishPageCacheTracerMetricsAfterStart( platformModule.tracers.pageCursorTracerSupplier ) );
 
@@ -239,108 +225,23 @@ public class DataSourceModule
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
 
-        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, deps,
-                editionModule.coreAPIAvailabilityGuard );
+        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, editionModule, this, deps,
+                editionModule.coreAPIAvailabilityGuard, editionModule.relationshipTypeTokenHolder );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
 
-    protected RelationshipProxy.RelationshipActions createRelationshipActions(
-            final GraphDatabaseService graphDatabaseService,
-            final ThreadToStatementContextBridge threadToStatementContextBridge,
-            final NodeManager nodeManager,
-            final RelationshipTypeTokenHolder relationshipTypeTokenHolder )
+    private CollectionsFactorySupplier createCollectionsFactorySupplier( Config config )
     {
-        return new RelationshipProxy.RelationshipActions()
+        final TransactionStateMemoryAllocation allocation = config.get( GraphDatabaseSettings.tx_state_memory_allocation );
+        switch ( allocation )
         {
-            @Override
-            public GraphDatabaseService getGraphDatabaseService()
-            {
-                return graphDatabaseService;
-            }
-
-            @Override
-            public void failTransaction()
-            {
-                threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true ).failure();
-            }
-
-            @Override
-            public void assertInUnterminatedTransaction()
-            {
-                threadToStatementContextBridge.assertInUnterminatedTransaction();
-            }
-
-            @Override
-            public Statement statement()
-            {
-                return threadToStatementContextBridge.get();
-            }
-
-            @Override
-            public Node newNodeProxy( long nodeId )
-            {
-                // only used by relationship already checked as valid in cache
-                return nodeManager.newNodeProxyById( nodeId );
-            }
-
-            @Override
-            public RelationshipType getRelationshipTypeById( int type )
-            {
-                try
-                {
-                    return relationshipTypeTokenHolder.getTokenById( type );
-                }
-                catch ( TokenNotFoundException e )
-                {
-                    throw new NotFoundException( e );
-                }
-            }
-        };
-    }
-
-    protected NodeProxy.NodeActions createNodeActions( final GraphDatabaseService graphDatabaseService,
-            final ThreadToStatementContextBridge threadToStatementContextBridge,
-            final NodeManager nodeManager )
-    {
-        return new NodeProxy.NodeActions()
-        {
-            @Override
-            public Statement statement()
-            {
-                return threadToStatementContextBridge.get();
-            }
-
-            @Override
-            public KernelTransaction kernelTransaction()
-            {
-                return threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true );
-            }
-
-            @Override
-            public GraphDatabaseService getGraphDatabase()
-            {
-                // TODO This should be wrapped as well
-                return graphDatabaseService;
-            }
-
-            @Override
-            public void assertInUnterminatedTransaction()
-            {
-                threadToStatementContextBridge.assertInUnterminatedTransaction();
-            }
-
-            @Override
-            public void failTransaction()
-            {
-                threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true ).failure();
-            }
-
-            @Override
-            public Relationship newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
-            {
-                return nodeManager.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
-            }
-        };
+        case ON_HEAP:
+            return CollectionsFactorySupplier.ON_HEAP;
+        case OFF_HEAP:
+            return CollectionsFactorySupplier.OFF_HEAP;
+        default:
+            throw new IllegalArgumentException( "Unknown transaction state memory allocation value: " + allocation );
+        }
     }
 
     private Guard createGuard( Dependencies deps, Clock clock, LogService logging )
@@ -359,19 +260,21 @@ public class DataSourceModule
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
+        EmbeddedProxySPI proxySPI = platform.dependencies.resolveDependency( EmbeddedProxySPI.class );
 
-        Procedures procedures = new Procedures(
+        ProcedureConfig procedureConfig = new ProcedureConfig( platform.config );
+        Procedures procedures = new Procedures( proxySPI,
                 new SpecialBuiltInProcedures( Version.getNeo4jVersion(),
                         platform.databaseInfo.edition.toString() ),
-                pluginDir, internalLog, new ProcedureConfig( platform.config ) );
+                pluginDir, internalLog, procedureConfig );
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
-        procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
-        procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
-        procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
-        procedures.registerType( Geometry.class, new SimpleConverter( NTGeometry, Geometry.class ) );
-        procedures.registerType( Point.class, new SimpleConverter( NTPoint, Point.class ) );
+        procedures.registerType( Node.class, NTNode );
+        procedures.registerType( Relationship.class, NTRelationship );
+        procedures.registerType( Path.class, NTPath );
+        procedures.registerType( Geometry.class, NTGeometry );
+        procedures.registerType( Point.class, NTPoint );
 
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );
@@ -398,7 +301,7 @@ public class DataSourceModule
         // Edition procedures
         try
         {
-            editionModule.registerProcedures( procedures );
+            editionModule.registerProcedures( procedures, procedureConfig );
         }
         catch ( KernelException e )
         {
@@ -426,7 +329,7 @@ public class DataSourceModule
         }
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
             availabilityGuard.isAvailable( timeout );
         }

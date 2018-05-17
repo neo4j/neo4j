@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,13 +19,29 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase;
-
-public class NodeValueIndexCursorInMemoryTest extends NodeValueIndexCursorTestBase<ReadTestSupport>
+public class NodeValueIndexCursorInMemoryTest extends AbstractNodeValueIndexCursorTest
 {
     @Override
     public ReadTestSupport newTestSupport()
     {
         return new ReadTestSupport();
+    }
+
+    @Override
+    protected String providerKey()
+    {
+        return "in-memory-index";
+    }
+
+    @Override
+    protected String providerVersion()
+    {
+        return "1.0";
+    }
+
+    @Override
+    protected boolean spatialRangeSupport()
+    {
+        return false;
     }
 }

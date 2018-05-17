@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ProcedureReadOnlyAccess, ResolvedCall}
 
 case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
+  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ call.callResults.map { result => result.variable.name }
 
   override def dependingExpressions = call.callArguments
 

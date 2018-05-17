@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListL
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
@@ -34,14 +34,14 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
   test("should seek relationship by id") {
     // given
     val (startNode, rel, endNode) = getRelWithNodes
-    val relOps= mock[Operations[EdgeValue]]
+    val relOps= mock[Operations[RelationshipValue]]
     when(relOps.getByIdIfExists(17)).thenReturn(Some(rel))
 
     val to = "to"
     val from = "from"
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].relationshipOps).thenReturn(relOps).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.relationshipOps).thenReturn(relOps)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
     val result: Iterator[ExecutionContext] =
@@ -58,15 +58,15 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     // given
     val (s1, r1, e1) = getRelWithNodes
     val (s2, r2, e2) = getRelWithNodes
-    val relationshipOps = mock[Operations[EdgeValue]]
+    val relationshipOps = mock[Operations[RelationshipValue]]
     val to = "to"
     val from = "from"
 
     when(relationshipOps.getByIdIfExists(42)).thenReturn(Some(r1))
     when(relationshipOps.getByIdIfExists(21)).thenReturn(Some(r2))
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.relationshipOps).thenReturn(relationshipOps)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     val relName = "a"
     // whens
@@ -87,10 +87,10 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     // given
     val to = "to"
     val from = "from"
-    val relationshipOps = mock[Operations[EdgeValue]]
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
-    )
+    val relationshipOps = mock[Operations[RelationshipValue]]
+    val queryContext = mock[QueryContext]
+    when(queryContext.relationshipOps).thenReturn(relationshipOps)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
     val result: Iterator[ExecutionContext] = UndirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(null)), to, from)().createResults(queryState)
@@ -99,8 +99,8 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     result.toList should be(empty)
   }
 
-  private def getRelWithNodes:(NodeValue,EdgeValue,NodeValue) = {
-    val rel = mock[EdgeValue]
+  private def getRelWithNodes:(NodeValue,RelationshipValue,NodeValue) = {
+    val rel = mock[RelationshipValue]
     val startNode = mock[NodeValue]
     val endNode = mock[NodeValue]
     when(rel.startNode()).thenReturn(startNode)

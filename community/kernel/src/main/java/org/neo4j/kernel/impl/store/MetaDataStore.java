@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -475,7 +475,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return version;
     }
 
-    private void incrementVersion( PageCursor cursor ) throws IOException
+    private void incrementVersion( PageCursor cursor )
     {
         if ( !cursor.isWriteLocked() )
         {
@@ -632,7 +632,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         updateRecord( record );
     }
 
-    private void setRecord( PageCursor cursor, Position position, long value ) throws IOException
+    private void setRecord( PageCursor cursor, Position position, long value )
     {
         if ( !cursor.isWriteLocked() )
         {

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.com;
 
@@ -104,7 +107,7 @@ public class CommunicationIT
     }
 
     @Test( expected = MismatchingStoreIdException.class )
-    public void makeSureClientStoreIdsMustMatch() throws Throwable
+    public void makeSureClientStoreIdsMustMatch()
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).client();
@@ -114,7 +117,7 @@ public class CommunicationIT
     }
 
     @Test( expected = MismatchingStoreIdException.class )
-    public void makeSureServerStoreIdsMustMatch() throws Throwable
+    public void makeSureServerStoreIdsMustMatch()
     {
         MadeUpServer server = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).server();
         MadeUpClient client = builder.client();
@@ -124,7 +127,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void makeSureClientCanStreamBigData() throws Throwable
+    public void makeSureClientCanStreamBigData()
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
@@ -134,7 +137,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void clientThrowsServerSideErrorMidwayThroughStreaming() throws Throwable
+    public void clientThrowsServerSideErrorMidwayThroughStreaming()
     {
         final String failureMessage = "Just failing";
         MadeUpServerImplementation serverImplementation = new MadeUpServerImplementation( storeIdToUse )
@@ -163,7 +166,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void communicateBetweenJvms() throws Throwable
+    public void communicateBetweenJvms()
     {
         ServerInterface server = builder.serverInOtherJvm();
         server.awaitStarted();
@@ -178,7 +181,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void throwingServerSideExceptionBackToClient() throws Throwable
+    public void throwingServerSideExceptionBackToClient()
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
@@ -197,7 +200,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void applicationProtocolVersionsMustMatch() throws Throwable
+    public void applicationProtocolVersionsMustMatch()
     {
         MadeUpServer server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION + 1) ).server();
         MadeUpClient client = builder.client();
@@ -213,7 +216,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void applicationProtocolVersionsMustMatchMultiJvm() throws Throwable
+    public void applicationProtocolVersionsMustMatchMultiJvm()
     {
         ServerInterface server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION + 1) )
                                         .serverInOtherJvm();
@@ -234,7 +237,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void internalProtocolVersionsMustMatch() throws Throwable
+    public void internalProtocolVersionsMustMatch()
     {
         MadeUpServer server = builder.internalProtocolVersion( (byte) 1 ).server();
         MadeUpClient client = builder.internalProtocolVersion( (byte) 2 ).client();
@@ -250,7 +253,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void internalProtocolVersionsMustMatchMultiJvm() throws Throwable
+    public void internalProtocolVersionsMustMatchMultiJvm()
     {
         ServerInterface server = builder.internalProtocolVersion( (byte) 1 ).serverInOtherJvm();
         server.awaitStarted();
@@ -299,7 +302,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void serverContextVerificationCanThrowException() throws Throwable
+    public void serverContextVerificationCanThrowException()
     {
         final String failureMessage = "I'm failing";
         TxChecksumVerifier failingVerifier = ( txId, checksum ) ->
@@ -324,7 +327,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void clientCanReadChunkSizeBiggerThanItsOwn() throws Throwable
+    public void clientCanReadChunkSizeBiggerThanItsOwn()
     {   // Given that frameLength is the same for both client and server.
         int serverChunkSize = 20000;
         int clientChunkSize = serverChunkSize / 10;
@@ -339,7 +342,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void serverCanReadChunkSizeBiggerThanItsOwn() throws Throwable
+    public void serverCanReadChunkSizeBiggerThanItsOwn()
     {   // Given that frameLength is the same for both client and server.
         int serverChunkSize = 1000;
         int clientChunkSize = serverChunkSize * 10;
@@ -616,7 +619,7 @@ public class CommunicationIT
         }
 
         @Override
-        public void obligation( long txId ) throws IOException
+        public void obligation( long txId )
         {
             fail( "Should not called" );
         }
@@ -628,7 +631,7 @@ public class CommunicationIT
         }
 
         @Override
-        public boolean visit( CommittedTransactionRepresentation element ) throws IOException
+        public boolean visit( CommittedTransactionRepresentation element )
         {
             assertEquals( expectedTxId + TransactionIdStore.BASE_TX_ID, element.getCommitEntry().getTxId() );
             expectedTxId++;

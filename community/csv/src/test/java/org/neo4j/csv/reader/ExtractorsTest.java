@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,6 +22,9 @@ package org.neo4j.csv.reader;
 import org.junit.Test;
 
 import org.neo4j.csv.reader.Extractors.IntExtractor;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -31,7 +34,7 @@ import static org.junit.Assert.fail;
 public class ExtractorsTest
 {
     @Test
-    public void shouldExtractStringArray() throws Exception
+    public void shouldExtractStringArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -47,7 +50,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractLongArray() throws Exception
+    public void shouldExtractLongArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -64,7 +67,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractBooleanArray() throws Exception
+    public void shouldExtractBooleanArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -80,7 +83,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractDoubleArray() throws Exception
+    public void shouldExtractDoubleArray()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -96,7 +99,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldFailExtractingLongArrayWhereAnyValueIsEmpty() throws Exception
+    public void shouldFailExtractingLongArrayWhereAnyValueIsEmpty()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';' );
@@ -115,7 +118,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldFailExtractingLongArrayWhereAnyValueIsntReallyANumber() throws Exception
+    public void shouldFailExtractingLongArrayWhereAnyValueIsntReallyANumber()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';' );
@@ -133,7 +136,24 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractNegativeInt() throws Exception
+    public void shouldExtractPoint()
+    {
+        // GIVEN
+        Extractors extractors = new Extractors( ',' );
+        PointValue value = Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.7 );
+
+        // WHEN
+        char[] asChars = "Point{latitude: 56.7, longitude: 13.2}".toCharArray();
+        Extractors.PointExtractor extractor = extractors.point();
+        String headerInfo = "{crs:WGS-84}";
+        extractor.extract( asChars, 0, asChars.length, false, PointValue.parseHeaderInformation( headerInfo ) );
+
+        // THEN
+        assertEquals( value, extractor.value );
+    }
+
+    @Test
+    public void shouldExtractNegativeInt()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -149,7 +169,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractEmptyStringForEmptyArrayString() throws Exception
+    public void shouldExtractEmptyStringForEmptyArrayString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -164,7 +184,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractEmptyLongArrayForEmptyArrayString() throws Exception
+    public void shouldExtractEmptyLongArrayForEmptyArrayString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -179,7 +199,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractTwoEmptyStringsForSingleDelimiterInArrayString() throws Exception
+    public void shouldExtractTwoEmptyStringsForSingleDelimiterInArrayString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -194,7 +214,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractEmptyStringForEmptyQuotedString() throws Exception
+    public void shouldExtractEmptyStringForEmptyQuotedString()
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
@@ -209,7 +229,7 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldExtractNullForEmptyQuotedStringIfConfiguredTo() throws Exception
+    public void shouldExtractNullForEmptyQuotedStringIfConfiguredTo()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';', true );
@@ -224,39 +244,39 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldTrimStringIfConfiguredTo() throws Exception
+    public void shouldTrimStringArrayIfConfiguredTo()
     {
         // GIVEN
-        Extractors extractors = new Extractors( ',', true, true );
-        String value = " abcde fgh  ";
+        Extractors extractors = new Extractors( ';', true, true );
+        String value = "ab;cd ; ef; gh ";
 
         // WHEN
         char[] asChars = value.toCharArray();
-        Extractor<String> extractor = extractors.string();
+        Extractor<String[]> extractor = extractors.stringArray();
         extractor.extract( asChars, 0, asChars.length, true );
 
         // THEN
-        assertEquals( value.trim(), extractor.value() );
+        assertArrayEquals( new String[] {"ab", "cd", "ef", "gh"}, extractor.value() );
     }
 
     @Test
-    public void shouldNotTrimStringIfNotConfiguredTo() throws Exception
+    public void shouldNotTrimStringIfNotConfiguredTo()
     {
         // GIVEN
-        Extractors extractors = new Extractors( ',', true, false );
-        String value = " abcde fgh  ";
+        Extractors extractors = new Extractors( ';', true, false );
+        String value = "ab;cd ; ef; gh ";
 
         // WHEN
         char[] asChars = value.toCharArray();
-        Extractor<String> extractor = extractors.string();
+        Extractor<String[]> extractor = extractors.stringArray();
         extractor.extract( asChars, 0, asChars.length, true );
 
         // THEN
-        assertEquals( value, extractor.value() );
+        assertArrayEquals( new String[] {"ab", "cd ", " ef", " gh "}, extractor.value() );
     }
 
     @Test
-    public void shouldCloneExtractor() throws Exception
+    public void shouldCloneExtractor()
     {
         // GIVEN
         Extractors extractors = new Extractors( ';' );

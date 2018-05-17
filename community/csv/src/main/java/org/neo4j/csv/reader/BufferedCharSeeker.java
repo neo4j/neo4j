@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,10 +22,14 @@ package org.neo4j.csv.reader;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
 
 import org.neo4j.csv.reader.Source.Chunk;
+import org.neo4j.values.storable.CSVHeaderInformation;
 
+import static java.lang.Character.isWhitespace;
 import static java.lang.String.format;
+
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 
 /**
@@ -64,6 +68,7 @@ public class BufferedCharSeeker implements CharSeeker
     private final boolean legacyStyleQuoting;
     private final Source source;
     private Chunk currentChunk;
+    private final boolean trim;
 
     public BufferedCharSeeker( Source source, Configuration config )
     {
@@ -72,6 +77,7 @@ public class BufferedCharSeeker implements CharSeeker
         this.lineStartPos = this.bufferPos;
         this.multilineFields = config.multilineFields();
         this.legacyStyleQuoting = config.legacyStyleQuoting();
+        this.trim = getTrimStringIgnoreErrors( config );
     }
 
     @Override
@@ -97,12 +103,23 @@ public class BufferedCharSeeker implements CharSeeker
             ch = nextChar( skippedChars );
             if ( quoteDepth == 0 )
             {   // In normal mode, i.e. not within quotes
-                if ( ch == quoteChar && seekStartPos == bufferPos - 1/* -1 since we just advanced one */ )
+                if ( ch == untilChar )
+                {   // We found a delimiter, set marker and return true
+                    return setMark( mark, endOffset, skippedChars, ch, isQuoted );
+                }
+                else if ( trim && isWhitespace( ch ) )
+                {   // Only check for left+trim whitespace as long as we haven't found a non-whitespace character
+                    if ( seekStartPos == bufferPos - 1/* -1 since we just advanced one */ )
+                    {   // We found a whitespace, which is before the first non-whitespace of the value and we've been told to trim that off
+                        seekStartPos++;
+                    }
+                }
+                else if ( ch == quoteChar && seekStartPos == bufferPos - 1/* -1 since we just advanced one */ )
                 {   // We found a quote, which was the first of the value, skip it and switch mode
                     quoteDepth++;
+                    isQuoted = true;
                     seekStartPos++;
                     quoteStartLine = lineNumber;
-                    continue;
                 }
                 else if ( isNewLine( ch ) )
                 {   // Encountered newline, done for now
@@ -114,29 +131,21 @@ public class BufferedCharSeeker implements CharSeeker
                     }
                     break;
                 }
-                else if ( ch == untilChar )
-                {   // We found a delimiter, set marker and return true
-                    mark.set( seekStartPos, bufferPos - endOffset - skippedChars, ch, isQuoted );
-                    return true;
+                else if ( isQuoted )
+                {   // This value is quoted, i.e. started with a quote and has also seen a quote
+                    throw new DataAfterQuoteException( this,
+                            new String( buffer, seekStartPos, bufferPos - seekStartPos ) );
                 }
+                // else this is a character to include as part of the current value
             }
             else
             {   // In quoted mode, i.e. within quotes
-                isQuoted = true;
                 if ( ch == quoteChar )
                 {   // Found a quote within a quote, peek at next char
                     int nextCh = peekChar( skippedChars );
-
                     if ( nextCh == quoteChar )
                     {   // Found a double quote, skip it and we're going down one more quote depth (quote-in-quote)
                         repositionChar( bufferPos++, ++skippedChars );
-                    }
-                    else if ( nextCh != untilChar && !isNewLine( nextCh ) && nextCh != EOF_CHAR )
-                    {   // Found an ending quote of sorts, although the next char isn't a delimiter, newline, or EOF
-                        // so it looks like there's data characters after this end quote. We don't really support that.
-                        // So circle this back to the user saying there's something wrong with the field.
-                        throw new DataAfterQuoteException( this,
-                                new String( buffer, seekStartPos, bufferPos - seekStartPos ) );
                     }
                     else
                     {   // Found an ending quote, skip it and switch mode
@@ -181,8 +190,52 @@ public class BufferedCharSeeker implements CharSeeker
         // We found the last value of the line or stream
         lineNumber++;
         lineStartPos = bufferPos;
-        mark.set( seekStartPos, bufferPos - endOffset - skippedChars, END_OF_LINE_CHARACTER, isQuoted );
+        return setMark( mark, endOffset, skippedChars, END_OF_LINE_CHARACTER, isQuoted );
+    }
+
+    @Override
+    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
+    {
+        return extract( mark, extractor, null );
+    }
+
+    private boolean setMark( Mark mark, int endOffset, int skippedChars, int ch, boolean isQuoted )
+    {
+        int pos = (trim ? rtrim() : bufferPos) - endOffset - skippedChars;
+        mark.set( seekStartPos, pos, ch, isQuoted );
         return true;
+    }
+
+    /**
+     * Starting from the current position, {@link #bufferPos}, scan backwards as long as whitespace is found.
+     * Although it cannot scan further back than the start of this field is, i.e. {@link #seekStartPos}.
+     *
+     * @return the right index of the value to pass into {@link Mark}. This is only called if {@link Configuration#trimStrings()} is {@code true}.
+     */
+    private int rtrim()
+    {
+        int index = bufferPos;
+        while ( index - 1 > seekStartPos && isWhitespace( buffer[index - 1 /*bufferPos has advanced*/ - 1 /*don't check the last read char (delim or EOF)*/] ) )
+        {
+            index--;
+        }
+        return index;
+    }
+
+    private boolean isWhitespace( int ch )
+    {
+        return ch == ' ' ||
+                ch == Character.SPACE_SEPARATOR ||
+                ch == Character.PARAGRAPH_SEPARATOR ||
+                ch == '\u00A0' ||
+                ch == '\u001C' ||
+                ch == '\u001D' ||
+                ch == '\u001E' ||
+                ch == '\u001F' ||
+                ch == '\u2007' ||
+                ch == '\u202F' ||
+                ch == '\t';
+
     }
 
     private void repositionChar( int offset, int stepsBack )
@@ -221,10 +274,24 @@ public class BufferedCharSeeker implements CharSeeker
         return false;
     }
 
-    @Override
-    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
+    private static boolean getTrimStringIgnoreErrors( Configuration config )
     {
-        if ( !tryExtract( mark, extractor ) )
+        try
+        {
+            return config.trimStrings();
+        }
+        catch ( Throwable t )
+        {
+            // Cypher compatibility can result in older Cypher 2.3 code being passed here with older implementations of
+            // Configuration. So we need to ignore the fact that those implementations do not include trimStrings().
+            return Configuration.DEFAULT.trimStrings();
+        }
+    }
+
+    @Override
+    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor, CSVHeaderInformation optionalData )
+    {
+        if ( !tryExtract( mark, extractor, optionalData ) )
         {
             throw new IllegalStateException( extractor + " didn't extract value for " + mark +
                     ". For values which are optional please use tryExtract method instead" );
@@ -233,17 +300,23 @@ public class BufferedCharSeeker implements CharSeeker
     }
 
     @Override
+    public boolean tryExtract( Mark mark, Extractor<?> extractor, CSVHeaderInformation optionalData )
+    {
+        int from = mark.startPosition();
+        int to = mark.position();
+        return extractor.extract( buffer, from, to - from, mark.isQuoted(), optionalData );
+    }
+
+    @Override
     public boolean tryExtract( Mark mark, Extractor<?> extractor )
     {
-        long from = mark.startPosition();
-        long to = mark.position();
-        return extractor.extract( buffer, (int) from, (int) (to - from), mark.isQuoted() );
+        return tryExtract( mark, extractor, null );
     }
 
     private int nextChar( int skippedChars ) throws IOException
     {
         int ch;
-        if ( fillBufferIfWeHaveExhaustedIt() )
+        if ( bufferPos < bufferEnd || fillBuffer() )
         {
             ch = buffer[bufferPos];
         }
@@ -264,59 +337,55 @@ public class BufferedCharSeeker implements CharSeeker
     /**
      * @return {@code true} if something was read, otherwise {@code false} which means that we reached EOF.
      */
-    private boolean fillBufferIfWeHaveExhaustedIt() throws IOException
+    private boolean fillBuffer() throws IOException
     {
-        if ( bufferPos >= bufferEnd )
+        boolean first = currentChunk == null;
+
+        if ( !first )
         {
-            boolean first = currentChunk == null;
-
-            if ( !first )
+            if ( bufferPos - seekStartPos >= dataCapacity )
             {
-                currentChunk.close();
-                if ( bufferPos - seekStartPos >= dataCapacity )
-                {
-                    throw new IllegalStateException( "Tried to read a field larger than buffer size " +
-                            dataLength + ". A common cause of this is that a field has an unterminated " +
-                            "quote and so will try to seek until the next quote, which ever line it may be on." +
-                            " This should not happen if multi-line fields are disabled, given that the fields contains " +
-                            "no new-line characters. This field started at " + sourceDescription() + ":" + lineNumber() );
-                }
+                throw new IllegalStateException( "Tried to read a field larger than buffer size " +
+                        dataLength + ". A common cause of this is that a field has an unterminated " +
+                        "quote and so will try to seek until the next quote, which ever line it may be on." +
+                        " This should not happen if multi-line fields are disabled, given that the fields contains " +
+                        "no new-line characters. This field started at " + sourceDescription() + ":" + lineNumber() );
             }
-
-            absoluteBufferStartPosition += dataLength;
-
-            // Fill the buffer with new characters
-            Chunk nextChunk = source.nextChunk( first ? -1 : seekStartPos );
-            if ( nextChunk.backPosition() == nextChunk.startPosition() + nextChunk.length() )
-            {
-                return false;
-            }
-            buffer = nextChunk.data();
-            dataLength = nextChunk.length();
-            dataCapacity = nextChunk.maxFieldSize();
-            bufferPos = nextChunk.startPosition();
-            bufferStartPos = bufferPos;
-            bufferEnd = bufferPos + dataLength;
-            int shift = seekStartPos - nextChunk.backPosition();
-            seekStartPos = nextChunk.backPosition();
-            if ( first )
-            {
-                lineStartPos = seekStartPos;
-            }
-            else
-            {
-                lineStartPos -= shift;
-            }
-            String sourceDescriptionAfterRead = nextChunk.sourceDescription();
-            if ( !sourceDescriptionAfterRead.equals( sourceDescription ) )
-            {   // We moved over to a new source, reset line number
-                lineNumber = 0;
-                sourceDescription = sourceDescriptionAfterRead;
-            }
-            currentChunk = nextChunk;
-            return dataLength > 0;
         }
-        return true;
+
+        absoluteBufferStartPosition += dataLength;
+
+        // Fill the buffer with new characters
+        Chunk nextChunk = source.nextChunk( first ? -1 : seekStartPos );
+        if ( nextChunk == Source.EMPTY_CHUNK )
+        {
+            return false;
+        }
+
+        buffer = nextChunk.data();
+        dataLength = nextChunk.length();
+        dataCapacity = nextChunk.maxFieldSize();
+        bufferPos = nextChunk.startPosition();
+        bufferStartPos = bufferPos;
+        bufferEnd = bufferPos + dataLength;
+        int shift = seekStartPos - nextChunk.backPosition();
+        seekStartPos = nextChunk.backPosition();
+        if ( first )
+        {
+            lineStartPos = seekStartPos;
+        }
+        else
+        {
+            lineStartPos -= shift;
+        }
+        String sourceDescriptionAfterRead = nextChunk.sourceDescription();
+        if ( !sourceDescriptionAfterRead.equals( sourceDescription ) )
+        {   // We moved over to a new source, reset line number
+            lineNumber = 0;
+            sourceDescription = sourceDescriptionAfterRead;
+        }
+        currentChunk = nextChunk;
+        return dataLength > 0;
     }
 
     @Override
@@ -337,7 +406,6 @@ public class BufferedCharSeeker implements CharSeeker
         return sourceDescription;
     }
 
-    @Override
     public long lineNumber()
     {
         return lineNumber;
@@ -348,5 +416,10 @@ public class BufferedCharSeeker implements CharSeeker
     {
         return format( "%s[source:%s, position:%d, line:%d]", getClass().getSimpleName(),
                 sourceDescription(), position(), lineNumber() );
+    }
+
+    public static boolean isEolChar( char c )
+    {
+        return c == EOL_CHAR || c == EOL_CHAR_2;
     }
 }

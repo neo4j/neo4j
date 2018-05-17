@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -96,6 +96,6 @@ public class MultiEvaluator<STATE> extends PathEvaluator.Adapter<STATE>
         PathEvaluator[] newArray = new PathEvaluator[this.evaluators.length + 1];
         System.arraycopy( this.evaluators, 0, newArray, 0, this.evaluators.length );
         newArray[newArray.length - 1] = evaluator;
-        return new MultiEvaluator<STATE>( newArray );
+        return new MultiEvaluator<>( newArray );
     }
 }

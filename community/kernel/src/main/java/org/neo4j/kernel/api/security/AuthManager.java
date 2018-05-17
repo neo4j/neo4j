@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.security;
 
 import java.util.Map;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -36,7 +36,7 @@ public interface AuthManager extends Lifecycle
      * @return An AuthSubject representing the newly logged-in user
      * @throws InvalidAuthTokenException if the authentication token is malformed
      */
-    SecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
+    LoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
 
     /**
      * Implementation that does no authentication.
@@ -44,29 +44,29 @@ public interface AuthManager extends Lifecycle
     AuthManager NO_AUTH = new AuthManager()
     {
         @Override
-        public void init() throws Throwable
+        public void init()
         {
         }
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
         }
 
         @Override
-        public void stop() throws Throwable
+        public void stop()
         {
         }
 
         @Override
-        public void shutdown() throws Throwable
+        public void shutdown()
         {
         }
 
         @Override
-        public SecurityContext login( Map<String,Object> authToken )
+        public LoginContext login( Map<String,Object> authToken )
         {
-            return SecurityContext.AUTH_DISABLED;
+            return LoginContext.AUTH_DISABLED;
         }
     };
 }

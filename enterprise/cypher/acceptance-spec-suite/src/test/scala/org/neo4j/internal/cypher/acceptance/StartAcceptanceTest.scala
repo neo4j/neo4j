@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -24,6 +27,8 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
+  // START gets executed on legacy cypher, because it's deprecated and will be removes in 4.0. Therefore it is only
+  // executable on the community interpreted runtime.
   val expectedToSucceed = Configs.CommunityInterpreted - Configs.Version3_3
   val expectedToSucceedNoCost = Configs.CommunityInterpreted - Configs.Cost3_1 - Configs.Cost2_3 - Configs.Version3_3
 
@@ -311,12 +316,32 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(node, createNode())
 
     graph.inTx {
-      graph.index.forNodes("nodes").add(node, "key", "A")
-      graph.index.forRelationships("rels").add(rel, "key", "B")
+      graph.index().forNodes("nodes").add(node, "key", "A")
+      graph.index().forRelationships("rels").add(rel, "key", "B")
     }
 
     val result = innerExecuteDeprecated("START n=node:nodes(key = 'A'), r=rel:rels(key = 'B') MATCH (n)-[r]->(b) RETURN b", Map())
     result.toList should equal(List(Map("b" -> resultNode)))
   }
 
+  test("Should not return deleted nodes from explicit index") {
+    // setup: create index, add a node
+    val node = createNode()
+    graph.inTx {
+      graph.index().forNodes("index").add(node, "key", "value")
+    }
+
+    // check if we find the node
+    innerExecuteDeprecated("start n=node:index(key = 'value') return n", Map.empty).size should equal(1)
+
+    // when
+    graph.inTx {
+      node.delete()
+    }
+
+    // nothing found in the index after deletion
+    val result = executeWith(expectedToSucceed, "start n=node:index(key = 'value') return n")
+
+    result.size should equal(0)
+  }
 }

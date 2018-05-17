@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,27 +21,29 @@ package org.neo4j.server.scripting.javascript;
 
 import org.junit.Test;
 
+import org.neo4j.server.rest.web.ScriptExecutionMode;
+
 public class TestGlobalJavascriptInitializer
 {
 
     @Test( expected = RuntimeException.class )
-    public void shouldNotAllowChangingMode() throws Exception
+    public void shouldNotAllowChangingMode()
     {
         // Given
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
 
         // When
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.UNSAFE );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.UNRESTRICTED );
     }
 
     @Test
-    public void initializingTheSameModeTwiceIsFine() throws Exception
+    public void initializingTheSameModeTwiceIsFine()
     {
         // Given
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
 
         // When
-        GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
+        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
 
         // Then
         // no exception should have been thrown.

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,7 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -54,12 +54,13 @@ public class KernelTest
         ThreadToStatementContextBridge stmtBridge =
                 db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
-        try ( Transaction ignored = db.beginTx();
-                Statement statement = stmtBridge.get() )
+        try ( Transaction ignored = db.beginTx() )
         {
+            KernelTransaction ktx =
+                    stmtBridge.getKernelTransactionBoundToThisThread( true );
             try
             {
-                statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( 1, 1 ) );
+                ktx.schemaWrite().uniquePropertyConstraintCreate( forLabel( 1, 1 ) );
                 fail( "expected exception here" );
             }
             catch ( InvalidTransactionTypeKernelException e )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -90,12 +90,13 @@ public class SubGraphExporter
                 {
                     throw new IllegalStateException( "Indexes should have at least one property key" );
                 }
-                String key = quote( propertyKeys.next() );
+                String id = propertyKeys.next();
                 if ( propertyKeys.hasNext() )
                 {
                     throw new RuntimeException( "Exporting compound indexes is not implemented yet" );
                 }
 
+                String key = quote( id );
                 String label = quote( index.getLabel().name() );
                 result.add( "create index on :" + label + "(" + key + ")" );
             }
@@ -106,8 +107,21 @@ public class SubGraphExporter
 
     private Collection<String> exportConstraints()
     {
-        final List<String> result = new ArrayList<>();
-        for ( ConstraintDefinition constraint : graph.getConstraints() )
+        Iterable<ConstraintDefinition> constraints = graph.getConstraints();
+        int count = 0;
+        if ( constraints instanceof Collection )
+        {
+            count = ((Collection<ConstraintDefinition>) constraints).size();
+        }
+        else
+        {
+            for ( ConstraintDefinition ignored : constraints )
+            {
+                count++;
+            }
+        }
+        final List<String> result = new ArrayList<>( count );
+        for ( ConstraintDefinition constraint : constraints )
         {
             if ( !constraint.isConstraintType( ConstraintType.UNIQUENESS ) )
             {
@@ -119,12 +133,13 @@ public class SubGraphExporter
             {
                 throw new IllegalStateException( "Constraints should have at least one property key" );
             }
-            String key = quote( propertyKeys.next() );
+            String id = propertyKeys.next();
             if ( propertyKeys.hasNext() )
             {
                 throw new RuntimeException( "Exporting compound constraints is not implemented yet" );
             }
 
+            String key = quote( id );
             String label = quote( constraint.getLabel().name() );
             result.add( "create constraint on (n:" + label + ") assert n." + key + " is unique" );
         }
@@ -132,7 +147,7 @@ public class SubGraphExporter
         return result;
     }
 
-    private String quote( String id )
+    private static String quote( String id )
     {
         return "`" + id + "`";
     }
@@ -149,7 +164,7 @@ public class SubGraphExporter
         while ( labels.hasNext() )
         {
             Label next = labels.next();
-            result.append( ":" ).append( quote( next.name() ) );
+            result.append( ':' ).append( quote( next.name() ) );
         }
         return result.toString();
     }
@@ -249,7 +264,7 @@ public class SubGraphExporter
             {
                 result.append( ", " );
             }
-            result.append( quote( prop ) ).append( ":" );
+            result.append( quote( prop ) ).append( ':' );
             Object value = pc.getProperty( prop );
             result.append( toString( value ) );
         }
@@ -286,7 +301,7 @@ public class SubGraphExporter
         return "[" + result + "]";
     }
 
-    private String escapeString( String value )
+    private static String escapeString( String value )
     {
         return "\"" + value.replaceAll( "\\\\", "\\\\\\\\" ).replaceAll( "\"", "\\\\\"" ) + "\"";
     }
@@ -303,7 +318,7 @@ public class SubGraphExporter
         }
         if ( value instanceof Float || value instanceof Double )
         {
-            return String.format( Locale.ENGLISH, "%f", value );
+            return String.format( Locale.ROOT, "%f", ((Number) value).doubleValue() );
         }
         if ( value instanceof Iterator )
         {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,13 +24,11 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.impl.api.operations.EntityOperations;
-import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 /**
@@ -58,18 +56,18 @@ public class LookupFilter
             return indexedNodeIds;
         }
 
-        IndexQuery[] numericPredicates =
+        IndexQuery[] filteredPredicates =
                 Arrays.stream( predicates )
-                        .filter( LookupFilter::isNumericPredicate )
+                        .filter( LookupFilter::isNumericOrGeometricPredicate )
                         .toArray( IndexQuery[]::new );
 
-        if ( numericPredicates.length > 0 )
+        if ( filteredPredicates.length > 0 )
         {
             LongPredicate combinedPredicate = nodeId ->
             {
                 try
                 {
-                    for ( IndexQuery predicate : numericPredicates )
+                    for ( IndexQuery predicate : filteredPredicates )
                     {
                         int propertyKeyId = predicate.propertyKeyId();
                         Value value = accessor.getPropertyValue( nodeId, propertyKeyId );
@@ -92,77 +90,27 @@ public class LookupFilter
         return indexedNodeIds;
     }
 
-    /**
-     * This filter is added on top of index results for schema index implementations that will have
-     * potential false positive hits due to value coersion to double values.
-     * The given {@code indexedNodeIds} will be wrapped in a filter double-checking with the actual
-     * node property values iff the {@link IndexQuery} predicates query for numbers, i.e. where this
-     * coersion problem may be possible.
-     *
-     * used in "normal" operation
-     */
-    public static PrimitiveLongIterator exactIndexMatches( EntityOperations operations, KernelStatement state,
-            PrimitiveLongIterator indexedNodeIds, IndexQuery... predicates )
-    {
-        if ( !indexedNodeIds.hasNext() )
-        {
-            return indexedNodeIds;
-        }
-
-        IndexQuery[] numericPredicates =
-                Arrays.stream( predicates )
-                        .filter( LookupFilter::isNumericPredicate )
-                        .toArray( IndexQuery[]::new );
-
-        if ( numericPredicates.length > 0 )
-        {
-            LongPredicate combinedPredicate = nodeId ->
-            {
-                try ( Cursor<NodeItem> node = operations.nodeCursorById( state, nodeId ) )
-                {
-                    NodeItem nodeItem = node.get();
-                    for ( IndexQuery predicate : numericPredicates )
-                    {
-                        int propertyKeyId = predicate.propertyKeyId();
-                        Value value = operations.nodeGetProperty( state, nodeItem, propertyKeyId );
-                        if ( !predicate.acceptsValue( value ) )
-                        {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                catch ( EntityNotFoundException ignored )
-                {
-                    return false; // The node has been deleted but was still reported from the index. We hope that this
-                                  // is some transient problem and just ignore this index entry.
-                }
-            };
-            return PrimitiveLongCollections.filter( indexedNodeIds, combinedPredicate );
-        }
-        return indexedNodeIds;
-    }
-
-    private static boolean isNumericPredicate( IndexQuery predicate )
+    private static boolean isNumericOrGeometricPredicate( IndexQuery predicate )
     {
 
         if ( predicate.type() == IndexQuery.IndexQueryType.exact )
         {
             IndexQuery.ExactPredicate exactPredicate = (IndexQuery.ExactPredicate) predicate;
-            if ( isNumberOrArray( exactPredicate.value() ) )
+            if ( isNumberGeometryOrArray( exactPredicate.value() ) )
             {
                 return true;
             }
         }
-        else if ( predicate.type() == IndexQuery.IndexQueryType.rangeNumeric )
+        else if ( predicate.type() == IndexQuery.IndexQueryType.range &&
+                  ( predicate.valueGroup() == ValueGroup.NUMBER || predicate.valueGroup() == ValueGroup.GEOMETRY ) )
         {
             return true;
         }
         return false;
     }
 
-    private static boolean isNumberOrArray( Value value )
+    private static boolean isNumberGeometryOrArray( Value value )
     {
-        return Values.isNumberValue( value ) || Values.isArrayValue( value );
+        return Values.isNumberValue( value ) || Values.isGeometryValue( value ) || Values.isArrayValue( value );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.Assert.assertEquals;
@@ -35,7 +36,7 @@ public class FreelistNodeTest
     private final int maxEntries = freelist.maxEntries();
 
     @Test
-    public void shouldInitializeTreeNode() throws Exception
+    public void shouldInitializeTreeNode()
     {
         // GIVEN
         FreelistNode.initialize( cursor );
@@ -48,7 +49,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldNodeOverwriteNodeType() throws Exception
+    public void shouldNodeOverwriteNodeType()
     {
         // GIVEN
         FreelistNode.initialize( cursor );
@@ -65,7 +66,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldSetAndGetNext() throws Exception
+    public void shouldSetAndGetNext()
     {
         // GIVEN
         long nextId = 12345;
@@ -79,7 +80,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldReadAndWriteFreeListEntries() throws Exception
+    public void shouldReadAndWriteFreeListEntries()
     {
         // GIVEN
         long generationA = 34;
@@ -99,7 +100,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingBeyondMaxEntries() throws Exception
+    public void shouldFailOnWritingBeyondMaxEntries()
     {
         // WHEN
         try
@@ -114,7 +115,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingTooBigPointer() throws Exception
+    public void shouldFailOnWritingTooBigPointer()
     {
         // WHEN
         try
@@ -129,7 +130,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingTooBigGeneration() throws Exception
+    public void shouldFailOnWritingTooBigGeneration()
     {
         // WHEN
         try
@@ -144,7 +145,7 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldReturnNoPageOnUnstableEntry() throws Exception
+    public void shouldReturnNoPageOnUnstableEntry()
     {
         // GIVEN
         long stableGeneration = 10;

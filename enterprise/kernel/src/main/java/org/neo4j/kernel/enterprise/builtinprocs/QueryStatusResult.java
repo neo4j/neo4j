@@ -1,24 +1,28 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +35,10 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.singletonList;
@@ -87,18 +91,18 @@ public class QueryStatusResult
     /** @since Neo4j 3.2 */
     public final long pageFaults;
 
-    QueryStatusResult( ExecutingQuery query, NodeManager manager ) throws InvalidArgumentsException
+    QueryStatusResult( ExecutingQuery query, EmbeddedProxySPI manager, ZoneId zoneId ) throws InvalidArgumentsException
     {
-        this( query.snapshot(), manager );
+        this( query.snapshot(), manager, zoneId );
     }
 
-    private QueryStatusResult( QuerySnapshot query, NodeManager manager ) throws InvalidArgumentsException
+    private QueryStatusResult( QuerySnapshot query, EmbeddedProxySPI manager, ZoneId zoneId ) throws InvalidArgumentsException
     {
         this.queryId = ofInternalId( query.internalQueryId() ).toString();
         this.username = query.username();
         this.query = query.queryText();
         this.parameters = asRawMap( query.queryParameters(), new ParameterWriter( manager ) );
-        this.startTime = formatTime( query.startTimestampMillis() );
+        this.startTime = formatTime( query.startTimestampMillis(), zoneId );
         this.elapsedTimeMillis = query.elapsedTimeMillis();
         this.elapsedTime = formatInterval( elapsedTimeMillis );
         ClientConnectionInfo clientConnection = query.clientConnection();
@@ -134,9 +138,9 @@ public class QueryStatusResult
 
     private static class ParameterWriter extends BaseToObjectValueWriter<RuntimeException>
     {
-        private final NodeManager nodeManager;
+        private final EmbeddedProxySPI nodeManager;
 
-        private ParameterWriter( NodeManager nodeManager )
+        private ParameterWriter( EmbeddedProxySPI nodeManager )
         {
             this.nodeManager = nodeManager;
         }
@@ -144,13 +148,13 @@ public class QueryStatusResult
         @Override
         protected Node newNodeProxyById( long id )
         {
-            return nodeManager.newNodeProxyById( id );
+            return nodeManager.newNodeProxy( id );
         }
 
         @Override
         protected Relationship newRelationshipProxyById( long id )
         {
-            return nodeManager.newRelationshipProxyById( id );
+            return nodeManager.newRelationshipProxy( id );
         }
 
         @Override

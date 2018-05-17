@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Comparator;
 
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -250,7 +250,10 @@ public class TransactionRecordState implements RecordState
         }
         for ( RecordProxy<SchemaRecord, SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
         {
-            integrityValidator.validateSchemaRule( change.getAdditionalData() );
+            if ( change.forReadingLinkage().inUse() )
+            {
+                integrityValidator.validateSchemaRule( change.getAdditionalData() );
+            }
             commands.add( new Command.SchemaRuleCommand(
                     change.getBefore(), change.forChangingData(), change.getAdditionalData() ) );
         }
@@ -585,6 +588,7 @@ public class TransactionRecordState implements RecordState
         {
             record.setInUse( false );
         }
+        records.setInUse( false );
     }
 
     public void changeSchemaRule( SchemaRule rule, SchemaRule updatedRule )

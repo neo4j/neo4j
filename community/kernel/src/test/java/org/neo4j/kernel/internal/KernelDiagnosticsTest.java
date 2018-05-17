@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,7 +30,7 @@ import org.neo4j.logging.AssertableLogProvider;
 public class KernelDiagnosticsTest
 {
     @Test
-    public void shouldPrintDiskUsage() throws Exception
+    public void shouldPrintDiskUsage()
     {
         File storeDir = Mockito.mock( File.class );
         Mockito.when( storeDir.getTotalSpace() ).thenReturn( 100L );
@@ -44,7 +44,7 @@ public class KernelDiagnosticsTest
     }
 
     @Test
-    public void shouldCountFileSizeRecursively() throws Exception
+    public void shouldCountFileSizeRecursively()
     {
         // Mock a file structure:
         //   storeDir/indexDir/indexFile (1 kB)

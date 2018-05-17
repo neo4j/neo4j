@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,8 +35,9 @@ public interface TransportThrottle
      * Apply throttling logic for the given channel..
      *
      * @param channel the netty channel to which this throttling logic should be applied
+     * @throws TransportThrottleException when throttle decides this connection should be halted
      */
-    void acquire( Channel channel );
+    void acquire( Channel channel ) throws TransportThrottleException;
 
     /**
      * Release throttling for the given channel (if applied)..

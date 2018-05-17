@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -39,9 +39,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
-import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
-import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
+import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
 
@@ -66,7 +66,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotStartAJobIfTheIndexIsNotOnline() throws InterruptedException
+    public void shouldNotStartAJobIfTheIndexIsNotOnline()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -348,7 +348,7 @@ public class IndexSamplingControllerTest
         }
 
         @Override
-        public boolean test( long indexId, IndexDescriptor descriptor )
+        public boolean test( long indexId, SchemaIndexDescriptor descriptor )
         {
             return ans;
         }
@@ -365,8 +365,8 @@ public class IndexSamplingControllerTest
     private final long anotherIndexId = 3;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
-    private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 3, 4 );
-    private final IndexDescriptor anotherDescriptor = IndexDescriptorFactory.forLabel( 5, 6 );
+    private final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 3, 4 );
+    private final SchemaIndexDescriptor anotherDescriptor = SchemaIndexDescriptorFactory.forLabel( 5, 6 );
     private final IndexSamplingJob job = mock( IndexSamplingJob.class );
     private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
 

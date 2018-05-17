@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,19 +27,19 @@ import org.neo4j.kernel.impl.security.User;
 public class InMemoryUserRepository extends AbstractUserRepository
 {
     @Override
-    protected void persistUsers() throws IOException
+    protected void persistUsers()
     {
         // Nothing to do
     }
 
     @Override
-    protected ListSnapshot<User> readPersistedUsers() throws IOException
+    protected ListSnapshot<User> readPersistedUsers()
     {
         return null;
     }
 
     @Override
-    public ListSnapshot<User> getPersistedSnapshot() throws IOException
+    public ListSnapshot<User> getPersistedSnapshot()
     {
         return null;
     }

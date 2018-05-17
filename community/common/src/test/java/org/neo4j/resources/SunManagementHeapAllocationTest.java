@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -44,14 +44,14 @@ public class SunManagementHeapAllocationTest
     }
 
     @Test
-    public void shouldLoadHeapAllocation() throws Exception
+    public void shouldLoadHeapAllocation()
     {
         assertNotSame( NOT_AVAILABLE, HEAP_ALLOCATION );
         assertThat( HEAP_ALLOCATION, instanceOf( SunManagementHeapAllocation.class ) );
     }
 
     @Test
-    public void shouldMeasureAllocation() throws Exception
+    public void shouldMeasureAllocation()
     {
         // given
         long allocatedBytes = HEAP_ALLOCATION.allocatedBytes( currentThread() );

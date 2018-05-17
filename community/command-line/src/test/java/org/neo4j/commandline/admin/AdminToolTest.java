@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -181,7 +181,7 @@ public class AdminToolTest
     }
 
     @Test
-    public void shouldBlockDumpIfABlockerSaysSo() throws IncorrectUsage
+    public void shouldBlockDumpIfABlockerSaysSo()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         AdminCommand command = mock( AdminCommand.class );
@@ -202,7 +202,7 @@ public class AdminToolTest
     }
 
     @Test
-    public void shouldBlockDumpIfOneBlockerOutOfManySaysSo() throws IncorrectUsage
+    public void shouldBlockDumpIfOneBlockerOutOfManySaysSo()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         AdminCommand command = mock( AdminCommand.class );
@@ -245,7 +245,7 @@ public class AdminToolTest
     }
 
     @Test
-    public void helpArgumentPrintsHelp() throws CommandFailed, IncorrectUsage
+    public void helpArgumentPrintsHelp()
     {
         AdminCommand command = mock( AdminCommand.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
@@ -260,7 +260,7 @@ public class AdminToolTest
     }
 
     @Test
-    public void helpArgumentPrintsHelpForCommand() throws CommandFailed, IncorrectUsage
+    public void helpArgumentPrintsHelpForCommand()
     {
         AdminCommand command = mock( AdminCommand.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
@@ -275,7 +275,7 @@ public class AdminToolTest
     }
 
     @Test
-    public void versionArgumentPrintsVersion() throws CommandFailed, IncorrectUsage
+    public void versionArgumentPrintsVersion()
     {
         AdminCommand command = mock( AdminCommand.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
@@ -289,7 +289,7 @@ public class AdminToolTest
     }
 
     @Test
-    public void versionArgumentPrintsVersionEvenWithCommand() throws CommandFailed, IncorrectUsage
+    public void versionArgumentPrintsVersionEvenWithCommand()
     {
         AdminCommand command = mock( AdminCommand.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
@@ -327,6 +327,7 @@ public class AdminToolTest
                 return "";
             }
 
+            @Override
             @Nonnull
             public AdminCommandSection commandSection()
             {
@@ -357,7 +358,7 @@ public class AdminToolTest
         }
     }
 
-    private class NullCommandProvider extends AdminCommand.Provider
+    private static class NullCommandProvider extends AdminCommand.Provider
     {
         protected NullCommandProvider()
         {

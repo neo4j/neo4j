@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,20 +19,20 @@
  */
 package org.neo4j.bolt.security.auth;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 
 public interface AuthenticationResult
 {
-    SecurityContext getSecurityContext();
+    LoginContext getLoginContext();
 
     boolean credentialsExpired();
 
     AuthenticationResult AUTH_DISABLED = new AuthenticationResult()
     {
         @Override
-        public SecurityContext getSecurityContext()
+        public LoginContext getLoginContext()
         {
-            return SecurityContext.AUTH_DISABLED;
+            return LoginContext.AUTH_DISABLED;
         }
 
         @Override

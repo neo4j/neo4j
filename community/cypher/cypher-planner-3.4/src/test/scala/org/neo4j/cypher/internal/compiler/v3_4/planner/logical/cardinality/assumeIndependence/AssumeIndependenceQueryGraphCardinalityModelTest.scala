@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality.assu
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality.{ABCDCardinalityData, RandomizedCardinalityModelTestSuite}
-import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ABCDCardinalityData {
@@ -231,7 +230,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
 
   test("honours bound arguments") {
     givenPattern("MATCH (a:FOO)-[:TYPE]->(b:BAR)").
-    withQueryGraphArgumentIds(IdName("a")).
+    withQueryGraphArgumentIds("a").
     withInboundCardinality(13.0).
     withGraphNodes(500).
     withLabel('FOO -> 100).
@@ -242,7 +241,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
 
   test("input cardinality of zero on a different variable should not affect cardinality estimation of the pattern") {
     givenPattern("MATCH (a)").
-    withQueryGraphArgumentIds(IdName("e")).
+    withQueryGraphArgumentIds("e").
     withInboundCardinality(0.0).
     withGraphNodes(500).
     shouldHaveQueryGraphCardinality(500)

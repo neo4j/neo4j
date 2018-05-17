@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,13 +24,25 @@ import java.io.File;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 
 public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
-    protected SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
+    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         return new InMemoryIndexProvider();
+    }
+
+    @Override
+    public boolean supportsSpatial()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean supportsTemporal()
+    {
+        return true;
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,7 +40,7 @@ public class LogVersionUpgradeCheckerTest
     public ExpectedException expect = ExpectedException.none();
 
     @Test
-    public void noThrowWhenLatestVersionAndUpgradeIsNotAllowed() throws Throwable
+    public void noThrowWhenLatestVersionAndUpgradeIsNotAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.CURRENT ) );
 
@@ -48,7 +48,7 @@ public class LogVersionUpgradeCheckerTest
     }
 
     @Test
-    public void throwWhenVersionIsOlderAndUpgradeIsNotAllowed() throws Throwable
+    public void throwWhenVersionIsOlderAndUpgradeIsNotAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V2_3 ) );
 
@@ -58,7 +58,7 @@ public class LogVersionUpgradeCheckerTest
     }
 
     @Test
-    public void stillAcceptLatestVersionWhenUpgradeIsAllowed() throws Throwable
+    public void stillAcceptLatestVersionWhenUpgradeIsAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.CURRENT ) );
 
@@ -66,7 +66,7 @@ public class LogVersionUpgradeCheckerTest
     }
 
     @Test
-    public void acceptOlderLogsWhenUpgradeIsAllowed() throws Throwable
+    public void acceptOlderLogsWhenUpgradeIsAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V2_3 ) );
 

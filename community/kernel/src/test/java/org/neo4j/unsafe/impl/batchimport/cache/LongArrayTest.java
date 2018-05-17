@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,7 +46,7 @@ public class LongArrayTest extends NumberArrayPageCacheTestSupport
     private static Fixture fixture;
 
     @Test
-    public void shouldHandleSomeRandomSetAndGet() throws Exception
+    public void shouldHandleSomeRandomSetAndGet()
     {
         // GIVEN
         int length = random.nextInt( 100_000 ) + 100;
@@ -81,7 +81,7 @@ public class LongArrayTest extends NumberArrayPageCacheTestSupport
     }
 
     @Test
-    public void shouldHandleMultipleCallsToClose() throws Exception
+    public void shouldHandleMultipleCallsToClose()
     {
         // GIVEN
         NumberArray<?> array = newArray( 10, -1 );

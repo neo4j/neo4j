@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,12 +24,11 @@ import java.util.Arrays;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 
 import static java.lang.Integer.min;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 public class IdRangeIterator implements IdSequence
 {
-    public static IdRangeIterator EMPTY_ID_RANGE_ITERATOR =
+    public static final IdRangeIterator EMPTY_ID_RANGE_ITERATOR =
             new IdRangeIterator( new IdRange( EMPTY_LONG_ARRAY, 0, 0 ) )
             {
                 @Override

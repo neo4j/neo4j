@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,8 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -31,24 +30,25 @@ public class NodePropertyAccessor implements PropertyAccessor
 {
     private final Map<Long, Map<Integer,Value>> nodePropertyMap;
 
-    NodePropertyAccessor( long nodeId, LabelSchemaDescriptor schema, Value... values )
+    NodePropertyAccessor( long nodeId, SchemaDescriptor schema, Value... values )
     {
         nodePropertyMap = new HashMap<>();
         addNode( nodeId, schema, values );
     }
 
-    public void addNode( long nodeId, LabelSchemaDescriptor schema, Value... values )
+    public void addNode( long nodeId, SchemaDescriptor schema, Value... values )
     {
         Map<Integer,Value> propertyMap = new HashMap<>();
-        for ( int i = 0; i < schema.getPropertyIds().length; i++ )
+        int[] propertyIds = schema.getPropertyIds();
+        for ( int i = 0; i < propertyIds.length; i++ )
         {
-            propertyMap.put( schema.getPropertyIds()[i], values[i] );
+            propertyMap.put( propertyIds[i], values[i] );
         }
         nodePropertyMap.put( nodeId, propertyMap );
     }
 
     @Override
-    public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value getPropertyValue( long nodeId, int propertyKeyId )
     {
         if ( nodePropertyMap.containsKey( nodeId ) )
         {

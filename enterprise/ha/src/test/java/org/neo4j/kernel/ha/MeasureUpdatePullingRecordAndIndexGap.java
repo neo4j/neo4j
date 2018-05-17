@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.ha;
 
@@ -98,64 +101,59 @@ public class MeasureUpdatePullingRecordAndIndexGap
     private void startMeasuringTheGap( final AtomicInteger good, final AtomicInteger bad, final AtomicInteger ugly,
             final AtomicBoolean halter, final AtomicLong[] highIdNodes, final GraphDatabaseAPI db )
     {
-        new Thread()
-        {
-            @Override
-            public void run()
+        new Thread( () -> {
+            while ( !halter.get() )
             {
-                while ( !halter.get() )
+                for ( int i = 0; i < numberOfIndexes; i++ )
                 {
-                    for ( int i = 0; i < numberOfIndexes; i++ )
+                    long targetNodeId = highIdNodes[i].get();
+                    if ( targetNodeId == 0 )
                     {
-                        long targetNodeId = highIdNodes[i].get();
-                        if ( targetNodeId == 0 )
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        try ( Transaction tx = db.beginTx() )
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        Node nodeFromStorePOV = null;
+                        long nodeId = targetNodeId;
+                        while ( nodeFromStorePOV == null && !halter.get() )
                         {
-                            Node nodeFromStorePOV = null;
-                            long nodeId = targetNodeId;
-                            while ( nodeFromStorePOV == null && !halter.get() )
+                            try
                             {
+                                nodeFromStorePOV = db.getNodeById( nodeId );
+                            }
+                            catch ( NotFoundException e )
+                            {   // Keep on spinning
+                                nodeId = max( nodeId - 1, 0 );
                                 try
                                 {
-                                    nodeFromStorePOV = db.getNodeById( nodeId );
+                                    Thread.sleep( 10 );
                                 }
-                                catch ( NotFoundException e )
-                                {   // Keep on spinning
-                                    nodeId = max( nodeId - 1, 0 );
-                                    try
-                                    {
-                                        Thread.sleep( 10 );
-                                    }
-                                    catch ( InterruptedException e1 )
-                                    {
-                                        throw new RuntimeException( e1 );
-                                    }
+                                catch ( InterruptedException e1 )
+                                {
+                                    throw new RuntimeException( e1 );
                                 }
                             }
+                        }
 
-                            Node nodeFromIndexPOV = db.findNode( label( i ), key( i ), nodeId );
-                            tx.success();
-                            if ( nodeFromIndexPOV != null )
-                            {
-                                good.incrementAndGet();
-                            }
-                            else
-                            {
-                                bad.incrementAndGet();
-                            }
-                            if ( nodeId != targetNodeId )
-                            {
-                                ugly.incrementAndGet();
-                            }
+                        Node nodeFromIndexPOV = db.findNode( label( i ), key( i ), nodeId );
+                        tx.success();
+                        if ( nodeFromIndexPOV != null )
+                        {
+                            good.incrementAndGet();
+                        }
+                        else
+                        {
+                            bad.incrementAndGet();
+                        }
+                        if ( nodeId != targetNodeId )
+                        {
+                            ugly.incrementAndGet();
                         }
                     }
                 }
             }
-        }.start();
+        } ).start();
     }
 
     private void printStats( int good, int bad, int ugly )
@@ -182,32 +180,27 @@ public class MeasureUpdatePullingRecordAndIndexGap
 
     private void startCatchingUp( final GraphDatabaseAPI db, final AtomicBoolean halter, final CountDownLatch endLatch )
     {
-        new Thread()
-        {
-            @Override
-            public void run()
+        new Thread( () -> {
+            try
             {
-                try
+                while ( !halter.get() )
                 {
-                    while ( !halter.get() )
+                    try
                     {
-                        try
-                        {
-                            db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                            throw new RuntimeException( e );
-                        }
+                        db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException( e );
                     }
                 }
-                finally
-                {
-                    endLatch.countDown();
-                }
             }
-        }.start();
+            finally
+            {
+                endLatch.countDown();
+            }
+        } ).start();
     }
 
     private void createIndexes( GraphDatabaseService db )
@@ -238,31 +231,26 @@ public class MeasureUpdatePullingRecordAndIndexGap
         for ( int i = 0; i < numberOfIndexes; i++ )
         {
             final int x = i;
-            new Thread()
-            {
-                @Override
-                public void run()
+            new Thread( () -> {
+                try
                 {
-                    try
+                    while ( !halter.get() )
                     {
-                        while ( !halter.get() )
+                        long nodeId;
+                        try ( Transaction tx = db.beginTx() )
                         {
-                            long nodeId;
-                            try ( Transaction tx = db.beginTx() )
-                            {
-                                Node node = db.createNode( label( x ) );
-                                node.setProperty( key( x ), nodeId = node.getId() );
-                                tx.success();
-                            }
-                            highIdNodes[x].set( nodeId );
+                            Node node = db.createNode( label( x ) );
+                            node.setProperty( key( x ), nodeId = node.getId() );
+                            tx.success();
                         }
-                    }
-                    finally
-                    {
-                        endLatch.countDown();
+                        highIdNodes[x].set( nodeId );
                     }
                 }
-            }.start();
+                finally
+                {
+                    endLatch.countDown();
+                }
+            } ).start();
         }
     }
 }

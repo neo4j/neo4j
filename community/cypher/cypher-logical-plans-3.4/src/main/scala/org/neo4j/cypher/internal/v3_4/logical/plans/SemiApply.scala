@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * For every row in 'left', set that row as the argument, and apply to 'right'. Produce left row, but only if right
@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *   }
   * }
   */
-case class SemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractSemiApply(left, right, solved)
+case class SemiApply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
+  extends AbstractSemiApply(left, right)(idGen)
 
 /**
   * For every row in 'left', set that row as the argument, and apply to 'right'. Produce left row, but only if right
@@ -46,13 +46,13 @@ case class SemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQ
   *   }
   * }
   */
-case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractSemiApply(left, right, solved)
+case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
+  extends AbstractSemiApply(left, right)(idGen)
 
-abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan, solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan)(idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols: Set[IdName] = left.availableSymbols
+  val availableSymbols: Set[String] = left.availableSymbols
 }

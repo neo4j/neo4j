@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,6 +25,9 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class SchemaProcessorTest
@@ -39,13 +42,13 @@ public class SchemaProcessorTest
         SchemaProcessor processor = new SchemaProcessor()
         {
             @Override
-            public void processSpecific( LabelSchemaDescriptor schema )
+            public void processSpecific( org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor schema )
             {
                 callHistory.add( "LabelSchemaDescriptor" );
             }
 
             @Override
-            public void processSpecific( RelationTypeSchemaDescriptor schema )
+            public void processSpecific( org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor schema )
             {
                 callHistory.add( "RelationTypeSchemaDescriptor" );
             }

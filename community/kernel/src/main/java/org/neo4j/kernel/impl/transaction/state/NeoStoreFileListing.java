@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,11 +25,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -37,25 +40,23 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
+import org.neo4j.kernel.impl.util.MultiResource;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
-import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterators.resourceIterator;
 
 public class NeoStoreFileListing
 {
     private final File storeDir;
     private final LogFiles logFiles;
-    private final LabelScanStore labelScanStore;
-    private final IndexingService indexingService;
-    private final ExplicitIndexProviderLookup explicitIndexProviders;
     private final StorageEngine storageEngine;
-    private final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
+    private static final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
             file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE );
-    private final Function<File, StoreFileMetadata> logFileMapper =
+    private static final Function<File, StoreFileMetadata> logFileMapper =
             file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE, true );
+    private final NeoStoreFileIndexListing neoStoreFileIndexListing;
+    private final Collection<StoreFileProvider> additionalProviders;
 
     public NeoStoreFileListing( File storeDir, LogFiles logFiles,
             LabelScanStore labelScanStore, IndexingService indexingService,
@@ -63,25 +64,34 @@ public class NeoStoreFileListing
     {
         this.storeDir = storeDir;
         this.logFiles = logFiles;
-        this.labelScanStore = labelScanStore;
-        this.indexingService = indexingService;
-        this.explicitIndexProviders = explicitIndexProviders;
         this.storageEngine = storageEngine;
+        this.neoStoreFileIndexListing = new NeoStoreFileIndexListing( labelScanStore, indexingService, explicitIndexProviders );
+        this.additionalProviders = new CopyOnWriteArraySet<>();
     }
 
-    public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
+    public StoreFileListingBuilder builder()
     {
-        List<StoreFileMetadata> files = new ArrayList<>();
-        gatherNonRecordStores( files, includeLogs );
-        gatherNeoStoreFiles( files );
-        Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
-        Resource schemaIndexSnapshots = gatherSchemaIndexFiles( files );
-        Resource explicitIndexSnapshots = gatherExplicitIndexFiles( files );
+        return new StoreFileListingBuilder();
+    }
 
-        placeMetaDataStoreLast( files );
+    public NeoStoreFileIndexListing getNeoStoreFileIndexListing()
+    {
+        return neoStoreFileIndexListing;
+    }
 
-        return resourceIterator( files.iterator(),
-                new MultiResource( asList( labelScanStoreSnapshot, schemaIndexSnapshots, explicitIndexSnapshots ) ) );
+    public void registerStoreFileProvider( StoreFileProvider provider )
+    {
+        additionalProviders.add( provider );
+    }
+
+    public interface StoreFileProvider
+    {
+        /**
+         * @param fileMetadataCollection the collection to add the files to
+         * @return A {@link Resource} that should be closed when we are done working with the files added to the collection
+         * @throws IOException if the provider is unable to prepare the file listing
+         */
+        Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException;
     }
 
     private void placeMetaDataStoreLast( List<StoreFileMetadata> files )
@@ -123,71 +133,185 @@ public class NeoStoreFileListing
         }
     }
 
-    private Resource gatherExplicitIndexFiles( Collection<StoreFileMetadata> files ) throws IOException
+    public class StoreFileListingBuilder
     {
-        final Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
-        for ( IndexImplementation indexProvider : explicitIndexProviders.all() )
+        private boolean excludeLogFiles;
+        private boolean excludeNonRecordStoreFiles;
+        private boolean excludeNeoStoreFiles;
+        private boolean excludeLabelScanStoreFiles;
+        private boolean excludeSchemaIndexStoreFiles;
+        private boolean excludeExplicitIndexStoreFiles;
+        private boolean excludeAdditionalProviders;
+
+        private StoreFileListingBuilder()
         {
-            ResourceIterator<File> snapshot = indexProvider.listStoreFiles();
-            snapshots.add( snapshot );
-            snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toCollection( () -> files ) );
         }
-        // Intentionally don't close the snapshot here, return it for closing by the consumer of
-        // the targetFiles list.
-        return new MultiResource( snapshots );
+
+        private void excludeAll( boolean initiateInclusive )
+        {
+            this.excludeLogFiles =
+            this.excludeNonRecordStoreFiles =
+            this.excludeNeoStoreFiles =
+            this.excludeLabelScanStoreFiles =
+                    this.excludeSchemaIndexStoreFiles = this.excludeAdditionalProviders = this.excludeExplicitIndexStoreFiles = initiateInclusive;
+        }
+
+        public StoreFileListingBuilder excludeAll()
+        {
+            excludeAll( true );
+            return this;
+        }
+
+        public StoreFileListingBuilder includeAll()
+        {
+            excludeAll( false );
+            return this;
+        }
+
+        public StoreFileListingBuilder excludeLogFiles()
+        {
+            excludeLogFiles = true;
+            return this;
+        }
+
+        public StoreFileListingBuilder excludeNonRecordStoreFiles()
+        {
+            excludeNonRecordStoreFiles = true;
+            return this;
+        }
+
+        public StoreFileListingBuilder excludeNeoStoreFiles()
+        {
+            excludeNeoStoreFiles = true;
+            return this;
+        }
+
+        public StoreFileListingBuilder excludeLabelScanStoreFiles()
+        {
+            excludeLabelScanStoreFiles = true;
+            return this;
+        }
+
+        public StoreFileListingBuilder excludeSchemaIndexStoreFiles()
+        {
+            excludeSchemaIndexStoreFiles = true;
+            return this;
+        }
+
+        public StoreFileListingBuilder excludeExplicitIndexStoreFiles()
+        {
+            excludeExplicitIndexStoreFiles = true;
+            return this;
+        }
+
+        public StoreFileListingBuilder excludeAdditionalProviders()
+        {
+            excludeAdditionalProviders = true;
+            return this;
+        }
+
+        public StoreFileListingBuilder includeLogFiles()
+        {
+            excludeLogFiles = false;
+            return this;
+        }
+
+        public StoreFileListingBuilder includeNonRecordStoreFiles()
+        {
+            excludeNonRecordStoreFiles = false;
+            return this;
+        }
+
+        public StoreFileListingBuilder includeNeoStoreFiles()
+        {
+            excludeNeoStoreFiles = false;
+            return this;
+        }
+
+        public StoreFileListingBuilder includeLabelScanStoreFiles()
+        {
+            excludeLabelScanStoreFiles = false;
+            return this;
+        }
+
+        public StoreFileListingBuilder includeSchemaIndexStoreFiles()
+        {
+            excludeSchemaIndexStoreFiles = false;
+            return this;
+        }
+
+        public StoreFileListingBuilder includeExplicitIndexStoreStoreFiles()
+        {
+            excludeExplicitIndexStoreFiles = false;
+            return this;
+        }
+
+        public StoreFileListingBuilder includeAdditionalProviders()
+        {
+            excludeAdditionalProviders = false;
+            return this;
+        }
+
+        public ResourceIterator<StoreFileMetadata> build() throws IOException
+        {
+            List<StoreFileMetadata> files = new ArrayList<>();
+            List<Resource> resources = new ArrayList<>();
+            try
+            {
+                if ( !excludeNonRecordStoreFiles )
+                {
+                    gatherNonRecordStores( files, !excludeLogFiles );
+                }
+                if ( !excludeNeoStoreFiles )
+                {
+                    gatherNeoStoreFiles( files );
+                }
+                if ( !excludeLabelScanStoreFiles )
+                {
+                    resources.add( neoStoreFileIndexListing.gatherLabelScanStoreFiles( files ) );
+                }
+                if ( !excludeSchemaIndexStoreFiles )
+                {
+                    resources.add( neoStoreFileIndexListing.gatherSchemaIndexFiles( files ) );
+                }
+                if ( !excludeExplicitIndexStoreFiles )
+                {
+                    resources.add( neoStoreFileIndexListing.gatherExplicitIndexFiles( files ) );
+                }
+                if ( !excludeAdditionalProviders )
+                {
+                    for ( StoreFileProvider additionalProvider : additionalProviders )
+                    {
+                        resources.add( additionalProvider.addFilesTo( files ) );
+                    }
+                }
+
+                placeMetaDataStoreLast( files );
+            }
+            catch ( IOException e )
+            {
+                try
+                {
+                    IOUtils.closeAll( resources );
+                }
+                catch ( IOException e1 )
+                {
+                    e = Exceptions.chain( e, e1 );
+                }
+                throw e;
+            }
+
+            return resourceIterator( files.iterator(), new MultiResource( resources ) );
+        }
     }
 
-    private Resource gatherSchemaIndexFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
+    public static List<StoreFileMetadata> getSnapshotFilesMetadata( ResourceIterator<File> snapshot )
     {
-        ResourceIterator<File> snapshot = indexingService.snapshotStoreFiles();
-        snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toCollection( () -> targetFiles ) );
-        // Intentionally don't close the snapshot here, return it for closing by the consumer of
-        // the targetFiles list.
-        return snapshot;
-    }
-
-    private Resource gatherLabelScanStoreFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
-    {
-        ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
-        snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toCollection( () -> targetFiles ) );
-        // Intentionally don't close the snapshot here, return it for closing by the consumer of
-        // the targetFiles list.
-        return snapshot;
+        return snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toList() );
     }
 
     private void gatherNeoStoreFiles( final Collection<StoreFileMetadata> targetFiles )
     {
         targetFiles.addAll( storageEngine.listStorageFiles() );
-    }
-
-    private static final class MultiResource implements Resource
-    {
-        private final Collection<? extends Resource> snapshots;
-
-        private MultiResource( Collection<? extends Resource> resources )
-        {
-            this.snapshots = resources;
-        }
-
-        @Override
-        public void close()
-        {
-            RuntimeException exception = null;
-            for ( Resource snapshot : snapshots )
-            {
-                try
-                {
-                    snapshot.close();
-                }
-                catch ( RuntimeException e )
-                {
-                    exception = e;
-                }
-            }
-            if ( exception != null )
-            {
-                throw exception;
-            }
-        }
     }
 }

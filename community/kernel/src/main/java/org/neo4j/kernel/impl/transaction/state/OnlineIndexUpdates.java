@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,8 +29,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
@@ -57,7 +57,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     private final NodeStore nodeStore;
     private final IndexingUpdateService updateService;
     private final PropertyPhysicalToLogicalConverter converter;
-    private final Collection<IndexEntryUpdate<LabelSchemaDescriptor>> updates = new ArrayList<>();
+    private final Collection<IndexEntryUpdate<SchemaDescriptor>> updates = new ArrayList<>();
     private NodeRecord nodeRecord;
 
     public OnlineIndexUpdates( NodeStore nodeStore,
@@ -70,7 +70,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
+    public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
     {
         return updates.iterator();
     }
@@ -111,7 +111,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         NodeUpdates nodeUpdates = nodePropertyUpdate.build();
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        for ( IndexEntryUpdate<LabelSchemaDescriptor> update :  updateService.convertToIndexUpdates( nodeUpdates ) )
+        for ( IndexEntryUpdate<SchemaDescriptor> update :  updateService.convertToIndexUpdates( nodeUpdates ) )
         {
             updates.add( update );
         }

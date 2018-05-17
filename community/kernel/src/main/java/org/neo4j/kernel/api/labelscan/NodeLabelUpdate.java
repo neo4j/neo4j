@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,7 +25,7 @@ import java.util.Comparator;
 public class NodeLabelUpdate
 {
     public static final Comparator<? super NodeLabelUpdate> SORT_BY_NODE_ID =
-            (Comparator<NodeLabelUpdate>) ( o1, o2 ) -> Long.compare( o1.getNodeId(), o2.getNodeId() );
+            Comparator.comparingLong( NodeLabelUpdate::getNodeId );
 
     private final long nodeId;
     private final long[] labelsBefore;

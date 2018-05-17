@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,14 +23,14 @@ import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, PathValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue, PathValue}
 
 import scala.collection.JavaConverters._
 
 case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
-                     (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
+                     (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(src) with GraphElementPropertyFunctions {
 
 
@@ -39,7 +39,7 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
     input.map { row =>
       expression(row, state) match {
         case Values.NO_VALUE => // do nothing
-        case r: EdgeValue =>
+        case r: RelationshipValue =>
           deleteRelationship(r, state)
         case n: NodeValue =>
           deleteNode(n, state)
@@ -57,13 +57,13 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
     else state.query.nodeOps.delete(n.id())
   }
 
-  private def deleteRelationship(r: EdgeValue, state: QueryState) =
+  private def deleteRelationship(r: RelationshipValue, state: QueryState) =
     if (!state.query.relationshipOps.isDeletedInThisTx(r.id())) state.query.relationshipOps.delete(r.id())
 
   private def deletePath(p: PathValue, state: QueryState) = p.asList().iterator().asScala.foreach {
     case n: NodeValue =>
       deleteNode(n, state)
-    case r: EdgeValue =>
+    case r: RelationshipValue =>
       deleteRelationship(r, state)
     case other =>
       throw new CypherTypeException(s"Expected a Node or Relationship, but got a ${other.getClass.getSimpleName}")

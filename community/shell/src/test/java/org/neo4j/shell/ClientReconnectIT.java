@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.Serializable;
-import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 public class ClientReconnectIT extends AbstractShellIT
 {
     @Before
-    public void setUp() throws RemoteException
+    public void setUp()
     {
         makeServerRemotelyAvailable();
     }
@@ -65,7 +64,7 @@ public class ClientReconnectIT extends AbstractShellIT
         client.shutdown();
     }
 
-    private void makeRemoveAvailableOnPort( int serverPort ) throws RemoteException
+    private void makeRemoveAvailableOnPort( int serverPort )
     {
         long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 30 );
         do

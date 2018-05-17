@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,9 +28,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -81,7 +81,8 @@ public class NeoTransactionIndexApplierTest
         after.setLabelField( 18, emptyDynamicRecords );
         final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
-        when( labelScanStore.get() ).thenReturn( mock( LabelScanWriter.class ) );
+        LabelScanWriter labelScanWriter = mock( LabelScanWriter.class );
+        when( labelScanStore.get() ).thenReturn( labelScanWriter );
 
         // when
         boolean result;
@@ -126,7 +127,7 @@ public class NeoTransactionIndexApplierTest
 
     private IndexRule indexRule( long ruleId, int labelId, int propertyId, Descriptor descriptor )
     {
-        return IndexRule.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
+        return IndexRule.indexRule( ruleId, SchemaIndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
     }
 
     @Test

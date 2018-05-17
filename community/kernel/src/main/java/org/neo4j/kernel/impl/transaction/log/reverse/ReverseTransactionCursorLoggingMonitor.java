@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,7 +33,7 @@ public class ReverseTransactionCursorLoggingMonitor implements ReversedTransacti
     }
 
     @Override
-    public void transactionalLogRecordReadFailure( Throwable t, long[] transactionOffsets, int transactionIndex, long logVersion )
+    public void transactionalLogRecordReadFailure( long[] transactionOffsets, int transactionIndex, long logVersion )
     {
         log.warn( transactionIndex > 0 ?
                format( "Fail to read transaction log version %d. Last valid transaction start offset is: %d.",

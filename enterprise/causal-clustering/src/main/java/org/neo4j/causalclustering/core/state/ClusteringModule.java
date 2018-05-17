@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core.state;
 
@@ -33,6 +36,7 @@ import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
 import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
 import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.causalclustering.identity.DatabaseName;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -44,6 +48,7 @@ import org.neo4j.time.Clocks;
 
 import static java.lang.Thread.sleep;
 import static org.neo4j.causalclustering.core.server.CoreServerModule.CLUSTER_ID_NAME;
+import static org.neo4j.causalclustering.core.server.CoreServerModule.DB_NAME;
 import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.chooseResolver;
 
 public class ClusteringModule
@@ -64,30 +69,36 @@ public class ClusteringModule
 
         topologyService = discoveryServiceFactory
                 .coreTopologyService( config, myself, platformModule.jobScheduler, logProvider,
-                        userLogProvider, hostnameResolver, resolveStrategy( config ) );
+                        userLogProvider, hostnameResolver, resolveStrategy( config, logProvider ) );
 
         life.add( topologyService );
 
         dependencies.satisfyDependency( topologyService ); // for tests
 
+        CoreBootstrapper coreBootstrapper =
+                new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider );
+
         SimpleStorage<ClusterId> clusterIdStorage =
                 new SimpleFileStorage<>( fileSystem, clusterStateDirectory, CLUSTER_ID_NAME, new ClusterId.Marshal(),
                         logProvider );
 
-        CoreBootstrapper coreBootstrapper =
-                new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider );
+        SimpleStorage<DatabaseName> dbNameStorage =
+                new SimpleFileStorage<>( fileSystem, clusterStateDirectory, DB_NAME, new DatabaseName.Marshal(), logProvider );
 
-        clusterBinder = new ClusterBinder( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
-                () -> sleep( 100 ), 300_000, coreBootstrapper );
+        String dbName = config.get( CausalClusteringSettings.database );
+        int minimumCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
+
+        clusterBinder = new ClusterBinder( clusterIdStorage, dbNameStorage, topologyService, Clocks.systemClock(), () -> sleep( 100 ), 300_000,
+                coreBootstrapper, dbName, minimumCoreHosts, logProvider );
     }
 
-    private static TopologyServiceRetryStrategy resolveStrategy( Config config )
+    private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )
     {
         long refreshPeriodMillis = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         int pollingFrequencyWithinRefreshWindow = 2;
         int numberOfRetries =
                 pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
-        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries, logProvider );
     }
 
     public CoreTopologyService topologyService()

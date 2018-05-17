@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,11 +23,11 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
@@ -53,7 +53,7 @@ public class BasicAuthentication implements Authentication
     {
         if ( authToken.containsKey( NEW_CREDENTIALS ) )
         {
-            return update( authToken, false );
+            return update( authToken );
         }
         else
         {
@@ -65,9 +65,9 @@ public class BasicAuthentication implements Authentication
     {
         try
         {
-            SecurityContext securityContext = authManager.login( authToken );
+            LoginContext loginContext = authManager.login( authToken );
 
-            switch ( securityContext.subject().getAuthenticationResult() )
+            switch ( loginContext.subject().getAuthenticationResult() )
             {
             case SUCCESS:
             case PASSWORD_CHANGE_REQUIRED:
@@ -78,7 +78,7 @@ public class BasicAuthentication implements Authentication
                 throw new AuthenticationException( Status.Security.Unauthorized );
             }
 
-            return new BasicAuthenticationResult( securityContext );
+            return new BasicAuthenticationResult( loginContext );
         }
         catch ( InvalidAuthTokenException e )
         {
@@ -86,28 +86,28 @@ public class BasicAuthentication implements Authentication
         }
     }
 
-    private AuthenticationResult update( Map<String,Object> authToken, boolean requiresPasswordChange )
+    private AuthenticationResult update( Map<String,Object> authToken )
             throws AuthenticationException
     {
         try
         {
-            SecurityContext securityContext = authManager.login( authToken );
+            LoginContext loginContext = authManager.login( authToken );
 
-            switch ( securityContext.subject().getAuthenticationResult() )
+            switch ( loginContext.subject().getAuthenticationResult() )
             {
             case SUCCESS:
             case PASSWORD_CHANGE_REQUIRED:
                 String newPassword = AuthToken.safeCast( NEW_CREDENTIALS, authToken );
                 String username = AuthToken.safeCast( PRINCIPAL, authToken );
-                userManagerSupplier.getUserManager( securityContext )
-                        .setUserPassword( username, newPassword, requiresPasswordChange );
-                securityContext.subject().setPasswordChangeNoLongerRequired();
+                userManagerSupplier.getUserManager( loginContext.subject(), false )
+                        .setUserPassword( username, newPassword, false );
+                loginContext.subject().setPasswordChangeNoLongerRequired();
                 break;
             default:
                 throw new AuthenticationException( Status.Security.Unauthorized );
             }
 
-            return new BasicAuthenticationResult( securityContext );
+            return new BasicAuthenticationResult( loginContext );
         }
         catch ( AuthorizationViolationException | InvalidArgumentsException | InvalidAuthTokenException e )
         {

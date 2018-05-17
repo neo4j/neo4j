@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -123,19 +123,33 @@ public abstract class BaseRecordFormats implements RecordFormats
         return contains( capabilities(), capability );
     }
 
-    public static boolean hasSameCapabilities( RecordFormats one, RecordFormats other, CapabilityType type )
+    public static boolean hasCompatibleCapabilities( RecordFormats one, RecordFormats other, CapabilityType type )
     {
         Set<Capability> myFormatCapabilities = Stream.of( one.capabilities() )
                 .filter( capability -> capability.isType( type ) ).collect( toSet() );
         Set<Capability> otherFormatCapabilities = Stream.of( other.capabilities() )
                 .filter( capability -> capability.isType( type ) ).collect( toSet() );
 
-        return myFormatCapabilities.equals( otherFormatCapabilities );
+        if ( myFormatCapabilities.equals( otherFormatCapabilities ) )
+        {
+            // If they have the same capabilities then of course they are compatible
+            return true;
+        }
+
+        boolean capabilitiesNotRemoved = otherFormatCapabilities.containsAll( myFormatCapabilities );
+
+        otherFormatCapabilities.removeAll( myFormatCapabilities );
+        boolean allAddedAreAdditive = otherFormatCapabilities.stream().allMatch( Capability::isAdditive );
+
+        // Even if capabilities of the two aren't the same then there's a special case where if the additional
+        // capabilities of the other format are all additive then they are also compatible because no data
+        // in the existing store needs to be migrated.
+        return capabilitiesNotRemoved && allAddedAreAdditive;
     }
 
     @Override
-    public boolean hasSameCapabilities( RecordFormats other, CapabilityType type )
+    public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
     {
-        return hasSameCapabilities( this, other, type );
+        return hasCompatibleCapabilities( this, other, type );
     }
 }

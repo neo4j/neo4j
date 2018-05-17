@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,20 +36,23 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static java.util.stream.StreamSupport.stream;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
 public final class ValueUtils
@@ -94,7 +97,7 @@ public final class ValueUtils
             {
                 if ( object instanceof Path )
                 {
-                    return asPathValue( (Path) object );
+                    return fromPath( (Path) object );
                 }
                 else if ( object instanceof List<?> )
                 {
@@ -135,14 +138,11 @@ public final class ValueUtils
             }
             else if ( object instanceof Geometry )
             {
-                if ( object instanceof Point )
-                {
-                    return asPointValue( (Point) object );
-                }
-                else
-                {
-                    return asGeometryValue( (Geometry) object );
-                }
+                return asGeometryValue( (Geometry) object );
+            }
+            else if ( object instanceof VirtualNodeValue || object instanceof VirtualRelationshipValue )
+            {
+                return (AnyValue) object;
             }
             else
             {
@@ -175,22 +175,7 @@ public final class ValueUtils
             primitiveCoordinate[i] = coordinate.get( i );
         }
 
-        // TODO:
-        // From a (public class) CRS we can not get the name of the CRSTable.
-        // I do not know how to a sensible mapping here.
-        // Maybe we have to deprecate the public types after all and rewrite them
-        if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.Cartesian.getCode() )
-        {
-            return Values.pointValue( CoordinateReferenceSystem.Cartesian, primitiveCoordinate );
-        }
-        else if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.WGS84.getCode() )
-        {
-            return Values.pointValue( CoordinateReferenceSystem.WGS84, primitiveCoordinate );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown coordinate reference system " + geometry.getCRS() );
-        }
+        return Values.pointValue( CoordinateReferenceSystem.get( geometry.getCRS() ), primitiveCoordinate );
     }
 
     public static ListValue asListValue( List<?> collection )
@@ -230,87 +215,25 @@ public final class ValueUtils
         }
     }
 
-    public static PathValue asPathValue( Path path )
-    {
-        NodeValue[] nodes = stream( path.nodes().spliterator(), false )
-                .map( ValueUtils::fromNodeProxy ).toArray( NodeValue[]::new );
-        EdgeValue[] edges = stream( path.relationships().spliterator(), false )
-                .map( ValueUtils::fromRelationshipProxy ).toArray( EdgeValue[]::new );
-
-        return VirtualValues.path( nodes, edges );
-    }
-
     public static ListValue asListOfEdges( Iterable<Relationship> rels )
     {
         return VirtualValues.list( StreamSupport.stream( rels.spliterator(), false )
-                .map( ValueUtils::fromRelationshipProxy ).toArray( EdgeValue[]::new ) );
+                .map( ValueUtils::fromRelationshipProxy ).toArray( RelationshipValue[]::new ) );
     }
 
     public static ListValue asListOfEdges( Relationship[] rels )
     {
-        EdgeValue[] edgeValues = new EdgeValue[rels.length];
-        for ( int i = 0; i < edgeValues.length; i++ )
+        RelationshipValue[] relValues = new RelationshipValue[rels.length];
+        for ( int i = 0; i < relValues.length; i++ )
         {
-            edgeValues[i] = fromRelationshipProxy( rels[i] );
+            relValues[i] = fromRelationshipProxy( rels[i] );
         }
-        return VirtualValues.list( edgeValues );
+        return VirtualValues.list( relValues );
     }
 
     public static MapValue asMapValue( Map<String,Object> map )
     {
         return map( mapValues( map ) );
-    }
-
-    public static PointValue fromMap( MapValue map )
-    {
-        if ( map.containsKey( "x" ) && map.containsKey( "y" ) )
-        {
-            double x = ((NumberValue) map.get( "x" )).doubleValue();
-            double y = ((NumberValue) map.get( "y" )).doubleValue();
-            if ( !map.containsKey( "crs" ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
-            }
-
-            TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.getName() ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
-            }
-            else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.getName() ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.WGS84, x, y );
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Unknown coordinate reference system: " + crs.stringValue() );
-            }
-        }
-        else if ( map.containsKey( "latitude" ) && map.containsKey( "longitude" ) )
-        {
-            double latitude = ((NumberValue) map.get( "latitude" )).doubleValue();
-            double longitude = ((NumberValue) map.get( "longitude" )).doubleValue();
-            if ( !map.containsKey( "crs" ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
-            }
-
-            TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.getName() ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
-            }
-            else
-            {
-                throw new IllegalArgumentException(
-                        "Geographic points does not support coordinate reference system: " + crs.stringValue() );
-            }
-        }
-        else
-        {
-            throw new IllegalArgumentException(
-                    "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
-        }
     }
 
     private static Map<String,AnyValue> mapValues( Map<String,Object> map )
@@ -329,8 +252,129 @@ public final class ValueUtils
         return new NodeProxyWrappingNodeValue( node );
     }
 
-    public static EdgeValue fromRelationshipProxy( Relationship relationship )
+    public static RelationshipValue fromRelationshipProxy( Relationship relationship )
     {
-        return new RelationshipProxyWrappingEdgeValue( relationship );
+        return new RelationshipProxyWrappingValue( relationship );
     }
+
+    public static PathValue fromPath( Path path )
+    {
+        return new PathWrappingPathValue( path );
+    }
+
+    /**
+     * Creates a {@link Value} from the given object, or if it is already a Value it is returned as it is.
+     * <p>
+     * This is different from {@link Values#of} which often explicitly fails or creates a new copy
+     * if given a Value.
+     */
+    public static Value asValue( Object value )
+    {
+        if ( value instanceof Value )
+        {
+            return (Value) value;
+        }
+        return Values.of( value );
+    }
+
+    /**
+     * Creates an {@link AnyValue} from the given object, or if it is already an AnyValue it is returned as it is.
+     * <p>
+     * This is different from {@link ValueUtils#of} which often explicitly fails or creates a new copy
+     * if given an AnyValue.
+     */
+    public static AnyValue asAnyValue( Object value )
+    {
+        if ( value instanceof AnyValue )
+        {
+            return (AnyValue) value;
+        }
+        return of( value );
+    }
+
+    public static NodeValue asNodeValue( Object object )
+    {
+        if ( object instanceof NodeValue )
+        {
+            return (NodeValue) object;
+        }
+        if ( object instanceof Node )
+        {
+            return fromNodeProxy( (Node) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a node from " + object.getClass().getName() );
+    }
+
+    public static RelationshipValue asRelationshipValue( Object object )
+    {
+        if ( object instanceof RelationshipValue )
+        {
+            return (RelationshipValue) object;
+        }
+        if ( object instanceof Relationship )
+        {
+            return fromRelationshipProxy( (Relationship) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a relationship from " + object.getClass().getName() );
+    }
+
+    public static LongValue asLongValue( Object object )
+    {
+        if ( object instanceof LongValue )
+        {
+            return (LongValue) object;
+        }
+        if ( object instanceof Long )
+        {
+            return Values.longValue( (long) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a long from " + object.getClass().getName() );
+    }
+
+    public static DoubleValue asDoubleValue( Object object )
+    {
+        if ( object instanceof DoubleValue )
+        {
+            return (DoubleValue) object;
+        }
+        if ( object instanceof Double )
+        {
+            return Values.doubleValue( (double) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a double from " + object.getClass().getName() );
+    }
+
+    public static BooleanValue asBooleanValue( Object object )
+    {
+        if ( object instanceof BooleanValue )
+        {
+            return (BooleanValue) object;
+        }
+        if ( object instanceof Boolean )
+        {
+            return Values.booleanValue( (boolean) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a boolean from " + object.getClass().getName() );
+    }
+
+    public static TextValue asTextValue( Object object )
+    {
+        if ( object instanceof TextValue )
+        {
+            return (TextValue) object;
+        }
+        if ( object instanceof String )
+        {
+            return Values.stringValue( (String) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a string from " + object.getClass().getName() );
+    }
+
 }
+

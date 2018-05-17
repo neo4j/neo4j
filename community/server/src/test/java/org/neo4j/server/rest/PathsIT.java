@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -305,7 +305,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
     @Test
     @Graph( value = { "a to c", "a to d", "c to b", "d to e", "b to f", "c to f", "f to g", "d to g", "e to g",
     "c to g" } )
-    public void shouldReturn404WhenFailingToFindASinglePath() throws JsonParseException
+    public void shouldReturn404WhenFailingToFindASinglePath()
     {
         long a = nodeId( data.get(), "a" );
         long g = nodeId( data.get(), "g" );

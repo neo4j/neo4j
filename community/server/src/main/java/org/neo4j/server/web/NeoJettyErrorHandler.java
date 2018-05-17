@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,6 @@ package org.neo4j.server.web;
 
 import org.eclipse.jetty.server.handler.ErrorHandler;
 
-import java.io.IOException;
 import java.io.Writer;
 import javax.servlet.http.HttpServletRequest;
 
@@ -30,14 +29,13 @@ public class NeoJettyErrorHandler extends ErrorHandler
 
     @Override
     protected void handleErrorPage( HttpServletRequest request, Writer writer, int code, String message )
-            throws IOException
     {
         writeErrorPage( request, writer, code, message, false );
     }
 
     @Override
     protected void writeErrorPage( HttpServletRequest request, Writer writer, int code, String message,
-            boolean showStacks ) throws IOException
+            boolean showStacks )
     {
 
         // we don't want any Jetty output
@@ -46,7 +44,6 @@ public class NeoJettyErrorHandler extends ErrorHandler
 
     @Override
     protected void writeErrorPageHead( HttpServletRequest request, Writer writer, int code, String message )
-            throws IOException
     {
         // we don't want any Jetty output
 
@@ -54,7 +51,7 @@ public class NeoJettyErrorHandler extends ErrorHandler
 
     @Override
     protected void writeErrorPageBody( HttpServletRequest request, Writer writer, int code, String message,
-            boolean showStacks ) throws IOException
+            boolean showStacks )
     {
         // we don't want any Jetty output
 
@@ -62,14 +59,14 @@ public class NeoJettyErrorHandler extends ErrorHandler
 
     @Override
     protected void writeErrorPageMessage( HttpServletRequest request, Writer writer, int code, String message,
-            String uri ) throws IOException
+            String uri )
     {
         // we don't want any Jetty output
 
     }
 
     @Override
-    protected void writeErrorPageStacks( HttpServletRequest request, Writer writer ) throws IOException
+    protected void writeErrorPageStacks( HttpServletRequest request, Writer writer )
     {
         // we don't want any stack output
 

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j;
 
@@ -76,8 +79,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.LifecycleManagingDatabase;
-import org.neo4j.server.enterprise.EnterpriseNeoServer;
+import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.shell.InterruptSignalHandler;
@@ -116,7 +120,7 @@ public class TransactionGuardIT
     private static final FakeClock fakeClock = Clocks.fakeClock();
     private static GraphDatabaseAPI databaseWithTimeout;
     private static GraphDatabaseAPI databaseWithoutTimeout;
-    private static EnterpriseNeoServer neoServer;
+    private static OpenEnterpriseNeoServer neoServer;
     private static int boltPortDatabaseWithTimeout;
     private static final String DEFAULT_TIMEOUT = "2s";
     private static final KernelTransactionTimeoutMonitorSupplier monitorSupplier = new
@@ -312,7 +316,7 @@ public class TransactionGuardIT
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         KernelTransactionTimeoutMonitor timeoutMonitor =
                 database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
-        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        OpenEnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
         String transactionEndPoint = HTTP.POST( transactionUri( neoServer ) ).location();
 
         fakeClock.forward( 3, TimeUnit.SECONDS );
@@ -336,7 +340,7 @@ public class TransactionGuardIT
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         KernelTransactionTimeoutMonitor timeoutMonitor =
                 database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
-        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        OpenEnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
         long customTimeout = TimeUnit.SECONDS.toMillis( 10 );
         HTTP.Response beginResponse = HTTP
                 .withHeaders( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER, String.valueOf( customTimeout ) )
@@ -372,7 +376,7 @@ public class TransactionGuardIT
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         KernelTransactionTimeoutMonitor timeoutMonitor =
                 database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
-        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        OpenEnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
 
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
 
@@ -404,7 +408,7 @@ public class TransactionGuardIT
         KernelTransactionTimeoutMonitor timeoutMonitor =
                 database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         monitorSupplier.setTransactionTimeoutMonitor( timeoutMonitor );
-        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        OpenEnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
 
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
 
@@ -423,7 +427,7 @@ public class TransactionGuardIT
     }
 
     @Test
-    public void changeTimeoutAtRuntime() throws Exception
+    public void changeTimeoutAtRuntime()
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         KernelTransactionTimeoutMonitor timeoutMonitor =
@@ -516,17 +520,18 @@ public class TransactionGuardIT
                 .toConfig();
     }
 
-    private EnterpriseNeoServer startNeoServer( GraphDatabaseFacade database ) throws IOException
+    private OpenEnterpriseNeoServer startNeoServer( GraphDatabaseFacade database ) throws IOException
     {
         if ( neoServer == null )
         {
             GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
             BoltConnector boltConnector = new BoltConnector( BOLT_CONNECTOR_KEY );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
-                    .withProperty( boltConnector.enabled.name(), "true" )
+                    .withProperty( boltConnector.enabled.name(), Settings.TRUE )
+                    .withProperty( ServerSettings.script_enabled.name(), Settings.TRUE )
                     .withProperty( boltConnector.encryption_level.name(),
                             BoltConnector.EncryptionLevel.DISABLED.name() )
-                    .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" );
+                    .withProperty( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE );
             serverBuilder.withProperty( new HttpConnector( "http" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
             neoServer = serverBuilder.build();
             cleanupRule.add( neoServer );
@@ -543,6 +548,7 @@ public class TransactionGuardIT
                 boltConnector.address, "localhost:0",
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
+                ServerSettings.script_enabled, Settings.TRUE,
                 boltConnector.encryption_level, BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.auth_enabled, "false" );
     }
@@ -552,7 +558,7 @@ public class TransactionGuardIT
         return MapUtil.genericMap();
     }
 
-    private String transactionUri( EnterpriseNeoServer neoServer )
+    private String transactionUri( OpenEnterpriseNeoServer neoServer )
     {
         return neoServer.baseUri().toString() + "db/data/transaction";
     }
@@ -675,7 +681,7 @@ public class TransactionGuardIT
             return new GuardTestServer( config, dependencies, NullLogProvider.getInstance() );
         }
 
-        private class GuardTestServer extends EnterpriseNeoServer
+        private class GuardTestServer extends OpenEnterpriseNeoServer
         {
             GuardTestServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
             {
@@ -738,7 +744,8 @@ public class TransactionGuardIT
 
         CustomClockEnterpriseFacadeFactory()
         {
-            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,EditionModule>()
+            // XXX: This has to be a Function, JVM crashes with ClassFormatError if you pass a lambda here
+            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,EditionModule>() // Don't make a lambda
             {
                 @Override
                 public EditionModule apply( PlatformModule platformModule )

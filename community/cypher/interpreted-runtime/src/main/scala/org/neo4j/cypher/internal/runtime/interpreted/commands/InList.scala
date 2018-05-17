@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -52,7 +52,7 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
 
       seqMethod(seq)(item =>
         // Since we can override an existing id here we use a method that guarantees that we do not overwrite an existing variable
-        predicate.isMatch(innerContext.newWith1(id, item), state))
+        predicate.isMatch(innerContext.set(id, item), state))
     }
   }
 

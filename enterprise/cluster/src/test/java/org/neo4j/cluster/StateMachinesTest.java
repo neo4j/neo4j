@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster;
 
@@ -51,13 +54,13 @@ import static org.neo4j.cluster.com.message.Message.internal;
 public class StateMachinesTest
 {
     @Test
-    public void whenMessageHandlingCausesNewMessagesThenEnsureCorrectOrder() throws Exception
+    public void whenMessageHandlingCausesNewMessagesThenEnsureCorrectOrder()
     {
         // Given
         StateMachines stateMachines = new StateMachines( NullLogProvider.getInstance(), mock( StateMachines.Monitor.class ),
                 mock( MessageSource.class ),
                 Mockito.mock( MessageSender.class ), Mockito.mock( Timeouts.class ),
-                Mockito.mock( DelayedDirectExecutor.class ), command -> command.run(), mock( InstanceId.class )
+                Mockito.mock( DelayedDirectExecutor.class ), Runnable::run, mock( InstanceId.class )
         );
 
         ArrayList<TestMessage> handleOrder = new ArrayList<>();
@@ -73,10 +76,10 @@ public class StateMachinesTest
     }
 
     @Test
-    public void shouldAlwaysAddItsInstanceIdToOutgoingMessages() throws Exception
+    public void shouldAlwaysAddItsInstanceIdToOutgoingMessages()
     {
         InstanceId me = new InstanceId( 42 );
-        final List<Message> sentOut = new LinkedList<Message>();
+        final List<Message> sentOut = new LinkedList<>();
 
         /*
          * Lots of setup required. Must have a sender that keeps messages so we can see what the machine sent out.
@@ -98,7 +101,7 @@ public class StateMachinesTest
                 mock( Timeouts.class ), mock( DelayedDirectExecutor.class ), Runnable::run, me
         );
 
-        // The state machine, which has a TestMessage message type and simply adds a TO header to the messages it
+        // The state machine, which has a TestMessage message type and simply adds a HEADER_TO header to the messages it
         // is handed to handle.
         StateMachine machine = mock( StateMachine.class );
         when( machine.getMessageType() ).then( (Answer<Object>) invocation -> TestMessage.class );
@@ -106,7 +109,7 @@ public class StateMachinesTest
         {
             Message message = invocation.getArgument( 0 );
             MessageHolder holder = invocation.getArgument( 1 );
-            message.setHeader( Message.TO, "to://neverland" );
+            message.setHeader( Message.HEADER_TO, "to://neverland" );
             holder.offer( message );
             return null;
         } ).when( machine ).handle( any( Message.class ), any( MessageHolder.class ) );
@@ -118,9 +121,9 @@ public class StateMachinesTest
         // Then
         assertEquals( "StateMachines should not make up messages from thin air", 1, sentOut.size() );
         Message sent = sentOut.get( 0 );
-        assertTrue( "StateMachines should add the instance-id header", sent.hasHeader( Message.INSTANCE_ID ) );
+        assertTrue( "StateMachines should add the instance-id header", sent.hasHeader( Message.HEADER_INSTANCE_ID ) );
         assertEquals( "StateMachines should add instance-id header that has the correct value",
-                me.toString(), sent.getHeader( Message.INSTANCE_ID ) );
+                me.toString(), sent.getHeader( Message.HEADER_INSTANCE_ID ) );
     }
 
     public enum TestMessage
@@ -135,8 +138,8 @@ public class StateMachinesTest
         test
                 {
                     @Override
-                    public State<?, ?> handle( List context, Message<TestMessage> message,
-                                               MessageHolder outgoing ) throws Throwable
+                    public TestState handle( List context, Message<TestMessage> message,
+                                               MessageHolder outgoing )
                     {
                         context.add( message.getMessageType() );
 

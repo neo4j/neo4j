@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,26 +20,22 @@
 package org.neo4j.kernel.impl.coreapi;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public class PlaceboTransaction implements InternalTransaction
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
-    private final Supplier<Statement> stmt;
     private final KernelTransaction currentTransaction;
     private boolean success;
 
-    public PlaceboTransaction( Supplier<KernelTransaction> currentTransaction, Supplier<Statement> stmt )
+    public PlaceboTransaction( KernelTransaction currentTransaction )
     {
-        this.stmt = stmt;
-        this.currentTransaction = currentTransaction.get();
+        this.currentTransaction = currentTransaction;
     }
 
     @Override
@@ -72,13 +68,13 @@ public class PlaceboTransaction implements InternalTransaction
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
-        return locker.exclusiveLock( stmt, entity );
+        return locker.exclusiveLock( currentTransaction, entity );
     }
 
     @Override
     public Lock acquireReadLock( PropertyContainer entity )
     {
-        return locker.sharedLock( stmt, entity );
+        return locker.sharedLock( currentTransaction, entity );
     }
 
     @Override

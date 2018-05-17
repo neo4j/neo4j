@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,13 +23,12 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
@@ -43,11 +42,11 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
  */
 public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder>
 {
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
     private IndexSamplingConfig samplingConfig;
     private Factory<IndexWriterConfig> writerConfigFactory = IndexWriterConfigs::standard;
 
-    private LuceneSchemaIndexBuilder( IndexDescriptor descriptor, Config config )
+    private LuceneSchemaIndexBuilder( SchemaIndexDescriptor descriptor, Config config )
     {
         super( config );
         this.descriptor = descriptor;
@@ -60,7 +59,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      * @return new LuceneSchemaIndexBuilder
      * @param descriptor The descriptor for this index
      */
-    public static LuceneSchemaIndexBuilder create( IndexDescriptor descriptor, Config config )
+    public static LuceneSchemaIndexBuilder create( SchemaIndexDescriptor descriptor, Config config )
     {
         return new LuceneSchemaIndexBuilder( descriptor, config );
     }
@@ -103,8 +102,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
         }
         else
         {
-            Boolean archiveFailed = getConfig( GraphDatabaseSettings.archive_failed_index );
-            PartitionedIndexStorage storage = storageBuilder.archivingFailed( archiveFailed ).build();
+            PartitionedIndexStorage storage = storageBuilder.build();
             return new WritableDatabaseSchemaIndex( storage, descriptor, samplingConfig,
                     new WritableIndexPartitionFactory( writerConfigFactory ) );
         }

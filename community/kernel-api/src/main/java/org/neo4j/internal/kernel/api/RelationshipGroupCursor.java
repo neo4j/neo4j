@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,7 +46,7 @@ public interface RelationshipGroupCursor extends SuspendableCursor<RelationshipG
     {
         while ( next() )
         {
-            if ( relationshipLabel < relationshipLabel() )
+            if ( relationshipLabel < type() )
             {
                 return true;
             }
@@ -54,7 +54,7 @@ public interface RelationshipGroupCursor extends SuspendableCursor<RelationshipG
         return false;
     }
 
-    int relationshipLabel();
+    int type();
 
     int outgoingCount();
 
@@ -64,8 +64,7 @@ public interface RelationshipGroupCursor extends SuspendableCursor<RelationshipG
 
     default int totalCount()
     {
-        // the outgoingCount and incomingCount both contain the loopCount, so we need to remove it once.
-        return outgoingCount() + incomingCount() - loopCount();
+        return outgoingCount() + incomingCount() + loopCount();
     }
 
     void outgoing( RelationshipTraversalCursor cursor );

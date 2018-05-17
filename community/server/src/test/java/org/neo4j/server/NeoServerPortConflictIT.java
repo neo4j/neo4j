@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,7 +39,7 @@ import static org.junit.Assert.fail;
 public class NeoServerPortConflictIT extends ExclusiveServerTestBase
 {
     @Test
-    public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException, InterruptedException
+    public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         int serverPort = PortAuthority.allocatePort();
         ListenSocketAddress contestedAddress = new ListenSocketAddress( "localhost", serverPort );
@@ -74,7 +74,7 @@ public class NeoServerPortConflictIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldComplainIfServerHTTPSPortIsAlreadyTaken() throws IOException, InterruptedException
+    public void shouldComplainIfServerHTTPSPortIsAlreadyTaken() throws IOException
     {
         int serverPort = PortAuthority.allocatePort();
         int httpsPort = PortAuthority.allocatePort();

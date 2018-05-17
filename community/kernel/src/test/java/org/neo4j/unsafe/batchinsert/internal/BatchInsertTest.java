@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -63,10 +63,10 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -128,7 +128,7 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.mockito.matcher.CollectionMatcher.matchesCollection;
@@ -140,8 +140,8 @@ public class BatchInsertTest
 {
     private final int denseNodeThreshold;
     // This is the assumed internal index descriptor based on knowledge of what ids get assigned
-    private static final IndexDescriptor internalIndex = IndexDescriptorFactory.forLabel( 0, 0 );
-    private static final IndexDescriptor internalUniqueIndex = IndexDescriptorFactory.uniqueForLabel( 0, 0 );
+    private static final SchemaIndexDescriptor internalIndex = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
+    private static final SchemaIndexDescriptor internalUniqueIndex = SchemaIndexDescriptorFactory.uniqueForLabel( 0, 0 );
 
     @Parameterized.Parameters
     public static Collection<Integer> data()
@@ -221,7 +221,7 @@ public class BatchInsertTest
     }
 
     @AfterClass
-    public static void shutDownGlobalInserter() throws Exception
+    public static void shutDownGlobalInserter()
     {
         globalInserter.shutdown();
     }
@@ -236,7 +236,7 @@ public class BatchInsertTest
         return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration() );
     }
 
-    private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
+    private BatchInserter newBatchInserterWithIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
     {
         return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), singletonList( provider ) );
     }
@@ -261,7 +261,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1() throws Exception
+    public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1()
     {
         // Given
         BatchInserter inserter = globalInserter;
@@ -286,7 +286,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testSimple() throws Exception
+    public void testSimple()
     {
         BatchInserter graphDb = globalInserter;
         long node1 = graphDb.createNode( null );
@@ -300,7 +300,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testSetAndAddNodeProperties() throws Exception
+    public void testSetAndAddNodeProperties()
     {
         BatchInserter inserter = globalInserter;
 
@@ -415,7 +415,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testNodeHasProperty() throws Exception
+    public void testNodeHasProperty()
     {
         BatchInserter inserter = globalInserter;
 
@@ -490,7 +490,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveDynamicProperty() throws Exception
+    public void shouldBeAbleToRemoveDynamicProperty()
     {
         // Only triggered if assertions are enabled
 
@@ -507,7 +507,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldBeAbleToOverwriteDynamicProperty() throws Exception
+    public void shouldBeAbleToOverwriteDynamicProperty()
     {
         // Only triggered if assertions are enabled
 
@@ -525,7 +525,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testMore() throws Exception
+    public void testMore()
     {
         BatchInserter graphDb = globalInserter;
         long startNode = graphDb.createNode( properties );
@@ -634,7 +634,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void createEntitiesWithEmptyPropertiesMap() throws Exception
+    public void createEntitiesWithEmptyPropertiesMap()
     {
         BatchInserter inserter = globalInserter;
 
@@ -650,7 +650,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void createEntitiesWithDynamicPropertiesMap() throws Exception
+    public void createEntitiesWithDynamicPropertiesMap()
     {
         BatchInserter inserter = globalInserter;
 
@@ -659,7 +659,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldAddInitialLabelsToCreatedNode() throws Exception
+    public void shouldAddInitialLabelsToCreatedNode()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -674,7 +674,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldGetNodeLabels() throws Exception
+    public void shouldGetNodeLabels()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -688,7 +688,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldAddManyInitialLabelsAsDynamicRecords() throws Exception
+    public void shouldAddManyInitialLabelsAsDynamicRecords()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -704,7 +704,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldReplaceExistingInlinedLabelsWithDynamic() throws Exception
+    public void shouldReplaceExistingInlinedLabelsWithDynamic()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -720,7 +720,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldReplaceExistingDynamicLabelsWithInlined() throws Exception
+    public void shouldReplaceExistingDynamicLabelsWithInlined()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -820,7 +820,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldNotAllowCreationOfDuplicateIndex() throws Exception
+    public void shouldNotAllowCreationOfDuplicateIndex()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -841,7 +841,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldNotAllowCreationOfDuplicateConstraint() throws Exception
+    public void shouldNotAllowCreationOfDuplicateConstraint()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -862,7 +862,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldNotAllowCreationOfDeferredSchemaConstraintAfterIndexOnSameKeys() throws Exception
+    public void shouldNotAllowCreationOfDeferredSchemaConstraintAfterIndexOnSameKeys()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -883,7 +883,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldNotAllowCreationOfDeferredSchemaIndexAfterConstraintOnSameKeys() throws Exception
+    public void shouldNotAllowCreationOfDeferredSchemaIndexAfterConstraintOnSameKeys()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -908,14 +908,14 @@ public class BatchInsertTest
     {
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
-        BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
-                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+        BatchInserter inserter = newBatchInserterWithIndexProvider(
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
 
@@ -927,7 +927,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(),
                 Values.of( "Jakewins" ) ) ) ) );
@@ -943,14 +943,14 @@ public class BatchInsertTest
     {
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
-        BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
-                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+        BatchInserter inserter = newBatchInserterWithIndexProvider(
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
 
@@ -962,7 +962,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
@@ -979,14 +979,14 @@ public class BatchInsertTest
         long jakewins = dbWithIndexAndSingleIndexedNode();
 
         IndexPopulator populator = mock( IndexPopulator.class );
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
-        BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
-                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+        BatchInserter inserter = newBatchInserterWithIndexProvider(
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         long boggle = inserter.createNode( map( "handle", "b0ggl3" ), label( "Hacker" ) );
 
@@ -996,7 +996,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection(
                 add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
@@ -1039,7 +1039,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void propertiesCanBeReSetUsingBatchInserter() throws Exception
+    public void propertiesCanBeReSetUsingBatchInserter()
     {
         // GIVEN
         BatchInserter batchInserter = globalInserter;
@@ -1108,7 +1108,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void propertiesCanBeReSetUsingBatchInserter2() throws Exception
+    public void propertiesCanBeReSetUsingBatchInserter2()
     {
         // GIVEN
         BatchInserter batchInserter = globalInserter;
@@ -1123,7 +1123,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord() throws Exception
+    public void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord()
     {
         // GIVEN
         BatchInserter batchInserter = globalInserter;
@@ -1142,7 +1142,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void mustSplitUpRelationshipChainsWhenCreatingDenseNodes() throws Exception
+    public void mustSplitUpRelationshipChainsWhenCreatingDenseNodes()
     {
         BatchInserter inserter = globalInserter;
 
@@ -1163,7 +1163,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldGetRelationships() throws Exception
+    public void shouldGetRelationships()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -1179,7 +1179,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldNotCreateSameLabelTwiceOnSameNode() throws Exception
+    public void shouldNotCreateSameLabelTwiceOnSameNode()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -1197,7 +1197,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldSortLabelIdsWhenGetOrCreate() throws Exception
+    public void shouldSortLabelIdsWhenGetOrCreate()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -1268,7 +1268,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldNotAllowCreationOfUniquenessConstraintAndIndexOnSameLabelAndProperty() throws Exception
+    public void shouldNotAllowCreationOfUniquenessConstraintAndIndexOnSameLabelAndProperty()
     {
         // Given
         Label label = label( "Person1-" + denseNodeThreshold );
@@ -1291,7 +1291,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldNotAllowDuplicatedUniquenessConstraints() throws Exception
+    public void shouldNotAllowDuplicatedUniquenessConstraints()
     {
         // Given
         Label label = label( "Person2-" + denseNodeThreshold );
@@ -1316,7 +1316,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldNotAllowDuplicatedIndexes() throws Exception
+    public void shouldNotAllowDuplicatedIndexes()
     {
         // Given
         Label label = label( "Person3-" + denseNodeThreshold );
@@ -1368,7 +1368,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldChangePropertiesInCurrentBatch() throws Exception
+    public void shouldChangePropertiesInCurrentBatch()
     {
         // GIVEN
         BatchInserter inserter = globalInserter;
@@ -1384,7 +1384,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldIgnoreRemovingNonExistentNodeProperty() throws Exception
+    public void shouldIgnoreRemovingNonExistentNodeProperty()
     {
         // given
         BatchInserter inserter = globalInserter;
@@ -1397,7 +1397,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldIgnoreRemovingNonExistentRelationshipProperty() throws Exception
+    public void shouldIgnoreRemovingNonExistentRelationshipProperty()
     {
         // given
         BatchInserter inserter = globalInserter;
@@ -1457,14 +1457,14 @@ public class BatchInsertTest
     private long dbWithIndexAndSingleIndexedNode() throws Exception
     {
         IndexPopulator populator = mock( IndexPopulator.class );
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
-        BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
-                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+        BatchInserter inserter = newBatchInserterWithIndexProvider(
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
         long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );

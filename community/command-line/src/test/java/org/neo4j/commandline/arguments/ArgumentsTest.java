@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -145,13 +145,13 @@ public class ArgumentsTest
     }
 
     @Test
-    public void withDatabaseUsage() throws Exception
+    public void withDatabaseUsage()
     {
         assertEquals( "[--database=<name>]", builder.withDatabase().usage() );
     }
 
     @Test
-    public void withDatabaseDescription() throws Exception
+    public void withDatabaseDescription()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
                         "  --database=<name>   Name of database. [default:graph.db]" ),
@@ -159,14 +159,14 @@ public class ArgumentsTest
     }
 
     @Test
-    public void withDatabaseToUsage() throws Exception
+    public void withDatabaseToUsage()
     {
         assertEquals( "[--database=<name>] --to=<destination-path>", builder.withDatabase().withTo(
                 "Destination file." ).usage() );
     }
 
     @Test
-    public void withDatabaseToDescription() throws Exception
+    public void withDatabaseToDescription()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
                         "  --database=<name>         Name of database. [default:graph.db]%n" +
@@ -175,7 +175,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void withDatabaseToMultilineDescription() throws Exception
+    public void withDatabaseToMultilineDescription()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
                         "  --database=<name>         Name of database. [default:graph.db]%n" +
@@ -187,7 +187,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void longNamesTriggerNewLineFormatting() throws Exception
+    public void longNamesTriggerNewLineFormatting()
     {
         assertEquals( String.format( "How to use%n%noptions:%n" +
                         "  --database=<name>%n" +
@@ -207,7 +207,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void descriptionShouldHandleExistingNewlines() throws Exception
+    public void descriptionShouldHandleExistingNewlines()
     {
         assertEquals( String.format( "This is the first line%n" +
                         "And this is the second line%n" +
@@ -222,7 +222,7 @@ public class ArgumentsTest
     }
 
     @Test
-    public void wrappingHandlesBothKindsOfLineEndingsAndOutputsPlatformDependentOnes() throws Exception
+    public void wrappingHandlesBothKindsOfLineEndingsAndOutputsPlatformDependentOnes()
     {
         assertEquals( String.format( "One with Linux%n" +
                         "One with Windows%n" +

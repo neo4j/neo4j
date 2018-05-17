@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 
 /**
@@ -37,7 +36,7 @@ import org.neo4j.shell.ShellServer;
  */
 public class BashVariableInterpreter
 {
-    private static final Map<String, Replacer> STATIC_REPLACERS = new HashMap<String, Replacer>();
+    private static final Map<String, Replacer> STATIC_REPLACERS = new HashMap<>();
 
     static
     {
@@ -54,7 +53,7 @@ public class BashVariableInterpreter
         STATIC_REPLACERS.put( "V", new StaticReplacer( Version.getKernelVersion() ) );
     }
 
-    private final Map<String, Replacer> localReplacers = new HashMap<String, Replacer>();
+    private final Map<String, Replacer> localReplacers = new HashMap<>();
 
     /**
      * Adds a customized replacer for a certain variable.
@@ -73,9 +72,8 @@ public class BashVariableInterpreter
      * @param server the server which runs the interpretation.
      * @param session the session (or environment) of the interpretation.
      * @return the interpreted string.
-     * @throws ShellException if there should be some communication error.
      */
-    public String interpret( String string, ShellServer server, Session session ) throws ShellException
+    public String interpret( String string, ShellServer server, Session session )
     {
         string = replace( string, server, session, localReplacers );
         string = replace( string, server, session, STATIC_REPLACERS );
@@ -83,7 +81,6 @@ public class BashVariableInterpreter
     }
 
     private String replace( String string, ShellServer server, Session session, Map<String, Replacer> replacers )
-            throws ShellException
     {
         for ( Map.Entry<String, Replacer> replacer : replacers.entrySet() )
         {
@@ -103,9 +100,8 @@ public class BashVariableInterpreter
          * @param server the server which runs the interpretation.
          * @param session the environment of the interpretation.
          * @return the replacement.
-         * @throws ShellException if there should be some communication error.
          */
-        String getReplacement( ShellServer server, Session session ) throws ShellException;
+        String getReplacement( ShellServer server, Session session );
     }
 
     /**

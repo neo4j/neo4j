@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
-import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{AstNode, TypeSafeMathSupport}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, InternalException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
 
@@ -89,8 +89,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
   override def toString = "Cached(%s of type %s)".format(key, typ)
 }
 
-abstract class Arithmetics(left: Expression, right: Expression)
-  extends Expression with TypeSafeMathSupport {
+abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
   def throwTypeError(bVal: Any, aVal: Any): Nothing = {
     throw new CypherTypeException("Don't know how to " + this + " `" + bVal + "` with `" + aVal + "`")
   }
@@ -99,6 +98,10 @@ abstract class Arithmetics(left: Expression, right: Expression)
     val aVal = left(ctx, state)
     val bVal = right(ctx, state)
 
+    applyWithValues(aVal, bVal)
+  }
+
+  protected def applyWithValues(aVal: AnyValue, bVal: AnyValue): AnyValue = {
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
       case (x: NumberValue, y: NumberValue) => calc(x, y)

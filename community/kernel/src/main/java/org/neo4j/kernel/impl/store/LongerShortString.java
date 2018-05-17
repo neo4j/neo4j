@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -734,14 +734,7 @@ public enum LongerShortString
         int maxBytes = PropertyType.getPayloadSize();
         if ( stringLength <= maxBytes - 5 )
         {
-            if ( encodeLatin1( keyId, string, target ) )
-            {
-                return true;
-            }
-            if ( encodeUTF8( keyId, string, target, payloadSize ) )
-            {
-                return true;
-            }
+            return encodeLatin1( keyId, string, target ) || encodeUTF8( keyId, string, target, payloadSize );
         }
         return false;
     }

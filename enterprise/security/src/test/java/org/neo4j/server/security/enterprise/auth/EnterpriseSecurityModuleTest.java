@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.auth;
 
@@ -26,6 +29,7 @@ import org.junit.rules.ExpectedException;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -34,6 +38,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -151,6 +157,63 @@ public class EnterpriseSecurityModuleTest
         new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
     }
 
+    @Test
+    public void shouldNotFailWithPropertyLevelPermissions()
+    {
+        nativeAuth( true, true );
+        ldapAuth( false, false );
+        pluginAuth( false, false );
+        authProviders(
+                SecuritySettings.NATIVE_REALM_NAME
+        );
+
+        when( config.get( SecuritySettings.property_level_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.property_level_authorization_permissions ) ).thenReturn( "smith=alias" );
+
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class ), null, null );
+    }
+
+    @Test
+    public void shouldFailOnIllegalPropertyLevelPermissions()
+    {
+        nativeAuth( true, true );
+        ldapAuth( false, false );
+        pluginAuth( false, false );
+        authProviders(
+                SecuritySettings.NATIVE_REALM_NAME
+        );
+
+        when( config.get( SecuritySettings.property_level_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.property_level_authorization_permissions ) ).thenReturn( "smithmalias" );
+
+        thrown.expect( IllegalArgumentException.class );
+        thrown.expectMessage(
+                "Illegal configuration: Property level authorization is enabled but there is a error in the permissions mapping." );
+
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class ), null, null );
+    }
+
+    @Test
+    public void shouldParsePropertyLevelPermissions()
+    {
+        nativeAuth( true, true );
+        ldapAuth( false, false );
+        pluginAuth( false, false );
+        authProviders(
+                SecuritySettings.NATIVE_REALM_NAME
+        );
+
+        when( config.get( SecuritySettings.property_level_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.property_level_authorization_permissions ) ).thenReturn(
+                "smith = alias;merovingian=alias ,location;\n abel=alias,\t\thasSilver" );
+
+        EnterpriseSecurityModule.SecurityConfig securityConfig = new EnterpriseSecurityModule.SecurityConfig( config );
+        securityConfig.validate();
+        assertThat( securityConfig.propertyBlacklist.get( "smith" ), equalTo( Collections.singletonList( "alias" ) ) );
+        assertThat( securityConfig.propertyBlacklist.get( "merovingian" ), equalTo( Arrays.asList( "alias", "location" ) ) );
+        assertThat( securityConfig.propertyBlacklist.get( "abel" ), equalTo( Arrays.asList( "alias", "hasSilver" ) ) );
+    }
+
     // --------- HELPERS ----------
 
     @Before
@@ -161,6 +224,7 @@ public class EnterpriseSecurityModuleTest
         Log mockLog = mock( Log.class );
         when( mockLogProvider.getLog( anyString() ) ).thenReturn( mockLog );
         when( mockLog.isDebugEnabled() ).thenReturn( true );
+        when( config.get( SecuritySettings.property_level_authorization_enabled ) ).thenReturn( false );
         when( config.get( SecuritySettings.auth_cache_ttl ) ).thenReturn( Duration.ZERO );
         when( config.get( SecuritySettings.auth_cache_max_capacity ) ).thenReturn( 10 );
         when( config.get( SecuritySettings.auth_cache_use_ttl ) ).thenReturn( true );

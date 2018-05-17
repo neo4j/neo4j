@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,7 +36,7 @@ public class LonelyProcessingStepTest
     public static SuppressOutput mute = SuppressOutput.suppressAll();
 
     @Test
-    public void issuePanicBeforeCompletionOnError() throws Exception
+    public void issuePanicBeforeCompletionOnError()
     {
         List<Step<?>> stepsPipeline = new ArrayList<>();
         BinaryLatch endOfUpstreamLatch = new BinaryLatch();

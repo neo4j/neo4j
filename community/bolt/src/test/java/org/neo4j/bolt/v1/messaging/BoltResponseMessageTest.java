@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,11 +35,12 @@ import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.System.lineSeparator;
@@ -47,7 +48,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ONE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_TWO;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ZERO;
@@ -62,13 +62,15 @@ import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 public class BoltResponseMessageTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    private final Neo4jPack neo4jPack = new Neo4jPackV1();
 
     @Test
     public void shouldHandleCommonMessages() throws Throwable
@@ -128,12 +130,12 @@ public class BoltResponseMessageTest
     @Test
     public void shouldSerializeRelationship() throws Throwable
     {
-        EdgeValue edgeValue = edgeValue( 12L,
+        RelationshipValue rel = relationshipValue( 12L,
                 nodeValue( 1L, stringArray(), VirtualValues.EMPTY_MAP ),
                 nodeValue( 2L, stringArray(), VirtualValues.EMPTY_MAP ),
                 stringValue( "KNOWS" ), VirtualValues.map( new String[]{"name", "age"},
                         new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
-        assertThat( serialized( edgeValue ),
+        assertThat( serialized( rel ),
                 equalTo( "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84" + lineSeparator() +
                          "6E 61 6D 65 83 42 6F 62 83 61 67 65 0E" ) );
     }
@@ -213,9 +215,8 @@ public class BoltResponseMessageTest
 
     private String serialized( AnyValue object ) throws IOException
     {
-        RecordMessage message =
-                new RecordMessage( record( object ) );
-        return HexPrinter.hex( serialize( message ), 4, " " );
+        RecordMessage message = new RecordMessage( record( object ) );
+        return HexPrinter.hex( serialize( neo4jPack, message ), 4, " " );
     }
 
     private void assertSerializes( ResponseMessage msg ) throws IOException
@@ -227,10 +228,10 @@ public class BoltResponseMessageTest
     {
         RecordingByteChannel channel = new RecordingByteChannel();
         BoltResponseMessageReader reader = new BoltResponseMessageReader(
-                new Neo4jPack.Unpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
-        BoltResponseMessageWriter writer = new BoltResponseMessageWriter(
-                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK,
-                NullBoltMessageLogger.getInstance() );
+                neo4jPack.newUnpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
+        BufferedChannelOutput output = new BufferedChannelOutput( channel );
+        BoltResponseMessageWriter writer = new BoltResponseMessageWriter( neo4jPack, output,
+                NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
 
         msg.dispatch( writer );
         writer.flush();

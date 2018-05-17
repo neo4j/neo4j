@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,7 +34,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -49,11 +48,9 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -144,10 +141,10 @@ public class RebuildCountsTest
     {
         ThreadToStatementContextBridge contextBridge = ((GraphDatabaseAPI) db).getDependencyResolver()
                 .resolveDependency( ThreadToStatementContextBridge.class );
-        try ( Transaction tx = db.beginTx();
-              Statement statement = contextBridge.get() )
+        try ( Transaction tx = db.beginTx() )
         {
-            return statement.readOperations().labelGetForName( alien.name() );
+            return contextBridge.getKernelTransactionBoundToThisThread( true )
+                    .tokenRead().nodeLabel( alien.name() );
         }
     }
 
@@ -173,7 +170,6 @@ public class RebuildCountsTest
         return fsRule.get().snapshot();
     }
 
-    @SuppressWarnings( "deprecated" )
     private void rotateLog() throws IOException
     {
         ((GraphDatabaseAPI) db).getDependencyResolver()

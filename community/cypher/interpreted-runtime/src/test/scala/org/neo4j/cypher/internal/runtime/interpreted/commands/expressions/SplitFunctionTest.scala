@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -49,6 +49,10 @@ class SplitFunctionTest extends CypherFunSuite {
 
   test("splitting a string containing only the split pattern should return two empty strings") {
     split(",", ",") should be(seq("",""))
+  }
+
+  test("splitting with character that has a meaning in regex") {
+    split("a|b", "|") should be(seq("a","b"))
   }
 
   test("using an empty separator should split on every character") {

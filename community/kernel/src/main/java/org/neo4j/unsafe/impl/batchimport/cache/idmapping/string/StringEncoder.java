@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,7 @@ import static java.lang.Math.max;
  * Encodes String into a long with very small chance of collision, i.e. two different Strings encoded into
  * the same long value.
  *
- * Assumes a single thread making all calls to {@link #encode(String)}.
+ * Assumes a single thread making all calls to {@link #encode(Object)}.
  */
 public class StringEncoder implements Encoder
 {
@@ -36,7 +36,7 @@ public class StringEncoder implements Encoder
 
     // fixed values
     private final int numCodes;
-    private final int encodingThreshold = 7;
+    private static final int encodingThreshold = 7;
 
     // data changing over time, potentially with each encoding
     private final byte[] reMap = new byte[256];
@@ -127,7 +127,13 @@ public class StringEncoder implements Encoder
         {
             if ( reMap[bytes[i]] == -1 )
             {
-                reMap[bytes[i]] = (byte) (numChars++ % 256);
+                synchronized ( this )
+                {
+                    if ( reMap[bytes[i]] == -1 )
+                    {
+                        reMap[bytes[i]] = (byte) (numChars++ % 256);
+                    }
+                }
             }
             bytes[i] = reMap[bytes[i]];
         }

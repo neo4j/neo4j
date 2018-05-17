@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,6 +32,14 @@ public interface LabelScanReader extends Resource
      * @return node ids with the given {@code labelId}.
      */
     PrimitiveLongResourceIterator nodesWithLabel( int labelId );
+
+    /**
+     * Sets the client up for a label scan on <code>labelId</code>
+     *
+     * @param client the client to communicate with
+     * @param labelId label token id
+     */
+    void nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId );
 
     /**
      * @param labelIds label token ids.

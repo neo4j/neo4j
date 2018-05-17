@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,10 +29,10 @@ import org.neo4j.io.pagecache.PageCursor;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 public class ConsistencyCheckerTest
 {
@@ -49,7 +49,7 @@ public class ConsistencyCheckerTest
         long pointer = 123;
 
         cursor.next( 0 );
-        TreeNode.initializeInternal( cursor, stableGeneration, crashGeneration );
+        new TreeNodeFixedSize<>( pageSize, longLayout().build() ).initializeInternal( cursor, stableGeneration, crashGeneration );
         TreeNode.setSuccessor( cursor, pointer, stableGeneration, crashGeneration );
 
         // WHEN
@@ -76,15 +76,15 @@ public class ConsistencyCheckerTest
     {
         // GIVEN
         int pageSize = 256;
-        Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-        TreeNode<MutableLong,MutableLong> node = new TreeNode<>( pageSize, layout );
+        Layout<MutableLong,MutableLong> layout = longLayout().build();
+        TreeNode<MutableLong,MutableLong> node = new TreeNodeFixedSize<>( pageSize, layout );
         long stableGeneration = GenerationSafePointer.MIN_GENERATION;
         long unstableGeneration = stableGeneration + 1;
-        SimpleIdProvider idProvider = new SimpleIdProvider();
+        PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
+        SimpleIdProvider idProvider = new SimpleIdProvider( cursor::duplicate );
         InternalTreeLogic<MutableLong,MutableLong> logic = new InternalTreeLogic<>( idProvider, node, layout );
-        PageCursor cursor = new PageAwareByteArrayCursor( pageSize );
         cursor.next( idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
-        TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+        node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         logic.initialize( cursor );
         StructurePropagation<MutableLong> structure = new StructurePropagation<>( layout.newKey(), layout.newKey(),
                 layout.newKey() );
@@ -100,12 +100,11 @@ public class ConsistencyCheckerTest
                 {
                     goTo( cursor, "new root",
                             idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
-                    TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                    node.insertKeyAt( cursor, structure.rightKey, 0, 0 );
-                    TreeNode.setKeyCount( cursor, 1 );
+                    node.initializeInternal( cursor, stableGeneration, unstableGeneration );
                     node.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
-                    node.setChildAt( cursor, structure.rightChild, 1,
+                    node.insertKeyAndRightChildAt( cursor, structure.rightKey, structure.rightChild, 0, 0,
                             stableGeneration, unstableGeneration );
+                    TreeNode.setKeyCount( cursor, 1 );
                     logic.initialize( cursor );
                 }
                 if ( structure.hasMidChildUpdate )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -99,14 +99,14 @@ public class UdcSettings implements LoadableConfig
                     String disabled = System.getProperty( udc_disabled() );
                     if ( disabled == null || disabled.equalsIgnoreCase( TRUE ) )
                     { // the 'disabled' system property does nothing to enable UDC
-                        return false;
+                        return Boolean.FALSE;
                     }
                 }
                 else if ( TRUE.equalsIgnoreCase( System.getProperty( udc_disabled() ) ) )
                 { // the 'disabled' system property tries to disable UDC
                     return enabled != null; // only disable if 'enabled' was not defined
                 }
-                return true;
+                return Boolean.TRUE;
             }
             else if ( FALSE.equalsIgnoreCase( from ) )
             { // the setting tries to disable UDC
@@ -117,14 +117,14 @@ public class UdcSettings implements LoadableConfig
                 { // the 'enabled' system property does nothing to enable UDC
                     if ( disabled == null || disabled.equalsIgnoreCase( TRUE ) )
                     { // the 'disabled' system property does nothing to enable UDC
-                        return false;
+                        return Boolean.FALSE;
                     }
                 }
-                return true;
+                return Boolean.TRUE;
             }
             else
             { // the setting enabled UDC
-                return true;
+                return Boolean.TRUE;
             }
         }
 

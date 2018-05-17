@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.neo4j.index.internal.gbptree.Header;
 
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
 
 class NativeSchemaIndexHeaderReader implements Header.Reader
 {
@@ -37,10 +37,19 @@ class NativeSchemaIndexHeaderReader implements Header.Reader
         state = headerData.get();
         if ( state == BYTE_FAILED )
         {
-            short messageLength = headerData.getShort();
-            byte[] failureMessageBytes = new byte[messageLength];
-            headerData.get( failureMessageBytes );
-            failureMessage = new String( failureMessageBytes, StandardCharsets.UTF_8 );
+            failureMessage = readFailureMessage( headerData );
         }
+    }
+
+    /**
+     * Alternative header readers should react to FAILED indexes by using this, because their specific headers will have been
+     * overwritten by the FailedHeaderWriter.
+     */
+    public static String readFailureMessage( ByteBuffer headerData )
+    {
+        short messageLength = headerData.getShort();
+        byte[] failureMessageBytes = new byte[messageLength];
+        headerData.get( failureMessageBytes );
+        return new String( failureMessageBytes, StandardCharsets.UTF_8 );
     }
 }

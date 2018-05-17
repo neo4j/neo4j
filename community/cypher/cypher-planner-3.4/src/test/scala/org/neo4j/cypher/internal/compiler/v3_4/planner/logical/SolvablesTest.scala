@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, PatternRelationship, QueryGraph, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_4.{PatternRelationship, QueryGraph, SimplePatternLength}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 
 class SolvablesTest extends CypherFunSuite {
 
-  val node1Name = IdName("a")
-  val node2Name = IdName("b")
+  val node1Name = "a"
+  val node2Name = "b"
 
-  val relName = IdName("rel")
+  val relName = "rel"
   val rel = PatternRelationship(relName, (node1Name, node2Name), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("should compute solvables from empty query graph") {

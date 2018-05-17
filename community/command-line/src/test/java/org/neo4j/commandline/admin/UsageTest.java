@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,15 +19,15 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.util.Collections;
-import java.util.function.Consumer;
-import javax.annotation.Nonnull;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.Collections;
+import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -47,7 +47,7 @@ public class UsageTest
     }
 
     @Test
-    public void shouldPrintUsageForACommand() throws Exception
+    public void shouldPrintUsageForACommand()
     {
         // given
         AdminCommand.Provider commandProvider = mockCommand( "bam", "A summary", AdminCommandSection.general() );
@@ -65,6 +65,8 @@ public class UsageTest
         ordered.verify( out ).accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
         ordered.verify( out ).accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
         ordered.verify( out ).accept( "    NEO4J_HOME    Neo4j home directory." );
+        ordered.verify( out ).accept( "    HEAP_SIZE     Set JVM maximum heap size during command execution." );
+        ordered.verify( out ).accept( "                  Takes a number and a unit, for example 512m." );
         ordered.verify( out ).accept( "" );
         ordered.verify( out ).accept( "description" );
     }
@@ -87,6 +89,8 @@ public class UsageTest
         ordered.verify( out ).accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
         ordered.verify( out ).accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
         ordered.verify( out ).accept( "    NEO4J_HOME    Neo4j home directory." );
+        ordered.verify( out ).accept( "    HEAP_SIZE     Set JVM maximum heap size during command execution." );
+        ordered.verify( out ).accept( "                  Takes a number and a unit, for example 512m." );
         ordered.verify( out ).accept( "" );
 
         ordered.verify( out ).accept( "available commands:" );
@@ -117,6 +121,8 @@ public class UsageTest
         ordered.verify( out ).accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
         ordered.verify( out ).accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
         ordered.verify( out ).accept( "    NEO4J_HOME    Neo4j home directory." );
+        ordered.verify( out ).accept( "    HEAP_SIZE     Set JVM maximum heap size during command execution." );
+        ordered.verify( out ).accept( "                  Takes a number and a unit, for example 512m." );
         ordered.verify( out ).accept( "" );
 
         ordered.verify( out ).accept( "available commands:" );
@@ -130,7 +136,7 @@ public class UsageTest
         ordered.verifyNoMoreInteractions();
     }
 
-    private class TestGeneralSection extends AdminCommandSection
+    private static class TestGeneralSection extends AdminCommandSection
     {
 
         @Override

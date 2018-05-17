@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -63,23 +63,21 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
     protected void process( RelationshipRecord[] batch, BatchSender sender )
     {
         RelationshipCountsProcessor processor = processor();
-        for ( RelationshipRecord relationship : batch )
+        for ( RelationshipRecord record : batch )
         {
-            processor.process( relationship.getFirstNode(), relationship.getType(), relationship.getSecondNode() );
+            if ( record.inUse() )
+            {
+                processor.process( record );
+            }
         }
         progressMonitor.progress( batch.length );
     }
 
     private RelationshipCountsProcessor processor()
     {
-        RelationshipCountsProcessor processor = processors.get( Thread.currentThread() );
-        if ( processor == null )
-        {   // This is OK since in this step implementation we use TaskExecutor which sticks to its threads.
-            // deterministically.
-            processors.put( Thread.currentThread(), processor = new RelationshipCountsProcessor(
-                    cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory ) );
-        }
-        return processor;
+        // This is OK since in this step implementation we use TaskExecutor which sticks to its threads deterministically.
+        return processors.computeIfAbsent( Thread.currentThread(),
+                k -> new RelationshipCountsProcessor( cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory ) );
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -104,14 +104,14 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     private static GraphDbHelper helper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
     @Test
-    public void create_node() throws Exception
+    public void create_node()
     {
         JaxRsResponse response = gen.get()
                 .expectedStatus( 201 )
@@ -124,7 +124,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void create_node_with_properties() throws Exception
+    public void create_node_with_properties()
     {
         JaxRsResponse response = gen.get()
                 .payload( "{\"foo\" : \"bar\"}" )
@@ -139,7 +139,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void create_node_with_array_properties() throws Exception
+    public void create_node_with_array_properties()
     {
         String response = gen.get()
                 .payload( "{\"foo\" : [1,2,3]}" )
@@ -155,7 +155,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
                  "\n" +
                  "This example shows the response you get when trying to set a property to +null+." )
     @Test
-    public void shouldGet400WhenSupplyingNullValueForAProperty() throws Exception
+    public void shouldGet400WhenSupplyingNullValueForAProperty()
     {
         gen.get()
                 .payload( "{\"foo\":null}" )
@@ -164,14 +164,14 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldGet400WhenCreatingNodeMalformedProperties() throws Exception
+    public void shouldGet400WhenCreatingNodeMalformedProperties()
     {
         JaxRsResponse response = sendCreateRequestToServer("this:::isNot::JSON}");
         assertEquals( 400, response.getStatus() );
     }
 
     @Test
-    public void shouldGet400WhenCreatingNodeUnsupportedNestedPropertyValues() throws Exception
+    public void shouldGet400WhenCreatingNodeUnsupportedNestedPropertyValues()
     {
         JaxRsResponse response = sendCreateRequestToServer("{\"foo\" : {\"bar\" : \"baz\"}}");
         assertEquals( 400, response.getStatus() );
@@ -188,7 +188,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldGetValidLocationHeaderWhenCreatingNode() throws Exception
+    public void shouldGetValidLocationHeaderWhenCreatingNode()
     {
         JaxRsResponse response = sendCreateRequestToServer();
         assertNotNull( response.getLocation() );
@@ -229,7 +229,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
 
     @Documented( "Delete node." )
     @Test
-    public void shouldRespondWith204WhenNodeDeleted() throws Exception
+    public void shouldRespondWith204WhenNodeDeleted()
     {
         long node = helper.createNode();
         gen.get().expectedStatus( 204 )
@@ -269,7 +269,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldRespondWith400IfInvalidJsonSentAsNodePropertiesDuringNodeCreation() throws URISyntaxException
+    public void shouldRespondWith400IfInvalidJsonSentAsNodePropertiesDuringNodeCreation()
     {
         String mangledJsonArray = "{\"myprop\":[1,2,\"three\"]}";
         JaxRsResponse response = sendCreateRequestToServer(mangledJsonArray);
@@ -280,7 +280,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperty() throws URISyntaxException
+    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperty()
     {
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
@@ -294,7 +294,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperties() throws URISyntaxException
+    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperties()
     {
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
@@ -307,7 +307,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         response.close();
     }
 
-    private JaxRsResponse sendDeleteRequestToServer( final long id ) throws Exception
+    private JaxRsResponse sendDeleteRequestToServer( final long id )
     {
         return RestRequest.req().delete(functionalTestHelper.dataUri() + "node/" + id);
     }
@@ -347,7 +347,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         }
 
         @Before
-        public void setupTheDatabase() throws Exception
+        public void setupTheDatabase()
         {
             // do nothing, we don't care about the database contents here
         }
@@ -423,7 +423,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         private final URI uri = URI.create( "http://peteriscool.com:6666/" );
 
         @Test
-        public void correctRepresentation() throws URISyntaxException
+        public void correctRepresentation()
         {
             ConsoleService consoleService = new ConsoleService( new ShellOnlyConsoleSessionFactory(), mock( Database.class ),
                     NullLogProvider.getInstance(), new OutputFormat( new JsonFormat(), uri, null ) );
@@ -437,7 +437,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         }
 
         @Test
-        public void advertisesAvailableConsoleEngines() throws URISyntaxException
+        public void advertisesAvailableConsoleEngines()
         {
             ConsoleService consoleServiceWithJustShellEngine = new ConsoleService( new ShellOnlyConsoleSessionFactory(),
                     mock( Database.class ), NullLogProvider.getInstance(), new OutputFormat( new JsonFormat(), uri, null ) );
@@ -475,7 +475,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         private final URI uri = URI.create( "http://peteriscool.com:6666/" );
 
         @Test
-        public void correctRepresentation() throws URISyntaxException
+        public void correctRepresentation()
         {
             Response resp = jmxService.getServiceDefinition();
 
@@ -488,7 +488,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         }
 
         @Test
-        public void shouldListDomainsCorrectly() throws Exception
+        public void shouldListDomainsCorrectly()
         {
             Response resp = jmxService.listDomains();
 
@@ -496,13 +496,13 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         }
 
         @Test
-        public void testwork() throws Exception
+        public void testwork()
         {
             jmxService.queryBeans( "[\"*:*\"]" );
         }
 
         @Before
-        public void setUp() throws Exception
+        public void setUp()
         {
             this.jmxService = new JmxService( new OutputFormat( new JsonFormat(), uri, null ), null );
         }
@@ -516,7 +516,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         private final URI uri = URI.create( "http://peteriscool.com:6666/" );
 
         @Before
-        public void setUp() throws Exception
+        public void setUp()
         {
             this.database = new WrappedDatabase( (GraphDatabaseFacade) new TestGraphDatabaseFactory().
                     newImpermanentDatabaseBuilder().
@@ -608,7 +608,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
     public static class VersionAndEditionServiceTest
     {
         @Test
-        public void shouldReturnReadableStringForServiceName() throws Exception
+        public void shouldReturnReadableStringForServiceName()
         {
             // given
             VersionAndEditionService service = new VersionAndEditionService( mock( CommunityNeoServer.class ) );
@@ -620,7 +620,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         }
 
         @Test
-        public void shouldReturnSensiblePathWhereServiceIsHosted() throws Exception
+        public void shouldReturnSensiblePathWhereServiceIsHosted()
         {
             // given
             VersionAndEditionService service = new VersionAndEditionService( mock( CommunityNeoServer.class ) );

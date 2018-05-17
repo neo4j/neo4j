@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -45,7 +45,7 @@ import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_LEVEL;
 public class TestUniqueness extends TraversalTestBase
 {
     @Test
-    public void nodeLevelUniqueness() throws Exception
+    public void nodeLevelUniqueness()
     {
         /*
          *         (b)
@@ -100,7 +100,7 @@ public class TestUniqueness extends TraversalTestBase
     }
 
     @Test
-    public void relationshipLevelAndGlobalUniqueness() throws Exception
+    public void relationshipLevelAndGlobalUniqueness()
     {
         /*
          *    (a)=TO=>(b)=TO=>(c)-TO->(d)

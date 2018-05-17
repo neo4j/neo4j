@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,11 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChannel
 {
@@ -48,7 +55,7 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public void writeAll( ByteBuffer src, long position ) throws IOException
+    public void writeAll( ByteBuffer src, long position )
     {
         throw new UnsupportedOperationException( "Not needed" );
     }
@@ -61,13 +68,13 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public int read( ByteBuffer dst, long position ) throws IOException
+    public int read( ByteBuffer dst, long position )
     {
         throw new UnsupportedOperationException( "Not needed" );
     }
 
     @Override
-    public void readAll( ByteBuffer dst ) throws IOException
+    public void readAll( ByteBuffer dst )
     {
         throw new UnsupportedOperationException( "Not needed" );
     }
@@ -113,7 +120,7 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public long position() throws IOException
+    public long position()
     {
         return position;
     }

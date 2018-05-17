@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -158,7 +158,7 @@ public class NeoStoreDataSourceTest
     }
 
     @Test
-    public void shouldLogCorrectTransactionLogDiagnosticsForNoTransactionLogs() throws Exception
+    public void shouldLogCorrectTransactionLogDiagnosticsForNoTransactionLogs()
     {
         // GIVEN
         NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId( noLogs() );
@@ -211,7 +211,7 @@ public class NeoStoreDataSourceTest
     }
 
     @Test
-    public void logModuleSetUpError() throws Exception
+    public void logModuleSetUpError()
     {
         Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );

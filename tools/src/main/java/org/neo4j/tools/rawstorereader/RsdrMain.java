@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.tools.rawstorereader;
 
@@ -26,7 +29,6 @@ import java.nio.ByteBuffer;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.xml.bind.DatatypeConverter;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -36,6 +38,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -47,6 +50,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.string.HexString;
 import org.neo4j.tools.util.TransactionLogUtils;
 
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
@@ -62,7 +66,7 @@ public class RsdrMain
     private static final Console console = System.console();
     private static final Pattern readCommandPattern = Pattern.compile( "r" + // 'r' means read command
             "((?<lower>\\d+)?,(?<upper>\\d+)?)?\\s+" + // optional record id range bounds, followed by whitespace
-            "(?<fname>[\\w\\.]+)" + // files are a sequence of word characters or literal '.'
+            "(?<fname>[\\w.]+)" + // files are a sequence of word characters or literal '.'
             "(\\s*\\|\\s*(?<regex>.+))?" // a pipe signifies a regex to filter records by
     );
 
@@ -108,7 +112,7 @@ public class RsdrMain
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider );
+        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
     }
 
     private static void interact( FileSystemAbstraction fileSystem, NeoStores neoStores ) throws IOException
@@ -226,7 +230,7 @@ public class RsdrMain
                 byte[] bytes = new byte[count];
                 buf.clear();
                 buf.get( bytes );
-                String hex = DatatypeConverter.printHexBinary( bytes );
+                String hex = HexString.encodeHexString( bytes );
                 int paddingNeeded = (recordSize * 2 - Math.max( count * 2, 0 )) + 1;
                 String format = "%s %6s 0x%08X %s%" + paddingNeeded + "s%s%n";
                 String str;

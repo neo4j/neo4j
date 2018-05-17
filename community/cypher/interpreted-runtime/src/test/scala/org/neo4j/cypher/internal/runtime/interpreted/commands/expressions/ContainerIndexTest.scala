@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,7 +30,7 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.JavaConverters._
 
@@ -86,8 +86,8 @@ class ContainerIndexTest extends CypherFunSuite {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
     implicit val expression = Literal(node)
-    when(qtx.getPropertyKeyId("v")).thenReturn(0)
-    when(qtx.getPropertyKeyId("c")).thenReturn(1)
+    when(qtx.getOptPropertyKeyId("v")).thenReturn(Some(0))
+    when(qtx.getOptPropertyKeyId("c")).thenReturn(Some(1))
     val nodeOps = mock[Operations[NodeValue]]
     when(nodeOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
       override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)
@@ -105,9 +105,9 @@ class ContainerIndexTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     implicit val expression = Literal(rel)
-    when(qtx.getPropertyKeyId("v")).thenReturn(0)
-    when(qtx.getPropertyKeyId("c")).thenReturn(1)
-    val relOps = mock[Operations[EdgeValue]]
+    when(qtx.getOptPropertyKeyId("v")).thenReturn(Some(0))
+    when(qtx.getOptPropertyKeyId("c")).thenReturn(Some(1))
+    val relOps = mock[Operations[RelationshipValue]]
     when(relOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
       override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)
     })

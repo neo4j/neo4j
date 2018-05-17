@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -68,8 +68,9 @@ class RightmostInChain
         String errorMessage = errorMessageBuilder.toString();
         if ( !errorMessage.equals( "" ) )
         {
-            setPatternException( cursor, newRightmostNodeGeneration, newRightmostLeftSiblingPointer,
+            errorMessage = addPatternToExceptionMessage( newRightmostNodeGeneration, newRightmostLeftSiblingPointer,
                     newRightmostLeftSiblingPointerGeneration, newRightmostNode, errorMessage );
+            throw new IllegalStateException( errorMessage );
         }
 
         // Update currentRightmostNode = newRightmostNode;
@@ -79,16 +80,16 @@ class RightmostInChain
         currentRightmostRightSiblingPointerGeneration = newRightmostRightSiblingPointerGeneration;
     }
 
-    private void setPatternException( PageCursor cursor, long newRightmostGeneration, long leftSibling,
+    private String addPatternToExceptionMessage( long newRightmostGeneration, long leftSibling,
             long leftSiblingGeneration, long newRightmost, String errorMessage )
     {
-        cursor.setCursorException( format( "%s" +
+        return format( "%s" +
                         "  Left siblings view:  %s%n" +
                         "  Right siblings view: %s%n", errorMessage,
                 leftPattern( currentRightmostNode, currentRightmostNodeGeneration,
                         currentRightmostRightSiblingPointerGeneration,
                         currentRightmostRightSiblingPointer ),
-                rightPattern( newRightmost, newRightmostGeneration, leftSiblingGeneration, leftSibling ) ) );
+                rightPattern( newRightmost, newRightmostGeneration, leftSiblingGeneration, leftSibling ) );
     }
 
     private String leftPattern( long actualLeftSibling, long actualLeftSiblingGeneration,

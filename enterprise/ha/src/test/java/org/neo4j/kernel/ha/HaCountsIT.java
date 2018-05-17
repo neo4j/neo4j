@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.ha;
 
@@ -28,11 +31,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -59,7 +65,7 @@ public class HaCountsIT
     private HighlyAvailableGraphDatabase slave2;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule.startCluster();
         master = cluster.getMaster();
@@ -68,7 +74,7 @@ public class HaCountsIT
         clearDatabase();
     }
 
-    private void clearDatabase() throws InterruptedException
+    private void clearDatabase()
     {
         try ( Transaction tx = master.beginTx() )
         {
@@ -95,7 +101,7 @@ public class HaCountsIT
     }
 
     @Test
-    public void shouldUpdateCountsOnSlavesWhenCreatingANodeOnMaster() throws Exception
+    public void shouldUpdateCountsOnSlavesWhenCreatingANodeOnMaster()
     {
         // when creating a node on the master
         createANode( master, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
@@ -110,7 +116,7 @@ public class HaCountsIT
     }
 
     @Test
-    public void shouldUpdateCountsOnMasterAndSlaveWhenCreatingANodeOnSlave() throws Exception
+    public void shouldUpdateCountsOnMasterAndSlaveWhenCreatingANodeOnSlave()
     {
         // when creating a node on the slave
         createANode( slave1, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
@@ -129,14 +135,14 @@ public class HaCountsIT
     {
         // when creating a node on the master
         createANode( master, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
-        IndexDescriptor indexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
-        long indexId = awaitOnline( master, indexDescriptor );
+        SchemaIndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
+        long indexId = awaitOnline( master, schemaIndexDescriptor );
 
         // and the slaves got the updates
         cluster.sync( master );
 
-        long index1 = awaitOnline( slave1, indexDescriptor );
-        long index2 = awaitOnline( slave2, indexDescriptor );
+        long index1 = awaitOnline( slave1, schemaIndexDescriptor );
+        long index2 = awaitOnline( slave2, schemaIndexDescriptor );
 
         // then the slaves has updated counts
         assertOnIndexCounts( 0, 1, 1, 1, indexId, master );
@@ -149,14 +155,14 @@ public class HaCountsIT
     {
         // when creating a node on the master
         createANode( slave1, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
-        IndexDescriptor indexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
-        long indexId = awaitOnline( master, indexDescriptor );
+        SchemaIndexDescriptor schemaIndexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
+        long indexId = awaitOnline( master, schemaIndexDescriptor );
 
         // and the updates are propagate in the cluster
         cluster.sync();
 
-        long index1 = awaitOnline( slave1, indexDescriptor );
-        long index2 = awaitOnline( slave2, indexDescriptor );
+        long index1 = awaitOnline( slave1, schemaIndexDescriptor );
+        long index2 = awaitOnline( slave2, schemaIndexDescriptor );
 
         // then the slaves has updated counts
         assertOnIndexCounts( 0, 1, 1, 1, indexId, master );
@@ -174,30 +180,30 @@ public class HaCountsIT
         }
     }
 
-    private IndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
+    private SchemaIndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
             throws KernelException
     {
-        try ( Transaction tx = db.beginTx();
-              Statement statement = statement( db ) )
+        try ( Transaction tx = db.beginTx() )
         {
-            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyName );
-            IndexDescriptor index = statement.schemaWriteOperations()
-                    .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
+            KernelTransaction ktx = kernelTransaction( db );
+            int labelId = ktx.tokenWrite().labelGetOrCreateForName( label.name() );
+            int propertyKeyId = ktx.tokenWrite().propertyKeyGetOrCreateForName( propertyName );
+            IndexReference index = ktx.schemaWrite()
+                                                   .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
             tx.success();
-            return index;
+            return DefaultIndexReference.toDescriptor( index );
         }
     }
 
     private void assertOnNodeCounts( int expectedTotalNodes, int expectedLabelledNodes,
                                      Label label, HighlyAvailableGraphDatabase db )
     {
-        try ( Transaction ignored = db.beginTx();
-              Statement statement = statement( db ) )
+        try ( Transaction ignored = db.beginTx() )
         {
-            final int labelId = statement.readOperations().labelGetForName( label.name() );
-            assertEquals( expectedTotalNodes, statement.readOperations().countsForNode( -1 ) );
-            assertEquals( expectedLabelledNodes, statement.readOperations().countsForNode( labelId ) );
+            KernelTransaction transaction = kernelTransaction( db );
+            final int labelId = transaction.tokenRead().nodeLabel( label.name() );
+            assertEquals( expectedTotalNodes, transaction.dataRead().countsForNode( -1 ) );
+            assertEquals( expectedLabelledNodes, transaction.dataRead().countsForNode( labelId ) );
         }
     }
 
@@ -232,22 +238,29 @@ public class HaCountsIT
                  .get();
     }
 
+    private KernelTransaction kernelTransaction( HighlyAvailableGraphDatabase db )
+    {
+        return db.getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread(true);
+    }
+
     private IndexingService indexingService( HighlyAvailableGraphDatabase db )
     {
         return db.getDependencyResolver().resolveDependency( IndexingService.class );
     }
 
-    private long awaitOnline( HighlyAvailableGraphDatabase db, IndexDescriptor index )
+    private long awaitOnline( HighlyAvailableGraphDatabase db, SchemaIndexDescriptor index )
             throws KernelException
     {
         long start = System.currentTimeMillis();
         long end = start + 60_000;
         while ( System.currentTimeMillis() < end )
         {
-            try ( Transaction tx = db.beginTx();
-                  Statement statement = statement( db ) )
+            try ( Transaction tx = db.beginTx() )
             {
-                switch ( statement.readOperations().indexGetState( index ) )
+                KernelTransaction transaction = kernelTransaction( db );
+                switch ( transaction.schemaRead().indexGetState( DefaultIndexReference.fromDescriptor( index  ) ) )
                 {
                 case ONLINE:
                     return indexingService( db ).getIndexId( index.schema() );

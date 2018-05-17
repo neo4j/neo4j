@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,11 +23,9 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveLongIterator;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 /**
@@ -38,7 +36,7 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
  *
  * @param <T> type of elements
  */
-public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongIterator> implements ReadableDiffSets<T>
+public class DiffSets<T> extends SuperDiffSets<T> implements ReadableDiffSets<T>
 {
     public DiffSets()
     {
@@ -53,19 +51,19 @@ public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongIterator> implemen
     @Override
     public PrimitiveLongIterator augment( final PrimitiveLongIterator source )
     {
-        return new DiffApplyingPrimitiveLongIterator( source, added( false ), removed( false ) );
+        return DiffApplyingLongIterator.augment( source, added( false ), removed( false ) );
     }
 
     @Override
-    public PrimitiveIntIterator augment( final PrimitiveIntIterator source )
+    public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
     {
-        return new DiffApplyingPrimitiveIntIterator( source, added( false ), removed( false ) );
+        return DiffApplyingLongIterator.augment( source, added( false ), removed( false ) );
     }
 
     @Override
-    public PrimitiveLongIterator augmentWithRemovals( final PrimitiveLongIterator source )
+    public PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongResourceIterator source )
     {
-        return new DiffApplyingPrimitiveLongIterator( source, Collections.emptySet(), removed( false ) );
+        return DiffApplyingLongIterator.augment( source, Collections.emptySet(), removed( false ) );
     }
 
     @Override

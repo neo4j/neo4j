@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,126 +19,121 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphSolver}
-import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.util.v3_4.Cardinality
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NodeHashJoin}
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NodeHashJoin}
 
-class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
+class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]),
-    mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
+  implicit def converter(s: Symbol): String = s.toString()
 
-  val plan1 = mock[LogicalPlan]
-  val plan2 = mock[LogicalPlan]
-  when(plan1.solved).thenReturn(PlannerQuery.empty)
-  when(plan2.solved).thenReturn(PlannerQuery.empty)
-
-  val pattern1 = PatternRelationship('r1, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val pattern2 = PatternRelationship('r2, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  val pattern1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  val pattern2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   val table = new IDPTable[LogicalPlan]()
 
   test("does not join based on empty table") {
     implicit val registry = IdRegistry[PatternRelationship]
-    val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c)
-
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
+      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx, solveds) should be(empty)
+    }
   }
 
   test("joins plans that solve a single pattern relationship") {
     implicit val registry = IdRegistry[PatternRelationship]
-    val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c)
 
-    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
-    when(plan1.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
-    when(plan2.availableSymbols).thenReturn(Set[IdName]('b, 'r2, 'c))
-    when(plan2.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('b, 'c)))
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val plan1 = fakeLogicalPlanFor(solveds, cardinalities, "a", "r1", "b")
+      solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
+      val plan2 = fakeLogicalPlanFor(solveds, cardinalities, "b", "r2", "c")
+      solveds.set(plan2.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("b", "c")))
 
-    table.put(register(pattern1), plan1)
-    table.put(register(pattern2), plan2)
+      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
-      NodeHashJoin(Set('b), plan1, plan2)(PlannerQuery.empty),
-      NodeHashJoin(Set('b), plan2, plan1)(PlannerQuery.empty)
-    ))
+      table.put(register(pattern1), plan1)
+      table.put(register(pattern2), plan2)
+
+      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx, solveds).toSet should equal(Set(
+        NodeHashJoin(Set("b"), plan1, plan2),
+        NodeHashJoin(Set("b"), plan2, plan1)
+      ))
+    }
   }
 
   test("can produce a join for a single pattern relationship") {
     implicit val registry = IdRegistry[PatternRelationship]
-    val qg = QueryGraph.empty.addPatternNodes('a, 'b)
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val plan1 = fakeLogicalPlanFor("a", "r1", "b")
+      solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
+      val plan2 = fakeLogicalPlanFor("b")
+      solveds.set(plan2.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("b")))
 
-    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
-    when(plan1.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
-    when(plan2.availableSymbols).thenReturn(Set[IdName]('b))
-    when(plan2.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('b)))
+      val qg = QueryGraph.empty.addPatternNodes("a", "b")
 
-    table.put(register(pattern1), plan1)
-    table.put(register(pattern2), plan2)
+      table.put(register(pattern1), plan1)
+      table.put(register(pattern2), plan2)
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
-      NodeHashJoin(Set('b), plan1, plan2)(PlannerQuery.empty),
-      NodeHashJoin(Set('b), plan2, plan1)(PlannerQuery.empty)
-    ))
+      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx, solveds).toSet should equal(Set(
+        NodeHashJoin(Set("b"), plan1, plan2),
+        NodeHashJoin(Set("b"), plan2, plan1)
+      ))
+    }
   }
 
   test("does not join plans that do not overlap") {
     implicit val registry = IdRegistry[PatternRelationship]
-    val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c, 'd)
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val plan1 = fakeLogicalPlanFor("a", "r1", "b")
+      solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
+      val plan2 = fakeLogicalPlanFor("c", "r2", "d")
+      solveds.set(plan2.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("c", "d")))
 
-    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
-    when(plan1.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
-    when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd))
-    when(plan2.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd)))
+      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d")
 
-    table.put(register(pattern1), plan1)
-    table.put(register(pattern2), plan2)
+      table.put(register(pattern1), plan1)
+      table.put(register(pattern2), plan2)
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
+      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx, solveds) should be(empty)
+    }
   }
-
 
   test("does not join plans that overlap on non-nodes") {
     implicit val registry = IdRegistry[PatternRelationship]
-    val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c, 'd)
 
-    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'x))
-    when(plan1.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
-    when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd, 'x))
-    when(plan2.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd)))
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val plan1 = fakeLogicalPlanFor("a", "r1", "b", "x")
+      solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
+      val plan2 = fakeLogicalPlanFor("c", "r2", "d", "x")
+      solveds.set(plan2.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("c", "d")))
 
-    table.put(register(pattern1), plan1)
-    table.put(register(pattern2), plan2)
+      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d")
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
+      table.put(register(pattern1), plan1)
+      table.put(register(pattern2), plan2)
+
+      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx, solveds) should be(empty)
+    }
   }
 
   test("does not join plans that overlap on nodes that are arguments") {
     implicit val registry = IdRegistry[PatternRelationship]
-    val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c, 'd).addArgumentIds(Seq('x))
+    new given().withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
+      val plan1 = fakeLogicalPlanFor("a", "r1", "b", "x")
+      solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b", 'x).addArgumentIds(Seq('x))))
+      val plan2 = fakeLogicalPlanFor("c", "r2", "d", "x")
+      solveds.set(plan2.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("c", "d", 'x).addArgumentIds(Seq('x))))
 
-    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'x))
-    when(plan1.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b, 'x).addArgumentIds(Seq('x))))
-    when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd, 'x))
-    when(plan2.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd, 'x).addArgumentIds(Seq('x))))
+      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d").addArgumentIds(Seq('x))
 
-    table.put(register(pattern1), plan1)
-    table.put(register(pattern2), plan2)
+      table.put(register(pattern1), plan1)
+      table.put(register(pattern2), plan2)
 
-    joinSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
+      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx, solveds) should be(empty)
+    }
   }
 
   def register[X](patRels: X*)(implicit registry: IdRegistry[X]) = registry.registerAll(patRels)
-
-  private implicit def lift(plannerQuery: PlannerQuery): PlannerQuery with CardinalityEstimation =
-    CardinalityEstimation.lift(plannerQuery, Cardinality(0))
 }

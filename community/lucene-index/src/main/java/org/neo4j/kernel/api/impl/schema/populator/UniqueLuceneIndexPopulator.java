@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
@@ -41,7 +41,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     private final int[] propertyKeyIds;
     private final UniqueIndexSampler sampler;
 
-    public UniqueLuceneIndexPopulator( SchemaIndex index, IndexDescriptor descriptor )
+    public UniqueLuceneIndexPopulator( SchemaIndex index, SchemaIndexDescriptor descriptor )
     {
         super( index );
         this.propertyKeyIds = descriptor.schema().getPropertyIds();
@@ -55,7 +55,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( final PropertyAccessor accessor ) throws IOException
+    public IndexUpdater newPopulatingUpdater( final PropertyAccessor accessor )
     {
         return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyIds, luceneIndex, accessor, sampler );
     }

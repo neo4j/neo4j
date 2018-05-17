@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,7 @@ import java.util.Arrays;
 import org.neo4j.values.storable.BufferValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 
@@ -40,8 +40,8 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         EndNode,
         BeginLabels,
         EndLabels,
-        WriteEdge,
-        WriteEdgeReference,
+        WriteRelationship,
+        WriteRelationshipReference,
         EndEdge,
         WritePath,
         BeginMap,
@@ -106,16 +106,16 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void writeEdgeReference( long edgeId )
+    public void writeRelationshipReference( long relId )
     {
-        buffer.add( Specials.writeEdgeReference( edgeId ) );
+        buffer.add( Specials.writeRelationshipReference( relId ) );
     }
 
     @Override
-    public void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
             throws RuntimeException
     {
-        buffer.add( Specials.writeEdge( edgeId, startNodeId, endNodeId, type, properties ) );
+        buffer.add( Specials.writeRelationship( relId, startNodeId, endNodeId, type, properties ) );
     }
 
     @Override
@@ -143,9 +143,9 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, EdgeValue[] edges ) throws RuntimeException
+    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws RuntimeException
     {
-        buffer.add( Specials.writePath( nodes, edges ) );
+        buffer.add( Specials.writePath( nodes, relationships ) );
     }
 
     @SuppressWarnings( "WeakerAccess" )
@@ -158,14 +158,14 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
                                                        31 * labels.hashCode() );
         }
 
-        public static Special writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type,
+        public static Special writeRelationship( long edgeId, long startNodeId, long endNodeId, TextValue type,
                 MapValue properties )
         {
-            return new Special( SpecialKind.WriteEdge,
+            return new Special( SpecialKind.WriteRelationship,
                     Arrays.hashCode( new Object[]{edgeId, startNodeId, endNodeId, type, properties} ) );
         }
 
-        public static Special writePath( NodeValue[] nodes, EdgeValue[] edges )
+        public static Special writePath( NodeValue[] nodes, RelationshipValue[] edges )
         {
             return new Special( SpecialKind.WritePath, Arrays.hashCode( nodes ) + 31 * Arrays.hashCode( edges ) );
         }
@@ -175,9 +175,9 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
             return new Special( SpecialKind.WriteNodeReference, (int) nodeId );
         }
 
-        public static Special writeEdgeReference( long edgeId )
+        public static Special writeRelationshipReference( long edgeId )
         {
-            return new Special( SpecialKind.WriteEdgeReference, (int) edgeId );
+            return new Special( SpecialKind.WriteRelationshipReference, (int) edgeId );
         }
 
         public static Special beginMap( int size )

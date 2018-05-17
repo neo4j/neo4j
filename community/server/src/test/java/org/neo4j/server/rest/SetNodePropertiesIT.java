@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -51,7 +51,6 @@ public class SetNodePropertiesIT extends
                  "of attributes." )
     @Test
     public void shouldReturn204WhenPropertiesAreUpdated()
-            throws JsonParseException
     {
         Node jim = data.get().get( "jim" );
         assertThat( jim, inTx(graphdb(), not( hasProperty( "age" ) ) ) );
@@ -64,7 +63,6 @@ public class SetNodePropertiesIT extends
     @Graph( "jim knows joe" )
     @Test
     public void set_node_properties_in_Unicode()
-            throws JsonParseException
     {
         Node jim = data.get().get( "jim" );
         gen.get().payload(
@@ -76,9 +74,8 @@ public class SetNodePropertiesIT extends
     @Test
     @Graph( "jim knows joe" )
     public void shouldReturn400WhenSendinIncompatibleJsonProperties()
-            throws JsonParseException
     {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "jim", new HashMap<String, Object>() );
         gen.get().payload( JsonHelper.createJsonFrom( map ) ).expectedStatus(
                 400 ).put( getPropertiesUri( data.get().get( "jim" ) ) );
@@ -98,7 +95,6 @@ public class SetNodePropertiesIT extends
     @Test
     @Graph( "jim knows joe" )
     public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist()
-            throws JsonParseException
     {
         gen.get().payload(
                 JsonHelper.createJsonFrom( MapUtil.map( "key", "val" ) ) ).expectedStatus(
@@ -133,7 +129,6 @@ public class SetNodePropertiesIT extends
                  "nested JSON as a string instead." )
     @Test
     public void shouldReturn400WhenSendinIncompatibleJsonProperty()
-            throws Exception
     {
         gen.get()
                 .payload( "{\"foo\" : {\"bar\" : \"baz\"}}" )
@@ -156,7 +151,6 @@ public class SetNodePropertiesIT extends
     @Test
     @Graph( "jim knows joe" )
     public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist()
-            throws Exception
     {
         JaxRsResponse response = RestRequest.req().put(
                 getDataUri() + "node/1234/foo",

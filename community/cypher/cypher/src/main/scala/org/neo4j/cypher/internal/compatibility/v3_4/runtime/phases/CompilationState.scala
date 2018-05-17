@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,6 +26,6 @@ import scala.util.{Failure, Try}
 
 class CompilationState(ls: LogicalPlanState,
                            val maybeExecutionPlan: Try[ExecutionPlan] = Failure(new UnsupportedOperationException))
-  extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.maybeStatement, ls.maybeSemantics,
+  extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.solveds, ls.cardinalities, ls.maybeStatement, ls.maybeSemantics,
                            ls.maybeExtractedParams, ls.maybeSemanticTable, ls.maybeUnionQuery, ls.maybeLogicalPlan,
                            ls.maybePeriodicCommit, ls.accumulatedConditions)

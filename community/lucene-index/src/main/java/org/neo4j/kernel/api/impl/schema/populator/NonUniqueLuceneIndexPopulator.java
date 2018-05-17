@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,7 +40,6 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final IndexSamplingConfig samplingConfig;
     private NonUniqueIndexSampler sampler;
-    private boolean updateSampling;
 
     public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
     {
@@ -50,13 +49,13 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( PropertyAccessor accessor )
     {
         // no constraints to verify so do nothing
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
     {
         return new NonUniqueLuceneIndexPopulatingUpdater( writer, sampler );
     }

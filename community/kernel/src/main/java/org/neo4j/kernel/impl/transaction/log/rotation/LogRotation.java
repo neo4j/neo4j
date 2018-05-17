@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -41,13 +41,13 @@ public interface LogRotation
     LogRotation NO_ROTATION = new LogRotation()
     {
         @Override
-        public boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent ) throws IOException
+        public boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent )
         {
             return false;
         }
 
         @Override
-        public void rotateLogFile() throws IOException
+        public void rotateLogFile()
         {
         }
     };

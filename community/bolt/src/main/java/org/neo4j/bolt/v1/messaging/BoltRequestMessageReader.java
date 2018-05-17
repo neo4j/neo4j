@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,12 +21,12 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.bolt.v1.packstream.PackStream;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
+
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Reader for Bolt request messages made available via a {@link Neo4jPack.Unpacker}.
@@ -40,18 +40,13 @@ public class BoltRequestMessageReader
         this.unpacker = unpacker;
     }
 
-    public boolean hasNext() throws IOException
-    {
-        return unpacker.hasNext();
-    }
-
     /**
      * Parse and handle a single message by handing it off
      * to a {@link BoltRequestMessageHandler} instance.
      *
      * @param handler handler for request messages
      */
-    public <E extends Exception> void read( BoltRequestMessageHandler<E> handler ) throws IOException, E
+    public void read( BoltRequestMessageHandler handler ) throws IOException
     {
         try
         {
@@ -64,8 +59,8 @@ public class BoltRequestMessageReader
                 {
                 case INIT:
                     String clientName = unpacker.unpackString();
-                    Map<String,Object> credentials = unpacker.unpackToRawMap();
-                    handler.onInit( clientName, credentials );
+                    Map<String,Object> authToken = readAuthToken( unpacker );
+                    handler.onInit( clientName, authToken );
                     break;
                 case ACK_FAILURE:
                     handler.onAckFailure();
@@ -76,15 +71,7 @@ public class BoltRequestMessageReader
                 case RUN:
                     String statement = unpacker.unpackString();
                     MapValue params = unpacker.unpackMap();
-                    Optional<Neo4jError> error = unpacker.consumeError();
-                    if ( error.isPresent() )
-                    {
-                        handler.onExternalError( error.get() );
-                    }
-                    else
-                    {
-                        handler.onRun( statement, params );
-                    }
+                    handler.onRun( statement, params );
                     break;
                 case DISCARD_ALL:
                     handler.onDiscardAll();
@@ -93,20 +80,29 @@ public class BoltRequestMessageReader
                     handler.onPullAll();
                     break;
                 default:
-                    throw new BoltIOException( Status.Request.Invalid,
-                            "Message 0x" + Integer.toHexString( signature ) + " is not supported." );
+                    throw new BoltIOException( Status.Request.InvalidFormat,
+                            String.format( "Message 0x%s is not supported.", Integer.toHexString( signature ) ) );
                 }
             }
             catch ( IllegalArgumentException e )
             {
-                throw new BoltIOException( Status.Request.Invalid,
-                        "0x" + Integer.toHexString( signature ) + " is not a valid message signature." );
+                throw new BoltIOException( Status.Request.InvalidFormat,
+                        String.format( "Message 0x%s is not a valid message signature.", Integer.toHexString( signature ) ) );
             }
         }
         catch ( PackStream.PackStreamException e )
         {
-            throw new BoltIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
-                                                                     "Error was: " + e.getMessage(), e );
+            throw new BoltIOException( Status.Request.InvalidFormat,
+                    String.format( "Unable to read message type. Error was: %s.", e.getMessage() ), e );
         }
+    }
+
+    private static Map<String,Object> readAuthToken( Neo4jPack.Unpacker unpacker ) throws IOException
+    {
+        MapValue authTokenValue = unpacker.unpackMap();
+        AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
+        return authTokenValue.entrySet()
+                .stream()
+                .collect( toMap( Map.Entry::getKey, entry -> writer.valueAsObject( entry.getValue() ) ) );
     }
 }

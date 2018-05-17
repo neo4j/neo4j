@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,20 +29,21 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.Args;
 
 import static java.lang.String.format;
-
 import static org.neo4j.commandline.Util.neo4jVersion;
 
 public class AdminTool
 {
-
-    static final int STATUS_SUCCESS = 0;
+    public static final int STATUS_SUCCESS = 0;
     public static final int STATUS_ERROR = 1;
+    public static final String NEO4J_HOME = System.getenv().getOrDefault( "NEO4J_HOME", "" );
+    public static final String NEO4J_CONF = System.getenv().getOrDefault( "NEO4J_CONF", "" );
+    public static final String NEO4J_DEBUG = System.getenv().getOrDefault( "NEO4J_DEBUG", "" );
 
     public static void main( String[] args ) throws IOException
     {
-        Path homeDir = Paths.get( System.getenv().getOrDefault( "NEO4J_HOME", "" ) );
-        Path configDir = Paths.get( System.getenv().getOrDefault( "NEO4J_CONF", "" ) );
-        boolean debug = System.getenv( "NEO4J_DEBUG" ) != null;
+        Path homeDir = Paths.get( NEO4J_HOME );
+        Path configDir = Paths.get( NEO4J_CONF );
+        boolean debug = NEO4J_DEBUG != null;
 
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
         {
@@ -115,7 +116,7 @@ public class AdminTool
             if ( Args.parse( commandArgs ).has( "help" ) )
             {
                 outsideWorld.stdErrLine( "unknown argument: --help" );
-                usage.printUsageForCommand( commandLocator.findProvider( name ), outsideWorld::stdErrLine );
+                usage.printUsageForCommand( provider, outsideWorld::stdErrLine );
                 failure();
             }
             else

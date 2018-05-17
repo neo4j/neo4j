@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.neo4j.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.kernel.api.schema.SchemaUtil.idTokenNameLookup;
+import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 
 public class ConstraintRule extends SchemaRule implements ConstraintDescriptor.Supplier
 {
@@ -105,7 +105,7 @@ public class ConstraintRule extends SchemaRule implements ConstraintDescriptor.S
     @Override
     public boolean equals( Object o )
     {
-        if ( o != null && o instanceof ConstraintRule )
+        if ( o instanceof ConstraintRule )
         {
             ConstraintRule that = (ConstraintRule) o;
             return this.descriptor.equals( that.descriptor );

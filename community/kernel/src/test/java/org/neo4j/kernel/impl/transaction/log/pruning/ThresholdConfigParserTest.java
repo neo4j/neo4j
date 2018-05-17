@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,21 +31,21 @@ import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParse
 public class ThresholdConfigParserTest
 {
     @Test
-    public void parseTrue() throws Exception
+    public void parseTrue()
     {
         ThresholdConfigValue configValue = parse( "true" );
         assertEquals( NO_PRUNING, configValue );
     }
 
     @Test
-    public void parseFalse() throws Exception
+    public void parseFalse()
     {
         ThresholdConfigValue configValue = parse( "false" );
         assertEquals( KEEP_LAST_FILE, configValue );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void parseGarbage() throws Exception
+    public void parseGarbage()
     {
         parse( "davide" );
         fail( "Expected IllegalArgumentException" );

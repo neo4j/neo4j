@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -55,20 +55,17 @@ public class DatabaseAvailability implements Lifecycle
 
     @Override
     public void init()
-            throws Throwable
     {
     }
 
     @Override
     public void start()
-            throws Throwable
     {
         availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
     }
 
     @Override
     public void stop()
-            throws Throwable
     {
         // Database is no longer available for use
         // Deny beginning new transactions
@@ -90,7 +87,6 @@ public class DatabaseAvailability implements Lifecycle
 
     @Override
     public void shutdown()
-            throws Throwable
     {
         // TODO: Starting database. Make sure none can access it through lock or CAS
     }

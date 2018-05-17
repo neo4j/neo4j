@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,13 +39,10 @@ public class CountsStoreBatchTransactionApplier extends BatchTransactionApplier.
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction )
     {
         Optional<CountsAccessor.Updater> result = countsTracker.apply( transaction.transactionId() );
-        if ( result.isPresent() )
-        {
-            this.countsUpdater = result.get();
-        }
+        result.ifPresent( updater -> this.countsUpdater = updater );
         assert this.countsUpdater != null || mode == TransactionApplicationMode.RECOVERY;
 
         return new CountsStoreTransactionApplier( mode, countsUpdater );

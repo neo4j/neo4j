@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,17 +26,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.impl.proc.TypeMappers.NeoValueConverter;
+import org.neo4j.kernel.impl.proc.TypeMappers.DefaultValueConverter;
 import org.neo4j.procedure.Name;
 
-import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 
 /**
- * Given a java method, figures out a valid {@link org.neo4j.kernel.api.proc.ProcedureSignature} field signature.
+ * Given a java method, figures out a valid {@link ProcedureSignature} field signature.
  * Basically, it takes the java signature and spits out the same signature described as Neo4j types.
  */
 public class MethodSignatureCompiler
@@ -54,8 +56,7 @@ public class MethodSignatureCompiler
         List<Neo4jTypes.AnyType> neoTypes = new ArrayList<>( types.length );
         for ( Type type : types )
         {
-            NeoValueConverter valueConverter = typeMappers.converterFor( type );
-            neoTypes.add( valueConverter.type() );
+            neoTypes.add( typeMappers.toNeo4jType( type ) );
         }
 
         return neoTypes;
@@ -92,8 +93,8 @@ public class MethodSignatureCompiler
 
             try
             {
-                NeoValueConverter valueConverter = typeMappers.converterFor( type );
-                Optional<Neo4jValue> defaultValue = valueConverter.defaultValue( parameter );
+                DefaultValueConverter valueConverter = typeMappers.converterFor( type );
+                Optional<DefaultParameterValue> defaultValue = valueConverter.defaultValue( parameter );
                 //it is not allowed to have holes in default values
                 if ( seenDefault && !defaultValue.isPresent() )
                 {
@@ -104,9 +105,20 @@ public class MethodSignatureCompiler
                 }
 
                 seenDefault = defaultValue.isPresent();
-                signature.add( defaultValue.isPresent()
-                        ? inputField( name, valueConverter.type(), defaultValue.get() )
-                        : inputField( name, valueConverter.type() ) );
+
+                // Currently only byte[] is not supported as a Cypher type, so we have specific conversion here.
+                // Should we add more unsupported types we should generalize this.
+                if ( type == byte[].class )
+                {
+                    FieldSignature.InputMapper mapper = new ByteArrayConverter();
+                    signature.add( defaultValue.map( neo4jValue -> inputField( name, valueConverter.type(), neo4jValue, mapper ) ).orElseGet(
+                            () -> inputField( name, valueConverter.type(), mapper ) ) );
+                }
+                else
+                {
+                    signature.add( defaultValue.map( neo4jValue -> inputField( name, valueConverter.type(), neo4jValue ) ).orElseGet(
+                            () -> inputField( name, valueConverter.type() ) ) );
+                }
             }
             catch ( ProcedureException e )
             {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,8 +28,7 @@ import org.neo4j.consistency.RecordType;
 
 public class ConsistencySummaryStatistics
 {
-    private final Map<RecordType, AtomicInteger> inconsistentRecordCount =
-            new EnumMap<RecordType, AtomicInteger>( RecordType.class );
+    private final Map<RecordType, AtomicInteger> inconsistentRecordCount = new EnumMap<>( RecordType.class );
     private final AtomicInteger totalInconsistencyCount = new AtomicInteger();
     private final AtomicLong errorCount = new AtomicLong();
     private final AtomicLong warningCount = new AtomicLong();

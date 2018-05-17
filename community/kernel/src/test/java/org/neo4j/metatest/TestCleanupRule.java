@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -79,7 +79,7 @@ public class TestCleanupRule
     }
 
     @Test
-    public void shouldTellUserIllegalArgumentIfSo() throws Throwable
+    public void shouldTellUserIllegalArgumentIfSo()
     {
         // GIVEN
         CleanupRule rule = new CleanupRule();
@@ -98,7 +98,7 @@ public class TestCleanupRule
         rule.apply( new Statement()
         {
             @Override
-            public void evaluate() throws Throwable
+            public void evaluate()
             {
             }
         }, null ).evaluate();

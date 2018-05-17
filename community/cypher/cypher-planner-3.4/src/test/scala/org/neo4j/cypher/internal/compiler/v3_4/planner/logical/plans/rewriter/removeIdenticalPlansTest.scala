@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,16 +21,17 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_4.IdName
+import org.neo4j.cypher.internal.util.v3_4.attribution.Attributes
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, NodeHashJoin}
 
 class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSupport {
+  val noAttributes = new Attributes(idGen)
 
   test("should not contain copies") {
-    val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val join = NodeHashJoin(Set(IdName("a")), scan, scan)(solved)
+    val scan = AllNodesScan("a", Set.empty)
+    val join = NodeHashJoin(Set("a"), scan, scan)
 
-    val rewritten = join.endoRewrite(removeIdenticalPlans)
+    val rewritten = join.endoRewrite(removeIdenticalPlans(noAttributes))
 
     rewritten should equal(join)
     rewritten shouldNot be theSameInstanceAs join
@@ -38,11 +39,11 @@ class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("should not rewrite when not needed") {
-    val scan1 = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val scan2 = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val join = NodeHashJoin(Set(IdName("a")), scan1, scan2)(solved)
+    val scan1 = AllNodesScan("a", Set.empty)
+    val scan2 = AllNodesScan("a", Set.empty)
+    val join = NodeHashJoin(Set("a"), scan1, scan2)
 
-    val rewritten = join.endoRewrite(removeIdenticalPlans)
+    val rewritten = join.endoRewrite(removeIdenticalPlans(noAttributes))
 
     rewritten should equal(join)
     rewritten.left should be theSameInstanceAs join.left

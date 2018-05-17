@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,6 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -147,7 +146,7 @@ public class Neo4jWithSocket extends ExternalResource
         }
     }
 
-    public void ensureDatabase( Consumer<Map<String,String>> overrideSettingsFunction ) throws IOException
+    public void ensureDatabase( Consumer<Map<String,String>> overrideSettingsFunction )
     {
         if ( gdb != null )
         {
@@ -163,7 +162,7 @@ public class Neo4jWithSocket extends ExternalResource
                 ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 
-    private Map<String,String> configure( Consumer<Map<String,String>> overrideSettingsFunction ) throws IOException
+    private Map<String,String> configure( Consumer<Map<String,String>> overrideSettingsFunction )
     {
         Map<String,String> settings = new HashMap<>();
         settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );

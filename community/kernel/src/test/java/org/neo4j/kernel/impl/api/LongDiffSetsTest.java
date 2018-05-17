@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ public class LongDiffSetsTest
     // TODO null/isEmpty elements
 
     @Test
-    public void shouldContainSourceForEmptyDiffSets() throws Exception
+    public void shouldContainSourceForEmptyDiffSets()
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );
@@ -52,7 +52,7 @@ public class LongDiffSetsTest
     }
 
     @Test
-    public void shouldContainFilteredSourceForDiffSetsWithRemovedElements() throws Exception
+    public void shouldContainFilteredSourceForDiffSetsWithRemovedElements()
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );
@@ -68,7 +68,7 @@ public class LongDiffSetsTest
     }
 
     @Test
-    public void shouldContainFilteredSourceForDiffSetsWithAddedElements() throws Exception
+    public void shouldContainFilteredSourceForDiffSetsWithAddedElements()
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );
@@ -84,7 +84,7 @@ public class LongDiffSetsTest
     }
 
     @Test
-    public void shouldContainAddedElementsForDiffSetsWithAddedElements() throws Exception
+    public void shouldContainAddedElementsForDiffSetsWithAddedElements()
     {
         // given
         DiffSets<Long> diffSets = new DiffSets<>( );

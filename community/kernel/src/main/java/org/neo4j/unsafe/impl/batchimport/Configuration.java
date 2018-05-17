@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,9 +20,9 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
@@ -31,7 +31,6 @@ import static java.lang.Math.round;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.gibiBytes;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
  * User controlled configuration for a {@link BatchImporter}.
@@ -43,7 +42,7 @@ public interface Configuration
      * database directory of the imported database, i.e. <into>/bad.log.
      */
     String BAD_FILE_NAME = "bad.log";
-    long MAX_PAGE_CACHE_MEMORY = mebiBytes( 480 );
+    long MAX_PAGE_CACHE_MEMORY = gibiBytes( 1 );
     int DEFAULT_MAX_MEMORY_PERCENT = 90;
 
     /**
@@ -157,7 +156,7 @@ public interface Configuration
      * Enabling will probably increase concurrent I/O to a point which reduces performance if underlying storage
      * isn't great at concurrent I/O, especially if also {@link #parallelRecordWrites()} is enabled.
      */
-    default boolean parallelRecordReadsWhenWriting()
+    default boolean highIO()
     {
         // Defaults to false since some environments sees less performance with this enabled
         return false;
@@ -253,9 +252,21 @@ public interface Configuration
         }
 
         @Override
-        public boolean parallelRecordReadsWhenWriting()
+        public boolean highIO()
         {
-            return defaults.parallelRecordReadsWhenWriting();
+            return defaults.highIO();
+        }
+
+        @Override
+        public long maxMemoryUsage()
+        {
+            return defaults.maxMemoryUsage();
+        }
+
+        @Override
+        public boolean allowCacheAllocationOnHeap()
+        {
+            return defaults.allowCacheAllocationOnHeap();
         }
     }
 
@@ -286,8 +297,8 @@ public interface Configuration
         {
             throw new IllegalArgumentException( "Expected percentage to be < 100, was " + percent );
         }
-        long freePhysicalMemory = OsBeanUtil.getFreePhysicalMemory();
-        if ( freePhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE )
+        long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
+        if ( totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE )
         {
             // Unable to detect amount of free memory, so rather max memory should be explicitly set
             // in order to get best performance. However let's just go with a default of 2G in this case.
@@ -295,6 +306,6 @@ public interface Configuration
         }
 
         double factor = percent / 100D;
-        return round( (freePhysicalMemory - Runtime.getRuntime().maxMemory()) * factor );
+        return round( (totalPhysicalMemory - Runtime.getRuntime().maxMemory()) * factor );
     }
 }

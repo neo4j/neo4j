@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,14 +25,13 @@ import static java.lang.String.format;
 
 public class DuplicateInputIdException extends DataException
 {
-    public DuplicateInputIdException( Object id, String groupName, String sourceLocation1, String sourceLocation2 )
+    public DuplicateInputIdException( Object id, String groupName )
     {
-        super( message( id, groupName, sourceLocation1, sourceLocation2 ) );
+        super( message( id, groupName ) );
     }
 
-    public static String message( Object id, String groupName, String sourceLocation1, String sourceLocation2 )
+    public static String message( Object id, String groupName )
     {
-        return format( "Id '%s' is defined more than once in %s, at least at %s and %s",
-                id, groupName, sourceLocation1, sourceLocation2 );
+        return format( "Id '%s' is defined more than once in group '%s'", id, groupName );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.lang.reflect.Array;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -44,7 +44,7 @@ import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 public class StorageLayerPropertyTest extends StorageLayerTest
 {
     @Test
-    public void should_get_all_node_properties() throws Exception
+    public void should_get_all_node_properties()
     {
         // GIVEN
         String longString =
@@ -125,7 +125,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_create_property_key_if_not_exists() throws Exception
+    public void should_create_property_key_if_not_exists()
     {
         // WHEN
         long id = disk.propertyKeyGetOrCreateForName( propertyKey );
@@ -135,7 +135,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_get_previously_created_property_key() throws Exception
+    public void should_get_previously_created_property_key()
     {
         // GIVEN
         long id = disk.propertyKeyGetOrCreateForName( propertyKey );
@@ -148,7 +148,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_be_able_to_get_or_create_previously_created_property_key() throws Exception
+    public void should_be_able_to_get_or_create_previously_created_property_key()
     {
         // GIVEN
         long id = disk.propertyKeyGetOrCreateForName( propertyKey );
@@ -161,13 +161,13 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_fail_if_get_non_existent_property_key() throws Exception
+    public void should_fail_if_get_non_existent_property_key()
     {
         // WHEN
         int propertyKey = disk.propertyKeyGetForName( "non-existent-property-key" );
 
         // THEN
-        assertEquals( KeyReadOperations.NO_SUCH_PROPERTY_KEY, propertyKey );
+        assertEquals( TokenRead.NO_TOKEN, propertyKey );
     }
 
     private Object array( int length, Class<?> componentType )

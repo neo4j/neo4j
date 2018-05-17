@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.phases
 
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, Condition}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 /*
@@ -37,6 +39,8 @@ the pipe line
 case class LogicalPlanState(queryText: String,
                             startPosition: Option[InputPosition],
                             plannerName: PlannerName,
+                            solveds: Solveds,
+                            cardinalities: Cardinalities,
                             maybeStatement: Option[Statement] = None,
                             maybeSemantics: Option[SemanticState] = None,
                             maybeExtractedParams: Option[Map[String, Any]] = None,
@@ -44,7 +48,8 @@ case class LogicalPlanState(queryText: String,
                             maybeUnionQuery: Option[UnionQuery] = None,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
                             maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
-                            accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
+                            accumulatedConditions: Set[Condition] = Set.empty,
+                            initialFields: Map[String, CypherType] = Map.empty) extends BaseState {
 
   def unionQuery: UnionQuery = maybeUnionQuery getOrElse fail("Union query")
   def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
@@ -64,6 +69,9 @@ object LogicalPlanState {
     LogicalPlanState(queryText = state.queryText,
                      startPosition = state.startPosition,
                      plannerName = state.plannerName,
+                     initialFields = state.initialFields,
+                     solveds = new Solveds,
+                     cardinalities = new Cardinalities,
                      maybeStatement = state.maybeStatement,
                      maybeSemantics = state.maybeSemantics,
                      maybeExtractedParams = state.maybeExtractedParams,

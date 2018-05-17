@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,12 +22,9 @@ package org.neo4j.consistency.checking;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,14 +39,20 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
+import static org.neo4j.io.fs.FileUtils.copyFile;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
@@ -81,6 +84,50 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // then
         assertTrue( "Expected consistency check to succeed", result.isSuccessful() );
+    }
+
+    @Test
+    public void reportNotCleanLabelIndex() throws IOException, ConsistencyCheckIncompleteException
+    {
+        File storeDir = db.getStoreDir();
+        someData();
+        db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        File labelIndexFileCopy = new File( storeDir, "label_index_copy" );
+        copyFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( LABEL_ONE );
+            tx.success();
+        }
+
+        db.shutdownAndKeepStore();
+
+        copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
+
+        ConsistencyCheckService.Result result = fullConsistencyCheck();
+        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertThat( readReport( result ),
+                hasItem( containsString("WARN : Label index was not properly shutdown and rebuild is required.") ) );
+    }
+
+    @Test
+    public void reportNotCleanLabelIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
+    {
+        File storeDir = db.getStoreDir();
+        someData();
+        db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        File labelIndexFileCopy = new File( storeDir, "label_index_copy" );
+        copyFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy );
+
+        db.shutdownAndKeepStore();
+
+        copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
+
+        ConsistencyCheckService.Result result = fullConsistencyCheck();
+        assertTrue( "Expected consistency check to fail", result.isSuccessful() );
+        assertThat( readReport( result ),
+                hasItem( containsString("WARN : Label index was not properly shutdown and rebuild is required.") ) );
     }
 
     @Test
@@ -175,27 +222,10 @@ public class AllNodesInStoreExistInLabelIndexTest
         assertFalse( "Expected consistency check to fail", result.isSuccessful() );
     }
 
-    // Do not remove this, very useful for debugging
-    private void printReport( ConsistencyCheckService.Result result )
+    private List<String> readReport( ConsistencyCheckService.Result result )
             throws IOException
     {
-        try
-        {
-            FileInputStream fileInputStream = new FileInputStream( result.reportFile() );
-
-            BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( fileInputStream ) );
-            String line;
-            while ( (line = bufferedReader.readLine()) != null )
-            {
-                System.out.println( line );
-            }
-        }
-        catch ( FileNotFoundException e )
-        {
-            // Fine dont print it then, just report
-            System.out
-                    .println( "FileNotFoundException, might just mean that consistency checker had nothing to report" );
-        }
+        return Files.readAllLines( result.reportFile().toPath() );
     }
 
     private void removeExistingNode( List<Pair<Long,Label[]>> nodesInStore )

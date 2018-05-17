@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,7 +30,7 @@ import static org.junit.Assert.assertArrayEquals;
 public class PhysicalToLogicalLabelChangesTest
 {
     @Test
-    public void shouldSeeSimpleAddition() throws Exception
+    public void shouldSeeSimpleAddition()
     {
         convertAndAssert(
                 // before/after
@@ -40,7 +40,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSimpleRemoval() throws Exception
+    public void shouldSeeSimpleRemoval()
     {
         convertAndAssert(
                 // before/after
@@ -50,7 +50,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeAdded() throws Exception
+    public void shouldSeeSomeAdded()
     {
         convertAndAssert(
                 // before/after
@@ -60,7 +60,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeRemoved() throws Exception
+    public void shouldSeeSomeRemoved()
     {
         convertAndAssert(
                 // before/after
@@ -70,7 +70,7 @@ public class PhysicalToLogicalLabelChangesTest
     }
 
     @Test
-    public void shouldSeeSomeAddedAndSomeRemoved() throws Exception
+    public void shouldSeeSomeAddedAndSomeRemoved()
     {
         convertAndAssert(
                 // before/after

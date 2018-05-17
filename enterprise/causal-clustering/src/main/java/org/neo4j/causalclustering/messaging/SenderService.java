@@ -1,41 +1,45 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.messaging;
 
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Stream;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.Future;
 
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.causalclustering.messaging.monitoring.MessageQueueMonitor;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -43,24 +47,22 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress,Message>
 {
-    private NonBlockingChannels nonBlockingChannels;
+    private ReconnectingChannels channels;
 
-    private final ChannelInitializer<SocketChannel> channelInitializer;
+    private final ChannelInitializer channelInitializer;
     private final ReadWriteLock serviceLock = new ReentrantReadWriteLock();
     private final Log log;
-    private final Monitors monitors;
 
     private JobScheduler.JobHandle jobHandle;
     private boolean senderServiceRunning;
     private Bootstrap bootstrap;
     private NioEventLoopGroup eventLoopGroup;
 
-    public SenderService( ChannelInitializer<SocketChannel> channelInitializer, LogProvider logProvider, Monitors monitors )
+    public SenderService( ChannelInitializer channelInitializer, LogProvider logProvider )
     {
         this.channelInitializer = channelInitializer;
         this.log = logProvider.getLog( getClass() );
-        this.monitors = monitors;
-        this.nonBlockingChannels = new NonBlockingChannels();
+        this.channels = new ReconnectingChannels();
     }
 
     @Override
@@ -75,7 +77,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 return;
             }
 
-            future = channel( to ).send( message );
+            future = channel( to ).writeAndFlush( message );
         }
         finally
         {
@@ -84,34 +86,43 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
         if ( block )
         {
-            future.awaitUninterruptibly();
+            try
+            {
+                future.get();
+            }
+            catch ( ExecutionException e )
+            {
+                log.error( "Exception while sending to: " + to, e );
+            }
+            catch ( InterruptedException e )
+            {
+                log.info( "Interrupted while sending", e );
+            }
         }
     }
 
-    private NonBlockingChannel channel( AdvertisedSocketAddress to )
+    private Channel channel( AdvertisedSocketAddress destination )
     {
-        MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
-        NonBlockingChannel nonBlockingChannel = nonBlockingChannels.get( to );
+        ReconnectingChannel channel = channels.get( destination );
 
-        if ( nonBlockingChannel == null )
+        if ( channel == null )
         {
-            nonBlockingChannel = new NonBlockingChannel( bootstrap, eventLoopGroup.next(), to, log );
-            nonBlockingChannel.start();
-            NonBlockingChannel existingNonBlockingChannel = nonBlockingChannels.putIfAbsent( to, nonBlockingChannel );
+            channel = new ReconnectingChannel( bootstrap, eventLoopGroup.next(), destination, log );
+            channel.start();
+            ReconnectingChannel existingNonBlockingChannel = channels.putIfAbsent( destination, channel );
 
             if ( existingNonBlockingChannel != null )
             {
-                nonBlockingChannel.dispose();
-                nonBlockingChannel = existingNonBlockingChannel;
+                channel.dispose();
+                channel = existingNonBlockingChannel;
             }
             else
             {
-                log.info( "Creating channel to: [%s] ", to );
+                log.info( "Creating channel to: [%s] ", destination );
             }
         }
 
-        monitor.register( to );
-        return nonBlockingChannel;
+        return channel;
     }
 
     @Override
@@ -148,10 +159,10 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 jobHandle = null;
             }
 
-            Iterator<NonBlockingChannel> itr = nonBlockingChannels.values().iterator();
+            Iterator<ReconnectingChannel> itr = channels.values().iterator();
             while ( itr.hasNext() )
             {
-                NonBlockingChannel timestampedChannel = itr.next();
+                Channel timestampedChannel = itr.next();
                 timestampedChannel.dispose();
                 itr.remove();
             }
@@ -169,5 +180,10 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
         {
             serviceLock.writeLock().unlock();
         }
+    }
+
+    public Stream<Pair<AdvertisedSocketAddress,ProtocolStack>> installedProtocols()
+    {
+        return channels.installedProtocols();
     }
 }

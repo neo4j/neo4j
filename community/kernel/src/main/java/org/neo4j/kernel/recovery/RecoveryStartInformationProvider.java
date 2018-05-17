@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -84,7 +84,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
      * @throws IOException if log files cannot be read
      */
     @Override
-    public RecoveryStartInformation get() throws IOException
+    public RecoveryStartInformation get()
     {
         LogTailScanner.LogTailInformation logTailInformation = logTailScanner.getTailInformation();
         CheckPoint lastCheckPoint = logTailInformation.lastCheckPoint;

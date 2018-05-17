@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,10 +20,8 @@
 package org.neo4j.test;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -91,6 +89,11 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
+    public void setTopLevelGroupName( String name )
+    {
+    }
+
+    @Override
     public Executor executor( Group group )
     {
         return job -> schedule( job, now() );
@@ -110,14 +113,6 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
 
     @Override
     public JobHandle schedule( Group group, Runnable job )
-    {
-        JobHandle handle = schedule( job, now() );
-        processSchedule();
-        return handle;
-    }
-
-    @Override
-    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
         JobHandle handle = schedule( job, now() );
         processSchedule();
@@ -155,25 +150,25 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         throw new UnsupportedOperationException();
     }
@@ -218,7 +213,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         }
 
         @Override
-        public void waitTermination() throws InterruptedException, ExecutionException
+        public void waitTermination()
         {
             throw new UnsupportedOperationException();
         }

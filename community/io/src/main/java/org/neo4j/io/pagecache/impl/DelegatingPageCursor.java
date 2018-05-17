@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -42,6 +43,18 @@ public class DelegatingPageCursor extends PageCursor
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         return delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
+    {
+        return delegate.copyTo( sourceOffset, targetBuffer );
+    }
+
+    @Override
+    public void shiftBytes( int sourceOffset, int length, int shift )
+    {
+        delegate.shiftBytes( sourceOffset, length, shift );
     }
 
     @Override
@@ -138,6 +151,12 @@ public class DelegatingPageCursor extends PageCursor
     public void putBytes( byte[] data, int arrayOffset, int length )
     {
         delegate.putBytes( data, arrayOffset, length );
+    }
+
+    @Override
+    public void putBytes( int bytes, byte value )
+    {
+        delegate.putBytes( bytes, value );
     }
 
     @Override

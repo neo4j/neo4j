@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertArrayEquals;
 public class NodeLabelRangeTest
 {
     @Test
-    public void shouldTransposeNodeIdsAndLabelIds() throws Exception
+    public void shouldTransposeNodeIdsAndLabelIds()
     {
         // given
         long[][] labelsPerNode = new long[][] {
@@ -52,7 +52,7 @@ public class NodeLabelRangeTest
     }
 
     @Test
-    public void shouldRebaseOnRangeId() throws Exception
+    public void shouldRebaseOnRangeId()
     {
         // given
         long[][] labelsPerNode = new long[][] {

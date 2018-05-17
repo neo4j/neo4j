@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.com;
 
@@ -28,7 +31,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -43,7 +45,7 @@ public class NetworkReceiverTest
     static final int PORT = 1234;
 
     @Test
-    public void testGetURIWithWildCard() throws Exception
+    public void testGetURIWithWildCard()
     {
         NetworkReceiver networkReceiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                 mock( NetworkReceiver.Configuration.class ), mock( LogProvider.class ) );
@@ -57,7 +59,7 @@ public class NetworkReceiverTest
     }
 
     @Test
-    public void testGetURIWithLocalHost() throws Exception
+    public void testGetURIWithLocalHost()
     {
         NetworkReceiver networkReceiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                 mock( NetworkReceiver.Configuration.class ), mock( LogProvider.class ) );
@@ -73,7 +75,8 @@ public class NetworkReceiverTest
     public void testMessageReceivedOriginFix() throws Exception
     {
         LogProvider logProvider = mock( LogProvider.class );
-        when( logProvider.getLog( NetworkReceiver.class ) ).thenReturn( mock( Log.class ) );
+        Log log = mock( Log.class );
+        when( logProvider.getLog( NetworkReceiver.class ) ).thenReturn( log );
         NetworkReceiver networkReceiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                 mock( NetworkReceiver.Configuration.class ), logProvider );
 
@@ -94,13 +97,13 @@ public class NetworkReceiverTest
         when( messageEvent.getMessage() ).thenReturn( message );
         when( messageEvent.getChannel() ).thenReturn( channel );
 
-        // the original FROM header should be ignored
-        message.setHeader( Message.FROM, "cluster://someplace:1234" );
+        // the original HEADER_FROM header should be ignored
+        message.setHeader( Message.HEADER_FROM, "cluster://someplace:1234" );
 
         networkReceiver.new MessageReceiver().messageReceived( ctx, messageEvent );
 
         assertEquals(
-                "FROM header should have been changed to visible ip address: " + message.getHeader( Message.FROM ),
-                "cluster://127.0.0.1:1234", message.getHeader( Message.FROM ) );
+                "HEADER_FROM header should have been changed to visible ip address: " + message.getHeader( Message.HEADER_FROM ),
+                "cluster://127.0.0.1:1234", message.getHeader( Message.HEADER_FROM ) );
     }
 }

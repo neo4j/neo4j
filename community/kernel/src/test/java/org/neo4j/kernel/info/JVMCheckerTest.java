@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,7 +32,7 @@ import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_WARNING;
 public class JVMCheckerTest
 {
     @Test
-    public void shouldIssueWarningWhenUsingHotspotServerVmVersion7() throws Exception
+    public void shouldIssueWarningWhenUsingHotspotServerVmVersion7()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -43,7 +43,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldNotIssueWarningWhenUsingHotspotServerVmVersion8() throws Exception
+    public void shouldNotIssueWarningWhenUsingHotspotServerVmVersion8()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -65,7 +65,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingHotspotServerVmVersion7InThe32BitVersion() throws Exception
+    public void shouldIssueWarningWhenUsingHotspotServerVmVersion7InThe32BitVersion()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -76,7 +76,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingOpenJDKServerVmVersion7() throws Exception
+    public void shouldIssueWarningWhenUsingOpenJDKServerVmVersion7()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -87,7 +87,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingOpenJDKClientVmVersion7() throws Exception
+    public void shouldIssueWarningWhenUsingOpenJDKClientVmVersion7()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -98,7 +98,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingUnsupportedJvm() throws Exception
+    public void shouldIssueWarningWhenUsingUnsupportedJvm()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 
@@ -109,7 +109,7 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingUnsupportedJvmVersion() throws Exception
+    public void shouldIssueWarningWhenUsingUnsupportedJvmVersion()
     {
         BufferingLog bufferingLogger = new BufferingLog();
 

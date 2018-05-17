@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,12 +25,12 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.api.{KernelTransaction, ResourceTracker, Statement}
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
 
-  override type ReadOps = ReadOperations
+  override type ReadOps = Nothing
 
   override type DbmsOps = DbmsOperations
 
@@ -42,9 +42,11 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   def statement: Statement = tc.statement()
 
+  def kernelTransaction: KernelTransaction = tc.kernelTransaction()
+
   def stateView: TxStateHolder = tc.stateView()
 
-  override def readOperations: ReadOperations = tc.readOperations()
+  override def readOperations: Nothing = ???
 
   override def dbmsOperations: DbmsOperations = tc.dbmsOperations()
 
@@ -57,4 +59,6 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
   def restrictCurrentTransaction(context: SecurityContext): Revertable = tc.restrictCurrentTransaction(context)
 
   def securityContext: SecurityContext = tc.securityContext
+
+  def resourceTracker: ResourceTracker = tc.resourceTracker
 }

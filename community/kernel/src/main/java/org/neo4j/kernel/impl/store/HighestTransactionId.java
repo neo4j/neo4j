@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -72,7 +72,7 @@ public class HighestTransactionId
      * @param checksum checksum of the transaction.
      * @param commitTimestamp commit time for transaction with {@code transactionId}.
      */
-    public void set( long transactionId, long checksum, long commitTimestamp )
+    public final void set( long transactionId, long checksum, long commitTimestamp )
     {
         highest.set( new TransactionId( transactionId, checksum, commitTimestamp ) );
     }

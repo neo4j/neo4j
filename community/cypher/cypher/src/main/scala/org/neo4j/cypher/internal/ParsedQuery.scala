@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,7 @@ import scala.util.Try
 
 trait ParsedQuery {
   protected def trier: Try[{ def isPeriodicCommit: Boolean }]
-  def plan(transactionContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any])
+  def plan(transactionContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any], Seq[String])
   final def isPeriodicCommit: Boolean = trier.map(_.isPeriodicCommit).getOrElse(false)
   final def hasErrors: Boolean = trier.isFailure
   final def onError[T](f: Throwable => T): Option[T] = trier.failed.toOption.map(f)

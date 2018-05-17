@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,7 +31,7 @@ import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.nio.ByteBuffer.allocateDirect;
+import static java.nio.ByteBuffer.allocate;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -49,7 +49,7 @@ public class TestEphemeralFileChannel
         StoreChannel channel = fs.open( new File( "yo" ), OpenMode.READ_WRITE );
 
         // Clear it because we depend on it to be zeros where we haven't written
-        ByteBuffer buffer = allocateDirect( 23 );
+        ByteBuffer buffer = allocate( 23 );
         buffer.put( new byte[23] ); // zeros
         buffer.flip();
         channel.write( buffer );

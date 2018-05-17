@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -60,7 +60,7 @@ public class RWLockTest
     }
 
     @Test
-    public void assertWriteLockDoesNotLeakMemory() throws InterruptedException
+    public void assertWriteLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
         final LockResource resource = new LockResource( ResourceTypes.NODE, 0 );
@@ -77,7 +77,7 @@ public class RWLockTest
     }
 
     @Test
-    public void assertReadLockDoesNotLeakMemory() throws InterruptedException
+    public void assertReadLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
         final LockResource resource = new LockResource( ResourceTypes.NODE, 0 );

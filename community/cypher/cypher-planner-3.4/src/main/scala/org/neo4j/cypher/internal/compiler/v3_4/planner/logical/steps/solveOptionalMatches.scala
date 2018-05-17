@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,34 +20,54 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, LogicalPlanningFunction2}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.frontend.v3_4.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object solveOptionalMatches {
-  type OptionalSolver = LogicalPlanningFunction2[QueryGraph, LogicalPlan, Option[LogicalPlan]]
+  type OptionalSolver = ((QueryGraph, LogicalPlan, LogicalPlanningContext, Solveds, Cardinalities) => Option[LogicalPlan])
 }
 
 case object applyOptional extends OptionalSolver {
-  def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {
-    val innerContext: LogicalPlanningContext = context.recurse(lhs)
-    val inner = context.strategy.plan(optionalQg)(innerContext)
-    val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols)(innerContext)
-    Some(context.logicalPlanProducer.planApply(lhs, rhs))
+  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
+    val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs, solveds, cardinalities)
+    val inner = context.strategy.plan(optionalQg, innerContext, solveds, cardinalities)
+    val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
+    Some(context.logicalPlanProducer.planApply(lhs, rhs, context))
   }
 }
 
-case object outerHashJoin extends OptionalSolver {
-  def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {
+abstract class outerHashJoin extends OptionalSolver {
+  override def apply(optionalQg: QueryGraph, side1: LogicalPlan, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) = {
     val joinNodes = optionalQg.argumentIds
-    val rhs = context.strategy.plan(optionalQg.withoutArguments())
+    val solvedHints = optionalQg.joinHints.filter { hint =>
+      val hintVariables = hint.variables.map(_.name).toSet
+      hintVariables.subsetOf(joinNodes)
+    }
+    val side2 = context.strategy.plan(optionalQg.withoutArguments().withoutHints(solvedHints), context, solveds, cardinalities)
 
     if (joinNodes.nonEmpty &&
-      joinNodes.forall(lhs.availableSymbols) &&
+      joinNodes.forall(side1.availableSymbols) &&
       joinNodes.forall(optionalQg.patternNodes)) {
-      Some(context.logicalPlanProducer.planOuterHashJoin(joinNodes, lhs, rhs))
+      Some(produceJoin(context, joinNodes, side1, side2, solvedHints))
     } else {
       None
     }
+  }
+
+  def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], side1: LogicalPlan, side2: LogicalPlan, solvedHints: Seq[UsingJoinHint]): LogicalPlan
+}
+
+case object leftOuterHashJoin extends outerHashJoin {
+  override def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], lhs: LogicalPlan, rhs: LogicalPlan, solvedHints: Seq[UsingJoinHint]) = {
+    context.logicalPlanProducer.planLeftOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
+  }
+}
+
+case object rightOuterHashJoin extends outerHashJoin {
+  override def produceJoin(context: LogicalPlanningContext, joinNodes: Set[String], rhs: LogicalPlan, lhs: LogicalPlan, solvedHints: Seq[UsingJoinHint]) = {
+    context.logicalPlanProducer.planRightOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
   }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,13 +24,14 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
+import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -40,12 +41,152 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.primitive.Primitive.intSet;
 
-public class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
+class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
 {
+    static final NodeState EMPTY = new NodeState()
+    {
+        @Override
+        public Iterator<StorageProperty> addedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<StorageProperty> changedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<Integer> removedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<StorageProperty> addedAndChangedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
+        {
+            return iterator;
+        }
+
+        @Override
+        public void accept( PropertyContainerState.Visitor visitor )
+        {
+        }
+
+        @Override
+        public ReadableDiffSets<Integer> labelDiffSets()
+        {
+            return ReadableDiffSets.Empty.instance();
+        }
+
+        @Override
+        public int augmentDegree( Direction direction, int degree )
+        {
+            return degree;
+        }
+
+        @Override
+        public int augmentDegree( Direction direction, int degree, int typeId )
+        {
+            return degree;
+        }
+
+        @Override
+        public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
+        {
+            return degree;
+        }
+
+        @Override
+        public void accept( NodeState.Visitor visitor )
+        {
+        }
+
+        @Override
+        public PrimitiveIntSet relationshipTypes()
+        {
+            return intSet();
+        }
+
+        @Override
+        public long getId()
+        {
+            throw new UnsupportedOperationException( "id not defined" );
+        }
+
+        @Override
+        public boolean hasPropertyChanges()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean hasRelationshipChanges()
+        {
+            return false;
+        }
+
+        @Override
+        public StorageProperty getChangedProperty( int propertyKeyId )
+        {
+            return null;
+        }
+
+        @Override
+        public StorageProperty getAddedProperty( int propertyKeyId )
+        {
+            return null;
+        }
+
+        @Override
+        public boolean isPropertyChangedOrRemoved( int propertyKey )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isPropertyRemoved( int propertyKeyId )
+        {
+            return false;
+        }
+
+        @Override
+        public PrimitiveLongIterator getAddedRelationships( Direction direction )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator getAddedRelationships()
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+    };
+
     private DiffSets<Integer> labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
-    private Set<DiffSets<Long>> indexDiffs; // TODO: does this really fill any function?
+
+    private Set<PrimitiveLongDiffSets> indexDiffs;
     private final TxState state;
 
     NodeStateImpl( long id, TxState state )
@@ -62,7 +203,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
 
     DiffSets<Integer> getOrCreateLabelDiffSets()
     {
-        if ( null == labelDiffSets )
+        if ( labelDiffSets == null )
         {
             labelDiffSets = new DiffSets<>();
         }
@@ -147,6 +288,20 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     }
 
     @Override
+    public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
+    {
+        if ( hasAddedRelationships() )
+        {
+            degree = relationshipsAdded.augmentDegree( direction, degree, typeId );
+        }
+        if ( hasRemovedRelationships() )
+        {
+            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId );
+        }
+        return degree;
+    }
+
+    @Override
     public void accept( NodeState.Visitor visitor ) throws ConstraintValidationException
     {
         super.accept( visitor );
@@ -176,16 +331,16 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
         return intSet();
     }
 
-    void addIndexDiff( DiffSets<Long> diff )
+    void addIndexDiff( PrimitiveLongDiffSets diff )
     {
         if ( indexDiffs == null )
         {
-            indexDiffs = Collections.newSetFromMap( new IdentityHashMap<DiffSets<Long>, Boolean>() );
+            indexDiffs = Collections.newSetFromMap( new IdentityHashMap<PrimitiveLongDiffSets, Boolean>() );
         }
         indexDiffs.add( diff );
     }
 
-    void removeIndexDiff( DiffSets<Long> diff )
+    void removeIndexDiff( PrimitiveLongDiffSets diff )
     {
         if ( indexDiffs != null )
         {
@@ -197,7 +352,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     {
         if ( indexDiffs != null )
         {
-            for ( DiffSets<Long> diff : indexDiffs )
+            for ( PrimitiveLongDiffSets diff : indexDiffs )
             {
                 if ( diff.getAdded().contains( nodeId ) )
                 {
@@ -231,140 +386,17 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             PrimitiveLongCollections.emptyIterator();
     }
 
-    public abstract static class Defaults extends StateDefaults<Long, NodeState, NodeStateImpl>
+    @Override
+    public PrimitiveLongIterator getAddedRelationships()
     {
-        @Override
-        final NodeStateImpl createValue( Long id, TxState state )
-        {
-            return new NodeStateImpl( id, state );
-        }
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships() :
+               PrimitiveLongCollections.emptyIterator();
+    }
 
-        @Override
-        final NodeState defaultValue()
-        {
-            return DEFAULT;
-        }
-
-        private static final NodeState DEFAULT = new NodeState()
-        {
-            @Override
-            public Iterator<StorageProperty> addedProperties()
-            {
-                return emptyIterator();
-            }
-
-            @Override
-            public Iterator<StorageProperty> changedProperties()
-            {
-                return emptyIterator();
-            }
-
-            @Override
-            public Iterator<Integer> removedProperties()
-            {
-                return emptyIterator();
-            }
-
-            @Override
-            public Iterator<StorageProperty> addedAndChangedProperties()
-            {
-                return emptyIterator();
-            }
-
-            @Override
-            public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-            {
-                return iterator;
-            }
-
-            @Override
-            public void accept( PropertyContainerState.Visitor visitor ) throws ConstraintValidationException
-            {
-            }
-
-            @Override
-            public ReadableDiffSets<Integer> labelDiffSets()
-            {
-                return ReadableDiffSets.Empty.instance();
-            }
-
-            @Override
-            public int augmentDegree( Direction direction, int degree )
-            {
-                return degree;
-            }
-
-            @Override
-            public int augmentDegree( Direction direction, int degree, int typeId )
-            {
-                return degree;
-            }
-
-            @Override
-            public void accept( NodeState.Visitor visitor )
-            {
-            }
-
-            @Override
-            public PrimitiveIntSet relationshipTypes()
-            {
-                return Primitive.intSet();
-            }
-
-            @Override
-            public long getId()
-            {
-                throw new UnsupportedOperationException( "id not defined" );
-            }
-
-            @Override
-            public boolean hasPropertyChanges()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean hasRelationshipChanges()
-            {
-                return false;
-            }
-
-            @Override
-            public StorageProperty getChangedProperty( int propertyKeyId )
-            {
-                return null;
-            }
-
-            @Override
-            public StorageProperty getAddedProperty( int propertyKeyId )
-            {
-                return null;
-            }
-
-            @Override
-            public boolean isPropertyChangedOrRemoved( int propertyKey )
-            {
-                return false;
-            }
-
-            @Override
-            public boolean isPropertyRemoved( int propertyKeyId )
-            {
-                return false;
-            }
-
-            @Override
-            public PrimitiveLongIterator getAddedRelationships( Direction direction )
-            {
-                return null;
-            }
-
-            @Override
-            public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
-            {
-                return null;
-            }
-
-        };
+    @Override
+    public PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType )
+    {
+        return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relType ) :
+               PrimitiveLongCollections.emptyIterator();
     }
 }

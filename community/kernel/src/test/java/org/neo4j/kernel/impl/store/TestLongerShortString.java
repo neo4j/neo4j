@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,13 +36,13 @@ public class TestLongerShortString
 {
 
     @Test
-    public void testMasks() throws Exception
+    public void testMasks()
     {
         assertEquals( 0, 1 & LongerShortString.invertedBitMask( LongerShortString.NUMERICAL ) );
         assertEquals( 0, 2 & LongerShortString.invertedBitMask( LongerShortString.DATE ) );
         assertEquals( LongerShortString.NUMERICAL.bitMask(),
                 3 & LongerShortString.invertedBitMask( LongerShortString.DATE ) );
-        assertEquals( 0, (LongerShortString.NUMERICAL.bitMask() | LongerShortString.NUMERICAL.bitMask()) &
+        assertEquals( 0, LongerShortString.NUMERICAL.bitMask() &
                          LongerShortString.invertedBitMask( LongerShortString.NUMERICAL, LongerShortString.DATE ) );
     }
 
@@ -60,14 +60,14 @@ public class TestLongerShortString
     }
 
     @Test
-    public void canEncodeDate() throws Exception
+    public void canEncodeDate()
     {
         assertCanEncodeAndDecodeToSame( "2011-10-10 12:45:22+0200" );
         assertCanEncodeAndDecodeToSame( "2011/10/10 12:45:22+0200" );
     }
 
     @Test
-    public void testRandomStrings() throws Exception
+    public void testRandomStrings()
     {
         for ( int i = 0; i < 1000; i++ )
         {
@@ -87,14 +87,14 @@ public class TestLongerShortString
     }
 
     @Test
-    public void canEncodeEmailAndUri() throws Exception
+    public void canEncodeEmailAndUri()
     {
         assertCanEncodeAndDecodeToSame( "mattias@neotechnology.com" );
         assertCanEncodeAndDecodeToSame( "http://domain:7474/" );
     }
 
     @Test
-    public void canEncodeLower() throws Exception
+    public void canEncodeLower()
     {
         assertCanEncodeAndDecodeToSame( "folder/generators/templates/controller.ext" );
         assertCanEncodeAndDecodeToSame( "folder/generators/templates/controller.extr" );
@@ -102,7 +102,7 @@ public class TestLongerShortString
     }
 
     @Test
-    public void canEncodeLowerHex() throws Exception
+    public void canEncodeLowerHex()
     {
         assertCanEncodeAndDecodeToSame( "da39a3ee5e6b4b0d3255bfef95601890afd80709" ); // sha1hex('') len=40
         assertCanEncodeAndDecodeToSame(
@@ -113,7 +113,7 @@ public class TestLongerShortString
     }
 
     @Test
-    public void canEncodeUpperHex() throws Exception
+    public void canEncodeUpperHex()
     {
         assertCanEncodeAndDecodeToSame( "DA39A3EE5E6B4B0D3255BFEF95601890AFD80709" ); // sha1HEX('') len=40
         assertCanEncodeAndDecodeToSame(
@@ -124,14 +124,14 @@ public class TestLongerShortString
     }
 
     @Test
-    public void checkMarginalFit() throws Exception
+    public void checkMarginalFit()
     {
         assertCanEncodeAndDecodeToSame( "^aaaaaaaaaaaaaaaaaaaaaaaaaa" );
         assertCannotEncode( "^aaaaaaaaaaaaaaaaaaaaaaaaaaa" );
     }
 
     @Test
-    public void canEncodeUUIDString() throws Exception
+    public void canEncodeUUIDString()
     {
         assertCanEncodeAndDecodeToSame( "81fe144f-484b-4a34-8e36-17a021540318" );
     }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
@@ -36,11 +36,11 @@ import org.neo4j.values.storable.Value;
  */
 public interface SchemaIndex extends DatabaseIndex
 {
-    LuceneIndexWriter getIndexWriter() throws IOException;
+    LuceneIndexWriter getIndexWriter();
 
     IndexReader getIndexReader() throws IOException;
 
-    IndexDescriptor getDescriptor();
+    SchemaIndexDescriptor getDescriptor();
 
     /**
      * Verifies uniqueness of property values present in this index.

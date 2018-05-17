@@ -1,28 +1,32 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
 import java.time.Clock
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{verify, _}
+import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.LatestRuntimeVariablePlannerCompatibility
 import org.neo4j.cypher.internal.compatibility.v3_4.WrappedMonitors
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.simpleExpressionEvaluator
@@ -31,12 +35,13 @@ import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, StatsDivergenceCalculator, devNullLogger}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, devNullLogger}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.{KernelTransaction, Statement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -100,9 +105,10 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       val tracer =CompilationPhaseTracer.NO_TRACING
       val parsed = compiler.parseQuery(query, query, logger, IDPPlannerName.name, Set.empty, None, tracer)
       val queryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(IDPPlannerName, monitors, configuration)
-      val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-      val context = CommunityRuntimeContextCreator.create(tracer, logger, planContext(statement), parsed.queryText, Set.empty,
-        None, monitors, metricsFactory, queryGraphSolver, configuration, defaultUpdateStrategy, Clock.systemUTC(),
+      val kernelTransaction = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getKernelTransactionBoundToThisThread(true)
+      val statement = kernelTransaction.acquireStatement()
+      val context = CommunityRuntimeContextCreator.create(tracer, logger, planContext(kernelTransaction, statement), parsed.queryText, Set.empty,
+        None, monitors, metricsFactory, queryGraphSolver, configuration, defaultUpdateStrategy, Clock.systemUTC(), new SequentialIdGen(),
                                                          simpleExpressionEvaluator)
 
       try {
@@ -123,7 +129,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
-    nonIndexedLabelWarningThreshold = 10000L
+    nonIndexedLabelWarningThreshold = 10000L,
+    false
   )
   private lazy val monitors = WrappedMonitors(kernelMonitors)
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
@@ -140,10 +147,9 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     )
   }
 
-  private def planContext(statement: Statement): PlanContext = {
+  private def planContext(transaction: KernelTransaction, statement: Statement): PlanContext = {
     val tc = mock[TransactionalContextWrapper]
-    when(tc.statement).thenReturn(statement)
-    when(tc.readOperations).thenReturn(statement.readOperations())
+    when(tc.dataRead).thenReturn(transaction.dataRead())
     when(tc.graph).thenReturn(graph)
     TransactionBoundPlanContext(tc, devNullLogger)
   }

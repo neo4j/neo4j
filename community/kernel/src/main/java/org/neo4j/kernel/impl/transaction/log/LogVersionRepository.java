@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,5 +40,5 @@ public interface LogVersionRepository
      * Increments (making sure it is persisted on disk) and returns the latest log version for this repository.
      * It does so atomically and can potentially block.
      */
-    long incrementAndGetVersion() throws IOException;
+    long incrementAndGetVersion();
 }

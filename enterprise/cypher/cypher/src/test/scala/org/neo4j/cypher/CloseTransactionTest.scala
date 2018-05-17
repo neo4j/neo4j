@@ -1,37 +1,40 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher
 
 import java.util
 
 import org.neo4j.collection.RawIterator
-import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.graphdb.{GraphDatabaseService, Result}
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.{GraphDatabaseService, Result}
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs.{FieldSignature, Neo4jTypes, ProcedureSignature, QualifiedName}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.exceptions.ProcedureException
+import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION
 import org.neo4j.kernel.api.proc._
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -40,6 +43,7 @@ import org.neo4j.procedure.Mode
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.immutable.Map
+import scala.collection.mutable.ArrayBuffer
 
 class CloseTransactionTest extends CypherFunSuite with GraphIcing {
 
@@ -489,8 +493,8 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     val procedureName = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
     val emptySignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
     val signature: ProcedureSignature = new ProcedureSignature(
-      procedureName, paramSignature, resultSignature, Mode.READ, java.util.Optional.empty(), Array.empty,
-      java.util.Optional.empty(), java.util.Optional.empty())
+      procedureName, paramSignature, resultSignature, Mode.READ, null, Array.empty,
+      null, null, false)
 
     def paramSignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
 
@@ -498,23 +502,26 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
       fields :+ FieldSignature.outputField(entry, results(entry).asInstanceOf[Neo4jTypes.AnyType])
     }.asJava
 
-    override def apply(context: Context, objects: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
-      val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
-      val readOperations = statement.readOperations
-      val nodes = readOperations.nodesGetAll()
-      val nodesArray = PrimitiveLongCollections.asArray(nodes)
-      statement.close()
+    override def apply(context: Context,
+                       objects: Array[AnyRef],
+                       resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
+      val ktx = context.get(KERNEL_TRANSACTION)
+      val nodeBuffer = new ArrayBuffer[Long]()
+      val cursor = ktx.cursors().allocateNodeCursor()
+      ktx.dataRead().allNodesScan(cursor)
+      while (cursor.next()) nodeBuffer.append(cursor.nodeReference())
+      cursor.close()
       new RawIterator[Array[AnyRef], ProcedureException] {
         var index = 0
 
         override def next(): Array[AnyRef] = {
-          val value = nodesArray(index)
+          val value = nodeBuffer(index)
           index += 1
           Array(new java.lang.Long(value))
         }
 
         override def hasNext: Boolean = {
-          nodesArray.length < index
+          nodeBuffer.length < index
         }
       }
     }

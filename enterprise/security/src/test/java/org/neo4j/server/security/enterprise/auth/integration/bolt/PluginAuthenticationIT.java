@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
@@ -28,7 +31,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthPlugin;
@@ -42,7 +44,6 @@ import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
@@ -209,14 +210,14 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertReadSucceeds();
 
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
 
         // Then
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "MATCH (n) RETURN n" ), pullAll() ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired,
                         "Plugin 'plugin-TestCacheableAdminAuthPlugin' authorization info expired." ) ) );
     }
@@ -230,11 +231,11 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         // Then
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
 
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -256,9 +257,9 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertConnectionSucceeds( authToken( "authorization_expired_user", "neo4j", null ) );
 
         // Then
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "MATCH (n) RETURN n" ), pullAll() ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired,
                         "Plugin 'plugin-TestCombinedAuthPlugin' authorization info expired: " +
                         "authorization_expired_user needs to re-authenticate." ) ) );

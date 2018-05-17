@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -102,7 +105,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         |CREATE (L:Location {name: toUpper(l.name)})
         |RETURN L.name AS NAME""".stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.UpdateConf, query)
 
     result.toList should equal(List(Map("NAME" -> "LONDON")))
   }
@@ -164,7 +167,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(IndexSeekByRange.name)
       }, Configs.AllRulePlanners), params = Map("apa" -> 43))
 
-    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+    result.toSet should equal(Set(Map("a" -> a1), Map("a" -> a2)))
     result.executionPlanDescription().toString should include("prop STARTS WITH \"www\"")
   }
 
@@ -190,7 +193,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(IndexSeekByRange.name)
       }, Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+    result.toSet should equal(Set(Map("a" -> a1), Map("a" -> a2)))
   }
 
   test("should plan a UniqueIndexSeek when constraint exists") {
@@ -216,7 +219,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(UniqueIndexSeekByRange.name)
       }, Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+    result.toSet should equal(Set(Map("a" -> a1), Map("a" -> a2)))
   }
 
   test("should be able to plan index seek for numerical less than") {
@@ -1007,7 +1010,8 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     result.executionPlanDescription().toString should include(IndexSeekByRange.name)
   }
 
-  test("should refuse to execute index seeks using inequalities over different types") {
+  // TODO: re-enable linting for these queries where some predicates can be statically determined to always be false.
+  ignore("should refuse to execute index seeks using inequalities over different types") {
     // Given
     createLabeledNode(Map("prop" -> 15), "Label")
     createLabeledNode(Map("prop" -> "1"), "Label")
@@ -1038,7 +1042,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     }
   }
 
-  test("should refuse to execute index seeks using inequalities over incomparable types (detected at runtime)") {
+  test("should yield empty results for index seeks using inequalities over incomparable types detected at runtime") {
     // Given
     (1 to 405).foreach { _ =>
       createLabeledNode("Label")
@@ -1047,16 +1051,12 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
-    val result = executeWith(Configs.Interpreted, s"EXPLAIN $query",
+    val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators(IndexSeekByRange.name)
-      }, Configs.AllRulePlanners))
+      }), params = Map("param" -> Array[Int](1, 2, 3)))
     result.toList should be(empty)
-
-    an[IllegalArgumentException] should be thrownBy {
-      executeWith(Configs.Empty, query, params = Map("param" -> Array[Int](1, 2, 3))).toList
-    }
   }
 
   test("should return no rows when executing index seeks using inequalities over incomparable types but also comparing against null") {
@@ -1134,7 +1134,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop < 10 CREATE () RETURN n.prop"
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.UpdateConf, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators(IndexSeekByRange.name)

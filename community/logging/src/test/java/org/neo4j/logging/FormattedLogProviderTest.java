@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -63,7 +63,7 @@ public class FormattedLogProviderTest
     }
 
     @Test
-    public void shouldLogWithAbbreviatedClassNameAsContext() throws Exception
+    public void shouldLogWithAbbreviatedClassNameAsContext()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -78,7 +78,7 @@ public class FormattedLogProviderTest
     }
 
     @Test
-    public void shouldSetLevelForLogWithMatchingContext() throws Exception
+    public void shouldSetLevelForLogWithMatchingContext()
     {
         // Given
         StringWriter writer = new StringWriter();
@@ -98,7 +98,7 @@ public class FormattedLogProviderTest
     }
 
     @Test
-    public void shouldSetLevelForLogWithPartiallyMatchingContext() throws Exception
+    public void shouldSetLevelForLogWithPartiallyMatchingContext()
     {
         // Given
         StringWriter writer = new StringWriter();

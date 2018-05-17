@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,9 @@ import org.junit.Test;
 import org.neo4j.test.Race;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
+import static org.neo4j.unsafe.impl.batchimport.input.Groups.LOWEST_NONGLOBAL_ID;
 
 public class GroupsTest
 {
@@ -40,7 +42,7 @@ public class GroupsTest
             race.addContestant( () ->
             {
                 Group group = groups.getOrCreate( name );
-                assertEquals( 0, group.id() );
+                assertEquals( LOWEST_NONGLOBAL_ID, group.id() );
             } );
         }
 
@@ -49,33 +51,33 @@ public class GroupsTest
 
         // THEN
         Group otherGroup = groups.getOrCreate( "MyOtherGroup" );
-        assertEquals( 1, otherGroup.id() );
-    }
-
-    @Test( expected = IllegalStateException.class )
-    public void shouldFailOnMixedGroupModeInGetOrCreate() throws Exception
-    {
-        // given
-        Groups groups = new Groups();
-        groups.getOrCreate( null );
-
-        // when
-        groups.getOrCreate( "Something" );
-    }
-
-    @Test( expected = IllegalStateException.class )
-    public void shouldFailOnMixedGroupModeInGetOrCreate2() throws Exception
-    {
-        // given
-        Groups groups = new Groups();
-        groups.getOrCreate( "Something" );
-
-        // when
-        groups.getOrCreate( null );
+        assertEquals( LOWEST_NONGLOBAL_ID + 1, otherGroup.id() );
     }
 
     @Test
-    public void shouldGetCreatedGroup() throws Exception
+    public void shouldSupportMixedGroupModeInGetOrCreate()
+    {
+        // given
+        Groups groups = new Groups();
+        assertEquals( Group.GLOBAL, groups.getOrCreate( null ) );
+
+        // when
+        assertNotEquals( Group.GLOBAL, groups.getOrCreate( "Something" ) );
+    }
+
+    @Test
+    public void shouldSupportMixedGroupModeInGetOrCreate2()
+    {
+        // given
+        Groups groups = new Groups();
+        assertNotEquals( Group.GLOBAL, groups.getOrCreate( "Something" ) );
+
+        // when
+        assertEquals( Group.GLOBAL, groups.getOrCreate( null ) );
+    }
+
+    @Test
+    public void shouldGetCreatedGroup()
     {
         // given
         Groups groups = new Groups();
@@ -90,7 +92,7 @@ public class GroupsTest
     }
 
     @Test
-    public void shouldGetGlobalGroup() throws Exception
+    public void shouldGetGlobalGroup()
     {
         // given
         Groups groups = new Groups();
@@ -103,23 +105,22 @@ public class GroupsTest
         assertSame( Group.GLOBAL, group );
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void shouldFailOnMixedGroupModeInGet() throws Exception
+    @Test
+    public void shouldSupportMixedGroupModeInGet()
     {
         // given
         Groups groups = new Groups();
         groups.getOrCreate( "Something" );
 
         // when
-        groups.get( null );
+        assertEquals( Group.GLOBAL, groups.get( null ) );
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void shouldFailOnMixedGroupModeInGet2() throws Exception
+    @Test ( expected = HeaderException.class )
+    public void shouldFailOnGettingNonExistentGroup()
     {
         // given
         Groups groups = new Groups();
-        groups.getOrCreate( null );
 
         // when
         groups.get( "Something" );

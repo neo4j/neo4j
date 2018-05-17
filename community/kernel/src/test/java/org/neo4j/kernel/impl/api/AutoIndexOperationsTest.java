@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_
 
 public class AutoIndexOperationsTest
 {
-    private final DataWriteOperations ops = mock(DataWriteOperations.class);
+    private final ExplicitIndexWrite ops = mock(ExplicitIndexWrite.class);
     private final PropertyKeyTokenHolder tokens = mock( PropertyKeyTokenHolder.class );
     private final AutoIndexOperations index = new InternalAutoIndexOperations( tokens, InternalAutoIndexOperations.EntityType.NODE );
 

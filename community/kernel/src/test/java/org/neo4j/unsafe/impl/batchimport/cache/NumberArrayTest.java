@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,6 +31,7 @@ import org.junit.runners.Parameterized.Parameters;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,8 +39,11 @@ import java.util.function.Function;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.RandomRule;
-
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+
+import static java.lang.Integer.max;
+
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
@@ -64,6 +68,7 @@ public class NumberArrayTest extends NumberArrayPageCacheTestSupport
     }
 
     private static final int INDEXES = 50_000;
+    private static final int CHUNK_SIZE = max( 1, INDEXES / 100 );
 
     @Parameters( name = "{0}" )
     public static Collection<Object[]> arrays() throws IOException
@@ -90,7 +95,7 @@ public class NumberArrayTest extends NumberArrayPageCacheTestSupport
                     ( array, index, value ) -> array.set( index, (Integer) value ), IntArray::get ) );
             list.add( line(
                     name + "DynamicIntArray",
-                    factory.newDynamicIntArray( INDEXES / 100, -1 ),
+                    factory.newDynamicIntArray( CHUNK_SIZE, -1 ),
                     random -> random.nextInt( 1_000_000_000 ),
                     ( array, index, value ) -> array.set( index, (Integer) value ), IntArray::get ) );
 
@@ -101,24 +106,60 @@ public class NumberArrayTest extends NumberArrayPageCacheTestSupport
                     ( array, index, value ) -> array.set( index, (Long) value ), LongArray::get ) );
             list.add( line(
                     name + "DynamicLongArray",
-                    factory.newDynamicLongArray( INDEXES / 100, -1 ),
+                    factory.newDynamicLongArray( CHUNK_SIZE, -1 ),
                     random -> random.nextLong( 1_000_000_000 ),
                     ( array, index, value ) -> array.set( index, (Long) value ), LongArray::get ) );
 
             list.add( line(
-                    name + "ByteArray",
-                    factory.newByteArray( INDEXES, new byte[] {-1, -1, -1, -1, -1} ),
+                    name + "ByteArray5",
+                    factory.newByteArray( INDEXES, defaultByteArray( 5 ) ),
                     random -> random.nextInt( 1_000_000_000 ),
                     ( array, index, value ) -> array.setInt( index, 1, (Integer) value ),
                     ( array, index ) -> array.getInt( index, 1 ) ) );
             list.add( line(
-                    name + "DynamicByteArray",
-                    factory.newDynamicByteArray( INDEXES / 100, new byte[] {-1, -1, -1, -1, -1} ),
+                    name + "DynamicByteArray5",
+                    factory.newDynamicByteArray( CHUNK_SIZE, defaultByteArray( 5 ) ),
                     random -> random.nextInt( 1_000_000_000 ),
                     ( array, index, value ) -> array.setInt( index, 1, (Integer) value ),
                     ( array, index ) -> array.getInt( index, 1 ) ) );
+
+            Function<RandomRule,Object> valueGenerator = random -> new long[] {
+                    random.nextLong(),
+                    random.nextInt(),
+                    (short) random.nextInt(),
+                    (byte) random.nextInt()
+            };
+            Writer<ByteArray> writer = ( array, index, value ) ->
+            {
+                long[] values = (long[]) value;
+                array.setLong( index, 0, values[0] );
+                array.setInt( index, 8, (int) values[1] );
+                array.setShort( index, 12, (short) values[2] );
+                array.setByte( index, 14, (byte) values[3] );
+            };
+            Reader<ByteArray> reader = ( array, index ) -> new long[] {
+                array.getLong( index, 0 ),
+                array.getInt( index, 8 ),
+                array.getShort( index, 12 ),
+                array.getByte( index, 14 )
+            };
+            list.add( line(
+                    name + "ByteArray15",
+                    factory.newByteArray( INDEXES, defaultByteArray( 15 ) ),
+                    valueGenerator, writer, reader ) );
+            list.add( line(
+                    name + "DynamicByteArray15",
+                    factory.newDynamicByteArray( CHUNK_SIZE, defaultByteArray( 15 ) ),
+                    valueGenerator, writer, reader ) );
         }
         return list;
+    }
+
+    private static byte[] defaultByteArray( int length )
+    {
+        byte[] result = new byte[length];
+        Arrays.fill( result, (byte) -1 );
+        return result;
     }
 
     private static <N extends NumberArray<N>> Object[] line( String name, N array, Function<RandomRule,Object> valueGenerator,
@@ -151,14 +192,14 @@ public class NumberArrayTest extends NumberArrayPageCacheTestSupport
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldGetAndSetRandomItems() throws Exception
+    public void shouldGetAndSetRandomItems()
     {
         // GIVEN
         Map<Integer,Object> key = new HashMap<>();
         Object defaultValue = reader.read( array, 0 );
 
-        // WHEN
-        for ( int i = 0; i < 100_000; i++ )
+        // WHEN setting random items
+        for ( int i = 0; i < INDEXES * 2; i++ )
         {
             int index = random.nextInt( INDEXES );
             Object value = valueGenerator.apply( random );
@@ -166,12 +207,45 @@ public class NumberArrayTest extends NumberArrayPageCacheTestSupport
             key.put( index, value );
         }
 
-        // THEN
+        // THEN they should be read correctly
+        assertAllValues( key, defaultValue );
+
+        // AND WHEN swapping some
+        for ( int i = 0; i < INDEXES / 2; i++ )
+        {
+            int fromIndex = random.nextInt( INDEXES );
+            int toIndex;
+            do
+            {
+                toIndex = random.nextInt( INDEXES );
+            }
+            while ( toIndex == fromIndex );
+            Object fromValue = reader.read( array, fromIndex );
+            Object toValue = reader.read( array, toIndex );
+            key.put( fromIndex, toValue );
+            key.put( toIndex, fromValue );
+            array.swap( fromIndex, toIndex );
+        }
+
+        // THEN they should end up in the correct places
+        assertAllValues( key, defaultValue );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private void assertAllValues( Map<Integer,Object> key, Object defaultValue )
+    {
         for ( int index = 0; index < INDEXES; index++ )
         {
             Object value = reader.read( index % 2 == 0 ? array : array.at( index ), index );
             Object expectedValue = key.getOrDefault( index, defaultValue );
-            assertEquals( expectedValue, value );
+            if ( value instanceof long[] )
+            {
+                assertArrayEquals( "index " + index, (long[]) expectedValue, (long[]) value );
+            }
+            else
+            {
+                assertEquals( "index " + index, expectedValue, value );
+            }
         }
     }
 

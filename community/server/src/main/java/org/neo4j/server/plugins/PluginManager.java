@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -38,7 +38,7 @@ import org.neo4j.server.rest.repr.Representation;
 
 public final class PluginManager implements ExtensionInjector, PluginInvocator
 {
-    private final Map<String/*name*/, ServerExtender> extensions = new HashMap<String, ServerExtender>();
+    private final Map<String/*name*/, ServerExtender> extensions = new HashMap<>();
 
     public PluginManager( Config serverConfig, LogProvider logProvider )
     {
@@ -47,7 +47,7 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
 
     PluginManager( Config serverConfig, Iterable<ServerPlugin> plugins, LogProvider logProvider )
     {
-        Map<String, Pair<ServerPlugin, ServerExtender>> extensions = new HashMap<String, Pair<ServerPlugin, ServerExtender>>();
+        Map<String, Pair<ServerPlugin, ServerExtender>> extensions = new HashMap<>();
         Log log = logProvider.getLog( getClass() );
         for ( ServerPlugin plugin : plugins )
         {
@@ -57,14 +57,9 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
             {
                 plugin.loadServerExtender( extender );
             }
-            catch ( Exception ex )
+            catch ( Exception | LinkageError ex )
             {
                 log.warn( "Failed to load plugin [%s]: %s", plugin.toString(), ex.getMessage() );
-                continue;
-            }
-            catch ( LinkageError err )
-            {
-                log.warn( "Failed to load plugin [%s]: %s", plugin.toString(), err.getMessage() );
                 continue;
             }
             Pair<ServerPlugin, ServerExtender> old = extensions.put( plugin.name, Pair.of( plugin, extender ) );
@@ -89,10 +84,10 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
     @Override
     public Map<String, List<String>> getExensionsFor( Class<?> type )
     {
-        Map<String, List<String>> result = new HashMap<String, List<String>>();
+        Map<String, List<String>> result = new HashMap<>();
         for ( Map.Entry<String, ServerExtender> extension : extensions.entrySet() )
         {
-            List<String> methods = new ArrayList<String>();
+            List<String> methods = new ArrayList<>();
             for ( PluginPoint method : extension.getValue()
                     .getExtensionsFor( type ) )
             {
@@ -139,7 +134,7 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
         {
             throw new PluginLookupException( "No such ServerPlugin: \"" + name + "\"" );
         }
-        List<ExtensionPointRepresentation> result = new ArrayList<ExtensionPointRepresentation>();
+        List<ExtensionPointRepresentation> result = new ArrayList<>();
         for ( PluginPoint plugin : extender.all() )
         {
             result.add( describe( plugin ) );
@@ -157,15 +152,7 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
         {
             return plugin.invoke( graphDb, context, params );
         }
-        catch ( BadInputException e )
-        {
-            throw e;
-        }
-        catch ( BadPluginInvocationException e )
-        {
-            throw e;
-        }
-        catch ( PluginInvocationFailureException e )
+        catch ( BadInputException | PluginInvocationFailureException | BadPluginInvocationException e )
         {
             throw e;
         }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,8 @@ package org.neo4j.graphdb;
 
 import java.util.Iterator;
 import java.util.function.Supplier;
+
+import static org.neo4j.graphdb.DependencyResolver.SelectionStrategy.FIRST;
 
 /**
  * Find a dependency given a type. This can be the exact type or a super type of
@@ -73,15 +75,8 @@ public interface DependencyResolver
          * @throws IllegalArgumentException if no suitable candidate was found.
          */
         <T> T select( Class<T> type, Iterable<? extends T> candidates ) throws IllegalArgumentException;
-    }
 
-    /**
-     * Adapter for {@link DependencyResolver} which will select the first available candidate by default
-     * for {@link #resolveDependency(Class)}.
-     */
-    abstract class Adapter implements DependencyResolver
-    {
-        private static final SelectionStrategy FIRST = new SelectionStrategy()
+        SelectionStrategy FIRST = new SelectionStrategy()
         {
             @Override
             public <T> T select( Class<T> type, Iterable<? extends T> candidates ) throws IllegalArgumentException
@@ -95,6 +90,40 @@ public interface DependencyResolver
             }
         };
 
+        /**
+         * Returns the one and only dependency, or throws.
+         */
+        SelectionStrategy ONLY = new SelectionStrategy()
+        {
+            @Override
+            public <T> T select( Class<T> type, Iterable<? extends T> candidates ) throws IllegalArgumentException
+            {
+                Iterator<? extends T> iterator = candidates.iterator();
+                if ( !iterator.hasNext() )
+                {
+                    throw new IllegalArgumentException( "Could not resolve dependency of type:" + type.getName() );
+                }
+
+                T only = iterator.next();
+
+                if ( iterator.hasNext() )
+                {
+                    throw new IllegalArgumentException( "Multiple dependencies of type:" + type.getName() );
+                }
+                else
+                {
+                    return only;
+                }
+            }
+        };
+    }
+
+    /**
+     * Adapter for {@link DependencyResolver} which will select the first available candidate by default
+     * for {@link #resolveDependency(Class)}.
+     */
+    abstract class Adapter implements DependencyResolver
+    {
         @Override
         public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
         {

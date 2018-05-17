@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,15 +27,22 @@ class ToStringTest extends FunctionTestBase("toString")  {
     testValidTypes(CTBoolean)(CTString)
     testValidTypes(CTAny.covariant)(CTString)
     testValidTypes(CTNumber.covariant)(CTString)
+    testValidTypes(CTDuration)(CTString)
+    testValidTypes(CTDate)(CTString)
+    testValidTypes(CTTime)(CTString)
+    testValidTypes(CTLocalTime)(CTString)
+    testValidTypes(CTLocalDateTime)(CTString)
+    testValidTypes(CTDateTime)(CTString)
+    testValidTypes(CTPoint)(CTString)
   }
 
   test("should fail type check for incompatible arguments") {
     testInvalidApplication(CTRelationship)(
-      "Type mismatch: expected Boolean, Float, Integer or String but was Relationship"
+      "Type mismatch: expected Boolean, Float, Integer, Point, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Relationship"
     )
 
     testInvalidApplication(CTNode)(
-      "Type mismatch: expected Boolean, Float, Integer or String but was Node"
+      "Type mismatch: expected Boolean, Float, Integer, Point, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Node"
     )
   }
 

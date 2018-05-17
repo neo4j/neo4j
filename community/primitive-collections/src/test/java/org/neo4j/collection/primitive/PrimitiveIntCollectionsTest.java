@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,23 +21,23 @@ package org.neo4j.collection.primitive;
 
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.memory.GlobalMemoryTracker;
+
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class PrimitiveIntCollectionsTest
 {
     @Test
-    public void arrayOfItemsAsIterator() throws Exception
+    public void arrayOfItemsAsIterator()
     {
         // GIVEN
         int[] items = new int[] { 2, 5, 234 };
@@ -53,7 +53,7 @@ public class PrimitiveIntCollectionsTest
     public void convertCollectionToLongArray()
     {
         PrimitiveIntSet heapSet = PrimitiveIntCollections.asSet( new int[]{1, 2, 3} );
-        PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet();
+        PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet( GlobalMemoryTracker.INSTANCE );
         offHeapIntSet.add( 7 );
         offHeapIntSet.add( 8 );
         assertArrayEquals( new long[]{1, 2, 3}, PrimitiveIntCollections.asLongArray( heapSet ) );
@@ -61,20 +61,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void arrayOfReversedItemsAsIterator() throws Exception
-    {
-        // GIVEN
-        int[] items = new int[] { 2, 5, 234 };
-
-        // WHEN
-        PrimitiveIntIterator iterator = PrimitiveIntCollections.reversed( items );
-
-        // THEN
-        assertItems( iterator, reverse( items ) );
-    }
-
-    @Test
-    public void concatenateTwoIterators() throws Exception
+    public void concatenateTwoIterators()
     {
         // GIVEN
         PrimitiveIntIterator firstItems = PrimitiveIntCollections.iterator( 10, 3, 203, 32 );
@@ -88,35 +75,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void prependItem() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 10, 23 );
-        int prepended = 5;
-
-        // WHEN
-        PrimitiveIntIterator iterator = PrimitiveIntCollections.prepend( prepended, items );
-
-        // THEN
-        assertItems( iterator, prepended, 10, 23 );
-    }
-
-    @Test
-    public void appendItem() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2 );
-        int appended = 3;
-
-        // WHEN
-        PrimitiveIntIterator iterator = PrimitiveIntCollections.append( items, appended );
-
-        // THEN
-        assertItems( iterator, 1, 2, appended );
-    }
-
-    @Test
-    public void filter() throws Exception
+    public void filter()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -129,7 +88,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void deduplicate() throws Exception
+    public void deduplicate()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 1, 2, 3, 2 );
@@ -139,183 +98,6 @@ public class PrimitiveIntCollectionsTest
 
         // THEN
         assertItems( deduped, 1, 2, 3 );
-    }
-
-    @Test
-    public void limit() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
-
-        // WHEN
-        PrimitiveIntIterator limited = PrimitiveIntCollections.limit( items, 2 );
-
-        // THEN
-        assertItems( limited, 1, 2 );
-    }
-
-    @Test
-    public void skip() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3, 4 );
-
-        // WHEN
-        PrimitiveIntIterator skipped = PrimitiveIntCollections.skip( items, 2 );
-
-        // THEN
-        assertItems( skipped, 3, 4 );
-    }
-
-    // TODO paging iterator
-
-    @Test
-    public void range() throws Exception
-    {
-        // WHEN
-        PrimitiveIntIterator range = PrimitiveIntCollections.range( 5, 15, 3 );
-
-        // THEN
-        assertItems( range, 5, 8, 11, 14 );
-    }
-
-    @Test
-    public void singleton() throws Exception
-    {
-        // GIVEN
-        int item = 15;
-
-        // WHEN
-        PrimitiveIntIterator singleton = PrimitiveIntCollections.singleton( item );
-
-        // THEN
-        assertItems( singleton, item );
-    }
-
-    @Test
-    public void reversed() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
-
-        // WHEN
-        PrimitiveIntIterator reversed = PrimitiveIntCollections.reversed( items );
-
-        // THEN
-        assertItems( reversed, 3, 2, 1 );
-    }
-
-    @Test
-    public void first() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2 );
-
-        // WHEN
-        try
-        {
-            PrimitiveIntCollections.first(  PrimitiveIntCollections.emptyIterator() );
-            fail( "Should throw exception" );
-        }
-        catch ( NoSuchElementException e )
-        {   // Good
-        }
-        long first = PrimitiveIntCollections.first( items );
-
-        // THEN
-        assertEquals( 1, first );
-    }
-
-    @Test
-    public void firstWithDefault() throws Exception
-    {
-        // GIVEN
-        int defaultValue = 5;
-
-        // WHEN
-        int firstOnEmpty = PrimitiveIntCollections.first( PrimitiveIntCollections.emptyIterator(), defaultValue );
-        int first = PrimitiveIntCollections.first( PrimitiveIntCollections.iterator( 1, 2 ), defaultValue );
-
-        // THEN
-        assertEquals( defaultValue, firstOnEmpty );
-        assertEquals( 1, first );
-    }
-
-    @Test
-    public void last() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2 );
-
-        // WHEN
-        try
-        {
-            PrimitiveIntCollections.last( PrimitiveIntCollections.emptyIterator() );
-            fail( "Should throw exception" );
-        }
-        catch ( NoSuchElementException e )
-        {   // Good
-        }
-        long last = PrimitiveIntCollections.last( items );
-
-        // THEN
-        assertEquals( 2, last );
-    }
-
-    @Test
-    public void lastWithDefault() throws Exception
-    {
-        // GIVEN
-        int defaultValue = 5;
-
-        // WHEN
-        int lastOnEmpty = PrimitiveIntCollections.last( PrimitiveIntCollections.emptyIterator(), defaultValue );
-        int last = PrimitiveIntCollections.last( PrimitiveIntCollections.iterator( 1, 2 ), defaultValue );
-
-        // THEN
-        assertEquals( defaultValue, lastOnEmpty );
-        assertEquals( 2, last );
-    }
-
-    @Test
-    public void single() throws Exception
-    {
-        try
-        {
-            PrimitiveIntCollections.single( PrimitiveIntCollections.emptyIterator() );
-        }
-        catch ( NoSuchElementException e )
-        {
-            assertThat( e.getMessage(), containsString( "No" ) );
-        }
-
-        assertEquals( 3, PrimitiveIntCollections.single( PrimitiveIntCollections.iterator( 3 ) ) );
-
-        try
-        {
-            PrimitiveIntCollections.single( PrimitiveIntCollections.iterator( 1, 2 ) );
-            fail( "Should throw exception" );
-        }
-        catch ( NoSuchElementException e )
-        {
-            assertThat( e.getMessage(), containsString( "More than one" ) );
-        }
-    }
-
-    @Test
-    public void singleWithDefault() throws Exception
-    {
-        assertEquals( 5, PrimitiveIntCollections.single( PrimitiveIntCollections.emptyIterator(), 5 ) );
-        assertEquals( 3, PrimitiveIntCollections.single( PrimitiveIntCollections.iterator( 3 ) ) );
-        try
-        {
-            PrimitiveIntCollections.single( PrimitiveIntCollections.iterator( 1, 2 ) );
-            fail( "Should throw exception" );
-        }
-        catch ( NoSuchElementException e )
-        {   // Good
-            assertThat( e.getMessage(), containsString( "More than one" ) );
-        }
     }
 
     private static final class CountingPrimitiveIntIteratorResource implements PrimitiveIntIterator, AutoCloseable
@@ -330,7 +112,7 @@ public class PrimitiveIntCollectionsTest
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
             closeCounter.incrementAndGet();
         }
@@ -349,133 +131,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void singleMustAutoCloseIterator()
-    {
-        AtomicInteger counter = new AtomicInteger();
-        CountingPrimitiveIntIteratorResource itr = new CountingPrimitiveIntIteratorResource(
-                PrimitiveIntCollections.iterator( 13 ), counter );
-        assertEquals( PrimitiveIntCollections.single( itr ), 13 );
-        assertEquals( 1, counter.get() );
-    }
-
-    @Test
-    public void singleWithDefaultMustAutoCloseIterator()
-    {
-        AtomicInteger counter = new AtomicInteger();
-        CountingPrimitiveIntIteratorResource itr = new CountingPrimitiveIntIteratorResource(
-                PrimitiveIntCollections.iterator( 13 ), counter );
-        assertEquals( PrimitiveIntCollections.single( itr, 2 ), 13 );
-        assertEquals( 1, counter.get() );
-    }
-
-    @Test
-    public void singleMustAutoCloseEmptyIterator()
-    {
-        AtomicInteger counter = new AtomicInteger();
-        CountingPrimitiveIntIteratorResource itr = new CountingPrimitiveIntIteratorResource(
-                PrimitiveIntCollections.emptyIterator(), counter );
-        try
-        {
-            PrimitiveIntCollections.single( itr );
-            fail( "single() on empty iterator should have thrown" );
-        }
-        catch ( NoSuchElementException ignore )
-        {
-        }
-        assertEquals( 1, counter.get() );
-    }
-
-    @Test
-    public void singleWithDefaultMustAutoCloseEmptyIterator()
-    {
-        AtomicInteger counter = new AtomicInteger();
-        CountingPrimitiveIntIteratorResource itr = new CountingPrimitiveIntIteratorResource(
-                PrimitiveIntCollections.emptyIterator(), counter );
-        assertEquals( PrimitiveIntCollections.single( itr, 2 ), 2 );
-        assertEquals( 1, counter.get() );
-    }
-
-    @Test
-    public void itemAt() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterable items = () -> PrimitiveIntCollections.iterator( 10, 20, 30 );
-
-        // THEN
-        try
-        {
-            PrimitiveIntCollections.itemAt( items.iterator(), 3 );
-            fail( "Should throw exception" );
-        }
-        catch ( NoSuchElementException e )
-        {
-            assertThat( e.getMessage(), containsString( "No element" ) );
-        }
-        try
-        {
-            PrimitiveIntCollections.itemAt( items.iterator(), -4 );
-            fail( "Should throw exception" );
-        }
-        catch ( NoSuchElementException e )
-        {
-            assertThat( e.getMessage(), containsString( "not found" ) );
-        }
-        assertEquals( 10, PrimitiveIntCollections.itemAt( items.iterator(), 0 ) );
-        assertEquals( 20, PrimitiveIntCollections.itemAt( items.iterator(), 1 ) );
-        assertEquals( 30, PrimitiveIntCollections.itemAt( items.iterator(), 2 ) );
-        assertEquals( 30, PrimitiveIntCollections.itemAt( items.iterator(), -1 ) );
-        assertEquals( 20, PrimitiveIntCollections.itemAt( items.iterator(), -2 ) );
-        assertEquals( 10, PrimitiveIntCollections.itemAt( items.iterator(), -3 ) );
-    }
-
-    @Test
-    public void itemAtWithDefault() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterable items = () -> PrimitiveIntCollections.iterator( 10, 20, 30 );
-        int defaultValue = 55;
-
-        // THEN
-        assertEquals( defaultValue, PrimitiveIntCollections.itemAt( items.iterator(), 3, defaultValue ) );
-        assertEquals( defaultValue, PrimitiveIntCollections.itemAt( items.iterator(), -4, defaultValue ) );
-        assertEquals( 10, PrimitiveIntCollections.itemAt( items.iterator(), 0 ) );
-        assertEquals( 20, PrimitiveIntCollections.itemAt( items.iterator(), 1 ) );
-        assertEquals( 30, PrimitiveIntCollections.itemAt( items.iterator(), 2 ) );
-        assertEquals( 30, PrimitiveIntCollections.itemAt( items.iterator(), -1 ) );
-        assertEquals( 20, PrimitiveIntCollections.itemAt( items.iterator(), -2 ) );
-        assertEquals( 10, PrimitiveIntCollections.itemAt( items.iterator(), -3 ) );
-    }
-
-    @Test
-    public void indexOf() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterable items = () -> PrimitiveIntCollections.iterator( 10, 20, 30 );
-
-        // THEN
-        assertEquals( -1, PrimitiveIntCollections.indexOf( items.iterator(), 55 ) );
-        assertEquals( 0, PrimitiveIntCollections.indexOf( items.iterator(), 10 ) );
-        assertEquals( 1, PrimitiveIntCollections.indexOf( items.iterator(), 20 ) );
-        assertEquals( 2, PrimitiveIntCollections.indexOf( items.iterator(), 30 ) );
-    }
-
-    @Test
-    public void iteratorsEqual() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterable items1 = () -> PrimitiveIntCollections.iterator( 1, 2, 3 );
-        PrimitiveIntIterable items2 = () -> PrimitiveIntCollections.iterator( 1, 20, 3 );
-        PrimitiveIntIterable items3 = () -> PrimitiveIntCollections.iterator( 1, 2, 3, 4 );
-        PrimitiveIntIterable items4 = () -> PrimitiveIntCollections.iterator( 1, 2, 3 );
-
-        // THEN
-        assertFalse( PrimitiveIntCollections.equals( items1.iterator(), items2.iterator() ) );
-        assertFalse( PrimitiveIntCollections.equals( items1.iterator(), items3.iterator() ) );
-        assertTrue( PrimitiveIntCollections.equals( items1.iterator(), items4.iterator() ) );
-    }
-
-    @Test
-    public void iteratorAsSet() throws Exception
+    public void iteratorAsSet()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -499,48 +155,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void iteratorAsSetAllowDuplicates() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 1 );
-
-        // WHEN
-        PrimitiveIntSet set = PrimitiveIntCollections.asSetAllowDuplicates( items );
-
-        // THEN
-        assertTrue( set.contains( 1 ) );
-        assertTrue( set.contains( 2 ) );
-        assertFalse( set.contains( 3 ) );
-    }
-
-    @Test
-    public void count() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
-
-        // WHEN
-        int count = PrimitiveIntCollections.count( items );
-
-        // THEN
-        assertEquals( 3, count );
-    }
-
-    @Test
-    public void asArray() throws Exception
-    {
-        // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
-
-        // WHEN
-        int[] array = PrimitiveIntCollections.asArray( items );
-
-        // THEN
-        assertTrue( Arrays.equals( new int[] { 1, 2, 3 }, array ) );
-    }
-
-    @Test
-    public void shouldNotContinueToCallNextOnHasNextFalse() throws Exception
+    public void shouldNotContinueToCallNextOnHasNextFalse()
     {
         // GIVEN
         AtomicInteger count = new AtomicInteger( 2 );
@@ -566,7 +181,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void shouldDeduplicate() throws Exception
+    public void shouldDeduplicate()
     {
         // GIVEN
         int[] array = new int[] {1, 6, 2, 5, 6, 1, 6};
@@ -576,6 +191,21 @@ public class PrimitiveIntCollectionsTest
 
         // THEN
         assertArrayEquals( new int[] {1, 6, 2, 5}, deduped );
+    }
+
+    @Test
+    public void copyMap()
+    {
+        PrimitiveIntObjectMap<Object> originalMap = Primitive.intObjectMap();
+        originalMap.put( 1, "a" );
+        originalMap.put( 2, "b" );
+        originalMap.put( 3, "c" );
+        PrimitiveIntObjectMap<Object> copyMap = PrimitiveIntCollections.copy( originalMap );
+        assertNotSame( originalMap, copyMap );
+        assertEquals( 3, copyMap.size() );
+        assertEquals( "a", copyMap.get( 1 ) );
+        assertEquals( "b", copyMap.get( 2 ) );
+        assertEquals( "c", copyMap.get( 3 ) );
     }
 
     private void assertNoMoreItems( PrimitiveIntIterator iterator )

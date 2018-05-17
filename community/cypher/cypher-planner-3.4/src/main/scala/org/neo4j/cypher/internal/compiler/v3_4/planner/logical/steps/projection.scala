@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,27 +21,24 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.ir.v3_4.IdName
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object projection {
 
-  def apply(in: LogicalPlan, projs: Map[String, Expression])
-           (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def apply(in: LogicalPlan, projs: Map[String, Expression], context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities): LogicalPlan = {
 
-    val (plan, projectionsMap) = PatternExpressionSolver()(in, projs)
+    val (plan, projectionsMap) = PatternExpressionSolver()(in, projs, context, solveds, cardinalities)
 
     val ids = plan.availableSymbols
 
-    val projectAllCoveredIds: Set[(String, Expression)] = ids.map {
-      case IdName(id) => id -> Variable(id)(null)
-    }
+    val projectAllCoveredIds: Set[(String, Expression)] = ids.map(id => id -> Variable(id)(null))
     val projections: Set[(String, Expression)] = projectionsMap.toIndexedSeq.toSet
 
     if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds) {
-      context.logicalPlanProducer.planStarProjection(plan, projectionsMap, projs)
+      context.logicalPlanProducer.planStarProjection(plan, projectionsMap, projs, context)
     } else {
-      context.logicalPlanProducer.planRegularProjection(plan, projectionsMap, projs)
+      context.logicalPlanProducer.planRegularProjection(plan, projectionsMap, projs, context)
     }
   }
 }

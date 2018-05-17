@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.helpers.collection.Iterators;
 
 /**
  * Just like {@link Iterator}, but with the addition that {@link #hasNext()} and {@link #next()} can
@@ -42,12 +43,12 @@ public interface RawIterator<T,EXCEPTION extends Exception>
         throw new UnsupportedOperationException();
     }
 
-    RawIterator<Object,Exception> EMPTY = RawIterator.of();
+    RawIterator<Object,Exception> EMPTY_ITERATOR = RawIterator.of();
 
     @SuppressWarnings( "unchecked" )
     static <T, EXCEPTION extends Exception> RawIterator<T,EXCEPTION> empty()
     {
-        return (RawIterator<T,EXCEPTION>) EMPTY;
+        return (RawIterator<T,EXCEPTION>) EMPTY_ITERATOR;
     }
 
     static <T, EX extends Exception> RawIterator<T, EX> of( T ... values )
@@ -95,19 +96,6 @@ public interface RawIterator<T,EXCEPTION extends Exception>
      */
     static <T, EX extends Exception> RawIterator<T, EX> wrap( final Iterator<T> iterator )
     {
-        return new RawIterator<T,EX>()
-        {
-            @Override
-            public boolean hasNext() throws EX
-            {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public T next() throws EX
-            {
-                return iterator.next();
-            }
-        };
+        return Iterators.asRawIterator( iterator );
     }
 }

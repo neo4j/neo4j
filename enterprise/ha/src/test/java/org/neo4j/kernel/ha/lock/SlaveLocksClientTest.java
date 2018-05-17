@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.ha.lock;
 
@@ -36,7 +39,7 @@ import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -82,7 +85,7 @@ public class SlaveLocksClientTest
     private AssertableLogProvider logProvider;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         master = mock( Master.class );
         availabilityGuard = new AvailabilityGuard( Clocks.fakeClock(), getInstance() );
@@ -148,7 +151,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldAllowAcquiringReleasingAndReacquiringExclusive() throws Exception
+    public void shouldAllowAcquiringReleasingAndReacquiringExclusive()
     {
         // Given we have grabbed and released a lock
         client.acquireExclusive( LockTracer.NONE, NODE, 1L );
@@ -164,7 +167,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldAllowAcquiringReleasingAndReacquiringShared() throws Exception
+    public void shouldAllowAcquiringReleasingAndReacquiringShared()
     {
         // Given we have grabbed and released a lock
         client.acquireShared( LockTracer.NONE, NODE, 1L );
@@ -180,7 +183,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldUseReEntryMethodsOnLocalLocksForReEntryExclusive() throws Exception
+    public void shouldUseReEntryMethodsOnLocalLocksForReEntryExclusive()
     {
         // Given we have grabbed and released a lock
         client.acquireExclusive( LockTracer.NONE, NODE, 1L );
@@ -199,7 +202,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldUseReEntryMethodsOnLocalLocksForReEntryShared() throws Exception
+    public void shouldUseReEntryMethodsOnLocalLocksForReEntryShared()
     {
         // Given we have grabbed and released a lock
         client.acquireShared( LockTracer.NONE, NODE, 1L );
@@ -218,7 +221,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldReturnNoLockSessionIfNotInitialized() throws Exception
+    public void shouldReturnNoLockSessionIfNotInitialized()
     {
         // When
         int lockSessionId = client.getLockSessionId();
@@ -228,7 +231,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldReturnDelegateIdIfInitialized() throws Exception
+    public void shouldReturnDelegateIdIfInitialized()
     {
         // Given
         client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1L );
@@ -258,7 +261,7 @@ public class SlaveLocksClientTest
     }
 
     @Test( expected = DistributedLockFailureException.class )
-    public void acquireSharedMustThrowIfMasterThrows() throws Exception
+    public void acquireSharedMustThrowIfMasterThrows()
     {
         whenMasterAcquireShared().thenThrow( new ComException() );
 
@@ -266,7 +269,7 @@ public class SlaveLocksClientTest
     }
 
     @Test( expected = DistributedLockFailureException.class )
-    public void acquireExclusiveMustThrowIfMasterThrows() throws Exception
+    public void acquireExclusiveMustThrowIfMasterThrows()
     {
         whenMasterAcquireExclusive().thenThrow( new ComException() );
 
@@ -274,19 +277,19 @@ public class SlaveLocksClientTest
     }
 
     @Test( expected = UnsupportedOperationException.class )
-    public void tryExclusiveMustBeUnsupported() throws Exception
+    public void tryExclusiveMustBeUnsupported()
     {
         client.tryExclusiveLock( NODE, 1 );
     }
 
     @Test( expected = UnsupportedOperationException.class )
-    public void trySharedMustBeUnsupported() throws Exception
+    public void trySharedMustBeUnsupported()
     {
         client.trySharedLock( NODE, 1 );
     }
 
     @Test( expected = DistributedLockFailureException.class )
-    public void closeMustThrowIfMasterThrows() throws Exception
+    public void closeMustThrowIfMasterThrows()
     {
         when( master.endLockSession( isNull(), anyBoolean() ) ).thenThrow( new ComException() );
 
@@ -295,7 +298,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void mustCloseLocalClientEvenIfMasterThrows() throws Exception
+    public void mustCloseLocalClientEvenIfMasterThrows()
     {
         when( master.endLockSession( isNull(), anyBoolean() ) ).thenThrow( new ComException() );
 
@@ -312,7 +315,7 @@ public class SlaveLocksClientTest
     }
 
     @Test( expected = org.neo4j.graphdb.TransientDatabaseFailureException.class )
-    public void mustThrowTransientTransactionFailureIfDatabaseUnavailable() throws Exception
+    public void mustThrowTransientTransactionFailureIfDatabaseUnavailable()
     {
         availabilityGuard.shutdown();
 
@@ -320,7 +323,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldFailWithTransientErrorOnDbUnavailable() throws Exception
+    public void shouldFailWithTransientErrorOnDbUnavailable()
     {
         // GIVEN
         availabilityGuard.shutdown();
@@ -548,7 +551,7 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldIncludeReasonForNotLocked() throws Exception
+    public void shouldIncludeReasonForNotLocked()
     {
         // GIVEN
         SlaveLocksClient client = newSlaveLocksClient( lockManager );

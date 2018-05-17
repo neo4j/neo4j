@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,7 +36,7 @@ import org.neo4j.string.UTF8;
 public class FailureStorage
 {
     private static final int MAX_FAILURE_SIZE = 16384;
-    private static final String DEFAULT_FAILURE_FILE_NAME = "failure-message";
+    public static final String DEFAULT_FAILURE_FILE_NAME = "failure-message";
 
     private final FileSystemAbstraction fs;
     private final FolderLayout folderLayout;

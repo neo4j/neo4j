@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -49,7 +49,9 @@ object PlanDescriptionArgumentSerializer {
       case ExplicitIndex(index) => index
       case Index(label, properties) => s":$label(${properties.mkString(",")})"
       case PrefixIndex(label, property, p) => s":$label($property STARTS WITH ${asPrettyString(p)})"
-      case InequalityIndex(label, property, bounds) => s":$label($property) ${bounds.mkString(", ")}"
+      case InequalityIndex(label, property, bounds) => bounds.map(bound => s":$label($property) $bound").mkString(" AND ")
+      case PointDistanceIndex(label, property, point, distance, inclusive) =>
+        s":$label($property) WHERE distance(_,$point) <${if(inclusive) "=" else ""} $distance"
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)

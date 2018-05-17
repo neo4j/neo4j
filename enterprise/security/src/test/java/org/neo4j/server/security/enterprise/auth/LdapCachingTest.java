@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.auth;
 
@@ -37,10 +40,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -61,9 +65,12 @@ public class LdapCachingTest
     private TestRealm testRealm;
     private FakeTicker fakeTicker;
 
+    private Function<String, Integer> token;
+
     @Before
     public void setup() throws Throwable
     {
+        token = s -> -1;
         SecurityLog securityLog = mock( SecurityLog.class );
         InternalFlatFileRealm internalFlatFileRealm =
             new InternalFlatFileRealm(
@@ -82,7 +89,7 @@ public class LdapCachingTest
 
         fakeTicker = new FakeTicker();
         authManager = new MultiRealmAuthManager( internalFlatFileRealm, realms,
-                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10, true ), securityLog, false );
+                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10, true ), securityLog, false, false, Collections.emptyMap() );
         authManager.init();
         authManager.start();
 
@@ -120,12 +127,12 @@ public class LdapCachingTest
     public void shouldCacheAuthorizationInfo() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
-        mike.mode().allowsReads();
+        EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
+        mike.authorize( token ).mode().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
-        mike.mode().allowsWrites();
+        mike.authorize( token ).mode().allowsWrites();
 
         // Then
         assertThat( "Test realm received a call", testRealm.takeAuthorizationFlag(), is( false ) );
@@ -135,20 +142,20 @@ public class LdapCachingTest
     public void shouldInvalidateAuthorizationCacheAfterTTL() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
-        mike.mode().allowsReads();
+        EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
+        mike.authorize( token ).mode().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
         fakeTicker.advance( 99, TimeUnit.MILLISECONDS );
-        mike.mode().allowsWrites();
+        mike.authorize( token ).mode().allowsWrites();
 
         // Then
         assertThat( "Test realm received a call", testRealm.takeAuthorizationFlag(), is( false ) );
 
         // When
         fakeTicker.advance( 2, TimeUnit.MILLISECONDS );
-        mike.mode().allowsWrites();
+        mike.authorize( token ).mode().allowsWrites();
 
         // Then
         assertThat( "Test realm did not received a call", testRealm.takeAuthorizationFlag(), is( true ) );

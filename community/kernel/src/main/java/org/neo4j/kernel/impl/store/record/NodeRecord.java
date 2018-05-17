@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -126,12 +126,7 @@ public class NodeRecord extends PrimitiveRecord
 
     public Iterable<DynamicRecord> getUsedDynamicLabelRecords()
     {
-        return filter( inUseFilter(), dynamicLabelRecords );
-    }
-
-    public Iterable<DynamicRecord> getUnusedDynamicLabelRecords()
-    {
-        return filter( notInUseFilter(), dynamicLabelRecords );
+        return filter( AbstractBaseRecord::inUse, dynamicLabelRecords );
     }
 
     public boolean isDense()

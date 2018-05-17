@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,21 @@ class GreaterThanTest extends InfixExpressionTestBase(GreaterThan(_, _)(DummyPos
     testValidTypes(CTString, CTString)(CTBoolean)
   }
 
+  test("shouldSupportComparingPoints") {
+    testValidTypes(CTPoint, CTPoint)(CTBoolean)
+  }
+
+  test("shouldSupportComparingTemporals") {
+    testValidTypes(CTDate, CTDate)(CTBoolean)
+    testValidTypes(CTTime, CTTime)(CTBoolean)
+    testValidTypes(CTLocalTime, CTLocalTime)(CTBoolean)
+    testValidTypes(CTDateTime, CTDateTime)(CTBoolean)
+    testValidTypes(CTLocalDateTime, CTLocalDateTime)(CTBoolean)
+  }
+
   test("shouldReturnErrorIfInvalidArgumentTypes") {
-    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Float, Integer or String but was Node")
+    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Float, Integer, Point, String, Date, Time, LocalTime, LocalDateTime or DateTime but was Node")
     testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Float or Integer but was Node")
+    testInvalidApplication(CTDuration, CTDuration)("Type mismatch: expected Float, Integer, Point, String, Date, Time, LocalTime, LocalDateTime or DateTime but was Duration")
   }
 }

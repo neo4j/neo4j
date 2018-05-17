@@ -1,36 +1,38 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
-import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator;
+import org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator.ScoreEntry;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -51,25 +53,27 @@ public class BloomProcedures
     @Context
     public FulltextProvider provider;
 
+    private static final Function<ScoreEntry,EntityOutput> QUERY_RESULT_MAPPER = result -> new EntityOutput( result.entityId(), result.score() );
+
     @Description( "Await the completion of any background index population or updates" )
     @Procedure( name = "bloom.awaitPopulation", mode = READ )
-    public void awaitPopulation() throws Exception
+    public void awaitPopulation()
     {
         provider.awaitPopulation();
     }
 
     @Description( "Returns the node property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedNodePropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedNodePropertyKeys() throws Exception
+    public Stream<PropertyOutput> getIndexedNodePropertyKeys()
     {
         return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
     }
 
     @Description( "Returns the relationship property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedRelationshipPropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys() throws Exception
+    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys()
     {
-        return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
+        return provider.getProperties( BLOOM_RELATIONSHIPS, RELATIONSHIPS ).stream().map( PropertyOutput::new );
     }
 
     @Description( "Set the node property keys to index" )
@@ -88,11 +92,11 @@ public class BloomProcedures
 
     @Description( "Check the status of the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.indexStatus", mode = READ )
-    public Stream<StatusOutput> indexStatus() throws Exception
+    public Stream<StatusOutput> indexStatus()
     {
-        InternalIndexState nodeIndexState = provider.getState( BLOOM_NODES, NODES );
-        InternalIndexState relationshipIndexState = provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
-        return Stream.of( nodeIndexState, relationshipIndexState ).map( StatusOutput::new );
+        StatusOutput nodeIndexState = new StatusOutput( BLOOM_NODES, provider.getState( BLOOM_NODES, NODES ) );
+        StatusOutput relationshipIndexState = new StatusOutput( BLOOM_RELATIONSHIPS, provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS ) );
+        return Stream.of( nodeIndexState, relationshipIndexState );
     }
 
     @Description( "Query the Bloom fulltext index for nodes" )
@@ -123,26 +127,28 @@ public class BloomProcedures
 
     private Stream<EntityOutput> queryAsStream( List<String> terms, ReadOnlyFulltext indexReader, boolean fuzzy, boolean matchAll )
     {
-        PrimitiveLongIterator primitiveLongIterator;
+        terms = terms.stream().flatMap( s -> Arrays.stream( s.split( "\\s+" ) ) ).collect( Collectors.toList() );
+        ScoreEntityIterator resultIterator;
         if ( fuzzy )
         {
-            primitiveLongIterator = indexReader.fuzzyQuery( terms, matchAll );
+            resultIterator = indexReader.fuzzyQuery( terms, matchAll );
         }
         else
         {
-            primitiveLongIterator = indexReader.query( terms, matchAll );
+            resultIterator = indexReader.query( terms, matchAll );
         }
-        Iterator<EntityOutput> iterator = PrimitiveLongCollections.map( EntityOutput::new, primitiveLongIterator );
-        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, Spliterator.ORDERED ), false );
+        return resultIterator.stream().map( QUERY_RESULT_MAPPER );
     }
 
     public static class EntityOutput
     {
         public final long entityid;
+        public final double score;
 
-        public EntityOutput( long entityid )
+        EntityOutput( long entityid, float score )
         {
             this.entityid = entityid;
+            this.score = score;
         }
     }
 
@@ -150,18 +156,20 @@ public class BloomProcedures
     {
         public final String propertyKey;
 
-        public PropertyOutput( String propertykey )
+        PropertyOutput( String propertykey )
         {
             this.propertyKey = propertykey;
         }
     }
 
-    public class StatusOutput
+    public static class StatusOutput
     {
+        public final String name;
         public final String state;
 
-        public StatusOutput( InternalIndexState internalIndexState )
+        StatusOutput( String name, InternalIndexState internalIndexState )
         {
+            this.name = name;
             switch ( internalIndexState )
             {
             case POPULATING:

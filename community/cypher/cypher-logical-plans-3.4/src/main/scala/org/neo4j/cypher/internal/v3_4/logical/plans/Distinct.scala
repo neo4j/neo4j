@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Distinct produces source rows without changing them, but omitting rows
@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   */
 case class Distinct(source: LogicalPlan,
                     groupingExpressions: Map[String, Expression])
-                   (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with EagerLogicalPlan {
+                   (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
   override def lhs = Some(source)
 
   override def rhs: Option[LogicalPlan] = None
 
-  override def availableSymbols: Set[IdName] = groupingExpressions.keySet.map(IdName(_))
+  override val availableSymbols: Set[String] = groupingExpressions.keySet
 }

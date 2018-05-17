@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,19 +21,20 @@ package org.neo4j.collection;
 
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 public class RawIteratorTest
 {
     @Test
-    public void shouldCreateSimpleRawIterator() throws Throwable
+    public void shouldCreateSimpleRawIterator()
     {
-        assertEquals( asList(), list( RawIterator.of() ) );
-        assertEquals( asList(1), list( RawIterator.of(1) ) );
+        assertEquals( Collections.emptyList(), list( RawIterator.of() ) );
+        assertEquals( Collections.singletonList( 1 ), list( RawIterator.of(1) ) );
         assertEquals( asList(1,2), list( RawIterator.of( 1,2 ) ) );
         assertEquals( asList(1,2,3), list( RawIterator.of( 1,2,3 ) ) );
     }

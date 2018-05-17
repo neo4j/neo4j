@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -206,9 +206,8 @@ public class NativeAllEntriesLabelScanReaderTest
         List<Pair<LabelScanKey,LabelScanValue>> entries = new ArrayList<>();
         long currentRange = 0;
         LabelScanValue value = new LabelScanValue();
-        for ( int i = 0; i < nodeIds.length; i++ )
+        for ( long nodeId : nodeIds )
         {
-            long nodeId = nodeIds[i];
             long range = nodeId / RANGE_SIZE;
             if ( range != currentRange )
             {
@@ -256,7 +255,7 @@ public class NativeAllEntriesLabelScanReaderTest
                 }
 
                 @Override
-                public boolean next() throws IOException
+                public boolean next()
                 {
                     if ( cursor + 1 >= entries.size() )
                     {
@@ -267,7 +266,7 @@ public class NativeAllEntriesLabelScanReaderTest
                 }
 
                 @Override
-                public void close() throws IOException
+                public void close()
                 {   // Nothing to close
                 }
             };
@@ -284,13 +283,13 @@ public class NativeAllEntriesLabelScanReaderTest
         }
 
         @Override
-        public boolean next() throws IOException
+        public boolean next()
         {
             return false;
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {   // Nothing to close
         }
     };

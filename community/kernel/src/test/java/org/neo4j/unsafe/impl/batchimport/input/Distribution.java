@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,11 +43,11 @@ public class Distribution<T>
     {
         float value = random.nextFloat();
         float comparison = 0.5f;
-        for ( int i = 0; i < items.length; i++ )
+        for ( T item : items )
         {
             if ( value >= comparison )
             {
-                return items[i];
+                return item;
             }
             comparison /= 2f;
         }

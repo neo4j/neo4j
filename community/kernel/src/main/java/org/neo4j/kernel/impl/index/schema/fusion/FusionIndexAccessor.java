@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,39 +21,41 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
 
-import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 
-class FusionIndexAccessor implements IndexAccessor
+class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
-    private final IndexAccessor nativeAccessor;
-    private final IndexAccessor luceneAccessor;
-    private final Selector selector;
     private final long indexId;
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
     private final DropAction dropAction;
 
-    FusionIndexAccessor( IndexAccessor nativeAccessor, IndexAccessor luceneAccessor, Selector selector,
-            long indexId, IndexDescriptor descriptor, DropAction dropAction )
+    FusionIndexAccessor( IndexAccessor[] accessors,
+            Selector selector,
+            long indexId,
+            SchemaIndexDescriptor descriptor,
+            DropAction dropAction )
     {
-        this.nativeAccessor = nativeAccessor;
-        this.luceneAccessor = luceneAccessor;
-        this.selector = selector;
+        super( accessors, selector );
         this.indexId = indexId;
         this.descriptor = descriptor;
         this.dropAction = dropAction;
@@ -62,83 +64,82 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public void drop() throws IOException
     {
-        try
-        {
-            nativeAccessor.drop();
-        }
-        finally
-        {
-            luceneAccessor.drop();
-        }
+        forAll( IndexAccessor::drop, instances );
         dropAction.drop( indexId );
     }
 
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return new FusionIndexUpdater( nativeAccessor.newUpdater( mode ), luceneAccessor.newUpdater( mode ), selector );
+        return new FusionIndexUpdater( instancesAs( IndexUpdater.class, accessor -> accessor.newUpdater( mode ) ), selector );
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        nativeAccessor.force();
-        luceneAccessor.force();
+        forAll( accessor -> accessor.force( ioLimiter ), instances );
+    }
+
+    @Override
+    public void refresh() throws IOException
+    {
+        forAll( IndexAccessor::refresh, instances );
     }
 
     @Override
     public void close() throws IOException
     {
-        try
-        {
-            nativeAccessor.close();
-        }
-        finally
-        {
-            luceneAccessor.close();
-        }
+        forAll( IndexAccessor::close, instances );
     }
 
     @Override
     public IndexReader newReader()
     {
-        return new FusionIndexReader( nativeAccessor.newReader(), luceneAccessor.newReader(), selector,
-                descriptor.schema().getPropertyIds() );
+        return new FusionIndexReader( instancesAs( IndexReader.class, IndexAccessor::newReader ), selector, descriptor );
     }
 
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        BoundedIterable<Long> nativeAllEntries = nativeAccessor.newAllEntriesReader();
-        BoundedIterable<Long> luceneAllEntries = luceneAccessor.newAllEntriesReader();
+        BoundedIterable<Long>[] entries = instancesAs( BoundedIterable.class, IndexAccessor::newAllEntriesReader );
         return new BoundedIterable<Long>()
         {
             @Override
             public long maxCount()
             {
-                long nativeMaxCount = nativeAllEntries.maxCount();
-                long luceneMaxCount = luceneAllEntries.maxCount();
-                return nativeMaxCount == UNKNOWN_MAX_COUNT || luceneMaxCount == UNKNOWN_MAX_COUNT ?
-                       UNKNOWN_MAX_COUNT : nativeMaxCount + luceneMaxCount;
+                long[] maxCounts = new long[entries.length];
+                long sum = 0;
+                for ( int i = 0; i < entries.length; i++ )
+                {
+                    maxCounts[i] = entries[i].maxCount();
+                    sum += maxCounts[i];
+                }
+                return existsUnknownMaxCount( maxCounts ) ? UNKNOWN_MAX_COUNT : sum;
             }
 
+            private boolean existsUnknownMaxCount( long... maxCounts )
+            {
+                for ( long maxCount : maxCounts )
+                {
+                    if ( maxCount == UNKNOWN_MAX_COUNT )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @SuppressWarnings( "unchecked" )
             @Override
             public void close() throws Exception
             {
-                try
-                {
-                    nativeAllEntries.close();
-                }
-                finally
-                {
-                    luceneAllEntries.close();
-                }
+                forAll( BoundedIterable::close, entries );
             }
 
             @Override
             public Iterator<Long> iterator()
             {
-                return Iterables.concat( nativeAllEntries, luceneAllEntries ).iterator();
+                return Iterables.concat( entries ).iterator();
             }
         };
     }
@@ -146,15 +147,30 @@ class FusionIndexAccessor implements IndexAccessor
     @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
-        return concatResourceIterators(
-                asList( nativeAccessor.snapshotFiles(), luceneAccessor.snapshotFiles() ).iterator() );
+        List<ResourceIterator<File>> snapshots = new ArrayList<>();
+        forAll( accessor -> snapshots.add( accessor.snapshotFiles() ), instances );
+        return concatResourceIterators( snapshots.iterator() );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        nativeAccessor.verifyDeferredConstraints( propertyAccessor );
-        luceneAccessor.verifyDeferredConstraints( propertyAccessor );
+        for ( IndexAccessor accessor : instances )
+        {
+            accessor.verifyDeferredConstraints( propertyAccessor );
+        }
+    }
+
+    @Override
+    public boolean isDirty()
+    {
+        return stream( instances ).anyMatch( IndexAccessor::isDirty );
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        selector.select( instances, tuple ).validateBeforeCommit( tuple );
     }
 }

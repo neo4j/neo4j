@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,7 @@ public class AssertionRunner
 {
     private AssertionRunner()
     {
-    }
-
-    public static boolean isAssertionsEnabled()
-    {
-        boolean assertionsEnabled = false;
-        assert assertionsEnabled = true;
-        return assertionsEnabled;
+        throw new AssertionError( "No instances" );
     }
 
     public static void runUnderAssertion( Thunk thunk )
@@ -51,5 +45,12 @@ public class AssertionRunner
     public interface Thunk
     {
         void apply();
+    }
+
+    public static boolean isAssertionsEnabled()
+    {
+        boolean assertionsEnabled = false;
+        assert assertionsEnabled = true;
+        return assertionsEnabled;
     }
 }

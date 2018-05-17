@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,18 +20,17 @@
 package org.neo4j.server.modules;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
 
 import org.neo4j.concurrent.RecentK;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
+import org.neo4j.server.rest.web.CorsFilter;
 import org.neo4j.server.rest.web.CypherService;
 import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.ExtensionService;
@@ -43,6 +42,7 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.server.configuration.ServerSettings.http_access_control_allow_origin;
 
 /**
  * Mounts the database REST API.
@@ -53,7 +53,6 @@ public class RESTApiModule implements ServerModule
     private final WebServer webServer;
     private DependencyResolver dependencyResolver;
     private final LogProvider logProvider;
-    private final Log log;
 
     private PluginManager plugins;
 
@@ -64,24 +63,17 @@ public class RESTApiModule implements ServerModule
         this.config = config;
         this.dependencyResolver = dependencyResolver;
         this.logProvider = logProvider;
-        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public void start()
     {
-        try
-        {
-            URI restApiUri = restApiUri( );
+        URI restApiUri = restApiUri( );
 
-            webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
-            webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
-            loadPlugins();
-        }
-        catch ( URISyntaxException e )
-        {
-            log.warn( "Unable to mount REST API", e );
-        }
+        webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
+        webServer.addFilter( new CorsFilter( logProvider, config.get( http_access_control_allow_origin ) ), "/*" );
+        webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
+        loadPlugins();
     }
 
     /**
@@ -111,18 +103,11 @@ public class RESTApiModule implements ServerModule
     @Override
     public void stop()
     {
-        try
-        {
-            webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
-            unloadPlugins();
-        }
-        catch ( URISyntaxException e )
-        {
-            log.warn( "Unable to unmount REST API", e );
-        }
+        webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
+        unloadPlugins();
     }
 
-    private URI restApiUri() throws URISyntaxException
+    private URI restApiUri()
     {
         return config.get( ServerSettings.rest_api_path );
     }

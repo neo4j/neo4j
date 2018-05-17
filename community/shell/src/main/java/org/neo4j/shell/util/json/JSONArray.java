@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -114,7 +114,7 @@ public class JSONArray
      */
     public JSONArray()
     {
-        this.myArrayList = new ArrayList<Object>();
+        this.myArrayList = new ArrayList<>();
     }
 
     /**
@@ -211,7 +211,7 @@ public class JSONArray
 
     public JSONArray( Collection collection, boolean includeSuperClass )
     {
-        this.myArrayList = new ArrayList<Object>();
+        this.myArrayList = new ArrayList<>();
         if ( collection != null )
         {
             Iterator iter = collection.iterator();
@@ -453,7 +453,7 @@ public class JSONArray
     public String join( String separator ) throws JSONException
     {
         int len = length();
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
         for ( int i = 0; i < len; i += 1 )
         {
@@ -712,7 +712,7 @@ public class JSONArray
      */
     public JSONArray put( double value ) throws JSONException
     {
-        Double d = new Double( value );
+        Double d = value;
         JSONObject.testValidity( d );
         put( d );
         return this;
@@ -726,7 +726,7 @@ public class JSONArray
      */
     public JSONArray put( int value )
     {
-        put( new Integer( value ) );
+        put( Integer.valueOf( value ) );
         return this;
     }
 
@@ -738,7 +738,7 @@ public class JSONArray
      */
     public JSONArray put( long value )
     {
-        put( new Long( value ) );
+        put( Long.valueOf( value ) );
         return this;
     }
 
@@ -830,7 +830,7 @@ public class JSONArray
      */
     public JSONArray put( int index, int value ) throws JSONException
     {
-        put( index, new Integer( value ) );
+        put( index, Integer.valueOf( value ) );
         return this;
     }
 
@@ -846,7 +846,7 @@ public class JSONArray
      */
     public JSONArray put( int index, long value ) throws JSONException
     {
-        put( index, new Long( value ) );
+        put( index, Long.valueOf( value ) );
         return this;
     }
 
@@ -999,7 +999,7 @@ public class JSONArray
             return "[]";
         }
         int i;
-        StringBuffer sb = new StringBuffer( "[" );
+        StringBuilder sb = new StringBuilder( "[" );
         if ( len == 1 )
         {
             sb.append( JSONObject.valueToString( this.myArrayList.get( 0 ), indentFactor, indent ) );

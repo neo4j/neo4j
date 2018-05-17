@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.storeupgrade;
 
@@ -48,13 +51,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -423,30 +426,31 @@ public class StoreUpgradeIT
     {
         InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-              Statement statement = tx.acquireStatement() )
+              Statement ignore = tx.acquireStatement() )
         {
-            Iterator<IndexDescriptor> indexes = IndexDescriptor.sortByType( getAllIndexes( statement ) );
+            SchemaRead schemaRead = tx.schemaRead();
+            Iterator<IndexReference> indexes = IndexReference.sortByType( getAllIndexes( schemaRead ) );
             DoubleLongRegister register = Registers.newDoubleLongRegister();
             for ( int i = 0; indexes.hasNext(); i++ )
             {
-                IndexDescriptor descriptor = indexes.next();
+                IndexReference reference = indexes.next();
 
                 // wait index to be online since sometimes we need to rebuild the indexes on migration
-                awaitOnline( statement.readOperations(), descriptor );
+                awaitOnline( schemaRead, reference );
 
                 assertDoubleLongEquals( store.indexCounts[i][0], store.indexCounts[i][1],
-                        statement.readOperations().indexUpdatesAndSize( descriptor, register ) );
+                       schemaRead.indexUpdatesAndSize( reference, register ) );
                 assertDoubleLongEquals( store.indexCounts[i][2], store.indexCounts[i][3],
-                        statement.readOperations().indexSample( descriptor, register ) );
-                double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
+                        schemaRead.indexSample( reference, register ) );
+                double selectivity = schemaRead.indexUniqueValuesSelectivity( reference );
                 assertEquals( store.indexSelectivity[i], selectivity, 0.0000001d );
             }
         }
     }
 
-    private static Iterator<IndexDescriptor> getAllIndexes( Statement statement )
+    private static Iterator<IndexReference> getAllIndexes( SchemaRead schemaRead )
     {
-        return statement.readOperations().indexesGetAll();
+        return schemaRead.indexesGetAll();
     }
 
     private static void checkLabelCounts( GraphDatabaseAPI db )
@@ -472,14 +476,14 @@ public class StoreUpgradeIT
 
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class );
-            Statement statement = bridge.get();
+            KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( true );
 
             for ( Map.Entry<Label,Long> entry : counts.entrySet() )
             {
                 assertEquals(
                         entry.getValue().longValue(),
-                        statement.readOperations().countsForNode(
-                                statement.readOperations().labelGetForName( entry.getKey().name() ) )
+                        kernelTransaction.dataRead().countsForNode(
+                                kernelTransaction.tokenRead().nodeLabel( entry.getKey().name() ) )
                 );
             }
         }
@@ -491,9 +495,9 @@ public class StoreUpgradeIT
         {
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class );
-            Statement statement = bridge.get();
+            KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( true );
 
-            assertThat( statement.readOperations().countsForNode( -1 ), is( store.expectedNodeCount ) );
+            assertThat( kernelTransaction.dataRead().countsForNode( -1 ), is( store.expectedNodeCount ) );
         }
     }
 
@@ -549,14 +553,14 @@ public class StoreUpgradeIT
         return new long[]{upgrade, size, unique, sampleSize};
     }
 
-    private static IndexDescriptor awaitOnline( ReadOperations readOperations, IndexDescriptor index )
+    private static IndexReference awaitOnline( SchemaRead schemRead, IndexReference index )
             throws KernelException
     {
         long start = System.currentTimeMillis();
         long end = start + 20_000;
         while ( System.currentTimeMillis() < end )
         {
-            switch ( readOperations.indexGetState( index ) )
+            switch ( schemRead.indexGetState( index ) )
             {
             case ONLINE:
                 return index;

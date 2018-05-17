@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,17 +21,19 @@ package org.neo4j.kernel.api.proc;
 
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
-import static org.neo4j.kernel.api.proc.FieldSignature.outputField;
-import static org.neo4j.kernel.impl.proc.Neo4jValue.ntString;
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntString;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
 
 public class FieldSignatureTest
 {
     @Test
-    public void equalsShouldConsiderName() throws Exception
+    public void equalsShouldConsiderName()
     {
         assertEquals(
                 "input without default",
@@ -71,7 +73,7 @@ public class FieldSignatureTest
     }
 
     @Test
-    public void shouldTypeCheckDefaultValue() throws Exception
+    public void shouldTypeCheckDefaultValue()
     {
         // when
         try
@@ -89,7 +91,7 @@ public class FieldSignatureTest
     }
 
     @Test
-    public void equalsShouldConsiderType() throws Exception
+    public void equalsShouldConsiderType()
     {
         assertEquals(
                 "input without default",
@@ -120,7 +122,7 @@ public class FieldSignatureTest
     }
 
     @Test
-    public void equalsShouldConsiderDefaultValue() throws Exception
+    public void equalsShouldConsiderDefaultValue()
     {
         assertEquals(
                 inputField( "name", Neo4jTypes.NTString, ntString( "foo" ) ),
@@ -131,7 +133,7 @@ public class FieldSignatureTest
     }
 
     @Test
-    public void equalsShouldConsiderDeprecation() throws Exception
+    public void equalsShouldConsiderDeprecation()
     {
         assertEquals(
                 outputField( "name", Neo4jTypes.NTString, true ),

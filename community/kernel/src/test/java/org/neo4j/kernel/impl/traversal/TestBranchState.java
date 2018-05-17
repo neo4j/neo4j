@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,7 +40,7 @@ import static org.neo4j.graphdb.traversal.Evaluation.ofIncludes;
 public class TestBranchState extends TraversalTestBase
 {
     @Test
-    public void depthAsState() throws Exception
+    public void depthAsState()
     {
         /*
          * (a) -> (b) -> (c) -> (d)
@@ -60,7 +60,7 @@ public class TestBranchState extends TraversalTestBase
     }
 
     @Test
-    public void everyOtherDepthAsState() throws Exception
+    public void everyOtherDepthAsState()
     {
         /*
          * (a) -> (b) -> (c) -> (e)
@@ -81,7 +81,7 @@ public class TestBranchState extends TraversalTestBase
     }
 
     @Test
-    public void evaluateState() throws Exception
+    public void evaluateState()
     {
         /*
          * (a)-1->(b)-2->(c)-3->(d)

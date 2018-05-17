@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -41,6 +41,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -106,7 +107,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments1() throws Throwable
+    public void shouldGetUsageOnWrongArguments1()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD );
         assertNoAuthIniFile();
@@ -118,16 +119,16 @@ public class SetInitialPasswordCommandIT
         verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set size of JVM heap during command execution." ) );
+        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
         verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
         verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments2() throws Throwable
+    public void shouldGetUsageOnWrongArguments2()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "foo", "bar" );
         assertNoAuthIniFile();
@@ -139,13 +140,13 @@ public class SetInitialPasswordCommandIT
         verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
         verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
-        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set size of JVM heap during command execution." ) );
+        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set JVM maximum heap size during command execution." ) );
         verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
 
         verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     @Test
@@ -164,7 +165,7 @@ public class SetInitialPasswordCommandIT
         verify( out, times( 1 ) )
                 .stdErrLine( "command failed: initial password was not set because live Neo4j-users were detected." );
         verify( out ).exit( 1 );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     private void assertAuthIniFile( String password ) throws Throwable

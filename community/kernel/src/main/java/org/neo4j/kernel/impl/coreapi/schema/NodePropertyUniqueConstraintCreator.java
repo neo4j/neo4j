@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreator
 {
@@ -47,17 +45,9 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
     {
         assertInUnterminatedTransaction();
 
-        try
-        {
-            IndexDefinitionImpl definition =
-                    new IndexDefinitionImpl( actions, label, propertyKeys.toArray( new String[propertyKeys.size()] ),
-                            true );
-            return actions.createPropertyUniquenessConstraint( definition );
-        }
-        catch ( KernelException e )
-        {
-            String userMessage = actions.getUserMessage( e );
-            throw new ConstraintViolationException( userMessage, e );
-        }
+        IndexDefinitionImpl definition =
+                new IndexDefinitionImpl( actions, label, propertyKeys.toArray( new String[propertyKeys.size()] ),
+                        true );
+        return actions.createPropertyUniquenessConstraint( definition );
     }
 }

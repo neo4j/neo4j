@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,27 +37,27 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.GraphTransactionRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
 
 public class ManualAcquireLockTest
 {
-    public DatabaseRule db = new ImpermanentDatabaseRule();
-    public GraphTransactionRule tx = new GraphTransactionRule( db );
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final GraphTransactionRule tx = new GraphTransactionRule( db );
 
     @Rule
-    public TestRule chain = RuleChain.outerRule( db ).around( tx );
+    public final TestRule chain = RuleChain.outerRule( db ).around( tx );
 
     private Worker worker;
 
     @Before
-    public void doBefore() throws Exception
+    public void doBefore()
     {
         worker = new Worker();
     }
 
     @After
-    public void doAfter() throws Exception
+    public void doAfter()
     {
         worker.close();
     }
@@ -94,7 +94,7 @@ public class ManualAcquireLockTest
     }
 
     @Test
-    public void canOnlyReleaseOnce() throws Exception
+    public void canOnlyReleaseOnce()
     {
         Node node = getGraphDb().createNode();
 
@@ -130,9 +130,8 @@ public class ManualAcquireLockTest
             worker.setProperty( node, key, "ksjd" );
             fail( "Shouldn't be able to grab it" );
         }
-        catch ( Exception e )
+        catch ( Exception ignored )
         {
-            // e.printStackTrace();
         }
 
         tx.success();
@@ -195,7 +194,7 @@ public class ManualAcquireLockTest
             {
                 node.setProperty( key, value );
                 return null;
-            }, 200, MILLISECONDS );
+            }, 2, SECONDS );
         }
     }
 }

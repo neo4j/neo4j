@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -97,7 +97,7 @@ public class LazySingleReferenceTest
     }
 
     @Test
-    public void shouldInitializeAgainAfterInvalidated() throws Exception
+    public void shouldInitializeAgainAfterInvalidated()
     {
         // GIVEN
         final AtomicInteger initCalls = new AtomicInteger();
@@ -120,7 +120,7 @@ public class LazySingleReferenceTest
     }
 
     @Test
-    public void shouldRespondToIsInitialized() throws Exception
+    public void shouldRespondToIsInitialized()
     {
         // GIVEN
         LazySingleReference<Integer> ref = new LazySingleReference<Integer>()

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,33 +21,9 @@ package org.neo4j.internal.kernel.api;
 
 /**
  * This interface is package-private because it is not generically useful. All use cases should use the explicit cursor
- * types. It is however useful to define this interface to ensure that the generic usage pattern (as outlined by the
- * example code snippet below) aligns across all cursor interfaces.
- * <p>
- * Generic usage:
- * <code><pre>
- * SomeCursor cursor = allocateCursorOfAppropriateType();
- * store.positionCursor( cursor );
- * while ( cursor.next() )
- * {
- *     do
- *     {
- *         // access data here ...
- *         // also make sure that data read here is considered valid until `shouldRetry()` is false.
- *     }
- *     while ( cursor.shouldRetry() );
- *     // use accessed data here ...
- * }
- * </pre></code>
+ * types.
  */
-interface Cursor extends AutoCloseable
+interface Cursor extends AutoCloseablePlus
 {
     boolean next();
-
-    boolean shouldRetry();
-
-    @Override
-    void close();
-
-    boolean isClosed();
 }

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.protocol.election;
 
@@ -23,6 +26,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
@@ -45,11 +49,10 @@ public enum ElectionState
     start
             {
                 @Override
-                public State<?, ?> handle( ElectionContext context,
+                public ElectionState handle( ElectionContext context,
                                            Message<ElectionMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == ElectionMessage.created )
                     {
@@ -68,11 +71,10 @@ public enum ElectionState
     election
             {
                 @Override
-                public State<?, ?> handle( ElectionContext context,
+                public ElectionState handle( ElectionContext context,
                                            Message<ElectionMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     Log log = context.getLog( ElectionState.class );
                     switch ( message.getMessageType() )
@@ -154,6 +156,7 @@ public enum ElectionState
 
                                 if ( isElector )
                                 {
+                                    context.getLog( ElectionState.class ).info( "I am the elector, doing election..." );
                                     // Start election process for all roles
                                     Iterable<ElectionRole> rolesRequiringElection = context.getPossibleRoles();
                                     for ( ElectionRole role : rolesRequiringElection )
@@ -212,10 +215,23 @@ public enum ElectionState
                                 }
                                 else
                                 {
-                                    List<InstanceId> aliveInstances = Iterables.asList( context.getAlive() );
-                                    Collections.sort( aliveInstances );
-                                    outgoing.offer( message.setHeader( Message.TO,
-                                            context.getUriForId( firstOrNull( aliveInstances ) ).toString() ) );
+                                    /*
+                                     * We take alive instances as determined by suspicions and remove those that are
+                                     * marked as failed in the failed set. This is done so that an instance which
+                                     * just joined can use the failed set provided in the configuration response to
+                                     * correctly determine the instances that are failed and skip them.
+                                     * Basically, this is to solve an issue where if an instance joins and is the
+                                     * lowest numbered alive but not overall will not try to get the failed lower
+                                     * numbered one to do elections.
+                                     */
+                                    Set<InstanceId> aliveInstances = Iterables.asSet( context.getAlive() );
+                                    aliveInstances.removeAll( context.getFailed() );
+                                    List<InstanceId> adjustedAlive = Iterables.asList( aliveInstances );
+                                    Collections.sort( adjustedAlive );
+
+                                    context.getLog( ElectionState.class ).info( "I am NOT the elector, sending to " + adjustedAlive );
+                                    outgoing.offer( message.setHeader( Message.HEADER_TO,
+                                            context.getUriForId( firstOrNull( adjustedAlive ) ).toString() ) );
                                 }
                             }
                             break;
@@ -245,7 +261,7 @@ public enum ElectionState
                                     context.voted( data.getRole(), data.getInstanceId(), data.getElectionCredentials(),
                                             version );
 
-                            String voter = message.hasHeader( Message.FROM ) ? message.getHeader( Message.FROM ) : "I";
+                            String voter = message.hasHeader( Message.HEADER_FROM ) ? message.getHeader( Message.HEADER_FROM ) : "I";
                             log.debug( voter + " voted " + data + " which i " +
                                     ( accepted ? "accepted" : "did not accept" ) );
 

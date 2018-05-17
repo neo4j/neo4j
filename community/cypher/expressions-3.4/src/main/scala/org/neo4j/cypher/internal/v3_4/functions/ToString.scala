@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,13 @@ case object ToString extends Function with TypeSignatures {
     TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTString),
     TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTString),
     TypeSignature(argumentTypes = Vector(CTBoolean), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTString)
+    TypeSignature(argumentTypes = Vector(CTString), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTDuration), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTDate), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTTime), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTDateTime), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTLocalTime), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTLocalDateTime), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTPoint), outputType = CTString)
   )
 }

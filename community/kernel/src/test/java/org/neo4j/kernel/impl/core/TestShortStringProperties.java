@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -63,7 +63,7 @@ public class TestShortStringProperties
     private static final String LONG_STRING = "this is a really long string, believe me!";
 
     @Test
-    public void canAddMultipleShortStringsToTheSameNode() throws Exception
+    public void canAddMultipleShortStringsToTheSameNode()
     {
         long recordCount = dynamicRecordsInUse();
         Node node = graphdb.getGraphDatabaseAPI().createNode();
@@ -76,7 +76,7 @@ public class TestShortStringProperties
     }
 
     @Test
-    public void canAddShortStringToRelationship() throws Exception
+    public void canAddShortStringToRelationship()
     {
         long recordCount = dynamicRecordsInUse();
         GraphDatabaseService db = graphdb.getGraphDatabaseAPI();
@@ -88,7 +88,7 @@ public class TestShortStringProperties
     }
 
     @Test
-    public void canUpdateShortStringInplace() throws Exception
+    public void canUpdateShortStringInplace()
     {
         try
         {
@@ -118,7 +118,7 @@ public class TestShortStringProperties
     }
 
     @Test
-    public void canReplaceLongStringWithShortString() throws Exception
+    public void canReplaceLongStringWithShortString()
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
@@ -139,7 +139,7 @@ public class TestShortStringProperties
     }
 
     @Test
-    public void canReplaceShortStringWithLongString() throws Exception
+    public void canReplaceShortStringWithLongString()
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
@@ -160,7 +160,7 @@ public class TestShortStringProperties
     }
 
     @Test
-    public void canRemoveShortStringProperty() throws Exception
+    public void canRemoveShortStringProperty()
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
@@ -182,26 +182,26 @@ public class TestShortStringProperties
     }
 
     @Test
-    public void canEncodeEmptyString() throws Exception
+    public void canEncodeEmptyString()
     {
         assertCanEncode( "" );
     }
 
     @Test
-    public void canEncodeReallyLongString() throws Exception
+    public void canEncodeReallyLongString()
     {
         assertCanEncode( "                    " ); // 20 spaces
         assertCanEncode( "                " ); // 16 spaces
     }
 
     @Test
-    public void canEncodeFifteenSpaces() throws Exception
+    public void canEncodeFifteenSpaces()
     {
         assertCanEncode( "               " );
     }
 
     @Test
-    public void canEncodeNumericalString() throws Exception
+    public void canEncodeNumericalString()
     {
         assertCanEncode( "0123456789+,'.-" );
         assertCanEncode( " ,'.-0123456789" );
@@ -217,7 +217,6 @@ public class TestShortStringProperties
 
     @Test
     public void canEncodeTooLongStringsWithCharsInDifferentTables()
-            throws Exception
     {
         assertCanEncode( "____________+" );
         assertCanEncode( "_____+_____" );
@@ -227,7 +226,7 @@ public class TestShortStringProperties
     }
 
     @Test
-    public void canEncodeUpToNineEuropeanChars() throws Exception
+    public void canEncodeUpToNineEuropeanChars()
     {
         // Shorter than 10 chars
         assertCanEncode( "fågel" ); // "bird" in Swedish
@@ -239,14 +238,14 @@ public class TestShortStringProperties
     }
 
     @Test
-    public void canEncodeEuropeanCharsWithPunctuation() throws Exception
+    public void canEncodeEuropeanCharsWithPunctuation()
     {
         assertCanEncode( "qHm7 pp3" );
         assertCanEncode( "UKKY3t.gk" );
     }
 
     @Test
-    public void canEncodeAlphanumerical() throws Exception
+    public void canEncodeAlphanumerical()
     {
         assertCanEncode( "1234567890" ); // Just a sanity check
         assertCanEncodeInBothCasings( "HelloWor1d" ); // There is a number there
@@ -257,27 +256,27 @@ public class TestShortStringProperties
     }
 
     @Test
-    public void canEncodeHighUnicode() throws Exception
+    public void canEncodeHighUnicode()
     {
         assertCanEncode( "\u02FF" );
         assertCanEncode( "hello\u02FF" );
     }
 
     @Test
-    public void canEncodeLatin1SpecialChars() throws Exception
+    public void canEncodeLatin1SpecialChars()
     {
         assertCanEncode( "#$#$#$#" );
         assertCanEncode( "$hello#" );
     }
 
     @Test
-    public void canEncodeTooLongLatin1String() throws Exception
+    public void canEncodeTooLongLatin1String()
     {
         assertCanEncode( "#$#$#$#$" );
     }
 
     @Test
-    public void canEncodeLowercaseAndUppercaseStringsUpTo12Chars() throws Exception
+    public void canEncodeLowercaseAndUppercaseStringsUpTo12Chars()
     {
         assertCanEncodeInBothCasings( "hello world" );
         assertCanEncode( "hello_world" );

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,9 +34,9 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
   test("should return a count for relationships without a type or any labels") {
     val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes.empty, None)()
 
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, WILDCARD, WILDCARD)).thenReturn(42L).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.relationshipCountByCountStore(WILDCARD, WILDCARD, WILDCARD)).thenReturn(42L)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
     pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(longValue(42L)))
   }
 
@@ -46,9 +46,9 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
 
     val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Array(RelTypeName("X")(pos))), None)()
 
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.relationshipCountByCountStore(WILDCARD, 22, WILDCARD)).thenReturn(42L)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
     pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(longValue(42L)))
   }
 
@@ -59,9 +59,9 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
 
     val pipe = RelationshipCountFromCountStorePipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Array(RelTypeName("X")(pos))), None)()
 
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
     pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(longValue(42L)))
   }
 

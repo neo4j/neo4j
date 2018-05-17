@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,12 +26,14 @@ import io.netty.channel.Channel;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.v1.transport.ChunkedOutput.CHUNK_HEADER_SIZE;
 
 /** Helper to chunk up serialized data for testing */
 public class Chunker
@@ -55,12 +57,14 @@ public class Chunker
             return null;
         } );
 
-        ChunkedOutput out = new ChunkedOutput( ch, maxChunkSize + 2 /* for chunk header */ );
+        int maxBufferSize = maxChunkSize + CHUNK_HEADER_SIZE;
+        ChunkedOutput out = new ChunkedOutput( ch, maxBufferSize, maxBufferSize, TransportThrottleGroup.NO_THROTTLE );
 
         for ( byte[] message : messages )
         {
+            out.beginMessage();
             out.writeBytes( message, 0, message.length );
-            out.onMessageComplete();
+            out.messageSucceeded();
         }
         out.flush();
         out.close();

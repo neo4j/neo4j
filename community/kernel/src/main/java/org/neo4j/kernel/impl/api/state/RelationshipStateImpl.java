@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,15 +21,94 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
 import static java.util.Collections.emptyIterator;
 
-public class RelationshipStateImpl extends PropertyContainerStateImpl implements RelationshipState
+class RelationshipStateImpl extends PropertyContainerStateImpl implements RelationshipState
 {
+    static final RelationshipState EMPTY = new RelationshipState()
+    {
+        @Override
+        public long getId()
+        {
+            throw new UnsupportedOperationException( "id not defined" );
+        }
+
+        @Override
+        public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor )
+        {
+            return false;
+        }
+
+        @Override
+        public Iterator<StorageProperty> addedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<StorageProperty> changedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<Integer> removedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<StorageProperty> addedAndChangedProperties()
+        {
+            return emptyIterator();
+        }
+
+        @Override
+        public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
+        {
+            return iterator;
+        }
+
+        @Override
+        public void accept( Visitor visitor )
+        {
+        }
+
+        @Override
+        public boolean hasPropertyChanges()
+        {
+            return false;
+        }
+
+        @Override
+        public StorageProperty getChangedProperty( int propertyKeyId )
+        {
+            return null;
+        }
+
+        @Override
+        public StorageProperty getAddedProperty( int propertyKeyId )
+        {
+            return null;
+        }
+
+        @Override
+        public boolean isPropertyChangedOrRemoved( int propertyKey )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isPropertyRemoved( int propertyKeyId )
+        {
+            return false;
+        }
+    };
+
     private long startNode = -1;
     private long endNode = -1;
     private int type = -1;
@@ -39,7 +118,7 @@ public class RelationshipStateImpl extends PropertyContainerStateImpl implements
         super( id );
     }
 
-    public void setMetaData( long startNode, long endNode, int type )
+    void setMetaData( long startNode, long endNode, int type )
     {
         this.startNode = startNode;
         this.endNode = endNode;
@@ -55,105 +134,5 @@ public class RelationshipStateImpl extends PropertyContainerStateImpl implements
             return true;
         }
         return false;
-    }
-
-    public abstract static class Defaults extends StateDefaults<Long, RelationshipState, RelationshipStateImpl>
-    {
-        @Override
-        RelationshipStateImpl createValue( Long id, TxState state )
-        {
-            return new RelationshipStateImpl( id );
-        }
-
-        @Override
-        RelationshipState defaultValue()
-        {
-            return DEFAULT;
-        }
-
-        private static final RelationshipState DEFAULT = new RelationshipState()
-        {
-            private UnsupportedOperationException notDefined( String field )
-            {
-                return new UnsupportedOperationException( field + " not defined" );
-            }
-
-            @Override
-            public long getId()
-            {
-                throw notDefined( "id" );
-            }
-
-            @Override
-            public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX
-            {
-                return false;
-            }
-
-            @Override
-            public Iterator<StorageProperty> addedProperties()
-            {
-                return emptyIterator();
-            }
-
-            @Override
-            public Iterator<StorageProperty> changedProperties()
-            {
-                return emptyIterator();
-            }
-
-            @Override
-            public Iterator<Integer> removedProperties()
-            {
-                return emptyIterator();
-            }
-
-            @Override
-            public Iterator<StorageProperty> addedAndChangedProperties()
-            {
-                return emptyIterator();
-            }
-
-            @Override
-            public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-            {
-                return iterator;
-            }
-
-            @Override
-            public void accept( Visitor visitor ) throws ConstraintValidationException
-            {
-            }
-
-            @Override
-            public boolean hasPropertyChanges()
-            {
-                return false;
-            }
-
-            @Override
-            public StorageProperty getChangedProperty( int propertyKeyId )
-            {
-                return null;
-            }
-
-            @Override
-            public StorageProperty getAddedProperty( int propertyKeyId )
-            {
-                return null;
-            }
-
-            @Override
-            public boolean isPropertyChangedOrRemoved( int propertyKey )
-            {
-                return false;
-            }
-
-            @Override
-            public boolean isPropertyRemoved( int propertyKeyId )
-            {
-                return false;
-            }
-        };
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * For each relationship id in 'relIds', fetch the corresponding relationship. For each relationship,
@@ -27,12 +27,13 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   * rows has the relationship start node as 'leftNode' and the end node as 'rightNode', while the other produced
   * row has the end node as 'leftNode' = endNode and the start node as 'rightNode'.
   */
-case class UndirectedRelationshipByIdSeek(idName: IdName,
+case class UndirectedRelationshipByIdSeek(idName: String,
                                           relIds: SeekableArgs,
-                                          leftNode: IdName,
-                                          rightNode: IdName,
-                                          argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan {
+                                          leftNode: String,
+                                          rightNode: String,
+                                          argumentIds: Set[String])
+                                         (implicit idGen: IdGen)
+  extends LogicalLeafPlan(idGen) {
 
-  def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, leftNode, rightNode)
+  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 }

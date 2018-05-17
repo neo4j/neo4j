@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -73,15 +73,15 @@ public class ModelBuilder
     public static class DomainEntity
     {
         public URI location;
-        public Map<String, String> properties = new HashMap<String, String>();
+        public Map<String, String> properties = new HashMap<>();
     }
 
     public static class DomainModel
     {
-        public Map<URI, DomainEntity> nodeUriToEntityMap = new HashMap<URI, DomainEntity>();
+        public Map<URI, DomainEntity> nodeUriToEntityMap = new HashMap<>();
         String nodeIndexName = "nodes";
-        public Map<String, String> indexedNodeKeyValues = new HashMap<String, String>();
-        public Map<URI, DomainEntity> indexedNodeUriToEntityMap = new HashMap<URI, DomainEntity>();
+        public Map<String, String> indexedNodeKeyValues = new HashMap<>();
+        public Map<URI, DomainEntity> indexedNodeUriToEntityMap = new HashMap<>();
 
         public void add( DomainEntity de )
         {

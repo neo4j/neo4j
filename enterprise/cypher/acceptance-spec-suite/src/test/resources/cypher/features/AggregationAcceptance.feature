@@ -1,21 +1,24 @@
 #
-# Copyright (c) 2002-2017 "Neo Technology,"
-# Network Engine for Objects in Lund AB [http://neotechnology.com]
+# Copyright (c) 2002-2018 "Neo4j,"
+# Neo4j Sweden AB [http://neo4j.com]
 #
-# This file is part of Neo4j.
-#
-# Neo4j is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+# This file is part of Neo4j Enterprise Edition. The included source
+# code can be redistributed and/or modified under the terms of the
+# GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+# (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+# Commons Clause, as found in the associated LICENSE.txt file.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
 #
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# Neo4j object code can be licensed independently from the source
+# under separate terms from the AGPL. Inquiries can be directed to:
+# licensing@neo4j.com
+#
+# More information is also available at:
+# https://neo4j.com/licensing/
 #
 
 Feature: AggregationAcceptance
@@ -195,4 +198,37 @@ Feature: AggregationAcceptance
       | 'Swing Time'        | 1        | 1                 |
       | 'The Autograph Man' | 1        | 1                 |
       | 'White teeth'       | 1        | 1                 |
+    And no side effects
+
+  Scenario: Distinct should work with multiple equal grouping keys and only one different
+    And having executed:
+      """
+      UNWIND range(1,9) as i
+      CREATE ({prop1:'prop1',prop2:'prop2',prop3:'prop3',prop4:'prop4',prop5:'prop5',prop6:toString(i),prop7:'prop7',prop8:'prop8',prop9:'prop9'})
+      """
+    When executing query:
+      """
+      MATCH (node)
+      RETURN DISTINCT
+        node.prop1 as p1,
+        node.prop2 as p2,
+        node.prop3 as p3,
+        node.prop4 as p4,
+        node.prop5 as p5,
+        node.prop6 as p6,
+        node.prop7 as p7,
+        node.prop8 as p8,
+        node.prop9 as p9
+      """
+    Then the result should be:
+      | p1      | p2      | p3      | p4      | p5      | p6  | p7      | p8      | p9      |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '1' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '2' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '3' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '4' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '5' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '6' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '7' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '8' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '9' | 'prop7' | 'prop8' | 'prop9' |
     And no side effects

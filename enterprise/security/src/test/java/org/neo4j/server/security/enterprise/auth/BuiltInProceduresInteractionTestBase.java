@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.auth;
 
@@ -29,6 +32,7 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,15 +47,18 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
-import org.neo4j.kernel.impl.api.LockingStatementOperations;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.lang.String.format;
+import static java.time.OffsetDateTime.from;
+import static java.time.OffsetDateTime.now;
+import static java.time.OffsetDateTime.ofInstant;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
@@ -72,7 +79,6 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.enterprise.builtinprocs.ProceduresTimeFormatHelper.UTC_ZONE_ID;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
@@ -97,7 +103,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String secondModifier = "MATCH (n:MyNode) set n.prop=4";
         DoubleLatch latch = new DoubleLatch( 2 );
         DoubleLatch blockedModifierLatch = new DoubleLatch( 2 );
-        OffsetDateTime startTime = OffsetDateTime.now( UTC_ZONE_ID );
+        OffsetDateTime startTime = getStartTime();
 
         ThreadedTransaction<S> tx = new ThreadedTransaction<>( neo, latch );
         tx.execute( threading, writeSubject, firstModifier );
@@ -131,8 +137,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     private void waitTransactionToStartWaitingForTheLock() throws InterruptedException
     {
-        while ( !Thread.getAllStackTraces().keySet().stream().anyMatch(
-                ThreadingRule.waitingWhileIn( LockingStatementOperations.class, "exclusiveOptimisticLock" ) ) )
+        while ( Thread.getAllStackTraces().keySet().stream().noneMatch(
+                ThreadingRule.waitingWhileIn( Operations.class, "acquireExclusiveNodeLock" ) ) )
         {
             TimeUnit.MILLISECONDS.sleep( 10 );
         }
@@ -146,7 +152,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String listTransactionsQuery = "CALL dbms.listTransactions()";
 
         DoubleLatch latch = new DoubleLatch( 2 );
-        OffsetDateTime startTime = OffsetDateTime.now( UTC_ZONE_ID );
+        OffsetDateTime startTime = getStartTime();
 
         ThreadedTransaction<S> tx = new ThreadedTransaction<>( neo, latch );
         tx.execute( threading, writeSubject, setMetaDataQuery, matchQuery );
@@ -172,8 +178,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void listAllTransactionsWhenRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        OffsetDateTime startTime = OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
+        OffsetDateTime startTime = getStartTime();
 
         ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
         ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
@@ -204,8 +209,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldOnlyListOwnTransactionsWhenNotRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        OffsetDateTime startTime = OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
+        OffsetDateTime startTime = getStartTime();
         ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
         ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
 
@@ -237,8 +241,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         neo = setUpNeoServer( stringMap( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
 
         DoubleLatch latch = new DoubleLatch( 2, true );
-        OffsetDateTime startTime = OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
+        OffsetDateTime startTime = getStartTime();
 
         ThreadedTransaction<S> read = new ThreadedTransaction<>( neo, latch );
 
@@ -274,7 +277,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String listQueriesQuery = "CALL dbms.listQueries()";
 
         DoubleLatch latch = new DoubleLatch( 2 );
-        OffsetDateTime startTime = OffsetDateTime.now( UTC_ZONE_ID );
+        OffsetDateTime startTime = now( ZoneOffset.UTC );
 
         ThreadedTransaction<S> tx = new ThreadedTransaction<>( neo, latch );
         tx.execute( threading, writeSubject, setMetaDataQuery, matchQuery );
@@ -301,8 +304,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldListAllQueriesWhenRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        OffsetDateTime startTime = OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
+        OffsetDateTime startTime = getStartTime();
 
         ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
         ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
@@ -333,8 +335,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldOnlyListOwnQueriesWhenNotRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        OffsetDateTime startTime = OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
+        OffsetDateTime startTime = getStartTime();
         ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
         ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
 
@@ -377,8 +378,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             server.start();
             int localPort = getLocalPort( server );
 
-            OffsetDateTime startTime = OffsetDateTime
-                    .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
+            OffsetDateTime startTime = getStartTime();
 
             // When
             ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
@@ -423,8 +423,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         neo = setUpNeoServer( stringMap( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
 
         DoubleLatch latch = new DoubleLatch( 2, true );
-        OffsetDateTime startTime = OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
+        OffsetDateTime startTime = getStartTime();
 
         ThreadedTransaction<S> read = new ThreadedTransaction<>( neo, latch );
 
@@ -584,7 +583,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @Test
-    public void shouldSelfKillQuery() throws Throwable
+    public void shouldSelfKillQuery()
     {
         String result = neo.executeQuery(
                 readSubject,
@@ -758,7 +757,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     //---------- set tx meta data -----------
 
     @Test
-    public void shouldHaveSetTXMetaDataProcedure() throws Throwable
+    public void shouldHaveSetTXMetaDataProcedure()
     {
         assertEmpty( writeSubject, "CALL dbms.setTXMetaData( { aKey: 'aValue' } )" );
     }
@@ -797,7 +796,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     //---------- config manipulation -----------
 
     @Test
-    public void setConfigValueShouldBeAccessibleOnlyToAdmins() throws Exception
+    public void setConfigValueShouldBeAccessibleOnlyToAdmins()
     {
         String call = "CALL dbms.setConfigValue('dbms.logs.query.enabled', 'false')";
         assertFail( writeSubject, call, PERMISSION_DENIED );
@@ -1047,7 +1046,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Test
     public void shouldClearQueryCachesIfAdmin()
     {
-        assertSuccess( adminSubject,"CALL dbms.clearQueryCaches()", r -> r.close());
+        assertSuccess( adminSubject,"CALL dbms.clearQueryCaches()", ResourceIterator::close );
         // any answer is okay, as long as it isn't denied. That is why we don't care about the actual result here
     }
 
@@ -1132,7 +1131,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     //@Test
-    public void shouldNotTerminateTerminationTransaction() throws InterruptedException, ExecutionException
+    public void shouldNotTerminateTerminationTransaction()
     {
         assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'adminSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "adminSubject", "0" ) ) );
@@ -1172,7 +1171,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     //@Test
-    public void shouldNotTerminateTransactionsIfNonExistentUser() throws InterruptedException, ExecutionException
+    public void shouldNotTerminateTransactionsIfNonExistentUser()
     {
         assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( 'Petra' )", "User 'Petra' does not exist" );
         assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( '' )", "User '' does not exist" );
@@ -1382,7 +1381,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             @Override
             public boolean matches( Object item )
             {
-                OffsetDateTime otherTime = OffsetDateTime.from( ISO_OFFSET_DATE_TIME.parse( item.toString() ) );
+                OffsetDateTime otherTime = from( ISO_OFFSET_DATE_TIME.parse( item.toString() ) );
                 return startTime.compareTo( otherTime ) <= 0;
             }
         } );
@@ -1435,5 +1434,10 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             transformed.add( transformedMap );
         }
         return transformed;
+    }
+
+    private static OffsetDateTime getStartTime()
+    {
+        return ofInstant( Instant.ofEpochMilli( now().toEpochSecond() ), ZoneOffset.UTC );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -72,14 +72,14 @@ public class AdminCommandSectionTest
     }
 
     @Test
-    public void equalsUsingReflection() throws Exception
+    public void equalsUsingReflection()
     {
         assertTrue( AdminCommandSection.general().equals( new TestGeneralSection() ) );
         assertFalse( AdminCommandSection.general().equals( new TestAnotherGeneralSection() ) );
     }
 
     @Test
-    public void hashCodeUsingReflection() throws Exception
+    public void hashCodeUsingReflection()
     {
         TestGeneralSection testGeneralSection = new TestGeneralSection();
         TestAnotherGeneralSection testAnotherGeneralSection = new TestAnotherGeneralSection();
@@ -94,7 +94,7 @@ public class AdminCommandSectionTest
         assertEquals( "General-AnotherTest", map.get( testAnotherGeneralSection ) );
     }
 
-    private class TestGeneralSection extends AdminCommandSection
+    private static class TestGeneralSection extends AdminCommandSection
     {
 
         @Override
@@ -105,7 +105,7 @@ public class AdminCommandSectionTest
         }
     }
 
-    private class TestAnotherGeneralSection extends AdminCommandSection
+    private static class TestAnotherGeneralSection extends AdminCommandSection
     {
 
         @Override

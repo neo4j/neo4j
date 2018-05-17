@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -79,7 +79,7 @@ public class KernelDataTest
             .around( pageCacheRule ).around( shutDownRemainingKernels );
 
     @Test
-    public void shouldGenerateUniqueInstanceIdentifiers() throws Exception
+    public void shouldGenerateUniqueInstanceIdentifiers()
     {
         // given
         Kernel kernel1 = new Kernel( null );
@@ -94,7 +94,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldReuseInstanceIdentifiers() throws Exception
+    public void shouldReuseInstanceIdentifiers()
     {
         // given
         Kernel kernel = new Kernel( null );
@@ -109,7 +109,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldAllowConfigurationOfInstanceId() throws Exception
+    public void shouldAllowConfigurationOfInstanceId()
     {
         // when
         Kernel kernel = new Kernel( "myInstance" );
@@ -119,7 +119,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldGenerateInstanceIdentifierWhenNullConfigured() throws Exception
+    public void shouldGenerateInstanceIdentifierWhenNullConfigured()
     {
         // when
         Kernel kernel = new Kernel( null );
@@ -130,7 +130,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldGenerateInstanceIdentifierWhenEmptyStringConfigured() throws Exception
+    public void shouldGenerateInstanceIdentifierWhenEmptyStringConfigured()
     {
         // when
         Kernel kernel = new Kernel( "" );
@@ -141,7 +141,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldNotAllowMultipleInstancesWithTheSameConfiguredInstanceId() throws Exception
+    public void shouldNotAllowMultipleInstancesWithTheSameConfiguredInstanceId()
     {
         // given
         new Kernel( "myInstance" );
@@ -160,7 +160,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldAllowReuseOfConfiguredInstanceIdAfterShutdown() throws Exception
+    public void shouldAllowReuseOfConfiguredInstanceIdAfterShutdown()
     {
         // given
         new Kernel( "myInstance" ).shutdown();

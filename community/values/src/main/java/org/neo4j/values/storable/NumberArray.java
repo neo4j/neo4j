@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,34 +19,93 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+
 import org.neo4j.graphdb.spatial.Geometry;
 
-abstract class NumberArray extends ArrayValue
+public abstract class NumberArray extends ArrayValue
 {
     abstract int compareTo( IntegralArray other );
 
     abstract int compareTo( FloatingPointArray other );
 
     @Override
-    public boolean equals( boolean[] x )
+    int unsafeCompareTo( Value otherValue )
+    {
+        if ( otherValue instanceof IntegralArray )
+        {
+            return compareTo( (IntegralArray) otherValue );
+        }
+        else if ( otherValue instanceof FloatingPointArray )
+        {
+            return compareTo( (FloatingPointArray) otherValue );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+    }
+
+    @Override
+    public final boolean equals( boolean[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( char[] x )
+    public final boolean equals( char[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( String[] x )
+    public final boolean equals( String[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( Geometry[] x )
+    public final boolean equals( Geometry[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( ZonedDateTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( LocalDate[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( DurationValue[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( LocalDateTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( LocalTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( OffsetTime[] x )
     {
         return false;
     }

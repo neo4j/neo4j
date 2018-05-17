@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,9 +25,9 @@ import java.io.IOException;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -38,7 +38,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class FailedIndexProxyTest
 {
-    private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
+    private final IndexProvider.Descriptor providerDescriptor = mock( IndexProvider.Descriptor.class );
     private final IndexCapability indexCapability = mock( IndexCapability.class );
     private final IndexPopulator indexPopulator = mock( IndexPopulator.class );
     private final IndexPopulationFailure indexPopulationFailure = mock( IndexPopulationFailure.class );
@@ -49,7 +49,7 @@ public class FailedIndexProxyTest
     {
         // given
         String userDescription = "description";
-        FailedIndexProxy index = new FailedIndexProxy( indexMeta( IndexDescriptorFactory.forLabel( 1, 2 ) ),
+        FailedIndexProxy index = new FailedIndexProxy( indexMeta( SchemaIndexDescriptorFactory.forLabel( 1, 2 ) ),
                 userDescription, indexPopulator, indexPopulationFailure, indexCountsRemover, NullLogProvider.getInstance() );
 
         // when
@@ -68,7 +68,7 @@ public class FailedIndexProxyTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        new FailedIndexProxy( indexMeta( IndexDescriptorFactory.forLabel( 0, 0 ) ),
+        new FailedIndexProxy( indexMeta( SchemaIndexDescriptorFactory.forLabel( 0, 0 ) ),
                 "foo", mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ),
                 indexCountsRemover, logProvider ).drop();
 
@@ -78,8 +78,8 @@ public class FailedIndexProxyTest
         );
     }
 
-    private IndexMeta indexMeta( IndexDescriptor descriptor )
+    private IndexMeta indexMeta( SchemaIndexDescriptor descriptor )
     {
-        return new IndexMeta( descriptor, providerDescriptor, indexCapability );
+        return new IndexMeta( 1, descriptor, providerDescriptor, indexCapability );
     }
 }

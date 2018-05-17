@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,15 +19,20 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.apache.commons.lang3.ArrayUtils;
+import org.hamcrest.Matcher;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -44,6 +49,12 @@ class FusionIndexTestHelp
     private static LabelSchemaDescriptor indexKey = SchemaDescriptorFactory.forLabel( 0, 0 );
     private static LabelSchemaDescriptor compositeIndexKey = SchemaDescriptorFactory.forLabel( 0, 0, 1 );
 
+    private static final Value[] stringValues = new Value[]
+            {
+                    Values.stringValue( "abc" ),
+                    Values.stringValue( "abcdefghijklmnopqrstuvwxyzåäö" ),
+                    Values.charValue( 'S' ),
+            };
     private static final Value[] numberValues = new Value[]
             {
                     Values.byteValue( (byte) 1 ),
@@ -53,11 +64,20 @@ class FusionIndexTestHelp
                     Values.floatValue( 5.6f ),
                     Values.doubleValue( 7.8 )
             };
+    private static final Value[] pointValues = new Value[]
+            {
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 123.0, 456.0 ),
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123.0, 456.0, 789.0 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.8 )
+            };
+    private static final Value[] temporalValues = new Value[]
+            {
+                    DateValue.epochDate( 1 ),
+                    DateValue.epochDate( 10000 )
+            };
     private static final Value[] otherValues = new Value[]
             {
                     Values.booleanValue( true ),
-                    Values.charValue( 'a' ),
-                    Values.stringValue( "bcd" ),
                     Values.booleanArray( new boolean[2] ),
                     Values.byteArray( new byte[]{1, 2} ),
                     Values.shortArray( new short[]{3, 4} ),
@@ -66,26 +86,59 @@ class FusionIndexTestHelp
                     Values.floatArray( new float[]{9.10f, 11.12f} ),
                     Values.doubleArray( new double[]{13.14, 15.16} ),
                     Values.charArray( new char[2] ),
-                    Values.stringArray( new String[]{"a", "b"} ),
+                    Values.stringArray( "a", "b" ),
+                    Values.pointArray( pointValues ),
                     Values.NO_VALUE
             };
 
-    static Value[] valuesSupportedByNative()
+    static Value[] valuesSupportedByString()
+    {
+        return stringValues;
+    }
+
+    static Value[] valuesSupportedByNumber()
     {
         return numberValues;
     }
 
-    static Value[] valuesNotSupportedByNative()
+    static Value[] valuesSupportedBySpatial()
+    {
+        return pointValues;
+    }
+
+    static Value[] valuesSupportedByTemporal()
+    {
+        return temporalValues;
+    }
+
+    static Value[] valuesNotSupportedBySpecificIndex()
     {
         return otherValues;
     }
 
     static Value[] allValues()
     {
-        return ArrayUtils.addAll( numberValues, otherValues );
+        List<Value> values = new ArrayList<>();
+        for ( Value[] group : valuesByGroup() )
+        {
+            values.addAll( Arrays.asList( group ) );
+        }
+        return values.toArray( new Value[values.size()] );
     }
 
-    static void verifyCallFail( Exception expectedFailure, Callable failingCall ) throws Exception
+    static Value[][] valuesByGroup()
+    {
+        return new Value[][]
+                {
+                        FusionIndexTestHelp.valuesSupportedByString(),
+                        FusionIndexTestHelp.valuesSupportedByNumber(),
+                        FusionIndexTestHelp.valuesSupportedBySpatial(),
+                        FusionIndexTestHelp.valuesSupportedByTemporal(),
+                        FusionIndexTestHelp.valuesNotSupportedBySpecificIndex()
+                };
+    }
+
+    static void verifyCallFail( Exception expectedFailure, Callable failingCall )
     {
         try
         {
@@ -134,8 +187,8 @@ class FusionIndexTestHelp
         return IndexEntryUpdate.change( 0, indexKey, before, after );
     }
 
-    static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable successfulCloseable,
-            AutoCloseable fusionCloseable ) throws Exception
+    static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable, AutoCloseable... successfulCloseables )
+            throws Exception
     {
         IOException failure = new IOException( "fail" );
         doThrow( failure ).when( failingCloseable ).close();
@@ -151,7 +204,10 @@ class FusionIndexTestHelp
         }
 
         // then
-        verify( successfulCloseable, Mockito.times( 1 ) ).close();
+        for ( AutoCloseable successfulCloseable : successfulCloseables )
+        {
+            verify( successfulCloseable, Mockito.times( 1 ) ).close();
+        }
     }
 
     static void verifyFusionCloseThrowOnSingleCloseThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable )
@@ -170,14 +226,15 @@ class FusionIndexTestHelp
         }
     }
 
-    static void verifyFusionCloseThrowIfBothThrow( AutoCloseable nativeCloseable, AutoCloseable luceneCloseable,
-            AutoCloseable fusionCloseable ) throws Exception
+    static void verifyFusionCloseThrowIfAllThrow( AutoCloseable fusionCloseable, AutoCloseable... autoCloseables ) throws Exception
     {
         // given
-        IOException nativeFailure = new IOException( "native" );
-        IOException luceneFailure = new IOException( "lucene" );
-        doThrow( nativeFailure ).when( nativeCloseable ).close();
-        doThrow( luceneFailure ).when( luceneCloseable ).close();
+        IOException[] failures = new IOException[autoCloseables.length];
+        for ( int i = 0; i < autoCloseables.length; i++ )
+        {
+            failures[i] = new IOException( "unknown" );
+            doThrow( failures[i] ).when( autoCloseables[i] ).close();
+        }
 
         try
         {
@@ -188,7 +245,12 @@ class FusionIndexTestHelp
         catch ( IOException e )
         {
             // then
-            assertThat( e, anyOf( sameInstance( nativeFailure ), sameInstance( luceneFailure ) ) );
+            List<Matcher<? super IOException>> matchers = new ArrayList<>();
+            for ( IOException failure : failures )
+            {
+                matchers.add( sameInstance( failure ) );
+            }
+            assertThat( e, anyOf( matchers ) );
         }
     }
 }

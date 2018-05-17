@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,10 +35,11 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -48,8 +49,8 @@ import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 
-import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -58,7 +59,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
+import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 
 public class ReflectiveUserAggregationFunctionTest
 {
@@ -69,7 +70,7 @@ public class ReflectiveUserAggregationFunctionTest
     private ComponentRegistry components;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         components = new ComponentRegistry();
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
@@ -98,7 +99,7 @@ public class ReflectiveUserAggregationFunctionTest
         CallableUserAggregationFunction func = compile( SingleAggregationFunction.class ).get( 0 );
 
         // When
-        CallableUserAggregationFunction.Aggregator aggregator = func.create( new BasicContext() );
+        UserAggregator aggregator = func.create( new BasicContext() );
 
         aggregator.update( new Object[]{"Harry"} );
         aggregator.update( new Object[]{"Bonnie"} );
@@ -119,7 +120,7 @@ public class ReflectiveUserAggregationFunctionTest
                 function = procedureCompiler.compileAggregationFunction( LoggingFunction.class ).get( 0 );
 
         // When
-        CallableUserAggregationFunction.Aggregator aggregator = function.create( new BasicContext() );
+        UserAggregator aggregator = function.create( new BasicContext() );
         aggregator.update( new Object[]{} );
         aggregator.result();
 
@@ -149,10 +150,10 @@ public class ReflectiveUserAggregationFunctionTest
         CallableUserAggregationFunction f2 = compiled.get( 1 );
 
         // When
-        CallableUserAggregationFunction.Aggregator f1Aggregator = f1.create( new BasicContext() );
+        UserAggregator f1Aggregator = f1.create( new BasicContext() );
         f1Aggregator.update( new Object[]{"Bonnie"} );
         f1Aggregator.update( new Object[]{"Clyde"} );
-        CallableUserAggregationFunction.Aggregator f2Aggregator = f2.create( new BasicContext() );
+        UserAggregator f2Aggregator = f2.create( new BasicContext() );
         f2Aggregator.update( new Object[]{"Bonnie", 1337L} );
         f2Aggregator.update( new Object[]{"Bonnie", 42L} );
 
@@ -285,9 +286,11 @@ public class ReflectiveUserAggregationFunctionTest
         exception.expect( ProcedureException.class );
         exception.expectMessage( String.format("Don't know how to map `char[]` to the Neo4j Type System.%n" +
                                  "Please refer to to the documentation for full details.%n" +
-                                 "For your reference, known types are: [boolean, double, java.lang.Boolean, java.lang" +
-                                 ".Double, java.lang.Long, java.lang.Number, java.lang.Object, java.lang.String, java" +
-                                 ".util.List, java.util.Map, long]" ));
+                                 "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
+                                 "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
+                                 "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
+                                 "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
+                                 "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ));
 
         // When
         compile( FunctionWithInvalidOutput.class ).get( 0 );
@@ -355,7 +358,7 @@ public class ReflectiveUserAggregationFunctionTest
         CallableUserAggregationFunction method = compile( SingleAggregationFunction.class ).get( 0 );
 
         // Expect
-        CallableUserAggregationFunction.Aggregator created = method.create( new BasicContext() );
+        UserAggregator created = method.create( new BasicContext() );
         created.update( new Object[]{"Bonnie"} );
         assertThat(created.result(), equalTo( Collections.singletonList( "Bonnie" ) ) );
     }

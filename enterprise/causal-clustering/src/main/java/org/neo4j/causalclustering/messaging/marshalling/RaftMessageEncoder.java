@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.messaging.marshalling;
 
@@ -77,16 +80,16 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
             channel.putLong( voteRequest.lastLogIndex() );
             channel.putLong( voteRequest.lastLogTerm() );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
-        public Void handle( RaftMessages.Vote.Response voteResponse ) throws Exception
+        public Void handle( RaftMessages.Vote.Response voteResponse )
         {
             channel.putLong( voteResponse.term() );
             channel.put( (byte) (voteResponse.voteGranted() ? 1 : 0) );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -97,16 +100,16 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
             channel.putLong( preVoteRequest.lastLogIndex() );
             channel.putLong( preVoteRequest.lastLogTerm() );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
-        public Void handle( RaftMessages.PreVote.Response preVoteResponse ) throws Exception
+        public Void handle( RaftMessages.PreVote.Response preVoteResponse )
         {
             channel.putLong( preVoteResponse.term() );
             channel.put( (byte) (preVoteResponse.voteGranted() ? 1 : 0) );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -125,18 +128,18 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
                 marshal.marshal( raftLogEntry.content(), channel );
             }
 
-            return (Void)null;
+            return null;
         }
 
         @Override
-        public Void handle( RaftMessages.AppendEntries.Response appendResponse ) throws Exception
+        public Void handle( RaftMessages.AppendEntries.Response appendResponse )
         {
             channel.putLong( appendResponse.term() );
             channel.put( (byte) (appendResponse.success() ? 1 : 0) );
             channel.putLong( appendResponse.matchIndex() );
             channel.putLong( appendResponse.appendIndex() );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -144,60 +147,56 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         {
             marshal.marshal( newEntryRequest.content(), channel );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
-        public Void handle( RaftMessages.Heartbeat heartbeat ) throws Exception
+        public Void handle( RaftMessages.Heartbeat heartbeat )
         {
             channel.putLong( heartbeat.leaderTerm() );
             channel.putLong( heartbeat.commitIndexTerm() );
             channel.putLong( heartbeat.commitIndex() );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
-        public Void handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws Exception
+        public Void handle( RaftMessages.HeartbeatResponse heartbeatResponse )
         {
             // Heartbeat Response does not have any data attached to it.
-            return (Void)null;
+            return null;
         }
 
         @Override
-        public Void handle( RaftMessages.LogCompactionInfo logCompactionInfo ) throws Exception
+        public Void handle( RaftMessages.LogCompactionInfo logCompactionInfo )
         {
             channel.putLong( logCompactionInfo.leaderTerm() );
             channel.putLong( logCompactionInfo.prevIndex() );
-            return (Void)null;
+            return null;
         }
 
         @Override
-        public Void handle( RaftMessages.Timeout.Election election ) throws Exception
+        public Void handle( RaftMessages.Timeout.Election election )
         {
-            // Not network
-            return (Void)null;
+            return null; // Not network
         }
 
         @Override
-        public Void handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws Exception
+        public Void handle( RaftMessages.Timeout.Heartbeat heartbeat )
         {
-            // Not network
-            return (Void)null;
+            return null; // Not network
         }
 
         @Override
-        public Void handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws Exception
+        public Void handle( RaftMessages.NewEntry.BatchRequest batchRequest )
         {
-            // Not network
-            return (Void)null;
+            return null; // Not network
         }
 
         @Override
-        public Void handle( RaftMessages.PruneRequest pruneRequest ) throws Exception
+        public Void handle( RaftMessages.PruneRequest pruneRequest )
         {
-            // Not network
-            return (Void)null;
+            return null; // Not network
         }
     }
 }

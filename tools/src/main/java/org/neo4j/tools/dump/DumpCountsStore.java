@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.tools.dump;
 
@@ -31,8 +34,9 @@ import java.util.Map;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
@@ -83,8 +87,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             if ( fs.isDirectory( path ) )
             {
                 StoreFactory factory = new StoreFactory( path, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                        pages, fs,
-                        logProvider );
+                        pages, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
                 NeoStores neoStores = factory.openAllNeoStores();
                 SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
@@ -120,14 +123,14 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     }
 
     private final PrintStream out;
-    private final Map<Long,IndexDescriptor> indexes;
+    private final Map<Long,SchemaIndexDescriptor> indexes;
     private final List<Token> labels;
     private final List<RelationshipTypeToken> relationshipTypes;
     private final List<Token> propertyKeys;
 
-    private DumpCountsStore( PrintStream out, Map<Long,IndexDescriptor> indexes, List<Token> labels,
-            List<RelationshipTypeToken> relationshipTypes,
-            List<Token> propertyKeys )
+    private DumpCountsStore( PrintStream out, Map<Long,SchemaIndexDescriptor> indexes, List<Token> labels,
+                             List<RelationshipTypeToken> relationshipTypes,
+                             List<Token> propertyKeys )
     {
         this.out = out;
         this.indexes = indexes;
@@ -165,17 +168,17 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     @Override
     public void visitIndexStatistics( long indexId, long updates, long size )
     {
-        IndexDescriptor index = indexes.get( indexId );
+        SchemaIndexDescriptor index = indexes.get( indexId );
         out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
-                label( index.schema().getLabelId() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
+                label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
     }
 
     @Override
     public void visitIndexSample( long indexId, long unique, long size )
     {
-        IndexDescriptor index = indexes.get( indexId );
+        SchemaIndexDescriptor index = indexes.get( indexId );
         out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
-                label( index.schema().getLabelId() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
+                label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
     }
 
     @Override
@@ -187,7 +190,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     private String label( int id )
     {
-        if ( id == ReadOperations.ANY_LABEL )
+        if ( id == StatementConstants.ANY_LABEL )
         {
             return "";
         }
@@ -210,7 +213,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     private String relationshipType( int id )
     {
-        if ( id == ReadOperations.ANY_RELATIONSHIP_TYPE )
+        if ( id == StatementConstants.ANY_RELATIONSHIP_TYPE )
         {
             return "";
         }
@@ -255,9 +258,9 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         }
     }
 
-    private static Map<Long,IndexDescriptor> getAllIndexesFrom( SchemaStorage storage )
+    private static Map<Long,SchemaIndexDescriptor> getAllIndexesFrom( SchemaStorage storage )
     {
-        HashMap<Long,IndexDescriptor> indexes = new HashMap<>();
+        HashMap<Long,SchemaIndexDescriptor> indexes = new HashMap<>();
         Iterator<IndexRule> indexRules = storage.indexesGetAll();
         while ( indexRules.hasNext() )
         {
@@ -273,7 +276,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         VisitableCountsTracker( LogProvider logProvider, FileSystemAbstraction fs,
                 PageCache pages, Config config, File baseFile )
         {
-            super( logProvider, fs, pages, config, baseFile );
+            super( logProvider, fs, pages, config, baseFile, EmptyVersionContextSupplier.EMPTY );
         }
 
         @Override

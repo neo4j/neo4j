@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,10 +25,10 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.function.Predicates;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.scheduler.JobScheduler.Groups.checkPoint;
@@ -129,13 +129,13 @@ public class CheckPointScheduler extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         handle = scheduler.schedule( checkPoint, job, recurringPeriodMillis, MILLISECONDS );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         stopped = true;
         if ( handle != null )

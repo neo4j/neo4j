@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,7 @@ import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 
 public class DiscardAllMessage implements RequestMessage
 {
-    private static DiscardAllMessage INSTANCE = new DiscardAllMessage();
+    private static final DiscardAllMessage INSTANCE = new DiscardAllMessage();
 
     /**
      * Factory method for obtaining DISCARD_ALL messages.
@@ -38,7 +38,7 @@ public class DiscardAllMessage implements RequestMessage
     }
 
     @Override
-    public <E extends Exception> void dispatch( BoltRequestMessageHandler<E> consumer ) throws E
+    public void dispatch( BoltRequestMessageHandler consumer )
     {
         consumer.onDiscardAll();
     }
@@ -46,11 +46,7 @@ public class DiscardAllMessage implements RequestMessage
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        return !(o == null || getClass() != o.getClass());
+        return this == o || !(o == null || getClass() != o.getClass());
     }
 
     @Override

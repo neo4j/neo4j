@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -68,7 +68,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
         {
             RecordFormats from = RecordFormatSelector.selectForVersion( versionToMigrateFrom );
             RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
-            if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
+            if ( !from.hasCompatibleCapabilities( to, CapabilityType.INDEX ) )
             {
                 originalExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( storeDir );
                 migrationExplicitIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationDir );

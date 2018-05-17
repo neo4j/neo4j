@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,7 +32,7 @@ import org.neo4j.shell.kernel.ReadOnlyGraphDatabaseProxy;
 public class ReadOnlyServerIT extends AbstractShellIT
 {
     @Override
-    protected ShellServer newServer( GraphDatabaseAPI db ) throws ShellException, RemoteException
+    protected ShellServer newServer( GraphDatabaseAPI db ) throws RemoteException
     {
         return new GraphDatabaseShellServer( new ReadOnlyGraphDatabaseProxy( db ) );
     }

@@ -1,25 +1,20 @@
 Neo4j
-Copyright © 2002-2017 Network Engine for Objects in Lund AB (referred to
-in this notice as "Neo Technology")
-   [http://neotechnology.com]
+Copyright © 2002-2018 Neo4j Sweden AB (referred to in this notice as "Neo4j")
+[http://neo4j.com]
 
-This product includes software ("Software") developed by Neo Technology.
+This product includes software ("Software") developed and owned by Neo4j.
 
-The software ("Software") is developed and owned by Network Engine
-for Objects in Lund AB (referred to in this notice as "Neo Technology").
-If you have executed an End User Software License and Services Agreement,
-an OEM Software License and Support Services Agreement, or another
-commercial license agreement (including an Evaluation Agreement) with
-Neo Technology or one of its affiliates (each, a "Commercial Agreement"),
-you may use the Software solely pursuant to the terms of the relevant
-Commercial Agreement.
+The Software is subject to the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html),
+included in the LICENSE.txt file, with the Commons Clause.
 
-If you have not executed a Commercial Agreement with Neo Technology, the
-Software is subject to the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
-Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html), included
-in the LICENSE.txt file.
+Neo4j Enterprise object code can be licensed independently from the source
+under separate commercial terms. Email inquiries can be directed
+to: licensing@neo4j.com. More information is also available
+at: https://neo4j.com/licensing/
 
 Full license texts are found in LICENSES.txt.
+
 
 Third-party licenses
 --------------------

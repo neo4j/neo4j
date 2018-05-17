@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 public class HighestTransactionIdTest
 {
     @Test
-    public void shouldHardSetHighest() throws Exception
+    public void shouldHardSetHighest()
     {
         // GIVEN
         HighestTransactionId highest = new HighestTransactionId( 10, 10, 10 );
@@ -47,7 +47,7 @@ public class HighestTransactionIdTest
     }
 
     @Test
-    public void shouldOnlyKeepTheHighestOffered() throws Exception
+    public void shouldOnlyKeepTheHighestOffered()
     {
         // GIVEN
         HighestTransactionId highest = new HighestTransactionId( -1, -1, -1 );

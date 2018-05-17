@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -42,10 +42,10 @@ public class DefaultFormatTest
     private DefaultFormat input;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         JsonFormat inner = new JsonFormat();
-        ArrayList<MediaType> supported = new ArrayList<MediaType>();
+        ArrayList<MediaType> supported = new ArrayList<>();
         MediaType requested = MediaType.APPLICATION_JSON_TYPE;
         input = new DefaultFormat( inner, supported, requested );
     }
@@ -83,7 +83,7 @@ public class DefaultFormatTest
     }
 
     @Test( expected = MediaTypeNotSupportedException.class )
-    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput() throws BadInputException
+    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput()
     {
         input.readValue( "<xml />" );
     }
@@ -95,7 +95,7 @@ public class DefaultFormatTest
     }
 
     @Test( expected = MediaTypeNotSupportedException.class )
-    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput3() throws BadInputException
+    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput3()
     {
         input.readUri( "<xml />" );
     }

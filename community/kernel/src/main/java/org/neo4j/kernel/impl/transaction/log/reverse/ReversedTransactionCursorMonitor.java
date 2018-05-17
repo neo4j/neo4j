@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,5 +21,5 @@ package org.neo4j.kernel.impl.transaction.log.reverse;
 
 public interface ReversedTransactionCursorMonitor
 {
-    void transactionalLogRecordReadFailure( Throwable t, long[] offsets, int offsetCursor, long logVersion );
+    void transactionalLogRecordReadFailure( long[] offsets, int offsetCursor, long logVersion );
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,18 +25,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
 import org.neo4j.function.FailableConsumer;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.helpers.FailableConcurrentTransfer;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.test.ReflectionUtil;
 
 import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
@@ -58,7 +58,7 @@ public class ThreadingRule extends ExternalResource
     };
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         executor = Executors.newCachedThreadPool();
     }
@@ -136,7 +136,7 @@ public class ThreadingRule extends ExternalResource
 
     public <FROM, TO, EX extends Exception> Future<TO> executeAndAwait(
             ThrowingFunction<FROM,TO,EX> function, FROM parameter, Predicate<Thread> threadCondition,
-            long timeout, TimeUnit unit ) throws TimeoutException, InterruptedException, ExecutionException
+            long timeout, TimeUnit unit ) throws ExecutionException
     {
         FailableConcurrentTransfer<Thread> transfer = new FailableConcurrentTransfer<>();
         Future<TO> future = executor.submit( task( function, function.toString(), parameter, transfer ) );
@@ -207,5 +207,43 @@ public class ThreadingRule extends ExternalResource
                         owner.getName(), method );
             }
         };
+    }
+
+    private static class FailableConcurrentTransfer<TYPE> implements FailableConsumer<TYPE>, ThrowingSupplier<TYPE, Exception>
+    {
+        private final CountDownLatch latch = new CountDownLatch( 1 );
+        private TYPE value;
+        private Exception failure;
+
+        @Override
+        public void accept( TYPE value )
+        {
+            this.value = value;
+            latch.countDown();
+        }
+
+        @Override
+        public void fail( Exception failure )
+        {
+            this.failure = failure;
+            latch.countDown();
+        }
+
+        @Override
+        public TYPE get() throws Exception
+        {
+            latch.await();
+            if ( failure != null )
+            {
+                throw failure;
+            }
+            return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "ConcurrentTransfer{%s}", latch.getCount() == 1 ? "<waiting>" : value );
+        }
     }
 }

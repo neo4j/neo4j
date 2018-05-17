@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,20 +35,19 @@ import java.util.Set;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -67,8 +66,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 
 public class IndexCRUDIT
@@ -88,12 +87,13 @@ public class IndexCRUDIT
         Node node = createNode( map( indexProperty, value1, otherProperty, otherValue ), myLabel );
 
         // Then, for now, this should trigger two NodePropertyUpdates
-        try ( Transaction tx = db.beginTx();
-                Statement statement = ctxSupplier.get() )
+        try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
-            int label = readOperations.labelGetForName( myLabel.name() );
+            KernelTransaction ktx =
+                    ctxSupplier.getKernelTransactionBoundToThisThread( true );
+            TokenRead tokenRead = ktx.tokenRead();
+            int propertyKey1 = tokenRead.propertyKey( indexProperty );
+            int label = tokenRead.nodeLabel( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
                     IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value1 ) ) ) ) );
@@ -129,12 +129,13 @@ public class IndexCRUDIT
         }
 
         // THEN
-        try ( Transaction tx = db.beginTx();
-              Statement statement = ctxSupplier.get() )
+        try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
-            int label = readOperations.labelGetForName( myLabel.name() );
+            KernelTransaction ktx =
+                    ctxSupplier.getKernelTransactionBoundToThisThread( true );
+            TokenRead tokenRead = ktx.tokenRead();
+            int propertyKey1 = tokenRead.propertyKey( indexProperty );
+            int label = tokenRead.nodeLabel( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
                     IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value ) ) ) ) );
@@ -145,9 +146,9 @@ public class IndexCRUDIT
     private GraphDatabaseAPI db;
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
+    private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
-            singleInstanceSchemaIndexProviderFactory( "none", mockedIndexProvider );
+            singleInstanceIndexProviderFactory( "none", mockedIndexProvider );
     private ThreadToStatementContextBridge ctxSupplier;
     private final Label myLabel = Label.label( "MYLABEL" );
 
@@ -166,7 +167,7 @@ public class IndexCRUDIT
     }
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
@@ -183,18 +184,18 @@ public class IndexCRUDIT
     {
         GatheringIndexWriter writer = new GatheringIndexWriter();
         when( mockedIndexProvider.getPopulator(
-                    anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) )
+                    anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) )
             ).thenReturn( writer );
         when( mockedIndexProvider.getOnlineAccessor(
-                    anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class )
+                    anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
             ) ).thenReturn( writer );
-        when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
+        when( mockedIndexProvider.compareTo( any( IndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
         return writer;
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         db.shutdown();
     }
@@ -216,12 +217,12 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
         {
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
         {
             return newUpdater( IndexUpdateMode.ONLINE );
         }
@@ -232,7 +233,7 @@ public class IndexCRUDIT
             return new CollectingIndexUpdater()
             {
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close()
                 {
                     updatesCommitted.addAll( updates );
                 }
@@ -268,12 +269,7 @@ public class IndexCRUDIT
 
         private void addValueToSample( long nodeId, Object propertyValue )
         {
-            Set<Long> nodeIds = indexSamples.get( propertyValue );
-            if ( nodeIds == null )
-            {
-                nodeIds = new HashSet<>();
-                indexSamples.put( propertyValue, nodeIds );
-            }
+            Set<Long> nodeIds = indexSamples.computeIfAbsent( propertyValue, k -> new HashSet<>() );
             nodeIds.add( nodeId );
         }
     }

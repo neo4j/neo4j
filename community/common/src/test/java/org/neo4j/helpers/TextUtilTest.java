@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 public class TextUtilTest
 {
     @Test
-    public void shouldReplaceVariablesWithValuesInTemplateString() throws Exception
+    public void shouldReplaceVariablesWithValuesInTemplateString()
     {
         // given
         String template = "This is a $FIRST that $SECOND $THIRD!";
@@ -47,7 +47,7 @@ public class TextUtilTest
     }
 
     @Test
-    public void shouldTokenizeStringWithWithoutQuotes() throws Exception
+    public void shouldTokenizeStringWithWithoutQuotes()
     {
         // given
         String untokenized = "First Second Third";
@@ -60,7 +60,7 @@ public class TextUtilTest
     }
 
     @Test
-    public void shouldTokenizeStringWithQuotes() throws Exception
+    public void shouldTokenizeStringWithQuotes()
     {
         // given
         String untokenized = "First \"Second one\" Third \"And a fourth\"";
@@ -73,7 +73,7 @@ public class TextUtilTest
     }
 
     @Test
-    public void shouldTokenStringWithWithQuotesAndEscapedSpaces() throws Exception
+    public void shouldTokenStringWithWithQuotesAndEscapedSpaces()
     {
         // given
         String untokenized = "First \"Second one\" Third And\\ a\\ fourth";
@@ -86,7 +86,7 @@ public class TextUtilTest
     }
 
     @Test
-    public void shouldPreserveBackslashes() throws Exception
+    public void shouldPreserveBackslashes()
     {
         // given
         String untokenized = "First C:\\a\\b\\c";

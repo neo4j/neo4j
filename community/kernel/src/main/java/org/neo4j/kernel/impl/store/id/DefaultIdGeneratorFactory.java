@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,8 +20,7 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -31,7 +30,7 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 
 public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType, IdGenerator> generators = new HashMap<>();
+    private final EnumMap<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
     private final FileSystemAbstraction fs;
     private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 

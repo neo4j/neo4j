@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.schema.constaints;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;
 
@@ -28,38 +27,8 @@ import static java.lang.String.format;
  * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
  * and the how that schema unit is constrained (eg. "has to exist", or "must be unique").
  */
-public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
+public abstract class ConstraintDescriptor implements org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor
 {
-    public enum Type
-    {
-        UNIQUE( true, false ),
-        EXISTS( false, true ),
-        UNIQUE_EXISTS( true, true );
-
-        private final boolean isUnique;
-        private final boolean mustExist;
-
-        Type( boolean isUnique, boolean mustExist )
-        {
-            this.isUnique = isUnique;
-            this.mustExist = mustExist;
-        }
-
-        private boolean enforcesUniqueness()
-        {
-            return isUnique;
-        }
-
-        private boolean enforcesPropertyExistence()
-        {
-            return mustExist;
-        }
-    }
-
-    public interface Supplier
-    {
-        ConstraintDescriptor getConstraintDescriptor();
-    }
 
     private final ConstraintDescriptor.Type type;
 
@@ -71,18 +40,18 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
     // METHODS
 
     @Override
-    public abstract SchemaDescriptor schema();
-
     public Type type()
     {
         return type;
     }
 
+    @Override
     public boolean enforcesUniqueness()
     {
         return type.enforcesUniqueness();
     }
 
+    @Override
     public boolean enforcesPropertyExistence()
     {
         return type.enforcesPropertyExistence();
@@ -92,16 +61,13 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of this constraint.
      */
+    @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return format( "Constraint( %s, %s )", type.name(), schema().userDescription( tokenNameLookup ) );
     }
 
-    /**
-     * Checks whether a constraint descriptor Supplier supplies this constraint descriptor.
-     * @param supplier supplier to get a constraint descriptor from
-     * @return true if the supplied constraint descriptor equals this constraint descriptor
-     */
+    @Override
     public final boolean isSame( Supplier supplier )
     {
         return this.equals( supplier.getConstraintDescriptor() );
@@ -110,7 +76,7 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
     @Override
     public final boolean equals( Object o )
     {
-        if ( o != null && o instanceof ConstraintDescriptor )
+        if ( o instanceof ConstraintDescriptor )
         {
             ConstraintDescriptor that = (ConstraintDescriptor)o;
             return this.type() == that.type() && this.schema().equals( that.schema() );
@@ -123,10 +89,6 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
     {
         return type.hashCode() & schema().hashCode();
     }
-
-    // PRETTY PRINTING
-
-    public abstract String prettyPrint( TokenNameLookup tokenNameLookup );
 
     String escapeLabelOrRelTyp( String name )
     {

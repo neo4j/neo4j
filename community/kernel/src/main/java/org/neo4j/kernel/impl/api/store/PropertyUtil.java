@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,6 +25,7 @@ import java.nio.ByteOrder;
 import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
+import org.neo4j.kernel.impl.store.TemporalType;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
@@ -56,13 +57,19 @@ public class PropertyUtil
                 }
                 return Values.stringArray( result );
             }
-
             else if ( typeId == PropertyType.GEOMETRY.intValue() )
             {
                 GeometryType.GeometryHeader header = GeometryType.GeometryHeader.fromArrayHeaderByteBuffer( buffer );
                 byte[] byteArray = new byte[buffer.limit() - buffer.position()];
                 buffer.get( byteArray );
                 return GeometryType.decodeGeometryArray( header, byteArray );
+            }
+            else if ( typeId == PropertyType.TEMPORAL.intValue() )
+            {
+                TemporalType.TemporalHeader header = TemporalType.TemporalHeader.fromArrayHeaderByteBuffer( buffer );
+                byte[] byteArray = new byte[buffer.limit() - buffer.position()];
+                buffer.get( byteArray );
+                return TemporalType.decodeTemporalArray( header, byteArray );
             }
             else
             {

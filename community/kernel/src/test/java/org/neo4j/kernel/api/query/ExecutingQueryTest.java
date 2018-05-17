@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -68,7 +68,7 @@ public class ExecutingQueryTest
     private ExecutingQuery subQuery = createExecutingquery( 2, "goodbye world", page, clock, cpuClock, heapAllocation );
 
     @Test
-    public void shouldReportElapsedTime() throws Exception
+    public void shouldReportElapsedTime()
     {
         // when
         clock.forward( 10, TimeUnit.SECONDS );
@@ -79,7 +79,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldTransitionBetweenStates() throws Exception
+    public void shouldTransitionBetweenStates()
     {
         // initial
         assertEquals( "planning", query.snapshot().status() );
@@ -113,7 +113,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportPlanningTime() throws Exception
+    public void shouldReportPlanningTime()
     {
         // when
         clock.forward( 124, TimeUnit.MILLISECONDS );
@@ -134,7 +134,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportWaitTime() throws Exception
+    public void shouldReportWaitTime()
     {
         // given
         query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
@@ -186,7 +186,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportQueryWaitTime() throws Exception
+    public void shouldReportQueryWaitTime()
     {
         // given
         query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
@@ -215,7 +215,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportCpuTime() throws Exception
+    public void shouldReportCpuTime()
     {
         // given
         cpuClock.add( 60, TimeUnit.MILLISECONDS );
@@ -228,7 +228,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldNotReportCpuTimeIfUnavailable() throws Exception
+    public void shouldNotReportCpuTimeIfUnavailable()
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
@@ -253,7 +253,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportHeapAllocation() throws Exception
+    public void shouldReportHeapAllocation()
     {
         // given
         heapAllocation.add( 4096 );
@@ -273,7 +273,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldNotReportHeapAllocationIfUnavailable() throws Exception
+    public void shouldNotReportHeapAllocationIfUnavailable()
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
@@ -298,7 +298,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportLockCount() throws Exception
+    public void shouldReportLockCount()
     {
         // given
         lockCount = 11;
@@ -314,7 +314,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportPageHitsAndFaults() throws Exception
+    public void shouldReportPageHitsAndFaults()
     {
         // given
         page.hits( 7 );

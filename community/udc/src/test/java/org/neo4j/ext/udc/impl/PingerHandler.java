@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,28 +19,28 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 
+import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+
 public class PingerHandler implements HttpRequestHandler
 {
-    private final Map<String, String> queryMap = new HashMap<String, String>();
+    private final Map<String, String> queryMap = new HashMap<>();
 
     @Override
     public void handle( HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext )
-            throws HttpException, IOException
+            throws IOException
     {
         final String requestUri = httpRequest.getRequestLine().getUri();
-        final int offset = requestUri.indexOf( "?" );
+        final int offset = requestUri.indexOf( '?' );
         if ( offset > -1 )
         {
             String query = requestUri.substring( offset + 1 );

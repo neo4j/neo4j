@@ -1,0 +1,6 @@
+// To be further investigated. This does work from 3.3 browser and tests, seems to be a bug in TCK-framework.
+Feature "MatchAcceptance": Scenario "Filter on path nodes"
+
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"

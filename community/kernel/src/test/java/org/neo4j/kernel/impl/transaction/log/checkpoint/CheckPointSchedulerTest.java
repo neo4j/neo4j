@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -82,7 +82,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
+    public void shouldScheduleTheCheckPointerJobOnStart()
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -122,7 +122,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldNotRescheduleAJobWhenStopped() throws Throwable
+    public void shouldNotRescheduleAJobWhenStopped()
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -171,7 +171,7 @@ public class CheckPointSchedulerTest
         CheckPointer checkPointer = new CheckPointer()
         {
             @Override
-            public long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
+            public long checkPointIfNeeded( TriggerInfo triggerInfo )
             {
                 checkPointerLatch.startAndWaitForAllToStart();
                 checkPointerLatch.waitForAllToFinish();
@@ -179,13 +179,13 @@ public class CheckPointSchedulerTest
             }
 
             @Override
-            public long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
+            public long tryCheckPoint( TriggerInfo triggerInfo )
             {
                 throw new RuntimeException( "this should have not been called" );
             }
 
             @Override
-            public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
+            public long forceCheckPoint( TriggerInfo triggerInfo )
             {
                 throw new RuntimeException( "this should have not been called" );
             }
@@ -238,7 +238,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldContinueThroughSporadicFailures() throws Throwable
+    public void shouldContinueThroughSporadicFailures()
     {
         // GIVEN
         ControlledCheckPointer checkPointer = new ControlledCheckPointer();
@@ -326,13 +326,13 @@ public class CheckPointSchedulerTest
         }
 
         @Override
-        public long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
+        public long tryCheckPoint( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
+        public long forceCheckPoint( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException();
         }
@@ -349,7 +349,7 @@ public class CheckPointSchedulerTest
         private volatile boolean limitEnabled;
 
         @Override
-        public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable ) throws IOException
+        public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
         {
             return 0;
         }
@@ -386,7 +386,7 @@ public class CheckPointSchedulerTest
         }
 
         @Override
-        public long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
+        public long checkPointIfNeeded( TriggerInfo triggerInfo )
         {
             latch.countDown();
             while ( ioLimiter.isLimitEnabled() )
@@ -398,13 +398,13 @@ public class CheckPointSchedulerTest
         }
 
         @Override
-        public long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
+        public long tryCheckPoint( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException( "This should have not been called" );
         }
 
         @Override
-        public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
+        public long forceCheckPoint( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException( "This should have not been called" );
         }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -255,7 +255,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "b,c" );
         graph.makeEdgeChain( "c,d" );
         graph.makeEdgeChain( "c,a" );
-        final Map<String,Double> costs = new HashMap<String,Double>();
+        final Map<String,Double> costs = new HashMap<>();
         costs.put( "a,b", 1.0 );
         costs.put( "b,c", 1.0 );
         costs.put( "c,d", 1.0 );

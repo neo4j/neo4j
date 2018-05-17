@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.discovery;
 
@@ -50,7 +53,6 @@ import com.hazelcast.monitor.LocalMultiMapStats;
 import com.hazelcast.query.Predicate;
 import org.junit.Test;
 
-import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,16 +63,15 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -81,6 +82,7 @@ import org.neo4j.test.OnDemandJobScheduler;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -89,6 +91,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.CLIENT_CONNECTOR_ADDRESSES;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.MEMBER_DB_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.MEMBER_UUID;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.RAFT_SERVER;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.TRANSACTION_SERVER;
@@ -98,10 +101,9 @@ public class HazelcastClientTest
 {
     private MemberId myself = new MemberId( UUID.randomUUID() );
     private TopologyServiceRetryStrategy topologyServiceRetryStrategy = new TopologyServiceNoRetriesStrategy();
-
-    private Config config()
-    {
+    private static final java.util.function.Supplier<HashMap<String, String>> DEFAULT_SETTINGS = () -> {
         HashMap<String, String> settings = new HashMap<>();
+
         settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
         settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
         settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
@@ -109,60 +111,129 @@ public class HazelcastClientTest
         settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
         settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
         settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:3001" );
+        return settings;
+    };
 
-        return Config.defaults( settings );
+    private Config config( HashMap<String, String> settings )
+    {
+        HashMap<String, String> defaults = DEFAULT_SETTINGS.get();
+        defaults.putAll( settings );
+        return Config.defaults( defaults );
     }
 
-    @Test
-    public void shouldReturnTopologyUsingHazelcastMembers() throws Throwable
+    private Config config( String key, String value )
     {
-        // given
-        HazelcastConnector connector = mock( HazelcastConnector.class );
-        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        HashMap<String, String> defaults = DEFAULT_SETTINGS.get();
+        defaults.put(key, value);
+        return Config.defaults( defaults );
+    }
 
-        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
-                topologyServiceRetryStrategy );
+    private Config config()
+    {
+
+        return Config.defaults( DEFAULT_SETTINGS.get() );
+    }
+
+    private HazelcastClient hzClient( OnDemandJobScheduler jobScheduler, com.hazelcast.core.Cluster cluster, Config config )
+    {
+        HazelcastConnector connector = mock( HazelcastConnector.class );
+
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config, myself );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
-        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
         when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
+        when( hazelcastInstance.getMap( anyString() ) ).thenReturn( new HazelcastMap() );
 
-        com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
 
-        Set<Member> members = asSet( makeMember( 1 ), makeMember( 2 ) );
+        return client;
+    }
+
+    private HazelcastClient startedClientWithMembers( Set<Member> members, Config config )
+    {
+        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        com.hazelcast.core.Cluster cluster = mock( Cluster.class );
+
         when( cluster.getMembers() ).thenReturn( members );
 
-        // when
+        HazelcastClient client = hzClient( jobScheduler, cluster, config );
         client.start();
         jobScheduler.runJob();
-        CoreTopology topology = client.coreServers();
+
+        return client;
+    }
+
+    @Test
+    public void shouldReturnTopologyUsingHazelcastMembers()
+    {
+        // given
+        Set<Member> members = asSet( makeMember( 1 ), makeMember( 2 ) );
+        HazelcastClient client = startedClientWithMembers( members, config() );
+
+        // when
+        CoreTopology topology = client.localCoreServers();
 
         // then
         assertEquals( members.size(), topology.members().size() );
     }
 
     @Test
-    public void shouldNotReconnectWhileHazelcastRemainsAvailable() throws Throwable
+    public void localAndAllTopologiesShouldMatchForSingleDBName()
+    {
+        // given
+        Set<Member> members = asSet( makeMember( 1 ), makeMember( 2 ) );
+        HazelcastClient client = startedClientWithMembers( members, config() );
+
+        // then
+        String message = "Different local and global topologies reported despite single, default database name.";
+        assertEquals(message, client.allCoreServers(), client.localCoreServers() );
+    }
+
+    @Test
+    public void localAndAllTopologiesShouldDifferForMultipleDBNames()
+    {
+        // given
+        Set<Member> members = asSet( makeMember( 1, "foo" ), makeMember( 2, "bar" ) );
+        HazelcastClient client = startedClientWithMembers( members, config( CausalClusteringSettings.database.name(), "foo" ) );
+
+        // then
+        String message = "Identical local and global topologies reported despite multiple, distinct database names.";
+        assertNotEquals(message, client.allCoreServers(), client.localCoreServers() );
+        assertEquals( 1, client.localCoreServers().members().size() );
+    }
+
+    @Test
+    public void allTopologyShouldContainAllMembers()
+    {
+        // given
+        Set<Member> members = asSet( makeMember( 1, "foo" ), makeMember( 2, "bar" ) );
+        HazelcastClient client = startedClientWithMembers( members, config( CausalClusteringSettings.database.name(), "foo" ) );
+
+        // then
+        String message = "Global topology should contain all Hazelcast Members despite different db names.";
+        assertEquals(message, members.size(), client.allCoreServers().members().size() );
+    }
+
+    @Test
+    public void shouldNotReconnectWhileHazelcastRemainsAvailable()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
-        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
-                topologyServiceRetryStrategy );
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
-        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
         when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
+        when( hazelcastInstance.getMap( anyString() ) ).thenReturn( new HazelcastMap() );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -177,7 +248,7 @@ public class HazelcastClientTest
         CoreTopology topology;
         for ( int i = 0; i < 5; i++ )
         {
-            topology = client.coreServers();
+            topology = client.allCoreServers();
             assertEquals( members.size(), topology.members().size() );
         }
 
@@ -186,7 +257,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast() throws Throwable
+    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -197,12 +268,13 @@ public class HazelcastClientTest
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenThrow( new IllegalStateException() );
-        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
+        IAtomicReference iAtomicReference = mock( IAtomicReference.class );
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( iAtomicReference );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
-        HazelcastClient client = new HazelcastClient( connector, jobScheduler, logProvider, config(), myself, topologyServiceRetryStrategy );
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, logProvider, config(), myself );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -213,13 +285,13 @@ public class HazelcastClientTest
         // when
         client.start();
         jobScheduler.runJob();
-        CoreTopology topology = client.coreServers();
+        CoreTopology topology = client.allCoreServers();
 
         assertEquals( 0, topology.members().size() );
     }
 
     @Test
-    public void shouldRegisterReadReplicaInTopology() throws Throwable
+    public void shouldRegisterReadReplicaInTopology()
     {
         // given
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -240,7 +312,8 @@ public class HazelcastClientTest
         HazelcastMultiMap hazelcastMultiMap = new HazelcastMultiMap();
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
-        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
+        IAtomicReference iAtomicReference = mock( IAtomicReference.class );
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( iAtomicReference );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( hazelcastMap );
         when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( hazelcastMultiMap );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
@@ -252,8 +325,7 @@ public class HazelcastClientTest
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
-                topologyServiceRetryStrategy );
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
 
         // when
         hazelcastClient.start();
@@ -264,7 +336,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldRemoveReadReplicasOnGracefulShutdown() throws Throwable
+    public void shouldRemoveReadReplicasOnGracefulShutdown()
     {
         // given
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -284,7 +356,8 @@ public class HazelcastClientTest
         HazelcastMap hazelcastMap = new HazelcastMap();
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
-        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
+        IAtomicReference iAtomicReference = mock( IAtomicReference.class );
+        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( iAtomicReference );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( hazelcastMap );
         when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
@@ -296,8 +369,7 @@ public class HazelcastClientTest
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
-                topologyServiceRetryStrategy );
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
 
         hazelcastClient.start();
 
@@ -311,7 +383,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldSwallowNPEFromHazelcast() throws Throwable
+    public void shouldSwallowNPEFromHazelcast()
     {
         // given
         Endpoint endpoint = mock( Endpoint.class );
@@ -328,8 +400,7 @@ public class HazelcastClientTest
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
-                topologyServiceRetryStrategy );
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
 
         hazelcastClient.start();
 
@@ -341,7 +412,12 @@ public class HazelcastClientTest
         // then no NPE has been thrown
     }
 
-    private Member makeMember( int id ) throws UnknownHostException
+    private Member makeMember( int id )
+    {
+        return makeMember( id, CausalClusteringSettings.database.getDefaultValue() );
+    }
+
+    private Member makeMember( int id, String databaseName )
     {
         Member member = mock( Member.class );
         when( member.getStringAttribute( MEMBER_UUID ) ).thenReturn( UUID.randomUUID().toString() );
@@ -349,6 +425,7 @@ public class HazelcastClientTest
         when( member.getStringAttribute( RAFT_SERVER ) ).thenReturn( format( "host%d:%d", id, 6000 + id ) );
         when( member.getStringAttribute( CLIENT_CONNECTOR_ADDRESSES ) )
                 .thenReturn( format( "bolt://host%d:%d,http://host%d:%d", id, 5000 + id, id, 5000 + id ) );
+        when( member.getStringAttribute( MEMBER_DB_NAME ) ).thenReturn( databaseName );
         return member;
     }
 
@@ -682,14 +759,13 @@ public class HazelcastClientTest
         }
 
         @Override
-        public boolean tryLock( Object key, long time, TimeUnit timeunit ) throws InterruptedException
+        public boolean tryLock( Object key, long time, TimeUnit timeunit )
         {
             return false;
         }
 
         @Override
         public boolean tryLock( Object key, long time, TimeUnit timeunit, long leaseTime, TimeUnit leaseTimeunit )
-                throws InterruptedException
         {
             return false;
         }
@@ -1085,14 +1161,13 @@ public class HazelcastClientTest
         }
 
         @Override
-        public boolean tryLock( Object key, long time, TimeUnit timeunit ) throws InterruptedException
+        public boolean tryLock( Object key, long time, TimeUnit timeunit )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public boolean tryLock( Object key, long time, TimeUnit timeunit, long leaseTime, TimeUnit leaseTimeunit )
-                throws InterruptedException
         {
             throw new UnsupportedOperationException();
         }
@@ -1488,7 +1563,7 @@ public class HazelcastClientTest
         }
 
         @Override
-        public boolean awaitTermination( long timeout, TimeUnit unit ) throws InterruptedException
+        public boolean awaitTermination( long timeout, TimeUnit unit )
         {
             return false;
         }
@@ -1512,28 +1587,25 @@ public class HazelcastClientTest
         }
 
         @Override
-        public <T> List<Future<T>> invokeAll( Collection<? extends Callable<T>> tasks ) throws InterruptedException
+        public <T> List<Future<T>> invokeAll( Collection<? extends Callable<T>> tasks )
         {
             return null;
         }
 
         @Override
         public <T> List<Future<T>> invokeAll( Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit )
-                throws InterruptedException
         {
             return null;
         }
 
         @Override
-        public <T> T invokeAny( Collection<? extends Callable<T>> tasks ) throws InterruptedException,
-                ExecutionException
+        public <T> T invokeAny( Collection<? extends Callable<T>> tasks )
         {
             return null;
         }
 
         @Override
-        public <T> T invokeAny( Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit ) throws
-                InterruptedException, ExecutionException, TimeoutException
+        public <T> T invokeAny( Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit )
         {
             return null;
         }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ public class DocumentationProcessor extends AnnotationProcessor
 {
     @Override
     protected void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
-            Map<? extends ExecutableElement,? extends AnnotationValue> values ) throws IOException
+            Map<? extends ExecutableElement,? extends AnnotationValue> values )
     {
         if ( values.size() != 1 )
         {

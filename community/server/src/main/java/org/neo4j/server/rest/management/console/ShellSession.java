@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.management.console;
 
-import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 
@@ -59,14 +58,10 @@ public class ShellSession implements ScriptSession
                 server = getFallbackServer( graph );
             }
             output = new CollectingOutput();
-            client = new SameJvmClient( new HashMap<String, Serializable>(), server, output );
+            client = new SameJvmClient( new HashMap<>(), server, output );
             output.asString();
         }
-        catch ( RemoteException e )
-        {
-            throw new RuntimeException( "Unable to start shell client", e );
-        }
-        catch ( ShellException e )
+        catch ( RemoteException | ShellException e )
         {
             throw new RuntimeException( "Unable to start shell client", e );
         }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -61,7 +61,7 @@ public class LogVersionUpgradeCheckerIT
     public ExpectedException expect = ExpectedException.none();
 
     @Test
-    public void startAsNormalWhenUpgradeIsNotAllowed() throws Exception
+    public void startAsNormalWhenUpgradeIsNotAllowed()
     {
         createGraphDbAndKillIt();
 
@@ -104,7 +104,7 @@ public class LogVersionUpgradeCheckerIT
         db.shutdown();
     }
 
-    private void createGraphDbAndKillIt() throws Exception
+    private void createGraphDbAndKillIt()
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs )

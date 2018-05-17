@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ public class DenseNodeIT
     public ImpermanentDatabaseRule databaseRule = new ImpermanentDatabaseRule();
 
     @Test
-    public void testBringingNodeOverDenseThresholdIsConsistent() throws Exception
+    public void testBringingNodeOverDenseThresholdIsConsistent()
     {
         // GIVEN
         GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
@@ -81,7 +81,7 @@ public class DenseNodeIT
     }
 
     @Test
-    public void deletingRelationshipsFromDenseNodeIsConsistent() throws Exception
+    public void deletingRelationshipsFromDenseNodeIsConsistent()
     {
         // GIVEN
         GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
@@ -114,7 +114,7 @@ public class DenseNodeIT
     }
 
     @Test
-    public void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
+    public void movingBilaterallyOfTheDenseNodeThresholdIsConsistent()
     {
         // GIVEN
         GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
@@ -145,7 +145,7 @@ public class DenseNodeIT
     }
 
     @Test
-    public void testBringingTwoConnectedNodesOverDenseThresholdIsConsistent() throws Exception
+    public void testBringingTwoConnectedNodesOverDenseThresholdIsConsistent()
     {
         // GIVEN
         GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
@@ -206,7 +206,7 @@ public class DenseNodeIT
     }
 
     @Test
-    public void shouldBeAbleToCreateRelationshipsInEmptyDenseNode() throws Exception
+    public void shouldBeAbleToCreateRelationshipsInEmptyDenseNode()
     {
         // GIVEN
         Node node;

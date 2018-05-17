@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -62,15 +62,14 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         cacheListener.clear()
 
         graph.inTx {
-          val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-          statement.readOperations().schemaStateFlush()
-          statement.close()
+          val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getKernelTransactionBoundToThisThread(true)
+          statement.schemaRead().schemaStateFlush()
         }
 
         graph.execute(firstQuery).resultAsString()
         graph.execute(secondQuery).resultAsString()
 
-        val actual = cacheListener.trace
+        val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
         val expected = List(
           s"cacheFlushDetected",
           s"cacheMiss: CYPHER 3.4 $query",

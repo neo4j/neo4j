@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
@@ -29,9 +30,9 @@ public class OffHeapIntArray extends OffHeapRegularNumberArray<IntArray> impleme
 {
     private final int defaultValue;
 
-    public OffHeapIntArray( long length, int defaultValue, long base )
+    public OffHeapIntArray( long length, int defaultValue, long base, MemoryAllocationTracker allocationTracker )
     {
-        super( length, 2, base );
+        super( length, 2, base, allocationTracker );
         this.defaultValue = defaultValue;
         clear();
     }

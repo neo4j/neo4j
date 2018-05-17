@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,9 +26,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.scheduler.JobSchedulerAdapter;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class GroupingRecoveryCleanupWorkCollectorTest
 {
@@ -37,7 +39,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
             new GroupingRecoveryCleanupWorkCollector( jobScheduler );
 
     @Test
-    public void mustNotScheduleAnyJobsBeforeStart() throws Throwable
+    public void mustNotScheduleAnyJobsBeforeStart()
     {
         // given
         List<CleanupJob> allRuns = new ArrayList<>();
@@ -52,7 +54,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustScheduleAllJobs() throws Throwable
+    public void mustScheduleAllJobs()
     {
         // given
         List<CleanupJob> allRuns = new ArrayList<>();
@@ -68,7 +70,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustNotScheduleOldJobsAfterRestart() throws Throwable
+    public void mustNotScheduleOldJobsAfterRestart()
     {
         // given
         List<CleanupJob> allRuns = new ArrayList<>();
@@ -85,7 +87,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustNotScheduleOldJobsOnMultipleStart() throws Throwable
+    public void mustNotScheduleOldJobsOnMultipleStart()
     {
         // given
         List<CleanupJob> allRuns = new ArrayList<>();
@@ -119,6 +121,52 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         assertSame( expectedJobs, allRuns );
     }
 
+    @Test
+    public void executeAllTheJobsWhenSeparateJobFails()
+    {
+        List<CleanupJob> allRuns = new ArrayList<>();
+        collector.init();
+
+        DummyJob firstJob = new DummyJob( "first", allRuns );
+        DummyJob thirdJob = new DummyJob( "third", allRuns );
+        DummyJob fourthJob = new DummyJob( "fourth", allRuns );
+        List<CleanupJob> expectedJobs = Arrays.asList( firstJob, thirdJob, fourthJob );
+
+        collector.add( firstJob );
+        collector.add( new EvilJob() );
+        collector.add( thirdJob );
+        collector.add( fourthJob );
+
+        try
+        {
+            collector.start();
+            fail( "One of the jobs throws exception." );
+        }
+        catch ( RuntimeException e )
+        {
+            assertTrue( Exceptions.contains( e, "Resilient to run attempts", RuntimeException.class ) );
+        }
+
+        assertSame( expectedJobs, allRuns );
+    }
+
+    @Test
+    public void throwOnAddingJobsAfterStart()
+    {
+        collector.init();
+        collector.start();
+
+        try
+        {
+            collector.add( new DummyJob( "first", new ArrayList<>() ) );
+            fail( "Collector should not acccept new jobs after start." );
+        }
+        catch ( IllegalStateException ise )
+        {
+            // expected
+        }
+    }
+
     private void addAll( Collection<CleanupJob> jobs )
     {
         jobs.forEach( collector::add );
@@ -146,6 +194,40 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         {
             job.run();
             return super.schedule( group, job );
+        }
+    }
+
+    private class EvilJob implements CleanupJob
+    {
+
+        @Override
+        public boolean needed()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean hasFailed()
+        {
+            return false;
+        }
+
+        @Override
+        public Exception getCause()
+        {
+            return null;
+        }
+
+        @Override
+        public void close()
+        {
+            // nothing to close
+        }
+
+        @Override
+        public void run()
+        {
+            throw new RuntimeException( "Resilient to run attempts" );
         }
     }
 
@@ -182,6 +264,11 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         public Exception getCause()
         {
             return null;
+        }
+
+        @Override
+        public void close()
+        {   // no-op
         }
 
         @Override

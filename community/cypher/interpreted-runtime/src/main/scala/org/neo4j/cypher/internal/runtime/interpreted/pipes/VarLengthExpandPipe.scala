@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
 
@@ -30,7 +30,7 @@ import scala.collection.mutable
 
 trait VarLengthPredicate {
   def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean
-  def filterRelationship(row: ExecutionContext, state:QueryState)(rel: EdgeValue): Boolean
+  def filterRelationship(row: ExecutionContext, state:QueryState)(rel: RelationshipValue): Boolean
 }
 
 object VarLengthPredicate {
@@ -39,7 +39,7 @@ object VarLengthPredicate {
 
     override def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean = true
 
-    override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: EdgeValue): Boolean = true
+    override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: RelationshipValue): Boolean = true
   }
 }
 case class VarLengthExpandPipe(source: Pipe,
@@ -53,17 +53,17 @@ case class VarLengthExpandPipe(source: Pipe,
                                max: Option[Int],
                                nodeInScope: Boolean,
                                filteringStep: VarLengthPredicate= VarLengthPredicate.NONE)
-                              (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
+                              (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
-                              row: ExecutionContext): Iterator[(NodeValue, Seq[EdgeValue])] = {
-    val stack = new mutable.Stack[(NodeValue, Seq[EdgeValue])]
+                              row: ExecutionContext): Iterator[(NodeValue, Seq[RelationshipValue])] = {
+    val stack = new mutable.Stack[(NodeValue, Seq[RelationshipValue])]
     stack.push((node, Seq.empty))
 
-    new Iterator[(NodeValue, Seq[EdgeValue])] {
-      def next(): (NodeValue, Seq[EdgeValue]) = {
+    new Iterator[(NodeValue, Seq[RelationshipValue])] {
+      def next(): (NodeValue, Seq[RelationshipValue]) = {
         val (node, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
-          val relationships: Iterator[EdgeValue] = state.query.getRelationshipsForIds(node.id(), dir,
+          val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(node.id(), dir,
                                                                                       types.types(state.query))
 
           relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
@@ -91,7 +91,7 @@ case class VarLengthExpandPipe(source: Pipe,
       val paths = varLengthExpand(n, state, max, row)
       paths.collect {
         case (node, rels) if rels.length >= min && isToNodeValid(row, state, node) =>
-          row.newWith2(relName, VirtualValues.list(rels: _*), toName, node)
+          executionContextFactory.copyWith(row, relName, VirtualValues.list(rels: _*), toName, node)
       }
     }
 
@@ -107,9 +107,9 @@ case class VarLengthExpandPipe(source: Pipe,
 
           case Values.NO_VALUE =>
             if (nodeInScope)
-              Iterator(row.newWith1(relName, Values.NO_VALUE))
+              Iterator(row.set(relName, Values.NO_VALUE))
             else
-              Iterator(row.newWith2(relName, Values.NO_VALUE, toName, Values.NO_VALUE))
+              Iterator(row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE))
 
           case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
         }

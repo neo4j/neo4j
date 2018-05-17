@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,7 +28,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.CleanupRule;
@@ -38,13 +37,11 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 public class FlippableIndexProxyTest
 {
-
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
     @Rule
@@ -61,7 +58,7 @@ public class FlippableIndexProxyTest
 
         // WHEN
         delegate.flip( noOp(), null );
-        delegate.drop().get();
+        delegate.drop();
 
         // THEN
         verify( other ).drop();
@@ -77,7 +74,7 @@ public class FlippableIndexProxyTest
         FlippableIndexProxy delegate = new FlippableIndexProxy( actual );
 
         //WHEN
-        delegate.close().get();
+        delegate.close();
 
         delegate.setFlipTarget( indexContextFactory );
 
@@ -99,7 +96,7 @@ public class FlippableIndexProxyTest
         delegate.setFlipTarget( indexContextFactory );
 
         //WHEN
-        delegate.drop().get();
+        delegate.drop();
 
         //THEN
         expectedException.expect( IndexProxyAlreadyClosedKernelException.class );
@@ -119,8 +116,8 @@ public class FlippableIndexProxyTest
         final CountDownLatch triggerFinishFlip = new CountDownLatch( 1 );
         final CountDownLatch triggerExternalAccess = new CountDownLatch( 1 );
 
-        OtherThreadExecutor<Void> flippingThread = cleanup.add( new OtherThreadExecutor<Void>( "Flipping thread", null ) );
-        OtherThreadExecutor<Void> dropIndexThread = cleanup.add( new OtherThreadExecutor<Void>( "Drop index thread", null ) );
+        OtherThreadExecutor<Void> flippingThread = cleanup.add( new OtherThreadExecutor<>( "Flipping thread", null ) );
+        OtherThreadExecutor<Void> dropIndexThread = cleanup.add( new OtherThreadExecutor<>( "Drop index thread", null ) );
 
         // WHEN one thread starts flipping to another context
         Future<Void> flipContextFuture = flippingThread.executeDontWait( startFlipAndWaitForLatchBeforeFinishing(
@@ -149,11 +146,34 @@ public class FlippableIndexProxyTest
         verify( contextAfterFlip ).drop();
     }
 
+    @Test
+    public void shouldAbortStoreScanWaitOnDrop() throws Exception
+    {
+        // given the proxy structure
+        FakePopulatingIndexProxy delegate = new FakePopulatingIndexProxy();
+        FlippableIndexProxy flipper = new FlippableIndexProxy( delegate );
+        OtherThreadExecutor<Void> waiter = cleanup.add( new OtherThreadExecutor<>( "Waiter", null ) );
+
+        // and a thread stuck in the awaitStoreScanCompletion loop
+        Future<Object> waiting = waiter.executeDontWait( state -> flipper.awaitStoreScanCompleted() );
+        while ( !delegate.awaitCalled )
+        {
+            Thread.sleep( 10 );
+        }
+
+        // when
+        flipper.drop();
+
+        // then the waiting should quickly be over
+        waiting.get( 10, SECONDS );
+    }
+
     private OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexProxy flippable )
+            throws IOException
     {
         return state ->
         {
-            awaitFuture( flippable.drop() );
+            flippable.drop();
             return null;
         };
     }
@@ -168,15 +188,15 @@ public class FlippableIndexProxyTest
             {
                 triggerExternalAccess.countDown();
                 assertTrue( awaitLatch( triggerFinishFlip ) );
-                return null;
+                return Boolean.TRUE;
             }, null );
             return null;
         };
     }
 
-    private Callable<Void> noOp()
+    private Callable<Boolean> noOp()
     {
-        return () -> null;
+        return () -> Boolean.TRUE;
     }
 
     public static IndexProxyFactory singleProxy( final IndexProxy proxy )
@@ -187,5 +207,17 @@ public class FlippableIndexProxyTest
     private FailedIndexProxyFactory singleFailedDelegate( final IndexProxy failed )
     {
         return failure -> failed;
+    }
+
+    private static class FakePopulatingIndexProxy extends IndexProxyAdapter
+    {
+        private volatile boolean awaitCalled;
+
+        @Override
+        public boolean awaitStoreScanCompleted()
+        {
+            awaitCalled = true;
+            return true;
+        }
     }
 }

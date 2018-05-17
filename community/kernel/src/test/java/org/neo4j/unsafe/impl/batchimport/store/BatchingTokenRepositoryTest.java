@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import java.util.List;
 
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -41,6 +43,7 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingL
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 
+import static java.lang.Integer.parseInt;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -48,15 +51,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static java.lang.Integer.parseInt;
-
 public class BatchingTokenRepositoryTest
 {
     @Rule
     public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
 
     @Test
-    public void shouldDedupLabelIds() throws Exception
+    public void shouldDedupLabelIds()
     {
         // GIVEN
         BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( mock( TokenStore.class ) );
@@ -69,7 +70,7 @@ public class BatchingTokenRepositoryTest
     }
 
     @Test
-    public void shouldSortLabelIds() throws Exception
+    public void shouldSortLabelIds()
     {
         // GIVEN
         BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( mock( TokenStore.class ) );
@@ -88,7 +89,7 @@ public class BatchingTokenRepositoryTest
     }
 
     @Test
-    public void shouldRespectExistingTokens() throws Exception
+    public void shouldRespectExistingTokens()
     {
         // given
         TokenStore<RelationshipTypeTokenRecord,RelationshipTypeToken> tokenStore = mock( TokenStore.class );
@@ -105,12 +106,15 @@ public class BatchingTokenRepositoryTest
     }
 
     @Test
-    public void shouldFlushNewTokens() throws Exception
+    public void shouldFlushNewTokens()
     {
         // given
-        try ( NeoStores stores = new StoreFactory( storage.directory().absolutePath(), Config.defaults(),
-                new DefaultIdGeneratorFactory( storage.fileSystem() ), storage.pageCache(), storage.fileSystem(),
-                NullLogProvider.getInstance() ).openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
+
+        try ( PageCache pageCache = storage.pageCache();
+              NeoStores stores = new StoreFactory( storage.directory().absolutePath(), Config.defaults(),
+                new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache, storage.fileSystem(),
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
+                .openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
         {
             TokenStore<PropertyKeyTokenRecord,Token> tokenStore = stores.getPropertyKeyTokenStore();
             int rounds = 3;

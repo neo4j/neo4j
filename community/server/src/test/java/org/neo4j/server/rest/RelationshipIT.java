@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -57,7 +57,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
@@ -186,7 +186,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
             @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
             @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
                     @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING )} )} )
-    public void get_single_property_on_a_relationship() throws Exception
+    public void get_single_property_on_a_relationship()
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
         String response = gen().expectedStatus( ClientResponse.Status.OK ).get( getRelPropURI( loves,
@@ -204,7 +204,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
             @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
             @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
                     @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING )} )} )
-    public void set_single_property_on_a_relationship() throws Exception
+    public void set_single_property_on_a_relationship()
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
         assertThat( loves, inTx( graphdb(), hasProperty( "cost" ).withValue( "high" ) ) );
@@ -219,7 +219,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
             @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
                     @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ),
                     @PROP( key = "since", value = "1day", type = GraphDescription.PropType.STRING )} )} )
-    public void set_all_properties_on_a_relationship() throws Exception
+    public void set_all_properties_on_a_relationship()
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
         assertThat( loves, inTx( graphdb(), hasProperty( "cost" ).withValue( "high" ) ) );
@@ -235,7 +235,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
             @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
                     @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ),
                     @PROP( key = "since", value = "1day", type = GraphDescription.PropType.STRING )} )} )
-    public void get_all_properties_on_a_relationship() throws Exception
+    public void get_all_properties_on_a_relationship()
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
         String response = gen().expectedStatus( ClientResponse.Status.OK ).get( getRelPropsURI( loves ) ).entity();

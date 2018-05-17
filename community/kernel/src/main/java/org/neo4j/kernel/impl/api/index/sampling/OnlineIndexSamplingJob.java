@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 
 class OnlineIndexSamplingJob implements IndexSamplingJob
 {

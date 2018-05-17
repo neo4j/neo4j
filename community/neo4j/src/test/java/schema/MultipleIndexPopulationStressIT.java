@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,7 +25,6 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -44,11 +43,17 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
+import org.neo4j.kernel.impl.index.schema.DateLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.DateTimeLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.DurationLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.LocalDateTimeLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.LocalTimeLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.SpatialLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.TimeLayoutTestUtil;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -61,21 +66,18 @@ import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.RandomsStates;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.System.currentTimeMillis;
@@ -85,6 +87,8 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator.EMPTY_ITERABLE;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 
 /**
@@ -96,7 +100,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 public class MultipleIndexPopulationStressIT
 {
     private static final String[] TOKENS = new String[]{"One", "Two", "Three", "Four"};
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
+    private final TestDirectory directory = TestDirectory.testDirectory();
 
     private final RandomRule random = new RandomRule();
     private final CleanupRule cleanup = new CleanupRule();
@@ -287,7 +291,7 @@ public class MultipleIndexPopulationStressIT
             }
             else
             {   // CHANGE
-                node.setProperty( key, randomPropertyValue( random.random() ) );
+                node.setProperty( key, randomPropertyValue( random ) );
             }
             tx.success();
         }
@@ -303,65 +307,40 @@ public class MultipleIndexPopulationStressIT
         RecordFormats recordFormats =
                 RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),
-                null, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats );
+                null, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR );
         importer.doImport( new RandomDataInput( count ) );
     }
 
-    protected Iterable<InputNode> randomNodes( int count )
+    static Object randomPropertyValue( Randoms random )
     {
-        return () -> new InputNodePrefetchingIterator( count );
+        switch ( random.nextInt( 9 ) )
+        {
+        case 0:
+            return random.nextInt( 100 );
+        case 1:
+            return random.string();
+        case 2:
+            return DateTimeLayoutTestUtil.randomDateTime( random );
+        case 3:
+            return TimeLayoutTestUtil.randomTime( random );
+        case 4:
+            return DateLayoutTestUtil.randomDate( random );
+        case 5:
+            return LocalDateTimeLayoutTestUtil.randomLocalDateTime( random );
+        case 6:
+            return LocalTimeLayoutTestUtil.randomLocalTime( random );
+        case 7:
+            return DurationLayoutTestUtil.randomDuration( random );
+        default:
+            return SpatialLayoutTestUtil.randomPoint( random );
+        }
     }
 
-    private int randomPropertyValue( Random random )
+    private class RandomNodeGenerator extends GeneratingInputIterator<Randoms>
     {
-        return random.nextInt( 100 );
-    }
-
-    private class InputNodePrefetchingIterator extends PrefetchingIterator<InputNode>
-    {
-        private final int count;
-        private int i;
-
-        InputNodePrefetchingIterator( int count )
+        RandomNodeGenerator( int count, Generator<Randoms> randomsGenerator )
         {
-            this.count = count;
-        }
-
-        @Override
-        protected InputNode fetchNextOrNull()
-        {
-            if ( i >= count )
-            {
-                return null;
-            }
-
-            try
-            {
-                return new InputNode( "Nodes", i, i, (long) i, randomProperties(), null, randomLabels(),
-                        null );
-            }
-            finally
-            {
-                i++;
-            }
-        }
-
-        private String[] randomLabels()
-        {
-            return random.randoms().selection( TOKENS, 1, TOKENS.length, false );
-        }
-
-        private Object[] randomProperties()
-        {
-            String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
-            Object[] result = new Object[keys.length * 2];
-            int i = 0;
-            for ( String key : keys )
-            {
-                result[i++] = key;
-                result[i++] = randomPropertyValue( random.random() );
-            }
-            return result;
+            super( count, 1_000, new RandomsStates( random.seed() ), randomsGenerator, 0 );
         }
     }
 
@@ -375,27 +354,28 @@ public class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public InputIterable<InputRelationship> relationships()
+        public InputIterable relationships()
         {
-            return SimpleInputIteratorWrapper.wrap( "Empty", Collections.emptyList() );
+            return EMPTY_ITERABLE;
         }
 
         @Override
-        public InputIterable<InputNode> nodes()
+        public InputIterable nodes()
         {
-            return SimpleInputIteratorWrapper.wrap( "Nodes", randomNodes( count ) );
+            return InputIterable.replayable( () -> new RandomNodeGenerator( count, ( state, visitor, id ) -> {
+                String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
+                for ( String key : keys )
+                {
+                    visitor.property( key, randomPropertyValue( state ) );
+                }
+                visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
+            } ) );
         }
 
         @Override
         public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
         {
             return IdMappers.actual();
-        }
-
-        @Override
-        public IdGenerator idGenerator()
-        {
-            return IdGenerators.fromInput();
         }
 
         @Override

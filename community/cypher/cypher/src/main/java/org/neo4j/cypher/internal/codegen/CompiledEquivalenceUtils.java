@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,11 +20,14 @@
 package org.neo4j.cypher.internal.codegen;
 
 import java.lang.reflect.Array;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.helpers.MathUtil;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.AnyValue;
+
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * Helper class for dealing with equivalence an hash code in compiled code.
@@ -45,7 +48,7 @@ public final class CompiledEquivalenceUtils
      * Checks if two objects are equal according to Cypher semantics
      * @param lhs the left-hand side to check
      * @param rhs the right-hand sid to check
-     * @return <tt>true</tt> if the two objects are equal otherwise <tt>false</tt>
+     * @return {@code true} if the two objects are equal otherwise {@code false}
      */
     @SuppressWarnings( "unchecked" )
     public static boolean equals( Object lhs, Object rhs )
@@ -54,130 +57,15 @@ public final class CompiledEquivalenceUtils
         {
             return true;
         }
-        else if ( lhs == null || rhs == null )
+        else if ( lhs == null || rhs == null || lhs == NO_VALUE || rhs == NO_VALUE )
         {
             return false;
         }
-        //if floats compare float values if integer types,
-        //compare long values
-        else if ( lhs instanceof Number && rhs instanceof Number )
-        {
-            if ( lhs instanceof Double && rhs instanceof Float )
-            {
-                return mixedFloatEquality( (Float) rhs, (Double) lhs );
-            }
-            else if ( lhs instanceof Float && rhs instanceof Double )
-            {
-                return mixedFloatEquality( (Float) lhs, (Double) rhs );
-            }
-            else if ( (lhs instanceof Double || lhs instanceof Float)
-                      && (rhs instanceof Double || rhs instanceof Float) )
-            {
-                double left = ((Number) lhs).doubleValue();
-                double right = ((Number) rhs).doubleValue();
-                return left == right;
-            }
-            else if ( lhs instanceof Double || lhs instanceof Float )
-            {
-                double left = ((Number) lhs).doubleValue();
-                long right = ((Number) rhs).longValue();
-                return MathUtil.numbersEqual( left, right );
-            }
-            else if ( rhs instanceof Double || rhs instanceof Float )
-            {
-                long left = ((Number) lhs).longValue();
-                double right = ((Number) rhs).doubleValue();
-                return MathUtil.numbersEqual( right, left );
-            }
 
-            //everything else is a long from cyphers point-of-view
-            long left = ((Number) lhs).longValue();
-            long right = ((Number) rhs).longValue();
-            return left == right;
-        }
-        else if ( lhs instanceof Character && rhs instanceof String )
-        {
-            return lhs.toString().equals( rhs );
-        }
-        else if ( lhs instanceof String && rhs instanceof Character )
-        {
-            return lhs.equals( rhs.toString() );
-        }
-        else if ( lhs.getClass().isArray() && rhs.getClass().isArray() )
-        {
-            int length = Array.getLength( lhs );
-            if ( length != Array.getLength( rhs ) )
-            {
-                return false;
-            }
-            for ( int i = 0; i < length; i++ )
-            {
-                if ( !equals( Array.get( lhs, i ), Array.get( rhs, i ) ) )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        else if ( lhs.getClass().isArray() && rhs instanceof List<?> )
-        {
-            return compareArrayAndList( lhs, (List<?>) rhs );
-        }
-        else if ( lhs instanceof List<?> && rhs.getClass().isArray() )
-        {
-            return compareArrayAndList( rhs, (List<?>) lhs );
-        }
-        else if ( lhs instanceof List<?> && rhs instanceof List<?> )
-        {
-            List<?> lhsList = (List<?>) lhs;
-            List<?> rhsList = (List<?>) rhs;
-            if ( lhsList.size() != rhsList.size() )
-            {
-                return false;
-            }
-            Iterator<?> lhsIterator = lhsList.iterator();
-            Iterator<?> rhsIterator = rhsList.iterator();
-            while ( lhsIterator.hasNext() )
-            {
-                if ( !equals( lhsIterator.next(), rhsIterator.next() ) )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        else if ( lhs instanceof Map<?,?> && rhs instanceof Map<?,?> )
-        {
-            Map<String, Object> rMap = (Map<String, Object>) rhs;
-            Map<String, Object> lMap = (Map<String, Object>) lhs;
-            if ( rMap.size() != lMap.size() )
-            {
-                return false;
-            }
-            for ( Map.Entry<String,Object> e : rMap.entrySet() )
-            {
-                String key = e.getKey();
-                Object value = e.getValue();
-                if ( value == null )
-                {
-                    if ( !(lMap.get( key ) == null && lMap.containsKey( key )) )
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    if ( !equals( value, lMap.get( key ) ) )
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
+        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : ValueUtils.of( lhs );
+        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : ValueUtils.of( rhs );
 
-        //for everything else call equals
-        return lhs.equals( rhs );
+        return lhsValue.equals( rhsValue );
     }
 
     /**
@@ -192,6 +80,10 @@ public final class CompiledEquivalenceUtils
         {
             return 0;
         }
+        else if ( element instanceof AnyValue )
+        {
+            return element.hashCode();
+        }
         else if ( element instanceof Number )
         {
             return hashCode( ((Number) element).longValue() );
@@ -204,6 +96,26 @@ public final class CompiledEquivalenceUtils
         {
             return hashCode( (boolean) element );
         }
+        else if ( element instanceof AnyValue[] )
+        {
+            return hashCode( (AnyValue[]) element );
+        }
+        else if ( element instanceof Object[] )
+        {
+            return hashCode( (Object[]) element );
+        }
+        else if ( element instanceof long[] )
+        {
+            return hashCode( (long[]) element );
+        }
+        else if ( element instanceof double[] )
+        {
+            return hashCode( (double[]) element );
+        }
+        else if ( element instanceof boolean[] )
+        {
+            return hashCode( (boolean[]) element );
+        }
         else if ( element instanceof List<?> )
         {
             return hashCode( (List<?>) element );
@@ -211,10 +123,6 @@ public final class CompiledEquivalenceUtils
         else if ( element instanceof Map<?,?> )
         {
             return hashCode( (Map<String,Object>) element );
-        }
-        else if ( element instanceof Object[] )
-        {
-            return hashCode( (Object[]) element );
         }
         else if ( element instanceof byte[] )
         {
@@ -228,10 +136,6 @@ public final class CompiledEquivalenceUtils
         {
             return hashCode( (int[]) element );
         }
-        else if ( element instanceof long[] )
-        {
-            return hashCode( (long[]) element );
-        }
         else if ( element instanceof char[] )
         {
             return hashCode( (char[]) element );
@@ -239,14 +143,6 @@ public final class CompiledEquivalenceUtils
         else if ( element instanceof float[] )
         {
             return hashCode( (float[]) element );
-        }
-        else if ( element instanceof double[] )
-        {
-            return hashCode( (double[]) element );
-        }
-        else if ( element instanceof boolean[] )
-        {
-            return hashCode( (boolean[]) element );
         }
         else
         {
@@ -369,6 +265,16 @@ public final class CompiledEquivalenceUtils
         default:
             return len * (31 * hashCode( array[0] ) + hashCode( array[len / 2] ) * 31 + hashCode( array[len - 1] ));
         }
+    }
+
+    /**
+     * Calculate hash code of a AnyValue[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
+     */
+    public static int hashCode( AnyValue[] array )
+    {
+        return Arrays.hashCode( array );
     }
 
     /**

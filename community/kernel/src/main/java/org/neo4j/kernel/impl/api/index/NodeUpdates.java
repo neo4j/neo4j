@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,18 +25,18 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveArrays;
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.Changed;
 import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.NoValue;
 
@@ -138,11 +138,11 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return PrimitiveArrays.intersect( labelsBefore, labelsAfter );
     }
 
-    PrimitiveIntCollection propertiesChanged()
+    PrimitiveIntSet propertiesChanged()
     {
         assert !hasLoadedAdditionalProperties : "Calling propertiesChanged() is not valid after non-changed " +
                                                 "properties have already been loaded.";
-        return knownProperties;
+        return asSet( knownProperties.iterator() );
     }
 
     @Override
@@ -161,7 +161,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
      * @param indexKeys The index keys to generate entry updates for
      * @return IndexEntryUpdates for all relevant index keys
      */
-    public <INDEX_KEY extends LabelSchemaSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
+    public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
             Iterable<INDEX_KEY> indexKeys )
     {
         Iterable<INDEX_KEY> potentiallyRelevant = Iterables.filter( this::atLeastOneRelevantChange, indexKeys );
@@ -183,7 +183,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
      * @param propertyLoader The property loader used to fetch needed additional properties
      * @return IndexEntryUpdates for all relevant index keys
      */
-    public <INDEX_KEY extends LabelSchemaSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
+    public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
             Iterable<INDEX_KEY> indexKeys, PropertyLoader propertyLoader )
     {
         List<INDEX_KEY> potentiallyRelevant = new ArrayList<>();
@@ -206,13 +206,13 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return gatherUpdatesForPotentials( potentiallyRelevant );
     }
 
-    private <INDEX_KEY extends LabelSchemaSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> gatherUpdatesForPotentials(
+    private <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> gatherUpdatesForPotentials(
             Iterable<INDEX_KEY> potentiallyRelevant )
     {
         List<IndexEntryUpdate<INDEX_KEY>> indexUpdates = new ArrayList<>();
         for ( INDEX_KEY indexKey : potentiallyRelevant )
         {
-            LabelSchemaDescriptor schema = indexKey.schema();
+            SchemaDescriptor schema = indexKey.schema();
             boolean relevantBefore = relevantBefore( schema );
             boolean relevantAfter = relevantAfter( schema );
             int[] propertyIds = schema.getPropertyIds();
@@ -241,15 +241,15 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return indexUpdates;
     }
 
-    private boolean relevantBefore( LabelSchemaDescriptor schema )
+    private boolean relevantBefore( SchemaDescriptor schema )
     {
-        return hasLabel( schema.getLabelId(), labelsBefore ) &&
+        return hasLabel( schema.keyId(), labelsBefore ) &&
                 hasPropsBefore( schema.getPropertyIds() );
     }
 
-    private boolean relevantAfter( LabelSchemaDescriptor schema )
+    private boolean relevantAfter( SchemaDescriptor schema )
     {
-        return hasLabel( schema.getLabelId(), labelsAfter ) &&
+        return hasLabel( schema.keyId(), labelsAfter ) &&
                 hasPropsAfter( schema.getPropertyIds() );
     }
 
@@ -266,7 +266,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         }
     }
 
-    private void gatherPropsToLoad( LabelSchemaDescriptor schema, PrimitiveIntSet target )
+    private void gatherPropsToLoad( SchemaDescriptor schema, PrimitiveIntSet target )
     {
         for ( int propertyId : schema.getPropertyIds() )
         {
@@ -277,9 +277,9 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         }
     }
 
-    private boolean atLeastOneRelevantChange( LabelSchemaSupplier indexKey )
+    private boolean atLeastOneRelevantChange( SchemaDescriptorSupplier indexKey )
     {
-        int labelId = indexKey.schema().getLabelId();
+        int labelId = indexKey.schema().keyId();
         boolean labelBefore = hasLabel( labelId, labelsBefore );
         boolean labelAfter = hasLabel( labelId, labelsAfter );
         if ( labelBefore && labelAfter )
@@ -371,10 +371,10 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
             result.append( ", " );
             result.append( key );
             result.append( " -> " );
-            result.append( propertyValue.toString() );
+            result.append( propertyValue );
             return false;
         } );
-        return result.append( "]" ).toString();
+        return result.append( ']' ).toString();
     }
 
     @Override

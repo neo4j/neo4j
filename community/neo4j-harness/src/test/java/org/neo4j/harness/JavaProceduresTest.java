@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,11 +26,13 @@ import org.junit.Test;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
@@ -122,13 +124,18 @@ public class JavaProceduresTest
         }
     }
 
+    private TestServerBuilder createServer( Class<?> procedureClass )
+    {
+        return TestServerBuilders.newInProcessBuilder()
+                                 .withProcedure( procedureClass )
+                                 .withConfig( ServerSettings.script_enabled, Settings.TRUE );
+    }
+
     @Test
     public void shouldLaunchWithDeclaredProcedures() throws Exception
     {
         // When
-        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
-                .withProcedure( MyProcedures.class )
-                .newServer() )
+        try ( ServerControls server = createServer( MyProcedures.class ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -145,9 +152,7 @@ public class JavaProceduresTest
     public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
-                .withProcedure( MyProcedures.class )
-                .newServer() )
+        try ( ServerControls server = createServer( MyProcedures.class ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -163,8 +168,7 @@ public class JavaProceduresTest
     public void shouldWorkWithInjectableFromKernelExtension() throws Throwable
     {
         // When
-        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
-                .withProcedure( MyProceduresUsingMyService.class ).newServer() )
+        try ( ServerControls server = createServer( MyProceduresUsingMyService.class ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -181,9 +185,9 @@ public class JavaProceduresTest
     public void shouldWorkWithInjectableFromKernelExtensionWithMorePower() throws Throwable
     {
         // When
-        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+        try ( ServerControls server = createServer( MyProceduresUsingMyCoreAPI.class )
                 .withConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
-                .withProcedure( MyProceduresUsingMyCoreAPI.class ).newServer() )
+                .newServer() )
         {
             // Then
             assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 0L );

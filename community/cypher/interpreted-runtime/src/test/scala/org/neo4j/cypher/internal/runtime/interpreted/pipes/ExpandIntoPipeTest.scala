@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
-import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -61,8 +61,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should return no relationships for types that have not been defined yet") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[EdgeValue]] {
-      override def answer(invocationOnMock: InvocationOnMock): Iterator[EdgeValue] = {
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]] {
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[RelationshipValue] = {
         val arg = invocationOnMock.getArgument[Option[Array[Int]]](2)
         arg match {
           case None => Iterator.empty
@@ -239,7 +239,7 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
     relsByNode.foreach {
       case (node, rels) =>
         when(query.getRelationshipsForIds(node.getId, direction, None)).thenAnswer(
-          new Answer[Iterator[EdgeValue]] {
+          new Answer[Iterator[RelationshipValue]] {
             def answer(invocation: InvocationOnMock) = rels.iterator.map(fromRelationshipProxy)
           })
 

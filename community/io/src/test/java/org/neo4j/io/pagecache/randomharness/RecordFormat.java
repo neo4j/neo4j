@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -95,7 +95,7 @@ public abstract class RecordFormat
     {
         int recordSize = getRecordSize();
         long recordsInFile = channel.size() / recordSize;
-        ByteBuffer buffer = ByteBuffer.allocateDirect( recordSize );
+        ByteBuffer buffer = ByteBuffer.allocate( recordSize );
         StubPageCursor cursor = new StubPageCursor( 0, buffer );
         for ( int i = 0; i < recordsInFile; i++ )
         {

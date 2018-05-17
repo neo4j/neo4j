@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,11 +48,10 @@ public class IndexMapTest
     @Before
     public void setup()
     {
-        Map<Long, IndexProxy> map = new HashMap<>();
+        PrimitiveLongObjectMap<IndexProxy> map = Primitive.longObjectMap();
         map.put( 1L, new TestIndexProxy( schema3_4 ) );
         map.put( 2L, new TestIndexProxy( schema5_6_7 ) );
         map.put( 3L, new TestIndexProxy( schema5_8 ) );
-
         indexMap = new IndexMap( map );
     }
 
@@ -105,19 +104,19 @@ public class IndexMapTest
     {
         assertThat(
                 indexMap.getRelatedIndexes( noLabel, noLabel, emptySet() ),
-                emptyIterableOf( LabelSchemaDescriptor.class ) );
+                emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
                 indexMap.getRelatedIndexes( label( 2 ), noLabel, emptySet() ),
-                emptyIterableOf( LabelSchemaDescriptor.class ) );
+                emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
                 indexMap.getRelatedIndexes( noLabel, label( 2 ), properties( 1 ) ),
-                emptyIterableOf( LabelSchemaDescriptor.class ) );
+                emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
                 indexMap.getRelatedIndexes( label( 2 ), label( 2 ), properties( 1 ) ),
-                emptyIterableOf( LabelSchemaDescriptor.class ) );
+                emptyIterableOf( SchemaDescriptor.class ) );
     }
 
     // HELPERS

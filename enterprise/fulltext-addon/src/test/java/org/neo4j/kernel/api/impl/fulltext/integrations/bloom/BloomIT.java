@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
@@ -28,6 +31,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Date;
+import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -51,6 +55,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -60,17 +65,18 @@ import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltex
 
 public class BloomIT
 {
-    private static final String NODES = "CALL bloom.searchNodes([%s])";
-    private static final String NODES_ADVANCED = "CALL bloom.searchNodes([%s], %b, %b)";
-    private static final String RELS = "CALL bloom.searchRelationships([%s])";
-    private static final String RELS_ADVANCED = "CALL bloom.searchRelationships([%s], %b, %b)";
-    private static final String ENTITYID = "entityid";
-    private static final String SET_NODE_KEYS = "CALL bloom.setIndexedNodePropertyKeys([%s])";
-    private static final String SET_REL_KEYS = "CALL bloom.setIndexedRelationshipPropertyKeys([%s])";
-    private static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
-    private static final String GET_REL_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
-    private static final String AWAIT_POPULATION = "CALL bloom.awaitPopulation";
-    private static final String STATUS = "CALL bloom.indexStatus";
+    static final String NODES = "CALL bloom.searchNodes([%s])";
+    static final String NODES_ADVANCED = "CALL bloom.searchNodes([%s], %b, %b)";
+    static final String RELS = "CALL bloom.searchRelationships([%s])";
+    static final String RELS_ADVANCED = "CALL bloom.searchRelationships([%s], %b, %b)";
+    static final String ENTITYID = "entityid";
+    static final String SCORE = "score";
+    static final String SET_NODE_KEYS = "CALL bloom.setIndexedNodePropertyKeys([%s])";
+    static final String SET_REL_KEYS = "CALL bloom.setIndexedRelationshipPropertyKeys([%s])";
+    static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
+    static final String GET_REL_KEYS = "CALL bloom.getIndexedRelationshipPropertyKeys";
+    static final String AWAIT_POPULATION = "CALL bloom.awaitPopulation";
+    static final String STATUS = "CALL bloom.indexStatus";
 
     @Rule
     public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
@@ -83,7 +89,7 @@ public class BloomIT
     private GraphDatabaseBuilder builder;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
@@ -91,7 +97,7 @@ public class BloomIT
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( db != null )
         {
@@ -192,6 +198,56 @@ public class BloomIT
         assertFalse( result.hasNext() );
         result = db.execute( String.format( RELS_ADVANCED, "\"relate\", \"sometimes\"", false, true ) );
         assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void exactMatchShouldScoreMuchBetterThatAlmostNotMatching() throws Exception
+    {
+        db = getDb();
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node1 = db.createNode();
+            node1.setProperty( "prop", "This is a integration test that involves scoring and thus needs a longer sentence." );
+            Node node2 = db.createNode();
+            node2.setProperty( "prop", "tase" );
+            transaction.success();
+        }
+
+        Result result = db.execute( String.format( NODES, "\"integration\", \"test\", \"involves\", \"scoring\", \"needs\", \"sentence\"" ) );
+        assertTrue( result.hasNext() );
+        Map<String,Object> firstResult = result.next();
+        assertTrue( result.hasNext() );
+        Map<String,Object> secondResult = result.next();
+        assertFalse( result.hasNext() );
+        assertEquals( 0L, firstResult.get( ENTITYID ) );
+        assertEquals( 1L, secondResult.get( ENTITYID ) );
+        assertThat( (double) firstResult.get( SCORE ), greaterThan( (double) secondResult.get( SCORE ) * 10 ) );
+    }
+
+    @Test
+    public void unsplitTokensShouldNotBreakFuzzyQuery() throws Exception
+    {
+        db = getDb();
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node1 = db.createNode();
+            node1.setProperty( "prop", "This is a integration test that involves scoring and thus needs a longer sentence." );
+            Node node2 = db.createNode();
+            node2.setProperty( "prop", "tase" );
+            transaction.success();
+        }
+
+        Result result = db.execute( String.format( NODES, "\"integration test involves scoring needs sentence\"" ) );
+        assertTrue( result.hasNext() );
+        Map<String,Object> firstResult = result.next();
+        assertTrue( result.hasNext() );
+        Map<String,Object> secondResult = result.next();
+        assertFalse( result.hasNext() );
+        assertEquals( 0L, firstResult.get( ENTITYID ) );
+        assertEquals( 1L, secondResult.get( ENTITYID ) );
+        assertThat( (double) firstResult.get( SCORE ), greaterThan( (double) secondResult.get( SCORE ) * 10 ) );
     }
 
     @Test
@@ -463,8 +519,8 @@ public class BloomIT
     @Test
     public void shouldReindexNodesWhenAnalyzerIsChanged() throws Exception
     {
-        String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
-        String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
+        final String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
+        final String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
 
         builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, ENGLISH );
 
@@ -580,11 +636,18 @@ public class BloomIT
         db = getDb();
 
         db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"otherprop\", \"proppmatt\"" ) );
+        db.execute( String.format( SET_REL_KEYS, "\"ata\", \"mata\", \"matt\"" ) );
 
         Result result = db.execute( GET_NODE_KEYS );
         assertEquals( "otherprop", result.next().get( "propertyKey" ) );
         assertEquals( "prop", result.next().get( "propertyKey" ) );
         assertEquals( "proppmatt", result.next().get( "propertyKey" ) );
+        assertFalse( result.hasNext() );
+
+        result = db.execute( GET_REL_KEYS );
+        assertEquals( "mata", result.next().get( "propertyKey" ) );
+        assertEquals( "matt", result.next().get( "propertyKey" ) );
+        assertEquals( "ata", result.next().get( "propertyKey" ) );
         assertFalse( result.hasNext() );
     }
 
@@ -597,8 +660,12 @@ public class BloomIT
 
         db.execute( AWAIT_POPULATION );
         Result result = db.execute( STATUS );
-        assertEquals( "ONLINE", result.next().get( "state" ) );
-        assertEquals( "ONLINE", result.next().get( "state" ) );
+        Map<String,Object> output = result.next();
+        assertEquals( "ONLINE", output.get( "state" ) );
+        assertEquals( "bloomNodes", output.get( "name" ) );
+        output = result.next();
+        assertEquals( "ONLINE", output.get( "state" ) );
+        assertEquals( "bloomRelationships", output.get( "name" ) );
         assertFalse( result.hasNext() );
     }
 

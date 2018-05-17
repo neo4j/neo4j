@@ -1,28 +1,33 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core.consensus;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -44,7 +49,6 @@ import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.helper.VolatileFuture;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
-import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -73,7 +77,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private final LeaderAvailabilityTimers leaderAvailabilityTimers;
     private RaftMembershipManager membershipManager;
-    private final boolean refuseToBecomeLeader;
 
     private final VolatileFuture<MemberId> volatileLeader = new VolatileFuture<>( null );
 
@@ -83,10 +86,10 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private RaftLogShippingManager logShipping;
 
-    public RaftMachine( MemberId myself, StateStorage<TermState> termStorage, StateStorage<VoteState> voteStorage,
-            RaftLog entryLog, LeaderAvailabilityTimers leaderAvailabilityTimers, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
-            LogProvider logProvider, RaftMembershipManager membershipManager, RaftLogShippingManager logShipping,
-            InFlightCache inFlightCache, boolean refuseToBecomeLeader, boolean supportPreVoting,Monitors monitors )
+    public RaftMachine( MemberId myself, StateStorage<TermState> termStorage, StateStorage<VoteState> voteStorage, RaftLog entryLog,
+            LeaderAvailabilityTimers leaderAvailabilityTimers, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
+            RaftMembershipManager membershipManager, RaftLogShippingManager logShipping, InFlightCache inFlightCache, boolean refuseToBecomeLeader,
+            boolean supportPreVoting, Monitors monitors )
     {
         this.myself = myself;
         this.leaderAvailabilityTimers = leaderAvailabilityTimers;
@@ -96,11 +99,10 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
-        this.refuseToBecomeLeader = refuseToBecomeLeader;
 
         this.inFlightCache = inFlightCache;
         this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightCache,
-                logProvider, supportPreVoting );
+                logProvider, supportPreVoting, refuseToBecomeLeader );
 
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
     }
@@ -112,10 +114,8 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
      */
     public synchronized void postRecoveryActions()
     {
-        if ( !refuseToBecomeLeader )
-        {
-            leaderAvailabilityTimers.start( this::electionTimeout, () -> handle( new RaftMessages.Timeout.Heartbeat( myself ) ) );
-        }
+        leaderAvailabilityTimers.start( this::electionTimeout,
+                clock -> handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Heartbeat( myself ) ) ) );
 
         inFlightCache.enable();
     }
@@ -125,20 +125,17 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         leaderAvailabilityTimers.stop();
     }
 
-    private synchronized void electionTimeout() throws IOException
+    private synchronized void electionTimeout( Clock clock ) throws IOException
     {
         if ( leaderAvailabilityTimers.isElectionTimedOut() )
         {
-            triggerElection();
+            triggerElection( clock );
         }
     }
 
-    public void triggerElection() throws IOException
+    public void triggerElection( Clock clock ) throws IOException
     {
-        if ( !refuseToBecomeLeader )
-        {
-            handle( new RaftMessages.Timeout.Election( myself ) );
-        }
+            handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Election( myself ) ) );
     }
 
     public void panic()
@@ -192,17 +189,17 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         }
     }
 
-    private Collection<Listener<MemberId>> leaderListeners = new ArrayList<>();
+    private Collection<LeaderListener> leaderListeners = new ArrayList<>();
 
     @Override
-    public synchronized void registerListener( Listener<MemberId> listener )
+    public synchronized void registerListener( LeaderListener listener )
     {
         leaderListeners.add( listener );
-        listener.receive( state.leader() );
+        listener.onLeaderSwitch( state.leaderInfo() );
     }
 
     @Override
-    public synchronized void unregisterListener( Listener listener )
+    public synchronized void unregisterListener( LeaderListener listener )
     {
         leaderListeners.remove( listener );
     }
@@ -219,13 +216,13 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private void notifyLeaderChanges( Outcome outcome )
     {
-        for ( Listener<MemberId> listener : leaderListeners )
+        for ( LeaderListener listener : leaderListeners )
         {
-            listener.receive( outcome.getLeader() );
+            listener.onLeaderEvent( outcome );
         }
     }
 
-    private void handleLogShipping( Outcome outcome ) throws IOException
+    private void handleLogShipping( Outcome outcome )
     {
         LeaderContext leaderContext = new LeaderContext( outcome.getTerm(), outcome.getLeaderCommit() );
         if ( outcome.isElectedLeader() )
@@ -245,16 +242,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private boolean leaderChanged( Outcome outcome, MemberId oldLeader )
     {
-        if ( oldLeader == null && outcome.getLeader() != null )
-        {
-            return true;
-        }
-        else if ( oldLeader != null && !oldLeader.equals( outcome.getLeader() ) )
-        {
-            return true;
-        }
-
-        return false;
+        return !Objects.equals( oldLeader, outcome.getLeader() );
     }
 
     public synchronized ConsensusOutcome handle( RaftMessages.RaftMessage incomingMessage ) throws IOException

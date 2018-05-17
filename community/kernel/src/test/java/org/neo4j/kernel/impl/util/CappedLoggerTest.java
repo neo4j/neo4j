@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
@@ -174,12 +173,12 @@ public class CappedLoggerTest
         return lines;
     }
 
-    public void assertLoggedLines( String[] lines, int count ) throws IOException
+    public void assertLoggedLines( String[] lines, int count )
     {
         assertLoggedLines( lines, count, 0 );
     }
 
-    public void assertLoggedLines( String[] lines, int count, int skip ) throws IOException
+    public void assertLoggedLines( String[] lines, int count, int skip )
     {
         Matcher<String>[] matchers = new Matcher[count];
         int i;
@@ -204,13 +203,13 @@ public class CappedLoggerTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowIfDelegateIsNull() throws Exception
+    public void mustThrowIfDelegateIsNull()
     {
         new CappedLogger( null );
     }
 
     @Test
-    public void mustLogWithoutLimitConfiguration() throws Exception
+    public void mustLogWithoutLimitConfiguration()
     {
         int lineCount = 1000;
         String[] lines = logLines( lineCount );
@@ -218,7 +217,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogExceptions() throws Exception
+    public void mustLogExceptions()
     {
         logMethod.log( logger, "MESSAGE", new ArithmeticException( "EXCEPTION" ) );
         logProvider.assertContainsLogCallContaining( "MESSAGE" );
@@ -227,43 +226,43 @@ public class CappedLoggerTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowOnSettingZeroCountLimit() throws Exception
+    public void mustThrowOnSettingZeroCountLimit()
     {
         logger.setCountLimit( 0 );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowOnSettingNegativeCountLimit() throws Exception
+    public void mustThrowOnSettingNegativeCountLimit()
     {
         logger.setCountLimit( -1 );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowOnZeroTimeLimit() throws Exception
+    public void mustThrowOnZeroTimeLimit()
     {
         logger.setTimeLimit( 0, MILLISECONDS, Clocks.systemClock() );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowOnNegativeTimeLimit() throws Exception
+    public void mustThrowOnNegativeTimeLimit()
     {
         logger.setTimeLimit( -1, MILLISECONDS, Clocks.systemClock() );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowOnNullTimeUnit() throws Exception
+    public void mustThrowOnNullTimeUnit()
     {
         logger.setTimeLimit( 10, null, Clocks.systemClock() );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowOnNullClock() throws Exception
+    public void mustThrowOnNullClock()
     {
         logger.setTimeLimit( 10, TimeUnit.MILLISECONDS, null );
     }
 
     @Test
-    public void mustAllowConfigurationChaining() throws Exception
+    public void mustAllowConfigurationChaining()
     {
         logger.setCountLimit( 1 )
               .setTimeLimit( 10, MILLISECONDS, Clocks.systemClock() )
@@ -274,7 +273,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLimitByConfiguredCount() throws Exception
+    public void mustLimitByConfiguredCount()
     {
         int limit = 10;
         logger.setCountLimit( limit );
@@ -284,7 +283,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogAfterResetWithCountLimit() throws Exception
+    public void mustLogAfterResetWithCountLimit()
     {
         int limit = 10;
         logger.setCountLimit( limit );
@@ -297,7 +296,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void unsettingCountLimitMustLetMessagesThrough() throws Exception
+    public void unsettingCountLimitMustLetMessagesThrough()
     {
         int limit = 10;
         logger.setCountLimit( limit );
@@ -312,7 +311,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustNotLogMessagesWithinConfiguredTimeLimit() throws Exception
+    public void mustNotLogMessagesWithinConfiguredTimeLimit()
     {
         FakeClock clock = getDefaultFakeClock();
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
@@ -327,7 +326,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void unsettingTimeLimitMustLetMessagesThrough() throws Exception
+    public void unsettingTimeLimitMustLetMessagesThrough()
     {
         FakeClock clock = getDefaultFakeClock();
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
@@ -347,7 +346,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogAfterResetWithTimeLimit() throws Exception
+    public void mustLogAfterResetWithTimeLimit()
     {
         FakeClock clock = getDefaultFakeClock();
         logger.setTimeLimit( 1, TimeUnit.MILLISECONDS, clock );
@@ -362,7 +361,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustOnlyLogMessagesThatPassBothLimits() throws Exception
+    public void mustOnlyLogMessagesThatPassBothLimits()
     {
         FakeClock clock = getDefaultFakeClock();
         logger.setCountLimit( 2 );
@@ -381,7 +380,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustFilterDuplicateMessageAndNullException() throws Exception
+    public void mustFilterDuplicateMessageAndNullException()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###" );
@@ -392,7 +391,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustFilterDuplicateMessageAndException() throws Exception
+    public void mustFilterDuplicateMessageAndException()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "exc_aaa" ) );
@@ -404,7 +403,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogSameMessageAndDifferentExceptionWithDuplicateLimit() throws Exception
+    public void mustLogSameMessageAndDifferentExceptionWithDuplicateLimit()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "exc_aaa" ) );
@@ -416,7 +415,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogSameMessageAndNonNullExceptionWithDuplicateLimit() throws Exception
+    public void mustLogSameMessageAndNonNullExceptionWithDuplicateLimit()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###" );
@@ -428,7 +427,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustFilterSameMessageAndExceptionWithNullMessage() throws Exception
+    public void mustFilterSameMessageAndExceptionWithNullMessage()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( null ) );
@@ -440,7 +439,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogDifferentMessageAndSameExceptionWithDuplicateLimit() throws Exception
+    public void mustLogDifferentMessageAndSameExceptionWithDuplicateLimit()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "xyz" ) );
@@ -451,7 +450,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogDifferentMessageAndDifferentExceptionWithDuplicateLimit() throws Exception
+    public void mustLogDifferentMessageAndDifferentExceptionWithDuplicateLimit()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "foo" ) );
@@ -462,7 +461,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogSameMessageAndExceptionAfterResetWithDuplicateFilter() throws Exception
+    public void mustLogSameMessageAndExceptionAfterResetWithDuplicateFilter()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "xyz" ) );

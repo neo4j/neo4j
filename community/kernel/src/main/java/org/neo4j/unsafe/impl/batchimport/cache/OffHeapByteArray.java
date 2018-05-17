@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,15 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements ByteArray
 {
     private final byte[] defaultValue;
 
-    protected OffHeapByteArray( long length, byte[] defaultValue, long base )
+    protected OffHeapByteArray( long length, byte[] defaultValue, long base, MemoryAllocationTracker allocationTracker )
     {
-        super( length, defaultValue.length, base );
+        super( length, defaultValue.length, base, allocationTracker );
         this.defaultValue = defaultValue;
         clear();
     }
@@ -35,11 +36,46 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     @Override
     public void swap( long fromIndex, long toIndex )
     {
-        long intermediary = UnsafeUtil.allocateMemory( itemSize );
-        UnsafeUtil.copyMemory( address( fromIndex, 0 ), intermediary, itemSize );
-        UnsafeUtil.copyMemory( address( toIndex, 0 ), address( fromIndex, 0 ), itemSize );
-        UnsafeUtil.copyMemory( intermediary, address( toIndex, 0 ), itemSize );
-        UnsafeUtil.free( intermediary );
+        int bytesLeft = itemSize;
+        long fromAddress = address( fromIndex, 0 );
+        long toAddress = address( toIndex, 0 );
+
+        // piece-wise swap, as large chunks as possible: long, int, short and finally byte-wise swap
+        while ( bytesLeft > 0 )
+        {
+            int chunkSize;
+            if ( bytesLeft >= Long.BYTES )
+            {
+                chunkSize = Long.BYTES;
+                long intermediary = getLong( fromAddress );
+                UnsafeUtil.copyMemory( toAddress, fromAddress, chunkSize );
+                putLong( toAddress, intermediary );
+            }
+            else if ( bytesLeft >= Integer.BYTES )
+            {
+                chunkSize = Integer.BYTES;
+                int intermediary = getInt( fromAddress );
+                UnsafeUtil.copyMemory( toAddress, fromAddress, chunkSize );
+                putInt( toAddress, intermediary );
+            }
+            else if ( bytesLeft >= Short.BYTES )
+            {
+                chunkSize = Short.BYTES;
+                short intermediary = getShort( fromAddress );
+                UnsafeUtil.copyMemory( toAddress, fromAddress, chunkSize );
+                putShort( toAddress, intermediary );
+            }
+            else
+            {
+                chunkSize = Byte.BYTES;
+                byte intermediary = getByte( fromAddress );
+                UnsafeUtil.copyMemory( toAddress, fromAddress, chunkSize );
+                putByte( toAddress, intermediary );
+            }
+            fromAddress += chunkSize;
+            toAddress += chunkSize;
+            bytesLeft -= chunkSize;
+        }
     }
 
     @Override
@@ -51,7 +87,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         }
         else
         {
-            long intermediary = UnsafeUtil.allocateMemory( itemSize );
+            long intermediary = UnsafeUtil.allocateMemory( itemSize, allocationTracker );
             for ( int i = 0; i < defaultValue.length; i++ )
             {
                 UnsafeUtil.putByte( intermediary + i, defaultValue[i] );
@@ -61,7 +97,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
             {
                 UnsafeUtil.copyMemory( intermediary, adr, itemSize );
             }
-            UnsafeUtil.free( intermediary );
+            UnsafeUtil.free( intermediary, itemSize, allocationTracker );
         }
     }
 
@@ -92,6 +128,11 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     public byte getByte( long index, int offset )
     {
         return UnsafeUtil.getByte( address( index, offset ) );
+    }
+
+    private byte getByte( long p )
+    {
+        return UnsafeUtil.getByte( p );
     }
 
     @Override
@@ -127,18 +168,34 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     }
 
     @Override
+    public long get5ByteLong( long index, int offset )
+    {
+        long address = address( index, offset );
+        long low4b = getInt( address ) & 0xFFFFFFFFL;
+        long high1b = UnsafeUtil.getByte( address + Integer.BYTES ) & 0xFF;
+        long result = low4b | (high1b << 32);
+        return result == 0xFFFFFFFFFFL ? -1 : result;
+    }
+
+    @Override
     public long get6ByteLong( long index, int offset )
     {
         long address = address( index, offset );
         long low4b = getInt( address ) & 0xFFFFFFFFL;
-        long high2b = getShort( address + Integer.BYTES );
-        return low4b | (high2b << 32);
+        long high2b = getShort( address + Integer.BYTES ) & 0xFFFF;
+        long result = low4b | (high2b << 32);
+        return result == 0xFFFFFFFFFFFFL ? -1 : result;
     }
 
     @Override
     public long getLong( long index, int offset )
     {
         long p = address( index, offset );
+        return getLong( p );
+    }
+
+    private long getLong( long p )
+    {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             return UnsafeUtil.getLong( p );
@@ -161,6 +218,11 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     public void setByte( long index, int offset, byte value )
     {
         UnsafeUtil.putByte( address( index, offset ), value );
+    }
+
+    private void putByte( long p, byte value )
+    {
+        UnsafeUtil.putByte( p, value );
     }
 
     @Override
@@ -200,6 +262,14 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     }
 
     @Override
+    public void set5ByteLong( long index, int offset, long value )
+    {
+        long address = address( index, offset );
+        putInt( address, (int) value );
+        UnsafeUtil.putByte( address + Integer.BYTES, (byte) (value >>> 32) );
+    }
+
+    @Override
     public void set6ByteLong( long index, int offset, long value )
     {
         long address = address( index, offset );
@@ -211,6 +281,11 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     public void setLong( long index, int offset, long value )
     {
         long p = address( index, offset );
+        putLong( p, value );
+    }
+
+    private void putLong( long p, long value )
+    {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             UnsafeUtil.putLong( p, value );
@@ -226,8 +301,9 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     {
         long address = address( index, offset );
         int lowWord = UnsafeUtil.getShort( address ) & 0xFFFF;
-        byte highByte = UnsafeUtil.getByte( address + Short.BYTES );
-        return lowWord | (highByte << Short.SIZE);
+        int highByte = UnsafeUtil.getByte( address + Short.BYTES ) & 0xFF;
+        int result = lowWord | (highByte << Short.SIZE);
+        return result == 0xFFFFFF ? -1 : result;
     }
 
     @Override
@@ -240,6 +316,16 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
 
     private long address( long index, int offset )
     {
+        checkBounds( index );
         return address + (rebase( index ) * itemSize) + offset;
+    }
+
+    private void checkBounds( long index )
+    {
+        long rebased = rebase( index );
+        if ( rebased < 0 || rebased >= length )
+        {
+            throw new IndexOutOfBoundsException( "Wanted to access " + rebased + " but range is " + base + "-" + length );
+        }
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,6 +26,7 @@ import java.util.Arrays;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,7 +38,7 @@ import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
 public class DynamicProcessorAssignerTest
 {
     @Test
-    public void shouldAssignAdditionalCPUToBottleNeckStep() throws Exception
+    public void shouldAssignAdditionalCPUToBottleNeckStep()
     {
         // GIVEN
         Configuration config = config( 10, 5 );
@@ -58,7 +59,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsFromWayTooFastStep() throws Exception
+    public void shouldRemoveCPUsFromWayTooFastStep()
     {
         // GIVEN
         Configuration config = config( 10, 3 );
@@ -82,7 +83,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsButNotSoThatTheFastStepBecomesBottleneck() throws Exception
+    public void shouldRemoveCPUsButNotSoThatTheFastStepBecomesBottleneck()
     {
         // GIVEN
         Configuration config = config( 10, 3 );
@@ -99,12 +100,12 @@ public class DynamicProcessorAssignerTest
         assigner.check( execution );
 
         // THEN one processor should be removed from the fast step
-        verify( fastStep, times( 0 ) ).processors( 1 );
-        verify( fastStep, times( 0 ) ).processors( -1 );
+        verify( fastStep, never() ).processors( 1 );
+        verify( fastStep, never() ).processors( -1 );
     }
 
     @Test
-    public void shouldHandleZeroAverage() throws Exception
+    public void shouldHandleZeroAverage()
     {
         // GIVEN
         Configuration config = config( 10, 5 );
@@ -125,7 +126,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsFromTooFastStepEvenIfThereIsAWayFaster() throws Exception
+    public void shouldRemoveCPUsFromTooFastStepEvenIfThereIsAWayFaster()
     {
         // The point is that not only the fastest step is subject to have processors removed,
         // it's the relationship between all pairs of steps. This is important since the DPA has got
@@ -150,7 +151,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsFromTooFastStepEvenIfNotAllPermitsAreUsed() throws Exception
+    public void shouldRemoveCPUsFromTooFastStepEvenIfNotAllPermitsAreUsed()
     {
         // GIVEN
         Configuration config = config( 10, 20 );

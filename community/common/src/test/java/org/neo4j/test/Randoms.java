@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,16 @@
 package org.neo4j.test;
 
 import java.lang.reflect.Array;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAmount;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -27,6 +37,8 @@ import java.util.function.Consumer;
 
 import static java.lang.Integer.bitCount;
 import static java.lang.Math.abs;
+import static java.time.ZoneOffset.UTC;
+import static java.time.temporal.ChronoUnit.DAYS;
 
 /**
  * Set of useful randomizing utilities, for example randomizing a string or property value of random type and value.
@@ -88,6 +100,8 @@ public class Randoms
 
     public static final int CSA_LETTERS = CS_LOWERCASE_LETTERS | CS_UPPERCASE_LETTERS;
     public static final int CSA_LETTERS_AND_DIGITS = CSA_LETTERS | CS_DIGITS;
+
+    public static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     private final Random random;
     private final Configuration configuration;
@@ -197,9 +211,8 @@ public class Randoms
 
     private static <T> boolean contains( T[] array, T contains )
     {
-        for ( int i = 0; i < array.length; i++ )
+        for ( T item : array )
         {
-            T item = array[i];
             if ( nullSafeEquals( item, contains ) )
             {
                 return true;
@@ -210,7 +223,7 @@ public class Randoms
 
     private static <T> boolean nullSafeEquals( T first, T other )
     {
-        return first == null ? first == other : first.equals( other );
+        return first == null ? other == null : first.equals( other );
     }
 
     public <T> T among( T[] among )
@@ -261,9 +274,10 @@ public class Randoms
 
     private byte propertyType( boolean allowArrays )
     {
-        return (byte) random.nextInt( allowArrays ? 10 : 9 );
+        return (byte) random.nextInt( allowArrays ? 17 : 16 );
     }
 
+    // TODO add Point also
     private Object propertyValue( byte type )
     {
         switch ( type )
@@ -285,12 +299,69 @@ public class Randoms
         case 7:
             return random.nextDouble();
         case 8:
-            return string();
+            return randomDateTime();
         case 9:
+            return randomTime();
+        case 10:
+            return randomDate();
+        case 11:
+            return randomLocalDateTime();
+        case 12:
+            return randomLocalTime();
+        case 13:
+            return randomPeriod();
+        case 14:
+            return randomDuration();
+        case 15:
+            return string();
+        case 16:
             return array();
         default:
             throw new IllegalArgumentException( "Unknown value type " + type );
         }
+    }
+
+    public OffsetTime randomTime()
+    {
+        return OffsetTime.ofInstant( randomInstant(), UTC);
+    }
+
+    public LocalDateTime randomLocalDateTime()
+    {
+        return LocalDateTime.ofInstant( randomInstant(), UTC);
+    }
+
+    public LocalDate randomDate()
+    {
+        return LocalDate.ofEpochDay( nextLong( LocalDate.MIN.toEpochDay(), LocalDate.MAX.toEpochDay() ) );
+    }
+
+    public LocalTime randomLocalTime()
+    {
+        return LocalTime.ofNanoOfDay( nextLong( LocalTime.MIN.toNanoOfDay(), LocalTime.MAX.toNanoOfDay() ) );
+    }
+
+    private Instant randomInstant()
+    {
+        return Instant.ofEpochSecond( nextLong( LocalDateTime.MIN.toEpochSecond( UTC ), LocalDateTime.MAX.toEpochSecond( UTC ) ),
+                nextLong( NANOS_PER_SECOND ) );
+    }
+
+    public ZonedDateTime randomDateTime()
+    {
+        return ZonedDateTime.ofInstant( randomInstant(), UTC );
+    }
+
+    public TemporalAmount randomPeriod()
+    {
+        // Based on Java period (years, months and days)
+        return Period.of( random.nextInt(), random.nextInt( 12 ), random.nextInt( 28 ) );
+    }
+
+    public TemporalAmount randomDuration()
+    {
+        // Based on java duration (seconds)
+        return Duration.of( nextLong( DAYS.getDuration().getSeconds() ), ChronoUnit.SECONDS );
     }
 
     private char symbol()
@@ -313,9 +384,29 @@ public class Randoms
         }
     }
 
+    public long nextLong()
+    {
+        return random.nextLong();
+    }
+
+    /**
+     * Returns a random long between 0 and a positive number
+     *
+     * @param bound upper bound, exclusive
+     */
     public long nextLong( long bound )
     {
         return abs( random.nextLong() ) % bound;
+    }
+
+    /**
+     * Returns a random long between two positive numbers.
+     * @param origin lower bound, inclusive
+     * @param bound upper bound, inclusive
+     */
+    public long nextLong( long origin, long bound )
+    {
+        return nextLong( (bound - origin) + 1L ) + origin;
     }
 
     public boolean nextBoolean()

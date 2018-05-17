@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -91,7 +91,6 @@ public final class AsyncLogEvent extends AsyncEvent
         } );
     }
 
-    @SuppressWarnings( "StringEquality" )
     public void process()
     {
         if ( parameter == null )
@@ -153,32 +152,20 @@ public final class AsyncLogEvent extends AsyncEvent
         return super.toString();
     }
 
-    private String timestamp()
-    {
-        return TIMESTAMP.format( timestamp );
-    }
-
     private abstract static class BulkLogger
     {
         abstract void process( long timestamp, Object target );
     }
 
-    private static final ThreadLocalFormat TIMESTAMP = new ThreadLocalFormat();
-
-    private static class ThreadLocalFormat extends ThreadLocal<DateFormat>
+    private String timestamp()
     {
-        String format( long timestamp )
-        {
-            return get().format( new Date( timestamp ) );
-        }
-
-        @Override
-        protected DateFormat initialValue()
-        {
-            SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSSZ" );
-            format.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
-            return format;
-        }
+        return DATE_FORMAT_THREAD_LOCAL.get().format( new Date( timestamp ) );
     }
+
+    private static final ThreadLocal<DateFormat> DATE_FORMAT_THREAD_LOCAL = ThreadLocal.withInitial( () -> {
+        SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSSZ" );
+        format.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
+        return format;
+    } );
 }
 

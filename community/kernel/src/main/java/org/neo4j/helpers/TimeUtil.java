@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -86,25 +86,25 @@ public final class TimeUtil
         if ( days > 0 )
         {
             nanoSeconds -= DAYS.toNanos( days );
-            timeString.append( days ).append( "d" );
+            timeString.append( days ).append( 'd' );
         }
         long hours = HOURS.convert( nanoSeconds, NANOSECONDS );
         if ( hours > 0 )
         {
             nanoSeconds -= HOURS.toNanos( hours );
-            timeString.append( hours ).append( "h" );
+            timeString.append( hours ).append( 'h' );
         }
         long minutes = MINUTES.convert( nanoSeconds, NANOSECONDS );
         if ( minutes > 0 )
         {
             nanoSeconds -= MINUTES.toNanos( minutes );
-            timeString.append( minutes ).append( "m" );
+            timeString.append( minutes ).append( 'm' );
         }
         long seconds = SECONDS.convert( nanoSeconds, NANOSECONDS );
         if ( seconds > 0 )
         {
             nanoSeconds -= SECONDS.toNanos( seconds );
-            timeString.append( seconds ).append( "s" );
+            timeString.append( seconds ).append( 's' );
         }
         long milliseconds = MILLISECONDS.convert( nanoSeconds, NANOSECONDS );
         if ( milliseconds > 0 )

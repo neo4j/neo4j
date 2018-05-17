@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,18 +24,20 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 
 public class ReuseExcessBatchIdsOnRestartIT
 {
@@ -70,13 +72,14 @@ public class ReuseExcessBatchIdsOnRestartIT
     }
 
     @Test( timeout = 30_000 )
-    public void shouldBeAbleToReuseAllIdsInConcurrentCommitsWithRestart() throws Exception
+    public void shouldBeAbleToReuseIdsInConcurrentCommitsWithRestart() throws Exception
     {
         // given
         int threads = Runtime.getRuntime().availableProcessors();
         int batchSize = Integer.parseInt( GraphDatabaseSettings.record_id_batch_size.getDefaultValue() );
         ExecutorService executor = Executors.newFixedThreadPool( threads );
-        AtomicIntegerArray createdIds = new AtomicIntegerArray( threads * batchSize );
+        int idsToAllocate = threads * batchSize;
+        SimpleBitSet usedIds = new SimpleBitSet( idsToAllocate );
         for ( int i = 0; i < threads; i++ )
         {
             executor.submit( () ->
@@ -86,7 +89,7 @@ public class ReuseExcessBatchIdsOnRestartIT
                     for ( int j = 0; j < batchSize / 2; j++ )
                     {
                         int index = toIntExact( db.createNode().getId() );
-                        createdIds.set( index, 1 );
+                        usedIds.put( index );
                     }
                     tx.success();
                 }
@@ -96,27 +99,27 @@ public class ReuseExcessBatchIdsOnRestartIT
         while ( !executor.awaitTermination( 1, SECONDS ) )
         {   // Just wait longer
         }
-        assertFalse( allSet( createdIds ) );
+        assertFalse( allSet( usedIds ) );
 
         // when/then
         db.restartDatabase();
+        int reusedIds = 0;
         try ( Transaction tx = db.beginTx() )
         {
-            while ( !allSet( createdIds ) )
+            while ( toIntExact( db.createNode().getId() ) < idsToAllocate )
             {
-                int index = toIntExact( db.createNode().getId() );
-                assert createdIds.get( index ) != 1;
-                createdIds.set( index, 1 );
+                reusedIds++;
             }
             tx.success();
         }
+        assertThat( reusedIds, greaterThan( 0 ) );
     }
 
-    private static boolean allSet( AtomicIntegerArray values )
+    private static boolean allSet( SimpleBitSet bitSet )
     {
-        for ( int i = 0; i < values.length(); i++ )
+        for ( int i = 0; i < bitSet.size(); i++ )
         {
-            if ( values.get( i ) == 0 )
+            if ( !bitSet.contains( i ) )
             {
                 return false;
             }

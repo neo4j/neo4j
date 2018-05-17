@@ -1,23 +1,37 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.ha.cluster;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import java.net.URI;
+
+import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.cluster.member.ClusterMemberListener;
+import org.neo4j.cluster.protocol.election.Election;
+import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -26,16 +40,6 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachineTest.mockAddClusterMemberListener;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
-
-import java.net.URI;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.member.ClusterMemberEvents;
-import org.neo4j.cluster.member.ClusterMemberListener;
-import org.neo4j.cluster.protocol.election.Election;
-import org.neo4j.kernel.impl.store.StoreId;
 
 /*
  * These tests reproduce state transitions which are illegal. The general requirement for them is that they
@@ -50,7 +54,7 @@ public class HAStateMachineIllegalTransitionsTest
     private Election election;
 
     @Before
-    public void setup() throws Throwable
+    public void setup()
     {
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
 
@@ -69,7 +73,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterAvailableWhenInPending() throws Throwable
+    public void shouldProperlyHandleMasterAvailableWhenInPending()
     {
         /*
          * If the instance is in PENDING state, masterIsAvailable for itself should leave it to PENDING
@@ -88,7 +92,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleSlaveAvailableWhenInPending() throws Throwable
+    public void shouldProperlyHandleSlaveAvailableWhenInPending()
     {
         /*
          * If the instance is in PENDING state, slaveIsAvailable for itself should set it to PENDING
@@ -106,7 +110,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleNonElectedMasterBecomingAvailableWhenInToSlave() throws Throwable
+    public void shouldProperlyHandleNonElectedMasterBecomingAvailableWhenInToSlave()
     {
         /*
          * If the instance is in TO_SLAVE and a masterIsAvailable comes that does not refer to the elected master,
@@ -135,7 +139,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingMasterAvailableMessage() throws Throwable
+    public void shouldProperlyHandleConflictingMasterAvailableMessage()
     {
         /*
          * If the instance is currently in TO_MASTER and a masterIsAvailable comes for another instance, then
@@ -163,7 +167,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingSlaveIsAvailableMessageWhenInToMaster() throws Throwable
+    public void shouldProperlyHandleConflictingSlaveIsAvailableMessageWhenInToMaster()
     {
         /*
          * If the instance is in TO_MASTER state, slaveIsAvailable for itself should set it to PENDING
@@ -190,7 +194,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingSlaveIsAvailableWhenInMaster() throws Throwable
+    public void shouldProperlyHandleConflictingSlaveIsAvailableWhenInMaster()
     {
         /*
          * If the instance is in MASTER state, slaveIsAvailable for itself should set it to PENDING
@@ -224,7 +228,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterIsAvailableWhenInMasterState() throws Throwable
+    public void shouldProperlyHandleMasterIsAvailableWhenInMasterState()
     {
         /*
          * If the instance is in MASTER state and a masterIsAvailable is received for another instance, then
@@ -260,7 +264,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterIsAvailableWhenInSlaveState() throws Throwable
+    public void shouldProperlyHandleMasterIsAvailableWhenInSlaveState()
     {
         /*
          * If the instance is in SLAVE state and receives masterIsAvailable for an instance different than the

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,14 +21,13 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -191,9 +190,12 @@ public class WriteTransactionCommandOrderingTest
                 Collections.emptyList() );
 
         NeoStores neoStores = mock( NeoStores.class );
-        when( neoStores.getNodeStore() ).thenReturn( mock( NodeStore.class ) );
-        when( neoStores.getRelationshipGroupStore() ).thenReturn( mock( RelationshipGroupStore.class ) );
-        when( neoStores.getRelationshipStore() ).thenReturn( mock( RelationshipStore.class ) );
+        NodeStore store = mock( NodeStore.class );
+        when( neoStores.getNodeStore() ).thenReturn( store );
+        RelationshipGroupStore relationshipGroupStore = mock( RelationshipGroupStore.class );
+        when( neoStores.getRelationshipGroupStore() ).thenReturn( relationshipGroupStore );
+        RelationshipStore relationshipStore = mock( RelationshipStore.class );
+        when( neoStores.getRelationshipStore() ).thenReturn( relationshipStore );
 
         return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet,
                 0, null, null, null, null, null );
@@ -284,7 +286,7 @@ public class WriteTransactionCommandOrderingTest
         private boolean deleted;
 
         @Override
-        public boolean visitNodeCommand( NodeCommand command ) throws IOException
+        public boolean visitNodeCommand( NodeCommand command )
         {
             if ( !nodeVisited )
             {

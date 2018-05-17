@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,7 @@ import java.util.Map
 
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{MapValue, VirtualRelationshipValue, VirtualNodeValue, VirtualValues}
 
 import scala.collection.immutable
 
@@ -43,8 +43,8 @@ trait MapSupport {
 
   def castToMap: PartialFunction[AnyValue, QueryContext => MapValue] = {
     case x: MapValue => _ => x
-    case x: NodeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.nodeOps, x.id()))
-    case x: EdgeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.relationshipOps, x.id()))
+    case x: VirtualNodeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.nodeOps, x.id()))
+    case x: VirtualRelationshipValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.relationshipOps, x.id()))
   }
 }
 
@@ -71,11 +71,17 @@ class LazyMap[T](ctx: QueryContext, ops: Operations[T], id: Long)
 
   override def putAll(m: util.Map[_ <: String, _ <: AnyValue]): Unit = throw new UnsupportedOperationException()
 
-  override def get(key: scala.Any): AnyValue = ops.getProperty(id, ctx.getPropertyKeyId(key.asInstanceOf[String]))
+  override def get(key: scala.Any): AnyValue =
+    ctx.getOptPropertyKeyId(key.asInstanceOf[String]) match {
+      case Some(keyId) =>
+        ops.getProperty(id, keyId)
+      case None =>
+        null
+    }
 
   override def keySet(): util.Set[String] = allProps.keySet()
 
-  override def entrySet(): util.Set[Map.Entry[String, AnyValue]] = allProps.entrySet()
+  override def entrySet(): util.Set[util.Map.Entry[String, AnyValue]] = allProps.entrySet()
 
   override def containsKey(key: Any): Boolean = ctx.getOptPropertyKeyId(key.asInstanceOf[String])
     .exists(ops.hasProperty(id, _))

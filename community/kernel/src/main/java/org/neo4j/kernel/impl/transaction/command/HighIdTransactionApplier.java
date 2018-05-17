@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -60,7 +60,7 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitNodeCommand( NodeCommand command ) throws IOException
+    public boolean visitNodeCommand( NodeCommand command )
     {
         NodeStore nodeStore = neoStores.getNodeStore();
         track( nodeStore, command );
@@ -69,14 +69,14 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
+    public boolean visitRelationshipCommand( RelationshipCommand command )
     {
         track( neoStores.getRelationshipStore(), command );
         return false;
     }
 
     @Override
-    public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+    public boolean visitPropertyCommand( PropertyCommand command )
     {
         PropertyStore propertyStore = neoStores.getPropertyStore();
         track( propertyStore, command );
@@ -99,35 +99,35 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
+    public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command )
     {
         track( neoStores.getRelationshipGroupStore(), command );
         return false;
     }
 
     @Override
-    public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
+    public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command )
     {
         trackToken( neoStores.getRelationshipTypeTokenStore(), command );
         return false;
     }
 
     @Override
-    public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
+    public boolean visitLabelTokenCommand( LabelTokenCommand command )
     {
         trackToken( neoStores.getLabelTokenStore(), command );
         return false;
     }
 
     @Override
-    public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
+    public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command )
     {
         trackToken( neoStores.getPropertyKeyTokenStore(), command );
         return false;
     }
 
     @Override
-    public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+    public boolean visitSchemaRuleCommand( SchemaRuleCommand command )
     {
         SchemaStore schemaStore = neoStores.getSchemaStore();
         for ( DynamicRecord record : command.getRecordsAfter() )
@@ -138,7 +138,7 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
         // Notifies the stores about the recovered ids and will bump those high ids atomically if
         // they surpass the current high ids

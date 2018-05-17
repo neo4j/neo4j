@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,6 +31,7 @@ import org.neo4j.index.internal.gbptree.Hit;
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -89,19 +90,19 @@ public class NativeLabelScanReaderTest
         try ( NativeLabelScanReader reader = new NativeLabelScanReader( index ) )
         {
             // first check test invariants
-            verify( cursor1, times( 0 ) ).close();
-            verify( cursor2, times( 0 ) ).close();
+            verify( cursor1, never() ).close();
+            verify( cursor2, never() ).close();
             PrimitiveLongIterator first = reader.nodesWithLabel( LABEL_ID );
             PrimitiveLongIterator second = reader.nodesWithLabel( LABEL_ID );
 
             // getting the second iterator should not have closed the first one
-            verify( cursor1, times( 0 ) ).close();
-            verify( cursor2, times( 0 ) ).close();
+            verify( cursor1, never() ).close();
+            verify( cursor2, never() ).close();
 
             // exhausting the first one should have closed only the first one
             exhaust( first );
             verify( cursor1, times( 1 ) ).close();
-            verify( cursor2, times( 0 ) ).close();
+            verify( cursor2, never() ).close();
 
             // exhausting the second one should close it
             exhaust( second );
@@ -127,8 +128,8 @@ public class NativeLabelScanReaderTest
             // first check test invariants
             reader.nodesWithLabel( LABEL_ID );
             reader.nodesWithLabel( LABEL_ID );
-            verify( cursor1, times( 0 ) ).close();
-            verify( cursor2, times( 0 ) ).close();
+            verify( cursor1, never() ).close();
+            verify( cursor2, never() ).close();
         }
 
         // THEN

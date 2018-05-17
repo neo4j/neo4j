@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -76,8 +76,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     }
 
     @Override
-    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws
-            IOException
+    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition )
     {
         return ReversedMultiFileTransactionCursor
                 .fromLogFile( logFiles, logFile, backToPosition, failOnCorruptedLogFiles,
@@ -113,9 +112,11 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         }
         catch ( FileNotFoundException e )
         {
-            throw new NoSuchTransactionException( transactionIdToStartFrom,
-                    "Log position acquired, but couldn't find the log file itself. " +
-                            "Perhaps it just recently was deleted? [" + e.getMessage() + "]" );
+            throw new NoSuchTransactionException(
+                    transactionIdToStartFrom,
+                    "Log position acquired, but couldn't find the log file itself. Perhaps it just recently was " +
+                    "deleted? [" + e.getMessage() + "]",
+                    e );
         }
     }
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,7 +25,6 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicValue;
@@ -144,9 +143,9 @@ class ByteCodeVerifier implements ByteCodeChecker, CodeGeneratorOption
     private static void verify( AssignmentChecker check, ClassNode clazz, List<Failure> failures )
     {
         Verifier verifier = new Verifier( clazz, check );
-        for ( MethodNode method : (Iterable<MethodNode>) clazz.methods )
+        for ( MethodNode method : clazz.methods )
         {
-            Analyzer analyzer = new Analyzer( verifier );
+            Analyzer<?> analyzer = new Analyzer<>( verifier );
             try
             {
                 analyzer.analyze( clazz.name, method );
@@ -263,7 +262,7 @@ class ByteCodeVerifier implements ByteCodeChecker, CodeGeneratorOption
             }
             for ( int j = 0; j < method.tryCatchBlocks.size(); j++ )
             {
-                ((TryCatchBlockNode) method.tryCatchBlocks.get( j )).accept( mv );
+                method.tryCatchBlocks.get( j ).accept( mv );
                 out.print( " " + formatted.text.get( formatted.text.size() - 1 ) );
             }
         }
@@ -362,7 +361,7 @@ class ByteCodeVerifier implements ByteCodeChecker, CodeGeneratorOption
         private static List<Type> interfaces( ClassNode clazz )
         {
             List<Type> interfaces = new ArrayList<>( clazz.interfaces.size() );
-            for ( String iFace : (Iterable<String>) clazz.interfaces )
+            for ( String iFace : clazz.interfaces )
             {
                 interfaces.add( Type.getObjectType( iFace ) );
             }
@@ -438,7 +437,7 @@ class ByteCodeVerifier implements ByteCodeChecker, CodeGeneratorOption
             {
                 return true;
             }
-            for ( String iFace : (Iterable<String>) value.interfaces )
+            for ( String iFace : value.interfaces )
             {
                 if ( isAssignableFrom( target, Type.getObjectType( iFace ) ) )
                 {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -93,7 +93,7 @@ public class DelayedBufferTest
     }
 
     @Test
-    public void shouldNotReleaseValuesUntilCrossedThreshold() throws Exception
+    public void shouldNotReleaseValuesUntilCrossedThreshold()
     {
         // GIVEN
         VerifyingConsumer consumer = new VerifyingConsumer( 30 );
@@ -169,7 +169,7 @@ public class DelayedBufferTest
     }
 
     @Test
-    public void shouldClearCurrentChunk() throws Exception
+    public void shouldClearCurrentChunk()
     {
         // GIVEN
         Consumer<long[]> consumer = mock( Consumer.class );
@@ -188,7 +188,7 @@ public class DelayedBufferTest
     }
 
     @Test
-    public void shouldClearPreviousChunks() throws Exception
+    public void shouldClearPreviousChunks()
     {
         // GIVEN
         Consumer<long[]> consumer = mock( Consumer.class );

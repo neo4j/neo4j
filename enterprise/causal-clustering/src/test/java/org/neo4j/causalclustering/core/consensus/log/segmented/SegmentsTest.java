@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
@@ -44,6 +47,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -133,7 +137,7 @@ public class SegmentsTest
             segments.truncate( 20, 9, 4 );
 
             // Then
-            verify( fsa, times( 0 ) ).deleteFile( any() );
+            verify( fsa, never() ).deleteFile( any() );
         }
     }
 
@@ -164,7 +168,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldCloseTheSegments() throws Exception
+    public void shouldCloseTheSegments()
     {
         // Given
         Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 );
@@ -180,7 +184,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldNotSwallowExceptionOnClose() throws Exception
+    public void shouldNotSwallowExceptionOnClose()
     {
         // Given
         doThrow( new RuntimeException() ).when( fileA ).close();

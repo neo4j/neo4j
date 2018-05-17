@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -70,7 +70,7 @@ case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, Base
 
   override def process(from: BaseState, context: CompilerContext): BaseState = {
     val rewrittenStatement = from.statement().endoRewrite(rewriter(context.planContext))
-    LogicalPlanState(from).copy(maybeStatement = Some(rewrittenStatement))
+    from.withStatement(rewrittenStatement)
   }
 
   override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))

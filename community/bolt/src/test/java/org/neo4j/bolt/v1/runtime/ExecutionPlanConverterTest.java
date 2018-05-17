@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -42,7 +42,7 @@ public class ExecutionPlanConverterTest
 {
 
     @Test
-    public void profileStatisticConversion() throws Exception
+    public void profileStatisticConversion()
     {
         MapValue convertedMap = ExecutionPlanConverter.convert(
                 new TestExecutionPlanDescription( "description", getProfilerStatistics(), getIdentifiers(),

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,7 +39,7 @@ public class PropertyValueRecordSizeCalculatorTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldIncludePropertyRecordSize() throws Exception
+    public void shouldIncludePropertyRecordSize()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
@@ -52,7 +52,7 @@ public class PropertyValueRecordSizeCalculatorTest
     }
 
     @Test
-    public void shouldIncludeDynamicRecordSizes() throws Exception
+    public void shouldIncludeDynamicRecordSizes()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
@@ -65,7 +65,7 @@ public class PropertyValueRecordSizeCalculatorTest
     }
 
     @Test
-    public void shouldSpanMultiplePropertyRecords() throws Exception
+    public void shouldSpanMultiplePropertyRecords()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();

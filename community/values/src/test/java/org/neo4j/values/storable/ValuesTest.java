@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.values.storable;
 
 import org.junit.Test;
 
+import static org.junit.Assert.fail;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -73,7 +74,7 @@ public class ValuesTest
         assertEqual( floatArray( new float[]{} ), floatArray( new float[]{} ) );
         assertEqual( doubleArray( new double[]{} ), doubleArray( new double[]{} ) );
         assertEqual( charArray( new char[]{} ), charArray( new char[]{} ) );
-        assertEqual( stringArray( new String[]{} ), stringArray( new String[]{} ) );
+        assertEqual( stringArray(), stringArray() );
 
         assertEqual( booleanArray( new boolean[]{true} ), booleanArray( new boolean[]{true} ) );
         assertEqual( byteArray( new byte[]{1} ), byteArray( new byte[]{1} ) );
@@ -83,6 +84,28 @@ public class ValuesTest
         assertEqual( floatArray( new float[]{1.0f} ), floatArray( new float[]{1.0f} ) );
         assertEqual( doubleArray( new double[]{1.0} ), doubleArray( new double[]{1.0} ) );
         assertEqual( charArray( new char[]{'x'} ), charArray( new char[]{'x'} ) );
-        assertEqual( stringArray( new String[]{"hi"} ), stringArray( new String[]{"hi"} ) );
+        assertEqual( stringArray( "hi" ), stringArray( "hi" ) );
+    }
+
+    @Test
+    public void pointValueShouldRequireConsistentInput()
+    {
+        assertThrowsIllegalArgument( CoordinateReferenceSystem.Cartesian, 1, 2, 3 );
+        assertThrowsIllegalArgument( CoordinateReferenceSystem.Cartesian_3D, 1, 2 );
+        assertThrowsIllegalArgument( CoordinateReferenceSystem.WGS84, 1, 2, 3 );
+        assertThrowsIllegalArgument( CoordinateReferenceSystem.WGS84_3D, 1, 2 );
+    }
+
+    private void assertThrowsIllegalArgument( CoordinateReferenceSystem crs, double... coordinates )
+    {
+        try
+        {
+            Values.pointValue( crs, coordinates );
+            fail( "exception expected" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // this is what we want
+        }
     }
 }

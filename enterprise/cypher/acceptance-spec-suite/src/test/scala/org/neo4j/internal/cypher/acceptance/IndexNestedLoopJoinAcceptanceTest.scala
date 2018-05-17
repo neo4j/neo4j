@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -42,7 +45,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
 
     // when
     val result = executeWith(
-      Configs.All - Configs.Compiled,
+      Configs.Interpreted,
       "MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 RETURN count(*)",
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should useOperators("Apply", "NodeIndexSeek")
@@ -68,7 +71,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
     graph.createIndex("C", "id")
 
     // when
-    val result = executeWith(Configs.All - Configs.Compiled,
+    val result = executeWith(Configs.Interpreted,
       "MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 OPTIONAL MATCH (a)-[:T]->() RETURN count(*)",
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should useOperators("Apply", "NodeIndexSeek")
@@ -91,7 +94,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
         | RETURN f
       """.stripMargin
 
-    val result = executeWith(Configs.All - Configs.Compiled - Configs.Version2_3, query,
+    val result = executeWith(Configs.All - Configs.Version2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion( _ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"), expectPlansToFail = Configs.AllRulePlanners ))
 
     result.columnAs[Node]("f").toSet should equal(Set(nodes(122),nodes(123)))
@@ -108,7 +111,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
         | MATCH (f:Foo) WHERE f.id = b.id
         | RETURN f
       """.stripMargin
-    val result = executeWith(Configs.All - Configs.Compiled, query,
+    val result = executeWith(Configs.All, query,
       planComparisonStrategy = ComparePlansWithAssertion( _ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
     result.columnAs[Node]("f").toList should equal(List(nodes(123)))
   }
@@ -126,7 +129,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
         | MATCH (f:Foo) WHERE f.id = b.id
         | RETURN f
       """.stripMargin
-    val result = executeWith(Configs.All - Configs.Compiled, query,
+    val result = executeWith(Configs.All, query,
       planComparisonStrategy = ComparePlansWithAssertion( _ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
     result.columnAs[Node]("f").toSet should equal(Set(nodes(122), nodes(123)))
   }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -51,6 +52,8 @@ public class SharedServerTestBase
         suppressAll().call( (Callable<Void>) () ->
         {
             ServerHolder.setServerBuilderProperty( GraphDatabaseSettings.cypher_hints_error.name(), "true" );
+            ServerHolder.setServerBuilderProperty( GraphDatabaseSettings.transaction_timeout.name(), "300s" );
+            ServerHolder.setServerBuilderProperty( ServerSettings.transaction_idle_timeout.name(), "300s" );
             server = ServerHolder.allocate();
             ServerHelper.cleanTheDatabase( server );
             return null;

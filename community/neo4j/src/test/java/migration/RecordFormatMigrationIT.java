@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -44,6 +44,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class RecordFormatMigrationIT
 {
@@ -60,7 +62,7 @@ public class RecordFormatMigrationIT
     @Test
     public void failToDowngradeFormatWhenUpgradeNotAllowed()
     {
-        GraphDatabaseService database = startDatabaseWithFormat( storeDir, StandardV3_4.NAME );
+        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_4.NAME );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();
@@ -70,7 +72,7 @@ public class RecordFormatMigrationIT
         database.shutdown();
         try
         {
-            startDatabaseWithFormat( storeDir, StandardV3_2.NAME );
+            startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
         }
         catch ( Throwable t )
         {
@@ -81,7 +83,7 @@ public class RecordFormatMigrationIT
     @Test
     public void failToDowngradeFormatWheUpgradeAllowed()
     {
-        GraphDatabaseService database = startDatabaseWithFormat( storeDir, StandardV3_4.NAME );
+        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_4.NAME );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();
@@ -103,9 +105,9 @@ public class RecordFormatMigrationIT
     }
 
     @Test
-    public void skipMigrationIfFormatSpecifiedInConfig() throws Exception
+    public void skipMigrationIfFormatSpecifiedInConfig()
     {
-        GraphDatabaseService database = startDatabaseWithFormat( storeDir, StandardV3_2.NAME );
+        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();
@@ -114,16 +116,16 @@ public class RecordFormatMigrationIT
         }
         database.shutdown();
 
-        GraphDatabaseAPI nonUpgradedStore = (GraphDatabaseAPI) startDatabaseWithFormat( storeDir, StandardV3_2.NAME );
+        GraphDatabaseAPI nonUpgradedStore = (GraphDatabaseAPI) startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
         RecordStorageEngine storageEngine = nonUpgradedStore.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         assertEquals( StandardV3_2.NAME, storageEngine.testAccessNeoStores().getRecordFormats().name() );
         nonUpgradedStore.shutdown();
     }
 
     @Test
-    public void skipMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime() throws Exception
+    public void skipMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime()
     {
-        GraphDatabaseService database = startDatabaseWithFormat( storeDir, StandardV3_2.NAME );
+        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();
@@ -142,7 +144,7 @@ public class RecordFormatMigrationIT
     @Test
     public void latestRecordNotMigratedWhenFormatBumped()
     {
-        GraphDatabaseService database = startDatabaseWithFormat( storeDir, StandardV3_2.NAME );
+        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();
@@ -153,7 +155,7 @@ public class RecordFormatMigrationIT
 
         try
         {
-            startDatabaseWithFormat( storeDir, Standard.LATEST_NAME );
+            startDatabaseWithFormatUnspecifiedUpgrade( storeDir, Standard.LATEST_NAME );
         }
         catch ( Throwable t )
         {
@@ -161,9 +163,23 @@ public class RecordFormatMigrationIT
         }
     }
 
-    private GraphDatabaseService startDatabaseWithFormat( File storeDir, String format )
+    private static GraphDatabaseService startDatabaseWithFormatUnspecifiedUpgrade( File storeDir, String formatName )
     {
         return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( record_format, format ).newGraphDatabase();
+                .setConfig( record_format, formatName ).newGraphDatabase();
+    }
+
+    static GraphDatabaseService startNonUpgradableDatabaseWithFormat( File storeDir, String formatName )
+    {
+        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( record_format, formatName )
+                .setConfig( allow_upgrade, FALSE ).newGraphDatabase();
+    }
+
+    static GraphDatabaseService startDatabaseWithFormat( File storeDir, String formatName )
+    {
+        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( record_format, formatName )
+                .setConfig( allow_upgrade, TRUE ).newGraphDatabase();
     }
 }

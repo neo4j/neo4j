@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,8 +28,8 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -43,14 +43,14 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
     public CompositeIndexPopulatorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+            IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -60,7 +60,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
+            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
         }
 
         @Test
@@ -68,14 +68,9 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
-            {
-                p.create();
-                p.add( Arrays.asList(
-                        add( 1, descriptor.schema(), "v1", "v2" ),
-                        add( 2, descriptor.schema(), "v1", "v2" ) ) );
-                p.close( true );
-            } );
+            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.add( Arrays.asList(
+                    add( 1, descriptor.schema(), "v1", "v2" ),
+                    add( 2, descriptor.schema(), "v1", "v2" ) ) ) );
 
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
@@ -100,7 +95,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
 
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
+            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
         }
 
         @Test
@@ -110,7 +105,6 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
-                p.create();
                 p.add( Arrays.asList(
                         IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
                         IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value2 ) ) );
@@ -140,8 +134,6 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
-                p.create();
-
                 // when
                 p.add( Arrays.asList(
                         IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),

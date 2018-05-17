@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -57,7 +57,6 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
 
     @Override
     public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize )
-            throws IOException
     {
         record.clear();
     }
@@ -68,7 +67,7 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
     }
 
     @Override
-    public void write( RECORD record, PageCursor cursor, int recordSize ) throws IOException
+    public void write( RECORD record, PageCursor cursor, int recordSize )
     {
     }
 

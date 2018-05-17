@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_4.VarPatternLength
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 /**
@@ -28,18 +29,18 @@ import org.neo4j.cypher.internal.v3_4.expressions._
   * relationship and end node as values on the produced rows.
   */
 case class Expand(source: LogicalPlan,
-                  from: IdName,
+                  from: String,
                   dir: SemanticDirection,
                   types: Seq[RelTypeName],
-                  to: IdName,
-                  relName: IdName,
-                  mode: ExpansionMode = ExpandAll
-                 )(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+                  to: String,
+                  relName: String,
+                  mode: ExpansionMode = ExpandAll)
+                 (implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
   override def rhs = None
-  override def availableSymbols: Set[IdName] = source.availableSymbols + relName + to
+  override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 }
 
 /**
@@ -48,19 +49,19 @@ case class Expand(source: LogicalPlan,
   * are set to NO_VALUE.
   */
 case class OptionalExpand(source: LogicalPlan,
-                          from: IdName,
+                          from: String,
                           dir: SemanticDirection,
                           types: Seq[RelTypeName],
-                          to: IdName,
-                          relName: IdName,
+                          to: String,
+                          relName: String,
                           mode: ExpansionMode = ExpandAll,
-                          predicates: Seq[Expression] = Seq.empty
-                         )(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+                          predicates: Seq[Expression] = Seq.empty)
+                         (implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
   override def rhs = None
-  override def availableSymbols: Set[IdName] = source.availableSymbols + relName + to
+  override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 }
 
 /**
@@ -72,24 +73,24 @@ case class OptionalExpand(source: LogicalPlan,
   * The relationships and end node of the corresponding path are added to the produced row.
   */
 case class VarExpand(source: LogicalPlan,
-                     from: IdName,
+                     from: String,
                      dir: SemanticDirection,
                      projectedDir: SemanticDirection,
                      types: Seq[RelTypeName],
-                     to: IdName,
-                     relName: IdName,
+                     to: String,
+                     relName: String,
                      length: VarPatternLength,
                      mode: ExpansionMode = ExpandAll,
-                     tempNode: IdName,
-                     tempEdge: IdName,
+                     tempNode: String,
+                     tempEdge: String,
                      nodePredicate: Expression,
                      edgePredicate: Expression,
                      legacyPredicates: Seq[(LogicalVariable, Expression)])
-                    (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+                    (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   override val lhs = Some(source)
   override def rhs = None
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + relName + to
+  override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 }
 
 /**
@@ -101,42 +102,20 @@ case class VarExpand(source: LogicalPlan,
   * Only the end node is added to produced rows.
   */
 case class PruningVarExpand(source: LogicalPlan,
-                            from: IdName,
+                            from: String,
                             dir: SemanticDirection,
                             types: Seq[RelTypeName],
-                            to: IdName,
+                            to: String,
                             minLength: Int,
                             maxLength: Int,
                             predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
-                           (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+                           (implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
 
   override val lhs = Some(source)
   override def rhs = None
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + to
-}
-
-/**
-  * Another variant of VarExpand, where paths are not explored if they could not produce an unseen
-  * end node. A more powerful version of PruningVarExpand, which keeps more state. Guaranteed to
-  * produce unique end nodes.
-  *
-  * Only the end node is added to produced rows.
-  */
-case class FullPruningVarExpand(source: LogicalPlan,
-                                from: IdName,
-                                dir: SemanticDirection,
-                                types: Seq[RelTypeName],
-                                to: IdName,
-                                minLength: Int,
-                                maxLength: Int,
-                                predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
-                               (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
-
-  override val lhs = Some(source)
-  override def rhs = None
-
-  override def availableSymbols: Set[IdName] = source.availableSymbols + to
+  override val availableSymbols: Set[String] = source.availableSymbols + to
 }
 
 sealed trait ExpansionMode

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.tools.dump;
 
@@ -28,8 +31,8 @@ import java.io.StringReader;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -66,8 +69,8 @@ public class InconsistencyReportReaderTest
                 "Some error", "something" );
         logger.error( RecordType.INDEX, new IndexEntry( indexNodeId ), "Some index error", "Something wrong with index" );
         logger.error( RecordType.NODE, new NodeRecord( nodeNotInTheIndexId ), "Some index error",
-                IndexRule.indexRule( indexId, IndexDescriptorFactory.forLabel( 1, 2 ),
-                        new SchemaIndexProvider.Descriptor( "key", "version" ) ).toString() );
+                IndexRule.indexRule( indexId, SchemaIndexDescriptorFactory.forLabel( 1, 2 ),
+                        new IndexProvider.Descriptor( "key", "version" ) ).toString() );
         String text = out.toString();
 
         // WHEN
@@ -83,5 +86,22 @@ public class InconsistencyReportReaderTest
         assertTrue( inconsistencies.containsRelationshipGroupId( relationshipGroupId ) );
         assertTrue( inconsistencies.containsPropertyId( propertyId ) );
         assertTrue( inconsistencies.containsSchemaIndexId( indexId ) );
+    }
+
+    @Test
+    public void shouldParseRelationshipGroupInconsistencies() throws Exception
+    {
+        // Given
+        ReportInconsistencies inconsistencies = new ReportInconsistencies();
+        String text =
+                "ERROR: The first outgoing relationship is not the first in its chain.\n" +
+                "\tRelationshipGroup[1337,type=1,out=2,in=-1,loop=-1,prev=-1,next=3,used=true,owner=4,secondaryUnitId=-1]";
+
+        // When
+        InconsistencyReportReader reader = new InconsistencyReportReader( inconsistencies );
+        reader.read( new BufferedReader( new StringReader( text ) ) );
+
+        // Then
+        assertTrue( inconsistencies.containsRelationshipGroupId( 1337 ) );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,9 +28,9 @@ public interface AccessMode
     enum Static implements AccessMode
     {
         /** No reading or writing allowed. */
-        NONE( false, false, false, false, false ),
+        NONE( false, false, false, false, false, false ),
         /** No reading or writing allowed because of expired credentials. */
-        CREDENTIALS_EXPIRED( false, false, false, false, false )
+        CREDENTIALS_EXPIRED( false, false, false, false, false, false )
                 {
                     @Override
                     public AuthorizationViolationException onViolation( String msg )
@@ -51,29 +51,31 @@ public interface AccessMode
                 },
 
         /** Allows reading data and schema, but not writing. */
-        READ( true, false, false, false, false ),
+        READ( true, false, false, false, false, true ),
         /** Allows writing data */
-        WRITE_ONLY( false, true, false, false, false ),
+        WRITE_ONLY( false, true, false, false, false, true ),
         /** Allows reading and writing data, but not schema. */
-        WRITE( true, true, false, false, false ),
+        WRITE( true, true, false, false, false, true ),
         /** Allows reading and writing data and creating new tokens, but not schema. */
-        TOKEN_WRITE( true, true, true, false, false ),
+        TOKEN_WRITE( true, true, true, false, false, true ),
         /** Allows all operations. */
-        FULL( true, true, true, true, true );
+        FULL( true, true, true, true, true, true );
 
-        private boolean read;
-        private boolean write;
-        private boolean token;
-        private boolean schema;
-        private boolean procedure;
+        private final boolean read;
+        private final boolean write;
+        private final boolean token;
+        private final boolean schema;
+        private final boolean procedure;
+        private final boolean property;
 
-        Static( boolean read, boolean write, boolean token, boolean schema, boolean procedure )
+        Static( boolean read, boolean write, boolean token, boolean schema, boolean procedure, boolean property )
         {
             this.read = read;
             this.write = write;
             this.token = token;
             this.schema = schema;
             this.procedure = procedure;
+            this.property = property;
         }
 
         @Override
@@ -101,6 +103,12 @@ public interface AccessMode
         }
 
         @Override
+        public boolean allowsPropertyReads( int propertyKey )
+        {
+            return property;
+        }
+
+        @Override
         public boolean allowsProcedureWith( String[] allowed )
         {
             return procedure;
@@ -118,12 +126,14 @@ public interface AccessMode
     boolean allowsTokenCreates();
     boolean allowsSchemaWrites();
 
+    boolean allowsPropertyReads( int propertyKey );
+
     /**
      * Determines whether this mode allows execution of a procedure with the parameter string array in its
      * procedure annotation.
      *
      * @param allowed An array of strings that encodes permissions that allows the execution of a procedure
-     * @return <tt>true</tt> if this mode allows the execution of a procedure with the given parameter string array
+     * @return {@code true} if this mode allows the execution of a procedure with the given parameter string array
      * encoding permission
      */
     boolean allowsProcedureWith( String[] allowed );

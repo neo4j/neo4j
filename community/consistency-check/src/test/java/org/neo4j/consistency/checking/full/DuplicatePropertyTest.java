@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 public class DuplicatePropertyTest
 {
     @Test
-    public void shouldReportDuplicatePropertyIndexesInPropertyRecordForNode() throws Exception
+    public void shouldReportDuplicatePropertyIndexesInPropertyRecordForNode()
     {
         // given
         ChainCheck check = new ChainCheck();
@@ -77,7 +77,7 @@ public class DuplicatePropertyTest
     }
 
     @Test
-    public void shouldReportDuplicatePropertyIndexesAcrossRecordsInPropertyChainForNode() throws Exception
+    public void shouldReportDuplicatePropertyIndexesAcrossRecordsInPropertyChainForNode()
     {
         // given
         ChainCheck check = new ChainCheck();
@@ -129,7 +129,7 @@ public class DuplicatePropertyTest
     }
 
     @Test
-    public void shouldNotReportAnythingForConsistentChains() throws Exception
+    public void shouldNotReportAnythingForConsistentChains()
     {
         // given
         ChainCheck check = new ChainCheck();

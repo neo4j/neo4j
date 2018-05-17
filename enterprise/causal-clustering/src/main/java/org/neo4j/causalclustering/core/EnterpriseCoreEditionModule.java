@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.core;
 
@@ -24,14 +27,19 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Duration;
+import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.ReplicationModule;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
+import org.neo4j.causalclustering.core.consensus.RaftProtocolClientInstaller;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.replication.ReplicationBenchmarkProcedure;
 import org.neo4j.causalclustering.core.replication.Replicator;
@@ -43,30 +51,52 @@ import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.causalclustering.core.state.machines.id.FreeIdFilteredIdGeneratorFactory;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.discovery.procedures.CoreRoleProcedure;
-import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
+import org.neo4j.causalclustering.discovery.procedures.InstalledProtocolsProcedure;
+import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
+import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
-import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForMultiDC;
-import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForSingleDC;
-import org.neo4j.causalclustering.load_balancing.procedure.LegacyGetServersProcedure;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingPluginLoader;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingProcessor;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForMultiDC;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForSingleDC;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.LegacyGetServersProcedure;
 import org.neo4j.causalclustering.logging.BetterMessageLogger;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
-import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.LoggingOutbound;
 import org.neo4j.causalclustering.messaging.Outbound;
-import org.neo4j.causalclustering.messaging.RaftChannelInitializer;
 import org.neo4j.causalclustering.messaging.RaftOutbound;
 import org.neo4j.causalclustering.messaging.SenderService;
+import org.neo4j.causalclustering.net.InstalledProtocolHandler;
+import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
+import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
+import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.ProtocolInstaller;
+import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
+import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
+import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetRoutersForAllDatabasesProcedure;
+import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetRoutersForDatabaseProcedure;
+import org.neo4j.causalclustering.upstream.NoOpUpstreamDatabaseStrategiesLoader;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionStrategy;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategiesLoader;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
+import org.neo4j.causalclustering.upstream.strategies.TypicallyConnectToRandomReadReplicaStrategy;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.SocketAddress;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -81,6 +111,7 @@ import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -88,6 +119,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
@@ -102,11 +134,11 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
+import static java.util.Collections.singletonList;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
 
 /**
@@ -120,7 +152,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private final CoreTopologyService topologyService;
     protected final LogProvider logProvider;
     protected final Config config;
-    private CoreStateMachinesModule coreStateMachinesModule;
+    private final Supplier<Stream<Pair<AdvertisedSocketAddress,ProtocolStack>>> clientInstalledProtocols;
+    private final Supplier<Stream<Pair<SocketAddress,ProtocolStack>>> serverInstalledProtocols;
+    private final CoreServerModule coreServerModule;
+    private final CoreStateMachinesModule coreStateMachinesModule;
 
     public enum RaftLogImplementation
     {
@@ -143,8 +178,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
-        procedures.register(
-                new LegacyGetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
+        procedures.register( new LegacyGetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
 
         if ( config.get( CausalClusteringSettings.multi_dc_license ) )
         {
@@ -156,13 +190,16 @@ public class EnterpriseCoreEditionModule extends EditionModule
                     config, logProvider ) );
         }
 
-        procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
+        procedures.register( new GetRoutersForAllDatabasesProcedure( topologyService, config ) );
+        procedures.register( new GetRoutersForDatabaseProcedure( topologyService, config ) );
+        procedures.register( new ClusterOverviewProcedure( topologyService, logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
-        procedures.registerComponent( Replicator.class, x -> replicationModule.getReplicator(), true );
+        procedures.register( new InstalledProtocolsProcedure( clientInstalledProtocols, serverInstalledProtocols ) );
+        procedures.registerComponent( Replicator.class, x -> replicationModule.getReplicator(), false );
         procedures.registerProcedure( ReplicationBenchmarkProcedure.class );
     }
 
-    EnterpriseCoreEditionModule( final PlatformModule platformModule,
+    public EnterpriseCoreEditionModule( final PlatformModule platformModule,
             final DiscoveryServiceFactory discoveryServiceFactory )
     {
         final Dependencies dependencies = platformModule.dependencies;
@@ -171,7 +208,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final File storeDir = platformModule.storeDir;
         final LifeSupport life = platformModule.life;
-        final Monitors monitors = platformModule.monitors;
 
         final File dataDir = config.get( GraphDatabaseSettings.data_directory );
         final ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, storeDir, false );
@@ -211,17 +247,38 @@ public class EnterpriseCoreEditionModule extends EditionModule
         // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
         dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
 
-        PipelineHandlerAppenderFactory appenderFactory = appenderFactory();
-        PipelineHandlerAppender pipelineHandlerAppender = appenderFactory.create( config, dependencies, logProvider );
+        PipelineWrapper clientPipelineWrapper = pipelineWrapperFactory().forClient( config, dependencies, logProvider, CausalClusteringSettings.ssl_policy );
+        PipelineWrapper serverPipelineWrapper = pipelineWrapperFactory().forServer( config, dependencies, logProvider, CausalClusteringSettings.ssl_policy );
+        PipelineWrapper backupServerPipelineWrapper = pipelineWrapperFactory().forServer( config, dependencies, logProvider, OnlineBackupSettings.ssl_policy );
+
+        NettyPipelineBuilderFactory clientPipelineBuilderFactory = new NettyPipelineBuilderFactory( clientPipelineWrapper );
+        NettyPipelineBuilderFactory serverPipelineBuilderFactory = new NettyPipelineBuilderFactory( serverPipelineWrapper );
+        NettyPipelineBuilderFactory backupServerPipelineBuilderFactory = new NettyPipelineBuilderFactory( backupServerPipelineWrapper );
 
         topologyService = clusteringModule.topologyService();
 
         long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
 
-        final SenderService raftSender = new SenderService(
-                new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors, pipelineHandlerAppender ),
-                logProvider, platformModule.monitors );
+        SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config, logProvider );
+        ApplicationSupportedProtocols supportedRaftProtocols = supportedProtocolCreator.createSupportedRaftProtocol();
+        Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
+
+        ApplicationProtocolRepository applicationProtocolRepository =
+                new ApplicationProtocolRepository( Protocol.ApplicationProtocols.values(), supportedRaftProtocols );
+        ModifierProtocolRepository modifierProtocolRepository =
+                new ModifierProtocolRepository( Protocol.ModifierProtocols.values(), supportedModifierProtocols );
+
+        ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository =
+                new ProtocolInstallerRepository<>(
+                        singletonList( new RaftProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider ) ),
+                        ModifierProtocolInstaller.allClientInstallers );
+
+        Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
+        HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository,
+                protocolInstallerRepository, clientPipelineBuilderFactory, handshakeTimeout, logProvider );
+        final SenderService raftSender = new SenderService( channelInitializer, logProvider );
         life.add( raftSender );
+        this.clientInstalledProtocols = raftSender::installedProtocols;
 
         final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
 
@@ -255,15 +312,46 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
-        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
-                coreStateMachinesModule, replicationModule, clusterStateDirectory.get(), clusteringModule, localDatabase,
-                messageLogger, databaseHealthSupplier, pipelineHandlerAppender );
+        InstalledProtocolHandler serverInstalledProtocolHandler = new InstalledProtocolHandler();
+
+        this.coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
+                replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), clientPipelineBuilderFactory,
+                serverPipelineBuilderFactory, backupServerPipelineBuilderFactory, serverInstalledProtocolHandler );
+
+        TypicallyConnectToRandomReadReplicaStrategy defaultStrategy = new TypicallyConnectToRandomReadReplicaStrategy( 2 );
+        defaultStrategy.inject( topologyService, config, logProvider, identityModule.myself() );
+        UpstreamDatabaseStrategySelector catchupStrategySelector =
+                createUpstreamDatabaseStrategySelector( identityModule.myself(), config, logProvider, topologyService, defaultStrategy );
+
+        CatchupAddressProvider.PrioritisingUpstreamStrategyBasedAddressProvider catchupAddressProvider =
+                new CatchupAddressProvider.PrioritisingUpstreamStrategyBasedAddressProvider( consensusModule.raftMachine(), topologyService,
+                        catchupStrategySelector );
+        RaftServerModule.createAndStart( platformModule, consensusModule, identityModule, coreServerModule, localDatabase, serverPipelineBuilderFactory,
+                messageLogger, catchupAddressProvider, supportedRaftProtocols, supportedModifierProtocols, serverInstalledProtocolHandler );
+        serverInstalledProtocols = serverInstalledProtocolHandler::installedProtocols;
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 
         dependencies.satisfyDependency( lockManager );
 
         life.add( coreServerModule.membershipWaiterLifecycle );
+    }
+
+    private UpstreamDatabaseStrategySelector createUpstreamDatabaseStrategySelector( MemberId myself, Config config, LogProvider logProvider,
+            TopologyService topologyService, UpstreamDatabaseSelectionStrategy defaultStrategy )
+    {
+        UpstreamDatabaseStrategiesLoader loader;
+        if ( config.get( CausalClusteringSettings.multi_dc_license ) )
+        {
+            loader = new UpstreamDatabaseStrategiesLoader( topologyService, config, myself, logProvider );
+            logProvider.getLog( getClass() ).info( "Multi-Data Center option enabled." );
+        }
+        else
+        {
+            loader = new NoOpUpstreamDatabaseStrategiesLoader();
+        }
+
+        return new UpstreamDatabaseStrategySelector( defaultStrategy, loader, logProvider );
     }
 
     private LogFiles buildLocalDatabaseLogFiles( PlatformModule platformModule, FileSystemAbstraction fileSystem,
@@ -288,9 +376,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule, clusterStateDirectory.get() );
     }
 
-    protected PipelineHandlerAppenderFactory appenderFactory()
+    protected DuplexPipelineWrapperFactory pipelineWrapperFactory()
     {
-        return new NoOpPipelineHandlerAppenderFactory();
+        return new VoidPipelineWrapperFactory();
     }
 
     @Override
@@ -307,7 +395,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         return Predicates.any(
                 fileName -> fileName.startsWith( TransactionLogFiles.DEFAULT_NAME ),
                 fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
-                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
+                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME ),
+                filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF )
         );
     }
 
@@ -366,7 +455,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         logFile.getParentFile().mkdirs();
         try
         {
-
             return new PrintWriter( new FileOutputStream( logFile, true ) );
         }
         catch ( FileNotFoundException e )
@@ -414,5 +502,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
         EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
+    }
+
+    public void disableCatchupServer() throws Throwable
+    {
+        coreServerModule.catchupServer().disable();
     }
 }

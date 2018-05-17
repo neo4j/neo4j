@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.storageengine.api;
+
 
 public class Token
 {
@@ -49,11 +50,7 @@ public class Token
     @Override
     public boolean equals( Object obj )
     {
-        if ( !(obj instanceof Token) )
-        {
-            return false;
-        }
-        return id == ((Token) obj).id;
+        return obj instanceof Token && id == ((Token) obj).id;
     }
 
     @Override

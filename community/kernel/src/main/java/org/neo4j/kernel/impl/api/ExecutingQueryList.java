@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -41,7 +41,7 @@ abstract class ExecutingQueryList
 
     abstract void waitsFor( ExecutingQuery query );
 
-    static ExecutingQueryList EMPTY = new ExecutingQueryList()
+    static final ExecutingQueryList EMPTY = new ExecutingQueryList()
     {
         @Override
         Stream<ExecutingQuery> queries()
@@ -75,8 +75,8 @@ abstract class ExecutingQueryList
 
     private static class Entry extends ExecutingQueryList
     {
-        final ExecutingQuery query;
-        final ExecutingQueryList next;
+        private final ExecutingQuery query;
+        private final ExecutingQueryList next;
 
         Entry( ExecutingQuery query, ExecutingQueryList next )
         {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 class InternalPlanDescriptionTest extends CypherFunSuite {
 
-  private val ID = LogicalPlanId.DEFAULT
+  private val ID = Id.INVALID_ID
 
   test("flatten behaves like expected for plan with two children") {
     val child1 = PlanDescriptionImpl(ID, "child1", NoChildren, Seq.empty, Set())

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -137,6 +137,12 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public double usageRatio()
+        {
+            return 0d;
+        }
+
+        @Override
         public void pins( long pins )
         {
         }
@@ -178,6 +184,11 @@ public interface PageCacheTracer extends PageCacheCounters
 
         @Override
         public void flushes( long flushes )
+        {
+        }
+
+        @Override
+        public void maxPages( long maxPages )
         {
         }
 
@@ -270,4 +281,10 @@ public interface PageCacheTracer extends PageCacheCounters
      * @param flushes number of flushes
      */
     void flushes( long flushes );
+
+    /**
+     * Sets the number of available pages.
+     * @param maxPages the total number of available pages.
+     */
+    void maxPages( long maxPages );
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -52,10 +52,10 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
-import org.neo4j.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -153,7 +153,7 @@ public class ConsistencyReporterTest
         }
 
         @Test
-        public void shouldIncludeStackTraceInUnexpectedCheckException() throws Exception
+        public void shouldIncludeStackTraceInUnexpectedCheckException()
         {
             // GIVEN
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
@@ -389,8 +389,8 @@ public class ConsistencyReporterTest
             }
             if ( type == IndexRule.class )
             {
-                return IndexRule.indexRule( 1, IndexDescriptorFactory.forLabel( 2, 3 ),
-                        new SchemaIndexProvider.Descriptor( "provider", "version" ) );
+                return IndexRule.indexRule( 1, SchemaIndexDescriptorFactory.forLabel( 2, 3 ),
+                        new IndexProvider.Descriptor( "provider", "version" ) );
             }
             if ( type == SchemaRule.class )
             {

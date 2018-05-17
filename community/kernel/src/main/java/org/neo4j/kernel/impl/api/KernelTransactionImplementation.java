@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,44 +27,53 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.KeyReadTokenNameLookup;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ActiveLock;
@@ -72,8 +81,9 @@ import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
-import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
+import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -82,6 +92,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -90,6 +102,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -98,7 +111,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
  * as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
-public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
+public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics
 {
     /*
      * IMPORTANT:
@@ -111,11 +124,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private static final long NOT_COMMITTED_TRANSACTION_ID = -1;
     private static final long NOT_COMMITTED_TRANSACTION_COMMIT_TIME = -1;
 
+    private final CollectionsFactory collectionsFactory;
+
     // Logic
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHooks hooks;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final StatementOperationParts statementOperations;
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
     private final Pool<KernelTransactionImplementation> pool;
@@ -126,13 +140,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final PageCursorTracerSupplier cursorTracerSupplier;
+    private final VersionContextSupplier versionContextSupplier;
     private final StoreReadLayer storeLayer;
-    private final Clock clock;
+    private final ClockContext clocks;
     private final AccessCapability accessCapability;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
-    private TransactionState txState;
+    private TxState txState;
     private ExplicitIndexTransactionState explicitIndexTransactionState;
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
@@ -175,12 +190,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
             TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess,
             TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
-            Pool<KernelTransactionImplementation> pool, Clock clock, CpuClock cpuClock, HeapAllocation heapAllocation,
+            Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
-            StorageEngine storageEngine, AccessCapability accessCapability, Cursors cursors, AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore )
+            StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors, AutoIndexing autoIndexing,
+            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
+            CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
+            SchemaState schemaState, IndexingService indexingService )
     {
-        this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -191,23 +207,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storageEngine = storageEngine;
         this.explicitIndexTxStateSupplier = explicitIndexTxStateSupplier;
         this.pool = pool;
-        this.clock = clock;
+        this.clocks = new ClockContext( clock );
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
+        this.versionContextSupplier = versionContextSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
-                procedures, accessCapability, lockTracer, statementOperations );
+                lockTracer, statementOperations, this.clocks,
+                versionContextSupplier );
         this.accessCapability = accessCapability;
-        this.statistics = new Statistics( this, cpuClock, heapAllocation );
+        this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore,
-                        this::assertOpen );
+                        procedures, schemaState );
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
-                        storageStatement, this, cursors, autoIndexing );
+                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, indexingService ),
+                        storageStatement,
+                        this, new KernelToken( storeLayer, this ), cursors, autoIndexing, constraintIndexCreator,
+                        constraintSemantics );
+        this.collectionsFactory = collectionsFactorySupplier.create();
     }
 
     /**
@@ -225,9 +246,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.beforeHookInvoked = false;
         this.failure = false;
         this.success = false;
-        this.beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
-        this.startTimeMillis = clock.millis();
+        this.startTimeMillis = clocks.systemClock().millis();
         this.timeoutMillis = transactionTimeout;
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.lastTransactionTimestampWhenStarted = lastTimeStamp;
@@ -347,7 +367,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public SecurityContext securityContext()
     {
+        if ( securityContext == null )
+        {
+            throw new NotInTransactionException();
+        }
         return securityContext;
+    }
+
+    public AuthSubject subjectOrAnonymous()
+    {
+        return securityContext == null ? AuthSubject.ANONYMOUS : securityContext.subject();
     }
 
     public void setMetaData( Map<String, Object> data )
@@ -366,6 +395,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertTransactionOpen();
         currentStatement.acquire();
         return currentStatement;
+    }
+
+    @Override
+    public long pageHits()
+    {
+        return cursorTracerSupplier.get().hits();
+    }
+
+    @Override
+    public long pageFaults()
+    {
+        return cursorTracerSupplier.get().faults();
     }
 
     ExecutingQueryList executingQueries()
@@ -388,18 +429,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            for ( SchemaIndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
-                try
-                {
-                    // TODO logically, which statement should this operation be performed on?
-                    constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
-                }
-                catch ( DropIndexFailureException e )
-                {
-                    throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
-                            "possible to drop during rollback of that transaction.", e );
-                }
+                // TODO logically, which statement should this operation be performed on?
+                constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
             }
         }
     }
@@ -410,7 +443,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( txState == null )
         {
             transactionMonitor.upgradeToWriteTransaction();
-            txState = new TxState();
+            txState = new TxState( collectionsFactory );
         }
         return txState;
     }
@@ -465,12 +498,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
+    @Override
     public void assertOpen()
     {
-        Optional<Status> terminationReason = getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        Status reason = this.terminationReason;
+        if ( reason != null )
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
+            throw new TransactionTerminatedException( reason );
+        }
+        if ( closed )
+        {
+            throw new NotInTransactionException( "The transaction has been closed." );
         }
     }
 
@@ -624,7 +662,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     PhysicalTransactionRepresentation transactionRepresentation =
                             new PhysicalTransactionRepresentation( extractedCommands );
                     TransactionHeaderInformation headerInformation = headerInformationFactory.create();
-                    long timeCommitted = clock.millis();
+                    long timeCommitted = clocks.systemClock().millis();
                     transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),
@@ -633,7 +671,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                     // Commit the transaction
                     success = true;
-                    TransactionToApply batch = new TransactionToApply( transactionRepresentation );
+                    TransactionToApply batch = new TransactionToApply( transactionRepresentation,
+                            versionContextSupplier.getVersionContext() );
                     txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }
@@ -644,7 +683,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         catch ( ConstraintValidationException | CreateConstraintFailureException e )
         {
             throw new ConstraintViolationTransactionFailureException(
-                    e.getUserMessage( new KeyReadTokenNameLookup( statementOperations.keyReadOperations() ) ), e );
+                    e.getUserMessage( new SilentTokenNameLookup( tokenRead() ) ), e );
         }
         finally
         {
@@ -688,7 +727,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                         @Override
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                                throws ConstraintValidationException
                         {
                             storeLayer.releaseRelationship( id );
                         }
@@ -710,15 +748,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public Read dataRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.dataRead();
+    }
+
+    @Override
+    public Read stableDataRead()
+    {
+        assertAllows( AccessMode::allowsReads, "Read" );
+        return operations.dataRead();
+    }
+
+    @Override
+    public void markAsStable()
+    {
+        // ignored until 2-layer tx-state is supported
     }
 
     @Override
     public Write dataWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        currentStatement.assertAllows( AccessMode::allowsWrites, "Write" );
+        assertAllows( AccessMode::allowsWrites, "Write" );
         upgradeToDataWrites();
         return operations;
     }
@@ -726,46 +777,69 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TokenWrite tokenWrite()
     {
-        currentStatement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         accessCapability.assertCanWrite();
+        return operations.token();
+    }
 
+    @Override
+    public Token token()
+    {
+        accessCapability.assertCanWrite();
         return operations.token();
     }
 
     @Override
     public TokenRead tokenRead()
     {
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.token();
     }
 
     @Override
     public ExplicitIndexRead indexRead()
     {
+        assertAllows( AccessMode::allowsReads, "Read" );
+
         return operations.indexRead();
     }
 
     @Override
-    public ExplicitIndexWrite indexWrite()
+    public ExplicitIndexWrite indexWrite() throws InvalidTransactionTypeKernelException
     {
-       return operations;
+        accessCapability.assertCanWrite();
+        assertAllows( AccessMode::allowsWrites, "Write" );
+        upgradeToDataWrites();
+
+        return operations;
     }
 
     @Override
     public SchemaRead schemaRead()
     {
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.schemaRead();
     }
 
     @Override
-    public SchemaWrite schemaWrite()
+    public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        accessCapability.assertCanWrite();
+        assertAllows( AccessMode::allowsSchemaWrites, "Schema" );
+
+        upgradeToSchemaWrites();
+        return operations;
     }
 
     @Override
-    public StatementLocks locks()
+    public org.neo4j.internal.kernel.api.Locks locks()
     {
-       return statementLocks;
+       return operations.locks();
+    }
+
+    public StatementLocks statementLocks()
+    {
+        assertOpen();
+        return statementLocks;
     }
 
     @Override
@@ -774,9 +848,32 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return operations.cursors();
     }
 
+    @Override
+    public org.neo4j.internal.kernel.api.Procedures procedures()
+    {
+        return operations.procedures();
+    }
+
+    @Override
+    public ExecutionStatistics executionStatistics()
+    {
+        return this;
+    }
+
     public LockTracer lockTracer()
     {
         return currentStatement.lockTracer();
+    }
+
+    public void assertAllows( Function<AccessMode,Boolean> allows, String mode )
+    {
+        AccessMode accessMode = securityContext().mode();
+        if ( !allows.apply( accessMode ) )
+        {
+            throw accessMode.onViolation(
+                    format( "%s operations are not allowed for %s.", mode,
+                           securityContext().description() ) );
+        }
     }
 
     private void afterCommit( long txId )
@@ -828,7 +925,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             securityContext = null;
             transactionEvent = null;
             explicitIndexTransactionState = null;
-            txState = null;
+            if ( txState != null )
+            {
+                txState.release();
+                txState = null;
+            }
             hooksState = null;
             closeListeners.clear();
             reuseCount++;
@@ -953,20 +1054,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         private volatile long heapAllocatedBytesWhenQueryStarted;
         private volatile long waitingTimeNanos;
         private volatile long transactionThreadId;
-        private final KernelTransactionImplementation transaction;
-        private final CpuClock cpuClock;
-        private final HeapAllocation heapAllocation;
         private volatile PageCursorTracer pageCursorTracer = PageCursorTracer.NULL;
+        private final KernelTransactionImplementation transaction;
+        private final AtomicReference<CpuClock> cpuClockRef;
+        private final AtomicReference<HeapAllocation> heapAllocationRef;
+        private CpuClock cpuClock;
+        private HeapAllocation heapAllocation;
 
-        public Statistics( KernelTransactionImplementation transaction, CpuClock cpuClock, HeapAllocation heapAllocation )
+        public Statistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef,
+                AtomicReference<HeapAllocation> heapAllocationRef )
         {
             this.transaction = transaction;
-            this.cpuClock = cpuClock;
-            this.heapAllocation = heapAllocation;
+            this.cpuClockRef = cpuClockRef;
+            this.heapAllocationRef = heapAllocationRef;
         }
 
-        void init( long threadId, PageCursorTracer pageCursorTracer )
+        protected void init( long threadId, PageCursorTracer pageCursorTracer )
         {
+            this.cpuClock = cpuClockRef.get();
+            this.heapAllocation = heapAllocationRef.get();
             this.transactionThreadId = threadId;
             this.pageCursorTracer = pageCursorTracer;
             this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( transactionThreadId );
@@ -977,9 +1083,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          * Returns number of allocated bytes by current transaction.
          * @return number of allocated bytes by the thread.
          */
-        long heapAllocateBytes()
+        long heapAllocatedBytes()
         {
             return heapAllocation.allocatedBytes( transactionThreadId ) - heapAllocatedBytesWhenQueryStarted;
+        }
+
+        /**
+         * Returns amount of direct memory allocated by current transaction.
+         *
+         * @return amount of direct memory allocated by the thread in bytes.
+         */
+        long directAllocatedBytes()
+        {
+            return transaction.collectionsFactory.getMemoryTracker().usedDirectMemory();
         }
 
         /**
@@ -1050,13 +1166,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public NodeCursor nodeCursor()
+    public ClockContext clocks()
+    {
+        return clocks;
+    }
+
+    @Override
+    public NodeCursor ambientNodeCursor()
     {
         return operations.nodeCursor();
     }
 
     @Override
-    public PropertyCursor propertyCursor()
+    public RelationshipScanCursor ambientRelationshipCursor()
+    {
+        return operations.relationshipCursor();
+    }
+
+    @Override
+    public PropertyCursor ambientPropertyCursor()
     {
         return operations.propertyCursor();
     }

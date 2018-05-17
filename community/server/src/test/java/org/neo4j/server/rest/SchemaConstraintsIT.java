@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -183,7 +183,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
                  "Drop uniqueness constraint for a label and a property." )
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void drop_constraint() throws Exception
+    public void drop_constraint()
     {
         data.get();
 
@@ -213,7 +213,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void drop_non_existent_constraint() throws Exception
+    public void drop_non_existent_constraint()
     {
         String labelName = labels.newInstance();
         String propertyKey = properties.newInstance();

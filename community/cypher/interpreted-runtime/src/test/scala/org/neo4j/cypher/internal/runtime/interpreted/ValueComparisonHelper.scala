@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -51,7 +51,7 @@ object ValueComparisonHelper {
     case (l: AnyValue, r: AnyValue) => l == r
     case (l: AnyValue, null) => l == Values.NO_VALUE
     case (n1: NodeValue, n2: Node) => n1.id() == n2.getId
-    case (e: EdgeValue, r: Relationship) => e.id() == r.getId
+    case (rv: RelationshipValue, r: Relationship) => rv.id() == r.getId
     case (l: ListValue, s: Seq[_]) if l.size() == s.size =>  s.indices.forall(i => check(l.value(i), s(i)))
     case (l: MapValue, s: Map[_, _]) if l.size() == s.size =>
       val map = s.asInstanceOf[Map[String, Any]]

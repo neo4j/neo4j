@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -151,9 +151,9 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
     public int size()
     {
         int size = 0;
-        for ( int i = 0; i < data.length; i++ )
+        for ( long s : data )
         {
-            size += Long.bitCount( data[i] );
+            size += Long.bitCount( s );
         }
         return size;
     }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,8 +27,9 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescri
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 
@@ -40,7 +41,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   val relId = 42
 
   val nodeOps = mock[Operations[NodeValue]]
-  val relOps = mock[Operations[EdgeValue]]
+  val relOps = mock[Operations[RelationshipValue]]
 
   when(inner.nodeOps).thenReturn(nodeOps)
   when(inner.relationshipOps).thenReturn(relOps)
@@ -67,7 +68,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
   when(inner.addIndexRule(any()))
-    .thenReturn(IdempotentResult(mock[IndexDescriptor]))
+    .thenReturn(IdempotentResult(mock[IndexReference]))
 
   var context: UpdateCountingQueryContext = null
 

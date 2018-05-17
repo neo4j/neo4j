@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,22 +22,23 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 import java.lang.reflect.Constructor
 
 import org.neo4j.cypher.internal.compatibility.v3_3.SemanticTableConverter.ExpressionMapping3To4
+import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3, InputPosition => InputPositionV3_3}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPositionV3_3, SemanticDirection => SemanticDirectionV3_3, ast => astV3_3, symbols => symbolsV3_3}
 import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName => IdNameV3_3}
-import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, IdName => IdNameV3_4}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
-import org.neo4j.cypher.internal.util.v3_4.Rewritable.{DuplicatableProduct, RewritableAny}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.util.v3_4.Rewritable.RewritableAny
+import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4, _}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{FieldSignature, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
-import org.neo4j.cypher.internal.compiler.{v3_3 => compilerV3_3}
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
@@ -47,30 +48,44 @@ object LogicalPlanConverter {
 
   type MutableExpressionMapping3To4 = mutable.Map[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4]
 
-  private class LogicalPlanRewriter(val expressionMap: MutableExpressionMapping3To4 = new mutable.HashMap[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4],
+  //noinspection ZeroIndexToHead
+  private class LogicalPlanRewriter(solveds: Solveds,
+                                    cardinalities: Cardinalities,
+                                    ids: IdConverter,
+                                    val expressionMap: MutableExpressionMapping3To4 = new mutable.HashMap[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4],
                                     val isImportant: ExpressionV3_3 => Boolean = _ => true)
     extends RewriterWithArgs {
+
+    val procedureOrSchemaIdGen = new SequentialIdGen()
 
     override def apply(v1: (AnyRef, Seq[AnyRef])): AnyRef = rewriter.apply(v1)
 
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
       val rewritten = RewriterWithArgs.lift {
         case (plan: plansV3_3.Argument, children: Seq[AnyRef]) =>
-          plansV3_4.Argument(children.head.asInstanceOf[Set[IdNameV3_4]])(new PlannerQueryWrapper(plan.solved))
+          plansV3_4.Argument(children.head.asInstanceOf[Set[String]])(ids.convertId(plan))
         case (plan: plansV3_3.SingleRow, _) =>
-          plansV3_4.Argument()(new PlannerQueryWrapper(plan.solved))
-        case (_: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
+          plansV3_4.Argument()(ids.convertId(plan))
+        case (plan: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
           plansV3_4.ProduceResult(source = children(1).asInstanceOf[LogicalPlanV3_4],
-            columns = children(0).asInstanceOf[Seq[String]])
+            columns = children(0).asInstanceOf[Seq[String]])(ids.convertId(plan))
         case (plan: plansV3_3.TriadicSelection, children: Seq[AnyRef]) =>
           plansV3_4.TriadicSelection(left = children(1).asInstanceOf[LogicalPlanV3_4],
             right = children(5).asInstanceOf[LogicalPlanV3_4],
             positivePredicate = children(0).asInstanceOf[Boolean],
-            sourceId = children(2).asInstanceOf[IdNameV3_4],
-            seenId = children(3).asInstanceOf[IdNameV3_4],
-            targetId = children(4).asInstanceOf[IdNameV3_4])(new PlannerQueryWrapper(plan.solved))
+            sourceId = children(2).asInstanceOf[String],
+            seenId = children(3).asInstanceOf[String],
+            targetId = children(4).asInstanceOf[String])(ids.convertId(plan))
+        case (plan: plansV3_3.ProceduralLogicalPlan, children: Seq[AnyRef]) =>
+          convertVersion("v3_3", "v3_4", plan, children, procedureOrSchemaIdGen, classOf[IdGen])
+        case (plan: plansV3_3.OuterHashJoin, children: Seq[AnyRef]) =>
+          plansV3_4.LeftOuterHashJoin(
+            children(0).asInstanceOf[Set[String]],
+            children(1).asInstanceOf[LogicalPlanV3_4],
+            children(2).asInstanceOf[LogicalPlanV3_4]
+          )(ids.convertId(plan))
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
-          convertVersion("v3_3", "v3_4", plan, children, new PlannerQueryWrapper(plan.solved), classOf[PlannerQuery])
+          convertVersion("v3_3", "v3_4", plan, children, ids.convertId(plan), classOf[IdGen])
 
         case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
           new expressionsV3_4.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsV3_4.Variable]].get)(helpers.as3_4(inp.position))
@@ -87,8 +102,6 @@ object LogicalPlanConverter {
           convertVersion("v3_3", "v3_4", item, children, helpers.as3_4(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
         case (expressionV3_3: astV3_3.ASTNode, children: Seq[AnyRef]) =>
           convertVersion("frontend.v3_3.ast", "v3_4.expressions", expressionV3_3, children, helpers.as3_4(expressionV3_3.position), classOf[InputPosition])
-        case (IdNameV3_3(name), _) => IdNameV3_4(name)
-
         case (symbolsV3_3.CTAny, _) => symbolsV3_4.CTAny
         case (symbolsV3_3.CTBoolean, _) => symbolsV3_4.CTBoolean
         case (symbolsV3_3.CTFloat, _) => symbolsV3_4.CTFloat
@@ -122,8 +135,8 @@ object LogicalPlanConverter {
         case (_: frontendV3_3.ExhaustiveShortestPathForbiddenException, _) => new utilV3_4.ExhaustiveShortestPathForbiddenException
 
         case (spp: irV3_3.ShortestPathPattern, children: Seq[AnyRef]) =>
-          val sp3_4 = convertASTNode[expressionsV3_4.ShortestPaths](spp.expr, expressionMap, isImportant)
-          irV3_4.ShortestPathPattern(children(0).asInstanceOf[Option[IdNameV3_4]], children(1).asInstanceOf[irV3_4.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
+          val sp3_4 = convertASTNode[expressionsV3_4.ShortestPaths](spp.expr, expressionMap, solveds, cardinalities, ids, isImportant)
+          irV3_4.ShortestPathPattern(children(0).asInstanceOf[Option[String]], children(1).asInstanceOf[irV3_4.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
         case (astV3_3.NilPathStep, _) => expressionsV3_4.NilPathStep
         case (item@(_: astV3_3.PathStep | _: astV3_3.NameToken[_]), children: Seq[AnyRef]) =>
           convertVersion("frontend.v3_3.ast", "v3_4.expressions", item, children)
@@ -131,12 +144,31 @@ object LogicalPlanConverter {
           convertVersion("frontend.v3_3", "util.v3_4", nameId, children)
         case (frontendV3_3.helpers.Fby(head, tail), children: Seq[AnyRef]) => utilV3_4.Fby(children(0), children(1).asInstanceOf[utilV3_4.NonEmptyList[_]])
         case (frontendV3_3.helpers.Last(head), children: Seq[AnyRef]) => utilV3_4.Last(children(0))
+
+        case ( _:plansV3_3.ProcedureSignature, children: Seq[AnyRef]) =>
+         plansV3_4.ProcedureSignature(children(0).asInstanceOf[QualifiedName],
+                                      children(1).asInstanceOf[IndexedSeq[FieldSignature]],
+                                      children(2).asInstanceOf[Option[IndexedSeq[FieldSignature]]],
+                                      children(3).asInstanceOf[Option[String]],
+                                      children(4).asInstanceOf[ProcedureAccessMode],
+                                      children(5).asInstanceOf[Option[String]],
+                                      children(6).asInstanceOf[Option[String]],
+                                      None)
+
+        case ( _:plansV3_3.UserFunctionSignature, children: Seq[AnyRef]) =>
+          plansV3_4.UserFunctionSignature(children(0).asInstanceOf[QualifiedName],
+                                       children(1).asInstanceOf[IndexedSeq[FieldSignature]],
+                                       children(2).asInstanceOf[CypherType],
+                                       children(3).asInstanceOf[Option[String]],
+                                       children(4).asInstanceOf[Array[String]],
+                                       children(5).asInstanceOf[Option[String]],
+                                       children(6).asInstanceOf[Boolean],
+                                       None)
+
         case (item@(_: plansV3_3.CypherValue |
                     _: plansV3_3.QualifiedName |
                     _: plansV3_3.FieldSignature |
                     _: plansV3_3.ProcedureAccessMode |
-                    _: plansV3_3.ProcedureSignature |
-                    _: plansV3_3.UserFunctionSignature |
                     _: plansV3_3.QueryExpression[_] |
                     _: plansV3_3.SeekableArgs |
                     _: irV3_3.PatternRelationship |
@@ -147,21 +179,17 @@ object LogicalPlanConverter {
           convertVersion("frontend.v3_3", "v3_4.logical.plans", item, children)
         case (item: compilerV3_3.SeekRange[_], children: Seq[AnyRef]) =>
           convertVersion("compiler.v3_3", "v3_4.logical.plans", item, children)
-
-        case (_: List[_], children: Seq[AnyRef]) => children.toList
-        case (_: Seq[_], children: Seq[AnyRef]) => children.toIndexedSeq
-        case (_: Set[_], children: Seq[AnyRef]) => children.toSet
-        case (_: Map[_, _], children: Seq[AnyRef]) => Map(children.map(_.asInstanceOf[(_, _)]): _*)
-        case (None, _) => None
-        case (p: Product, children: Seq[AnyRef]) => new DuplicatableProduct(p).copyConstructor.invoke(p, children: _*)
       }.apply(before)
       before._1 match {
         case plan: LogicalPlanV3_3 =>
           try {
-            rewritten.asInstanceOf[LogicalPlanV3_4].setIdTo(helpers.as3_4(plan.assignedId))
+            val plan3_4 = rewritten.asInstanceOf[LogicalPlanV3_4]
+            // Set other attributes that were part of the plan in 3.3
+            solveds.set(plan3_4.id, new PlannerQueryWrapper(plan.solved))
+            cardinalities.set(plan3_4.id, helpers.as3_4(plan.solved.estimatedCardinality))
           } catch {
-            case (e:frontendV3_3.InternalException) =>
-              // ProcedureOrSchema plans have no assigned IDs. That's ok.
+            case (_: frontendV3_3.InternalException) =>
+            // ProcedureOrSchema plans have no assigned IDs. That's ok.
           }
         // Save Mapping from 3.3 expression to 3.4 expression
         case e: ExpressionV3_3 if isImportant(e) => expressionMap += (((e, e.position), rewritten.asInstanceOf[ExpressionV3_4]))
@@ -172,20 +200,37 @@ object LogicalPlanConverter {
   }
 
   def convertLogicalPlan[T <: LogicalPlanV3_4](logicalPlan: LogicalPlanV3_3,
+                                               solveds: Solveds,
+                                               cardinalities: Cardinalities,
+                                               idConverter: IdConverter,
                                                isImportant: ExpressionV3_3 => Boolean = _ => true): (LogicalPlanV3_4, ExpressionMapping3To4) = {
-    val rewriter = new LogicalPlanRewriter(isImportant = isImportant)
+    val rewriter = new LogicalPlanRewriter(solveds, cardinalities, idConverter, isImportant = isImportant)
     val planV3_4 = new RewritableAny[LogicalPlanV3_3](logicalPlan).rewrite(rewriter, Seq.empty).asInstanceOf[T]
     (planV3_4, rewriter.expressionMap.toMap)
   }
 
-  private[v3_3] def convertExpression[T <: ExpressionV3_4](expression: ExpressionV3_3): T = {
-    new RewritableAny[ExpressionV3_3](expression).rewrite(new LogicalPlanRewriter, Seq.empty).asInstanceOf[T]
+  private[v3_3] def convertExpression[T <: ExpressionV3_4](expression: ExpressionV3_3,
+                                                           solveds: Solveds,
+                                                           cardinalities: Cardinalities,
+                                                           idConverter: IdConverter): T = {
+    new RewritableAny[ExpressionV3_3](expression)
+      .rewrite(new LogicalPlanRewriter(solveds, cardinalities, idConverter), Seq.empty)
+      .asInstanceOf[T]
   }
 
   private def convertASTNode[T <: utilV3_4.ASTNode](ast: astV3_3.ASTNode,
                                                     expressionMap: MutableExpressionMapping3To4,
+                                                    solveds: Solveds,
+                                                    cardinalities: Cardinalities,
+                                                    idConverter: IdConverter,
                                                     isImportant: ExpressionV3_3 => Boolean): T = {
-    new RewritableAny[astV3_3.ASTNode](ast).rewrite(new LogicalPlanRewriter(expressionMap, isImportant), Seq.empty).asInstanceOf[T]
+    new RewritableAny[astV3_3.ASTNode](ast)
+      .rewrite(new LogicalPlanRewriter(solveds,
+                                       cardinalities,
+                                       idConverter,
+                                       expressionMap,
+                                       isImportant), Seq.empty)
+      .asInstanceOf[T]
   }
 
   private val constructors = new ThreadLocal[MutableHashMap[(String, String, String), Constructor[_]]]() {
@@ -203,18 +248,35 @@ object LogicalPlanConverter {
           s"Failed trying to rewrite $classNameV3_3 - 3.4 class not found ($classNameV3_4)", e)
         case Failure(e: NoSuchElementException) => throw new InternalException(
           s"Failed trying to rewrite $classNameV3_3 - this class does not have a constructor", e)
+        case Failure(e) => throw e
       }
     })
   }
 
-  private def convertVersion(oldPackage: String, newPackage: String, thing: AnyRef, children: Seq[AnyRef], extraArg: AnyRef = null, assignableClazzForArg: Class[_] = null): AnyRef = {
+  private def convertVersion(oldPackage: String,
+                             newPackage: String,
+                             thing: AnyRef,
+                             children: Seq[AnyRef],
+                             extraArg: AnyRef = null,
+                             assignableClazzForArg: Class[_] = null,
+                             extraArg2: AnyRef = null,
+                             assignableClazzForArg2: Class[_] = null): AnyRef = {
     val thingClass = thing.getClass
     val classNameV3_3 = thingClass.getName
     val constructor = getConstructor(classNameV3_3, oldPackage, newPackage)
 
     val params = constructor.getParameterTypes
     val args = children.toVector
-    val ctorArgs = if (params.length == args.length + 1 && params.last.isAssignableFrom(assignableClazzForArg)) args :+ extraArg else args
+    val ctorArgs =
+      if (params.length == args.length + 1
+        && params.last.isAssignableFrom(assignableClazzForArg))
+        args :+ extraArg
+      else if (params.length == args.length + 2
+        && params(params.length - 2).isAssignableFrom(assignableClazzForArg)
+        && params(params.length - 1).isAssignableFrom(assignableClazzForArg2))
+        args :+ extraArg :+ extraArg2
+      else
+        args
 
     Try(constructor.newInstance(ctorArgs: _*).asInstanceOf[AnyRef]) match {
       case Success(i) => i

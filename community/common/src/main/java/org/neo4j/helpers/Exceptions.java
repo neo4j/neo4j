@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,6 +25,7 @@ import java.lang.Thread.State;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
@@ -37,6 +38,89 @@ public class Exceptions
 
     private static final String UNEXPECTED_MESSAGE = "Unexpected Exception";
 
+    private Exceptions()
+    {
+        throw new AssertionError( "No instances" );
+    }
+
+    /**
+     * Rethrows {@code exception} if it is an instance of {@link RuntimeException} or {@link Error}. Typical usage is:
+     *
+     * <pre>
+     * catch (Throwable e) {
+     *   ......common code......
+     *   throwIfUnchecked(e);
+     *   throw new RuntimeException(e);
+     * }
+     * </pre>
+     *
+     * This will only wrap checked exception in a {@code RuntimeException}. Do note that if the segment {@code common code}
+     * is missing, it's preferable to use this instead:
+     *
+     * <pre>
+     * catch (RuntimeException | Error e) {
+     *   throw e;
+     * }
+     * catch (Throwable e) {
+     *   throw new RuntimeException(e);
+     * }
+     * </pre>
+     *
+     * @param exception to rethrow.
+     */
+    public static void throwIfUnchecked( Throwable exception )
+    {
+        Objects.requireNonNull( exception );
+        if ( exception instanceof RuntimeException )
+        {
+            throw (RuntimeException) exception;
+        }
+        if ( exception instanceof Error )
+        {
+            throw (Error) exception;
+        }
+    }
+
+    /**
+     * Will rethrow the provided {@code exception} if it is an instance of {@code clazz}. Typical usage is:
+     *
+     * <pre>
+     * catch (Throwable e) {
+     *   ......common code......
+     *   throwIfInstanceOf(e, BarException.class);
+     *   throw new RuntimeException(e);
+     * }
+     * </pre>
+     *
+     * This will filter out all {@code BarExceptions} and wrap the rest in {@code RuntimeException}. Do note that if the
+     * segment {@code common code} is missing, it's preferable to use this instead:
+     *
+     * <pre>
+     * catch (BarException e) {
+     *   throw e;
+     * } catch (Throwable e) {
+     *   threw new RuntimeException(e);
+     * }
+     * </pre>
+     *
+     * @param exception to rethrow.
+     * @param clazz a {@link Class} instance to check against.
+     * @param <T> type thrown, if thrown at all.
+     * @throws T if {@code exception} is an instance of {@code clazz}.
+     */
+    public static <T extends Throwable> void throwIfInstanceOf( Throwable exception, Class<T> clazz ) throws T
+    {
+        Objects.requireNonNull( exception );
+        if ( clazz.isInstance( exception ) )
+        {
+            throw clazz.cast( exception );
+        }
+    }
+
+    /**
+     * @deprecated Use {@link Throwable#initCause(Throwable)} instead.
+     */
+    @Deprecated
     public static <T extends Throwable> T withCause( T exception, Throwable cause )
     {
         try
@@ -50,6 +134,10 @@ public class Exceptions
         return exception;
     }
 
+    /**
+     * @deprecated Use {@link Throwable#addSuppressed(Throwable)} instead.
+     */
+    @Deprecated
     public static <T extends Throwable> T withSuppressed( T exception, Throwable... suppressed )
     {
         if ( suppressed != null )
@@ -62,21 +150,42 @@ public class Exceptions
         return exception;
     }
 
+    /**
+     * @deprecated See {@link #launderedException(Class, String, Throwable)}.
+     */
+    @Deprecated
     public static RuntimeException launderedException( Throwable exception )
     {
-        return launderedException( UNEXPECTED_MESSAGE, exception );
+        return launderedException( RuntimeException.class, UNEXPECTED_MESSAGE, exception );
     }
 
+    /**
+     * @deprecated See {@link #launderedException(Class, String, Throwable)}.
+     */
+    @Deprecated
     public static RuntimeException launderedException( String messageForUnexpected, Throwable exception )
     {
         return launderedException( RuntimeException.class, messageForUnexpected, exception );
     }
 
+    /**
+     * @deprecated See {@link #launderedException(Class, String, Throwable)}.
+     */
+    @Deprecated
     public static <T extends Throwable> T launderedException( Class<T> type, Throwable exception )
     {
         return launderedException( type, UNEXPECTED_MESSAGE, exception );
     }
 
+    /**
+     * @deprecated use {@code throw e} or {@code throw new RuntimeException(e)} directly. Prefer multi-caches if applicable.
+     * For more elaborate scenarios, have a look at {@link #throwIfUnchecked(Throwable)} and
+     * {@link #throwIfInstanceOf(Throwable, Class)}
+     * <p>
+     * For a more furrow explanation take a look at the very similar case:
+     * <a href="https://goo.gl/Ivn2kc">Why we deprecated {@code Throwables.propagate}</a>
+     */
+    @Deprecated
     public static <T extends Throwable> T launderedException( Class<T> type, String messageForUnexpected,
             Throwable exception )
     {
@@ -131,11 +240,13 @@ public class Exceptions
         return exception;
     }
 
-    private Exceptions()
-    {
-        // no instances
-    }
-
+    /**
+     * Returns the root cause of an exception.
+     *
+     * @param caughtException exception to find the root cause of.
+     * @return the root cause.
+     * @throws IllegalArgumentException if the provided exception is null.
+     */
     public static Throwable rootCause( Throwable caughtException )
     {
         if ( null == caughtException )
@@ -143,11 +254,9 @@ public class Exceptions
             throw new IllegalArgumentException( "Cannot obtain rootCause from (null)" );
         }
         Throwable root  = caughtException;
-        Throwable cause = root.getCause();
-        while ( null != cause )
+        while ( root.getCause() != null )
         {
-            root  = cause;
-            cause = cause.getCause();
+            root = root.getCause();
         }
         return root;
     }
@@ -171,10 +280,12 @@ public class Exceptions
                 " prio=" + thread.getPriority() +
                 " tid=" + thread.getId() +
                 " " + thread.getState().name().toLowerCase() + "\n" );
-        builder.append( "   " + State.class.getName() + ": " + thread.getState().name().toUpperCase() + "\n" );
+        builder.append( "   " ).append( State.class.getName() ).append( ": " )
+                .append( thread.getState().name().toUpperCase() ).append( "\n" );
         for ( StackTraceElement element : elements )
         {
-            builder.append( "      at " + element.getClassName() + "." + element.getMethodName() );
+            builder.append( "      at " ).append( element.getClassName() ).append( "." )
+                    .append( element.getMethodName() );
             if ( element.isNativeMethod() )
             {
                 builder.append( "(Native method)" );
@@ -185,7 +296,8 @@ public class Exceptions
             }
             else
             {
-                builder.append( "(" + element.getFileName() + ":" + element.getLineNumber() + ")" );
+                builder.append( "(" ).append( element.getFileName() ).append( ":" ).append( element.getLineNumber() )
+                        .append( ")" );
             }
             builder.append( "\n" );
         }
@@ -200,6 +312,7 @@ public class Exceptions
                                 anyOfClasses.test( item ) );
     }
 
+    @SuppressWarnings( "rawtypes" )
     public static boolean contains( Throwable cause, Class... anyOfTheseClasses )
     {
         return contains( cause, org.neo4j.function.Predicates.instanceOfAny( anyOfTheseClasses ) );
@@ -218,6 +331,11 @@ public class Exceptions
         return false;
     }
 
+    /**
+     * @deprecated Use {@link Throwable#addSuppressed(Throwable)} and {@link Throwable#initCause(Throwable)} where
+     * appropriate instead.
+     */
+    @Deprecated
     public static <E extends Throwable> E combine( E first, E second )
     {
         if ( first == null )
@@ -278,7 +396,10 @@ public class Exceptions
             return current;
         }
 
-        initial.addSuppressed( current );
+        if ( current != null )
+        {
+            initial.addSuppressed( current );
+        }
         return initial;
     }
 

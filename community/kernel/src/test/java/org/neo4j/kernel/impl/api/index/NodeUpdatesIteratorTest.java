@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ public class NodeUpdatesIteratorTest
 {
 
     @Test
-    public void iterateOverEmptyNodeIds() throws Exception
+    public void iterateOverEmptyNodeIds()
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
         PrimitiveLongIterator emptyIterator = PrimitiveLongCollections.emptyIterator();
@@ -47,7 +47,7 @@ public class NodeUpdatesIteratorTest
     }
 
     @Test
-    public void iterateOverUpdatesWithNext() throws Exception
+    public void iterateOverUpdatesWithNext()
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
         NodeUpdates nodeUpdates1 = NodeUpdates.forNode( 1 ).build();

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -41,18 +41,23 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
-import org.neo4j.kernel.api.ExplicitIndexHits;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -62,7 +67,6 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 
@@ -82,80 +86,48 @@ public class BuiltInProcedures
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
-        Statement statement = tx.acquireStatement();
-        try
-        {
-            // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
-            // but we still want to eagerly consume the labels, so we can catch any exceptions,
-            List<LabelResult> labelResults = asList( TokenAccess.LABELS.inUse( statement ).map( LabelResult::new ) );
-            return labelResults.stream();
-        }
-        catch ( Throwable t )
-        {
-            statement.close();
-            throw t;
-        }
+        List<LabelResult> labelResults = asList( TokenAccess.LABELS.inUse( tx ).map( LabelResult::new ) );
+        return labelResults.stream();
     }
 
     @Description( "List all property keys in the database." )
     @Procedure( name = "db.propertyKeys", mode = READ )
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
-        Statement statement = tx.acquireStatement();
-        try
-        {
-            // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
-            // but we still want to eagerly consume the labels, so we can catch any exceptions,
-            List<PropertyKeyResult> propertyKeys =
-                    asList( TokenAccess.PROPERTY_KEYS.inUse( statement ).map( PropertyKeyResult::new ) );
-            return propertyKeys.stream();
-        }
-        catch ( Throwable t )
-        {
-            statement.close();
-            throw t;
-        }
+        List<PropertyKeyResult> propertyKeys =
+                asList( TokenAccess.PROPERTY_KEYS.inUse( tx ).map( PropertyKeyResult::new ) );
+        return propertyKeys.stream();
     }
 
     @Description( "List all relationship types in the database." )
     @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
-        Statement statement = tx.acquireStatement();
-        try
-        {
-            // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
-            // but we still want to eagerly consume the labels, so we can catch any exceptions,
-            List<RelationshipTypeResult> relationshipTypes =
-                    asList( TokenAccess.RELATIONSHIP_TYPES.inUse( statement ).map( RelationshipTypeResult::new ) );
-            return relationshipTypes.stream();
-        }
-        catch ( Throwable t )
-        {
-            statement.close();
-            throw t;
-        }
+        List<RelationshipTypeResult> relationshipTypes =
+                asList( TokenAccess.RELATIONSHIP_TYPES.inUse( tx ).map( RelationshipTypeResult::new ) );
+        return relationshipTypes.stream();
     }
 
     @Description( "List all indexes in the database." )
     @Procedure( name = "db.indexes", mode = READ )
     public Stream<IndexResult> listIndexes() throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations operations = statement.readOperations();
-            TokenNameLookup tokens = new StatementTokenNameLookup( operations );
+            TokenRead tokenRead = tx.tokenRead();
+            TokenNameLookup tokens = new SilentTokenNameLookup( tokenRead );
 
-            List<IndexDescriptor> indexes = asList( operations.indexesGetAll() );
+            SchemaRead schemaRead = tx.schemaRead();
+            List<IndexReference> indexes = asList( schemaRead.indexesGetAll() );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
-            for ( IndexDescriptor index : indexes )
+            for ( IndexReference index : indexes )
             {
                 try
                 {
                     String type;
-                    if ( index.type() == UNIQUE )
+                    if ( index.isUnique() )
                     {
                         type = IndexType.NODE_UNIQUE_PROPERTY.typeName();
                     }
@@ -164,16 +136,24 @@ public class BuiltInProcedures
                         type = IndexType.NODE_LABEL_PROPERTY.typeName();
                     }
 
-                    String label = tokens.labelGetName( index.schema().getLabelId() );
+                    String label = tokenRead.nodeLabelName( index.label() );
                     List<String> propertyNames = propertyNames( tokens, index );
-                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ), label, propertyNames,
-                            operations.indexGetState( index ).toString(), type,
-                            indexProviderDescriptorMap( operations.indexGetProviderDescriptor( index ) ) ) );
+                    result.add( new IndexResult( "INDEX ON " +
+                                                 SchemaDescriptorFactory.forLabel( index.label(), index.properties() )
+                                                         .userDescription( tokens ), label,
+                            propertyNames,
+                            schemaRead.indexGetState( index ).toString(), type,
+                            indexProviderDescriptorMap( schemaRead.index( index.label(), index.properties() ) ) ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {
                     throw new ProcedureException( Status.Schema.IndexNotFound, e,
                             "No index on ", index.userDescription( tokens ) );
+                }
+                catch ( LabelNotFoundKernelException e )
+                {
+                    throw new ProcedureException( Status.General.InvalidArguments, e,
+                            "Label not found " );
                 }
             }
             return result.stream();
@@ -195,7 +175,6 @@ public class BuiltInProcedures
     @Description( "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\"))." )
     @Procedure( name = "db.awaitIndexes", mode = READ )
     public void awaitIndexes( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
-            throws ProcedureException
     {
         graphDatabaseAPI.schema().awaitIndexesOnline( timeout, TimeUnit.SECONDS );
     }
@@ -222,7 +201,7 @@ public class BuiltInProcedures
 
     @Description( "Show the schema of the data." )
     @Procedure( name = "db.schema", mode = READ )
-    public Stream<SchemaProcedure.GraphResult> metaGraph() throws ProcedureException
+    public Stream<SchemaProcedure.GraphResult> metaGraph()
     {
         return Stream.of( new SchemaProcedure( graphDatabaseAPI, tx ).buildSchemaGraph() );
     }
@@ -231,17 +210,15 @@ public class BuiltInProcedures
     @Procedure( name = "db.constraints", mode = READ )
     public Stream<ConstraintResult> listConstraints()
     {
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            ReadOperations operations = statement.readOperations();
-            TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
-            return asList( operations.constraintsGetAll() )
-                    .stream()
-                    .map( constraint -> constraint.prettyPrint( tokens ) )
-                    .sorted()
-                    .map( ConstraintResult::new );
-        }
+        SchemaRead schemaRead = tx.schemaRead();
+        TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
+
+        return asList( schemaRead.constraintsGetAll() )
+                .stream()
+                .map( constraint -> constraint.prettyPrint( tokens ) )
+                .sorted()
+                .map( ConstraintResult::new );
     }
 
     @Description( "Get node from explicit index. Replaces `START n=node:nodes(key = 'A')`" )
@@ -251,17 +228,19 @@ public class BuiltInProcedures
             @Name( "value" ) Object value )
             throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits = readOperations.nodeExplicitIndexGet( explicitIndexName, key, value );
-            return toStream( hits, id -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
+            NodeExplicitIndexCursor cursor = tx.cursors().allocateNodeExplicitIndexCursor();
+            tx.indexRead().nodeExplicitIndexLookup( cursor, explicitIndexName, key, value );
+
+            return toStream( cursor, id -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
                     explicitIndexName );
         }
+
     }
 
     @Description( "Search nodes in explicit index. Replaces `START n=node:nodes('key:foo*')`" )
@@ -270,13 +249,13 @@ public class BuiltInProcedures
             @Name( "query" ) Object query )
             throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits = readOperations.nodeExplicitIndexQuery( manualIndexName, query );
-            return toWeightedNodeResultStream( hits );
+            NodeExplicitIndexCursor cursor = tx.cursors().allocateNodeExplicitIndexCursor();
+            tx.indexRead().nodeExplicitIndexQuery( cursor, manualIndexName, query );
+            return toWeightedNodeResultStream( cursor );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
                     manualIndexName );
@@ -290,13 +269,14 @@ public class BuiltInProcedures
             @Name( "value" ) Object value )
             throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits = readOperations.relationshipExplicitIndexGet( manualIndexName, key, value, -1, -1 );
-            return toStream( hits, id -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
+            RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
+            tx.indexRead().relationshipExplicitIndexLookup( cursor, manualIndexName, key, value,
+                    -1, -1 );
+            return toStream( cursor, id -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
                     manualIndexName );
@@ -310,13 +290,13 @@ public class BuiltInProcedures
             @Name( "query" ) Object query )
             throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits = readOperations.relationshipExplicitIndexQuery( manualIndexName, query, -1, -1 );
-            return toWeightedRelationshipResultStream( hits );
+            RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
+            tx.indexRead().relationshipExplicitIndexQuery( cursor, manualIndexName, query, -1, -1 );
+            return toWeightedRelationshipResultStream( cursor );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
                     manualIndexName );
@@ -331,13 +311,14 @@ public class BuiltInProcedures
             @Name( "query" ) Object query )
             throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits = readOperations.relationshipExplicitIndexQuery( indexName, query, in.getId(), -1 );
-            return toWeightedRelationshipResultStream( hits );
+            RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
+            tx.indexRead().relationshipExplicitIndexQuery( cursor, indexName, query, in.getId(), -1 );
+
+            return toWeightedRelationshipResultStream( cursor );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
                     indexName );
@@ -352,13 +333,13 @@ public class BuiltInProcedures
             @Name( "query" ) Object query )
             throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits = readOperations.relationshipExplicitIndexQuery( indexName, query, -1, out.getId() );
-            return toWeightedRelationshipResultStream( hits );
+            RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
+            tx.indexRead().relationshipExplicitIndexQuery( cursor, indexName, query, -1, out.getId() );
+            return toWeightedRelationshipResultStream( cursor );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
                     indexName );
@@ -374,13 +355,14 @@ public class BuiltInProcedures
             @Name( "query" ) Object query )
             throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits = readOperations.relationshipExplicitIndexQuery( indexName, query, in.getId(), out.getId() );
-            return toWeightedRelationshipResultStream( hits );
+            RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
+            tx.indexRead().relationshipExplicitIndexQuery( cursor, indexName, query, in.getId(), out.getId() );
+
+            return toWeightedRelationshipResultStream( cursor );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
                     indexName );
@@ -390,15 +372,14 @@ public class BuiltInProcedures
     @Description( "Get node from explicit automatic index. Replaces `START n=node:node_auto_index(key = 'A')`" )
     @Procedure( name = "db.index.explicit.auto.seekNodes", mode = READ )
     public Stream<NodeResult> nodeAutoIndexSeek( @Name( "key" ) String key, @Name( "value" ) Object value )
-            throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits = readOperations.nodeExplicitIndexGet( "node_auto_index", key, value );
-            return toStream( hits, id -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
+            NodeExplicitIndexCursor cursor = tx.cursors().allocateNodeExplicitIndexCursor();
+            tx.indexRead().nodeExplicitIndexLookup( cursor, "node_auto_index", key, value );
+            return toStream( cursor, id -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             // auto index will not exist if no nodes have been added that match the auto-index rules
             return Stream.empty();
@@ -407,15 +388,16 @@ public class BuiltInProcedures
 
     @Description( "Search nodes in explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`" )
     @Procedure( name = "db.index.explicit.auto.searchNodes", mode = READ )
-    public Stream<WeightedNodeResult> nodeAutoIndexSearch( @Name( "query" ) Object query ) throws ProcedureException
+    public Stream<WeightedNodeResult> nodeAutoIndexSearch( @Name( "query" ) Object query )
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits = readOperations.nodeExplicitIndexQuery( "node_auto_index", query );
-            return toWeightedNodeResultStream( hits );
+            NodeExplicitIndexCursor cursor = tx.cursors().allocateNodeExplicitIndexCursor();
+            tx.indexRead().nodeExplicitIndexQuery( cursor, "node_auto_index", query );
+
+            return toWeightedNodeResultStream( cursor );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             // auto index will not exist if no nodes have been added that match the auto-index rules
             return Stream.empty();
@@ -426,36 +408,35 @@ public class BuiltInProcedures
                   "= 'A')`" )
     @Procedure( name = "db.index.explicit.auto.seekRelationships", mode = READ )
     public Stream<RelationshipResult> relationshipAutoIndexSeek( @Name( "key" ) String key,
-            @Name( "value" ) Object value ) throws ProcedureException
+            @Name( "value" ) Object value )
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits =
-                    readOperations.relationshipExplicitIndexGet( "relationship_auto_index", key, value, -1, -1 );
-            return toStream( hits, id -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
+            RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
+            tx.indexRead()
+                    .relationshipExplicitIndexLookup( cursor, "relationship_auto_index", key,  value, -1, -1 );
+            return toStream( cursor, id -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             // auto index will not exist if no relationships have been added that match the auto-index rules
             return Stream.empty();
         }
     }
 
-    @Description( "Search relationship in explicit automatic index. Replaces `START r=relationship:relationship_auto_index" +
-                  "('key:foo*')`" )
+    @Description(
+            "Search relationship in explicit automatic index. Replaces `START r=relationship:relationship_auto_index" +
+            "('key:foo*')`" )
     @Procedure( name = "db.index.explicit.auto.searchRelationships", mode = READ )
     public Stream<WeightedRelationshipResult> relationshipAutoIndexSearch( @Name( "query" ) Object query )
-            throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            ExplicitIndexHits hits =
-                    readOperations.relationshipExplicitIndexQuery( "relationship_auto_index", query, -1, -1 );
-            return toWeightedRelationshipResultStream( hits );
+            RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
+            tx.indexRead().relationshipExplicitIndexQuery( cursor, "relationship_auto_index", query, -1, -1 );
+            return toWeightedRelationshipResultStream( cursor );
         }
-        catch ( ExplicitIndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             // auto index will not exist if no relationships have been added that match the auto-index rules
             return Stream.empty();
@@ -560,7 +541,7 @@ public class BuiltInProcedures
     {
         graphDatabaseAPI.index().forNodes( explicitIndexName ).add( node, key, value );
         // Failures will be expressed as exceptions before the return
-        return Stream.of( new BooleanResult( true ) );
+        return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
     @Description( "Add a relationship to an explicit index based on a specified key and value" )
@@ -571,15 +552,17 @@ public class BuiltInProcedures
     {
         graphDatabaseAPI.index().forRelationships( explicitIndexName ).add( relationship, key, value );
         // Failures will be expressed as exceptions before the return
-        return Stream.of( new BooleanResult( true ) );
+        return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
+
+    private static final String DEFAULT_KEY = " <[9895b15e-8693-4a21-a58b-4b7b87e09b8e]> ";
 
     @Description( "Remove a node from an explicit index with an optional key" )
     @Procedure( name = "db.index.explicit.removeNode", mode = WRITE )
     public Stream<BooleanResult> nodeManualIndexRemove( @Name( "indexName" ) String explicitIndexName,
-            @Name( "node" ) Node node, @Name( "key" ) String key )
+            @Name( "node" ) Node node, @Name( value = "key", defaultValue = DEFAULT_KEY ) String key )
     {
-        if ( key.equals( Name.DEFAULT_VALUE ) )
+        if ( key.equals( DEFAULT_KEY ) )
         {
             graphDatabaseAPI.index().forNodes( explicitIndexName ).remove( node );
         }
@@ -588,16 +571,16 @@ public class BuiltInProcedures
             graphDatabaseAPI.index().forNodes( explicitIndexName ).remove( node, key );
         }
         // Failures will be expressed as exceptions before the return
-        return Stream.of( new BooleanResult( true ) );
+        return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
     @Description( "Remove a relationship from an explicit index with an optional key" )
     @Procedure( name = "db.index.explicit.removeRelationship", mode = WRITE )
     public Stream<BooleanResult> relationshipManualIndexRemove( @Name( "indexName" ) String explicitIndexName,
             @Name( "relationship" ) Relationship relationship,
-            @Name( "key" ) String key )
+            @Name( value = "key", defaultValue = DEFAULT_KEY ) String key )
     {
-        if ( key.equals( Name.DEFAULT_VALUE ) )
+        if ( key.equals( DEFAULT_KEY ) )
         {
             graphDatabaseAPI.index().forRelationships( explicitIndexName ).remove( relationship );
         }
@@ -606,25 +589,85 @@ public class BuiltInProcedures
             graphDatabaseAPI.index().forRelationships( explicitIndexName ).remove( relationship, key );
         }
         // Failures will be expressed as exceptions before the return
-        return Stream.of( new BooleanResult( true ) );
+        return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
-    private Map<String,String> indexProviderDescriptorMap( SchemaIndexProvider.Descriptor providerDescriptor )
+    private Map<String,String> indexProviderDescriptorMap( CapableIndexReference indexReference )
     {
         return MapUtil.stringMap(
-                "key", providerDescriptor.getKey(),
-                "version", providerDescriptor.getVersion() );
+                "key", indexReference.providerKey(),
+                "version", indexReference.providerVersion() );
     }
 
-    private List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
+    private List<String> propertyNames( TokenNameLookup tokens, IndexReference index )
     {
-        int[] propertyIds = index.schema().getPropertyIds();
-        List<String> propertyNames = new ArrayList<>();
-        for ( int i = 0; i < propertyIds.length; i++ )
+        int[] propertyIds = index.properties();
+        List<String> propertyNames = new ArrayList<>( propertyIds.length );
+        for ( int propertyId : propertyIds )
         {
-            propertyNames.add( tokens.propertyKeyGetName( propertyIds[i] ) );
+            propertyNames.add( tokens.propertyKeyGetName( propertyId ) );
         }
         return propertyNames;
+    }
+
+    private <T> Stream<T> toStream( NodeExplicitIndexCursor cursor, LongFunction<T> mapper )
+    {
+        PrefetchingResourceIterator<T> it = new PrefetchingResourceIterator<T>()
+        {
+            @Override
+            protected T fetchNextOrNull()
+            {
+                if ( cursor.next() )
+                {
+                    return mapper.apply( cursor.nodeReference() );
+                }
+                else
+                {
+                    close();
+                    return null;
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                cursor.close();
+            }
+        };
+
+        Stream<T> stream =
+                StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
+        return stream.onClose( cursor::close );
+    }
+
+    private <T> Stream<T> toStream( RelationshipExplicitIndexCursor cursor, LongFunction<T> mapper )
+    {
+        PrefetchingResourceIterator<T> it = new PrefetchingResourceIterator<T>()
+        {
+            @Override
+            protected T fetchNextOrNull()
+            {
+                if ( cursor.next() )
+                {
+                    return mapper.apply( cursor.relationshipReference() );
+                }
+                else
+                {
+                    close();
+                    return null;
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                cursor.close();
+            }
+        };
+
+        Stream<T> stream =
+                StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
+        return stream.onClose( cursor::close );
     }
 
     private <T> Stream<T> toStream( PrimitiveLongResourceIterator iterator, LongFunction<T> mapper )
@@ -644,47 +687,78 @@ public class BuiltInProcedures
             }
         };
 
-        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
+        Stream<T> stream =
+                StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
+        return stream.onClose( () ->
+        {
+            if ( iterator != null )
+            {
+                iterator.close();
+            }
+        } );
     }
 
-    private Stream<WeightedNodeResult> toWeightedNodeResultStream( ExplicitIndexHits iterator )
+    private Stream<WeightedNodeResult> toWeightedNodeResultStream( NodeExplicitIndexCursor cursor )
     {
-        Iterator<WeightedNodeResult> it = new Iterator<WeightedNodeResult>()
+        Iterator<WeightedNodeResult> it = new PrefetchingResourceIterator<WeightedNodeResult>()
         {
             @Override
-            public boolean hasNext()
+            public void close()
             {
-                return iterator.hasNext();
+                cursor.close();
             }
 
             @Override
-            public WeightedNodeResult next()
+            protected WeightedNodeResult fetchNextOrNull()
             {
-                return new WeightedNodeResult( graphDatabaseAPI.getNodeById( iterator.next() ), iterator.currentScore() );
+                if ( cursor.next() )
+                {
+                    return new WeightedNodeResult( graphDatabaseAPI.getNodeById( cursor.nodeReference() ),
+                            cursor.score() );
+                }
+                else
+                {
+                    close();
+                    return null;
+                }
             }
         };
 
-        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
+        Stream<WeightedNodeResult> stream =
+                StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
+        return stream.onClose( cursor::close );
     }
 
-    private Stream<WeightedRelationshipResult> toWeightedRelationshipResultStream( ExplicitIndexHits iterator )
+    private Stream<WeightedRelationshipResult> toWeightedRelationshipResultStream(
+            RelationshipExplicitIndexCursor cursor )
     {
-        Iterator<WeightedRelationshipResult> it = new Iterator<WeightedRelationshipResult>()
+        Iterator<WeightedRelationshipResult> it = new PrefetchingResourceIterator<WeightedRelationshipResult>()
         {
             @Override
-            public boolean hasNext()
+            public void close()
             {
-                return iterator.hasNext();
+                cursor.close();
             }
 
             @Override
-            public WeightedRelationshipResult next()
+            protected WeightedRelationshipResult fetchNextOrNull()
             {
-                return new WeightedRelationshipResult( graphDatabaseAPI.getRelationshipById( iterator.next() ), iterator.currentScore() );
+                if ( cursor.next() )
+                {
+                    return new WeightedRelationshipResult(
+                            graphDatabaseAPI.getRelationshipById( cursor.relationshipReference() ), cursor.score() );
+                }
+                else
+                {
+                    close();
+                    return null;
+                }
             }
         };
 
-        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
+        Stream<WeightedRelationshipResult> stream =
+                StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
+        return stream.onClose( cursor::close );
     }
 
     private IndexProcedures indexProcedures()
@@ -692,8 +766,7 @@ public class BuiltInProcedures
         return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
     }
 
-    @SuppressWarnings( "unused" )
-    public class LabelResult
+    public static class LabelResult
     {
         public final String label;
 
@@ -703,8 +776,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class PropertyKeyResult
+    public static class PropertyKeyResult
     {
         public final String propertyKey;
 
@@ -714,8 +786,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class RelationshipTypeResult
+    public static class RelationshipTypeResult
     {
         public final String relationshipType;
 
@@ -725,8 +796,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class BooleanResult
+    public static class BooleanResult
     {
         public BooleanResult( Boolean success )
         {
@@ -736,8 +806,7 @@ public class BuiltInProcedures
         public final Boolean success;
     }
 
-    @SuppressWarnings( "unused" )
-    public class IndexResult
+    public static class IndexResult
     {
         public final String description;
         public final String label;
@@ -746,7 +815,8 @@ public class BuiltInProcedures
         public final String type;
         public final Map<String,String> provider;
 
-        private IndexResult( String description, String label, List<String> properties, String state, String type, Map<String,String> provider )
+        private IndexResult( String description, String label, List<String> properties, String state, String type,
+                Map<String,String> provider )
         {
             this.description = description;
             this.label = label;
@@ -771,8 +841,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class ConstraintResult
+    public static class ConstraintResult
     {
         public final String description;
 
@@ -782,8 +851,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class NodeResult
+    public static class NodeResult
     {
         public NodeResult( Node node )
         {
@@ -793,8 +861,7 @@ public class BuiltInProcedures
         public final Node node;
     }
 
-    @SuppressWarnings( "unused" )
-    public class WeightedNodeResult
+    public static class WeightedNodeResult
     {
         public final Node node;
         public final double weight;
@@ -806,8 +873,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class WeightedRelationshipResult
+    public static class WeightedRelationshipResult
     {
         public final Relationship relationship;
         public final double weight;
@@ -819,8 +885,7 @@ public class BuiltInProcedures
         }
     }
 
-    @SuppressWarnings( "unused" )
-    public class RelationshipResult
+    public static class RelationshipResult
     {
         public RelationshipResult( Relationship relationship )
         {

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.ext.udc.impl;
 
@@ -114,7 +117,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         String serverAddress = serviceHostName + ":" + servicePort;
 
         config = new HashMap<>();
-        config.put( UdcSettings.first_delay.name(), "100" );
+        config.put( UdcSettings.first_delay.name(), "1000" );
         config.put( UdcSettings.udc_host.name(), serverAddress );
         config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
 
@@ -405,7 +408,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldMatchAllValidVersions() throws Exception
+    public void shouldMatchAllValidVersions()
     {
         assertTrue( "1.8.M07".matches( VersionPattern ) );
         assertTrue( "1.8.RC1".matches( VersionPattern ) );
@@ -421,14 +424,14 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldFilterPlusBuildNumbers() throws Exception
+    public void shouldFilterPlusBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9.0-M01+00001" ),
                 is( equalTo( "1.9.0-M01" ) ) );
     }
 
     @Test
-    public void shouldNotFilterSnapshotBuildNumbers() throws Exception
+    public void shouldNotFilterSnapshotBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "2.0-SNAPSHOT" ),
                 is( equalTo( "2.0-SNAPSHOT" ) ) );
@@ -436,13 +439,13 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldNotFilterReleaseBuildNumbers() throws Exception
+    public void shouldNotFilterReleaseBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9" ), is( equalTo( "1.9" ) ) );
     }
 
     @Test
-    public void shouldUseTheCustomConfiguration() throws Exception
+    public void shouldUseTheCustomConfiguration()
     {
         // Given
         config.put( UdcSettings.udc_source.name(), "my_source" );
@@ -475,7 +478,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
 
     private void assertGotPingWithRetry( Map<String,Integer> counts, Condition<Integer> condition ) throws Exception
     {
-        for ( int i = 0; i < 50; i++ )
+        for ( int i = 0; i < 100; i++ )
         {
             Thread.sleep( 200 );
             Collection<Integer> countValues = counts.values();
@@ -488,17 +491,17 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         fail();
     }
 
-    private GraphDatabaseService createDatabase() throws IOException
+    private GraphDatabaseService createDatabase()
     {
         return createDatabase( null, null );
     }
 
-    private GraphDatabaseService createDatabase( Map<String,String> config ) throws IOException
+    private GraphDatabaseService createDatabase( Map<String,String> config )
     {
         return createDatabase( null, config );
     }
 
-    private GraphDatabaseService createDatabase( File storeDir, Map<String,String> config ) throws IOException
+    private GraphDatabaseService createDatabase( File storeDir, Map<String,String> config )
     {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
         GraphDatabaseBuilder graphDatabaseBuilder =

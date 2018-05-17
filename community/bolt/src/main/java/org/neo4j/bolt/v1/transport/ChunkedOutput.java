@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,50 +24,99 @@ import io.netty.channel.Channel;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Objects;
 
-import org.neo4j.bolt.transport.TransportThrottle;
+import org.neo4j.bolt.transport.TransportThrottleException;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
-import org.neo4j.bolt.v1.messaging.BoltResponseMessageBoundaryHook;
+import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.packstream.PackStream;
-
-import static java.lang.Math.max;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * A target output for {@link PackStream} which breaks the data into a continuous stream of chunks before pushing them into a netty
  * channel.
  */
-public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHook
+public class ChunkedOutput implements PackOutput
 {
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
+
     public static final int CHUNK_HEADER_SIZE = 2;
     public static final int MESSAGE_BOUNDARY = 0;
 
-    private final int bufferSize;
+    private static final int MAX_CHUNK_SIZE = Short.MAX_VALUE / 2;
+    private static final int NO_MESSAGE = -1;
+
+    private final Channel channel;
+    private final int maxBufferSize;
     private final int maxChunkSize;
-    private final AtomicBoolean closed = new AtomicBoolean( false );
     private final TransportThrottleGroup throttleGroup;
 
     private ByteBuf buffer;
-    private Channel channel;
-    private int currentChunkHeaderOffset;
+    private int currentChunkStartIndex;
+    private boolean closed;
 
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen;
+    private int currentMessageStartIndex = NO_MESSAGE;
 
-    public ChunkedOutput( Channel ch, int bufferSize )
+    public ChunkedOutput( Channel ch, TransportThrottleGroup throttleGroup )
     {
-        this( ch, bufferSize, null );
+        this( ch, DEFAULT_BUFFER_SIZE, throttleGroup );
     }
 
     public ChunkedOutput( Channel ch, int bufferSize, TransportThrottleGroup throttleGroup )
     {
-        this.channel = ch;
-        this.bufferSize = max( 16, bufferSize );
-        this.maxChunkSize = this.bufferSize - CHUNK_HEADER_SIZE;
-        this.buffer = channel.alloc().buffer( this.bufferSize, this.bufferSize );
-        this.throttleGroup = throttleGroup;
+        this( ch, bufferSize, MAX_CHUNK_SIZE, throttleGroup );
+    }
+
+    public ChunkedOutput( Channel channel, int maxBufferSize, int maxChunkSize, TransportThrottleGroup throttleGroup )
+    {
+        this.channel = Objects.requireNonNull( channel );
+        this.maxBufferSize = maxBufferSize;
+        this.maxChunkSize = maxChunkSize;
+        this.buffer = allocateBuffer();
+        this.throttleGroup = Objects.requireNonNull( throttleGroup );
+    }
+
+    @Override
+    public synchronized void beginMessage()
+    {
+        if ( currentMessageStartIndex != NO_MESSAGE )
+        {
+            throw new IllegalStateException( "Message has already been started, index: " + currentMessageStartIndex );
+        }
+
+        currentMessageStartIndex = buffer.writerIndex();
+    }
+
+    @Override
+    public synchronized void messageSucceeded() throws IOException
+    {
+        assertMessageStarted();
+        currentMessageStartIndex = NO_MESSAGE;
+
+        closeChunkIfOpen();
+        buffer.writeShort( MESSAGE_BOUNDARY );
+
+        if ( buffer.readableBytes() >= maxBufferSize )
+        {
+            flush();
+        }
+        chunkOpen = false;
+    }
+
+    @Override
+    public synchronized void messageFailed() throws IOException
+    {
+        assertMessageStarted();
+        int writerIndex = currentMessageStartIndex;
+        currentMessageStartIndex = NO_MESSAGE;
+
+        // truncate the buffer to remove all data written by an unfinished message
+        buffer.capacity( writerIndex );
+        chunkOpen = false;
     }
 
     //Flush can be called from a separate thread, we therefor need to synchronize
@@ -80,9 +129,13 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
             closeChunkIfOpen();
 
             // check for and apply write throttles
-            if ( throttleGroup != null )
+            try
             {
                 throttleGroup.writeThrottle().acquire( channel );
+            }
+            catch ( TransportThrottleException ex )
+            {
+                throw new BoltIOException( Status.Request.InvalidUsage, ex.getMessage(), ex );
             }
 
             // Local copy and clear the buffer field. This ensures that the buffer is not re-released if the flush call fails
@@ -91,7 +144,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
 
             channel.writeAndFlush( out, channel.voidPromise() );
 
-            newBuffer();
+            buffer = allocateBuffer();
         }
         return this;
     }
@@ -137,25 +190,16 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     }
 
     @Override
-    public PackOutput writeBytes( ByteBuffer data ) throws IOException
+    public synchronized PackOutput writeBytes( ByteBuffer data ) throws IOException
     {
-        // TODO: If data is larger than our chunk size or so, we're very likely better off just passing this ByteBuffer
-        // on rather than doing the copy here
-        // TODO: *however* note that we need some way to find out when the data has been written (and thus the buffer
-        // can be re-used) if we take that approach
-        // See the comment in #newBuffer for an approach that would allow that
         while ( data.remaining() > 0 )
         {
             // Ensure there is an open chunk, and that it has at least one byte of space left
             ensure( 1 );
 
             int oldLimit = data.limit();
-            synchronized ( this )
-            {
-                data.limit( data.position() + Math.min( buffer.writableBytes(), data.remaining() ) );
-
-                buffer.writeBytes( data );
-            }
+            data.limit( data.position() + Math.min( availableBytesInCurrentChunk(), data.remaining() ) );
+            buffer.writeBytes( data );
             data.limit( oldLimit );
         }
         return this;
@@ -171,54 +215,6 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         return writeBytes( ByteBuffer.wrap( data, offset, length ) );
     }
 
-    //must be called from within a synchronized block
-    private void ensure( int size ) throws IOException
-    {
-        assert size <= maxChunkSize : size + " > " + maxChunkSize;
-        if ( closed.get() )
-        {
-            throw new PackOutputClosedException( "Network channel towards " + channel.remoteAddress() + " is closed. " + "Client has probably been stopped." );
-        }
-        int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
-        synchronized ( this )
-        {
-            if ( buffer.writableBytes() < toWriteSize )
-            {
-                flush();
-            }
-
-            if ( !chunkOpen )
-            {
-                currentChunkHeaderOffset = buffer.writerIndex();
-                buffer.writerIndex( buffer.writerIndex() + CHUNK_HEADER_SIZE );
-                chunkOpen = true;
-            }
-        }
-    }
-
-    private synchronized void closeChunkIfOpen()
-    {
-        if ( chunkOpen )
-        {
-            int chunkSize = buffer.writerIndex() - (currentChunkHeaderOffset + CHUNK_HEADER_SIZE);
-            buffer.setShort( currentChunkHeaderOffset, chunkSize );
-            chunkOpen = false;
-        }
-    }
-
-    //must be called from within a synchronized block
-    private void newBuffer()
-    {
-        // Assumption: We're using nettys buffer pooling here
-        // If we wanted to, we can optimize this further and restrict memory usage by using our own ByteBuf impl.
-        // Each Output instance would have, say, 3 buffers that it rotates. Fill one up, send it to be async flushed,
-        // fill the next one up, etc. When release is called by Netty, push buffer back onto our local stack. That
-        // way there are no global data structures for managing memory, no fragmentation and a fixed amount of
-        // RAM per session used.
-        buffer = channel.alloc().buffer( bufferSize, bufferSize );
-        chunkOpen = false;
-    }
-
     public synchronized void close()
     {
         if ( buffer != null )
@@ -227,34 +223,87 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
             {
                 flush();
             }
-            catch ( IOException e )
+            catch ( IOException ignore )
             {
-                //
             }
             finally
             {
-                closed.set( true );
+                closed = true;
                 buffer.release();
                 buffer = null;
             }
         }
     }
 
-    @Override
-    public synchronized void onMessageComplete() throws IOException
+    private void ensure( int numberOfBytes ) throws IOException
     {
-        closeChunkIfOpen();
+        assertOpen();
+        assertMessageStarted();
 
-        // Ensure there's space to write the message boundary
-        if ( buffer.writableBytes() < CHUNK_HEADER_SIZE )
+        if ( chunkOpen )
         {
-            flush();
+            int targetChunkSize = currentChunkBodySize() + numberOfBytes + CHUNK_HEADER_SIZE;
+            if ( targetChunkSize > maxChunkSize )
+            {
+                closeChunkIfOpen();
+                startNewChunk();
+            }
         }
+        else
+        {
+            startNewChunk();
+        }
+    }
 
-        // Write message boundary
-        buffer.writeShort( MESSAGE_BOUNDARY );
+    private void startNewChunk()
+    {
+        currentChunkStartIndex = buffer.writerIndex();
 
-        // Mark us as not currently in a chunk
-        chunkOpen = false;
+        // write empty chunk header
+        buffer.writeShort( 0 );
+        chunkOpen = true;
+    }
+
+    private void closeChunkIfOpen()
+    {
+        if ( chunkOpen )
+        {
+            int chunkBodySize = currentChunkBodySize();
+            buffer.setShort( currentChunkStartIndex, chunkBodySize );
+            chunkOpen = false;
+        }
+    }
+
+    private int availableBytesInCurrentChunk()
+    {
+        return maxChunkSize - currentChunkBodySize() - CHUNK_HEADER_SIZE;
+    }
+
+    private int currentChunkBodySize()
+    {
+        return buffer.writerIndex() - (currentChunkStartIndex + CHUNK_HEADER_SIZE);
+    }
+
+    private ByteBuf allocateBuffer()
+    {
+        return channel.alloc().buffer( maxBufferSize );
+    }
+
+    private void assertMessageStarted()
+    {
+        if ( currentMessageStartIndex == NO_MESSAGE )
+        {
+            throw new IllegalStateException( "Message has not been started" );
+        }
+    }
+
+    private void assertOpen() throws PackOutputClosedException
+    {
+        if ( closed )
+        {
+            throw new PackOutputClosedException(
+                    String.format( "Network channel towards %s is closed. Client has probably been stopped.", channel.remoteAddress() ),
+                    String.format( "%s", channel.remoteAddress() ) );
+        }
     }
 }

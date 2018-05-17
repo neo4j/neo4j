@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -64,7 +64,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
                     @PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER )} )}, relationships = {
             @REL( start = "I", end = "him", type = "know", properties = {} ),
             @REL( start = "I", end = "you", type = "know", properties = {} )} )
-    public void testPropertyColumn() throws UnsupportedEncodingException
+    public void testPropertyColumn()
     {
         String script = createScript( "MATCH (x {name: 'I'})-[r]->(n) RETURN type(r), n.name, n.age" );
 
@@ -114,7 +114,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
                     @PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER )} )}, relationships = {
             @REL( start = "I", end = "him", type = "know", properties = {} ),
             @REL( start = "I", end = "you", type = "know", properties = {} )} )
-    public void testDataColumnOrder() throws UnsupportedEncodingException
+    public void testDataColumnOrder()
     {
         String script = createScript( "MATCH (x)-[r]->(n) WHERE id(x) = %I% RETURN type(r), n.name, n.age" );
 
@@ -170,7 +170,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
             "sent with the query." )
     @Title( "Create a node" )
     @Graph
-    public void send_query_to_create_a_node() throws Exception
+    public void send_query_to_create_a_node()
     {
         data.get();
         String script = "CREATE (n:Person { name : {name} }) RETURN n";
@@ -185,7 +185,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
     @Documented( "Create a node with a label and multiple properties using Cypher. See the request for the parameter " +
             "sent with the query." )
     @Graph
-    public void send_query_to_create_a_node_from_a_map() throws Exception
+    public void send_query_to_create_a_node_from_a_map()
     {
         data.get();
         String script = "CREATE (n:Person { props } ) RETURN n";
@@ -202,7 +202,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
             "with the query." )
     @Title( "Create multiple nodes with properties" )
     @Graph
-    public void send_query_to_create_multipe_nodes_from_a_map() throws Exception
+    public void send_query_to_create_multipe_nodes_from_a_map()
     {
         data.get();
         String script = "UNWIND {props} AS properties CREATE (n:Person) SET n = properties RETURN n";
@@ -219,7 +219,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
     @Title( "Set all properties on a node using Cypher" )
     @Documented( "Set all properties on a node." )
     @Graph
-    public void setAllPropertiesUsingMap() throws Exception
+    public void setAllPropertiesUsingMap()
     {
         data.get();
         String script = "CREATE (n:Person { name: 'this property is to be deleted' } ) SET n = { props } RETURN n";
@@ -238,7 +238,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
             @PROP( key = "prop", value = "Hello", type = GraphDescription.PropType.STRING )} ),
             @NODE( name = "you" )}, relationships = {@REL( start = "I", end = "him", type = "know", properties = {
             @PROP( key = "prop", value = "World", type = GraphDescription.PropType.STRING )} )} )
-    public void nodes_are_represented_as_nodes() throws Exception
+    public void nodes_are_represented_as_nodes()
     {
         data.get();
         String script = "MATCH (n)-[r]->() WHERE id(n) = %I% RETURN n, r";
@@ -276,7 +276,6 @@ public class CypherIT extends AbstractRestFunctionalTestBase
         data.get();
         String script = "MATCH (n) WHERE n.name in ['I', 'you'] RETURN collect(n.name)";
         String response = cypherRestCall( script, Status.OK );
-        System.out.println();
 
         Map<String,Object> resultMap = jsonToMap( response );
         assertEquals( 2, resultMap.size() );
@@ -314,7 +313,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
 
     @Test
     @Graph( value = {"I know you"}, autoIndexNodes = false )
-    public void array_property() throws Exception
+    public void array_property()
     {
         setProperty( "I", "array1", new int[]{1, 2, 3} );
         setProperty( "I", "array2", new String[]{"a", "b", "c"} );

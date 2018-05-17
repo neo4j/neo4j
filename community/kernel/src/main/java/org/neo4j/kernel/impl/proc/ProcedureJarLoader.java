@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,7 +26,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -38,8 +37,6 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.logging.Log;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure}
@@ -71,9 +68,8 @@ public class ProcedureJarLoader
 
         Callables out = new Callables();
 
-        List<URL> list = Stream.of( root.listFiles( ( dir, name ) -> name.endsWith( ".jar" ) ) ).map( this::toURL )
-                .collect( toList() );
-        URL[] jarFiles = list.toArray( new URL[list.size()] );
+        URL[] jarFiles = Stream.of( root.listFiles( ( dir, name ) -> name.endsWith( ".jar" ) ) ).map( this::toURL )
+                .toArray( URL[]::new );
 
         URLClassLoader loader = new URLClassLoader( jarFiles, this.getClass().getClassLoader() );
 
@@ -91,7 +87,7 @@ public class ProcedureJarLoader
         while ( classes.hasNext() )
         {
             Class<?> next = classes.next();
-            target.addAllProcedures( compiler.compileProcedure( next, Optional.empty(), false ) );
+            target.addAllProcedures( compiler.compileProcedure( next, null, false ) );
             target.addAllFunctions( compiler.compileFunction( next ) );
             target.addAllAggregationFunctions( compiler.compileAggregationFunction( next ) );
         }
@@ -134,7 +130,7 @@ public class ProcedureJarLoader
                         if ( name.endsWith( ".class" ) )
                         {
                             String className =
-                                    name.substring( 0, name.length() - ".class".length() ).replace( "/", "." );
+                                    name.substring( 0, name.length() - ".class".length() ).replace( '/', '.' );
 
                             try
                             {

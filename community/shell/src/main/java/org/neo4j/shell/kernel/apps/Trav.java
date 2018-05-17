@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -45,7 +45,6 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
 import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 
 /**
@@ -181,7 +180,7 @@ public class Trav extends TransactionProvidingApp
                                 caseInsensitiveFilters ), value.toString(),
                                 caseInsensitiveFilters, looseFilters ) )
                             {
-                                matchPerFilterKey.put( filterKey, true );
+                                matchPerFilterKey.put( filterKey, Boolean.TRUE );
                             }
                         }
                     }
@@ -200,7 +199,7 @@ public class Trav extends TransactionProvidingApp
                 }
                 else
                 {
-                    printAndInterpretTemplateLines( commandsToRun, false, true,
+                    printAndInterpretTemplateLines( commandsToRun, true,
                             NodeOrRelationship.wrap( path.endNode() ), getServer(), session, out );
                 }
             }

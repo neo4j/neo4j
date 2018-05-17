@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.adversaries.pagecache;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -74,6 +75,12 @@ public class AdversarialPagedFile implements PagedFile
     {
         adversary.injectFailure( IllegalStateException.class );
         return delegate.fileSize();
+    }
+
+    @Override
+    public File file()
+    {
+        return delegate.file();
     }
 
     @Override

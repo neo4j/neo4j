@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,8 +21,6 @@ package org.neo4j.kernel.builtinprocs;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
@@ -32,10 +30,10 @@ import static org.mockito.Mockito.verify;
 public class ResampleOutdatedIndexesProcedureTest
 {
     private final IndexingService indexingService = mock( IndexingService.class );
-    private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( null ), indexingService );
+    private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction(  ), indexingService );
 
     @Test
-    public void shouldTriggerResampling() throws SchemaRuleNotFoundException, ProcedureException
+    public void shouldTriggerResampling()
     {
         procedure.resampleOutdatedIndexes();
 

@@ -1,25 +1,29 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cypher.internal.javacompat;
 
 import org.junit.Assert;
+import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -27,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
@@ -34,6 +39,7 @@ import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -133,12 +139,9 @@ public class ExecutionResultTest
         // Given
         createNode();
 
-        // When
-        try ( Result ignore = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
-        {
-            // Then
-            // just close result without consuming it
-        }
+        // Then
+        // just close result without consuming it
+        db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ).close();
     }
 
     @Test
@@ -220,7 +223,7 @@ public class ExecutionResultTest
     public void shouldShowArgumentsExecutionPlan()
     {
         // Given
-        Result result = db.execute( "EXPLAIN CALL db.labels" );
+        Result result = db.execute( "EXPLAIN CALL db.labels()" );
 
         // When
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
@@ -237,7 +240,7 @@ public class ExecutionResultTest
     public void shouldShowArgumentsInProfileExecutionPlan()
     {
         // Given
-        Result result = db.execute( "PROFILE CALL db.labels" );
+        Result result = db.execute( "PROFILE CALL db.labels()" );
 
         // When
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
@@ -254,7 +257,7 @@ public class ExecutionResultTest
     public void shouldShowArgumentsInSchemaExecutionPlan()
     {
         // Given
-        Result result = db.execute( "EXPLAIN CREATE INDEX on :L(prop)" );
+        Result result = db.execute( "EXPLAIN CREATE INDEX ON :L(prop)" );
 
         // When
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
@@ -270,8 +273,69 @@ public class ExecutionResultTest
     @Test
     public void shouldReturnListFromSplit()
     {
-        assertThat(db.execute( "RETURN split('hello, world', ',') AS s" ).next().get("s"),
-                instanceOf(List.class));
+        assertThat( db.execute( "RETURN split('hello, world', ',') AS s" ).next().get( "s" ), instanceOf( List.class ) );
+    }
+
+    @Test
+    public void shouldReturnCorrectArrayType()
+    {
+        // Given
+        db.execute( "CREATE (p:Person {names:['adsf', 'adf' ]})" );
+
+        // When
+        Object result = db.execute( "MATCH (n) RETURN n.names" ).next().get( "n.names" );
+
+        // Then
+        assertThat( result, CoreMatchers.instanceOf( String[].class ) );
+    }
+
+    @Test
+    public void shouldContainCompletePlanFromFromLegacyVersions()
+    {
+        for ( String version : new String[]{"2.3", "3.1", "3.3", "3.4"} )
+        {
+            // Given
+            Result result = db.execute( String.format( "EXPLAIN CYPHER %s MATCH (n) RETURN n", version ) );
+
+            // When
+            ExecutionPlanDescription description = result.getExecutionPlanDescription();
+
+            // Then
+            assertThat( description.getName(), equalTo( "ProduceResults" ) );
+            assertThat( description.getChildren().get( 0 ).getName(), equalTo( "AllNodesScan" ) );
+        }
+    }
+
+    @Test
+    public void shouldContainCompleteProfileFromFromLegacyVersions()
+    {
+        // Given
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+
+            tx.success();
+        }
+
+        for ( String version : new String[]{"2.3", "3.1", "3.3", "3.4"} )
+        {
+            // When
+            Result result = db.execute( String.format( "PROFILE CYPHER %s MATCH (n) RETURN n", version ) );
+            result.resultAsString();
+            ExecutionPlanDescription.ProfilerStatistics stats =
+                    result.getExecutionPlanDescription()//ProduceResult
+                            .getChildren().get( 0 ) //AllNodesScan
+                            .getProfilerStatistics();
+
+            // Then
+            assertThat( "Mismatching db-hits for version " + version, stats.getDbHits(), equalTo( 2L ) );
+            assertThat( "Mismatching rows for version " + version, stats.getRows(), equalTo( 1L ) );
+
+            //These stats are not available in older versions, but should at least return 0, and >0 for newer
+            assertThat( "Mismatching page cache hits for version " + version, stats.getPageCacheHits(), greaterThanOrEqualTo( 0L ) );
+            assertThat( "Mismatching page cache misses for version " + version, stats.getPageCacheMisses(), greaterThanOrEqualTo( 0L ) );
+            assertThat( "Mismatching page cache hit ratio for version " + version, stats.getPageCacheHitRatio(), greaterThanOrEqualTo( 0.0 ) );
+        }
     }
 
     private void createNode()

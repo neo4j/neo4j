@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,7 +43,7 @@ class RecordFieldTypeVisitor extends SimpleTypeVisitor8<Boolean,Void>
     public Boolean visitDeclared( DeclaredType declaredType, Void ignored )
     {
         return allowedTypesValidator.test( declaredType ) &&
-                declaredType.getTypeArguments().stream().map( this::visit ).reduce( ( a, b ) -> a && b ).orElse( true );
+                declaredType.getTypeArguments().stream().map( this::visit ).reduce( ( a, b ) -> a && b ).orElse( Boolean.TRUE );
     }
 
     @Override

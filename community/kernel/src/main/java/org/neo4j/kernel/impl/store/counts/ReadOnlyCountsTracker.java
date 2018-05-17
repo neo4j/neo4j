@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.kvstore.State;
 import org.neo4j.logging.LogProvider;
@@ -34,11 +35,11 @@ public class ReadOnlyCountsTracker extends CountsTracker
     public ReadOnlyCountsTracker( LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache,
                                   Config config, File baseFile )
     {
-        super( logProvider, fileSystem, pageCache, config, baseFile );
+        super( logProvider, fileSystem, pageCache, config, baseFile, EmptyVersionContextSupplier.EMPTY );
     }
 
     @Override
-    public long rotate( long txId ) throws IOException
+    public long rotate( long txId )
     {
         return -1;
     }

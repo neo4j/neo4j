@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,7 +29,7 @@ import static org.junit.Assert.assertFalse;
 public class BatchingIdSequenceTest
 {
     @Test
-    public void ShouldSkipNullId() throws Exception
+    public void ShouldSkipNullId()
     {
         BatchingIdSequence idSequence = new BatchingIdSequence();
 
@@ -51,7 +51,7 @@ public class BatchingIdSequenceTest
     }
 
     @Test
-    public void resetShouldSetDefault() throws Exception
+    public void resetShouldSetDefault()
     {
         BatchingIdSequence idSequence = new BatchingIdSequence();
 
@@ -69,7 +69,7 @@ public class BatchingIdSequenceTest
     }
 
     @Test
-    public void shouldSkipReservedIdWhenGettingBatches() throws Exception
+    public void shouldSkipReservedIdWhenGettingBatches()
     {
         // GIVEN
         int batchSize = 10;

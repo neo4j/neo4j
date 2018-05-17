@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -62,7 +62,7 @@ public class TreeGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void nodesIteratorReturnAllNodes() throws Exception
+    public void nodesIteratorReturnAllNodes()
     {
         try ( Transaction transaction = beginTx() )
         {
@@ -79,7 +79,7 @@ public class TreeGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void relationshipsIteratorReturnAllNodes() throws Exception
+    public void relationshipsIteratorReturnAllNodes()
     {
         try ( Transaction transaction = beginTx() )
         {
@@ -97,7 +97,7 @@ public class TreeGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void pathsIteratorReturnAllNodes() throws Exception
+    public void pathsIteratorReturnAllNodes()
     {
 
         try ( Transaction transaction = beginTx() )
@@ -115,7 +115,7 @@ public class TreeGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testBreadthFirst() throws Exception
+    public void testBreadthFirst()
     {
         Traverser traverser = getGraphDb().traversalDescription().breadthFirst().traverse( node( "1" ) );
         Stack<Set<String>> levels = new Stack<>();
@@ -133,7 +133,6 @@ public class TreeGraphTest extends TraversalTestBase
 
     @Test
     public void testDepthFirstTraversalReturnsNodesOnCorrectDepths()
-            throws Exception
     {
 
         try ( Transaction transaction = beginTx() )

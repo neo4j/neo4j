@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,27 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Solveds
+
 object IDPSolverStep {
   def empty[S, P, C] = new IDPSolverStep[S, P, C] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C): Iterator[P] =
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C, solveds: Solveds): Iterator[P] =
       Iterator.empty
   }
 }
 
 trait SolverStep[S, P, C] {
-  def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C):  Iterator[P]
+  def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C, solveds: Solveds):  Iterator[P]
 }
 
 trait IDPSolverStep[S, P, C] extends SolverStep[S, P, C] {
   self =>
 
   def map(f: P => P) = new IDPSolverStep[S, P, C] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C): Iterator[P] =
-      self(registry, goal, cache).map(f)
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C, solveds: Solveds): Iterator[P] =
+      self(registry, goal, cache, context, solveds).map(f)
   }
 
   def ++(next: IDPSolverStep[S, P, C]) = new IDPSolverStep[S, P, C] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C): Iterator[P] =
-      self(registry, goal, cache) ++ next(registry, goal, cache)
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C, solveds: Solveds): Iterator[P] =
+      self(registry, goal, cache, context, solveds) ++ next(registry, goal, cache, context, solveds)
   }
 }

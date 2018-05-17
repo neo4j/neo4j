@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,12 +28,14 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -138,7 +140,7 @@ public class NeoStoreFileListingTest
                 new String[]{"blah/scan.store", "scan.more"} );
         ResourceIterator<File> indexSnapshot = indexFilesAre( indexingService, new String[]{"schema/index/my.index"} );
 
-        ResourceIterator<StoreFileMetadata> result = fileListing.listStoreFiles( false );
+        ResourceIterator<StoreFileMetadata> result = fileListing.builder().excludeLogFiles().build();
 
         // When
         result.close();
@@ -202,14 +204,24 @@ public class NeoStoreFileListingTest
     public void shouldListNeostoreFiles() throws Exception
     {
         StoreType[] values = StoreType.values();
-        ResourceIterator<StoreFileMetadata> storeFiles =
-                neoStoreDataSource.listStoreFiles( false );
+        ResourceIterator<StoreFileMetadata> storeFiles = neoStoreDataSource.listStoreFiles( false );
         List<StoreType> listedStoreFiles = storeFiles.stream()
                 .map( toStoreType )
                 .filter( Optional::isPresent )
                 .map( Optional::get )
                 .collect( Collectors.toList() );
         assertEquals( Arrays.asList(values), listedStoreFiles );
+    }
+
+    @Test
+    public void doNotListFilesFromAdditionalProviderThatRegisterTwice() throws IOException
+    {
+        NeoStoreFileListing neoStoreFileListing = neoStoreDataSource.getNeoStoreFileListing();
+        MarkerFileProvider provider = new MarkerFileProvider();
+        neoStoreFileListing.registerStoreFileProvider( provider );
+        neoStoreFileListing.registerStoreFileProvider( provider );
+        ResourceIterator<StoreFileMetadata> metadataResourceIterator = neoStoreFileListing.builder().build();
+        assertEquals( 1, metadataResourceIterator.stream().filter( metadata -> "marker".equals( metadata.file().getName() ) ).count() );
     }
 
     private void verifyLogFilesWithCustomPathListing( String path ) throws IOException
@@ -235,7 +247,6 @@ public class NeoStoreFileListingTest
     }
 
     private ResourceIterator<File> scanStoreFilesAre( LabelScanStore labelScanStore, String[] fileNames )
-            throws IOException
     {
         ArrayList<File> files = new ArrayList<>();
         mockFiles( fileNames, files, false );
@@ -250,7 +261,7 @@ public class NeoStoreFileListingTest
         ArrayList<File> files = new ArrayList<>();
         mockFiles( fileNames, files, false );
         ResourceIterator<File> snapshot = spy( asResourceIterator( files.iterator() ) );
-        when( indexingService.snapshotStoreFiles() ).thenReturn( snapshot );
+        when( indexingService.snapshotIndexFiles() ).thenReturn( snapshot );
         return snapshot;
     }
 
@@ -278,6 +289,16 @@ public class NeoStoreFileListingTest
             when( file.exists() ).thenReturn( true );
             when( file.getPath() ).thenReturn( filename );
             files.add( file );
+        }
+    }
+
+    private static class MarkerFileProvider implements NeoStoreFileListing.StoreFileProvider
+    {
+        @Override
+        public Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException
+        {
+            fileMetadataCollection.add( new StoreFileMetadata( new File( "marker" ), 0 ) );
+            return Resource.EMPTY;
         }
     }
 }

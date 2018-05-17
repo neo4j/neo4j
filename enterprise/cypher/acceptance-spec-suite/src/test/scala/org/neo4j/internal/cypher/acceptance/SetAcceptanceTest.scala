@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -24,10 +27,8 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  val expectedToSucceed = Configs.CommunityInterpreted - Configs.Cost2_3
-  val expectedToSucceedIncludingSlotted = Configs.Interpreted - Configs.Cost2_3
-  val expectedToFail = Configs.Interpreted - Configs.Cost2_3 + TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema))
-  val expectedToFail2 = Configs.Interpreted - Configs.Version2_3 + TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema))
+  val expectedToFail = Configs.Interpreted + Configs.Procs - Configs.Cost2_3
+  val expectedToFail2 = Configs.Interpreted  + Configs.Procs - Configs.Version2_3
 
   test("optional match and set") {
     val n1 = createLabeledNode("L1")
@@ -35,7 +36,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     relate(n1, n2, "R1")
 
     // only fails when returning distinct...
-    val result = executeWith(expectedToSucceedIncludingSlotted,
+    val result = executeWith(Configs.UpdateConf,
       """
         |MATCH (n1:L1)-[:R1]->(n2:L2)
         |OPTIONAL MATCH (n3)<-[r:R2]-(n2)
@@ -46,12 +47,32 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     result.toList should be(List(Map("n2" -> n2)))
   }
 
+  test("should be able to force a type change of a node property") {
+    // given
+    createNode("prop" -> 1337)
+
+    // when
+    executeWith(Configs.UpdateConf, "MATCH (n) SET n.prop = tofloat(n.prop)")
+
+    executeWith(Configs.All, "MATCH (n) RETURN n.prop").next()("n.prop") shouldBe a[java.lang.Double]
+  }
+
+  test("should be able to force a type change of a relationship property") {
+    // given
+    relate(createNode(), createNode(), "prop" -> 1337)
+
+    // when
+    executeWith(Configs.UpdateConf, "MATCH ()-[r]->() SET r.prop = tofloat(r.prop)")
+
+    executeWith(Configs.All, "MATCH ()-[r]->() RETURN r.prop").next()("r.prop") shouldBe a[java.lang.Double]
+  }
+
   test("should be able to set property to collection") {
     // given
     val node = createNode()
 
     // when
-    val result = executeWith(expectedToSucceedIncludingSlotted, "MATCH (n) SET n.property = ['foo','bar'] RETURN n.property")
+    val result = executeWith(Configs.UpdateConf, "MATCH (n) SET n.property = ['foo','bar'] RETURN n.property")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -87,7 +108,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode()
 
     // when
-    val result = executeWith(expectedToSucceedIncludingSlotted, "MATCH (n) SET (CASE WHEN true THEN n END).name = 'neo4j' RETURN count(*)")
+    val result = executeWith(Configs.UpdateConf, "MATCH (n) SET (CASE WHEN true THEN n END).name = 'neo4j' RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -100,7 +121,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val r = relate(createNode(), createNode())
 
     // when
-    val result = executeWith(expectedToSucceedIncludingSlotted, "MATCH ()-[r]->() SET (CASE WHEN true THEN r END).name = 'neo4j' RETURN count(*)")
+    val result = executeWith(Configs.UpdateConf, "MATCH ()-[r]->() SET (CASE WHEN true THEN r END).name = 'neo4j' RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -114,7 +135,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val n3 = createNode()
 
     val query = "MATCH (n) WITH collect(n) AS nodes, {param} AS data FOREACH (idx IN range(0,size(nodes)-1) | SET (nodes[idx]).num = data[idx])"
-    val result = executeWith(expectedToSucceedIncludingSlotted, query, params = Map("param" ->  Array("1", "2", "3")))
+    val result = executeWith(Configs.UpdateConf, query, params = Map("param" ->  Array("1", "2", "3")))
 
     assertStats(result, propertiesWritten = 3)
     n1 should haveProperty("num").withValue("1")
@@ -129,7 +150,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val r3 = relate(createNode(), createNode())
 
     val query = "MATCH ()-[r]->() WITH collect(r) AS rels, {param} as data FOREACH (idx IN range(0,size(rels)-1) | SET (rels[idx]).num = data[idx])"
-    val result = executeWith(expectedToSucceedIncludingSlotted, query, params = Map("param" ->  Array("1", "2", "3")))
+    val result = executeWith(Configs.UpdateConf, query, params = Map("param" ->  Array("1", "2", "3")))
 
     assertStats(result, propertiesWritten = 3)
     r1 should haveProperty("num").withValue("1")
@@ -140,7 +161,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
   //Not suitable for the TCK
   test("should fail at runtime when the expression is not a node or a relationship") {
     failWithError(expectedToFail2, "SET (CASE WHEN true THEN {node} END).name = 'neo4j' RETURN count(*)",
-      List("The expression GenericCase(Vector((true,{node})),None) should have been a node or a relationship"), params= "node" -> 42)
+      List("The expression GenericCase(Vector((true,{node})),None) should have been a node or a relationship"), params = Map("node" -> 42))
   }
 
   //Not suitable for the TCK
@@ -155,7 +176,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // when
     val q = "MATCH p=(a)-->(b)-->(c) WHERE id(a) = 0 AND id(c) = 2 WITH p FOREACH(n IN nodes(p) | SET n.marked = true)"
 
-    executeWith(expectedToSucceedIncludingSlotted, q)
+    executeWith(Configs.UpdateConf, q)
 
     // then
     a should haveProperty("marked").withValue(true)
@@ -171,7 +192,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val c = createNode("c"->"C")
 
     // when
-    val result = executeWith(expectedToSucceedIncludingSlotted, "MATCH (n) WITH collect(n) AS nodes FOREACH(x IN nodes | SET x += {x:'X'})")
+    val result = executeWith(Configs.UpdateConf, "MATCH (n) WITH collect(n) AS nodes FOREACH(x IN nodes | SET x += {x:'X'})")
 
     // then
     a should haveProperty("a").withValue("A")
@@ -190,7 +211,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val c = createNode("c"->"C")
 
     // when
-   executeWith(expectedToSucceedIncludingSlotted, "MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x = {a:'D', x:'X'})")
+   executeWith(Configs.UpdateConf, "MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x = {a:'D', x:'X'})")
 
     // then
     a should haveProperty("a").withValue("D")

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.collection.primitive.{PrimitiveIntIterator, PrimitiveLongIterator}
-import org.neo4j.cypher.internal.util.v3_4.EntityNotFoundException
-import org.neo4j.kernel.api
 
 object JavaConversionSupport {
 
@@ -30,24 +28,19 @@ object JavaConversionSupport {
     def next() = iterator.next()
   }
 
-  def asScalaENFXSafe(iterator: PrimitiveIntIterator): Iterator[Int] = makeENFXSafe(iterator.hasNext, iterator.next)(identity)
+  def asScalaENFXSafe(iterator: PrimitiveIntIterator): Iterator[Int] = makeENFXSafe(iterator.hasNext, iterator.next)(Some(_))
 
   // Same as mapToScala, but handles concurrency exceptions by swallowing exceptions
-  def mapToScalaENFXSafe[T](iterator: PrimitiveLongIterator)(f: Long => T): Iterator[T] = makeENFXSafe(iterator.hasNext, iterator.next)(f)
+  def mapToScalaENFXSafe[T](iterator: PrimitiveLongIterator)(f: Long => Option[T]): Iterator[T] = makeENFXSafe(iterator.hasNext, iterator.next)(f)
 
-  private def makeENFXSafe[S,T](hasMore: () => Boolean, more: () => S)(f: S => T): Iterator[T] = new Iterator[T] {
+  private def makeENFXSafe[S,T](hasMore: () => Boolean, more: () => S)(f: S => Option[T]): Iterator[T] = new Iterator[T] {
     private var _next: Option[T] = fetchNext()
 
     // Init
     private def fetchNext(): Option[T] = {
       _next = None
       while (_next.isEmpty && hasMore()) {
-        try {
-          _next = Some(f(more()))
-        } catch {
-          case _: api.exceptions.EntityNotFoundException => // IGNORE
-          case _: EntityNotFoundException => // IGNORE
-        }
+        _next = f(more())
       }
       _next
     }

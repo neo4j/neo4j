@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.Map
 
@@ -47,10 +47,10 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
   def createInitialHistory: InitialHistory = {
 
     val relationshipsInContextButNotInPattern = source.collect {
-      case (key, r: EdgeValue) if !boundRels.contains(key) && variablesInClause.contains(key) => r
+      case (key, r: RelationshipValue) if !boundRels.contains(key) && variablesInClause.contains(key) => r
     }.toIndexedSeq
 
-    new InitialHistory(source, relationshipsInContextButNotInPattern)
+    new InitialHistory(source, relationshipsInContextButNotInPattern, state.executionContextFactory)
   }
 
   protected def traverseNextSpecificNode[U](remaining: Set[MatchingPair],

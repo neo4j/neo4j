@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,7 @@ package org.neo4j.bolt.v1.messaging.example;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.BOB;
@@ -30,7 +30,7 @@ import static org.neo4j.bolt.v1.messaging.example.Nodes.DAVE;
 import static org.neo4j.bolt.v1.messaging.example.Support.NO_PROPERTIES;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
 public class Edges
@@ -43,13 +43,13 @@ public class Edges
     public static final TextValue WORKS_FOR = stringValue( "WORKS_FOR" );
 
     // Edges
-    public static final EdgeValue ALICE_KNOWS_BOB =
-            edgeValue( 12L, ALICE, BOB, KNOWS,
+    public static final RelationshipValue ALICE_KNOWS_BOB =
+            relationshipValue( 12L, ALICE, BOB, KNOWS,
                     map( new String[]{"since"}, new AnyValue[]{longValue( 1999L )} ) );
-    public static final EdgeValue ALICE_LIKES_CAROL = edgeValue( 13L, ALICE, CAROL, LIKES, NO_PROPERTIES );
-    public static final EdgeValue CAROL_DISLIKES_BOB = edgeValue( 32L, CAROL, BOB, DISLIKES, NO_PROPERTIES );
-    public static final EdgeValue CAROL_MARRIED_TO_DAVE = edgeValue( 34L, CAROL, DAVE, MARRIED_TO, NO_PROPERTIES );
-    public static final EdgeValue DAVE_WORKS_FOR_DAVE = edgeValue( 44L, DAVE, DAVE, WORKS_FOR, NO_PROPERTIES );
+    public static final RelationshipValue ALICE_LIKES_CAROL = relationshipValue( 13L, ALICE, CAROL, LIKES, NO_PROPERTIES );
+    public static final RelationshipValue CAROL_DISLIKES_BOB = relationshipValue( 32L, CAROL, BOB, DISLIKES, NO_PROPERTIES );
+    public static final RelationshipValue CAROL_MARRIED_TO_DAVE = relationshipValue( 34L, CAROL, DAVE, MARRIED_TO, NO_PROPERTIES );
+    public static final RelationshipValue DAVE_WORKS_FOR_DAVE = relationshipValue( 44L, DAVE, DAVE, WORKS_FOR, NO_PROPERTIES );
 
     private Edges()
     {

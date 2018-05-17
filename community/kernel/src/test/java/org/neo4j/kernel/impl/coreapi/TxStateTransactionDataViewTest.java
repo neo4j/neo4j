@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,17 +30,18 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -55,6 +56,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -84,7 +87,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsCreatedNodes() throws Exception
+    public void showsCreatedNodes()
     {
         // Given
         state.nodeDoCreate( 1 );
@@ -121,7 +124,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsAddedRelationships() throws Exception
+    public void showsAddedRelationships()
     {
         // Given
         state.relationshipDoCreate( 1, 1, 1L, 2L );
@@ -158,7 +161,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void correctlySaysNodeIsDeleted() throws Exception
+    public void correctlySaysNodeIsDeleted()
     {
         // Given
         state.nodeDoDelete( 1L );
@@ -173,7 +176,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void correctlySaysRelIsDeleted() throws Exception
+    public void correctlySaysRelIsDeleted()
     {
         // Given
         state.relationshipDoDelete( 1L, 1, 1L, 2L );
@@ -222,7 +225,7 @@ public class TxStateTransactionDataViewTest
         // Given
         int propertyKeyId = 1;
         Value prevValue = Values.of( "prevValue" );
-        state.nodeDoRemoveProperty( 1L, propertyKeyId, prevValue );
+        state.nodeDoRemoveProperty( 1L, propertyKeyId );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
@@ -247,7 +250,7 @@ public class TxStateTransactionDataViewTest
         // Given
         int propertyKeyId = 1;
         Value prevValue = Values.of( "prevValue" );
-        state.relationshipDoRemoveProperty( 1L, propertyKeyId, prevValue );
+        state.relationshipDoRemoveProperty( 1L, propertyKeyId );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 40L;
         when( storeStatement.acquireSingleRelationshipCursor( 1 ) )
@@ -342,7 +345,7 @@ public class TxStateTransactionDataViewTest
     @Test
     public void shouldGetEmptyUsernameForAnonymousContext()
     {
-        when( transaction.securityContext() ).thenReturn( AnonymousContext.read() );
+        when( transaction.securityContext() ).thenReturn( AnonymousContext.read().authorize( s -> -1 ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "", transactionDataSnapshot.username() );
@@ -354,7 +357,7 @@ public class TxStateTransactionDataViewTest
         AuthSubject authSubject = mock( AuthSubject.class );
         when( authSubject.username() ).thenReturn( "Christof" );
         when( transaction.securityContext() )
-                .thenReturn( new SecurityContext.Frozen( authSubject, AccessMode.Static.FULL ) );
+                .thenReturn( new SecurityContext( authSubject, AccessMode.Static.FULL ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "Christof", transactionDataSnapshot.username() );
@@ -370,12 +373,11 @@ public class TxStateTransactionDataViewTest
     @Test
     public void shouldAccessExampleMetaData()
     {
-        NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
-        final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
+        EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
         final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.getMetaData() ).thenReturn( genericMap( "username", "Igor" ) );
         TxStateTransactionDataSnapshot transactionDataSnapshot =
-                new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement, transaction );
+                new TxStateTransactionDataSnapshot( state, spi, ops, storeStatement, transaction );
         assertEquals( 1, transactionDataSnapshot.metaData().size() );
         assertThat( "Expected metadata map to contain defined username", transactionDataSnapshot.metaData(),
                 equalTo( genericMap( "username", "Igor" ) ) );
@@ -393,8 +395,12 @@ public class TxStateTransactionDataViewTest
 
     private TxStateTransactionDataSnapshot snapshot()
     {
-        NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
-        final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        return new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement, transaction );
+        EmbeddedProxySPI spi = mock( EmbeddedProxySPI.class );
+        when( spi.newNodeProxy( anyLong() ) ).thenAnswer( invocation -> new NodeProxy( spi, invocation.getArgument( 0 ) ) );
+        when( spi.newRelationshipProxy( anyLong() ) ).thenAnswer( invocation -> new RelationshipProxy( spi, invocation.getArgument( 0 ) ) );
+        when( spi.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).thenAnswer(
+                invocation -> new RelationshipProxy( spi, invocation.getArgument( 0 ), invocation.getArgument( 1 ),
+                        invocation.getArgument( 2 ), invocation.getArgument( 3 ) ) );
+        return new TxStateTransactionDataSnapshot( state, spi, ops, storeStatement, transaction );
     }
 }

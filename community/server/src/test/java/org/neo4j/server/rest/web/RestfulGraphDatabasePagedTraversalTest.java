@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -61,7 +61,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     private GraphDatabaseFacade graph;
 
     @Before
-    public void startDatabase() throws IOException
+    public void startDatabase()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase( graph );
@@ -69,12 +69,12 @@ public class RestfulGraphDatabasePagedTraversalTest
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( Clocks.fakeClock() );
         service = new RestfulGraphDatabase( new JsonFormat(), output,
-                new DatabaseActions( leaseManager, true, database.getGraph() ), null );
+                new DatabaseActions( leaseManager, ScriptExecutionMode.SANDBOXED, database.getGraph() ), null );
         service = new TransactionWrappingRestfulGraphDatabase( graph, service );
     }
 
     @After
-    public void shutdownDatabase() throws Throwable
+    public void shutdownDatabase()
     {
         this.graph.shutdown();
     }
@@ -94,7 +94,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     }
 
     @Test
-    public void givenAPageTraversalHasBeenCreatedShouldYieldNextPageAndRespondWith200() throws Exception
+    public void givenAPageTraversalHasBeenCreatedShouldYieldNextPageAndRespondWith200()
     {
         Response response = createAPagedTraverser();
 
@@ -197,6 +197,6 @@ public class RestfulGraphDatabasePagedTraversalTest
                 .get( 0 )
                 .toString();
 
-        return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1 );
+        return locationUri.substring( locationUri.lastIndexOf( '/' ) + 1 );
     }
 }

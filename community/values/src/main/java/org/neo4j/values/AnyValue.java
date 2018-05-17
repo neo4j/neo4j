@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,14 +23,16 @@ public abstract class AnyValue
 {
     private int hash;
 
+    // this should be final, but Mockito barfs if it is,
+    // so we need to just manually ensure it isn't overridden
     @Override
     public boolean equals( Object other )
     {
-        return eq( other );
+        return this == other || other != null && eq( other );
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
         //We will always recompute hashcode for values
         //where `hashCode == 0`, e.g. empty strings and empty lists
@@ -54,4 +56,6 @@ public abstract class AnyValue
     }
 
     public abstract Boolean ternaryEquals( AnyValue other );
+
+    public abstract <T> T map( ValueMapper<T> mapper );
 }

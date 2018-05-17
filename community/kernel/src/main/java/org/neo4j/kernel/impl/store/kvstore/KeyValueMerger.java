@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.kvstore;
 import java.io.Closeable;
 import java.io.IOException;
 
-import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.buffer;
+import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.newBuffer;
 
 class KeyValueMerger implements DataProvider
 {
@@ -39,8 +39,8 @@ class KeyValueMerger implements DataProvider
 
     KeyValueMerger( DataProvider first, DataProvider other, int keySize, int valueSize ) throws IOException
     {
-        this.firstAvail = (this.first = first).visit( firstKey = buffer( keySize ), firstValue = buffer( valueSize ) );
-        this.otherAvail = (this.other = other).visit( otherKey = buffer( keySize ), otherValue = buffer( valueSize ) );
+        this.firstAvail = (this.first = first).visit( firstKey = newBuffer( keySize ), firstValue = newBuffer( valueSize ) );
+        this.otherAvail = (this.other = other).visit( otherKey = newBuffer( keySize ), otherValue = newBuffer( valueSize ) );
     }
 
     @Override

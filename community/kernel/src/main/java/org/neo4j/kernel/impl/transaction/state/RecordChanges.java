@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
@@ -36,7 +35,7 @@ import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
  */
 public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
 {
-    private Map<Long, RecordProxy<RECORD,ADDITIONAL>> recordChanges = new HashMap<>();
+    private PrimitiveLongObjectMap<RecordProxy<RECORD,ADDITIONAL>> recordChanges = Primitive.longObjectMap();
     private final Loader<RECORD,ADDITIONAL> loader;
     private final IntCounter changeCounter;
 
@@ -103,7 +102,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         else
         {
             // Let's not allow the internal maps to grow too big over time.
-            recordChanges = new HashMap<>();
+            recordChanges = Primitive.longObjectMap();
         }
         changeCounter.clear();
     }
@@ -131,7 +130,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
 
     public static class RecordChange<RECORD,ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>
     {
-        private final Map<Long,RecordProxy<RECORD,ADDITIONAL>> allChanges;
+        private final PrimitiveLongObjectMap<RecordProxy<RECORD,ADDITIONAL>> allChanges;
         private final IntCounter changeCounter;
         private final Loader<RECORD,ADDITIONAL> loader;
 
@@ -143,8 +142,8 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         private RECORD before;
         private boolean changed;
 
-        public RecordChange( Map<Long,RecordProxy<RECORD,ADDITIONAL>> allChanges, IntCounter changeCounter, long key,
-                RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData )
+        public RecordChange( PrimitiveLongObjectMap<RecordProxy<RECORD,ADDITIONAL>> allChanges, IntCounter changeCounter,
+                long key, RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData )
         {
             this.allChanges = allChanges;
             this.changeCounter = changeCounter;

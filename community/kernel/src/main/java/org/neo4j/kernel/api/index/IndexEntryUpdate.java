@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,8 +21,9 @@ package org.neo4j.kernel.api.index;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema.SchemaUtil;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.values.storable.Value;
 
@@ -35,7 +36,7 @@ import static java.lang.String.format;
  *
  * @param <INDEX_KEY> {@link LabelSchemaSupplier} specifying the schema
  */
-public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
+public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
 {
     private final long entityId;
     private final UpdateMode updateMode;
@@ -136,29 +137,29 @@ public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
                 Arrays.toString( before ), Arrays.toString( values ) );
     }
 
-    public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> add(
-            long nodeId, INDEX_KEY indexKey, Value... values )
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> IndexEntryUpdate<INDEX_KEY> add(
+            long entityId, INDEX_KEY indexKey, Value... values )
     {
-        return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.ADDED, values );
+        return new IndexEntryUpdate<>( entityId, indexKey, UpdateMode.ADDED, values );
     }
 
-    public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> remove(
-            long nodeId, INDEX_KEY indexKey, Value... values )
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> IndexEntryUpdate<INDEX_KEY> remove(
+            long entityId, INDEX_KEY indexKey, Value... values )
     {
-        return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.REMOVED, values );
+        return new IndexEntryUpdate<>( entityId, indexKey, UpdateMode.REMOVED, values );
     }
 
-    public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> change(
-            long nodeId, INDEX_KEY indexKey, Value before, Value after )
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> IndexEntryUpdate<INDEX_KEY> change(
+            long entityId, INDEX_KEY indexKey, Value before, Value after )
     {
-        return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.CHANGED,
+        return new IndexEntryUpdate<>( entityId, indexKey, UpdateMode.CHANGED,
                 new Value[]{before}, new Value[]{after} );
     }
 
-    public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> change(
-            long nodeId, INDEX_KEY indexKey, Value[] before, Value[] after )
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> IndexEntryUpdate<INDEX_KEY> change(
+            long entityId, INDEX_KEY indexKey, Value[] before, Value[] after )
     {
-        return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.CHANGED, before, after );
+        return new IndexEntryUpdate<>( entityId, indexKey, UpdateMode.CHANGED, before, after );
     }
 
     public Value[] beforeValues()

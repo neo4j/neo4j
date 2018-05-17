@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -325,6 +326,12 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
+    public void putBytes( int bytes, byte value )
+    {
+        throw new UnsupportedOperationException( "Composite page cursor does not yet support this operation" );
+    }
+
+    @Override
     public short getShort()
     {
         short s = cursor( Short.BYTES ).getShort();
@@ -400,7 +407,7 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         throw unsupportedNext();
     }
@@ -412,7 +419,7 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
+    public boolean next( long pageId )
     {
         throw unsupportedNext();
     }
@@ -440,6 +447,18 @@ public class CompositePageCursor extends PageCursor
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         throw new UnsupportedOperationException( "Composite cursor does not support copyTo functionality." );
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
+    {
+        throw new UnsupportedOperationException( "Composite cursor does not support copyTo functionality." );
+    }
+
+    @Override
+    public void shiftBytes( int sourceOffset, int length, int shift )
+    {
+        throw new UnsupportedOperationException( "Composite cursor does not support shiftBytes functionality... yet." );
     }
 
     @Override

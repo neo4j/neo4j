@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -549,7 +549,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         rel.setProperty( "theDoubleThatGrows", Math.PI );
         rel.setProperty( "theInteger", -444345 );
 
-        rel.setProperty( "theDoubleThatGrows", new long[] { 1 << 63, 1 << 63, 1 << 63 } );
+        rel.setProperty( "theDoubleThatGrows", new long[] { 1L << 63, 1L << 63, 1L << 63 } );
 
         rel.setProperty( "theDoubleThatGrows", Math.E );
 
@@ -611,7 +611,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         newTransaction();
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
         assertEquals( valueRecordsInUseAtStart + 1, dynamicArrayRecordsInUse() );
-        rel.setProperty( "filler", new long[] { 1 << 63, 1 << 63, 1 << 63 } );
+        rel.setProperty( "filler", new long[] { 1L << 63, 1L << 63, 1L << 63 } );
         newTransaction();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
@@ -740,14 +740,14 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "Double3", 3.0 );
         newTransaction();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
-        assertEquals( new Double( 1.0 ), node.getProperty( "Double1" ) );
-        assertEquals( new Integer( 1 ), node.getProperty( "Int1" ) );
-        assertEquals( new Integer( 2 ), node.getProperty( "Int2" ) );
-        assertEquals( new Double( 3.0 ), node.getProperty( "Double3" ) );
+        assertEquals( 1.0, node.getProperty( "Double1" ) );
+        assertEquals( 1, node.getProperty( "Int1" ) );
+        assertEquals( 2, node.getProperty( "Int2" ) );
+        assertEquals( 3.0, node.getProperty( "Double3" ) );
     }
 
     @Test
-    public void deleteNodeWithNewPropertyRecordShouldFreeTheNewRecord() throws Exception
+    public void deleteNodeWithNewPropertyRecordShouldFreeTheNewRecord()
     {
         final long propcount = getIdGenerator( IdType.PROPERTY ).getNumberOfIdsInUse();
         Node node = getGraphDb().createNode();

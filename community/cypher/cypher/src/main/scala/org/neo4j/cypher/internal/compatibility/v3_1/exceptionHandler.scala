@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_1
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.exceptionHandler.RunSafely
+import org.neo4j.cypher.exceptionHandler.{RunSafely, mapToCypher}
 import org.neo4j.cypher.internal.compatibility.{ExceptionHandler, _}
 import org.neo4j.cypher.internal.frontend.v3_1.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherException => InternalCypherException}
+import org.neo4j.values.utils.ValuesException
 
 object exceptionHandler extends MapToPublicExceptions[CypherException] {
   def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
@@ -90,6 +91,9 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
         case e: InternalCypherException =>
           f(e)
           throw e.mapToPublic(exceptionHandler)
+        case e: ValuesException =>
+          f(e)
+          throw mapToCypher(e)
         case e: Throwable =>
           f(e)
           throw e

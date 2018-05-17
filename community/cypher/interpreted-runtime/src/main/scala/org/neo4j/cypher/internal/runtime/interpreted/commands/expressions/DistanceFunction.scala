@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,89 +19,35 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import java.lang.Math._
-
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{CoordinateReferenceSystem, DoubleValue, PointValue, Values}
+import org.neo4j.values.storable._
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
-
-  private val availableCalculators = Seq(HaversinCalculator, CartesianCalculator)
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     // TODO: Support better calculations, like https://en.wikipedia.org/wiki/Vincenty%27s_formulae
     // TODO: Support more coordinate systems
     (p1(ctx, state), p2(ctx, state)) match {
-      case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
       case (geometry1: PointValue, geometry2: PointValue) => calculateDistance(geometry1, geometry2)
-      case (x, y) => throw new CypherTypeException(s"Expected two Points, but got $x and $y")
+      case _ => Values.NO_VALUE
     }
   }
 
-  def calculateDistance(geometry1: PointValue, geometry2: PointValue): DoubleValue = {
-    Values.doubleValue(availableCalculators.collectFirst {
-      case distance: DistanceCalculator if distance.isDefinedAt(geometry1, geometry2) =>
-        distance(geometry1, geometry2)
-    }.getOrElse(
-      throw new IllegalArgumentException(s"Invalid points passed to distance($p1, $p2)")
-    ).get)
+  def calculateDistance(geometry1: PointValue, geometry2: PointValue): AnyValue = {
+    if (geometry1.getCoordinateReferenceSystem.equals(geometry2.getCoordinateReferenceSystem)) {
+      Values.doubleValue(geometry1.getCoordinateReferenceSystem.getCalculator.distance(geometry1, geometry2))
+    } else {
+      Values.NO_VALUE
+    }
   }
 
   override def rewrite(f: (Expression) => Expression) = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
 
   override def arguments: Seq[Expression] = p1.arguments ++ p2.arguments
 
-  override def symbolTableDependencies = p1.symbolTableDependencies ++ p2.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] = p1.symbolTableDependencies ++ p2.symbolTableDependencies
 
-  override def toString = "Distance(" + p1 + ", " + p2 + ")"
-}
-
-trait DistanceCalculator {
-  def isDefinedAt(p1: PointValue, p2: PointValue): Boolean
-
-  def calculateDistance(p1: PointValue, p2: PointValue): Double
-
-  def apply(p1: PointValue, p2: PointValue): Option[Double] =
-    if (isDefinedAt(p1, p2))
-      Some(calculateDistance(p1, p2))
-    else
-      None
-}
-
-object CartesianCalculator extends DistanceCalculator {
-  override def isDefinedAt(p1: PointValue, p2: PointValue): Boolean =
-    p1.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.Cartesian.getCode() &&
-      p2.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.Cartesian.getCode()
-
-  override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
-    val p1Coordinates = p1.coordinate()
-    val p2Coordinates = p2.coordinate()
-
-    sqrt((p2Coordinates(0) - p1Coordinates(0)) * (p2Coordinates(0) - p1Coordinates(0)) +
-           (p2Coordinates(1) - p1Coordinates(1)) * (p2Coordinates(1) - p1Coordinates(1)))
-  }
-}
-
-object HaversinCalculator extends DistanceCalculator {
-
-  private val EARTH_RADIUS_METERS = 6378140.0
-
-  override def isDefinedAt(p1: PointValue, p2: PointValue): Boolean =
-    p1.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.WGS84.getCode() &&
-      p2.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.WGS84.getCode()
-
-  override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
-    val c1Coord = p1.coordinate()
-    val c2Coord = p2.coordinate()
-    val c1: Array[Double] = Array(toRadians(c1Coord(0)), toRadians(c1Coord(1)))
-    val c2: Array[Double] = Array(toRadians(c2Coord(0)), toRadians(c2Coord(1)))
-    val dx = c2(0) - c1(0)
-    val dy = c2(1) - c1(1)
-    val a = pow(sin(dy / 2), 2.0) + cos(c1(1)) * cos(c2(1)) * pow(sin(dx / 2.0), 2.0)
-    val greatCircleDistance = 2.0 * atan2(sqrt(a), sqrt(1-a))
-    EARTH_RADIUS_METERS * greatCircleDistance
-  }
+  override def toString: String = "Distance(" + p1 + ", " + p2 + ")"
 }

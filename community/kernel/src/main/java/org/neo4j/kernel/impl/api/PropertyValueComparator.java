@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,30 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Comparator;
 
+/**
+ * This class is only needed because of a missed dependency in Cypher 2.3 and 3.1.
+ * It can be removed in 4.0.
+ */
+@Deprecated
 public abstract class PropertyValueComparator<T> implements Comparator<T>
 {
-    public boolean isEmptyRange( T lower, boolean includeLower, T upper, boolean includeUpper )
-    {
-        if ( lower == null || upper == null )
-        {
-            return false;
-        }
-        else
-        {
-            int cmp = compare( lower, upper );
-
-            if ( includeLower && includeUpper )
-            {
-                // l <= .. <= u <=> l <= u <=> empty if l > u
-                return cmp > 0;
-            }
-            else
-            {
-                // l <= .. < u <=> l < u <=> empty if l >= u
-                // l < .. <= u <=> l < u <=> empty if l >= u
-                // l < .. < u <=> l < u <=> empty if l >= u
-                return cmp >= 0;
-            }
-        }
-    }
 }

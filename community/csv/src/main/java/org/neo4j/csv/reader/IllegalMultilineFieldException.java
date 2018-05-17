@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,12 +19,14 @@
  */
 package org.neo4j.csv.reader;
 
+import static java.lang.String.format;
+
 public class IllegalMultilineFieldException extends FormatException
 {
     public IllegalMultilineFieldException( SourceTraceability source )
     {
-        super( source, "Multi-line fields are illegal in this context and so this might suggest that " +
-                String.format( "there's a field with a start quote, but a missing end quote. See line %d.",
-                        source.lineNumber() ) );
+        super( source, format( "Multi-line fields are illegal in this context and so this might suggest that " +
+                "there's a field with a start quote, but a missing end quote. See %s @ position %d.",
+                        source.sourceDescription(), source.position() ) );
     }
 }

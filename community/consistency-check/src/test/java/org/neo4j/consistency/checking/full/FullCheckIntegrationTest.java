@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -59,25 +59,27 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -131,11 +133,11 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.asIterable;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
+import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForLabel;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -153,7 +155,7 @@ import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
-    private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "lucene", "1.0" );
+    private static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( "lucene", "1.0" );
     private static final String PROP1 = "key1";
     private static final String PROP2 = "key2";
     private static final Object VALUE1 = "value1";
@@ -219,16 +221,15 @@ public class FullCheckIntegrationTest
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
                 db.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
-
-                try ( KernelStatement statement = statementOn( db ) )
+                KernelTransaction ktx = transactionOn( db );
+                try ( Statement ignore = ktx.acquireStatement() )
                 {
                     // the Core API for composite index creation is not quite merged yet
-                    TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
-                    key1 = tokenWriteOperations.propertyKeyGetOrCreateForName( PROP1 );
-                    key2 = tokenWriteOperations.propertyKeyGetOrCreateForName( PROP2 );
-                    label3 = statement.readOperations().labelGetForName( "label3" );
-                    statement.schemaWriteOperations()
-                            .indexCreate( SchemaDescriptorFactory.forLabel( label3, key1, key2 ) );
+                    TokenWrite tokenWrite = ktx.tokenWrite();
+                    key1 = tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
+                    key2 = tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
+                    label3 = ktx.tokenRead().nodeLabel( "label3" );
+                    ktx.schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( label3, key1, key2 ) );
                 }
 
                 db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
@@ -258,20 +259,21 @@ public class FullCheckIntegrationTest
                 set( db.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
                 tx.success();
 
-                try ( KernelStatement statement = statementOn( db ) )
+                KernelTransaction ktx = transactionOn( db );
+                try ( Statement ignore = ktx.acquireStatement() )
                 {
-                    ReadOperations readOperations = statement.readOperations();
-                    TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
-                    label1 = readOperations.labelGetForName( "label1" );
-                    label2 = readOperations.labelGetForName( "label2" );
-                    label3 = readOperations.labelGetForName( "label3" );
-                    label4 = readOperations.labelGetForName( "label4" );
-                    draconian = tokenWriteOperations.labelGetOrCreateForName( "draconian" );
-                    key1 = readOperations.propertyKeyGetForName( PROP1 );
-                    mandatory = tokenWriteOperations.propertyKeyGetOrCreateForName( "mandatory" );
-                    C = readOperations.relationshipTypeGetForName( "C" );
-                    T = readOperations.relationshipTypeGetForName( "T" );
-                    M = tokenWriteOperations.relationshipTypeGetOrCreateForName( "M" );
+                    TokenRead tokenRead = ktx.tokenRead();
+                    TokenWrite tokenWrite = ktx.tokenWrite();
+                    label1 = tokenRead.nodeLabel( "label1" );
+                    label2 = tokenRead.nodeLabel( "label2" );
+                    label3 = tokenRead.nodeLabel( "label3" );
+                    label4 = tokenRead.nodeLabel( "label4" );
+                    draconian = tokenWrite.labelGetOrCreateForName( "draconian" );
+                    key1 = tokenRead.propertyKey( PROP1 );
+                    mandatory = tokenWrite.propertyKeyGetOrCreateForName( "mandatory" );
+                    C = tokenRead.relationshipType( "C" );
+                    T = tokenRead.relationshipType( "T" );
+                    M = tokenWrite.relationshipTypeGetOrCreateForName( "M" );
                 }
             }
             catch ( KernelException e )
@@ -567,7 +569,7 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            IndexDescriptor descriptor = indexRule.getIndexDescriptor();
+            SchemaIndexDescriptor descriptor = indexRule.getIndexDescriptor();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
                     apply( indexRule.getProviderDescriptor() ).getOnlineAccessor(
                             indexRule.getId(), descriptor, samplingConfig );
@@ -582,7 +584,7 @@ public class FullCheckIntegrationTest
                     }
                 }
             }
-            accessor.force();
+            accessor.force( IOLimiter.unlimited() );
             accessor.close();
         }
 
@@ -609,7 +611,7 @@ public class FullCheckIntegrationTest
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );
             updater.close();
-            accessor.force();
+            accessor.force( IOLimiter.unlimited() );
             accessor.close();
         }
 
@@ -2265,7 +2267,7 @@ public class FullCheckIntegrationTest
         } );
     }
 
-    private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds ) throws Exception
+    private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds )
     {
         SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
 
@@ -2281,7 +2283,7 @@ public class FullCheckIntegrationTest
         writeToSchemaStore( schemaStore, uniqueRule );
     }
 
-    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds ) throws Exception
+    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds )
     {
         SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
 
@@ -2320,11 +2322,11 @@ public class FullCheckIntegrationTest
         }
     }
 
-    private static KernelStatement statementOn( GraphDatabaseService db )
+    private static KernelTransaction transactionOn( GraphDatabaseService db )
     {
         DependencyResolver resolver = ((GraphDatabaseAPI) db).getDependencyResolver();
         ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
-        return (KernelStatement) bridge.get();
+        return bridge.getKernelTransactionBoundToThisThread( true );
     }
 
     private static class Reference<T>

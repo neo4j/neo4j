@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,12 +39,12 @@ public class IndexProviderStore
 
     private final long creationTime;
     private final long randomIdentifier;
-    private long version;
+    private volatile long version;
     private final long indexVersion;
 
     private final StoreChannel fileChannel;
     private final ByteBuffer buf = ByteBuffer.allocate( RECORD_SIZE * RECORD_COUNT );
-    private long lastCommittedTx;
+    private volatile long lastCommittedTx;
     private final File file;
     private final Random random;
 
@@ -65,10 +65,10 @@ public class IndexProviderStore
             // Read all the records in the file
             channel = fileSystem.open( file, OpenMode.READ_WRITE );
             Long[] records = readRecordsWithNullDefaults( channel, RECORD_COUNT, allowUpgrade );
-            creationTime = records[0].longValue();
-            randomIdentifier = records[1].longValue();
-            version = records[2].longValue();
-            lastCommittedTx = records[3].longValue();
+            creationTime = records[0];
+            randomIdentifier = records[1];
+            version = records[2];
+            lastCommittedTx = records[3];
             Long readIndexVersion = records[4];
             fileChannel = channel;
 
@@ -106,15 +106,15 @@ public class IndexProviderStore
     private boolean compareExpectedVersionWithStoreVersion( long expectedVersion,
             boolean allowUpgrade, Long readIndexVersion )
     {
-        boolean versionDiffers = readIndexVersion == null || readIndexVersion.longValue() != expectedVersion;
+        boolean versionDiffers = readIndexVersion == null || readIndexVersion != expectedVersion;
         if ( versionDiffers )
         {
             // We can throw a more explicit exception if we see that we're trying to run
             // with an older version than the store is.
-            if ( readIndexVersion != null && expectedVersion < readIndexVersion.longValue() )
+            if ( readIndexVersion != null && expectedVersion < readIndexVersion )
             {
                 String expected = versionLongToString( expectedVersion );
-                String readVersion = versionLongToString( readIndexVersion.longValue() );
+                String readVersion = versionLongToString( readIndexVersion );
                 throw new NotCurrentStoreVersionException( expected, readVersion,
                         "Your index has been upgraded to " + readVersion +
                         " and cannot run with an older version " + expected, false );
@@ -154,19 +154,9 @@ public class IndexProviderStore
             throw new IllegalArgumentException( file + " already exist" );
         }
 
-        StoreChannel fileChannel = null;
-        try
+        try ( StoreChannel fileChannel = fileSystem.open( file, OpenMode.READ_WRITE ) )
         {
-            fileChannel = fileSystem.open( file, OpenMode.READ_WRITE );
-            write( fileChannel, System.currentTimeMillis(), random.nextLong(),
-                    0, 1, indexVersion );
-        }
-        finally
-        {
-            if ( fileChannel != null )
-            {
-                fileChannel.close();
-            }
+            write( fileChannel, System.currentTimeMillis(), random.nextLong(), 0, 1, indexVersion );
         }
     }
 
@@ -191,11 +181,6 @@ public class IndexProviderStore
         return creationTime;
     }
 
-    public long getRandomNumber()
-    {
-        return randomIdentifier;
-    }
-
     public long getVersion()
     {
         return version;
@@ -204,14 +189,6 @@ public class IndexProviderStore
     public long getIndexVersion()
     {
         return indexVersion;
-    }
-
-    public synchronized long incrementVersion()
-    {
-        long current = getVersion();
-        version++;
-        writeOut();
-        return current;
     }
 
     public synchronized void setVersion( long version )

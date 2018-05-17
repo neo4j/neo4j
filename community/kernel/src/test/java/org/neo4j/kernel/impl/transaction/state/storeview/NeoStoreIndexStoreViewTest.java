@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,12 +36,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -248,11 +248,9 @@ public class NeoStoreIndexStoreViewTest
             ThreadToStatementContextBridge bridge =
                     graphDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
-            try ( Statement statement = bridge.get() )
-            {
-                labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
-                propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "name" );
-            }
+            TokenWrite tokenWrite = bridge.getKernelTransactionBoundToThisThread( true ).tokenWrite();
+            labelId = tokenWrite.labelGetOrCreateForName( "Person" );
+            propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "name" );
             tx.success();
         }
     }
@@ -280,7 +278,7 @@ public class NeoStoreIndexStoreViewTest
         private final Set<NodeUpdates> updates = new HashSet<>();
 
         @Override
-        public boolean visit( NodeUpdates propertyUpdates ) throws Exception
+        public boolean visit( NodeUpdates propertyUpdates )
         {
             updates.add( propertyUpdates );
             return false;

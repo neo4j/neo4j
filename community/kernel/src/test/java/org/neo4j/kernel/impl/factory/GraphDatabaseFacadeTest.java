@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import java.util.HashMap;
@@ -33,6 +35,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
@@ -42,34 +45,40 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class GraphDatabaseFacadeTest
 {
-    private GraphDatabaseFacade.SPI spi = Mockito.mock( GraphDatabaseFacade.SPI.class, RETURNS_DEEP_STUBS );
-    private GraphDatabaseFacade graphDatabaseFacade = new GraphDatabaseFacade();
+    private final GraphDatabaseFacade.SPI spi = Mockito.mock( GraphDatabaseFacade.SPI.class, RETURNS_DEEP_STUBS );
+    private final GraphDatabaseFacade graphDatabaseFacade = new GraphDatabaseFacade();
     private GraphDatabaseQueryService queryService;
+
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp()
     {
         queryService = mock( GraphDatabaseQueryService.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
+        EditionModule editionModule = mock( EditionModule.class );
         Statement statement = mock( Statement.class, RETURNS_DEEP_STUBS );
         ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
 
         when( spi.queryService() ).thenReturn( queryService );
         when( spi.resolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( contextBridge );
-        when( resolver.resolveDependency( Guard.class ) ).thenReturn( mock( Guard.class ) );
+        Guard guard = mock( Guard.class );
+        when( resolver.resolveDependency( Guard.class ) ).thenReturn( guard );
         when( contextBridge.get() ).thenReturn( statement );
-        when( resolver.resolveDependency( Config.class ) ).thenReturn( Config.defaults() );
+        Config config = Config.defaults();
+        when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
 
-        graphDatabaseFacade.init( spi );
+        graphDatabaseFacade.init( editionModule, spi, guard, contextBridge, config, mock( RelationshipTypeTokenHolder.class ) );
     }
 
     @Test
-    public void beginTransactionWithCustomTimeout() throws Exception
+    public void beginTransactionWithCustomTimeout()
     {
         graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,7 @@ package org.neo4j.values.virtual;
 import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
 public abstract class VirtualNodeValue extends VirtualValue
@@ -45,6 +46,12 @@ public abstract class VirtualNodeValue extends VirtualValue
     public int computeHash()
     {
         return Long.hashCode( id() );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapNode( this );
     }
 
     @Override

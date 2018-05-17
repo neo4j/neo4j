@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,18 +24,22 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+
 public abstract class ActiveState<Key> extends ProgressiveState<Key>
 {
     public interface Factory
     {
-        <Key> ActiveState<Key> open( ReadableState<Key> store, File file );
+        <Key> ActiveState<Key> open( ReadableState<Key> store, File file, VersionContextSupplier versionContextSupplier );
     }
 
     protected final ReadableState<Key> store;
+    protected final VersionContextSupplier versionContextSupplier;
 
-    public ActiveState( ReadableState<Key> store )
+    public ActiveState( ReadableState<Key> store, VersionContextSupplier versionContextSupplier )
     {
         this.store = store;
+        this.versionContextSupplier = versionContextSupplier;
     }
 
     @Override
@@ -82,7 +86,7 @@ public abstract class ActiveState<Key> extends ProgressiveState<Key>
     final ProgressiveState<Key> stop() throws IOException
     {
         close();
-        return new DeadState.Stopped<>( keyFormat(), factory() );
+        return new DeadState.Stopped<>( keyFormat(), factory(), versionContextSupplier );
     }
 
     @Override

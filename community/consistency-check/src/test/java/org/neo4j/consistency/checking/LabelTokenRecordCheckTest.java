@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,7 +37,7 @@ public class LabelTokenRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordNotInUse() throws Exception
+    public void shouldNotReportAnythingForRecordNotInUse()
     {
         // given
         LabelTokenRecord key = notInUse( new LabelTokenRecord( 42 ) );
@@ -50,7 +50,7 @@ public class LabelTokenRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordThatDoesNotReferenceADynamicBlock() throws Exception
+    public void shouldNotReportAnythingForRecordThatDoesNotReferenceADynamicBlock()
     {
         // given
         LabelTokenRecord key = inUse( new LabelTokenRecord( 42 ) );
@@ -63,7 +63,7 @@ public class LabelTokenRecordCheckTest
     }
 
     @Test
-    public void shouldReportDynamicBlockNotInUse() throws Exception
+    public void shouldReportDynamicBlockNotInUse()
     {
         // given
         LabelTokenRecord key = inUse( new LabelTokenRecord( 42 ) );
@@ -79,7 +79,7 @@ public class LabelTokenRecordCheckTest
     }
 
     @Test
-    public void shouldReportEmptyName() throws Exception
+    public void shouldReportEmptyName()
     {
         // given
         LabelTokenRecord key = inUse( new LabelTokenRecord( 42 ) );

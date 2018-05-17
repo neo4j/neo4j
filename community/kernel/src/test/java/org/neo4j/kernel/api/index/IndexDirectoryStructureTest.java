@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.io.fs.FileUtils.path;
@@ -40,7 +40,7 @@ public class IndexDirectoryStructureTest
     private final long indexId = 15;
 
     @Test
-    public void shouldSeeCorrectDirectoriesForProviderKey() throws Exception
+    public void shouldSeeCorrectDirectoriesForProviderKey()
     {
         assertCorrectDirectories( directoriesByProviderKey( databaseStoreDir ).forProvider( provider ),
                 path( baseIndexDirectory, provider.getKey() ),
@@ -48,7 +48,7 @@ public class IndexDirectoryStructureTest
     }
 
     @Test
-    public void shouldSeeCorrectDirectoriesForProvider() throws Exception
+    public void shouldSeeCorrectDirectoriesForProvider()
     {
         assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( provider ),
                 path( baseIndexDirectory, provider.getKey() + "-" + provider.getVersion() ),
@@ -56,7 +56,7 @@ public class IndexDirectoryStructureTest
     }
 
     @Test
-    public void shouldSeeCorrectDirectoriesForSubProvider() throws Exception
+    public void shouldSeeCorrectDirectoriesForSubProvider()
     {
         IndexDirectoryStructure parentStructure = directoriesByProvider( databaseStoreDir ).forProvider( provider );
         Descriptor subProvider = new Descriptor( "sub", "0.3" );
@@ -67,7 +67,7 @@ public class IndexDirectoryStructureTest
     }
 
     @Test
-    public void shouldHandleWeirdCharactersInProviderKey() throws Exception
+    public void shouldHandleWeirdCharactersInProviderKey()
     {
         Descriptor providerWithWeirdName = new Descriptor( "native+lucene", "1.0" );
         assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( providerWithWeirdName ),

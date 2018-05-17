@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -47,14 +47,14 @@ public class UtilTest extends Neo4jAlgoTestCase
         Node e = graphDb.createNode();
         Node f = graphDb.createNode();
         // Predecessor lists
-        List<Relationship> ap = new LinkedList<Relationship>();
-        List<Relationship> bp = new LinkedList<Relationship>();
-        List<Relationship> cp = new LinkedList<Relationship>();
-        List<Relationship> dp = new LinkedList<Relationship>();
-        List<Relationship> ep = new LinkedList<Relationship>();
-        List<Relationship> fp = new LinkedList<Relationship>();
+        List<Relationship> ap = new LinkedList<>();
+        List<Relationship> bp = new LinkedList<>();
+        List<Relationship> cp = new LinkedList<>();
+        List<Relationship> dp = new LinkedList<>();
+        List<Relationship> ep = new LinkedList<>();
+        List<Relationship> fp = new LinkedList<>();
         // Predecessor map
-        Map<Node,List<Relationship>> predecessors = new HashMap<Node,List<Relationship>>();
+        Map<Node,List<Relationship>> predecessors = new HashMap<>();
         predecessors.put( a, ap );
         predecessors.put( b, bp );
         predecessors.put( c, cp );

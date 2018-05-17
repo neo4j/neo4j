@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.IndexDescriptor
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekMode.{MultipleValueQuery, assertSingleValue}
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.logical.plans.{QueryExpression, RangeQueryExpression}
 import org.neo4j.values.virtual.NodeValue
@@ -43,48 +41,24 @@ object IndexSeekMode {
       throw new InternalException("Composite lookups not yet supported")
     values.head
   }
- }
-
-sealed trait IndexSeekMode {
-  def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery
-
-  def name: String
 }
+
+sealed abstract class IndexSeekMode(val name: String)
 
 sealed trait ExactSeek {
   self: IndexSeekMode =>
-  override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
-    (state: QueryState) => (values: Seq[Any]) => state.query.indexSeek(descriptor, values)
 }
 
-case object IndexSeek extends IndexSeekMode with ExactSeek {
-  override def name: String = "NodeIndexSeek"
-}
+case object IndexSeek extends IndexSeekMode("NodeIndexSeek") with ExactSeek
 
-case object UniqueIndexSeek extends IndexSeekMode with ExactSeek {
-  override def name: String = "NodeUniqueIndexSeek"
-}
+case object UniqueIndexSeek extends IndexSeekMode("NodeUniqueIndexSeek") with ExactSeek
 
-case object LockingUniqueIndexSeek extends IndexSeekMode {
-
-  override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
-    (state: QueryState) => (x: Seq[Any]) => {
-      state.query.lockingUniqueIndexSeek(descriptor, x).toIterator
-    }
-
-  override def name: String = "NodeUniqueIndexSeek(Locking)"
-}
+case object LockingUniqueIndexSeek extends IndexSeekMode("NodeUniqueIndexSeek(Locking)")
 
 sealed trait SeekByRange {
   self: IndexSeekMode =>
-  override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
-    (state: QueryState) => (x: Seq[Any]) => state.query.indexSeekByRange(descriptor, assertSingleValue(x))
 }
 
-case object IndexSeekByRange extends IndexSeekMode with SeekByRange {
-  override def name: String = "NodeIndexSeekByRange"
-}
+case object IndexSeekByRange extends IndexSeekMode("NodeIndexSeekByRange") with SeekByRange
 
-case object UniqueIndexSeekByRange extends IndexSeekMode with SeekByRange {
-  override def name: String = "NodeUniqueIndexSeekByRange"
-}
+case object UniqueIndexSeekByRange extends IndexSeekMode("NodeUniqueIndexSeekByRange") with SeekByRange

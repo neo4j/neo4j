@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,11 +21,14 @@ package org.neo4j.codegen;
 
 import java.util.Arrays;
 
+import org.neo4j.values.AnyValue;
+
 import static org.neo4j.codegen.TypeReference.BOOLEAN;
 import static org.neo4j.codegen.TypeReference.DOUBLE;
 import static org.neo4j.codegen.TypeReference.INT;
 import static org.neo4j.codegen.TypeReference.LONG;
 import static org.neo4j.codegen.TypeReference.OBJECT;
+import static org.neo4j.codegen.TypeReference.VALUE;
 import static org.neo4j.codegen.TypeReference.arrayOf;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
@@ -261,7 +264,7 @@ public abstract class Expression extends ExpressionTemplate
 
     private static Expression[] expressions( Expression first, Expression[] more )
     {
-        Expression[] result = new Expression[more.length];
+        Expression[] result = new Expression[more.length + 1];
         result[0] = first;
         System.arraycopy( more, 0, result, 1, more.length );
         return result;
@@ -273,7 +276,7 @@ public abstract class Expression extends ExpressionTemplate
         {
             if ( rhs == NULL )
             {
-                return constant( true );
+                return constant( Boolean.TRUE );
             }
             else
             {
@@ -461,6 +464,10 @@ public abstract class Expression extends ExpressionTemplate
         else if ( value instanceof Boolean )
         {
             return (Boolean) value ? TRUE : FALSE;
+        }
+        else if ( value instanceof AnyValue )
+        {
+            reference = VALUE;
         }
         else
         {

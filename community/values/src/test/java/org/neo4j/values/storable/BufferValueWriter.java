@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,6 +21,11 @@ package org.neo4j.values.storable;
 
 import org.hamcrest.Matchers;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -173,6 +178,42 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     public void writeByteArray( byte[] value ) throws RuntimeException
     {
         buffer.add( Specials.byteArray( value ) );
+    }
+
+    @Override
+    public void writeDuration( long months, long days, long seconds, int nanos )
+    {
+        buffer.add( DurationValue.duration( months, days, seconds, nanos ) );
+    }
+
+    @Override
+    public void writeDate( LocalDate localDate ) throws RuntimeException
+    {
+        buffer.add( DateValue.date( localDate ) );
+    }
+
+    @Override
+    public void writeLocalTime( LocalTime localTime ) throws RuntimeException
+    {
+        buffer.add( LocalTimeValue.localTime( localTime ) );
+    }
+
+    @Override
+    public void writeTime( OffsetTime offsetTime ) throws RuntimeException
+    {
+        buffer.add( TimeValue.time( offsetTime ) );
+    }
+
+    @Override
+    public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
+    {
+        buffer.add( LocalDateTimeValue.localDateTime( localDateTime ) );
+    }
+
+    @Override
+    public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
+    {
+        buffer.add( DateTimeValue.datetime( zonedDateTime ) );
     }
 
     @SuppressWarnings( "WeakerAccess" )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,35 +33,35 @@ public class TestLifecycleException
 {
 
     @Test
-    public void shouldMakeNoneToStoppedIntoHumanReadableInitMessage() throws Exception
+    public void shouldMakeNoneToStoppedIntoHumanReadableInitMessage()
     {
         assertThat( exceptionFor( NONE, STOPPED ).getMessage(),
                 is( "Component 'SomeComponent' failed to initialize." ) );
     }
 
     @Test
-    public void shouldMakeStoppedToStartedIntoHumanReadableStartingMessage() throws Exception
+    public void shouldMakeStoppedToStartedIntoHumanReadableStartingMessage()
     {
         assertThat( exceptionFor( STOPPED, STARTED ).getMessage(),
                 is( "Component 'SomeComponent' was successfully initialized, but failed to start." ) );
     }
 
     @Test
-    public void shouldMakeStartedToStoppedIntoHumanReadableStoppingMessage() throws Exception
+    public void shouldMakeStartedToStoppedIntoHumanReadableStoppingMessage()
     {
         assertThat( exceptionFor( STARTED, STOPPED ).getMessage(),
                 is( "Component 'SomeComponent' failed to stop." ) );
     }
 
     @Test
-    public void shouldMakeShutdownIntoHumanReadableShutdownMessage() throws Exception
+    public void shouldMakeShutdownIntoHumanReadableShutdownMessage()
     {
         assertThat( exceptionFor( STOPPED, SHUTDOWN ).getMessage(),
                 is( "Component 'SomeComponent' failed to shut down." ) );
     }
 
     @Test
-    public void shouldIncludeRootCauseMessageInExceptionMessage() throws Exception
+    public void shouldIncludeRootCauseMessageInExceptionMessage()
     {
         Exception root = new Exception( "big bad root cause" );
         Exception intermediate = new Exception( "intermediate exception", root );

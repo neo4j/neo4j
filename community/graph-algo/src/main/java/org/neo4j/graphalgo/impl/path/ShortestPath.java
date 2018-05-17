@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,6 +33,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphalgo.impl.util.PathImpl.Builder;
@@ -195,6 +197,14 @@ public class ShortestPath implements PathFinder<Path>
         @Override
         public boolean equals( Object obj )
         {
+            if ( this == obj )
+            {
+                return true;
+            }
+            if ( obj == null || getClass() != obj.getClass() )
+            {
+                return false;
+            }
             Hit o = (Hit) obj;
             return connectingNode.equals( o.connectingNode );
         }
@@ -562,7 +572,7 @@ public class ShortestPath implements PathFinder<Path>
     // One long lived instance
     private static class Hits
     {
-        private final Map<Integer,Collection<Hit>> hits = new HashMap<>();
+        private final PrimitiveIntObjectMap<Collection<Hit>> hits = Primitive.intObjectMap();
         private int lowestDepth;
         private int totalHitCount;
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -49,12 +49,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.Boolean.getBoolean;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
-
-import static java.lang.Boolean.getBoolean;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
 
@@ -108,7 +106,7 @@ public class UniquenessRecoveryTest
     @Test
     public void shouldUpholdConstraintEvenAfterRestart() throws Exception
     {
-        assumeNotNull( "this test can only run on UNIX", PID );
+        assumeNotNull( PID ); // this test can only run on UNIX
 
         // given
         File path = dir.graphDbDir().getAbsoluteFile();
@@ -320,12 +318,12 @@ public class UniquenessRecoveryTest
         ArrayList<Object[]> configurations = new ArrayList<>();
         if ( EXHAUSTIVE )
         {
-            for ( int kill_signal : KILL_SIGNALS )
+            for ( int killSignal : KILL_SIGNALS )
             {
                 configurations
-                        .add( new Configuration().force_create_constraint( true ).kill_signal( kill_signal ).build() );
+                        .add( new Configuration().force_create_constraint( true ).kill_signal( killSignal ).build() );
                 configurations
-                        .add( new Configuration().force_create_constraint( false ).kill_signal( kill_signal ).build() );
+                        .add( new Configuration().force_create_constraint( false ).kill_signal( killSignal ).build() );
             }
         }
         else

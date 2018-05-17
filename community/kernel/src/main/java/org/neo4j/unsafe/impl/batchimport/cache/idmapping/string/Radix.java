@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,11 +31,11 @@ import static java.lang.Math.pow;
  */
 public abstract class Radix
 {
-    public static final Factory<Radix> LONG = () -> new Long();
+    public static final Factory<Radix> LONG = Long::new;
 
-    public static final Factory<Radix> STRING = () -> new String();
+    public static final Factory<Radix> STRING = String::new;
 
-    protected final int[] radixIndexCount = new int[(int) pow( 2, RadixCalculator.RADIX_BITS - 1 )];
+    final int[] radixIndexCount = new int[(int) pow( 2, RadixCalculator.RADIX_BITS - 1 )];
 
     public int registerRadixOf( long value )
     {

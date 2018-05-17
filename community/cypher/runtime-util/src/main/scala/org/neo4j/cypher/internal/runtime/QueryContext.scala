@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,14 +26,15 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescri
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
 
 import scala.collection.Iterator
 
@@ -53,29 +54,33 @@ trait QueryContext extends TokenContext {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
 
-  def entityAccessor: NodeManager
+  def entityAccessor: EmbeddedProxySPI
 
   def transactionalContext: QueryTransactionalContext
+
+  def withActiveRead: QueryContext
 
   def resources: CloseableResource
 
   def nodeOps: Operations[NodeValue]
 
-  def relationshipOps: Operations[EdgeValue]
+  def relationshipOps: Operations[RelationshipValue]
 
   def createNode(): Node
 
   def createNodeId(): Long
 
-  def createRelationship(start: Long, end: Long, relType: Int): EdgeValue
+  def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue
 
   def getOrCreateRelTypeId(relTypeName: String): Int
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[EdgeValue]
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue]
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator
 
-  def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): EdgeValue
+  def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor
+
+  def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue
 
   def getOrCreateLabelId(labelName: String): Int
 
@@ -87,28 +92,25 @@ trait QueryContext extends TokenContext {
 
   def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int
 
-  def getPropertiesForRelationship(relId: Long): Iterator[Int]
-
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
-  def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexDescriptor]
+  def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference]
 
   def dropIndexRule(descriptor: IndexDescriptor)
 
-  //TODO this should be `Seq[AnyValue]`
-  def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[NodeValue]
+  def indexReference(label: Int, properties: Int*): IndexReference
 
-  def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[NodeValue]
+  def indexSeek(index: IndexReference, queries: Seq[IndexQuery]): Iterator[NodeValue]
 
-  def indexScanByContains(index: IndexDescriptor, value: String): Iterator[NodeValue]
+  def indexScanByContains(index: IndexReference, value: String): Iterator[NodeValue]
 
-  def indexScanByEndsWith(index: IndexDescriptor, value: String): Iterator[NodeValue]
+  def indexScanByEndsWith(index: IndexReference, value: String): Iterator[NodeValue]
 
-  def indexScan(index: IndexDescriptor): Iterator[NodeValue]
+  def indexScan(index: IndexReference): Iterator[NodeValue]
 
-  def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongIterator
+  def indexScanPrimitive(index: IndexReference): PrimitiveLongIterator
 
-  def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[NodeValue]
+  def lockingUniqueIndexSeek(index: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue]
 
   def getNodesByLabel(id: Int): Iterator[NodeValue]
 
@@ -150,9 +152,9 @@ trait QueryContext extends TokenContext {
    */
   def createNewQueryContext(): QueryContext
 
-  def edgeGetStartNode(edge: EdgeValue): NodeValue
+  def edgeGetStartNode(edge: RelationshipValue): NodeValue
 
-  def edgeGetEndNode(edge: EdgeValue): NodeValue
+  def edgeGetEndNode(edge: RelationshipValue): NodeValue
 
   def nodeGetDegree(node: Long, dir: SemanticDirection): Int
 
@@ -179,16 +181,22 @@ trait QueryContext extends TokenContext {
 
   def lockRelationships(relIds: Long*)
 
+  def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
   def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
+  def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
   def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
+  def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
   def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
+  def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
   def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
 
-  def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef
+  def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]): AnyValue
+  def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue
 
+  def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator
   def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator
 
     // Check if a runtime value is a node, relationship, path or some such value returned from
@@ -216,10 +224,6 @@ trait Operations[T] {
 
   def getById(id: Long): T
 
-  def indexGet(name: String, key: String, value: Any): Iterator[T]
-
-  def indexQuery(name: String, query: Any): Iterator[T]
-
   def isDeletedInThisTx(id: Long): Boolean
 
   def all: Iterator[T]
@@ -230,14 +234,24 @@ trait Operations[T] {
 
   def releaseExclusiveLock(obj: Long): Unit
 
-  def exists(id: Long): Boolean
-
   def getByIdIfExists(id: Long): Option[T]
 }
 
 trait QueryTransactionalContext extends CloseableResource {
 
-  def readOperations: ReadOperations
+  def cursors : CursorFactory
+
+  def dataRead: Read
+
+  def stableDataRead: Read
+
+  def markAsStable(): Unit
+
+  def tokenRead: TokenRead
+
+  def schemaRead: SchemaRead
+
+  def dataWrite: Write
 
   def dbmsOperations: DbmsOperations
 

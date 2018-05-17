@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.rest.security;
 
@@ -37,10 +40,10 @@ import javax.ws.rs.core.HttpHeaders;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
@@ -130,8 +133,8 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject, KernelTransaction.Type txType )
             throws Throwable
     {
-        SecurityContext securityContext = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
-        return getLocalGraph().beginTransaction( txType, securityContext );
+        LoginContext loginContext = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
+        return getLocalGraph().beginTransaction( txType, loginContext );
     }
 
     @Override
@@ -160,9 +163,9 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     }
 
     @Override
-    public RESTSubject login( String username, String password ) throws Exception
+    public RESTSubject login( String username, String password )
     {
-        String principalCredentials = challengeResponse( username, password );
+        String principalCredentials = basicAuthHeader( username, password );
         return new RESTSubject( username, password, principalCredentials );
     }
 
@@ -174,7 +177,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     @Override
     public void updateAuthToken( RESTSubject subject, String username, String password )
     {
-        subject.principalCredentials = challengeResponse( username, password );
+        subject.principalCredentials = basicAuthHeader( username, password );
     }
 
     @Override
@@ -200,7 +203,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     }
 
     @Override
-    public void assertPasswordChangeRequired( RESTSubject subject ) throws Exception
+    public void assertPasswordChangeRequired( RESTSubject subject )
     {
         HTTP.Response response = authenticate( subject.principalCredentials );
         assertThat( response.status(), equalTo( 403 ) );

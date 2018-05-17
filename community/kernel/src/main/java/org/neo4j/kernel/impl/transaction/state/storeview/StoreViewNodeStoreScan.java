@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
@@ -105,7 +104,9 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
                 {
                     // This node has a property of interest to us
                     Value value = valueOf( property );
-                    Validators.INDEX_VALUE_VALIDATOR.validate( value );
+                    // No need to validate values before passing them to the updater since the index implementation
+                    // is allowed to fail in which ever way it wants to. The result of failure will be the same as
+                    // a failed validation, i.e. population FAILED.
                     updates.added( propertyKeyId, value );
                     hasRelevantProperty = true;
                 }

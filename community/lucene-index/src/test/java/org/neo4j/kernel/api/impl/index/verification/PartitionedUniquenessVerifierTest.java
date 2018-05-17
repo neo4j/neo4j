@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckingCollector;
 import org.neo4j.kernel.api.impl.schema.verification.PartitionedUniquenessVerifier;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -93,7 +92,7 @@ public class PartitionedUniquenessVerifierTest
         for ( Object value : values )
         {
             verify( searcher.getIndexSearcher() ).search(
-                    eq( LuceneDocumentStructure.newSeekQuery( new Value[]{Values.of( value )} ) ),
+                    eq( LuceneDocumentStructure.newSeekQuery( Values.of( value ) ) ),
                     any( DuplicateCheckingCollector.class ) );
         }
     }

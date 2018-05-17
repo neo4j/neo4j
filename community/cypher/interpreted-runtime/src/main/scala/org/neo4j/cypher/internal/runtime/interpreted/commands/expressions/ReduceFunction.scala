@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,10 +31,10 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = {
     val list = makeTraversable(value)
     val iterator = list.iterator()
-    var contextWithAcc = m.newScopeWith1(acc, init(m, state))
+    var contextWithAcc = m.copyWith(acc, init(m, state))
     while(iterator.hasNext) {
-      val innerMap = contextWithAcc.newWith1(id, iterator.next())
-      contextWithAcc = contextWithAcc.newWith1(acc, expression(innerMap, state))
+      val innerMap = contextWithAcc.set(id, iterator.next())
+      contextWithAcc = contextWithAcc.set(acc, expression(innerMap, state))
     }
     contextWithAcc(acc)
   }

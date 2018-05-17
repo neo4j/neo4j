@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,6 +39,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.KernelEventHandler;
@@ -51,10 +52,10 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -199,16 +200,16 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
     {
-        return getGraphDatabaseAPI().beginTransaction( type, securityContext );
+        return getGraphDatabaseAPI().beginTransaction( type, loginContext );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout,
             TimeUnit unit )
     {
-        return getGraphDatabaseAPI().beginTransaction( type, securityContext, timeout, unit );
+        return getGraphDatabaseAPI().beginTransaction( type, loginContext, timeout, unit );
     }
 
     @Override
@@ -248,7 +249,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         create();
         if ( startEagerly )
@@ -263,7 +264,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         shutdown( success );
     }
 
-    private void create() throws IOException
+    private void create()
     {
         createResources();
         try
@@ -284,7 +285,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
     }
 
-    protected void createResources() throws IOException
+    protected void createResources()
     {
     }
 
@@ -434,6 +435,13 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         return statementSupplier.get();
     }
 
+    public KernelTransaction transaction()
+    {
+        ensureStarted();
+        return database.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( true );
+    }
+
     @Override
     public DependencyResolver getDependencyResolver()
     {
@@ -532,6 +540,31 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     public ResourceIterator<Node> findNodes( Label label, String key, Object value )
     {
         return database.findNodes( label, key, value );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
+    {
+        return database.findNodes( label, key1, value1, key2, value2 );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2,
+            String key3, Object value3 )
+    {
+        return database.findNodes( label, key1, value1, key2, value2, key3, value3 );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
+    {
+        return database.findNodes( label, propertyValues );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode )
+    {
+        return database.findNodes( label, key, template, searchMode );
     }
 
     @Override

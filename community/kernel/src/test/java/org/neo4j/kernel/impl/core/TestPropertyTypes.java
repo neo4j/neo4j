@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,6 +26,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Array;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAmount;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
@@ -34,6 +41,12 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -307,7 +320,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     public void test3DPointType()
     {
-        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1 );
+        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 1, 1 );
         String key = "location";
         node1.setProperty( key, point );
         newTransaction();
@@ -320,8 +333,300 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     public void test4DPointType()
     {
         thrown.expect(Exception.class);
-        node1.setProperty( "location", Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1, 1 ) );
+        node1.setProperty( "location", Values.unsafePointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1, 1 ) );
         newTransaction();
+    }
+
+    @Test
+    public void testPointArray()
+    {
+        Point[] array = new Point[]{Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 1, 1 ),
+                                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 2, 1, 3 )};
+        String key = "testpointarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        Point[] propertyValue = null;
+        propertyValue = (Point[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
+    }
+
+    @Test
+    public void testDateTypeSmallEpochDay()
+    {
+        LocalDate date = DateValue.date( 2018, 1, 31 ).asObjectCopy();
+        String key = "dt";
+        node1.setProperty( key, date );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( date, property );
+    }
+
+    @Test
+    public void testDateTypeLargeEpochDay()
+    {
+        LocalDate date = DateValue.epochDate( 2147483648L ).asObjectCopy();
+        String key = "dt";
+        node1.setProperty( key, date );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( date, property );
+    }
+
+    @Test
+    public void testDateArray()
+    {
+        LocalDate[] array = new LocalDate[]{DateValue.date( 2018, 1, 31 ).asObjectCopy(), DateValue.epochDate( 2147483648L ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        LocalDate[] propertyValue = (LocalDate[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
+    }
+
+    @Test
+    public void testLocalTimeTypeSmallNano()
+    {
+        LocalTime time = LocalTimeValue.localTime( 0, 0, 0, 37 ).asObjectCopy();
+        String key = "dt";
+        node1.setProperty( key, time );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( time, property );
+    }
+
+    @Test
+    public void testLocalTimeTypeLargeNano()
+    {
+        LocalTime time = LocalTimeValue.localTime( 0, 0, 13, 37 ).asObjectCopy();
+        String key = "dt";
+        node1.setProperty( key, time );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( time, property );
+    }
+
+    @Test
+    public void testLocalTimeArray()
+    {
+        LocalTime[] array = new LocalTime[]{LocalTimeValue.localTime( 0, 0, 0, 37 ).asObjectCopy(), LocalTimeValue.localTime( 0, 0, 13, 37 ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        LocalTime[] propertyValue = (LocalTime[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
+    }
+
+    @Test
+    public void testLocalDateTimeType()
+    {
+        LocalDateTime dateTime = LocalDateTimeValue.localDateTime( 1991, 1, 1, 0, 0, 13, 37 ).asObjectCopy();
+        String key = "dt";
+        node1.setProperty( key, dateTime );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( dateTime, property );
+    }
+
+    @Test
+    public void testLocalDateTimeArray()
+    {
+        LocalDateTime[] array = new LocalDateTime[]{LocalDateTimeValue.localDateTime( 1991, 1, 1, 0, 0, 13, 37 ).asObjectCopy(),
+                LocalDateTimeValue.localDateTime( 1992, 2, 28, 1, 15, 0, 4000 ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        LocalDateTime[] propertyValue = (LocalDateTime[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
+    }
+
+    @Test
+    public void testTimeType()
+    {
+        OffsetTime time = TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy();
+        String key = "dt";
+        node1.setProperty( key, time );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( time, property );
+    }
+
+    @Test
+    public void testTimeArray()
+    {
+        String key = "testarray";
+
+        // array sizes 1 through 4
+        for ( OffsetTime[] array : new OffsetTime[][]{new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy()},
+                new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy(), TimeValue.time( 14, 34, 55, 3478, "+02:00" ).asObjectCopy()},
+                new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy(), TimeValue.time( 14, 34, 55, 3478, "+02:00" ).asObjectCopy(),
+                        TimeValue.time( 0, 17, 20, 783478, "-03:00" ).asObjectCopy()},
+                new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy(), TimeValue.time( 14, 34, 55, 3478, "+02:00" ).asObjectCopy(),
+                        TimeValue.time( 0, 17, 20, 783478, "-03:00" ).asObjectCopy(), TimeValue.time( 1, 1, 1, 1, "-01:00" ).asObjectCopy()}} )
+        {
+            node1.setProperty( key, array );
+            newTransaction();
+
+            OffsetTime[] propertyValue = (OffsetTime[]) node1.getProperty( key );
+            assertEquals( array.length, propertyValue.length );
+            for ( int i = 0; i < array.length; i++ )
+            {
+                assertEquals( array[i], propertyValue[i] );
+            }
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
+    }
+
+    @Test
+    public void testDurationType()
+    {
+        TemporalAmount duration = DurationValue.duration( 57, 57, 57, 57 ).asObjectCopy();
+        String key = "dt";
+        node1.setProperty( key, duration );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( duration, property );
+    }
+
+    @Test
+    public void testDurationArray()
+    {
+        TemporalAmount[] array = new TemporalAmount[]{DurationValue.duration( 57, 57, 57, 57 ).asObjectCopy(),
+                DurationValue.duration( -40, -189, -6247, -1 ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        TemporalAmount[] propertyValue = (TemporalAmount[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
+    }
+
+    @Test
+    public void testDateTimeTypeWithZoneOffset()
+    {
+        DateTimeValue dateTime = DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "+01:00" );
+        String key = "dt";
+        node1.setProperty( key, dateTime );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( dateTime.asObjectCopy(), property );
+    }
+
+    @Test
+    public void testDateTimeArrayWithZoneOffset()
+    {
+        ZonedDateTime[] array = new ZonedDateTime[]{DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "-01:00" ).asObjectCopy(),
+                DateTimeValue.datetime( 1992, 2, 28, 1, 15, 0, 4000, "+11:00" ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        ZonedDateTime[] propertyValue = (ZonedDateTime[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
+    }
+
+    @Test
+    public void testDateTimeTypeWithZoneId()
+    {
+        DateTimeValue dateTime = DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, ZoneId.of( "Europe/Stockholm" ) );
+        String key = "dt";
+        node1.setProperty( key, dateTime );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( dateTime.asObjectCopy(), property );
+    }
+
+    @Test
+    public void testDateTimeArrayWithZoneOffsetAndZoneID()
+    {
+        ZonedDateTime[] array = new ZonedDateTime[]{DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "-01:00" ).asObjectCopy(),
+                DateTimeValue.datetime( 1992, 2, 28, 1, 15, 0, 4000, "+11:00" ).asObjectCopy(),
+                DateTimeValue.datetime( 1992, 2, 28, 1, 15, 0, 4000, ZoneId.of( "Europe/Stockholm" ) ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        ZonedDateTime[] propertyValue = (ZonedDateTime[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
     }
 
     @Test
@@ -348,7 +653,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( array2.length, propertyValue.length );
         for ( int i = 0; i < array2.length; i++ )
         {
-            assertEquals( array2[i], new Integer( propertyValue[i] ) );
+            assertEquals( array2[i], Integer.valueOf( propertyValue[i] ) );
         }
 
         node1.removeProperty( key );
@@ -381,7 +686,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( array2.length, propertyValue.length );
         for ( int i = 0; i < array2.length; i++ )
         {
-            assertEquals( array2[i], new Short( propertyValue[i] ) );
+            assertEquals( array2[i], Short.valueOf( propertyValue[i] ) );
         }
 
         node1.removeProperty( key );
@@ -447,7 +752,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( array2.length, propertyValue.length );
         for ( int i = 0; i < array2.length; i++ )
         {
-            assertEquals( array2[i], new Boolean( propertyValue[i] ) );
+            assertEquals( array2[i], propertyValue[i] );
         }
 
         node1.removeProperty( key );
@@ -546,7 +851,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( array2.length, propertyValue.length );
         for ( int i = 0; i < array2.length; i++ )
         {
-            assertEquals( array2[i], new Long( propertyValue[i] ) );
+            assertEquals( array2[i], Long.valueOf( propertyValue[i] ) );
         }
 
         node1.removeProperty( key );
@@ -579,7 +884,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( array2.length, propertyValue.length );
         for ( int i = 0; i < array2.length; i++ )
         {
-            assertEquals( array2[i], new Byte( propertyValue[i] ) );
+            assertEquals( array2[i], Byte.valueOf( propertyValue[i] ) );
         }
 
         node1.removeProperty( key );
@@ -622,7 +927,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testEmptyString() throws Exception
+    public void testEmptyString()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "1", 2 );
@@ -636,55 +941,55 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonBooleanArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonBooleanArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new boolean[] {false, false, false}, true );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonByteArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonByteArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new byte[] {0, 0, 0}, (byte)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonShortArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonShortArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new short[] {0, 0, 0}, (short)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonIntArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonIntArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new int[] {0, 0, 0}, 1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonLongArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonLongArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new long[] {0, 0, 0}, 1L );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonFloatArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonFloatArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new float[] {0F, 0F, 0F}, 1F );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonDoubleArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonDoubleArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new double[] {0D, 0D, 0D}, 1D );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonCharArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonCharArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new char[] {'0', '0', '0'}, '1' );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonStringArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonStringArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new String[] {"zero", "zero", "zero"}, "one" );
     }
@@ -703,55 +1008,55 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongBooleanArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongBooleanArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Boolean.TYPE ), true );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongByteArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongByteArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Byte.TYPE ), (byte)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongShortArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongShortArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Short.TYPE ), (short)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongIntArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongIntArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Integer.TYPE ), 1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongLongArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongLongArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Long.TYPE ), 1L );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongFloatArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongFloatArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Float.TYPE ), 1F );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongDoubleArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongDoubleArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Double.TYPE ), 1D );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongCharArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongCharArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Character.TYPE ), '1' );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongStringArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongStringArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongStringArray(), "one" );
     }

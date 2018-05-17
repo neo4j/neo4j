@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -30,10 +33,6 @@ import org.neo4j.kernel.api.exceptions.Status
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTestSupport with CypherComparisonSupport {
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_hints_error -> "true")
 
-  val expectedToSucceed = Configs.All
-  val allPossibleConfigs = Configs.All + TestConfiguration(Versions.Default, Planners.Default,
-    Runtimes(Runtimes.Default, Runtimes.ProcedureOrSchema, Runtimes.CompiledSource, Runtimes.CompiledBytecode))
-
   test("should use index on literal value") {
     val node = createLabeledNode(Map("id" -> 123), "Foo")
     graph.createIndex("Foo", "id")
@@ -46,7 +45,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         | RETURN f
       """.stripMargin
 
-    val result = executeWith(expectedToSucceed, query,
+    val result = executeWith(Configs.All, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -65,7 +64,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         | RETURN f
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query,
+    val result = executeWith(Configs.All - Configs.Version2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -85,7 +84,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         | RETURN f
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted, query,
+    val result = executeWith(Configs.All, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -97,7 +96,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     // WHEN & THEN
-    failWithError(allPossibleConfigs + Configs.Morsel, "start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n", List("Invalid input"))
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel, "start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n", List("Invalid input"))
   }
 
   test("fail if using a variable with label not used in match") {
@@ -105,7 +104,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     // WHEN
-    failWithError(allPossibleConfigs + Configs.Morsel - Configs.Version2_3, "match n-->() using index n:Person(name) where n.name = 'kabam' return n",
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel - Configs.Version2_3, "match n-->() using index n:Person(name) where n.name = 'kabam' return n",
       List("Unknown variable `n`.", "Parentheses are required to identify nodes in patterns, i.e. (n)"))
   }
 
@@ -113,7 +112,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     // GIVEN: NO INDEX
 
     // WHEN
-    failWithError(allPossibleConfigs + Configs.Morsel, "match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n", List("No such index"))
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel, "match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n", List("No such index"))
   }
 
   test("fail if using hints with unusable equality predicate") {
@@ -121,7 +120,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     // WHEN
-    failWithError(allPossibleConfigs + Configs.Morsel, "match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n", List("Cannot use index hint in this context"))
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel, "match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n", List("Cannot use index hint in this context"))
   }
 
   test("fail if joining index hints in equality predicates") {
@@ -130,7 +129,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Food", "name")
 
     // WHEN
-    failWithError(allPossibleConfigs + Configs.Morsel,
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel,
       "match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n",
       List("Failed to fulfil the hints of the query.",
         "Unknown variable",
@@ -139,7 +138,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
   }
 
   test("scan hints are handled by ronja") {
-    executeWith(expectedToSucceed, "match (n:Person) using scan n:Person return n").toList
+    executeWith(Configs.All, "match (n:Person) using scan n:Person return n").toList
   }
 
   test("fail when equality checks are done with OR") {
@@ -147,7 +146,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     // WHEN
-    failWithError(allPossibleConfigs + Configs.Morsel - Configs.Version2_3, "match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n",
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel - Configs.Version2_3, "match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n",
       List("Parentheses are required to identify nodes in patterns, i.e. (n)"))
   }
 
@@ -161,7 +160,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         |RETURN n""".stripMargin
 
     // WHEN
-    failWithError(allPossibleConfigs + Configs.Morsel, query, List("No such index"), params = "foo" -> 42)
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel, query, List("No such index"), params = Map("foo" -> 42))
   }
 
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {
@@ -237,7 +236,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWith(expectedToSucceed, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
 
     //THEN
     result.toList should equal(List(Map("n" -> jake)))
@@ -253,7 +252,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWith(expectedToSucceed, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
     //THEN
     result.toList should equal(List(Map("n" -> jake)))
@@ -269,7 +268,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWith(expectedToSucceed, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
     //THEN
     result.toList should equal(List())
@@ -285,7 +284,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWith(expectedToSucceed, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n",
+    val result = executeWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n",
       params = Map("coll" -> List("Jacob")))
 
     //THEN
@@ -301,7 +300,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
 
     // WHEN THEN
 
-    failWithError(allPossibleConfigs + Configs.Morsel,
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel,
       "MATCH (n:Entity:Person) " +
         "USING INDEX n:Person(first_name) " +
         "USING INDEX n:Entity(source) " +
@@ -311,7 +310,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
   }
 
   test("does not accept multiple scan hints for the same variable") {
-    failWithError(allPossibleConfigs + Configs.Morsel,
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel,
       "MATCH (n:Entity:Person) " +
         "USING SCAN n:Person " +
         "USING SCAN n:Entity " +
@@ -322,7 +321,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
   }
 
   test("does not accept multiple mixed hints for the same variable") {
-    failWithError(allPossibleConfigs + Configs.Morsel,
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel,
       "MATCH (n:Entity:Person) " +
         "USING SCAN n:Person " +
         "USING INDEX n:Entity(first_name) " +
@@ -335,14 +334,14 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     // GIVEN
 
     // WHEN
-    failWithError(allPossibleConfigs + Configs.Morsel, "MATCH (n:Person)-->() USING SCAN x:Person return n", List("Variable `x` not defined", "x not defined"))
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel, "MATCH (n:Person)-->() USING SCAN x:Person return n", List("Variable `x` not defined", "x not defined"))
   }
 
   test("scan hint must fail if using label not used in the query") {
     // GIVEN
 
     // WHEN
-   failWithError(allPossibleConfigs + Configs.Morsel, "MATCH n-->() USING SCAN n:Person return n",
+   failWithError(Configs.AbsolutelyAll + Configs.Morsel, "MATCH n-->() USING SCAN n:Person return n",
      List("Cannot use label scan hint in this context.", "Parentheses are required to identify nodes in patterns, i.e. (n)"))
   }
 
@@ -411,7 +410,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
   }
 
   test("should fail when join hint is applied to an undefined node") {
-    failWithError(allPossibleConfigs + Configs.Morsel,
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel,
       s"""
          |MATCH (a:A)-->(b:B)<--(c:C)
          |USING JOIN ON d
@@ -420,7 +419,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
   }
 
   test("should fail when join hint is applied to a single node") {
-    failWithError(allPossibleConfigs + Configs.Morsel,
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel,
       s"""
          |MATCH (a:A)
          |USING JOIN ON a
@@ -429,7 +428,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     }
 
   test("should fail when join hint is applied to a relationship") {
-      failWithError(allPossibleConfigs + Configs.Morsel,
+      failWithError(Configs.AbsolutelyAll + Configs.Morsel,
         s"""
            |MATCH (a:A)-[r1]->(b:B)-[r2]->(c:C)
            |USING JOIN ON r1
@@ -438,7 +437,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     }
 
   test("should fail when join hint is applied to a path") {
-      failWithError(allPossibleConfigs + Configs.Morsel,
+      failWithError(Configs.AbsolutelyAll + Configs.Morsel,
         s"""
            |MATCH p=(a:A)-->(b:B)-->(c:C)
            |USING JOIN ON p
@@ -742,7 +741,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
   test("USING INDEX hint should not clash with used variables") {
     graph.createIndex("PERSON", "id")
 
-    val result = executeWith(expectedToSucceed,
+    val result = executeWith(Configs.All,
       """MATCH (actor:PERSON {id: 1})
         |USING INDEX actor:PERSON(id)
         |WITH 14 as id
@@ -808,5 +807,46 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       }, expectPlansToFail = Configs.AllRulePlanners))
 
     result.columnAs[Node]("f").toList should equal(List(node))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
+  }
+
+  test("should handle join hint solved multiple times") {
+    val initQuery = "CREATE (a:Node)-[:R]->(b:Node)-[:R]->(c:Node), (d:Node)-[:R]->(b)-[:R]->(e:Node)"
+    graph.execute(initQuery)
+
+    val query =
+      s"""MATCH (a:Node)-->(b:Node),(b)-->(c:Node),(d:Node)-->(b),(b)-->(e:Node)
+         |USING JOIN ON b
+         |RETURN count(*) as c""".stripMargin
+
+    val result = executeWith(Configs.Interpreted, query, planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+      plan should useOperatorTimes("NodeHashJoin", 3)
+    }, expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3 + Configs.Version3_1))
+
+    result.toList should equal (List(Map("c" -> 4)))
+  }
+
+  //---------------------------------------------------------------------------
+  // Verification helpers
+
+  private def verifyJoinHintUnfulfillableOnRunWithConfig(initQuery: String, query: String, expectedResult: Any): Unit = {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
+      db =>
+        db.execute(initQuery)
+        val result = db.execute(query)
+        shouldHaveNoWarnings(result)
+        import scala.collection.JavaConverters._
+        result.asScala.toList.map(_.asScala) should equal(expectedResult)
+
+        val explainResult = db.execute(s"EXPLAIN $query")
+        shouldHaveWarning(explainResult, Status.Statement.JoinHintUnfulfillableWarning)
+    }
+
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
+      db =>
+        db.execute(initQuery)
+        intercept[QueryExecutionException](db.execute(query)).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailed")
+        intercept[QueryExecutionException](db.execute(s"EXPLAIN $query")).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailed")
+    }
   }
 }

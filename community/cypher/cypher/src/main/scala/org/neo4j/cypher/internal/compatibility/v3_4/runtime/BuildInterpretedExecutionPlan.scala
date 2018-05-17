@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{InternalNotificationLogger, Phase}
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, ProfileMode, QueryContext}
@@ -44,17 +45,20 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
   override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
+    val readOnlies = new ReadOnlies
+    from.solveds.mapTo(readOnlies, _.readOnly)
+    val cardinalities = from.cardinalities
     val logicalPlan = from.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
       expressionConverters = converters, pipeBuilderFactory = CommunityPipeBuilderFactory)
-    val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
+    val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName, readOnlies, cardinalities)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = from.statement().returnColumns
     val resultBuilderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
-    val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory,
-                                        context.notificationLogger, InterpretedRuntimeName)
+    val func = getExecutionPlanFunction(periodicCommitInfo, updating, resultBuilderFactory,
+                                        context.notificationLogger, InterpretedRuntimeName, readOnlies, cardinalities)
 
     val execPlan: ExecutionPlan = new InterpretedExecutionPlan(func,
       logicalPlan,
@@ -66,11 +70,12 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
   }
 
   def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
-                                       queryId: AnyRef,
-                                       updating: Boolean,
-                                       resultBuilderFactory: ExecutionResultBuilderFactory,
-                                       notificationLogger: InternalNotificationLogger,
-                                        runtimeName: RuntimeName):
+                               updating: Boolean,
+                               resultBuilderFactory: ExecutionResultBuilderFactory,
+                               notificationLogger: InternalNotificationLogger,
+                               runtimeName: RuntimeName,
+                               readOnlies: ReadOnlies,
+                               cardinalities: Cardinalities):
   (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult =
     (queryContext: QueryContext, planType: ExecutionMode, params: MapValue) => {
       val builder = resultBuilderFactory.create()
@@ -89,7 +94,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
       if (profiling)
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
 
-      builder.build(queryId, planType, params, notificationLogger, runtimeName)
+      builder.build(planType, params, notificationLogger, runtimeName, readOnlies, cardinalities)
     }
 
   /**
@@ -105,7 +110,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult =
       executionPlanFunc(queryContext, planType, params)
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
+    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.checkPlanReusability(lastTxId, statistics)
 
     override def runtimeUsed: RuntimeName = InterpretedRuntimeName
 

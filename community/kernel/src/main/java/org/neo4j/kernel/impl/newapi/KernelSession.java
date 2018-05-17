@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,11 +21,10 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.storageengine.api.StorageEngine;
 
 /**
  * Implements a Kernel API Session.
@@ -33,32 +32,24 @@ import org.neo4j.storageengine.api.StorageEngine;
 class KernelSession implements Session
 {
     private final InwardKernel kernel;
-    private final SecurityContext securityContext;
-    private final KernelToken token;
+    private final LoginContext loginContext;
 
-    KernelSession( StorageEngine engine, InwardKernel kernel, SecurityContext securityContext )
+    KernelSession( InwardKernel kernel, LoginContext loginContext )
     {
         this.kernel = kernel;
-        this.securityContext = securityContext;
-        this.token = new KernelToken( engine );
+        this.loginContext = loginContext;
     }
 
     @Override
-    public Transaction beginTransaction() throws KernelException
+    public Transaction beginTransaction() throws TransactionFailureException
     {
         return beginTransaction( Transaction.Type.explicit );
     }
 
     @Override
-    public Transaction beginTransaction( KernelTransaction.Type type ) throws KernelException
+    public Transaction beginTransaction( KernelTransaction.Type type ) throws TransactionFailureException
     {
-        return kernel.newTransaction( type, securityContext );
-    }
-
-    @Override
-    public org.neo4j.internal.kernel.api.Token token()
-    {
-        return token;
+        return kernel.newTransaction( type, loginContext );
     }
 
     @Override

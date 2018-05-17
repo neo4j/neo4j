@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
@@ -68,8 +69,8 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
 {
     private static final Comparator<IndexQuery> ASCENDING_BY_KEY = Comparator.comparingInt( IndexQuery::propertyKeyId );
     private final NodeValueClient target;
-    private final NodeCursor node;
-    private final PropertyCursor property;
+    private final DefaultNodeCursor node;
+    private final DefaultPropertyCursor property;
     private final IndexQuery[] filters;
     private final Read read;
     private int[] keys;
@@ -77,7 +78,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
 
     NodeValueClientFilter(
             NodeValueClient target,
-            NodeCursor node, PropertyCursor property, Read read, IndexQuery... filters )
+            DefaultNodeCursor node, DefaultPropertyCursor property, Read read, IndexQuery... filters )
     {
         this.target = target;
         this.node = node;
@@ -88,11 +89,11 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     }
 
     @Override
-    public void initialize( IndexProgressor progressor, int[] propertyIds )
+    public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
     {
         this.progressor = progressor;
-        this.keys = propertyIds;
-        target.initialize( this, propertyIds );
+        this.keys = descriptor.schema().getPropertyIds();
+        target.initialize( descriptor, this, query );
     }
 
     @Override
@@ -116,6 +117,12 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
             }
             return filterByCursors( reference, values );
         }
+    }
+
+    @Override
+    public boolean needsValues()
+    {
+        return true;
     }
 
     @Override
@@ -177,10 +184,8 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
                 }
             }
         }
-        if ( accepted < filters.length )
-        {
-            return false; // not all filters were matched
-        }
-        return target.acceptNode( reference, values );
+        // if not all filters were matched, i.e. accepted < filters.length we reject
+        // otherwise we delegate to target
+        return accepted >= filters.length && target.acceptNode( reference, values );
     }
 }

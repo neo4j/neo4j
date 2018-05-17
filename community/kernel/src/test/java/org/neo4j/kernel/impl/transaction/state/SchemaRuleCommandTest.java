@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,10 +25,10 @@ import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -66,7 +66,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public class SchemaRuleCommandTest
 {
@@ -91,7 +91,7 @@ public class SchemaRuleCommandTest
             labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
             new PropertyPhysicalToLogicalConverter( propertyStore ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
-    private final IndexRule rule = IndexRule.indexRule( id, IndexDescriptorFactory.forLabel( labelId, propertyKey ),
+    private final IndexRule rule = IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forLabel( labelId, propertyKey ),
             PROVIDER_DESCRIPTOR );
 
     @Test

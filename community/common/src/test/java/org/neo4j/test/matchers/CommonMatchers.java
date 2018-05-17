@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,6 +46,17 @@ public final class CommonMatchers
     public static <T> Matcher<? super Iterable<T>> matchesOneToOneInAnyOrder( Matcher<? super T>... expectedMatchers )
     {
         return new MatchesOneToOneInAnyOrder<>( expectedMatchers );
+    }
+
+    /**
+     * Checks that an exception message matches given matcher
+     *
+     * @param matcher
+     * @return
+     */
+    public static Matcher<Throwable> matchesExceptionMessage( Matcher<? super String> matcher )
+    {
+        return new ExceptionMessageMatcher( matcher );
     }
 
     /**

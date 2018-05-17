@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, PropertyKeyName}
 
 /**
@@ -31,15 +32,15 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression, PropertyKeyName}
   */
 case class SetNodeProperty(
                             source: LogicalPlan,
-                            idName: IdName,
+                            idName: String,
                             propertyKey: PropertyKeyName,
                             value: Expression
-                          )(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+                          )(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + idName
+  override val availableSymbols: Set[String] = source.availableSymbols + idName
 
   override def rhs: Option[LogicalPlan] = None
 

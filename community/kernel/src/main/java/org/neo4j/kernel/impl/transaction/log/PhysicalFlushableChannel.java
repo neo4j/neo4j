@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,6 +35,8 @@ import static java.lang.Math.min;
  */
 public class PhysicalFlushableChannel implements FlushableChannel
 {
+    public static final int DEFAULT_BUFFER_SIZE = (int) ByteUnit.kibiBytes( 512 );
+
     private volatile boolean closed;
 
     protected final ByteBuffer buffer;
@@ -42,7 +44,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
 
     public PhysicalFlushableChannel( StoreChannel channel )
     {
-        this( channel, (int) ByteUnit.kibiBytes( 512 ) );
+        this( channel, DEFAULT_BUFFER_SIZE );
     }
 
     public PhysicalFlushableChannel( StoreChannel channel, int bufferSize )

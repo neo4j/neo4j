@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -52,10 +52,10 @@ public class RawBitsTest
     {
         return asList(
                 new Object[]{"Unique",
-                        new UniqueNumberLayout()
+                        new NumberLayoutUnique()
                 },
                 new Object[]{"NonUnique",
-                        new NonUniqueNumberLayout()
+                        new NumberLayoutNonUnique()
                 }
         );
     }
@@ -109,11 +109,11 @@ public class RawBitsTest
     );
 
     @Test
-    public void mustSortInSameOrderAsValueComparator() throws Exception
+    public void mustSortInSameOrderAsValueComparator()
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<SchemaNumberKey> schemaNumberKeys = asSchemaNumberKeys( values );
+        List<NumberSchemaKey> schemaNumberKeys = asSchemaNumberKeys( values );
         Collections.shuffle( values );
         Collections.shuffle( schemaNumberKeys );
 
@@ -127,22 +127,22 @@ public class RawBitsTest
     }
 
     @Test
-    public void shouldCompareAllValuesToAllOtherValuesLikeValueComparator() throws Exception
+    public void shouldCompareAllValuesToAllOtherValuesLikeValueComparator()
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<SchemaNumberKey> schemaNumberKeys = asSchemaNumberKeys( values );
+        List<NumberSchemaKey> schemaNumberKeys = asSchemaNumberKeys( values );
         values.sort( Values.COMPARATOR );
 
         // when
-        for ( SchemaNumberKey numberKey : schemaNumberKeys )
+        for ( NumberSchemaKey numberKey : schemaNumberKeys )
         {
-            List<SchemaNumberKey> withoutThisOne = new ArrayList<>( schemaNumberKeys );
+            List<NumberSchemaKey> withoutThisOne = new ArrayList<>( schemaNumberKeys );
             assertTrue( withoutThisOne.remove( numberKey ) );
             withoutThisOne = unmodifiableList( withoutThisOne );
             for ( int i = 0; i < withoutThisOne.size(); i++ )
             {
-                List<SchemaNumberKey> withThisOneInWrongPlace = new ArrayList<>( withoutThisOne );
+                List<NumberSchemaKey> withThisOneInWrongPlace = new ArrayList<>( withoutThisOne );
                 withThisOneInWrongPlace.add( i, numberKey );
                 withThisOneInWrongPlace.sort( layout );
                 List<Value> actual = asValues( withThisOneInWrongPlace );
@@ -154,22 +154,22 @@ public class RawBitsTest
     }
 
     @Test
-    public void shouldHaveSameCompareResultsAsValueCompare() throws Exception
+    public void shouldHaveSameCompareResultsAsValueCompare()
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<SchemaNumberKey> schemaNumberKeys = asSchemaNumberKeys( values );
+        List<NumberSchemaKey> schemaNumberKeys = asSchemaNumberKeys( values );
 
         // when
         for ( int i = 0; i < values.size(); i++ )
         {
             Value value1 = values.get( i );
-            SchemaNumberKey schemaNumberKey1 = schemaNumberKeys.get( i );
+            NumberSchemaKey schemaNumberKey1 = schemaNumberKeys.get( i );
             for ( int j = 0; j < values.size(); j++ )
             {
                 // then
                 Value value2 = values.get( j );
-                SchemaNumberKey schemaNumberKey2 = schemaNumberKeys.get( j );
+                NumberSchemaKey schemaNumberKey2 = schemaNumberKeys.get( j );
                 assertEquals( Values.COMPARATOR.compare( value1, value2 ),
                         layout.compare( schemaNumberKey1, schemaNumberKey2 ) );
                 assertEquals( Values.COMPARATOR.compare( value2, value1 ),
@@ -178,7 +178,7 @@ public class RawBitsTest
         }
     }
 
-    private List<Value> asValues( List<SchemaNumberKey> schemaNumberKeys )
+    private List<Value> asValues( List<NumberSchemaKey> schemaNumberKeys )
     {
         return schemaNumberKeys.stream()
                 .map( k -> RawBits.asNumberValue( k.rawValueBits, k.type ) )
@@ -214,12 +214,12 @@ public class RawBitsTest
         return values;
     }
 
-    private List<SchemaNumberKey> asSchemaNumberKeys( List<Value> values )
+    private List<NumberSchemaKey> asSchemaNumberKeys( List<Value> values )
     {
-        List<SchemaNumberKey> schemaNumberKeys = new ArrayList<>();
+        List<NumberSchemaKey> schemaNumberKeys = new ArrayList<>();
         for ( Value value : values )
         {
-            SchemaNumberKey key = new SchemaNumberKey();
+            NumberSchemaKey key = new NumberSchemaKey();
             key.from( 0, value );
             schemaNumberKeys.add( key );
         }

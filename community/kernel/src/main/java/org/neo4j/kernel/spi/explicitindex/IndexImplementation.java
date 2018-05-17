@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -82,28 +82,4 @@ public interface IndexImplementation extends Lifecycle
      * @throws IOException depends on the implementation
      */
     ResourceIterator<File> listStoreFiles() throws IOException;
-
-    /**
-     * Makes available index resource for recovery.
-     */
-    @Override
-    void init() throws Throwable;
-
-    /**
-     * Makes available index resource for online transaction processing.
-     */
-    @Override
-    void start() throws Throwable;
-
-    /**
-     * Makes unavailable index resource from online transaction processing.
-     */
-    @Override
-    void stop() throws Throwable;
-
-    /**
-     * Makes unavailable the index resource as a whole.
-     */
-    @Override
-    void shutdown() throws Throwable;
 }

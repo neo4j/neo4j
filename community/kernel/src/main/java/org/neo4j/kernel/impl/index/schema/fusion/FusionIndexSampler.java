@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,28 +23,37 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
-class FusionIndexSampler implements IndexSampler
+public class FusionIndexSampler implements IndexSampler
 {
-    private final IndexSampler nativeSampler;
-    private final IndexSampler luceneSampler;
+    private final IndexSampler[] samplers;
 
-    FusionIndexSampler( IndexSampler nativeSampler, IndexSampler luceneSampler )
+    public FusionIndexSampler( IndexSampler... samplers )
     {
-        this.nativeSampler = nativeSampler;
-        this.luceneSampler = luceneSampler;
+        this.samplers = samplers;
     }
 
     @Override
     public IndexSample sampleIndex() throws IndexNotFoundKernelException
     {
-        return combineSamples( nativeSampler.sampleIndex(), luceneSampler.sampleIndex() );
+        IndexSample[] samples = new IndexSample[samplers.length];
+        for ( int i = 0; i < samplers.length; i++ )
+        {
+            samples[i] = samplers[i].sampleIndex();
+        }
+        return combineSamples( samples );
     }
 
-    static IndexSample combineSamples( IndexSample first, IndexSample other )
+    public static IndexSample combineSamples( IndexSample... samples )
     {
-        return new IndexSample(
-                first.indexSize() + other.indexSize(),
-                first.uniqueValues() + other.uniqueValues(),
-                first.sampleSize() + other.sampleSize() );
+        long indexSize = 0;
+        long uniqueValues = 0;
+        long sampleSize = 0;
+        for ( IndexSample sample : samples )
+        {
+            indexSize += sample.indexSize();
+            uniqueValues += sample.uniqueValues();
+            sampleSize += sample.sampleSize();
+        }
+        return new IndexSample( indexSize, uniqueValues, sampleSize );
     }
 }

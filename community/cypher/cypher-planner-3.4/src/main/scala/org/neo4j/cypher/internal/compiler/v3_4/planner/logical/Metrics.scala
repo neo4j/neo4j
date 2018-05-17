@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, _}
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality, Cost}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, FunctionInvocation, LabelName, Parameter}
@@ -42,9 +44,9 @@ object Metrics {
   case class QueryGraphSolverInput(labelInfo: LabelInfo, inboundCardinality: Cardinality,
                                    strictness: Option[StrictnessMode]) {
 
-    def recurse(fromPlan: LogicalPlan): QueryGraphSolverInput = {
-      val newCardinalityInput = fromPlan.solved.estimatedCardinality
-      val newLabels = (labelInfo fuse fromPlan.solved.labelInfo) (_ ++ _)
+    def recurse(fromPlan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities): QueryGraphSolverInput = {
+      val newCardinalityInput = cardinalities.get(fromPlan.id)
+      val newLabels = (labelInfo fuse solveds.get(fromPlan.id).labelInfo) (_ ++ _)
       copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput, strictness = strictness)
     }
 
@@ -54,7 +56,7 @@ object Metrics {
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
-  type CostModel = (LogicalPlan, QueryGraphSolverInput) => Cost
+  type CostModel = (LogicalPlan, QueryGraphSolverInput, Cardinalities) => Cost
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
@@ -62,7 +64,7 @@ object Metrics {
 
   type QueryGraphCardinalityModel = (QueryGraph, QueryGraphSolverInput, SemanticTable) => Cardinality
 
-  type LabelInfo = Map[IdName, Set[LabelName]]
+  type LabelInfo = Map[String, Set[LabelName]]
 }
 
 trait ExpressionEvaluator {
@@ -88,13 +90,13 @@ case class Metrics(cost: CostModel,
 
 trait MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
-  def newCostModel(): CostModel
+  def newCostModel(config: CypherCompilerConfiguration): CostModel
   def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel
 
-  def newMetrics(statistics: GraphStatistics,expressionEvaluator: ExpressionEvaluator) = {
+  def newMetrics(statistics: GraphStatistics,expressionEvaluator: ExpressionEvaluator, config: CypherCompilerConfiguration) = {
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, expressionEvaluator)
-    Metrics(newCostModel(), cardinality, queryGraphCardinalityModel)
+    Metrics(newCostModel(config), cardinality, queryGraphCardinalityModel)
   }
 }
 

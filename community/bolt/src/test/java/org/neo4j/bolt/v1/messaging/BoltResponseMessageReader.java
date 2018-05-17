@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,11 +37,6 @@ public class BoltResponseMessageReader
     public BoltResponseMessageReader( Neo4jPack.Unpacker unpacker )
     {
         this.unpacker = unpacker;
-    }
-
-    public boolean hasNext() throws IOException
-    {
-        return unpacker.hasNext();
     }
 
     public <E extends Exception> void read( BoltResponseMessageHandler<E> handler ) throws IOException, E
@@ -82,20 +77,20 @@ public class BoltResponseMessageReader
                     handler.onFailure( codeFromString( code ), msg );
                     break;
                 default:
-                    throw new BoltIOException( Status.Request.Invalid,
-                            "Message 0x" + Integer.toHexString( signature ) + " is not supported." );
+                    throw new BoltIOException( Status.Request.InvalidFormat,
+                            String.format( "Message 0x%s is not supported.", Integer.toHexString( signature ) ) );
                 }
             }
             catch ( IllegalArgumentException e )
             {
-                throw new BoltIOException( Status.Request.Invalid,
-                        "0x" + Integer.toHexString( signature ) + " is not a valid message signature." );
+                throw new BoltIOException( Status.Request.InvalidFormat,
+                        String.format( "Message 0x%s is not a valid message signature.", Integer.toHexString( signature ) ) );
             }
         }
         catch ( PackStream.PackStreamException e )
         {
-            throw new BoltIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
-                    "Error was: " + e.getMessage(), e );
+            throw new BoltIOException( Status.Request.InvalidFormat,
+                    String.format( "Unable to read message type. Error was: %s.", e.getMessage() ), e );
         }
     }
 

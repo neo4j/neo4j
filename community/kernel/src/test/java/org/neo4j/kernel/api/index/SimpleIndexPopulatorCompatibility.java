@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,16 +22,25 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -42,40 +51,37 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
-import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
     public SimpleIndexPopulatorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+            IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
+
+    final IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
 
     @Test
     public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
+        String failure = "The contrived failure";
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
-        {
-            String failure = "The contrived failure";
-            p.create();
-
-            // WHEN
-            p.markAsFailed( failure );
-            p.close( false );
-
-            // THEN
-            assertThat( indexProvider.getPopulationFailure( 17 ), containsString( failure ) );
-        } );
+        // WHEN (this will attempt to call close)
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.markAsFailed( failure ), false );
+        // THEN
+        assertThat( indexProvider.getPopulationFailure( 17, descriptor ), containsString( failure ) );
     }
 
     @Test
@@ -86,14 +92,13 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
         {
             String failure = "The contrived failure";
-            p.create();
 
             // WHEN
             p.markAsFailed( failure );
 
             // THEN
             assertEquals( FAILED, indexProvider.getInitialState( 17, descriptor ) );
-        } );
+        }, false );
     }
 
     @Test
@@ -101,15 +106,13 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
-        {
-            p.close( false );
+        final IndexPopulator p = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
+        p.close( false );
 
-            // WHEN
-            p.drop();
+        // WHEN
+        p.drop();
 
-            // THEN - no exception should be thrown (it's been known to!)
-        } );
+        // THEN - no exception should be thrown (it's been known to!)
     }
 
     @Test
@@ -120,23 +123,19 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         final Value propertyValue = Values.of( "value1" );
         withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
         {
-            p.create();
             long nodeId = 1;
-            PropertyAccessor propertyAccessor =
-                    ( nodeId1, propertyKeyId ) -> propertyValue;
 
-            // this update (using add())...
-            p.add( singletonList( IndexEntryUpdate.add( nodeId, descriptor.schema(), propertyValue ) ) );
-            // ...is the same as this update (using update())
-            try ( IndexUpdater updater = p.newPopulatingUpdater( propertyAccessor ) )
+            // update using populator...
+            IndexEntryUpdate<SchemaDescriptor> update = add( nodeId, descriptor.schema(), propertyValue );
+            p.add( singletonList( update ) );
+            // ...is the same as update using updater
+            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId ) -> propertyValue ) )
             {
-                updater.process( add( nodeId, descriptor.schema(), propertyValue ) );
+                updater.process( update );
             }
-
-            p.close( true );
         } );
 
-        // then
+        // THEN
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
         {
             try ( IndexReader reader = accessor.newReader() )
@@ -145,7 +144,96 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
                 assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
             }
-            accessor.close();
+        }
+    }
+
+    @Test
+    public void shouldPopulateWithAllValues() throws Exception
+    {
+        // GIVEN
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.add( updates( valueSet1 ) ) );
+
+        // THEN
+        assertHasAllValues( valueSet1 );
+    }
+
+    @Test
+    public void shouldUpdateWithAllValuesDuringPopulation() throws Exception
+    {
+        // GIVEN
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+        {
+            try ( IndexUpdater updater = p.newPopulatingUpdater( this::valueSet1Lookup ) )
+            {
+                for ( NodeAndValue entry : valueSet1 )
+                {
+                    updater.process( IndexEntryUpdate.add( entry.nodeId, descriptor.schema(), entry.value ) );
+                }
+            }
+        } );
+
+        // THEN
+        assertHasAllValues( valueSet1 );
+    }
+
+    @Test
+    public void shouldPopulateAndUpdate() throws Exception
+    {
+        // GIVEN
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.add( updates( valueSet1 ) ) );
+
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
+        {
+            // WHEN
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+            {
+                List<IndexEntryUpdate<?>> updates = updates( valueSet2 );
+                for ( IndexEntryUpdate<?> update : updates )
+                {
+                    updater.process( update );
+                }
+            }
+
+            // THEN
+            try ( IndexReader reader = accessor.newReader() )
+            {
+                int propertyKeyId = descriptor.schema().getPropertyId();
+                for ( NodeAndValue entry : Iterables.concat( valueSet1, valueSet2 ) )
+                {
+                    NodeValueIterator nodes = new NodeValueIterator();
+                    reader.query( nodes, IndexOrder.NONE, IndexQuery.exact( propertyKeyId, entry.value ) );
+                    assertEquals( entry.nodeId, single( nodes, NO_SUCH_NODE ) );
+                }
+            }
+        }
+    }
+
+    private Value valueSet1Lookup( long nodeId, int propertyId )
+    {
+        for ( NodeAndValue x : valueSet1 )
+        {
+            if ( x.nodeId == nodeId )
+            {
+                return x.value;
+            }
+        }
+        return Values.NO_VALUE;
+    }
+
+    private void assertHasAllValues( List<NodeAndValue> values ) throws IOException, IndexNotApplicableKernelException
+    {
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
+        {
+            try ( IndexReader reader = accessor.newReader() )
+            {
+                int propertyKeyId = descriptor.schema().getPropertyId();
+                for ( NodeAndValue entry : values )
+                {
+                    NodeValueIterator nodes = new NodeValueIterator();
+                    reader.query( nodes, IndexOrder.NONE, IndexQuery.exact( propertyKeyId, entry.value ) );
+                    assertEquals( entry.nodeId, single( nodes, NO_SUCH_NODE ) );
+                }
+            }
         }
     }
 
@@ -154,22 +242,18 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100 ) );
+            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100 ) );
         }
 
         @Test
         public void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
         {
             // when
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            Value value = Values.of( "value1" );
+            long offset = valueSet1.size();
             withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
-                p.create();
-                p.add( Arrays.asList(
-                        IndexEntryUpdate.add( 1, descriptor.schema(), value ),
-                        IndexEntryUpdate.add( 2, descriptor.schema(), value ) ) );
-                p.close( true );
+                p.add( updates( valueSet1, 0 ) );
+                p.add( updates( valueSet1, offset ) );
             } );
 
             // then
@@ -177,10 +261,14 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             {
                 try ( IndexReader reader = accessor.newReader() )
                 {
-                    PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( 1, value ) );
-                    assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
+                    int propertyKeyId = descriptor.schema().getPropertyId();
+                    for ( NodeAndValue entry : valueSet1 )
+                    {
+                        NodeValueIterator nodes = new NodeValueIterator();
+                        reader.query( nodes, IndexOrder.NONE, IndexQuery.exact( propertyKeyId, entry.value ) );
+                        assertEquals( asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ) );
+                    }
                 }
-                accessor.close();
             }
         }
     }
@@ -190,7 +278,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
+            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
         }
 
         /**
@@ -204,15 +292,13 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             int nodeId1 = 1;
             int nodeId2 = 2;
 
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
-                p.create();
-                p.add( Arrays.asList(
-                        IndexEntryUpdate.add( nodeId1, descriptor.schema(), value ),
-                        IndexEntryUpdate.add( nodeId2, descriptor.schema(), value ) ) );
                 try
                 {
+                    p.add( Arrays.asList(
+                            IndexEntryUpdate.add( nodeId1, descriptor.schema(), value ),
+                            IndexEntryUpdate.add( nodeId2, descriptor.schema(), value ) ) );
                     NodePropertyAccessor propertyAccessor =
                             new NodePropertyAccessor( nodeId1, descriptor.schema(), value );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value );
@@ -221,11 +307,20 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     fail( "expected exception" );
                 }
                 // then
-                catch ( IndexEntryConflictException conflict )
+                catch ( Exception e )
                 {
-                    assertEquals( nodeId1, conflict.getExistingNodeId() );
-                    assertEquals( ValueTuple.of( value ), conflict.getPropertyValues() );
-                    assertEquals( nodeId2, conflict.getAddedNodeId() );
+                    Throwable root = Exceptions.rootCause( e );
+                    if ( root instanceof IndexEntryConflictException )
+                    {
+                        IndexEntryConflictException conflict = (IndexEntryConflictException)root;
+                        assertEquals( nodeId1, conflict.getExistingNodeId() );
+                        assertEquals( ValueTuple.of( value ), conflict.getPropertyValues() );
+                        assertEquals( nodeId2, conflict.getAddedNodeId() );
+                    }
+                    else
+                    {
+                        throw e;
+                    }
                 }
             } );
         }

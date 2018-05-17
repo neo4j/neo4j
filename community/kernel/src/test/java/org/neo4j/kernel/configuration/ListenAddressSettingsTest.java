@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -40,7 +40,7 @@ public class ListenAddressSettingsTest
             legacyFallback( legacy_address_setting, listenAddress( "listen_address", 1234 ) );
 
     @Test
-    public void shouldParseExplicitSettingValueWhenProvided() throws Exception
+    public void shouldParseExplicitSettingValueWhenProvided()
     {
         // given
         Map<String,String> config = stringMap(
@@ -56,7 +56,7 @@ public class ListenAddressSettingsTest
     }
 
     @Test
-    public void shouldCombineDefaultHostnameWithSettingSpecificPortWhenNoValueProvided() throws Exception
+    public void shouldCombineDefaultHostnameWithSettingSpecificPortWhenNoValueProvided()
     {
         // given
         Map<String,String> config = stringMap(
@@ -71,7 +71,7 @@ public class ListenAddressSettingsTest
     }
 
     @Test
-    public void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided() throws Exception
+    public void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided()
     {
         // given
         Map<String,String> config = stringMap(

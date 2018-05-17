@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -109,13 +109,13 @@ public interface RecordFormats
     FormatFamily getFormatFamily();
 
     /**
-     * Whether or not this format has the same capabilities of the specific {@code type} as the {@code other} format.
+     * Whether or not changes in the {@code other} format, compared to this format, for the given {@code type}, are compatible.
      *
-     * @param other {@link RecordFormats} to compare with.
-     * @param type {@link CapabilityType type} of capability to compare.
-     * @return true if both formats have the same set of capabilities of the given {@code type}.
+     * @param other {@link RecordFormats} to check compatibility with.
+     * @param type {@link CapabilityType type} of capability to check compatibility for.
+     * @return true if the {@code other} format have compatible capabilities of the given {@code type}.
      */
-    boolean hasSameCapabilities( RecordFormats other, CapabilityType type );
+    boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type );
 
     /**
      * Record format name

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ public class RelationshipChainExplorer
 
     public RecordSet<RelationshipRecord> exploreRelationshipRecordChainsToDepthTwo( RelationshipRecord record )
     {
-        RecordSet<RelationshipRecord> records = new RecordSet<RelationshipRecord>();
+        RecordSet<RelationshipRecord> records = new RecordSet<>();
         for ( RelationshipNodeField nodeField : RelationshipNodeField.values() )
         {
             long nodeId = nodeField.get( record );
@@ -49,7 +49,7 @@ public class RelationshipChainExplorer
 
     private RecordSet<RelationshipRecord> expandChains( RecordSet<RelationshipRecord> records, long otherNodeId )
     {
-        RecordSet<RelationshipRecord> chains = new RecordSet<RelationshipRecord>();
+        RecordSet<RelationshipRecord> chains = new RecordSet<>();
         for ( RelationshipRecord record : records )
         {
             chains.addAll( expandChainInBothDirections( record,

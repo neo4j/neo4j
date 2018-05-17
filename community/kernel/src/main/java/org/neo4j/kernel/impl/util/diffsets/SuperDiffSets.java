@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
@@ -40,8 +40,7 @@ import static java.util.Collections.newSetFromMap;
  * Super class of readable diffsets where use of {@link PrimitiveLongIterator} can be parameterized
  * to a specific subclass instead.
  */
-abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
-        implements SuperReadableDiffSets<T,LONGITERATOR>
+abstract class SuperDiffSets<T> implements SuperReadableDiffSets<T>
 {
     private Set<T> addedElements;
     private Set<T> removedElements;

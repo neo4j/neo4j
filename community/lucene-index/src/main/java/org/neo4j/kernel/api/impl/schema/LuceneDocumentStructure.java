@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -49,7 +49,7 @@ import org.apache.lucene.util.StringHelper;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
 
 import static org.apache.lucene.document.Field.Store.YES;
@@ -235,7 +235,7 @@ public class LuceneDocumentStructure
             return getClass().getSimpleName() + ", term:" + term + ", field:" + field;
         }
 
-        private class PrefixTermsEnum extends FilteredTermsEnum
+        private static class PrefixTermsEnum extends FilteredTermsEnum
         {
             private BytesRef prefix;
 
@@ -247,7 +247,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            protected AcceptStatus accept( BytesRef term ) throws IOException
+            protected AcceptStatus accept( BytesRef term )
             {
                 return StringHelper.startsWith( term, prefix ) ? AcceptStatus.YES : AcceptStatus.END;
             }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,15 +21,16 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans._
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.{PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, SeekableArgs}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
-  override def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
-    val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n.name)(null))
+  override def producePlanFor(e: Expression, qg: QueryGraph, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+    val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
     val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs)] = e match {
       // MATCH (a)-[r]-(b) WHERE id(r) IN expr
       // MATCH a WHERE id(a) IN {param}
@@ -39,48 +40,46 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     }
 
     idSeekPredicates map {
-      case (predicate, idExpr@Variable(id), idValues) if !qg.argumentIds.contains(IdName(id)) =>
+      case (predicate, idExpr@Variable(id), idValues) if !qg.argumentIds.contains(id) =>
 
-        qg.patternRelationships.find(_.name.name == id) match {
+        qg.patternRelationships.find(_.name == id) match {
           case Some(relationship) =>
             val types = relationship.types.toList
-            val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds)
-            LeafPlansForVariable(IdName(id), Set(planRelTypeFilter(seekPlan, idExpr, types)))
+            val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds, context)
+            LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, idExpr, types, context)))
           case None =>
-            val plan = context.logicalPlanProducer.planNodeByIdSeek(IdName(id), idValues, Seq(predicate), qg.argumentIds)
-            LeafPlansForVariable(IdName(id), Set(plan))
+            val plan = context.logicalPlanProducer.planNodeByIdSeek(id, idValues, Seq(predicate), qg.argumentIds, context)
+            LeafPlansForVariable(id, Set(plan))
         }
     }
   }
 
-  override def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) =
-    queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph).toSeq.flatMap(_.plans))
+  override def apply(queryGraph: QueryGraph, context: LogicalPlanningContext, solveds: Solveds, cardinalities: Cardinalities) =
+    queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph, context).toSeq.flatMap(_.plans))
 
-  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: SeekableArgs, predicates: Seq[Expression], argumentIds: Set[IdName])
-                                      (implicit context: LogicalPlanningContext): LogicalPlan = {
+  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: SeekableArgs, predicates: Seq[Expression], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name
     relationship.dir match {
-      case BOTH     => context.logicalPlanProducer.planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates)
-      case INCOMING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, argumentIds, predicates)
-      case OUTGOING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates)
+      case BOTH     => context.logicalPlanProducer.planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates, context)
+      case INCOMING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, argumentIds, predicates, context)
+      case OUTGOING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates, context)
     }
   }
 
-  private def planRelTypeFilter(plan: LogicalPlan, idExpr: Variable, relTypes: List[RelTypeName])
-                               (implicit context: LogicalPlanningContext): LogicalPlan = {
+  private def planRelTypeFilter(plan: LogicalPlan, idExpr: Variable, relTypes: List[RelTypeName], context: LogicalPlanningContext): LogicalPlan = {
     relTypes match {
       case Seq(tpe) =>
         val relTypeExpr = relTypeAsStringLiteral(tpe)
         val predicate = Equals(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position)
-        context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan)
+        context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan, context)
 
       case tpe :: _ =>
         val relTypeExprs = relTypes.map(relTypeAsStringLiteral).toSet
         val invocation = typeOfRelExpr(idExpr)
         val idPos = idExpr.position
         val predicate = Ors(relTypeExprs.map { expr => Equals(invocation, expr)(idPos) } )(idPos)
-        context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan)
+        context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan, context)
 
       case _ =>
         plan

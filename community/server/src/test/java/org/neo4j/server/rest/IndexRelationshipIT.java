@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -157,8 +157,8 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
                 functionalTestHelper.getRelationshipIdFromUri( relationshipLocation2 ), key, value );
         String indexLocation2 = indexedRelationshipResponse.getHeaders().get( HttpHeaders.LOCATION ).get( 0 );
         Map<String, String> uriToName = new HashMap<>();
-        uriToName.put( indexLocation1.toString(), relationshipName1 );
-        uriToName.put( indexLocation2.toString(), relationshipName2 );
+        uriToName.put( indexLocation1, relationshipName1 );
+        uriToName.put( indexLocation2, relationshipName2 );
         JaxRsResponse response = RestRequest.req().get(
                 functionalTestHelper.indexRelationshipUri( indexName, key, value ) );
         assertEquals( 200, response.getStatus() );
@@ -277,7 +277,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRespondWith400WhenSendingCorruptJson() throws Exception
+    public void shouldRespondWith400WhenSendingCorruptJson()
     {
         final String indexName = indexes.newInstance();
         helper.createRelationshipIndex( indexName );
@@ -295,7 +295,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
                  "\n" +
                  "NOTE: The type and direction of the relationship is not regarded when determining uniqueness." )
     @Test
-    public void get_or_create_relationship() throws Exception
+    public void get_or_create_relationship()
     {
         final String index = indexes.newInstance();
         String type = "knowledge";
@@ -320,7 +320,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
                  "of an already existing relationship, the sent data is ignored and the\n" +
                  "existing relationship returned." )
     @Test
-    public void get_or_create_unique_relationship_existing() throws Exception
+    public void get_or_create_unique_relationship_existing()
     {
         final String index = indexes.newInstance();
         String key = "name";
@@ -379,7 +379,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
                  "of an already existing relationship, an error should be returned. In this\n" +
                  "example, an existing relationship is found and an error is returned." )
     @Test
-    public void create_a_unique_relationship_or_return_fail___fail() throws Exception
+    public void create_a_unique_relationship_or_return_fail___fail()
     {
         final String index = indexes.newInstance();
         String key = "name";
@@ -414,7 +414,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
                  "\n" +
                  "NOTE: The type and direction of the relationship is not regarded when determining uniqueness." )
     @Test
-    public void put_relationship_or_fail_if_absent() throws Exception
+    public void put_relationship_or_fail_if_absent()
     {
         final String index = indexes.newInstance();
         String key = "name";
@@ -436,7 +436,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
 
     @Documented( "Add an existing relationship to a unique index (already indexed)." )
     @Test
-    public void put_relationship_if_absent_only_fail() throws Exception
+    public void put_relationship_if_absent_only_fail()
     {
         // Given
         final String index = indexes.newInstance();
@@ -473,7 +473,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void already_indexed_relationship_should_not_fail_on_create_or_fail() throws Exception
+    public void already_indexed_relationship_should_not_fail_on_create_or_fail()
     {
         // Given
         final String index = indexes.newInstance();
@@ -505,7 +505,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
      * This can be safely removed in version 1.11 an onwards.
      */
     @Test
-    public void createUniqueShouldBeBackwardsCompatibleWith1_8() throws Exception
+    public void createUniqueShouldBeBackwardsCompatibleWith1_8()
     {
         final String index = indexes.newInstance();
         String key = "name";

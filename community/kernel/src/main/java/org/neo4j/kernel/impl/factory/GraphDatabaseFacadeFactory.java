@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,7 +29,6 @@ import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -166,10 +165,12 @@ public class GraphDatabaseFacadeFactory
 
         ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard );
         graphDatabaseFacade.init(
+                edition,
                 spi,
                 dataSource.guard,
                 dataSource.threadToTransactionBridge,
-                platform.config
+                platform.config,
+                edition.relationshipTypeTokenHolder
         );
 
         // Start it
@@ -197,7 +198,7 @@ public class GraphDatabaseFacadeFactory
             }
         } );
 
-        Throwable error = null;
+        RuntimeException error = null;
         try
         {
             // Done after create to avoid a redundant
@@ -221,7 +222,7 @@ public class GraphDatabaseFacadeFactory
                 }
                 catch ( Throwable shutdownError )
                 {
-                    error = Exceptions.withSuppressed( shutdownError, error );
+                    error.addSuppressed( shutdownError );
                 }
             }
         }
@@ -229,7 +230,7 @@ public class GraphDatabaseFacadeFactory
         if ( error != null )
         {
             msgLog.log( "Failed to start database", error );
-            throw Exceptions.launderedException( error );
+            throw error;
         }
 
         return graphDatabaseFacade;

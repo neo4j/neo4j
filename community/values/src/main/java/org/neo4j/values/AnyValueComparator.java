@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,26 +22,25 @@ package org.neo4j.values;
 import java.util.Comparator;
 
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueComparator;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.VirtualValueGroup;
 
 /**
  * Comparator for any values.
  */
-class AnyValueComparator implements Comparator<AnyValue>
+class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyValue>
 {
-    private final Comparator<Value> valueComparator;
     private final Comparator<VirtualValueGroup> virtualValueGroupComparator;
+    private final ValueComparator valueComparator;
 
-    AnyValueComparator( Comparator<Value> valueComparator,
-            Comparator<VirtualValueGroup> virtualValueGroupComparator )
+    AnyValueComparator( ValueComparator valueComparator, Comparator<VirtualValueGroup> virtualValueGroupComparator )
     {
-        this.valueComparator = valueComparator;
         this.virtualValueGroupComparator = virtualValueGroupComparator;
+        this.valueComparator = valueComparator;
     }
 
-    @Override
-    public int compare( AnyValue v1, AnyValue v2 )
+    private Comparison cmp( AnyValue v1, AnyValue v2, boolean ternary )
     {
         assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
 
@@ -49,15 +48,15 @@ class AnyValueComparator implements Comparator<AnyValue>
         // front
         if ( v1 == v2 )
         {
-            return 0;
+            return Comparison.EQUAL;
         }
         if ( v1 == Values.NO_VALUE )
         {
-            return 1;
+            return Comparison.GREATER_THAN;
         }
         if ( v2 == Values.NO_VALUE )
         {
-            return -1;
+            return Comparison.SMALLER_THAN;
         }
 
         // We must handle sequences as a special case, as they can be both storable and virtual
@@ -66,15 +65,15 @@ class AnyValueComparator implements Comparator<AnyValue>
 
         if ( isSequence1 && isSequence2 )
         {
-            return compareSequences( (SequenceValue)v1, (SequenceValue)v2 );
+            return Comparison.from( compareSequences( (SequenceValue) v1, (SequenceValue) v2 ) );
         }
         else if ( isSequence1 )
         {
-            return compareSequenceAndNonSequence( (SequenceValue)v1, v2 );
+            return Comparison.from( compareSequenceAndNonSequence( (SequenceValue) v1, v2 ) );
         }
         else if ( isSequence2 )
         {
-            return -compareSequenceAndNonSequence( (SequenceValue)v2, v1 );
+            return Comparison.from( -compareSequenceAndNonSequence( (SequenceValue) v2, v1 ) );
         }
 
         // Handle remaining AnyValues
@@ -86,16 +85,44 @@ class AnyValueComparator implements Comparator<AnyValue>
         if ( x == 0 )
         {
             //noinspection ConstantConditions
-            return isValue1 ? valueComparator.compare( (Value)v1, (Value)v2 ) :
-                   compareVirtualValues( (VirtualValue)v1, (VirtualValue)v2 );
+            // Do not turn this into ?-operator
+            if ( isValue1 )
+            {
+                if ( ternary )
+                {
+                    return valueComparator.ternaryCompare( (Value) v1, (Value) v2 );
+                }
+                else
+                {
+                    return Comparison.from( valueComparator.compare( (Value) v1, (Value) v2 ) );
+                }
+            }
+            else
+            {
+                // This returns int
+                return Comparison.from( compareVirtualValues( (VirtualValue) v1, (VirtualValue) v2 ) );
+            }
+
         }
-        return x;
+        return Comparison.from( x );
+    }
+
+    @Override
+    public int compare( AnyValue v1, AnyValue v2 )
+    {
+        return cmp( v1, v2, false ).value();
+    }
+
+    @Override
+    public Comparison ternaryCompare( AnyValue v1, AnyValue v2 )
+    {
+        return cmp( v1, v2, true );
     }
 
     @Override
     public boolean equals( Object obj )
     {
-        return obj != null && obj instanceof AnyValueComparator;
+        return obj instanceof AnyValueComparator;
     }
 
     @Override
@@ -127,7 +154,7 @@ class AnyValueComparator implements Comparator<AnyValue>
         }
         else
         {
-            return virtualValueGroupComparator.compare( VirtualValueGroup.LIST, ((VirtualValue)v2).valueGroup() );
+            return virtualValueGroupComparator.compare( VirtualValueGroup.LIST, ((VirtualValue) v2).valueGroup() );
         }
     }
 

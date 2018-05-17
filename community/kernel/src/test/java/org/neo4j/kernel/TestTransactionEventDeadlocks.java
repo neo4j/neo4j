@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -42,7 +42,7 @@ public class TestTransactionEventDeadlocks
     public DatabaseRule database = new ImpermanentDatabaseRule();
 
     @Test
-    public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData() throws Exception
+    public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData()
     {
         GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
         Node node = null;
@@ -77,7 +77,7 @@ public class TestTransactionEventDeadlocks
 
         @SuppressWarnings( "boxing" )
         @Override
-        public Void beforeCommit( TransactionData data ) throws Exception
+        public Void beforeCommit( TransactionData data )
         {
             // TODO Hmm, makes me think... should we really call transaction event handlers
             // for these relationship type / property index transasctions?

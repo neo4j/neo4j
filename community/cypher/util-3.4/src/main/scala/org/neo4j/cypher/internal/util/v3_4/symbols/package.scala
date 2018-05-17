@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,12 @@ package object symbols {
   val CTNode: NodeType = NodeType.instance
   val CTRelationship: RelationshipType = RelationshipType.instance
   val CTPoint: PointType = PointType.instance
+  val CTDateTime: DateTimeType = TemporalTypes.datetime
+  val CTLocalDateTime: LocalDateTimeType = TemporalTypes.localdatetime
+  val CTDate: DateType = TemporalTypes.date
+  val CTTime: TimeType = TemporalTypes.time
+  val CTLocalTime: LocalTimeType = TemporalTypes.localtime
+  val CTDuration: DurationType = TemporalTypes.duration
   val CTGeometry: GeometryType = GeometryType.instance
   val CTPath: PathType = PathType.instance
   val CTGraphRef: GraphRefType = GraphRefType.instance

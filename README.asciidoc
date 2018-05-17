@@ -39,15 +39,13 @@ On top of that, to build Debian packages and Neo4j Desktop:
 
 == Building Neo4j ==
 
-Before you start running the unit and integration tests in the Neo4j Maven project on a Linux-like system, you should ensure your limit on open files is set to a reasonable value. You can test it with `ulimit -n`. We recommend you have a limit of at least 40K. 
+Before you start running the unit and integration tests in the Neo4j Maven project on a Linux-like system, you should ensure your limit on open files is set to a reasonable value. You can test it with `ulimit -n`. We recommend you have a limit of at least 40K.
 
-* A plain `mvn clean install` will only build the individual jar files. 
+* A plain `mvn clean install` will only build the individual jar files.
 * Test execution is, of course, part of the build.
 * In case you just want the jars, without running tests, this is for you: `mvn clean install -DskipTests`.
 * To build product packages, do `export PATH="bin:$PATH" && make clean all` in the packaging directory after building artifacts with Maven
 * To build the documentation see the https://github.com/neo4j/neo4j-documentation/[Neo4j documentation].
-* When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
-* The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`.
 * If you are running into problems building on Windows you can try building Neo4j in a Ubuntu virtual machine.
 * You may need to increase the memory available to Maven: `export MAVEN_OPTS="-Xmx512m"`.
 
@@ -59,7 +57,7 @@ After running a `mvn clean install` cd into `packaging/standalone/target` and ex
 
 in the extracted folder to start Neo4j on `localhost:7474`. On Windows you want to run
 
-  bin\Neo4j.bat
+  bin\neo4j start
 
 instead.
 
@@ -71,4 +69,4 @@ to start Neo4j.
 
 == Licensing ==
 
-Neo4j is an open source product. We support a Community edition under the GPLv3 license. The Enterprise edition is available under the AGPLv3 license for open source projects otherwise under a commercial license from https://info.neotechnology.com/contactus.html[Neo Technology].
+Neo4j Community Edition is an open source product licensed under GPLv3. Neo4j Enterprise Edition offers all the functionality of Community Edition plus Enterprise-specific features. In source code form, Neo4j Enterprise Edition is licensed under AGPLv3. When packaged as a binary, Enterprise Edition includes additional commercial / closed-source components and requires a commercial license from Neo4j Sweden AB or one of its affiliates.

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.com;
 
@@ -565,13 +568,13 @@ class DechunkingChannelBuffer implements ChannelBuffer
     }
 
     @Override
-    public int setBytes( int index, InputStream in, int length ) throws IOException
+    public int setBytes( int index, InputStream in, int length )
     {
         throw unsupportedOperation();
     }
 
     @Override
-    public int setBytes( int index, ScatteringByteChannel in, int length ) throws IOException
+    public int setBytes( int index, ScatteringByteChannel in, int length )
     {
         throw unsupportedOperation();
     }
@@ -846,13 +849,13 @@ class DechunkingChannelBuffer implements ChannelBuffer
     }
 
     @Override
-    public int writeBytes( InputStream in, int length ) throws IOException
+    public int writeBytes( InputStream in, int length )
     {
         throw unsupportedOperation();
     }
 
     @Override
-    public int writeBytes( ScatteringByteChannel in, int length ) throws IOException
+    public int writeBytes( ScatteringByteChannel in, int length )
     {
         throw unsupportedOperation();
     }
@@ -1049,21 +1052,21 @@ class DechunkingChannelBuffer implements ChannelBuffer
         return new InputStream()
         {
             @Override
-            public int read( byte[] b ) throws IOException
+            public int read( byte[] b )
             {
                 readBytes( b );
                 return b.length;
             }
 
             @Override
-            public int read( byte[] b, int off, int len ) throws IOException
+            public int read( byte[] b, int off, int len )
             {
                 readBytes( b, off, len );
                 return len;
             }
 
             @Override
-            public long skip( long n ) throws IOException
+            public long skip( long n )
             {
                 skipBytes( (int)n );
                 return n;
@@ -1076,7 +1079,7 @@ class DechunkingChannelBuffer implements ChannelBuffer
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
 
@@ -1087,7 +1090,7 @@ class DechunkingChannelBuffer implements ChannelBuffer
             }
 
             @Override
-            public synchronized void reset() throws IOException
+            public synchronized void reset()
             {
                 throw new UnsupportedOperationException();
             }
@@ -1099,7 +1102,7 @@ class DechunkingChannelBuffer implements ChannelBuffer
             }
 
             @Override
-            public int read() throws IOException
+            public int read()
             {
                 return readByte();
             }

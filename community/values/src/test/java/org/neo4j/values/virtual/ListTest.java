@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,12 +23,12 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.byteArray;
 import static org.neo4j.values.storable.Values.charArray;
@@ -36,6 +36,7 @@ import static org.neo4j.values.storable.Values.doubleArray;
 import static org.neo4j.values.storable.Values.floatArray;
 import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.longArray;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
@@ -69,7 +70,7 @@ public class ListTest
         assertEqualValues( list(), intArray( new int[]{} ) );
         assertEqualValues( list(), longArray( new long[]{} ) );
         assertEqualValues( list(), shortArray( new short[]{} ) );
-        assertEqualValues( list(), stringArray( new String[]{} ) );
+        assertEqualValues( list(), stringArray() );
 
         //actual values to test the equality
         assertEqualValues( list( true ), booleanArray( new boolean[]{true} ) );
@@ -90,8 +91,8 @@ public class ListTest
         assertEqualValues( list( 2L, -3L ), longArray( new long[]{2L, -3L} ) );
         assertEqualValues( list( (short) 2 ), shortArray( new short[]{(short) 2} ) );
         assertEqualValues( list( (short) 2, (short) -3 ), shortArray( new short[]{(short) 2, (short) -3} ) );
-        assertEqualValues( list( "hi" ), stringArray( new String[]{"hi"} ) );
-        assertEqualValues( list( "hi", "ho" ), stringArray( new String[]{"hi", "ho"} ) );
+        assertEqualValues( list( "hi" ), stringArray( "hi" ) );
+        assertEqualValues( list( "hi", "ho" ), stringArray( "hi", "ho" ) );
     }
 
     @Test
@@ -106,7 +107,7 @@ public class ListTest
         assertNotEqual( list( 1, "d" ), list( "d", 1 ) );
         assertNotEqual( list( "d" ), list( false ) );
         assertNotEqual(
-                list( Values.stringArray( new String[]{"d"} ) ),
+                list( Values.stringArray( "d" ) ),
                 list( "d" ) );
 
         assertNotEqual(
@@ -120,7 +121,7 @@ public class ListTest
         assertNotEqual( list( true, true ), floatArray( new float[]{0.0f, 0.0f} ) );
         assertNotEqual( list( true, true ), doubleArray( new double[]{0.0, 0.0} ) );
         assertNotEqual( list( true, true ), charArray( new char[]{'T', 'T'} ) );
-        assertNotEqual( list( true, true ), stringArray( new String[]{"True", "True"} ) );
+        assertNotEqual( list( true, true ), stringArray( "True", "True" ) );
         assertNotEqual( list( true, true ), byteArray( new byte[]{(byte) 0, (byte) 0} ) );
 
         // wrong or missing items
@@ -140,8 +141,8 @@ public class ListTest
         assertNotEqual( list( 2L ), longArray( new long[]{2L, -3L} ) );
         assertNotEqual( list( (short) 2, (short) 3 ), shortArray( new short[]{(short) 2, (short) -3} ) );
         assertNotEqual( list( (short) 2 ), shortArray( new short[]{(short) 2, (short) -3} ) );
-        assertNotEqual( list( "hi", "hello" ), stringArray( new String[]{"hi"} ) );
-        assertNotEqual( list( "hello" ), stringArray( new String[]{"hi"} ) );
+        assertNotEqual( list( "hi", "hello" ), stringArray( "hi" ) );
+        assertNotEqual( list( "hello" ), stringArray( "hi" ) );
 
         assertNotEqual( list( 1, 'b' ), charArray( new char[]{'a', 'b'} ) );
     }
@@ -178,31 +179,31 @@ public class ListTest
                 list(
                         booleanArray( new boolean[]{true, false} ),
                         intArray( new int[]{1, 2} ),
-                        stringArray( new String[]{"Hello", "World"} ) ),
+                        stringArray( "Hello", "World" ) ),
                 list(
                         booleanArray( new boolean[]{true, false} ),
                         intArray( new int[]{1, 2} ),
-                        stringArray( new String[]{"Hello", "World"} ) ) );
+                        stringArray( "Hello", "World" ) ) );
 
         assertNotEqual(
                 list(
                         booleanArray( new boolean[]{true, false} ),
                         intArray( new int[]{5, 2} ),
-                        stringArray( new String[]{"Hello", "World"} ) ),
+                        stringArray( "Hello", "World" ) ),
                 list(
                         booleanArray( new boolean[]{true, false} ),
                         intArray( new int[]{1, 2} ),
-                        stringArray( new String[]{"Hello", "World"} ) ) );
+                        stringArray( "Hello", "World" ) ) );
 
         assertNotEqual(
                 list(
                         intArray( new int[]{1, 2} ),
                         booleanArray( new boolean[]{true, false} ),
-                        stringArray( new String[]{"Hello", "World"} ) ),
+                        stringArray( "Hello", "World" ) ),
                 list(
                         booleanArray( new boolean[]{true, false} ),
                         intArray( new int[]{1, 2} ),
-                        stringArray( new String[]{"Hello", "World"} ) ) );
+                        stringArray( "Hello", "World" ) ) );
     }
 
     @Test
@@ -218,16 +219,15 @@ public class ListTest
 
                     range( 1L, 8L, 3L ),
                     VirtualValues.fromArray( Values.longArray( new long[]{1L, 4L, 7L} ) ),
-                    VirtualValues.filter( range( 1L, 100, 1L ), anyValue ->
-                    {
-                        long l = ((LongValue) anyValue).longValue();
-                        return l == 1L || l == 4L || l == 7L;
-                    } ),
+                    VirtualValues.dropNoValues( VirtualValues.list( NO_VALUE,
+                                                                    longValue( 1L ),
+                                                                    NO_VALUE,
+                                                                    longValue( 4L ),
+                                                                    longValue( 7L ),
+                                                                    NO_VALUE ) ),
                     VirtualValues.slice( list( -2L, 1L, 4L, 7L, 10L ), 1, 4 ),
                     VirtualValues.drop( list( -2L, 1L, 4L, 7L ), 1 ),
                     VirtualValues.take( list( 1L, 4L, 7L, 10L, 13L ), 3 ),
-                    VirtualValues.transform( list( 0L, 3L, 6L ),
-                            anyValue -> Values.longValue( ((LongValue) anyValue).longValue() + 1L ) ),
                     VirtualValues.reverse( list( 7L, 4L, 1L ) ),
                     VirtualValues.concat( list( 1L, 4L ), list( 7L ) )
             };
@@ -237,16 +237,15 @@ public class ListTest
 
                     range( 2L, 9L, 3L ),
                     VirtualValues.fromArray( Values.longArray( new long[]{3L, 6L, 9L} ) ),
-                    VirtualValues.filter( range( 1L, 100, 1L ), anyValue ->
-                    {
-                        long l = ((LongValue) anyValue).longValue();
-                        return l == 4L || l == 7L || l == 10L;
-                    } ),
+                    VirtualValues.dropNoValues( VirtualValues.list( NO_VALUE,
+                                                                    longValue( 1L ),
+                                                                    NO_VALUE,
+                                                                    longValue( 5L ),
+                                                                    longValue( 7L ),
+                                                                    NO_VALUE ) ),
                     VirtualValues.slice( list( -2L, 1L, 5L, 8L, 11L ), 1, 4 ),
                     VirtualValues.drop( list( -2L, 6L, 9L, 12L ), 1 ),
                     VirtualValues.take( list( 7L, 10L, 13L, 10L, 13L ), 3 ),
-                    VirtualValues.transform( list( 0L, 3L, 6L ),
-                            anyValue -> Values.longValue( ((LongValue) anyValue).longValue() + 8L ) ),
                     VirtualValues.reverse( list( 15L, 12L, 9L ) ),
                     VirtualValues.concat( list( 10L, 13L ), list( 16L ) )
             };

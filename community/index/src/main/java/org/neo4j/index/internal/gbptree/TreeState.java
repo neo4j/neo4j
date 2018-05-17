@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -39,8 +39,8 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class TreeState
 {
-    private static final byte CLEAN = 0x01;
-    private static final byte DIRTY = 0x00;
+    private static final byte CLEAN_BYTE = 0x01;
+    private static final byte DIRTY_BYTE = 0x00;
 
     /**
      * Page id this tree state has been read from.
@@ -103,7 +103,7 @@ class TreeState
     /**
      * Is tree clean or dirty. Clean means it was closed without any non-checkpointed changes.
      */
-    private boolean clean;
+    private final boolean clean;
 
     TreeState( long pageId, long stableGeneration, long unstableGeneration, long rootId, long rootGeneration,
             long lastId, long freeListWritePageId, long freeListReadPageId, int freeListWritePos, int freeListReadPos,
@@ -233,7 +233,7 @@ class TreeState
         return this;
     }
 
-    private boolean isEmpty()
+    boolean isEmpty()
     {
         return stableGeneration == 0L && unstableGeneration == 0L && rootId == 0L && lastId == 0L &&
                 freeListWritePageId == 0L && freeListReadPageId == 0L && freeListWritePos == 0 && freeListReadPos == 0;
@@ -251,7 +251,7 @@ class TreeState
         long freeListReadPageId = cursor.getLong();
         int freeListWritePos = cursor.getInt();
         int freeListReadPos = cursor.getInt();
-        boolean clean = cursor.getByte() == CLEAN;
+        boolean clean = cursor.getByte() == CLEAN_BYTE;
         return new TreeState( pageId, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
                 freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean, true );
     }
@@ -269,7 +269,7 @@ class TreeState
         cursor.putLong( freeListReadPageId );
         cursor.putInt( freeListWritePos );
         cursor.putInt( freeListReadPos );
-        cursor.putByte( clean ? CLEAN : DIRTY );
+        cursor.putByte( clean ? CLEAN_BYTE : DIRTY_BYTE );
     }
 
     @Override

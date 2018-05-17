@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,10 +22,14 @@ package org.neo4j.kernel.api.schema;
 import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.schema.SchemaComputer;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
-public class RelationTypeSchemaDescriptor implements SchemaDescriptor
+public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor
 {
     private final int relTypeId;
     private final int[] propertyIds;
@@ -55,6 +59,13 @@ public class RelationTypeSchemaDescriptor implements SchemaDescriptor
                 SchemaUtil.niceProperties( tokenNameLookup, propertyIds ) );
     }
 
+    @Override
+    public String keyName( TokenNameLookup tokenNameLookup )
+    {
+        return tokenNameLookup.relationshipTypeGetName( relTypeId );
+    }
+
+    @Override
     public int getRelTypeId()
     {
         return relTypeId;
@@ -78,20 +89,10 @@ public class RelationTypeSchemaDescriptor implements SchemaDescriptor
         return ResourceTypes.RELATIONSHIP_TYPE;
     }
 
-    public int getPropertyId()
-    {
-        if ( propertyIds.length != 1 )
-        {
-            throw new IllegalStateException(
-                    "Single property schema requires one property but had " + propertyIds.length );
-        }
-        return propertyIds[0];
-    }
-
     @Override
     public boolean equals( Object o )
     {
-        if ( o != null && o instanceof RelationTypeSchemaDescriptor )
+        if ( o instanceof RelationTypeSchemaDescriptor )
         {
             RelationTypeSchemaDescriptor that = (RelationTypeSchemaDescriptor)o;
             return relTypeId == that.getRelTypeId() && Arrays.equals( propertyIds, that.getPropertyIds() );
@@ -103,5 +104,11 @@ public class RelationTypeSchemaDescriptor implements SchemaDescriptor
     public int hashCode()
     {
         return Arrays.hashCode( propertyIds ) + 31 * relTypeId;
+    }
+
+    @Override
+    public SchemaDescriptor schema()
+    {
+        return this;
     }
 }

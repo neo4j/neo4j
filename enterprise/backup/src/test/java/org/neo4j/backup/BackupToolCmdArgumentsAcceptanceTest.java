@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.backup;
 
@@ -25,14 +28,18 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.backup.impl.BackupClient;
+import org.neo4j.backup.impl.BackupProtocolService;
+import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 
@@ -49,13 +56,12 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * It tests legacy and modern sets of args in all possible forms: (-option, --option, -option value, -option=value).
  * Legacy is (-from, -to, -verify) and modern is (-host, -port, -to, -verify).
  */
-
 @RunWith( Parameterized.class )
 public class BackupToolCmdArgumentsAcceptanceTest
 {
     private static final String HOST = "localhost";
     private static final int PORT = 9090;
-    private static final File PATH = new File( "/var/backup/neo4j/" ).getAbsoluteFile();
+    private static final Path PATH = Paths.get( "/var/backup/neo4j/" );
 
     @Parameter( 0 )
     public String argsAsString;
@@ -70,13 +76,13 @@ public class BackupToolCmdArgumentsAcceptanceTest
                         stringMap(
                                 "host", HOST,
                                 "port", String.valueOf( PORT ),
-                                "to", PATH.getAbsolutePath()
+                                "to", PATH.toString()
                         )
                 ),
                 allCombinations(
                         stringMap(
                                 "from", HOST + ":" + PORT,
-                                "to", PATH.getAbsolutePath()
+                                "to", PATH.toString()
                         )
                 )
         );
@@ -206,7 +212,7 @@ public class BackupToolCmdArgumentsAcceptanceTest
     private static List<List<String>> permutations( List<String> list )
     {
         List<List<String>> result = new ArrayList<>();
-        permutations( result, new ArrayList<String>(), list );
+        permutations( result, new ArrayList<>(), list );
         return result;
     }
 

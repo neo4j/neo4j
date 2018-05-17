@@ -1,44 +1,40 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, MergeConstraintConflictException, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
-import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
-import scala.collection.JavaConverters._
 import scala.collection.Map
 
 class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with CypherComparisonSupport {
 
-  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
-  }
-
-  val expectedSucceed: TestConfiguration = Configs.CommunityInterpreted - Configs.Cost2_3
-  val expectedSucceedIncludingSlotted: TestConfiguration = Configs.Interpreted - Configs.Cost2_3
+  val hasActiveRead = ComparePlansWithAssertion((plan) => {
+    plan should useOperators("ActiveRead")
+  }, Configs.Cost3_1 + Configs.Cost2_3 + Configs.AllRulePlanners)
 
   Seq(UniquenessConstraintCreator, NodeKeyConstraintCreator).foreach { constraintCreator =>
 
@@ -51,7 +47,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceedIncludingSlotted, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
+        executeWith(Configs.UpdateConf, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a", planComparisonStrategy = hasActiveRead)
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -72,7 +68,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceedIncludingSlotted, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
+        executeWith(Configs.UpdateConf, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a", planComparisonStrategy = hasActiveRead)
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -93,7 +89,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceedIncludingSlotted, "merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a")
+        executeWith(Configs.UpdateConf, "merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a", planComparisonStrategy = hasActiveRead)
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -113,7 +109,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       createLabeledNode(Map("id" -> 23), "User")
 
       // when + then
-      failWithError(expectedSucceedIncludingSlotted + Configs.Procs, "merge (a:Person:User {id: 23}) return a",
+      failWithError(Configs.UpdateConf + Configs.Procs, "merge (a:Person:User {id: 23}) return a",
         List("can not create a new node due to conflicts with existing unique nodes"))
       countNodes() should equal(2)
     }
@@ -125,7 +121,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceedIncludingSlotted, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a.id, a.mail, a.country, labels(a)")
+        executeWith(Configs.UpdateConf, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a.id, a.mail, a.country, labels(a)", planComparisonStrategy = hasActiveRead)
 
       // then
       results.toSet should equal(Set(Map("a.id" -> 23, "a.mail" -> "emil@neo.com", "a.country" -> "Sweden", "labels(a)" -> List("Person"))))
@@ -138,7 +134,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceedIncludingSlotted, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a.id, a.mail, a.country, labels(a)")
+        executeWith(Configs.UpdateConf, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a.id, a.mail, a.country, labels(a)", planComparisonStrategy = hasActiveRead)
 
       // then
       results.toSet should equal(Set(Map("a.id" -> 23, "a.mail" -> "emil@neo.com", "a.country" -> "Sweden", "labels(a)" -> List("Person", "User"))))

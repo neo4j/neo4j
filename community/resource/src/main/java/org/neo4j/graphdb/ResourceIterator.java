@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -78,30 +77,6 @@ public interface ResourceIterator<T> extends Iterator<T>, Resource
             public R next()
             {
                 return map.apply( ResourceIterator.this.next() );
-            }
-        };
-    }
-
-    @SuppressWarnings( "unchecked" )
-    static <T> ResourceIterator<T> empty()
-    {
-        return new ResourceIterator()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return false;
-            }
-
-            @Override
-            public T next()
-            {
-                return (T)Collections.EMPTY_LIST.iterator().next();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
     }

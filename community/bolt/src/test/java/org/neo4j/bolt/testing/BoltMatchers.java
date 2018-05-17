@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -91,6 +91,29 @@ public class BoltMatchers
             {
                 description.appendValue( SUCCESS )
                         .appendText( format( " with metadata %s = %s", key, value.toString() ) );
+            }
+        };
+    }
+
+    public static Matcher<RecordedBoltResponse> containsRecord( final Object... values )
+    {
+        return new BaseMatcher<RecordedBoltResponse>()
+        {
+            private AnyValue[] anyValues = Arrays.stream( values ).map( ValueUtils::of ).toArray( AnyValue[]::new );
+
+            @Override
+            public boolean matches( final Object item )
+            {
+
+                final RecordedBoltResponse response = (RecordedBoltResponse) item;
+                QueryResult.Record[] records = response.records();
+                return records.length > 0 && Arrays.equals( records[0].fields(), anyValues );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( format( "with record %s", values ) );
             }
         };
     }

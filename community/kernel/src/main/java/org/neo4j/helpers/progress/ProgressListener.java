@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -77,7 +77,7 @@ public interface ProgressListener
 
     class SinglePartProgressListener extends Adapter
     {
-        final Indicator indicator;
+        private final Indicator indicator;
         private final long totalCount;
         private long value;
         private int lastReported;
@@ -138,12 +138,13 @@ public interface ProgressListener
 
     final class MultiPartProgressListener extends Adapter
     {
+        public final String part;
+        public final long totalCount;
+
         private final Aggregator aggregator;
-        final String part;
-        boolean started;
+        private boolean started;
         private long value;
         private long lastReported;
-        final long totalCount;
 
         MultiPartProgressListener( Aggregator aggregator, String part, long totalCount )
         {

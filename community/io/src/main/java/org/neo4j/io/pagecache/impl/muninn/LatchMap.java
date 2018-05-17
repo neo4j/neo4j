@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,8 +20,8 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.concurrent.BinaryLatch;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+import org.neo4j.util.FeatureToggles;
 
 /**
  * The LatchMap is used by the {@link MuninnPagedFile} to coordinate concurrent page faults, and ensure that no two

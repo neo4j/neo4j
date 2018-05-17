@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,6 +34,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -103,12 +104,13 @@ public class StoreNodeRelationshipCursorTest
         fs = new DefaultFileSystemAbstraction();
         Config config = Config.defaults( pagecache_memory, "8m" );
         pageCache = new ConfiguringPageCacheFactory( fs,
-                config, NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance() )
+                config, NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY )
                 .getOrCreatePageCache();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         NullLogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
-                new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
+                new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider,
+                        EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
@@ -121,7 +123,7 @@ public class StoreNodeRelationshipCursorTest
     }
 
     @Test
-    public void retrieveNodeRelationships() throws Exception
+    public void retrieveNodeRelationships()
     {
         createNodeRelationships();
 
@@ -173,7 +175,7 @@ public class StoreNodeRelationshipCursorTest
     }
 
     @Test
-    public void shouldHandleDenseNodeWithNoRelationships() throws Exception
+    public void shouldHandleDenseNodeWithNoRelationships()
     {
         // This can actually happen, since we upgrade sparse node --> dense node when creating relationships,
         // but we don't downgrade dense --> sparse when we delete relationships. So if we have a dense node

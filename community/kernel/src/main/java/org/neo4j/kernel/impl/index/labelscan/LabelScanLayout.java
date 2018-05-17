@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -79,13 +79,13 @@ class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public int keySize()
+    public int keySize( LabelScanKey key )
     {
         return KEY_SIZE;
     }
 
     @Override
-    public int valueSize()
+    public int valueSize( LabelScanValue value )
     {
         return LabelScanValue.RANGE_SIZE_BYTES;
     }
@@ -110,7 +110,7 @@ class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public void readKey( PageCursor cursor, LabelScanKey into )
+    public void readKey( PageCursor cursor, LabelScanKey into, int keySize )
     {
         into.labelId = cursor.getInt();
         into.idRange = get6ByteLong( cursor );
@@ -124,9 +124,15 @@ class LabelScanLayout extends Layout.Adapter<LabelScanKey,LabelScanValue>
     }
 
     @Override
-    public void readValue( PageCursor cursor, LabelScanValue into )
+    public void readValue( PageCursor cursor, LabelScanValue into, int valueSize )
     {
         into.bits = cursor.getLong();
+    }
+
+    @Override
+    public boolean fixedSize()
+    {
+        return true;
     }
 
     @Override

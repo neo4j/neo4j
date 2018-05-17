@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
@@ -46,7 +49,6 @@ public enum HeartbeatState
                                               Message<HeartbeatMessage> message,
                                               MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -93,7 +95,6 @@ public enum HeartbeatState
                                               Message<HeartbeatMessage> message,
                                               MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -136,16 +137,16 @@ public enum HeartbeatState
                                 if ( lastLearned > context.getLastKnownLearnedInstanceInCluster() )
                                 {
                                     /*
-                                     * Need to pass the INSTANCE_ID header to catchUp state,
+                                     * Need to pass the HEADER_INSTANCE_ID header to catchUp state,
                                      * as the instance in catchUp state should be aware of at least one
-                                     * alive member of the cluster. FROM used to be abused for this reason
+                                     * alive member of the cluster. HEADER_FROM used to be abused for this reason
                                      * previously, so we leave it here for legacy reasons - should really have
                                      * no use within the current codebase but mixed version clusters may
                                      * make use of it.
                                      */
                                     Message<LearnerMessage> catchUpMessage = message.copyHeadersTo(
                                             internal( LearnerMessage.catchUp, lastLearned ),
-                                            Message.FROM, Message.INSTANCE_ID );
+                                            Message.HEADER_FROM, Message.HEADER_INSTANCE_ID );
                                     outgoing.offer( catchUpMessage );
                                 }
                             }
@@ -231,7 +232,7 @@ public enum HeartbeatState
                             HeartbeatMessage.SuspicionsState suspicions = message.getPayload();
 
                             InstanceId fromId = new InstanceId(
-                                    Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) );
+                                    Integer.parseInt( message.getHeader( Message.HEADER_INSTANCE_ID ) ) );
 
                             context.getLog( HeartbeatState.class )
                                     .debug( format( "Received suspicions as %s from %s", suspicions, fromId ) );
@@ -277,9 +278,9 @@ public enum HeartbeatState
                 {
                     String key = HeartbeatMessage.i_am_alive + "-" + state.getServer();
                     Message<? extends MessageType> oldTimeout = context.cancelTimeout( key );
-                    if ( oldTimeout != null && oldTimeout.hasHeader( Message.TIMEOUT_COUNT ) )
+                    if ( oldTimeout != null && oldTimeout.hasHeader( Message.HEADER_TIMEOUT_COUNT ) )
                     {
-                        int timeoutCount = Integer.parseInt( oldTimeout.getHeader( Message.TIMEOUT_COUNT ) );
+                        int timeoutCount = Integer.parseInt( oldTimeout.getHeader( Message.HEADER_TIMEOUT_COUNT ) );
                         if ( timeoutCount > 0 )
                         {
                             long timeout = context.getTimeoutFor( oldTimeout );

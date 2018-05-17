@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.com;
 
@@ -72,19 +75,19 @@ public class BlockLogBuffer implements Closeable
      * are moved over at the beginning of the cleared buffer.
      *
      * @return the buffer
-     * @throws IOException
      */
-    private BlockLogBuffer checkFlush() throws IOException
+    private BlockLogBuffer checkFlush()
     {
         if ( byteBuffer.position() > MAX_SIZE )
         {
-            flush( MAX_SIZE );
+            flush();
         }
         return this;
     }
 
-    private void flush( int howManyBytesToWrite ) throws IOException
+    private void flush()
     {
+        int howManyBytesToWrite = MAX_SIZE;
         target.writeBytes( byteArray, 0, howManyBytesToWrite );
         monitor.bytesWritten( howManyBytesToWrite );
         int pos = byteBuffer.position();
@@ -92,49 +95,43 @@ public class BlockLogBuffer implements Closeable
         byteBuffer.put( byteArray, howManyBytesToWrite, pos - howManyBytesToWrite );
     }
 
-//    @Override
-//    public void emptyBufferIntoChannelAndClearIt() throws IOException
-//    {
-//        flush( byteBuffer.position() );
-//    }
-
-    public BlockLogBuffer put( byte b ) throws IOException
+    public BlockLogBuffer put( byte b )
     {
         byteBuffer.put( b );
         return checkFlush();
     }
 
-    public BlockLogBuffer putShort( short s ) throws IOException
+    public BlockLogBuffer putShort( short s )
     {
         byteBuffer.putShort( s );
         return checkFlush();
     }
 
-    public BlockLogBuffer putInt( int i ) throws IOException
+    public BlockLogBuffer putInt( int i )
     {
         byteBuffer.putInt( i );
         return checkFlush();
     }
 
-    public BlockLogBuffer putLong( long l ) throws IOException
+    public BlockLogBuffer putLong( long l )
     {
         byteBuffer.putLong( l );
         return checkFlush();
     }
 
-    public BlockLogBuffer putFloat( float f ) throws IOException
+    public BlockLogBuffer putFloat( float f )
     {
         byteBuffer.putFloat( f );
         return checkFlush();
     }
 
-    public BlockLogBuffer putDouble( double d ) throws IOException
+    public BlockLogBuffer putDouble( double d )
     {
         byteBuffer.putDouble( d );
         return checkFlush();
     }
 
-    public BlockLogBuffer put( byte[] bytes, int length ) throws IOException
+    public BlockLogBuffer put( byte[] bytes, int length )
     {
         for ( int pos = 0; pos < length; )
         {
@@ -167,7 +164,7 @@ public class BlockLogBuffer implements Closeable
     public int write( ReadableByteChannel data ) throws IOException
     {
         int result = 0;
-        int bytesRead = 0;
+        int bytesRead;
         while ( (bytesRead = data.read( byteBuffer )) >= 0 )
         {
             checkFlush();

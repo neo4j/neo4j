@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -53,7 +53,7 @@ public enum TraverserReturnType
         @Override
         public MappingRepresentation toRepresentation( Path position )
         {
-            return new org.neo4j.server.rest.repr.PathRepresentation<Path>( position );
+            return new org.neo4j.server.rest.repr.PathRepresentation<>( position );
         }
     },
     fullpath( RepresentationType.FULL_PATH )

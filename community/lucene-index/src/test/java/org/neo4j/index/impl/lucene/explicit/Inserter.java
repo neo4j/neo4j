@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -46,29 +46,24 @@ public class Inserter
 
         for ( int i = 0; i < 5; i++ )
         {
-            new Thread()
-            {
-                @Override
-                public void run()
+            new Thread( () -> {
+                while ( true )
                 {
-                    while ( true )
+                    try ( Transaction tx = db.beginTx() )
                     {
-                        try ( Transaction tx = db.beginTx() )
+                        for ( int i1 = 0; i1 < 100; i1++ )
                         {
-                            for ( int i = 0; i < 100; i++ )
-                            {
-                                String key = keys[i % keys.length];
-                                String value = values[i % values.length] + i;
+                            String key = keys[i1 % keys.length];
+                            String value = values[i1 % values.length] + i1;
 
-                                Node node = db.createNode();
-                                node.setProperty( key, value );
-                                index.add( node, key, value );
-                            }
-                            tx.success();
+                            Node node = db.createNode();
+                            node.setProperty( key, value );
+                            index.add( node, key, value );
                         }
+                        tx.success();
                     }
                 }
-            }.start();
+            } ).start();
         }
         new File( path, "started" ).createNewFile();
     }

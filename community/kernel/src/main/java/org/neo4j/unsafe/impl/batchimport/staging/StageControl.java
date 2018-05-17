@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.util.function.Supplier;
+
 /**
  * Represents a means to control and coordinate lifecycle matters about a {@link Stage} and all its
  * {@link Step steps}.
@@ -28,4 +30,8 @@ public interface StageControl
     void panic( Throwable cause );
 
     void assertHealthy();
+
+    void recycle( Object batch );
+
+    <T> T reuse( Supplier<T> fallback );
 }

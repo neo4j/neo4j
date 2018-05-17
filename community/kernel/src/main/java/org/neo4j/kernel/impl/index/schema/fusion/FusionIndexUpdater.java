@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,19 +24,13 @@ import java.io.IOException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 
-class FusionIndexUpdater implements IndexUpdater
+class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexUpdater
 {
-    private final IndexUpdater nativeUpdater;
-    private final IndexUpdater luceneUpdater;
-    private final Selector selector;
-
-    FusionIndexUpdater( IndexUpdater nativeUpdater, IndexUpdater luceneUpdater, Selector selector )
+    FusionIndexUpdater( IndexUpdater[] updaters, Selector selector )
     {
-        this.nativeUpdater = nativeUpdater;
-        this.luceneUpdater = luceneUpdater;
-        this.selector = selector;
+        super( updaters, selector );
     }
 
     @Override
@@ -45,14 +39,14 @@ class FusionIndexUpdater implements IndexUpdater
         switch ( update.updateMode() )
         {
         case ADDED:
-            selector.select( nativeUpdater, luceneUpdater, update.values() ).process( update );
+            selector.select( instances, update.values() ).process( update );
             break;
         case CHANGED:
             // Hmm, here's a little conundrum. What if we change from a value that goes into native
             // to a value that goes into fallback, or vice versa? We also don't want to blindly pass
             // all CHANGED updates to both updaters since not all values will work in them.
-            IndexUpdater from = selector.select( nativeUpdater, luceneUpdater, update.beforeValues() );
-            IndexUpdater to = selector.select( nativeUpdater, luceneUpdater, update.values() );
+            IndexUpdater from = selector.select( instances, update.beforeValues() );
+            IndexUpdater to = selector.select( instances, update.values() );
             // There are two cases:
             // - both before/after go into the same updater --> pass update into that updater
             if ( from == to )
@@ -62,14 +56,12 @@ class FusionIndexUpdater implements IndexUpdater
             // - before go into one and after into the other --> REMOVED from one and ADDED into the other
             else
             {
-                from.process( IndexEntryUpdate.remove(
-                        update.getEntityId(), update.indexKey(), update.beforeValues() ) );
-                to.process( IndexEntryUpdate.add(
-                        update.getEntityId(), update.indexKey(), update.values() ) );
+                from.process( IndexEntryUpdate.remove( update.getEntityId(), update.indexKey(), update.beforeValues() ) );
+                to.process( IndexEntryUpdate.add( update.getEntityId(), update.indexKey(), update.values() ) );
             }
             break;
         case REMOVED:
-            selector.select( nativeUpdater, luceneUpdater, update.values() ).process( update );
+            selector.select( instances, update.values() ).process( update );
             break;
         default:
             throw new IllegalArgumentException( "Unknown update mode" );
@@ -81,11 +73,16 @@ class FusionIndexUpdater implements IndexUpdater
     {
         try
         {
-            nativeUpdater.close();
+            forAll( IndexUpdater::close, instances );
         }
-        finally
+        catch ( IOException | IndexEntryConflictException | RuntimeException e )
         {
-            luceneUpdater.close();
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            // This catch-clause is basically only here to satisfy the compiler
+            throw new RuntimeException( e );
         }
     }
 }

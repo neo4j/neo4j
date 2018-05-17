@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,7 +36,7 @@ import java.util.NoSuchElementException;
 public class CachingIterator<T> implements ListIterator<T>
 {
     private final Iterator<T> source;
-    private final List<T> visited = new ArrayList<T>();
+    private final List<T> visited = new ArrayList<>();
     private int position;
     private T current;
 

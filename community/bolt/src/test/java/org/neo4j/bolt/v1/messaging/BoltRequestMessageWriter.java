@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
@@ -34,17 +35,13 @@ import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.PULL_ALL;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RESET;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
 
-
-public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOException>
+public class BoltRequestMessageWriter implements BoltRequestMessageHandler
 {
-
     private final Neo4jPack.Packer packer;
-    private final BoltResponseMessageBoundaryHook onMessageComplete;
 
-    public BoltRequestMessageWriter( Neo4jPack.Packer packer, BoltResponseMessageBoundaryHook onMessageComplete )
+    public BoltRequestMessageWriter( Neo4jPack.Packer packer )
     {
         this.packer = packer;
-        this.onMessageComplete = onMessageComplete;
     }
 
     public BoltRequestMessageWriter write( RequestMessage message ) throws IOException
@@ -54,61 +51,101 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     }
 
     @Override
-    public void onInit( String clientName, Map<String,Object> credentials ) throws IOException
+    public void onInit( String clientName, Map<String,Object> credentials )
     {
-        packer.packStructHeader( 1, INIT.signature() );
-        packer.pack( clientName );
-        packer.packRawMap( ValueUtils.asMapValue( credentials ) );
-        onMessageComplete.onMessageComplete();
+        try
+        {
+            packer.packStructHeader( 2, INIT.signature() );
+            packer.pack( clientName );
+            packer.pack( ValueUtils.asMapValue( credentials ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
-    public void onAckFailure() throws IOException
+    public void onAckFailure()
     {
-        packer.packStructHeader( 0, ACK_FAILURE.signature() );
-        onMessageComplete.onMessageComplete();
+        try
+        {
+            packer.packStructHeader( 0, ACK_FAILURE.signature() );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
-    public void onReset() throws IOException
+    public void onReset()
     {
-        packer.packStructHeader( 0, RESET.signature() );
-        onMessageComplete.onMessageComplete();
+        try
+        {
+            packer.packStructHeader( 0, RESET.signature() );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
     public void onRun( String statement, MapValue params )
-            throws IOException
     {
-        packer.packStructHeader( 2, RUN.signature() );
-        packer.pack( statement );
-        packer.packRawMap(  params );
-        onMessageComplete.onMessageComplete();
+        try
+        {
+            packer.packStructHeader( 2, RUN.signature() );
+            packer.pack( statement );
+            packer.pack( params );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
     public void onDiscardAll()
-            throws IOException
     {
-        packer.packStructHeader( 0, DISCARD_ALL.signature() );
-        onMessageComplete.onMessageComplete();
+        try
+        {
+            packer.packStructHeader( 0, DISCARD_ALL.signature() );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
     public void onPullAll()
-            throws IOException
     {
-        packer.packStructHeader( 0, PULL_ALL.signature() );
-        onMessageComplete.onMessageComplete();
+        try
+        {
+            packer.packStructHeader( 0, PULL_ALL.signature() );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
-    public void flush() throws IOException
+    public void flush()
     {
-        packer.flush();
+        try
+        {
+            packer.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
-    public void onExternalError( Neo4jError error ) throws IOException
+    public void onExternalError( Neo4jError error )
     {
         //ignore
     }

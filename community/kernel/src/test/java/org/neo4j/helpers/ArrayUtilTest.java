@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,7 +30,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class ArrayUtilTest
 {
     @Test
-    public void shouldProduceUnionOfTwoArrays() throws Exception
+    public void shouldProduceUnionOfTwoArrays()
     {
         // GIVEN
         String[] first = {"one", "three"};
@@ -45,7 +45,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldProduceUnionWhereFirstIsNull() throws Exception
+    public void shouldProduceUnionWhereFirstIsNull()
     {
         // GIVEN
         String[] first = null;
@@ -59,7 +59,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldProduceUnionWhereOtherIsNull() throws Exception
+    public void shouldProduceUnionWhereOtherIsNull()
     {
         // GIVEN
         String[] first = {"one", "two"};
@@ -73,7 +73,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldCheckNullSafeEqual() throws Exception
+    public void shouldCheckNullSafeEqual()
     {
         // WHEN/THEN
         assertTrue( ArrayUtil.nullSafeEquals( null, null ) );
@@ -91,7 +91,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldConcatOneAndMany() throws Exception
+    public void shouldConcatOneAndMany()
     {
         // WHEN
         Integer[] result = ArrayUtil.concat( 0, 1, 2, 3, 4 );
@@ -104,7 +104,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldFindIndexOf() throws Exception
+    public void shouldFindIndexOf()
     {
         // GIVEN
         Integer[] numbers = ArrayUtil.concat( 0, 1, 2, 3, 4, 5 );
@@ -117,7 +117,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldRemoveItems() throws Exception
+    public void shouldRemoveItems()
     {
         // GIVEN
         Integer[] numbers = ArrayUtil.concat( 0, 1, 2, 3, 4, 5 );
@@ -138,7 +138,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldConcatArrays() throws Exception
+    public void shouldConcatArrays()
     {
         // GIVEN
         Integer[] initial = new Integer[] {0, 1, 2};
@@ -151,7 +151,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldReverseEvenCount() throws Exception
+    public void shouldReverseEvenCount()
     {
         // given
         Integer[] array = new Integer[] {0, 1, 2, 3, 4, 5};
@@ -164,7 +164,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldReverseUnevenCount() throws Exception
+    public void shouldReverseUnevenCount()
     {
         // given
         Integer[] array = new Integer[] {0, 1, 2, 3, 4};
@@ -177,7 +177,7 @@ public class ArrayUtilTest
     }
 
     @Test
-    public void shouldReverseEmptyArray() throws Exception
+    public void shouldReverseEmptyArray()
     {
         // given
         Integer[] array = new Integer[] {};

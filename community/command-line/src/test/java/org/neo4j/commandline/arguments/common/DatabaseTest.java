@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -38,7 +38,7 @@ public class DatabaseTest
     private Database arg = new Database();
 
     @Test
-    public void parseDatabaseShouldThrowOnPath() throws Exception
+    public void parseDatabaseShouldThrowOnPath()
     {
         Path path = Paths.get( "data", "databases", "graph.db" );
         expected.expect( IllegalArgumentException.class );
@@ -47,7 +47,7 @@ public class DatabaseTest
     }
 
     @Test
-    public void parseDatabaseName() throws Exception
+    public void parseDatabaseName()
     {
         assertEquals( "bob.db", arg.parse( Args.parse( "--database=bob.db" ) ) );
     }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -123,7 +123,7 @@ public interface LabelScanStore extends Lifecycle
      */
     AllEntriesLabelScanReader allNodeLabelRanges();
 
-    ResourceIterator<File> snapshotStoreFiles() throws IOException;
+    ResourceIterator<File> snapshotStoreFiles();
 
     /**
      * @return {@code true} if there's no data at all in this label scan store, otherwise {@code false}.
@@ -144,7 +144,7 @@ public interface LabelScanStore extends Lifecycle
     void start() throws IOException;
 
     @Override
-    void stop() throws IOException;
+    void stop();
 
     /**
      * Shuts down the store and all resources acquired by it.
@@ -168,7 +168,7 @@ public interface LabelScanStore extends Lifecycle
      * @return whether or not there's an existing store present for this label scan store.
      * @throws IOException on I/O error checking the presence of a store.
      */
-    boolean hasStore() throws IOException;
+    boolean hasStore();
 
     /**
      * Returns the path to label scan store, might be a directory or a file depending on the implementation.

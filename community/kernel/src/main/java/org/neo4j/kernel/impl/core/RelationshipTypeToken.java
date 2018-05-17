@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -42,5 +42,13 @@ public class RelationshipTypeToken extends Token implements RelationshipType
         {
             return new RelationshipTypeToken( name, id );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        // Conveniently use name() for toString. One should always use name() in favor of toString(), but sometimes
+        // it's easy to forget and we can help out by doing this.
+        return name();
     }
 }

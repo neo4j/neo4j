@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,14 +20,33 @@
 package org.neo4j.values.storable;
 
 import java.lang.reflect.Array;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
+import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.values.TernaryComparator;
 
 import static java.lang.String.format;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
 
 /**
  * Entry point to the values library.
@@ -47,7 +66,7 @@ public final class Values
     public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
     public static final Value ZERO_FLOAT = Values.doubleValue( 0.0 );
-    public static final Value ZERO_INT = Values.longValue( 0 );
+    public static final IntegralValue ZERO_INT = Values.longValue( 0 );
     public static final Value MIN_STRING = StringValue.EMTPY;
     public static final Value MAX_STRING = Values.booleanValue( false );
     public static final BooleanValue TRUE = Values.booleanValue( true );
@@ -63,7 +82,6 @@ public final class Values
     public static final ArrayValue EMPTY_LONG_ARRAY = Values.longArray( new long[0] );
     public static final ArrayValue EMPTY_FLOAT_ARRAY = Values.floatArray( new float[0] );
     public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray( new double[0] );
-    public static final ArrayValue EMPTY_POINT_ARRAY = Values.pointArray( new PointValue[0] );
     public static final TextArray EMPTY_TEXT_ARRAY = Values.stringArray();
 
     private Values()
@@ -72,9 +90,11 @@ public final class Values
 
     /**
      * Default value comparator. Will correctly compare all storable values and order the value groups according the
-     * to comparability group.
+     * to orderability group.
+     *
+     * To get Comparability semantics, use .ternaryCompare
      */
-    public static final Comparator<Value> COMPARATOR = new ValueComparator( ValueGroup::compareTo );
+    public static final ValueComparator COMPARATOR = new ValueComparator( ValueGroup::compareTo );
 
     public static boolean isNumberValue( Object value )
     {
@@ -94,6 +114,16 @@ public final class Values
     public static boolean isArrayValue( Value value )
     {
         return value instanceof ArrayValue;
+    }
+
+    public static boolean isGeometryValue( Value value )
+    {
+        return value instanceof PointValue;
+    }
+
+    public static boolean isTemporalValue( Value value )
+    {
+        return value instanceof TemporalValue || value instanceof DurationValue;
     }
 
     public static double coerceToDouble( Value value )
@@ -154,7 +184,7 @@ public final class Values
         }
     }
 
-    public static Value numberValue( Number number )
+    public static NumberValue numberValue( Number number )
     {
         if ( number instanceof Long )
         {
@@ -179,10 +209,6 @@ public final class Values
         if ( number instanceof Short )
         {
             return shortValue( number.shortValue() );
-        }
-        if ( number == null )
-        {
-            return NO_VALUE;
         }
 
         throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
@@ -230,51 +256,69 @@ public final class Values
 
     public static TextArray stringArray( String... value )
     {
-        return new StringArray.Direct( value );
+        return new StringArray( value );
     }
 
     public static ByteArray byteArray( byte[] value )
     {
-        return new ByteArray.Direct( value );
+        return new ByteArray( value );
     }
 
     public static LongArray longArray( long[] value )
     {
-        return new LongArray.Direct( value );
+        return new LongArray( value );
     }
 
     public static IntArray intArray( int[] value )
     {
-        return new IntArray.Direct( value );
+        return new IntArray( value );
     }
 
     public static DoubleArray doubleArray( double[] value )
     {
-        return new DoubleArray.Direct( value );
+        return new DoubleArray( value );
     }
 
     public static FloatArray floatArray( float[] value )
     {
-        return new FloatArray.Direct( value );
+        return new FloatArray( value );
     }
 
     public static BooleanArray booleanArray( boolean[] value )
     {
-        return new BooleanArray.Direct( value );
+        return new BooleanArray( value );
     }
 
     public static CharArray charArray( char[] value )
     {
-        return new CharArray.Direct( value );
+        return new CharArray( value );
     }
 
     public static ShortArray shortArray( short[] value )
     {
-        return new ShortArray.Direct( value );
+        return new ShortArray( value );
     }
 
+    /**
+     * Unlike pointValue(), this method does not enforce consistency between the CRS and coordinate dimensions.
+     * This can be useful for testing.
+     */
+    public static PointValue unsafePointValue( CoordinateReferenceSystem crs, double... coordinate )
+    {
+        return new PointValue( crs, coordinate );
+    }
+
+    /**
+     * Creates a PointValue, and enforces consistency between the CRS and coordinate dimensions.
+     */
     public static PointValue pointValue( CoordinateReferenceSystem crs, double... coordinate )
     {
+        if ( crs.getDimension() != coordinate.length )
+        {
+            throw new IllegalArgumentException(
+                    format( "Cannot create point, CRS %s expects %d dimensions, but got coordinates %s",
+                            crs, crs.getDimension(), Arrays.toString( coordinate ) ) );
+        }
         return new PointValue( crs, coordinate );
     }
 
@@ -291,6 +335,20 @@ public final class Values
         return new PointValue( crs( point.getCRS() ), coords );
     }
 
+    public static PointValue minPointValue( PointValue reference )
+    {
+        double[] coordinates = new double[reference.coordinate().length];
+        Arrays.fill( coordinates, -Double.MAX_VALUE );
+        return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
+    }
+
+    public static PointValue maxPointValue( PointValue reference )
+    {
+        double[] coordinates = new double[reference.coordinate().length];
+        Arrays.fill( coordinates, Double.MAX_VALUE );
+        return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
+    }
+
     public static PointArray pointArray( Point[] points )
     {
         PointValue[] values = new PointValue[points.length];
@@ -298,17 +356,132 @@ public final class Values
         {
             values[i] = Values.point( points[i] );
         }
-        return new PointArray.Direct( values );
+        return new PointArray( values );
+    }
+
+    public static PointArray pointArray( Value[] maybePoints )
+    {
+        PointValue[] values = new PointValue[maybePoints.length];
+        for ( int i = 0; i < maybePoints.length; i++ )
+        {
+            Value maybePoint = maybePoints[i];
+            if ( !(maybePoint instanceof PointValue) )
+            {
+                throw new IllegalArgumentException( format( "[%s:%s] is not a supported point value", maybePoint, maybePoint.getClass().getName() ) );
+            }
+            values[i] = Values.point( (PointValue) maybePoint );
+        }
+        return pointArray( values );
     }
 
     public static PointArray pointArray( PointValue[] points )
     {
-        return new PointArray.Direct( points );
+        return new PointArray( points );
     }
 
     public static CoordinateReferenceSystem crs( CRS crs )
     {
         return CoordinateReferenceSystem.get( crs );
+    }
+
+    public static Value temporalValue( Temporal value )
+    {
+        if ( value instanceof ZonedDateTime )
+        {
+            return datetime( (ZonedDateTime) value );
+        }
+        if ( value instanceof OffsetDateTime )
+        {
+            return datetime( (OffsetDateTime) value );
+        }
+        if ( value instanceof LocalDateTime )
+        {
+            return localDateTime( (LocalDateTime) value );
+        }
+        if ( value instanceof OffsetTime )
+        {
+            return time( (OffsetTime) value );
+        }
+        if ( value instanceof LocalDate )
+        {
+            return date( (LocalDate) value );
+        }
+        if ( value instanceof LocalTime )
+        {
+            return localTime( (LocalTime) value );
+        }
+        if ( value instanceof TemporalValue )
+        {
+            return (Value) value;
+        }
+        if ( value == null )
+        {
+            return NO_VALUE;
+        }
+
+        throw new UnsupportedOperationException( "Unsupported type of Temporal " + value.toString() );
+    }
+
+    public static DurationValue durationValue( TemporalAmount value )
+    {
+        if ( value instanceof Duration )
+        {
+            return duration( (Duration) value );
+        }
+        if ( value instanceof Period )
+        {
+            return duration( (Period) value );
+        }
+        if ( value instanceof DurationValue )
+        {
+            return (DurationValue) value;
+        }
+        DurationValue duration = duration( 0, 0, 0, 0 );
+        for ( TemporalUnit unit : value.getUnits() )
+        {
+            duration = duration.plus( value.get( unit ), unit );
+        }
+        return duration;
+    }
+
+    public static ArrayValue dateTimeArray( ZonedDateTime[] values )
+    {
+        return new DateTimeArray( values );
+    }
+
+    public static ArrayValue localDateTimeArray( LocalDateTime[] values )
+    {
+        return new LocalDateTimeArray( values );
+    }
+
+    public static ArrayValue localTimeArray( LocalTime[] values )
+    {
+        return new LocalTimeArray( values );
+    }
+
+    public static ArrayValue timeArray( OffsetTime[] values )
+    {
+        return new TimeArray( values );
+    }
+
+    public static ArrayValue dateArray( LocalDate[] values )
+    {
+        return new DateArray( values );
+    }
+
+    public static ArrayValue durationArray( DurationValue[] values )
+    {
+        return new DurationArray( values );
+    }
+
+    public static ArrayValue durationArray( TemporalAmount[] values )
+    {
+        DurationValue[] durations = new DurationValue[values.length];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            durations[i] = durationValue( values[i] );
+        }
+        return new DurationArray( durations );
     }
 
     // BOXED FACTORY METHODS
@@ -337,11 +510,9 @@ public final class Values
         {
             return of;
         }
-        else
-        {
-            throw new IllegalArgumentException(
-                    format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
-        }
+        Objects.requireNonNull( value );
+        throw new IllegalArgumentException(
+                format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
     }
 
     public static Value unsafeOf( Object value, boolean allowNull )
@@ -365,6 +536,14 @@ public final class Values
         if ( value instanceof Character )
         {
             return charValue( (Character) value );
+        }
+        if ( value instanceof Temporal )
+        {
+            return temporalValue( (Temporal) value );
+        }
+        if ( value instanceof TemporalAmount )
+        {
+            return durationValue( (TemporalAmount) value );
         }
         if ( value instanceof byte[] )
         {
@@ -494,7 +673,33 @@ public final class Values
         }
         if ( value instanceof Point[] )
         {
-            return pointArray( copy( value, new Point[value.length] ) );
+            // no need to copy here, since the pointArray(...) method will copy into a PointValue[]
+            return pointArray( (Point[])value );
+        }
+        if ( value instanceof ZonedDateTime[] )
+        {
+            return dateTimeArray( copy( value, new ZonedDateTime[value.length] ) );
+        }
+        if ( value instanceof LocalDateTime[] )
+        {
+            return localDateTimeArray( copy( value, new LocalDateTime[value.length] ) );
+        }
+        if ( value instanceof LocalTime[] )
+        {
+            return localTimeArray( copy( value, new LocalTime[value.length] ) );
+        }
+        if ( value instanceof OffsetTime[] )
+        {
+            return timeArray( copy( value, new OffsetTime[value.length] ) );
+        }
+        if ( value instanceof LocalDate[] )
+        {
+            return dateArray( copy( value, new LocalDate[value.length] ) );
+        }
+        if ( value instanceof TemporalAmount[] )
+        {
+            // no need to copy here, since the durationArray(...) method will perform copying as appropriate
+            return durationArray( (TemporalAmount[]) value );
         }
         return null;
     }
@@ -510,5 +715,39 @@ public final class Values
             Array.set( target, i, value[i] );
         }
         return target;
+    }
+
+    public static Value minValue( ValueGroup valueGroup, Value value )
+    {
+        switch ( valueGroup )
+        {
+        case TEXT: return MIN_STRING;
+        case NUMBER: return MIN_NUMBER;
+        case GEOMETRY: return minPointValue( (PointValue)value );
+        case DATE: return DateValue.MIN_VALUE;
+        case LOCAL_DATE_TIME: return LocalDateTimeValue.MIN_VALUE;
+        case ZONED_DATE_TIME: return DateTimeValue.MIN_VALUE;
+        case LOCAL_TIME: return LocalTimeValue.MIN_VALUE;
+        case ZONED_TIME: return TimeValue.MIN_VALUE;
+        default: throw new IllegalStateException(
+                format( "The minValue for valueGroup %s is not defined yet", valueGroup ) );
+        }
+    }
+
+    public static Value maxValue( ValueGroup valueGroup, Value value )
+    {
+        switch ( valueGroup )
+        {
+        case TEXT: return MAX_STRING;
+        case NUMBER: return MAX_NUMBER;
+        case GEOMETRY: return maxPointValue( (PointValue)value );
+        case DATE: return DateValue.MAX_VALUE;
+        case LOCAL_DATE_TIME: return LocalDateTimeValue.MAX_VALUE;
+        case ZONED_DATE_TIME: return DateTimeValue.MAX_VALUE;
+        case LOCAL_TIME: return LocalTimeValue.MAX_VALUE;
+        case ZONED_TIME: return TimeValue.MAX_VALUE;
+        default: throw new IllegalStateException(
+                format( "The maxValue for valueGroup %s is not defined yet", valueGroup ) );
+        }
     }
 }

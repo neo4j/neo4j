@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.protocol.snapshot;
 
@@ -42,7 +45,7 @@ public class SnapshotStateTest
     @Test
     public void testNoSnapshotRequestIfCoordinatorInExistingCluster() throws Throwable
     {
-        Map<InstanceId, URI> extraMember = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> extraMember = new HashMap<>();
         URI other = URI.create( "cluster://other");
         extraMember.put( new InstanceId( 2 ), other );
         baseNoSendTest( extraMember );
@@ -51,15 +54,15 @@ public class SnapshotStateTest
     @Test
     public void testNoSnapshotRequestIfOnlyMember() throws Throwable
     {
-        Map<InstanceId, URI> extraMember = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> extraMember = new HashMap<>();
         baseNoSendTest( extraMember );
     }
 
-    public void baseNoSendTest( Map<InstanceId,URI> extraMembers ) throws Throwable
+    private void baseNoSendTest( Map<InstanceId,URI> extraMembers ) throws Throwable
     {
         URI me = URI.create( "cluster://me" );
 
-        Map<InstanceId,URI> members = new HashMap<InstanceId,URI>();
+        Map<InstanceId,URI> members = new HashMap<>();
         final InstanceId myId = new InstanceId( 1 );
         members.put( myId, me );
         members.putAll( extraMembers );
@@ -75,7 +78,8 @@ public class SnapshotStateTest
 
         SnapshotContext context = mock( SnapshotContext.class );
         when( context.getClusterContext() ).thenReturn( clusterContext );
-        when( context.getSnapshotProvider() ).thenReturn( mock( SnapshotProvider.class ) );
+        SnapshotProvider snapshotProvider = mock( SnapshotProvider.class );
+        when( context.getSnapshotProvider() ).thenReturn( snapshotProvider );
 
         Message<SnapshotMessage> message = Message.to( SnapshotMessage.refreshSnapshot, me );
 

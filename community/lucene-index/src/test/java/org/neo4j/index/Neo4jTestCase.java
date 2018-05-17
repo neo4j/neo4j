@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -44,13 +44,13 @@ public abstract class Neo4jTestCase
     private Transaction tx;
 
     @BeforeClass
-    public static void setUpDb() throws Exception
+    public static void setUpDb()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterClass
-    public static void tearDownDb() throws Exception
+    public static void tearDownDb()
     {
         graphDb.shutdown();
     }
@@ -158,7 +158,7 @@ public abstract class Neo4jTestCase
 
     public static <T> Collection<T> asCollection( Iterable<T> iterable )
     {
-        List<T> list = new ArrayList<T>();
+        List<T> list = new ArrayList<>();
         for ( T item : iterable )
         {
             list.add( item );

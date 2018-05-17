@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,7 +37,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
 public class StageExecutionTest
 {
     @Test
-    public void shouldOrderStepsAscending() throws Exception
+    public void shouldOrderStepsAscending()
     {
         // GIVEN
         Collection<Step<?>> steps = new ArrayList<>();
@@ -60,7 +60,7 @@ public class StageExecutionTest
     }
 
     @Test
-    public void shouldOrderStepsDescending() throws Exception
+    public void shouldOrderStepsDescending()
     {
         // GIVEN
         Collection<Step<?>> steps = new ArrayList<>();

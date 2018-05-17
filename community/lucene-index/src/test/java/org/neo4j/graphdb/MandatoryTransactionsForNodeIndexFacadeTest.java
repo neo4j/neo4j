@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,7 @@ import static org.neo4j.graphdb.NodeIndexFacadeMethods.ALL_NODE_INDEX_FACADE_MET
 public class MandatoryTransactionsForNodeIndexFacadeTest extends AbstractMandatoryTransactionsTest<Index<Node>>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnNodeIndexFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnNodeIndexFacade()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_INDEX_FACADE_METHODS );
     }

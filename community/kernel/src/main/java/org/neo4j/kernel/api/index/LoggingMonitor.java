@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,13 +20,14 @@
 package org.neo4j.kernel.api.index;
 
 import java.util.Map;
+import java.util.StringJoiner;
 
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
-public class LoggingMonitor implements SchemaIndexProvider.Monitor
+public class LoggingMonitor implements IndexProvider.Monitor
 {
     private final Log log;
 
@@ -36,18 +37,18 @@ public class LoggingMonitor implements SchemaIndexProvider.Monitor
     }
 
     @Override
-    public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
+    public void failedToOpenIndex( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, String action, Exception cause )
     {
         log.error( "Failed to open index:" + indexId + ". " + action, cause );
     }
 
     @Override
-    public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
+    public void recoveryCompleted( SchemaIndexDescriptor schemaIndexDescriptor, String indexFile, Map<String,Object> data )
     {
-        StringBuilder builder =
-                new StringBuilder(
-                        "Schema index recovery completed: indexId: " + indexId + " descriptor: " + indexDescriptor.toString() );
-        data.forEach( ( key, value ) -> builder.append( format( " %s: %s", key, value ) ) );
-        log.info( builder.toString() );
+        StringJoiner joiner = new StringJoiner( ", ", "Schema index recovery completed: ", "" );
+        joiner.add( "descriptor=" + schemaIndexDescriptor );
+        joiner.add( "file=" + indexFile );
+        data.forEach( ( key, value ) -> joiner.add( format( "%s=%s", key, value ) ) );
+        log.info( joiner.toString() );
     }
 }

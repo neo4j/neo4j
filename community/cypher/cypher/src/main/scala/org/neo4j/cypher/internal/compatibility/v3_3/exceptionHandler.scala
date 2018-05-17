@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.exceptionHandler.RunSafely
+import org.neo4j.cypher.exceptionHandler.{RunSafely, mapToCypher}
 import org.neo4j.cypher.internal.compatibility.{ExceptionHandler, _}
 import org.neo4j.cypher.internal.frontend.v3_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException => InternalCypherExceptionV3_3}
 import org.neo4j.cypher.internal.util.v3_4.{CypherException => InternalCypherExceptionV3_4}
 import org.neo4j.cypher.{exceptionHandler => exceptionHandlerV3_4}
+import org.neo4j.values.utils.ValuesException
 
 object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
@@ -101,6 +102,9 @@ object runSafely extends RunSafely {
       case e: InternalCypherExceptionV3_4 =>
         f(e)
         throw e.mapToPublic(exceptionHandlerV3_4)
+      case e: ValuesException =>
+        f(e)
+        throw mapToCypher(e)
       case e: Throwable =>
         f(e)
         throw e

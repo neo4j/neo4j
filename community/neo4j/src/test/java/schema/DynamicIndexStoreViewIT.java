@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,6 @@
  */
 package schema;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -28,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -41,6 +39,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.test.Randoms;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -62,6 +61,7 @@ public class DynamicIndexStoreViewIT
                 new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
         try
         {
+            Randoms random = new Randoms();
             int counter = 1;
             for ( int j = 0; j < 100; j++ )
             {
@@ -70,7 +70,7 @@ public class DynamicIndexStoreViewIT
                     for ( int i = 0; i < 5; i++ )
                     {
                         Node node = database.createNode( Label.label( "label" + counter ) );
-                        node.setProperty( "property", ThreadLocalRandom.current().nextInt() );
+                        node.setProperty( "property", MultipleIndexPopulationStressIT.randomPropertyValue( random ) );
                     }
                     transaction.success();
                 }
@@ -137,6 +137,7 @@ public class DynamicIndexStoreViewIT
         @Override
         public void run()
         {
+            Randoms random = new Randoms();
             awaitLatch( startSignal );
             while ( !endSignal.get() )
             {
@@ -144,25 +145,25 @@ public class DynamicIndexStoreViewIT
                 {
                     try
                     {
-                        int operationType = ThreadLocalRandom.current().nextInt( 3 );
+                        int operationType = random.nextInt( 3 );
                         switch ( operationType )
                         {
                         case 0:
-                            long targetNodeId = ThreadLocalRandom.current().nextLong( totalNodes );
+                            long targetNodeId = random.nextLong( totalNodes );
                             databaseService.getNodeById( targetNodeId ).delete();
                             break;
                         case 1:
-                            long nodeId = ThreadLocalRandom.current().nextLong( totalNodes );
+                            long nodeId = random.nextLong( totalNodes );
                             Node node = databaseService.getNodeById( nodeId );
                             Map<String,Object> allProperties = node.getAllProperties();
                             for ( String key : allProperties.keySet() )
                             {
-                                node.setProperty( key, RandomStringUtils.random( 10 ) );
+                                node.setProperty( key, MultipleIndexPopulationStressIT.randomPropertyValue( random ) );
                             }
                             break;
                         case 2:
                             Node nodeToUpdate = databaseService.createNode( Label.label( "label10" ) );
-                            nodeToUpdate.setProperty( "property", RandomStringUtils.random( 5 ) );
+                            nodeToUpdate.setProperty( "property", MultipleIndexPopulationStressIT.randomPropertyValue( random ) );
                             break;
                         default:
                             throw new UnsupportedOperationException( "Unknown type of index operation" );

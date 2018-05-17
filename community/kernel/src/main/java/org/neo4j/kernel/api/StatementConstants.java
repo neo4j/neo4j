@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,6 +26,8 @@ public final class StatementConstants
     public static final int NO_SUCH_PROPERTY_KEY = -1;
     public static final long NO_SUCH_NODE = -1;
     public static final long NO_SUCH_RELATIONSHIP = -1;
+    public static final int ANY_LABEL = -1;
+    public static final int ANY_RELATIONSHIP_TYPE = -1;
 
     private StatementConstants()
     {

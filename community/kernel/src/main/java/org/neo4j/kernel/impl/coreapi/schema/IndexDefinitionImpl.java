@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.coreapi.schema;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
@@ -63,14 +64,19 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public void drop()
     {
-        // expected to call assertInUnterminatedTransaction()
-        if ( this.isConstraintIndex() )
+        try
         {
-            throw new IllegalStateException( "Constraint indexes cannot be dropped directly, " +
-                                             "instead drop the owning uniqueness constraint." );
+            actions.dropIndexDefinitions( this );
         }
-
-        actions.dropIndexDefinitions( this );
+        catch ( ConstraintViolationException e )
+        {
+            if ( this.isConstraintIndex() )
+            {
+                throw new IllegalStateException( "Constraint indexes cannot be dropped directly, " +
+                                                 "instead drop the owning uniqueness constraint.", e );
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -112,7 +118,7 @@ public class IndexDefinitionImpl implements IndexDefinition
                Arrays.stream( propertyKeys ).collect( Collectors.joining( "," ) ) + "]";
     }
 
-    protected void assertInUnterminatedTransaction()
+    private void assertInUnterminatedTransaction()
     {
         actions.assertInOpenTransaction();
     }

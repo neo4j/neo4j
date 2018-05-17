@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,51 +19,15 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ExecutionStatisticsOperations;
-import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
+import org.neo4j.kernel.api.StubResourceManager;
 
-public class StubStatement implements Statement
+public class StubStatement extends StubResourceManager implements Statement
 {
-    private final ReadOperations readOperations;
-
-    StubStatement( ReadOperations readOperations )
-    {
-        this.readOperations = readOperations;
-    }
 
     @Override
     public void close()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public ReadOperations readOperations()
-    {
-        return readOperations;
-    }
-
-    @Override
-    public TokenWriteOperations tokenWriteOperations()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeKernelException
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -74,15 +38,4 @@ public class StubStatement implements Statement
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    @Override
-    public ProcedureCallOperations procedureCallOperations()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public ExecutionStatisticsOperations executionStatisticsOperations()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
 }

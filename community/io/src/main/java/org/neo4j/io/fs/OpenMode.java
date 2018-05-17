@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,12 +36,12 @@ import java.io.RandomAccessFile;
  * exist then an attempt will be made to create it.
  * </li>
  * <li>
- * {@link #SYNC}: Open for reading and writing, as with <tt>{@link #READ_WRITE}</tt>, and also
+ * {@link #SYNC}: Open for reading and writing, as with {@link #READ_WRITE}, and also
  * require that every update to the file's content or metadata be written synchronously to the underlying storage
  * device.
  * </li>
  * <li>
- * {@link #DSYNC}:  Open for reading and writing, as with <tt>{@link #READ_WRITE}</tt>, and also
+ * {@link #DSYNC}:  Open for reading and writing, as with {@link #READ_WRITE}, and also
  * require that every update to the file's content be written
  * synchronously to the underlying storage device.
  * </li>

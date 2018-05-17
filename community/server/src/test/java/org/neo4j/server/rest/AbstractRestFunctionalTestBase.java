@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -52,6 +52,8 @@ import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
 import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
+import static org.neo4j.test.server.HTTP.POST;
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
@@ -172,7 +174,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     public static long extractTxId( HTTP.Response response )
     {
-        int lastSlash = response.location().lastIndexOf( "/" );
+        int lastSlash = response.location().lastIndexOf( '/' );
         String txIdString = response.location().substring( lastSlash + 1 );
         return Long.parseLong( txIdString );
     }
@@ -280,8 +282,19 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     public static int getLocalHttpPort()
     {
-        ConnectorPortRegister connectorPortRegister = server().getDatabase().getGraph().getDependencyResolver()
-                .resolveDependency( ConnectorPortRegister.class );
+        ConnectorPortRegister connectorPortRegister =
+                server().getDatabase().getGraph().getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
         return connectorPortRegister.getLocalAddress( "http" ).getPort();
+    }
+
+    public static HTTP.Response runQuery( String query )
+    {
+        return POST( txCommitUri(), quotedJson( "{'statements': [{'statement': '" + query + "'}]}" ) );
+    }
+
+    public static void assertNoErrors( HTTP.Response response ) throws JsonParseException
+    {
+        assertEquals( "[]", response.get( "errors" ).toString() );
+        assertEquals( 0, response.get( "errors" ).size() );
     }
 }

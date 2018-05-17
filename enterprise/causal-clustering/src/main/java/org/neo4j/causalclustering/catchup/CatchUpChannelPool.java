@@ -1,24 +1,28 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.causalclustering.catchup;
 
+import java.net.ConnectException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,18 +47,36 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
         this.factory = factory;
     }
 
-    CHANNEL acquire( AdvertisedSocketAddress catchUpAddress )
+    CHANNEL acquire( AdvertisedSocketAddress catchUpAddress ) throws Exception
     {
         CHANNEL channel = getIdleChannel( catchUpAddress );
 
         if ( channel == null )
         {
             channel = factory.apply( catchUpAddress );
+            try
+            {
+                channel.connect();
+                assertActive( channel, catchUpAddress );
+            }
+            catch ( Exception e )
+            {
+                channel.close();
+                throw e;
+            }
         }
 
         addActiveChannel( channel );
 
         return channel;
+    }
+
+    private void assertActive( CHANNEL channel, AdvertisedSocketAddress address ) throws ConnectException
+    {
+        if ( !channel.isActive() )
+        {
+            throw new ConnectException( "Unable to connect to " + address );
+        }
     }
 
     private synchronized CHANNEL getIdleChannel( AdvertisedSocketAddress catchUpAddress )
@@ -63,7 +85,13 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
         LinkedList<CHANNEL> channels = idleChannels.get( catchUpAddress );
         if ( channels != null )
         {
-            channel = channels.poll();
+            while ( (channel = channels.poll()) != null )
+            {
+                if ( channel.isActive() )
+                {
+                    break;
+                }
+            }
             if ( channels.isEmpty() )
             {
                 idleChannels.remove( catchUpAddress );
@@ -115,6 +143,10 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
     interface Channel
     {
         AdvertisedSocketAddress destination();
+
+        void connect() throws Exception;
+
+        boolean isActive();
 
         void close();
     }

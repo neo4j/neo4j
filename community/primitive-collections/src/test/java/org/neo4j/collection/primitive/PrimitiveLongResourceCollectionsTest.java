@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,7 +35,7 @@ public class PrimitiveLongResourceCollectionsTest
     // ITERATOR
 
     @Test
-    public void simpleIterator() throws Exception
+    public void simpleIterator()
     {
         // Given
         CountingResource resource = new CountingResource();
@@ -54,7 +54,7 @@ public class PrimitiveLongResourceCollectionsTest
     // FILTER
 
     @Test
-    public void filterItems() throws Exception
+    public void filterItems()
     {
         // Given
         CountingResource resource = new CountingResource();
@@ -76,7 +76,7 @@ public class PrimitiveLongResourceCollectionsTest
     // CONCAT
 
     @Test
-    public void concatIterators() throws Exception
+    public void concatIterators()
     {
         // Given
         CountingResource resource = new CountingResource();

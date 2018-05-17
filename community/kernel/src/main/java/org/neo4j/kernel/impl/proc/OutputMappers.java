@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,10 +31,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
@@ -83,7 +83,7 @@ public class OutputMappers
         }
     }
 
-    public static OutputMapper VOID_MAPPER = new OutputMapper( new FieldSignature[0], new FieldMapper[0] )
+    private static final OutputMapper VOID_MAPPER = new OutputMapper( new FieldSignature[0], new FieldMapper[0] )
     {
         @Override
         public List<FieldSignature> signature()
@@ -98,18 +98,18 @@ public class OutputMappers
     private static class FieldMapper
     {
         private final MethodHandle getter;
-        private final TypeMappers.NeoValueConverter mapper;
+        private final TypeMappers.TypeChecker checker;
 
-        FieldMapper( MethodHandle getter, TypeMappers.NeoValueConverter mapper )
+        FieldMapper( MethodHandle getter, TypeMappers.TypeChecker checker )
         {
             this.getter = getter;
-            this.mapper = mapper;
+            this.checker = checker;
         }
 
         Object apply( Object record ) throws ProcedureException
         {
             Object invoke = getValue( record );
-            return mapper.toNeoValue( invoke );
+            return checker.typeCheck( invoke );
         }
 
         private Object getValue( Object record ) throws ProcedureException
@@ -196,12 +196,12 @@ public class OutputMappers
 
             try
             {
-                TypeMappers.NeoValueConverter mapper = typeMappers.converterFor( field.getGenericType() );
+                TypeMappers.TypeChecker checker = typeMappers.checkerFor( field.getGenericType() );
                 MethodHandle getter = lookup.unreflectGetter( field );
-                FieldMapper fieldMapper = new FieldMapper( getter, mapper );
+                FieldMapper fieldMapper = new FieldMapper( getter, checker );
 
                 fieldMappers[i] = fieldMapper;
-                signature[i] = FieldSignature.outputField( field.getName(), mapper.type(), field.isAnnotationPresent( Deprecated.class ) );
+                signature[i] = FieldSignature.outputField( field.getName(), checker.type(), field.isAnnotationPresent( Deprecated.class ) );
             }
             catch ( ProcedureException e )
             {

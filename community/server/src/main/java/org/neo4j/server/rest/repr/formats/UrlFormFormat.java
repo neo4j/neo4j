@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.server.rest.repr.BadInputException;
@@ -74,7 +73,7 @@ public class UrlFormFormat extends RepresentationFormat
     }
 
     @Override
-    public Object readValue( final String input ) throws BadInputException
+    public Object readValue( final String input )
     {
         throw new RuntimeException( "Not implemented!" );
     }
@@ -82,13 +81,13 @@ public class UrlFormFormat extends RepresentationFormat
     @Override
     public Map<String, Object> readMap( final String input, String... requiredKeys ) throws BadInputException
     {
-        HashMap<String, Object> result = new HashMap<String, Object>();
+        HashMap<String, Object> result = new HashMap<>();
         if ( input.isEmpty() )
         {
             return result;
         }
 
-        for ( String pair : input.split( "\\&" ) )
+        for ( String pair : input.split( "&" ) )
         {
             String[] fields = pair.split( "=" );
             String key;
@@ -119,7 +118,7 @@ public class UrlFormFormat extends RepresentationFormat
                 }
                 else
                 {
-                    list = new ArrayList<Object>();
+                    list = new ArrayList<>();
                     result.put( key, list );
                     list.add( old );
                 }
@@ -140,13 +139,13 @@ public class UrlFormFormat extends RepresentationFormat
     }
 
     @Override
-    public List<Object> readList( final String input ) throws BadInputException
+    public List<Object> readList( final String input )
     {
         throw new RuntimeException( "Not implemented!" );
     }
 
     @Override
-    public URI readUri( final String input ) throws BadInputException
+    public URI readUri( final String input )
     {
         throw new RuntimeException( "Not implemented!" );
     }

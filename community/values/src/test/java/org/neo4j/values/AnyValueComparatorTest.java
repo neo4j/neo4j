@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -32,19 +32,25 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.VirtualValueTestUtil;
 
 import static java.lang.String.format;
+import static org.neo4j.values.storable.DateTimeValue.datetime;
+import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.DurationValue.duration;
+import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
+import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.map;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
-import static org.neo4j.values.virtual.VirtualValues.edge;
-import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.relationships;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 import static org.neo4j.values.virtual.VirtualValues.node;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
+import static org.neo4j.values.virtual.VirtualValues.relationship;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 public class AnyValueComparatorTest
 {
@@ -76,10 +82,10 @@ public class AnyValueComparatorTest
             node( 3L ),
 
             // Edge
-            edge( 1L ),
-            edgeValue( 2L, nodeValue( 1L, stringArray( "L" ), emptyMap() ),
+            relationship( 1L ),
+            relationshipValue( 2L, nodeValue( 1L, stringArray( "L" ), emptyMap() ),
                     nodeValue( 2L, stringArray( "L" ), emptyMap() ), stringValue( "type" ), emptyMap() ),
-            edge( 3L ),
+            relationship( 3L ),
 
             // LIST AND STORABLE ARRAYS
 
@@ -103,22 +109,28 @@ public class AnyValueComparatorTest
             new int[]{4, 1},
 
             // Path
-            path( nodes( 1L ), edges() ),
-            path( nodes( 1L, 2L ), edges( 1L ) ),
-            path( nodes( 1L, 2L, 3L ), edges( 1L, 2L ) ),
-            path( nodes( 1L, 2L, 3L ), edges( 1L, 3L ) ),
-            path( nodes( 1L, 2L, 3L, 4L ), edges( 1L, 3L, 4L ) ),
-            path( nodes( 1L, 2L, 3L, 4L ), edges( 1L, 4L, 2L ) ),
-            path( nodes( 1L, 2L, 3L ), edges( 2L, 3L ) ),
-            path( nodes( 1L, 2L ), edges( 3L ) ),
-            path( nodes( 2L ), edges() ),
-            path( nodes( 2L, 1L ), edges( 1L ) ),
-            path( nodes( 3L ), edges() ),
-            path( nodes( 4L, 5L ), edges( 2L ) ),
-            path( nodes( 5L, 4L ), edges( 2L ) ),
+            path( nodes( 1L ), relationships() ),
+            path( nodes( 1L, 2L ), relationships( 1L ) ),
+            path( nodes( 1L, 2L, 3L ), relationships( 1L, 2L ) ),
+            path( nodes( 1L, 2L, 3L ), relationships( 1L, 3L ) ),
+            path( nodes( 1L, 2L, 3L, 4L ), relationships( 1L, 3L, 4L ) ),
+            path( nodes( 1L, 2L, 3L, 4L ), relationships( 1L, 4L, 2L ) ),
+            path( nodes( 1L, 2L, 3L ), relationships( 2L, 3L ) ),
+            path( nodes( 1L, 2L ), relationships( 3L ) ),
+            path( nodes( 2L ), relationships() ),
+            path( nodes( 2L, 1L ), relationships( 1L ) ),
+            path( nodes( 3L ), relationships() ),
+            path( nodes( 4L, 5L ), relationships( 2L ) ),
+            path( nodes( 5L, 4L ), relationships( 2L ) ),
 
             // SCALARS
             pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0 ),
+            datetime(2018, 2, 2, 0, 0, 0, 0, "+00:00"),
+            localDateTime(2018, 2, 2, 0, 0, 0, 0),
+            date(2018, 2, 1),
+            time(12, 0, 0, 0, "+00:00"),
+            localTime(0, 0, 0, 1),
+            duration(0, 0, 0, 0),
             "hello",
             true,
             1L,
@@ -173,6 +185,6 @@ public class AnyValueComparatorTest
 
     private int sign( int value )
     {
-        return value == 0 ? 0 : (value < 0 ? -1 : +1);
+        return Integer.compare( value, 0 );
     }
 }

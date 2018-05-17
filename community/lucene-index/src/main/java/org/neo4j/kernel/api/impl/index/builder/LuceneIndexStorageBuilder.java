@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,7 +37,6 @@ public class LuceneIndexStorageBuilder
     private FileSystemAbstraction fileSystem;
     private File indexRootFolder;
     private PartitionedIndexStorage indexStorage;
-    private boolean archiveFailed;
 
     private LuceneIndexStorageBuilder()
     {
@@ -65,7 +64,7 @@ public class LuceneIndexStorageBuilder
             Objects.requireNonNull( directoryFactory );
             Objects.requireNonNull( fileSystem );
             Objects.requireNonNull( indexRootFolder );
-            indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, archiveFailed );
+            indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder );
         }
         return indexStorage;
     }
@@ -115,12 +114,6 @@ public class LuceneIndexStorageBuilder
     public LuceneIndexStorageBuilder withIndexStorage( PartitionedIndexStorage indexStorage )
     {
         this.indexStorage = indexStorage;
-        return this;
-    }
-
-    public LuceneIndexStorageBuilder archivingFailed( boolean archiveFailed )
-    {
-        this.archiveFailed = archiveFailed;
         return this;
     }
 }

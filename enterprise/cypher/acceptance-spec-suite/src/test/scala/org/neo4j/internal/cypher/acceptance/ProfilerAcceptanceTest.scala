@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -360,8 +363,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         val result = legacyProfile(query)
 
         // then
-        val expectedTxCount = 1 + // First tx used to compile the query
-                              10  // One per 10 rows of CSV file
+        val expectedTxCount = 10  // One per 10 rows of CSV file
 
         graph.txCounts-initialTxCounts should equal(TxCounts(commits = expectedTxCount))
         result.queryStatistics().containsUpdates should equal(true)
@@ -420,7 +422,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
         //THEN
         assertDbHits(7)(result)("Expand(All)")
-        assertDbHits(2)(result)("NodeUniqueIndexSeek")
+        assertDbHits(3)(result)("NodeUniqueIndexSeek")
        }
 
       test("should show expand without types in a simple form") {
@@ -432,7 +434,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
       test("should show expand with types in a simple form") {
         val result = profileWithExecute(Configs.All + Configs.Morsel, "match (n)-[r:T]->() return *")
 
-        result.executionPlanDescription().toString should include("(n)-[r:T]->()")
+        result.executionPlanDescription().toString should include("()<-[r:T]-(n)")
       }
 
       test("should report correct dbhits and rows for label scan") {
@@ -595,8 +597,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         val a2 = createLabeledNode("Artist")
         val c = createLabeledNode("Concert")
         val v = createLabeledNode("Venue")
-        relate(corp, a1, "SIGNED_WITH")
-        relate(corp, a2, "SIGNED_WITH")
+        relate(a1, corp, "SIGNED_WITH")
+        relate(a2, corp, "SIGNED_WITH")
         relate(a1, c, "PERFORMED_AT")
         relate(a2, c, "PERFORMED_AT")
         relate(c, v, "IN")
@@ -610,7 +612,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
         //when
         val result = innerExecuteDeprecated(query, Map.empty)
-    //    val result = profileWithPlannerNew(Configs.AllExceptSlotted, query, Map.empty)
+
+        result.toSet should be(Set(
+          Map("a1" -> a1, "a2" -> a2, "v" -> v),
+          Map("a1" -> a1, "a2" -> a1, "v" -> v),
+          Map("a1" -> a2, "a2" -> a1, "v" -> v),
+          Map("a1" -> a2, "a2" -> a2, "v" -> v)))
 
         //then
         assertDbHits(2)(result)("NodeByLabelScan")
@@ -661,19 +668,19 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
+      plan => assert(getArgument[Rows](plan).value === expectedRows, s" wrong row count for plan: ${plan.name}")
     }
   }
 
   private def assertEstimatedRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[EstimatedRows](plan).value, s" wrong estiamted row count for plan: ${plan.name}")
+      plan => assert(getArgument[EstimatedRows](plan).value === expectedRows , s" wrong estiamted row count for plan: ${plan.name}")
     }
   }
 
   private def assertDbHits(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[DbHits](plan).value, s" wrong db hits for plan: ${plan.name}")
+      plan => assert(getArgument[DbHits](plan).value === expectedRows , s" wrong db hits for plan: ${plan.name}")
     }
   }
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,15 +34,17 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.SimpleDataGenerator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.ImportStage;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.IdType.INTEGER;
@@ -69,14 +71,13 @@ public class HumanUnderstandableExecutionMonitorIT
         CapturingMonitor progress = new CapturingMonitor();
         HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( System.out, progress, NO_EXTERNAL_MONITOR );
         IdType idType = INTEGER;
-        SimpleDataGenerator generator = new SimpleDataGenerator( bareboneNodeHeader( idType, new Extractors( ';' ) ),
-                bareboneRelationshipHeader( idType, new Extractors( ';' ) ), random.seed(), NODE_COUNT, 1, 1, idType, 0, 0 );
-        Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, generator.nodes(), generator.relationships(), idType,
-                Collector.EMPTY );
+        Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, Collector.EMPTY, random.seed(),
+                0, bareboneNodeHeader( idType, new Extractors( ';' ) ), bareboneRelationshipHeader( idType, new Extractors( ';' ) ),
+                1, 1, 0, 0 );
 
         // when
         new ParallelBatchImporter( storage.directory().absolutePath(), storage.fileSystem(), storage.pageCache(), DEFAULT,
-                NullLogService.getInstance(), monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS ).doImport( input );
+                NullLogService.getInstance(), monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS, NO_MONITOR ).doImport( input );
 
         // then
         progress.assertAllProgressReachedEnd();

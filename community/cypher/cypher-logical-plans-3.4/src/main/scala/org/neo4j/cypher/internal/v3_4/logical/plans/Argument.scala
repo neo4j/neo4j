@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,24 +19,21 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
-import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SameId}
 
 /**
   * Produce a single row with the contents of argument
   */
-case class Argument(argumentIds: Set[IdName] = Set.empty)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan {
+case class Argument(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
 
-  def availableSymbols: Set[IdName] = argumentIds
+  override val availableSymbols: Set[String] = argumentIds
 
-  override def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): Argument =
-    copy(argumentIds)(newSolved)
-
-  override def copyPlan(): LogicalPlan = this.copy(argumentIds)(solved).asInstanceOf[this.type]
+  override def copyPlan(): LogicalPlan = {
+    this.copy(argumentIds)(SameId(this.id)).asInstanceOf[this.type]
+  }
 
   override def dup(children: Seq[AnyRef]) = children.size match {
     case 1 =>
-      copy(children.head.asInstanceOf[Set[IdName]])(solved).asInstanceOf[this.type]
+      copy(children.head.asInstanceOf[Set[String]])(SameId(this.id)).asInstanceOf[this.type]
   }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -43,7 +43,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -60,7 +60,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.locking.LockService.LockType;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
@@ -68,7 +68,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 {
     public UniqueConstraintCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1, 2 ) );
+        super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1, 2 ) );
     }
 
     /*
@@ -77,7 +77,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
      *
      * We have two supported providers:
      *  - InMemoryIndexProvider
-     *  - LuceneSchemaIndexProvider
+     *  - LuceneIndexProvider
      *
      * An index can be in a number of states, two of which are interesting:
      *  - ONLINE: the index is in active duty
@@ -132,7 +132,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     public void setUp()
     {
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
-        dbFactory.setKernelExtensions( Collections.singletonList( new PredefinedSchemaIndexProviderFactory( indexProvider ) ) );
+        dbFactory.setKernelExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) );
         db = dbFactory.newImpermanentDatabase( graphDbDir );
     }
 
@@ -191,7 +191,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     }
 
     @Test
-    public void onlineConstraintShouldNotFalselyCollideOnFindNodesByLabelAndProperty() throws Exception
+    public void onlineConstraintShouldNotFalselyCollideOnFindNodesByLabelAndProperty()
     {
         // Given
         givenOnlineConstraint();
@@ -253,7 +253,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     }
 
     @Test( expected = ConstraintViolationException.class )
-    public void onlineConstraintShouldRejectConflictsInTheSameTransaction() throws Exception
+    public void onlineConstraintShouldRejectConflictsInTheSameTransaction()
     {
         // Given
         givenOnlineConstraint();
@@ -268,7 +268,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     @Test
     public void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValueThatOtherTransactionsAreRemoving()
-            throws Exception
     {
         // Given
         givenOnlineConstraint();
@@ -943,14 +942,14 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private final Map<Transaction,KernelTransaction> txMap = new IdentityHashMap<>();
 
-    private void suspend( Transaction tx ) throws Exception
+    private void suspend( Transaction tx )
     {
         ThreadToStatementContextBridge txManager = getTransactionManager();
         txMap.put( tx, txManager.getTopLevelTransactionBoundToThisThread( true ) );
         txManager.unbindTransactionFromCurrentThread();
     }
 
-    private void resume( Transaction tx ) throws Exception
+    private void resume( Transaction tx )
     {
         ThreadToStatementContextBridge txManager = getTransactionManager();
         txManager.bindTransactionToCurrentThread( txMap.remove(tx) );
@@ -991,12 +990,12 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         }
     }
 
-    private static class PredefinedSchemaIndexProviderFactory extends KernelExtensionFactory<PredefinedSchemaIndexProviderFactory.NoDeps>
+    private static class PredefinedIndexProviderFactory extends KernelExtensionFactory<PredefinedIndexProviderFactory.NoDeps>
     {
-        private final SchemaIndexProvider indexProvider;
+        private final IndexProvider indexProvider;
 
         @Override
-        public Lifecycle newInstance( KernelContext context, NoDeps noDeps ) throws Throwable
+        public Lifecycle newInstance( KernelContext context, NoDeps noDeps )
         {
             return indexProvider;
         }
@@ -1005,7 +1004,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         {
         }
 
-        PredefinedSchemaIndexProviderFactory( SchemaIndexProvider indexProvider )
+        PredefinedIndexProviderFactory( IndexProvider indexProvider )
         {
             super( indexProvider.getClass().getSimpleName() );
             this.indexProvider = indexProvider;

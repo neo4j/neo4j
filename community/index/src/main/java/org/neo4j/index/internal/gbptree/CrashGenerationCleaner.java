@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -34,7 +34,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * Scans the entire tree and checks all GSPPs, replacing all CRASH gen GSPs with zeros.
@@ -50,7 +49,6 @@ class CrashGenerationCleaner
     private final long stableGeneration;
     private final long unstableGeneration;
     private final Monitor monitor;
-    private final long internalMaxKeyCount;
 
     CrashGenerationCleaner( PagedFile pagedFile, TreeNode<?,?> treeNode, long lowTreeNodeId, long highTreeNodeId,
             long stableGeneration, long unstableGeneration, Monitor monitor )
@@ -65,7 +63,6 @@ class CrashGenerationCleaner
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.monitor = monitor;
-        this.internalMaxKeyCount = treeNode.internalMaxKeyCount();
     }
 
     // === Methods about the execution and threading ===
@@ -110,7 +107,7 @@ class CrashGenerationCleaner
         Throwable finalError = error.get();
         if ( finalError != null )
         {
-            throw launderedException( IOException.class, finalError );
+            throw new IOException( finalError );
         }
 
         long endTime = currentTimeMillis();
@@ -182,7 +179,7 @@ class CrashGenerationCleaner
 
             if ( !hasCrashed && TreeNode.isInternal( cursor ) )
             {
-                for ( int i = 0; i <= keyCount && i <= internalMaxKeyCount && !hasCrashed; i++ )
+                for ( int i = 0; i <= keyCount && treeNode.reasonableChildCount( i ) && !hasCrashed; i++ )
                 {
                     hasCrashed = hasCrashedGSPP( cursor, treeNode.childOffset( i ) );
                 }
@@ -216,7 +213,7 @@ class CrashGenerationCleaner
         if ( TreeNode.isInternal( cursor ) )
         {
             int keyCount = TreeNode.keyCount( cursor );
-            for ( int i = 0; i <= keyCount && i <= internalMaxKeyCount; i++ )
+            for ( int i = 0; i <= keyCount && treeNode.reasonableChildCount( i ); i++ )
             {
                 cleanCrashedGSPP( cursor, treeNode.childOffset( i ), cleanedPointers );
             }

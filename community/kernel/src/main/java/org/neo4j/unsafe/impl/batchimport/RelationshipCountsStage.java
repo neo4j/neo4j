@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -27,8 +27,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
-
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.RECYCLE_BATCHES;
 
 /**
  * Reads all records from {@link RelationshipStore} and process the counts in them. Uses a {@link NodeLabelsCache}
@@ -42,10 +42,10 @@ public class RelationshipCountsStage extends Stage
             int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
             NumberArrayFactory cacheFactory, ProgressReporter progressReporter )
     {
-        super( NAME, null, config, 0 );
+        super( NAME, null, config, RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allIn( relationshipStore, config ),
                 relationshipStore.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, relationshipStore, null ) );
+        add( new ReadRecordsStep<>( control(), config, false, relationshipStore ) );
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
                 highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter ) );
     }

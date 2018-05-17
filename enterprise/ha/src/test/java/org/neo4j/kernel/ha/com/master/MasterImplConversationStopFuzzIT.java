@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.ha.com.master;
 
@@ -23,7 +26,6 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -42,7 +44,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
 import org.neo4j.kernel.ha.cluster.DefaultConversationSPI;
@@ -55,7 +57,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -92,7 +94,7 @@ public class MasterImplConversationStopFuzzIT
 
     private final LifeSupport life = new LifeSupport();
     private final ExecutorService executor = Executors.newFixedThreadPool( numberOfWorkers + 1 );
-    private final JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
+    private final JobScheduler scheduler = life.add( new CentralJobScheduler() );
     private final Config config = Config.defaults( stringMap( server_id.name(), "0", lock_read_timeout.name(), "1" ) );
     private final Locks locks = new ForsetiLockManager( Config.defaults(), Clocks.systemClock(),
             ResourceTypes.NODE, ResourceTypes.LABEL );
@@ -106,7 +108,7 @@ public class MasterImplConversationStopFuzzIT
             .build();
 
     @After
-    public void cleanup() throws InterruptedException
+    public void cleanup()
     {
         life.shutdown();
         executor.shutdownNow();
@@ -255,7 +257,7 @@ public class MasterImplConversationStopFuzzIT
             CLOSING_SESSION
                     {
                         @Override
-                        State next( SlaveEmulatorWorker worker ) throws Exception
+                        State next( SlaveEmulatorWorker worker )
                         {
                             if ( lowProbabilityEvent( worker ) )
                             {
@@ -272,7 +274,7 @@ public class MasterImplConversationStopFuzzIT
             abstract State next( SlaveEmulatorWorker worker ) throws Exception;
 
             protected State commit( SlaveEmulatorWorker worker, RequestContext requestContext )
-                    throws IOException, TransactionFailureException
+                    throws TransactionFailureException
             {
                 try
                 {
@@ -348,7 +350,6 @@ public class MasterImplConversationStopFuzzIT
 
         @Override
         public long applyPreparedTransaction( TransactionRepresentation preparedTransaction )
-                throws IOException, TransactionFailureException
         {
             // sleeping here and hope to be noticed by conversation killer.
             sleep();
@@ -368,7 +369,7 @@ public class MasterImplConversationStopFuzzIT
         }
 
         @Override
-        public long getTransactionChecksum( long txId ) throws IOException
+        public long getTransactionChecksum( long txId )
         {
             return 0;
         }

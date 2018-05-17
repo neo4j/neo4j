@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -76,7 +76,7 @@ public class StorageLayerLabelTest extends StorageLayerTest
     }
 
     @Test
-    public void labels_should_not_leak_out_as_properties() throws Exception
+    public void labels_should_not_leak_out_as_properties()
     {
         // GIVEN
         Node node = createLabeledNode( db, map( "name", "Node" ), label1 );
@@ -86,7 +86,7 @@ public class StorageLayerLabelTest extends StorageLayerTest
     }
 
     @Test
-    public void should_return_all_nodes_with_label() throws Exception
+    public void should_return_all_nodes_with_label()
     {
         // GIVEN
         Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label1 );

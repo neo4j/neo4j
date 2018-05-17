@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.procedure;
 
@@ -124,7 +127,7 @@ public class ProcedureIT
     public static boolean[] onCloseCalled;
 
     @Test
-    public void shouldCallProcedureWithParameterMap() throws Throwable
+    public void shouldCallProcedureWithParameterMap()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -139,7 +142,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithDefaultArgument() throws Throwable
+    public void shouldCallProcedureWithDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.simpleArgumentWithDefault" );
@@ -150,7 +153,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallYieldProcedureWithDefaultArgument() throws Throwable
+    public void shouldCallYieldProcedureWithDefaultArgument()
     {
         // Given/When
         Result res = db.execute(
@@ -162,7 +165,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithAllDefaultArgument() throws Throwable
+    public void shouldCallProcedureWithAllDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.defaultValues" );
@@ -173,7 +176,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithOneProvidedRestDefaultArgument() throws Throwable
+    public void shouldCallProcedureWithOneProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string')");
@@ -184,7 +187,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithTwoProvidedRestDefaultArgument() throws Throwable
+    public void shouldCallProcedureWithTwoProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string', 1337)");
@@ -195,7 +198,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithThreeProvidedRestDefaultArgument() throws Throwable
+    public void shouldCallProcedureWithThreeProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string', 1337, 2.718281828)");
@@ -206,7 +209,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithFourProvidedRestDefaultArgument() throws Throwable
+    public void shouldCallProcedureWithFourProvidedRestDefaultArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string', 1337, 2.718281828, false)");
@@ -217,7 +220,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveNiceErrorMessageOnWrongStaticType() throws Throwable
+    public void shouldGiveNiceErrorMessageOnWrongStaticType()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -232,7 +235,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveNiceErrorMessageWhenNoArguments() throws Throwable
+    public void shouldGiveNiceErrorMessageWhenNoArguments()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -249,7 +252,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveNiceErrorWhenMissingArgumentsToVoidFunction() throws Throwable
+    public void shouldGiveNiceErrorWhenMissingArgumentsToVoidFunction()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -266,7 +269,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldShowDescriptionWhenMissingArguments() throws Throwable
+    public void shouldShowDescriptionWhenMissingArguments()
     {
         //Expect
         exception.expect( QueryExecutionException.class );
@@ -284,7 +287,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallDelegatingProcedure() throws Throwable
+    public void shouldCallDelegatingProcedure()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -299,7 +302,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallRecursiveProcedure() throws Throwable
+    public void shouldCallRecursiveProcedure()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -314,7 +317,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithGenericArgument() throws Throwable
+    public void shouldCallProcedureWithGenericArgument()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -331,7 +334,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithMapArgument() throws Throwable
+    public void shouldCallProcedureWithMapArgument()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -347,7 +350,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithMapArgumentDefaultingToNull() throws Throwable
+    public void shouldCallProcedureWithMapArgumentDefaultingToNull()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -363,7 +366,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithMapArgumentDefaultingToMap() throws Throwable
+    public void shouldCallProcedureWithMapArgumentDefaultingToMap()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -379,14 +382,13 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithListWithDefault() throws Throwable
+    public void shouldCallProcedureWithListWithDefault()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute(
-                    "CALL org.neo4j.procedure.listWithDefault" );
+            Result res = db.execute( "CALL org.neo4j.procedure.listWithDefault" );
 
             // Then
             assertThat( res.next(), equalTo( map( "list", asList( 42L, 1337L ) ) ) );
@@ -395,18 +397,81 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithGenericListWithDefault() throws Throwable
+    public void shouldCallProcedureWithGenericListWithDefault()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute(
-                    "CALL org.neo4j.procedure.genericListWithDefault" );
+            Result res = db.execute( "CALL org.neo4j.procedure.genericListWithDefault" );
 
             // Then
             assertThat( res.next(), equalTo( map( "list", asList( 42L, 1337L ) ) ) );
             assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithByteArrayWithParameter() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.incrBytes($param)", map( "param", new byte[]{4, 5, 6} ) );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{5, 6, 7} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithByteArrayWithParameterAndYield() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "WITH $param AS b CALL org.neo4j.procedure.incrBytes(b) YIELD bytes RETURN bytes", map( "param", new byte[]{7, 8, 9} ) );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{8, 9, 10} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithByteArrayWithParameterAndYieldAndParameterReuse() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "WITH $param AS param CALL org.neo4j.procedure.incrBytes(param) YIELD bytes RETURN bytes, param",
+                    map( "param", new byte[]{10, 11, 12} ) );
+
+            // Then
+            assertTrue(res.hasNext());
+            Map<String,Object> results = res.next();
+            assertFalse( res.hasNext() );
+            assertThat( results.get( "bytes" ), equalTo( new byte[]{11, 12, 13} ) );
+            assertThat( results.get( "param" ), equalTo( new byte[]{10, 11, 12} ) );
+        }
+    }
+
+    @Test
+    public void shouldNotBeAbleCallWithCypherLiteralInByteArrayProcedure() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Cannot convert 1 to byte for input to procedure" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            Result result = db.execute( "CALL org.neo4j.procedure.incrBytes([1,2,3])" );
+            result.next();
         }
     }
 
@@ -427,7 +492,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureListWithNullInList() throws Throwable
+    public void shouldCallProcedureListWithNullInList()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -443,7 +508,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithNodeReturn() throws Throwable
+    public void shouldCallProcedureWithNodeReturn()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -461,7 +526,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureReturningNull() throws Throwable
+    public void shouldCallProcedureReturningNull()
     {
         Result res = db.execute( "CALL org.neo4j.procedure.node(-1)");
 
@@ -470,7 +535,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallYieldProcedureReturningNull() throws Throwable
+    public void shouldCallYieldProcedureReturningNull()
     {
         Result res = db.execute( "CALL org.neo4j.procedure.node(-1) YIELD node as node RETURN node");
 
@@ -479,7 +544,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnMissingProcedure() throws Throwable
+    public void shouldGiveHelpfulErrorOnMissingProcedure()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -492,7 +557,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnExceptionMidStream() throws Throwable
+    public void shouldGiveHelpfulErrorOnExceptionMidStream()
     {
         // Given
         // run in tx to avoid having to wait for tx rollback on shutdown
@@ -503,9 +568,8 @@ public class ProcedureIT
             // Expect
             exception.expect( QueryExecutionException.class );
             exception.expectMessage(
-                    "Failed to call procedure `org.neo4j.procedure.throwsExceptionInStream() :: (someVal :: INTEGER?)" +
-                    "`: " +
-                    "Kaboom" );
+                    "Failed to invoke procedure `org.neo4j.procedure.throwsExceptionInStream`: " +
+                            "Caused by: java.lang.RuntimeException: Kaboom" );
 
             // When
             result.next();
@@ -513,7 +577,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldShowCauseOfError() throws Throwable
+    public void shouldShowCauseOfError()
     {
         // Given
         // run in tx to avoid having to wait for tx rollback on shutdown
@@ -530,7 +594,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithAccessToDB() throws Throwable
+    public void shouldCallProcedureWithAccessToDB()
     {
         // When
         try ( Transaction ignore = db.beginTx() )
@@ -549,7 +613,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldLogLikeThereIsNoTomorrow() throws Throwable
+    public void shouldLogLikeThereIsNoTomorrow()
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -583,7 +647,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldDenyReadOnlyProcedureToPerformWrites() throws Throwable
+    public void shouldDenyReadOnlyProcedureToPerformWrites()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -597,7 +661,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldAllowWriteProcedureToPerformWrites() throws Throwable
+    public void shouldAllowWriteProcedureToPerformWrites()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -615,7 +679,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void readProceduresShouldPresentThemSelvesAsReadQueries() throws Throwable
+    public void readProceduresShouldPresentThemSelvesAsReadQueries()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -627,7 +691,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void readProceduresWithYieldShouldPresentThemSelvesAsReadQueries() throws Throwable
+    public void readProceduresWithYieldShouldPresentThemSelvesAsReadQueries()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -639,7 +703,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void writeProceduresShouldPresentThemSelvesAsWriteQueries() throws Throwable
+    public void writeProceduresShouldPresentThemSelvesAsWriteQueries()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -651,7 +715,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void writeProceduresWithYieldShouldPresentThemSelvesAsWriteQueries() throws Throwable
+    public void writeProceduresWithYieldShouldPresentThemSelvesAsWriteQueries()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -663,7 +727,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotBeAbleToCallWriteProcedureThroughReadProcedure() throws Throwable
+    public void shouldNotBeAbleToCallWriteProcedureThroughReadProcedure()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -677,7 +741,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotBeAbleToCallReadProcedureThroughWriteProcedureInWriteOnlyTransaction() throws Throwable
+    public void shouldNotBeAbleToCallReadProcedureThroughWriteProcedureInWriteOnlyTransaction()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -693,7 +757,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToCallWriteProcedureThroughWriteProcedure() throws Throwable
+    public void shouldBeAbleToCallWriteProcedureThroughWriteProcedure()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -711,7 +775,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotBeAbleToCallSchemaProcedureThroughWriteProcedureInWriteTransaction() throws Throwable
+    public void shouldNotBeAbleToCallSchemaProcedureThroughWriteProcedureInWriteTransaction()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -727,7 +791,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldDenyReadOnlyProcedureToPerformSchema() throws Throwable
+    public void shouldDenyReadOnlyProcedureToPerformSchema()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -742,7 +806,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldDenyReadWriteProcedureToPerformSchema() throws Throwable
+    public void shouldDenyReadWriteProcedureToPerformSchema()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -758,7 +822,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldAllowSchemaProcedureToPerformSchema() throws Throwable
+    public void shouldAllowSchemaProcedureToPerformSchema()
     {
         // Give
         try ( Transaction tx = db.beginTx() )
@@ -777,7 +841,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldAllowSchemaCallReadOnly() throws Throwable
+    public void shouldAllowSchemaCallReadOnly()
     {
         // Given
         long nodeId;
@@ -800,7 +864,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldDenySchemaProcedureToPerformWrite() throws Throwable
+    public void shouldDenySchemaProcedureToPerformWrite()
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -815,7 +879,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingProcedure() throws Throwable
+    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingProcedure()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -830,7 +894,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCoerceListOfNumbersToDoublesAtRuntimeWhenCallingProcedure() throws Throwable
+    public void shouldCoerceListOfNumbersToDoublesAtRuntimeWhenCallingProcedure()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -846,7 +910,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCoerceListOfMixedNumbers() throws Throwable
+    public void shouldCoerceListOfMixedNumbers()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -862,7 +926,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCoerceDoubleToLongAtRuntimeWhenCallingProcedure() throws Throwable
+    public void shouldCoerceDoubleToLongAtRuntimeWhenCallingProcedure()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -877,7 +941,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToCallVoidProcedure() throws Throwable
+    public void shouldBeAbleToCallVoidProcedure()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -888,7 +952,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToCallVoidProcedureWithDefaultValue() throws Throwable
+    public void shouldBeAbleToCallVoidProcedureWithDefaultValue()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -900,7 +964,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToCallDelegatingVoidProcedure() throws Throwable
+    public void shouldBeAbleToCallDelegatingVoidProcedure()
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -911,7 +975,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyProcedure() throws Throwable
+    public void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyProcedure()
     {
         // When
         try ( Transaction tx = db.beginTx() )
@@ -1055,7 +1119,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureReturningPaths() throws Throwable
+    public void shouldCallProcedureReturningPaths()
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
@@ -1080,7 +1144,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallStreamCloseWhenResultExhausted() throws Throwable
+    public void shouldCallStreamCloseWhenResultExhausted()
     {
         String query = "CALL org.neo4j.procedure.onCloseProcedure(0)";
 
@@ -1098,7 +1162,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallStreamCloseWhenResultFiltered() throws Throwable
+    public void shouldCallStreamCloseWhenResultFiltered()
     {
         // This query should return zero rows
         String query = "CALL org.neo4j.procedure.onCloseProcedure(1) YIELD someVal WITH someVal WHERE someVal = 1337 RETURN someVal";
@@ -1175,7 +1239,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotAllowReadProcedureInNoneTransaction() throws Throwable
+    public void shouldNotAllowReadProcedureInNoneTransaction()
     {
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -1192,7 +1256,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotAllowWriteProcedureInReadOnlyTransaction() throws Throwable
+    public void shouldNotAllowWriteProcedureInReadOnlyTransaction()
     {
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -1209,7 +1273,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldNotAllowSchemaWriteProcedureInWriteTransaction() throws Throwable
+    public void shouldNotAllowSchemaWriteProcedureInWriteTransaction()
     {
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -1226,7 +1290,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithDefaultNodeArgument() throws Throwable
+    public void shouldCallProcedureWithDefaultNodeArgument()
     {
         //Given/When
         Result res = db.execute( "CALL org.neo4j.procedure.nodeWithDefault" );
@@ -1237,7 +1301,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldIndicateDefaultValueWhenListingProcedures() throws Throwable
+    public void shouldIndicateDefaultValueWhenListingProcedures()
     {
         // Given/When
         List<Map<String,Object>> results = db.execute( "CALL dbms.procedures()" ).stream().filter( record ->
@@ -1249,7 +1313,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldShowDescriptionWhenListingProcedures() throws Throwable
+    public void shouldShowDescriptionWhenListingProcedures()
     {
         // Given/When
         List<Map<String,Object>> results = db.execute( "CALL dbms.procedures()" ).stream().filter( record ->
@@ -1261,7 +1325,19 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldIndicateDefaultValueWhenListingFunctions() throws Throwable
+    public void shouldShowModeWhenListingProcedures()
+    {
+        // Given/When
+        List<Map<String,Object>> results = db.execute( "CALL dbms.procedures()" ).stream().filter( record ->
+                record.get( "name" ).equals( "org.neo4j.procedure.nodeWithDescription" ) )
+                .collect( Collectors.toList() );
+        // Then
+        assertFalse( "Expected to find test procedure", results.isEmpty() );
+        assertThat( results.get( 0 ).get( "mode" ), equalTo( "WRITE" ) );
+    }
+
+    @Test
+    public void shouldIndicateDefaultValueWhenListingFunctions()
     {
         // Given/When
         List<Map<String,Object>> results = db.execute( "CALL dbms.functions()" ).stream().filter( record ->
@@ -1273,7 +1349,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldShowDescriptionWhenListingFunctions() throws Throwable
+    public void shouldShowDescriptionWhenListingFunctions()
     {
         // Given/When
         List<Map<String,Object>> results = db.execute( "CALL dbms.functions()" ).stream().filter( record ->
@@ -1282,6 +1358,75 @@ public class ProcedureIT
         // Then
         assertFalse( "Expected to find test function", results.isEmpty() );
         assertThat( results.get( 0 ).get( "description" ), equalTo( "This is a description" ) );
+    }
+
+    @Test
+    public void shouldCallFunctionWithByteArrayWithParameter() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "RETURN org.neo4j.procedure.decrBytes($param) AS bytes", map( "param", new byte[]{4, 5, 6} ) );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{3, 4, 5} ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallFuctionWithByteArrayWithBoundLiteral() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res =
+                    db.execute( "WITH $param AS param RETURN org.neo4j.procedure.decrBytes(param) AS bytes, param", map( "param", new byte[]{10, 11, 12} ) );
+
+            // Then
+            assertTrue(res.hasNext());
+            Map<String,Object> results = res.next();
+            assertFalse( res.hasNext() );
+            assertThat( results.get( "bytes" ), equalTo( new byte[]{9, 10, 11} ) );
+            assertThat( results.get( "param" ), equalTo( new byte[]{10, 11, 12} ) );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowNonByteValuesInImplicitByteArrayConversionWithUserDefinedFunction() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Cannot convert 1 to byte for input to procedure" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
+            Result result = db.execute( "RETURN org.neo4j.procedure.decrBytes([1,2,5]) AS bytes" );
+            result.next();
+        }
+    }
+
+    @Test
+    public void shouldCallAggregationFunctionWithByteArrays() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            byte[][] data = new byte[3][];
+            data[0] = new byte[]{1, 2, 3};
+            data[1] = new byte[]{3, 2, 1};
+            data[2] = new byte[]{1, 2, 1};
+            Result res = db.execute( "UNWIND $data AS bytes RETURN org.neo4j.procedure.aggregateByteArrays(bytes) AS bytes", map( "data", data ) );
+
+            // Then
+            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{5, 6, 5} ) );
+            assertFalse( res.hasNext() );
+        }
     }
 
     @Test
@@ -1296,7 +1441,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldMakeTransactionToFail() throws Throwable
+    public void shouldMakeTransactionToFail()
     {
         //When
         try ( Transaction ignore = db.beginTx() )
@@ -1356,6 +1501,16 @@ public class ProcedureIT
         public ListOutput( List<Long> list )
         {
             this.list = list;
+        }
+    }
+
+    public static class BytesOutput
+    {
+        public byte[] bytes;
+
+        public BytesOutput( byte[] bytes )
+        {
+            this.bytes = bytes;
         }
     }
 
@@ -1541,17 +1696,25 @@ public class ProcedureIT
         }
 
         @Procedure
-        public Stream<ListOutput> listWithDefault( @Name( value = "list", defaultValue = "[42, 1337]" ) List<Long>
-                list )
+        public Stream<ListOutput> listWithDefault( @Name( value = "list", defaultValue = "[42, 1337]" ) List<Long> list )
         {
             return Stream.of( new ListOutput( list ) );
         }
 
         @Procedure
-        public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]" )
-                List<List<Long>> list )
+        public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]" ) List<List<Long>> list )
         {
             return Stream.of( new ListOutput( list == null ? null : list.get( 0 ) ) );
+        }
+
+        @Procedure
+        public Stream<BytesOutput> incrBytes( @Name( value = "bytes" ) byte[] bytes )
+        {
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] += 1;
+            }
+            return Stream.of( new BytesOutput( bytes ) );
         }
 
         @Procedure
@@ -1810,12 +1973,7 @@ public class ProcedureIT
         public Stream<Output> onCloseProcedure( @Name( "index" ) long index )
         {
             onCloseCalled[(int) index] = false;
-            return Stream.of( 1L, 2L ).map( Output::new )
-                    .onClose( () ->
-                    {
-                        onCloseCalled[(int) index] = true;
-                    } );
-
+            return Stream.of( 1L, 2L ).map( Output::new ).onClose( () -> onCloseCalled[(int) index] = true );
         }
     }
 
@@ -1832,6 +1990,46 @@ public class ProcedureIT
         public long functionWithDescription()
         {
             return 0;
+        }
+
+        @UserFunction
+        public byte[] decrBytes( @Name( value = "bytes" ) byte[] bytes )
+        {
+            for ( int i = 0; i < bytes.length; i++ )
+            {
+                bytes[i] -= 1;
+            }
+            return bytes;
+        }
+
+        @UserAggregationFunction
+        public ByteArrayAggregator aggregateByteArrays()
+        {
+            return new ByteArrayAggregator();
+        }
+
+        public static class ByteArrayAggregator
+        {
+            byte[] aggregated;
+
+            @UserAggregationUpdate
+            public void update( @Name( "bytes" ) byte[] bytes )
+            {
+                if ( aggregated == null )
+                {
+                    aggregated = new byte[bytes.length];
+                }
+                for ( int i = 0; i < Math.min( bytes.length, aggregated.length ); i++ )
+                {
+                    aggregated[i] += bytes[i];
+                }
+            }
+
+            @UserAggregationResult
+            public byte[] result()
+            {
+                return aggregated == null ? new byte[0] : aggregated;
+            }
         }
     }
 

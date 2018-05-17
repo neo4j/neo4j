@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 public class ClientConnectionInfoTest
 {
     @Test
-    public void connectionDetailsForBoltQuerySource() throws Exception
+    public void connectionDetailsForBoltQuerySource()
     {
         // given
         ClientConnectionInfo clientConnection = new BoltConnectionInfo(
@@ -54,7 +54,7 @@ public class ClientConnectionInfoTest
     }
 
     @Test
-    public void connectionDetailsForHttpQuerySource() throws Exception
+    public void connectionDetailsForHttpQuerySource()
     {
         // given
         ClientConnectionInfo clientConnection =
@@ -72,7 +72,7 @@ public class ClientConnectionInfoTest
     }
 
     @Test
-    public void connectionDetailsForEmbeddedQuerySource() throws Exception
+    public void connectionDetailsForEmbeddedQuerySource()
     {
         // when
         String connectionDetails = ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails();
@@ -82,7 +82,7 @@ public class ClientConnectionInfoTest
     }
 
     @Test
-    public void connectionDetailsForShellSession() throws Exception
+    public void connectionDetailsForShellSession()
     {
         // given
         ClientConnectionInfo clientConnection = new ShellConnectionInfo( 1 ).withUsername( "FULL" );

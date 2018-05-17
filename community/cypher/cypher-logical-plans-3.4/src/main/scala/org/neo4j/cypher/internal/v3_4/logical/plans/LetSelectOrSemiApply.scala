@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
-import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
   * Like LetSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will to set to true without
@@ -37,9 +37,8 @@ import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, Planner
   *   }
   * }
   */
-case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
-                               (val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)
+case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression)(implicit idGen: IdGen)
+  extends AbstractLetSelectOrSemiApply(left, right, idName, expr)(idGen)
 
 /**
   * Like LetAntiSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will to set to true without
@@ -56,15 +55,13 @@ case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: I
   *   }
   * }
   */
-case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression)
-                                   (val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractLetSelectOrSemiApply(left, right, idName, expr, solved)
+case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression)(implicit idGen: IdGen)
+  extends AbstractLetSelectOrSemiApply(left, right, idName, expr)(idGen)
 
-abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName, expr: Expression,
-                                            solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression)(idGen: IdGen)
+  extends LogicalPlan(idGen) with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols: Set[IdName] = left.availableSymbols + idName
+  override val availableSymbols: Set[String] = left.availableSymbols + idName
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -70,7 +70,7 @@ public class DelegateFileSystemAbstractionTest
         verify( fileSystem ).newWatchService();
     }
 
-    private class TrackableFileSystem extends FileSystem
+    private static class TrackableFileSystem extends FileSystem
     {
 
         private boolean closed;
@@ -82,7 +82,7 @@ public class DelegateFileSystemAbstractionTest
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             closed = true;
         }
@@ -142,7 +142,7 @@ public class DelegateFileSystemAbstractionTest
         }
 
         @Override
-        public WatchService newWatchService() throws IOException
+        public WatchService newWatchService()
         {
             return null;
         }

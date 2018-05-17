@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -224,9 +224,16 @@ public class ReversedSingleFileTransactionCursorTest
 
     private ReversedSingleFileTransactionCursor txCursor( boolean failOnCorruptedLogFiles ) throws IOException
     {
-        return new ReversedSingleFileTransactionCursor(
-                (ReadAheadLogChannel) logFile.getReader( start( 0 ), NO_MORE_CHANNELS ),
-                new VersionAwareLogEntryReader<>(), failOnCorruptedLogFiles, monitor );
+        ReadAheadLogChannel fileReader = (ReadAheadLogChannel) logFile.getReader( start( 0 ), NO_MORE_CHANNELS );
+        try
+        {
+            return new ReversedSingleFileTransactionCursor( fileReader, new VersionAwareLogEntryReader<>(), failOnCorruptedLogFiles, monitor );
+        }
+        catch ( UnsupportedLogVersionException e )
+        {
+            fileReader.close();
+            throw e;
+        }
     }
 
     private void writeTransactions( int transactionCount, int minTransactionSize, int maxTransactionSize ) throws IOException

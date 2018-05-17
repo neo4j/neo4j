@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -33,7 +33,7 @@ public class TestShortArray
     private static final int DEFAULT_PAYLOAD_SIZE = PropertyType.getPayloadSize();
 
     @Test
-    public void canEncodeSomeSampleArraysWithDefaultPayloadSize() throws Exception
+    public void canEncodeSomeSampleArraysWithDefaultPayloadSize()
     {
         assertCanEncodeAndDecodeToSameValue( new boolean[]{true, false, true,
                 true, true, true, true, true, true, true, false, true} );
@@ -42,25 +42,23 @@ public class TestShortArray
         assertCanEncodeAndDecodeToSameValue( new int[]{1, 2, 3, 4, 5, 6, 7} );
         assertCanEncodeAndDecodeToSameValue( new long[]{1, 2, 3, 4, 5, 6, 7} );
         assertCanEncodeAndDecodeToSameValue( new float[]{0.34f, 0.21f} );
-        assertCanEncodeAndDecodeToSameValue( new long[]{1 << 63, 1 << 63} );
-        assertCanEncodeAndDecodeToSameValue( new long[]{1 << 63, 1 << 63,
-                1 << 63} );
-        assertCanEncodeAndDecodeToSameValue( new byte[]{0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0} );
+        assertCanEncodeAndDecodeToSameValue( new long[]{1L << 63, 1L << 63} );
+        assertCanEncodeAndDecodeToSameValue( new long[]{1L << 63, 1L << 63, 1L << 63} );
+        assertCanEncodeAndDecodeToSameValue( new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
         assertCanEncodeAndDecodeToSameValue( new long[]{0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0} );
     }
 
     @Test
-    public void testCannotEncodeMarginal() throws Exception
+    public void testCannotEncodeMarginal()
     {
         assertCanNotEncode( new long[]{1L << 15, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1} );
     }
 
     @Test
-    public void canEncodeBiggerArraysWithBiggerPayloadSize() throws Exception
+    public void canEncodeBiggerArraysWithBiggerPayloadSize()
     {
         int[] intArray = intArray( 10, 2600 );
         assertCanEncodeAndDecodeToSameValue( intArray, 32 );

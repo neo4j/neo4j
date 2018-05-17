@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -34,14 +33,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
@@ -63,6 +63,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
 
 public class NonUniqueIndexTest
 {
@@ -117,7 +119,7 @@ public class NonUniqueIndexTest
                 return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                 {
                     @Override
-                    protected Neo4jJobScheduler createJobScheduler()
+                    protected CentralJobScheduler createJobScheduler()
                     {
                         return newSlowJobScheduler();
                     }
@@ -133,20 +135,14 @@ public class NonUniqueIndexTest
                 graphDatabaseFactoryState.databaseDependencies() );
     }
 
-    private static Neo4jJobScheduler newSlowJobScheduler()
+    private static CentralJobScheduler newSlowJobScheduler()
     {
-        return new Neo4jJobScheduler()
+        return new CentralJobScheduler()
         {
             @Override
             public JobHandle schedule( Group group, Runnable job )
             {
                 return super.schedule( group, slowRunnable( job ) );
-            }
-
-            @Override
-            public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
-            {
-                return super.schedule( group, slowRunnable(job), metadata );
             }
         };
     }
@@ -162,28 +158,37 @@ public class NonUniqueIndexTest
 
     private List<Long> nodeIdsInIndex( Config config, int indexId, String value ) throws Exception
     {
-        FileSystemAbstraction fs = resources.fileSystem();
-        File storeDir = resources.directory().graphDbDir();
-        SchemaIndexProvider.Monitor monitor = SchemaIndexProvider.Monitor.EMPTY;
-        OperationalMode operationalMode = OperationalMode.single;
         PageCache pageCache = resources.pageCache();
-        Boolean useFusionIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
-        SchemaIndexProvider indexProvider;
-        if ( useFusionIndex )
-        {
-            indexProvider = NativeLuceneFusionSchemaIndexProviderFactory
-                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
-        }
-        else
-        {
-            indexProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, monitor, config, operationalMode );
-        }
+        File storeDir = resources.directory().graphDbDir();
+        FileSystemAbstraction fs = resources.fileSystem();
+        IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
+        OperationalMode operationalMode = OperationalMode.single;
+        IndexProvider indexProvider = selectIndexProvider( pageCache, storeDir, fs, monitor, config, operationalMode );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
-                IndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );
+                SchemaIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
             return PrimitiveLongCollections.asList( reader.query( IndexQuery.exact( 1, value ) ) );
         }
+    }
+
+    private IndexProvider selectIndexProvider( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
+            OperationalMode operationalMode )
+    {
+        String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
+        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
+        if ( LUCENE10.providerName().equals( defaultSchemaProvider ) )
+        {
+            return LuceneIndexProviderFactory
+                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        }
+        else if ( NATIVE10.providerName().equals( defaultSchemaProvider ) )
+        {
+            return NativeLuceneFusionIndexProviderFactory10
+                    .create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        }
+        return NativeLuceneFusionIndexProviderFactory20
+                .create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 }

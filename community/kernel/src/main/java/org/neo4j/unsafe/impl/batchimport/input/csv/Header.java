@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,9 @@ import java.util.Arrays;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.values.storable.CSVHeaderInformation;
 
 /**
  * Header of tabular/csv data input, specifying meta data about values in each "column", for example
@@ -37,8 +40,16 @@ public class Header implements Cloneable
          * to read at the very top of it.
          * @param configuration {@link Configuration} specific to the format of the data.
          * @param idType type of values we expect the ids to be.
+         * @param groups {@link Groups} to register groups in.
+         * @return the created {@link Header}.
          */
-        Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType );
+        Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType, Groups groups );
+
+        /**
+         * @return whether or not this header is already defined. If this returns {@code false} then the header
+         * will be read from the top of the data stream.
+         */
+        boolean isDefined();
     }
 
     private final Entry[] entries;
@@ -91,23 +102,43 @@ public class Header implements Cloneable
     {
         private final String name;
         private final Type type;
-        private final String groupName;
+        private final Group group;
         private final Extractor<?> extractor;
+        // This can be used to encapsulate the parameters set in the header for spatial and temporal columns
+        private final CSVHeaderInformation optionalParameter;
 
-        public Entry( String name, Type type, String groupName, Extractor<?> extractor )
+        public Entry( String name, Type type, Group group, Extractor<?> extractor )
         {
             this.name = name;
             this.type = type;
-            this.groupName = groupName;
+            this.group = group;
             this.extractor = extractor;
+            this.optionalParameter = null;
+        }
+
+        public Entry( String name, Type type, Group group, Extractor<?> extractor, CSVHeaderInformation optionalParameter )
+        {
+            this.name = name;
+            this.type = type;
+            this.group = group;
+            this.extractor = extractor;
+            this.optionalParameter = optionalParameter;
         }
 
         @Override
         public String toString()
         {
-            return (name != null ? name : "") +
-                   ":" + (type == Type.PROPERTY ? extractor.toString().toLowerCase() : type.name()) +
-                   (groupName != null ? "(" + groupName + ")" : "");
+            if ( optionalParameter == null )
+            {
+                return (name != null ? name : "") + ":" + (type == Type.PROPERTY ? extractor.name().toLowerCase() : type.name()) +
+                        (group() != Group.GLOBAL ? "(" + group().name() + ")" : "");
+            }
+            else
+            {
+                return (name != null ? name : "") + ":" +
+                        (type == Type.PROPERTY ? extractor.name().toLowerCase() + "[" + optionalParameter + "]" : type.name()) +
+                        (group() != Group.GLOBAL ? "(" + group().name() + ")" : "");
+            }
         }
 
         public Extractor<?> extractor()
@@ -120,14 +151,19 @@ public class Header implements Cloneable
             return type;
         }
 
-        public String groupName()
+        public Group group()
         {
-            return groupName;
+            return group != null ? group : Group.GLOBAL;
         }
 
         public String name()
         {
             return name;
+        }
+
+        public CSVHeaderInformation optionalParameter()
+        {
+            return optionalParameter;
         }
 
         @Override
@@ -140,9 +176,9 @@ public class Header implements Cloneable
                 result = prime * result + name.hashCode();
             }
             result = prime * result + type.hashCode();
-            if ( groupName != null )
+            if ( group != null )
             {
-                result = prime * result + groupName.hashCode();
+                result = prime * result + group.hashCode();
             }
             result = prime * result + extractor.hashCode();
             return result;
@@ -161,13 +197,14 @@ public class Header implements Cloneable
             }
             Entry other = (Entry) obj;
             return nullSafeEquals( name, other.name ) && type == other.type &&
-                    nullSafeEquals( groupName, other.groupName ) && extractorEquals( extractor, other.extractor );
+                    nullSafeEquals( group, other.group ) && extractorEquals( extractor, other.extractor ) &&
+                    nullSafeEquals( optionalParameter, other.optionalParameter );
         }
 
         @Override
         public Entry clone()
         {
-            return new Entry( name, type, groupName, extractor != null ? extractor.clone() : null );
+            return new Entry( name, type, group, extractor != null ? extractor.clone() : null, optionalParameter );
         }
 
         private boolean nullSafeEquals( Object o1, Object o2 )

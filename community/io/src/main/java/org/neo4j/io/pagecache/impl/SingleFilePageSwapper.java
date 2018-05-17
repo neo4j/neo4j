@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -55,6 +55,8 @@ import static java.lang.String.format;
  */
 public class SingleFilePageSwapper implements PageSwapper
 {
+    private static final int MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS = 42;
+
     private static int defaultChannelStripePower()
     {
         int vcores = Runtime.getRuntime().availableProcessors();
@@ -285,6 +287,11 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
     {
+        return readAndRetryIfInterrupted( filePageId, bufferAddress, bufferSize, MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
+    }
+
+    private long readAndRetryIfInterrupted( long filePageId, long bufferAddress, int bufferSize, int attemptsLeft ) throws IOException
+    {
         long fileOffset = pageIdToPosition( filePageId );
         try
         {
@@ -299,13 +306,15 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( ClosedChannelException e )
         {
-            // AsynchronousCloseException is a subclass of
-            // ClosedChannelException, and ClosedByInterruptException is in
-            // turn a subclass of AsynchronousCloseException.
             tryReopen( filePageId, e );
+
+            if ( attemptsLeft < 1 )
+            {
+                throw new IOException( "IO failed due to interruption", e );
+            }
+
             boolean interrupted = Thread.interrupted();
-            // Recurse because this is hopefully a very rare occurrence.
-            long bytesRead = read( filePageId, bufferAddress, bufferSize );
+            long bytesRead = readAndRetryIfInterrupted( filePageId, bufferAddress, bufferSize, attemptsLeft - 1 );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -343,8 +352,7 @@ public class SingleFilePageSwapper implements PageSwapper
         long fileOffset = pageIdToPosition( startFilePageId );
         FileChannel channel = unwrappedChannel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
-        long bytesRead = lockPositionReadVector(
-                startFilePageId, channel, fileOffset, srcs );
+        long bytesRead = lockPositionReadVectorAndRetryIfInterrupted( startFilePageId, channel, fileOffset, srcs, MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
         if ( bytesRead == -1 )
         {
             for ( long address : bufferAddresses )
@@ -373,8 +381,8 @@ public class SingleFilePageSwapper implements PageSwapper
         return bytesRead;
     }
 
-    private long lockPositionReadVector(
-            long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
+    private long lockPositionReadVectorAndRetryIfInterrupted( long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs, int attemptsLeft )
+            throws IOException
     {
         try
         {
@@ -394,14 +402,16 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( ClosedChannelException e )
         {
-            // AsynchronousCloseException is a subclass of
-            // ClosedChannelException, and ClosedByInterruptException is in
-            // turn a subclass of AsynchronousCloseException.
             tryReopen( filePageId, e );
+
+            if ( attemptsLeft < 1 )
+            {
+                throw new IOException( "IO failed due to interruption", e );
+            }
+
             boolean interrupted = Thread.interrupted();
-            // Recurse because this is hopefully a very rare occurrence.
             channel = unwrappedChannel( filePageId );
-            long bytesWritten = lockPositionReadVector( filePageId, channel, fileOffset, srcs );
+            long bytesWritten = lockPositionReadVectorAndRetryIfInterrupted( filePageId, channel, fileOffset, srcs, attemptsLeft - 1 );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -425,6 +435,11 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long write( long filePageId, long bufferAddress ) throws IOException
     {
+        return writeAndRetryIfInterrupted( filePageId, bufferAddress, MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
+    }
+
+    private long writeAndRetryIfInterrupted( long filePageId, long bufferAddress, int attemptsLeft ) throws IOException
+    {
         long fileOffset = pageIdToPosition( filePageId );
         increaseFileSizeTo( fileOffset + filePageSize );
         try
@@ -434,13 +449,15 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( ClosedChannelException e )
         {
-            // AsynchronousCloseException is a subclass of
-            // ClosedChannelException, and ClosedByInterruptException is in
-            // turn a subclass of AsynchronousCloseException.
             tryReopen( filePageId, e );
+
+            if ( attemptsLeft < 1 )
+            {
+                throw new IOException( "IO failed due to interruption", e );
+            }
+
             boolean interrupted = Thread.interrupted();
-            // Recurse because this is hopefully a very rare occurrence.
-            long bytesWritten = write( filePageId, bufferAddress );
+            long bytesWritten = writeAndRetryIfInterrupted( filePageId, bufferAddress, attemptsLeft - 1 );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -478,7 +495,7 @@ public class SingleFilePageSwapper implements PageSwapper
         increaseFileSizeTo( fileOffset + (((long) filePageSize) * length) );
         FileChannel channel = unwrappedChannel( startFilePageId );
         ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
-        return lockPositionWriteVector( startFilePageId, channel, fileOffset, srcs );
+        return lockPositionWriteVectorAndRetryIfInterrupted( startFilePageId, channel, fileOffset, srcs, MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
     }
 
     private ByteBuffer[] convertToByteBuffers( long[] bufferAddresses, int arrayOffset, int length ) throws Exception
@@ -498,8 +515,8 @@ public class SingleFilePageSwapper implements PageSwapper
         return StoreFileChannelUnwrapper.unwrap( storeChannel );
     }
 
-    private long lockPositionWriteVector(
-            long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs ) throws IOException
+    private long lockPositionWriteVectorAndRetryIfInterrupted( long filePageId, FileChannel channel, long fileOffset, ByteBuffer[] srcs, int attemptsLeft )
+            throws IOException
     {
         try
         {
@@ -518,14 +535,16 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( ClosedChannelException e )
         {
-            // AsynchronousCloseException is a subclass of
-            // ClosedChannelException, and ClosedByInterruptException is in
-            // turn a subclass of AsynchronousCloseException.
             tryReopen( filePageId, e );
+
+            if ( attemptsLeft < 1 )
+            {
+                throw new IOException( "IO failed due to interruption", e );
+            }
+
             boolean interrupted = Thread.interrupted();
-            // Recurse because this is hopefully a very rare occurrence.
             channel = unwrappedChannel( filePageId );
-            long bytesWritten = lockPositionWriteVector( filePageId, channel, fileOffset, srcs );
+            long bytesWritten = lockPositionWriteVectorAndRetryIfInterrupted( filePageId, channel, fileOffset, srcs, attemptsLeft - 1 );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -707,19 +726,26 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public void force() throws IOException
     {
+        forceAndRetryIfInterrupted( MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
+    }
+
+    private void forceAndRetryIfInterrupted( int attemptsLeft ) throws IOException
+    {
         try
         {
             channel( tokenFilePageId ).force( false );
         }
         catch ( ClosedChannelException e )
         {
-            // AsynchronousCloseException is a subclass of
-            // ClosedChannelException, and ClosedByInterruptException is in
-            // turn a subclass of AsynchronousCloseException.
             tryReopen( tokenFilePageId, e );
+
+            if ( attemptsLeft < 1 )
+            {
+                throw new IOException( "IO failed due to interruption", e );
+            }
+
             boolean interrupted = Thread.interrupted();
-            // Recurse because this is hopefully a very rare occurrence.
-            force();
+            forceAndRetryIfInterrupted( attemptsLeft - 1 );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -728,7 +754,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long getLastPageId() throws IOException
+    public long getLastPageId()
     {
         long channelSize = getCurrentFileSize();
         if ( channelSize == 0 )
@@ -743,6 +769,11 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public void truncate() throws IOException
     {
+        truncateAndRetryIfInterrupted( MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS );
+    }
+
+    private void truncateAndRetryIfInterrupted( int attemptsLeft ) throws IOException
+    {
         setCurrentFileSize( 0 );
         try
         {
@@ -750,13 +781,15 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         catch ( ClosedChannelException e )
         {
-            // AsynchronousCloseException is a subclass of
-            // ClosedChannelException, and ClosedByInterruptException is in
-            // turn a subclass of AsynchronousCloseException.
             tryReopen( tokenFilePageId, e );
+
+            if ( attemptsLeft < 1 )
+            {
+                throw new IOException( "IO failed due to interruption", e );
+            }
+
             boolean interrupted = Thread.interrupted();
-            // Recurse because this is hopefully a very rare occurrence.
-            truncate();
+            truncateAndRetryIfInterrupted( attemptsLeft - 1 );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();

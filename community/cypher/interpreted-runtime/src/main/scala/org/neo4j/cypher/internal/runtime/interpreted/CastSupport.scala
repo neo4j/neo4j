@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,11 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.time._
+import java.time.temporal.TemporalAmount
+
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable.{ArrayValue, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, AnyValueWriter}
+
+import org.neo4j.kernel.internal.Version
 
 import scala.reflect.ClassTag
 
@@ -100,13 +105,22 @@ object CastSupport {
           p1
         }
 
+      case (_:DateValue, _:DateValue) => a
+      case (_:DateTimeValue, _:DateTimeValue) => a
+      case (_:LocalDateTimeValue, _:LocalDateTimeValue) => a
+      case (_:TimeValue, _:TimeValue) => a
+      case (_:LocalTimeValue, _:LocalTimeValue) => a
+      case (_:DurationValue, _:DurationValue) => a
+
       case (a, b) if a == Values.NO_VALUE || b == Values.NO_VALUE => throw new CypherTypeException(
         "Collections containing null values can not be stored in properties.")
 
       case (a, b) if a.isInstanceOf[ListValue] || b.isInstanceOf[ListValue] => throw new CypherTypeException(
         "Collections containing collections can not be stored in properties.")
 
-      case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof.")
+      case _ => throw new CypherTypeException("Neo4j only supports a subset of Cypher types for storage as singleton or array properties. " +
+        "Please refer to section cypher/syntax/values of the manual for more details.")
+
     }
   }
 
@@ -137,6 +151,18 @@ object CastSupport {
       transform(new ArrayConverterWriter(classOf[PointValue], a => Values.pointArray(a.asInstanceOf[Array[PointValue]]))))
     case _: Point => Converter(
       transform(new ArrayConverterWriter(classOf[Point], a => Values.pointArray(a.asInstanceOf[Array[Point]]))))
+    case _: DurationValue => Converter(
+      transform(new ArrayConverterWriter(classOf[TemporalAmount], a => Values.durationArray(a.asInstanceOf[Array[TemporalAmount]]))))
+    case _: DateTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[ZonedDateTime], a => Values.dateTimeArray(a.asInstanceOf[Array[ZonedDateTime]]))))
+    case _: DateValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalDate], a => Values.dateArray(a.asInstanceOf[Array[LocalDate]]))))
+    case _: LocalTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalTime], a => Values.localTimeArray(a.asInstanceOf[Array[LocalTime]]))))
+    case _: TimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[OffsetTime], a => Values.timeArray(a.asInstanceOf[Array[OffsetTime]]))))
+    case _: LocalDateTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalDateTime], a => Values.localDateTimeArray(a.asInstanceOf[Array[LocalDateTime]]))))
     case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
   }
 
@@ -169,10 +195,10 @@ object CastSupport {
     override def writeNode(nodeId: Long, labels: TextArray,
                            properties: MapValue): Unit = fail()
 
-    override def writeEdgeReference(edgeId: Long): Unit = fail()
+    override def writeRelationshipReference(relId: Long): Unit = fail()
 
-    override def writeEdge(edgeId: Long, startNodeId: Long, endNodeId: Long, `type`: TextValue,
-                           properties: MapValue): Unit = fail()
+    override def writeRelationship(relId: Long, startNodeId: Long, endNodeId: Long, `type`: TextValue,
+                                   properties: MapValue): Unit = fail()
 
     override def beginMap(size: Int): Unit = fail()
 
@@ -183,7 +209,7 @@ object CastSupport {
     override def endList(): Unit = {}
 
     override def writePath(nodes: Array[NodeValue],
-                           edges: Array[EdgeValue]): Unit = fail()
+                           relationships: Array[RelationshipValue]): Unit = fail()
 
     override def writeNull(): Unit = fail()
 
@@ -215,6 +241,24 @@ object CastSupport {
 
     override def writePoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Unit =
       write(Values.pointValue(crs, coordinate: _*))
+
+    override def writeDuration(months: Long, days: Long, seconds: Long, nanos: Int): Unit =
+      write(DurationValue.duration(months, days, seconds, nanos))
+
+    override def writeDate(localDate: LocalDate): Unit =
+      write(localDate)
+
+    override def writeLocalTime(localTime: LocalTime): Unit =
+      write(localTime)
+
+    override def writeTime(offsetTime: OffsetTime): Unit =
+      write(offsetTime)
+
+    override def writeLocalDateTime(localDateTime: LocalDateTime): Unit =
+      write(localDateTime)
+
+    override def writeDateTime(zonedDateTime: ZonedDateTime): Unit =
+      write(zonedDateTime)
   }
 
 }

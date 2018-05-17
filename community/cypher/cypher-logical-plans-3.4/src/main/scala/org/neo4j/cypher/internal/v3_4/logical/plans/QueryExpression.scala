@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -31,10 +31,6 @@ trait SingleExpression[+T] {
   def expression: T
 
   def expressions = Seq(expression)
-}
-
-case class ScanQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
-  def map[R](f: T => R) = ScanQueryExpression(f(expression))
 }
 
 case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {

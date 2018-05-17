@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -42,7 +42,7 @@ public class RenewableBatchIdSequenceTest
     private final RenewableBatchIdSequence ids = new RenewableBatchIdSequence( idSource, BATCH_SIZE, excessIds::add );
 
     @Test
-    public void shouldRequestIdBatchFromSourceOnFirstCall() throws Exception
+    public void shouldRequestIdBatchFromSourceOnFirstCall()
     {
         // given
         assertEquals( 0, idSource.calls );
@@ -58,7 +58,7 @@ public class RenewableBatchIdSequenceTest
     }
 
     @Test
-    public void shouldRequestIdBatchFromSourceOnDepletingCurrent() throws Exception
+    public void shouldRequestIdBatchFromSourceOnDepletingCurrent()
     {
         // given
         assertEquals( 0, idSource.calls );
@@ -77,7 +77,7 @@ public class RenewableBatchIdSequenceTest
     }
 
     @Test
-    public void shouldGiveBackExcessIdsOnClose() throws Exception
+    public void shouldGiveBackExcessIdsOnClose()
     {
         // given
         for ( int i = 0; i < BATCH_SIZE / 2; i++ )
@@ -97,7 +97,7 @@ public class RenewableBatchIdSequenceTest
     }
 
     @Test
-    public void shouldHandleCloseWithNoCurrentBatch() throws Exception
+    public void shouldHandleCloseWithNoCurrentBatch()
     {
         // when
         ids.close();
@@ -107,7 +107,7 @@ public class RenewableBatchIdSequenceTest
     }
 
     @Test
-    public void shouldOnlyCloseOnce() throws Exception
+    public void shouldOnlyCloseOnce()
     {
         // given
         for ( int i = 0; i < BATCH_SIZE / 2; i++ )
@@ -132,7 +132,7 @@ public class RenewableBatchIdSequenceTest
     }
 
     @Test
-    public void shouldContinueThroughEmptyIdBatch() throws Exception
+    public void shouldContinueThroughEmptyIdBatch()
     {
         // given
         IdSequence idSource = mock( IdSequence.class );

@@ -24,18 +24,22 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
+  <properties>
+    <license-text.header>../../../build/AGPL-3-header.txt</license-text.header>
+    <moduleName>org.neo4j.internal.cypher.compatibility.spec.suite</moduleName>
+  </properties>
+
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3</name>
+      <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
       <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-      <comments>The software ("Software") developed and owned by Network Engine for
-        Objects in Lund AB (referred to in this notice as "Neo Technology") is
-        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+      <comments>The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
+        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 with the Commons Clause to all
         third parties and that license is included below.
 
         However, if you have executed an End User Software License and Services
         Agreement or an OEM Software License and Support Services Agreement, or
-        another commercial license agreement with Neo Technology or one of its
+        another commercial license agreement with Neo4j or one of its
         affiliates (each, a "Commercial Agreement"), the terms of the license in
         such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
         LICENSE Version 3 and you may use the Software solely pursuant to the
@@ -57,6 +61,12 @@
 
     <!-- shared versions are defined in the parent pom -->
 
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>tck</artifactId>
+      <version>${opencypher.version}</version>
+    </dependency>
+
     <!-- scala -->
 
     <dependency>
@@ -69,28 +79,38 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_2.11</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.scalautils</groupId>
       <artifactId>scalautils_2.11</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scalap</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-runner</artifactId>
+      <version>${junit-plattform-runner.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit-jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit-jupiter.version}</version>
       <scope>test</scope>
     </dependency>
 

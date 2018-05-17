@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.statemachine;
 
@@ -77,7 +80,6 @@ public class StateMachineProxyFactory
     }
 
     Object invoke( StateMachine stateMachine, Method method, Object arg )
-            throws Throwable
     {
         if ( method.getName().equals( "toString" ) )
         {
@@ -93,14 +95,13 @@ public class StateMachineProxyFactory
 
         try
         {
-            Class<? extends MessageType> messageType = stateMachine.getMessageType();
-            MessageType typeAsEnum = (MessageType) Enum.valueOf( (Class<? extends Enum>) messageType, method.getName() );
+            MessageType typeAsEnum = (MessageType) Enum.valueOf( stateMachine.getMessageType(), method.getName() );
             Message<?> message = Message.internal( typeAsEnum, arg );
             if ( me != null )
             {
                 message.
-                    setHeader( Message.CONVERSATION_ID, conversationId ).
-                    setHeader( Message.CREATED_BY,me.toString() );
+                    setHeader( Message.HEADER_CONVERSATION_ID, conversationId ).
+                    setHeader( Message.HEADER_CREATED_BY,me.toString() );
             }
 
             if ( method.getReturnType().equals( Void.TYPE ) )
@@ -125,13 +126,13 @@ public class StateMachineProxyFactory
     }
 
     @Override
-    public boolean process( Message message )
+    public boolean process( Message<?> message )
     {
         if ( !responseFutureMap.isEmpty() )
         {
-            if ( !message.hasHeader( Message.TO ) )
+            if ( !message.hasHeader( Message.HEADER_TO ) )
             {
-                String conversationId = message.getHeader( Message.CONVERSATION_ID );
+                String conversationId = message.getHeader( Message.HEADER_CONVERSATION_ID );
                 ResponseFuture future = responseFutureMap.get( conversationId );
                 if ( future != null )
                 {
@@ -170,7 +171,7 @@ public class StateMachineProxyFactory
 
                 try
                 {
-                    Enum.valueOf( (Class<? extends Enum>) stateMachine.getMessageType(), method.getName() );
+                    Enum.valueOf( stateMachine.getMessageType(), method.getName() );
 
                     // Ok!
                     foundMatch = true;

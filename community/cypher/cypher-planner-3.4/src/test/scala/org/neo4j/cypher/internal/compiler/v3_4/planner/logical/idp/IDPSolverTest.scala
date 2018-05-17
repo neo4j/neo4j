@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.mockito.Mockito.{spy, verify, verifyNoMoreInteractions}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ProjectingSelector
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
 
 class IDPSolverTest extends CypherFunSuite {
 
-  private implicit val context = ()
+  private val context = ()
 
   test("Solves a small toy problem") {
     val monitor = mock[IDPSolverMonitor]
@@ -46,7 +47,7 @@ class IDPSolverTest extends CypherFunSuite {
       Set('d') -> "d"
     )
 
-    val solution = solver(seed, Set('a', 'b', 'c', 'd'))
+    val solution = solver(seed, Set('a', 'b', 'c', 'd'), context, new Solveds)
 
     solution.toList should equal(List(Set('a', 'b', 'c', 'd') -> "abcd"))
     verify(monitor).foundPlanAfter(1)
@@ -78,7 +79,7 @@ class IDPSolverTest extends CypherFunSuite {
       Set('h') -> "h"
     )
 
-    solver(seed, Set('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'))
+    solver(seed, Set('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'), context, new Solveds)
 
     verify(monitor).startIteration(1)
     verify(monitor).endIteration(1, 2, 16)
@@ -139,7 +140,7 @@ class IDPSolverTest extends CypherFunSuite {
       acc ++ t._1
     }.toSet
 
-    solver(seed, result)
+    solver(seed, result, context, new Solveds)
 
     monitor.maxStartIteration should equal(monitor.foundPlanIteration)
     monitor.maxStartIteration
@@ -159,8 +160,7 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   private object stringAppendingSolverStep extends IDPSolverStep[Char, String, Unit] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String])
-                      (implicit context: Unit): Iterator[String] = {
+    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String], context: Unit, solveds: Solveds): Iterator[String] = {
       val goalSize = goal.size
       for (
         leftGoal <- goal.subsets if leftGoal.size <= goalSize;

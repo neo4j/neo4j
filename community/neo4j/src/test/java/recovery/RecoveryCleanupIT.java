@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package recovery;
 
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -27,7 +28,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -57,8 +61,11 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 
 public class RecoveryCleanupIT
 {
@@ -141,21 +148,34 @@ public class RecoveryCleanupIT
     public void nativeIndexMustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         // given
-        setTestConfig( GraphDatabaseSettings.enable_native_schema_index, "true" );
+        setTestConfig( GraphDatabaseSettings.default_schema_provider, NATIVE20.providerName() );
         dirtyDatabase();
 
         // when
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        factory.setUserLogProvider( logProvider );
         factory.setInternalLogProvider( logProvider );
         startDatabase().shutdown();
 
         // then
-        logProvider.assertContainsMessageMatching( Matchers.stringContainsInOrder( Iterables.asIterable(
+        List<Matcher<String>> matchers = new ArrayList<>();
+        matchers.add( indexRecoveryLogMatcher( "string" ) );
+        matchers.add( indexRecoveryLogMatcher( "native" ) );
+        matchers.add( indexRecoveryLogMatcher( "spatial" ) );
+        matchers.add( indexRecoveryLogMatcher( "temporal" ) );
+        matchers.forEach( logProvider::assertContainsExactlyOneMessageMatching );
+    }
+
+    private Matcher<String> indexRecoveryLogMatcher( String subIndexProviderKey )
+    {
+
+        return Matchers.stringContainsInOrder( Iterables.asIterable(
                 "Schema index recovery completed",
+                "descriptor",
+                "file=",
+                File.separator + subIndexProviderKey,
                 "cleaned crashed pointers",
                 "pages visited",
-                "Time spent" ) ) );
+                "Time spent" ) );
     }
 
     private void dirtyDatabase() throws IOException
@@ -172,7 +192,7 @@ public class RecoveryCleanupIT
         db = null;
     }
 
-    private void setTestConfig( Setting<Boolean> setting, String value )
+    private void setTestConfig( Setting<?> setting, String value )
     {
         testSpecificConfig.put( setting, value );
     }
@@ -222,6 +242,8 @@ public class RecoveryCleanupIT
         {
             db.createNode( label ).setProperty( propKey, 1 );
             db.createNode( label ).setProperty( propKey, "string" );
+            db.createNode( label ).setProperty( propKey, Values.pointValue( Cartesian, 0.5, 0.5 ) );
+            db.createNode( label ).setProperty( propKey, LocalTime.of( 0, 0 ) );
             tx.success();
         }
     }

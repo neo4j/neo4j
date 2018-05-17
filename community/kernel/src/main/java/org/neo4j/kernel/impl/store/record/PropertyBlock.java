@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -172,7 +172,7 @@ public class PropertyBlock implements Cloneable
         PropertyType type = getType();
         if ( valueBlocks != null )
         {
-            result.append( "blocks=" ).append( valueBlocks.length ).append( "," );
+            result.append( "blocks=" ).append( valueBlocks.length ).append( ',' );
         }
         result.append( type == null ? "<unknown type>" : type.name() ).append( ',' );
         result.append( "key=" ).append( valueBlocks == null ? "?" : Integer.toString( getKeyIndexId() ) );
@@ -194,7 +194,7 @@ public class PropertyBlock implements Cloneable
                     {
                         if ( i != 0 )
                         {
-                            buf.append( "," );
+                            buf.append( ',' );
                         }
                         buf.append( Array.get( value, i ) );
                     }
@@ -202,7 +202,7 @@ public class PropertyBlock implements Cloneable
                     {
                         buf.append( ",..." );
                     }
-                    value = buf.append( "]" );
+                    value = buf.append( ']' );
                 }
                 result.append( ",value=" ).append( value );
                 break;

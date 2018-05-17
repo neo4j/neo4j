@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -42,7 +42,7 @@ public class Files
      * @return An output stream
      * @throws IOException If an error occurs creating directories or opening the file
      */
-    public static OutputStream createOrOpenAsOuputStream( FileSystemAbstraction fileSystem, File file, boolean append ) throws IOException
+    public static OutputStream createOrOpenAsOutputStream( FileSystemAbstraction fileSystem, File file, boolean append ) throws IOException
     {
         if ( file.getParentFile() != null )
         {

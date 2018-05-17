@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 //
 // GENERATED FILE. DO NOT EDIT.
@@ -79,11 +79,11 @@ implements Visitable<DbStructureVisitor>
         visitor.visitRelationshipType( 2, "ACTS_IN" );
         visitor.visitRelationshipType( 3, "RATED" );
         visitor.visitRelationshipType( 4, "ROOT" );
-        visitor.visitIndex( IndexDescriptorFactory.forLabel( 0, 9 ), ":Movie(title)", 1.0d, 12462L );
-        visitor.visitIndex( IndexDescriptorFactory.forLabel( 1, 5 ), ":Person(name)", 1.0d, 49845L );
-        visitor.visitIndex( IndexDescriptorFactory.forLabel( 3, 5 ), ":Actor(name)", 1.0d, 44689L );
-        visitor.visitIndex( IndexDescriptorFactory.forLabel( 4, 5 ), ":Director(name)", 1.0d, 6010L );
-        visitor.visitIndex( IndexDescriptorFactory.uniqueForLabel( 2, 3 ), ":User(login)", 1.0d, 45L );
+        visitor.visitIndex( SchemaIndexDescriptorFactory.forLabel( 0, 9 ), ":Movie(title)", 1.0d, 12462L );
+        visitor.visitIndex( SchemaIndexDescriptorFactory.forLabel( 1, 5 ), ":Person(name)", 1.0d, 49845L );
+        visitor.visitIndex( SchemaIndexDescriptorFactory.forLabel( 3, 5 ), ":Actor(name)", 1.0d, 44689L );
+        visitor.visitIndex( SchemaIndexDescriptorFactory.forLabel( 4, 5 ), ":Director(name)", 1.0d, 6010L );
+        visitor.visitIndex( SchemaIndexDescriptorFactory.uniqueForLabel( 2, 3 ), ":User(login)", 1.0d, 45L );
         visitor.visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 2, 3 ),
                 "CONSTRAINT ON ( " + "user:User ) ASSERT user.login IS UNIQUE" );
         visitor.visitAllNodesCount( 63042L );

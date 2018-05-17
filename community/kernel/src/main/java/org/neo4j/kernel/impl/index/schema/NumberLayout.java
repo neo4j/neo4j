@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -25,66 +25,54 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for numbers where numbers doesn't need to be unique.
  */
-abstract class NumberLayout extends Layout.Adapter<SchemaNumberKey,SchemaNumberValue>
+abstract class NumberLayout extends SchemaLayout<NumberSchemaKey>
 {
-    @Override
-    public SchemaNumberKey newKey()
+    NumberLayout( long identifier, int majorVersion, int minorVersion )
     {
-        return new SchemaNumberKey();
+        super( identifier, majorVersion, minorVersion );
     }
 
     @Override
-    public SchemaNumberKey copyKey( SchemaNumberKey key,
-            SchemaNumberKey into )
+    public NumberSchemaKey newKey()
+    {
+        return new NumberSchemaKey();
+    }
+
+    @Override
+    public NumberSchemaKey copyKey( NumberSchemaKey key, NumberSchemaKey into )
     {
         into.type = key.type;
         into.rawValueBits = key.rawValueBits;
-        into.entityId = key.entityId;
-        into.entityIdIsSpecialTieBreaker = key.entityIdIsSpecialTieBreaker;
+        into.setEntityId( key.getEntityId() );
+        into.setCompareId( key.getCompareId() );
         return into;
     }
 
     @Override
-    public SchemaNumberValue newValue()
+    public int keySize( NumberSchemaKey key )
     {
-        return SchemaNumberValue.INSTANCE;
+        return NumberSchemaKey.SIZE;
     }
 
     @Override
-    public int keySize()
-    {
-        return SchemaNumberKey.SIZE;
-    }
-
-    @Override
-    public int valueSize()
-    {
-        return SchemaNumberValue.SIZE;
-    }
-
-    @Override
-    public void writeKey( PageCursor cursor, SchemaNumberKey key )
+    public void writeKey( PageCursor cursor, NumberSchemaKey key )
     {
         cursor.putByte( key.type );
         cursor.putLong( key.rawValueBits );
-        cursor.putLong( key.entityId );
+        cursor.putLong( key.getEntityId() );
     }
 
     @Override
-    public void writeValue( PageCursor cursor, SchemaNumberValue value )
-    {
-    }
-
-    @Override
-    public void readKey( PageCursor cursor, SchemaNumberKey into )
+    public void readKey( PageCursor cursor, NumberSchemaKey into, int keySize )
     {
         into.type = cursor.getByte();
         into.rawValueBits = cursor.getLong();
-        into.entityId = cursor.getLong();
+        into.setEntityId( cursor.getLong() );
     }
 
     @Override
-    public void readValue( PageCursor cursor, SchemaNumberValue into )
+    int compareValue( NumberSchemaKey o1, NumberSchemaKey o2 )
     {
+        return o1.compareValueTo( o2 );
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -30,20 +30,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.impl.proc.TypeMappers.NeoValueConverter;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.kernel.impl.proc.TypeMappers.TypeChecker;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static junit.framework.TestCase.assertEquals;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTBoolean;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTFloat;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNumber;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 
 @RunWith( Parameterized.class )
 public class TypeMappersTest
@@ -141,20 +141,20 @@ public class TypeMappersTest
     public void shouldDetectCorrectType() throws Throwable
     {
         // When
-        NeoValueConverter mapper = new TypeMappers().converterFor( javaClass );
+        Neo4jTypes.AnyType type = new TypeMappers().toNeo4jType( javaClass );
 
         // Then
-        assertEquals( neoType, mapper.type() );
+        assertEquals( neoType, type );
     }
 
     @Test
     public void shouldMapCorrectly() throws Throwable
     {
         // Given
-        NeoValueConverter mapper = new TypeMappers().converterFor( javaClass );
+        TypeChecker mapper = new TypeMappers().checkerFor( javaClass );
 
         // When
-        Object converted = mapper.toNeoValue( javaValue );
+        Object converted = mapper.typeCheck( javaValue );
 
         // Then
         Assert.assertEquals( expectedNeoValue, converted );

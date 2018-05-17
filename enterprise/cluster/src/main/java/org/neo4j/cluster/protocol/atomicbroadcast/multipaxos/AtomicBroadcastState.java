@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
@@ -24,7 +27,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
-import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.statemachine.State;
@@ -46,7 +48,6 @@ public enum AtomicBroadcastState
                                                     Message<AtomicBroadcastMessage> message,
                                                     MessageHolder outgoing
                 )
-                        throws Throwable
                 {
 
                     switch ( message.getMessageType() )
@@ -74,11 +75,10 @@ public enum AtomicBroadcastState
     joining
             {
                 @Override
-                public State<?, ?> handle( AtomicBroadcastContext context,
+                public AtomicBroadcastState handle( AtomicBroadcastContext context,
                                            Message<AtomicBroadcastMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -124,7 +124,6 @@ public enum AtomicBroadcastState
                                                     Message<AtomicBroadcastMessage> message,
                                                     MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -139,14 +138,14 @@ public enum AtomicBroadcastState
                                     URI coordinatorUri = context.getUriForId( coordinator );
                                     outgoing.offer( message.copyHeadersTo(
                                             to( ProposerMessage.propose, coordinatorUri, message.getPayload() ) ) );
-                                    context.setTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ),
+                                    context.setTimeout( "broadcast-" + message.getHeader( Message.HEADER_CONVERSATION_ID ),
                                             timeout( AtomicBroadcastMessage.broadcastTimeout, message,
                                                     message.getPayload() ) );
                                 }
                                 else
                                 {
                                     outgoing.offer( message.copyHeadersTo( internal( ProposerMessage.propose,
-                                            message.getPayload() ), Message.CONVERSATION_ID, org.neo4j.cluster.protocol
+                                            message.getPayload() ), Message.HEADER_CONVERSATION_ID, org.neo4j.cluster.protocol
                                             .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                 }
                             }
@@ -160,7 +159,7 @@ public enum AtomicBroadcastState
 
                         case broadcastResponse:
                         {
-                            context.cancelTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ) );
+                            context.cancelTimeout( "broadcast-" + message.getHeader( Message.HEADER_CONVERSATION_ID ) );
 
                             // TODO FILTER MESSAGES
 
@@ -174,7 +173,7 @@ public enum AtomicBroadcastState
                                     outgoing.offer( message.copyHeadersTo(
                                             Message.internal( HeartbeatMessage.i_am_alive,
                                                     new HeartbeatMessage.IAmAliveState( change.getJoin() ) ),
-                                            Message.FROM ) );
+                                            Message.HEADER_FROM ) );
                                 }
                             }
                             else

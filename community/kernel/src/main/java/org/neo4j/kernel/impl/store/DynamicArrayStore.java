@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,11 @@ import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Pair;
@@ -38,6 +43,7 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.storable.CRSTable;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -88,10 +94,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
     public static final int NUMBER_HEADER_SIZE = 3;
     public static final int STRING_HEADER_SIZE = 5;
     public static final int GEOMETRY_HEADER_SIZE = 6;   // This should match contents of GeometryType.GeometryHeader
+    public static final int TEMPORAL_HEADER_SIZE = 2;
 
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
-    private final boolean allowStorePoints;
+    private final boolean allowStorePointsAndTemporal;
 
     public DynamicArrayStore(
             File fileName,
@@ -106,7 +113,8 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
                 logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
-        allowStorePoints = recordFormats.hasCapability( Capability.POINT_PROPERTIES );
+        allowStorePointsAndTemporal = recordFormats.hasCapability( Capability.POINT_PROPERTIES )
+                && recordFormats.hasCapability( Capability.TEMPORAL_PROPERTIES );
     }
 
     @Override
@@ -204,17 +212,20 @@ public class DynamicArrayStore extends AbstractDynamicStore
         allocateRecordsFromBytes( target, bytes, recordAllocator );
     }
 
-    public static void allocateFromPoints( Collection<DynamicRecord> target, PointValue[] array,
-            DynamicRecordAllocator recordAllocator, boolean allowStorePoints )
+    private static void allocateFromCompositeType(
+            Collection<DynamicRecord> target,
+            byte[] bytes,
+            DynamicRecordAllocator recordAllocator,
+            boolean allowsStorage,
+            Capability storageCapability )
     {
-        if ( allowStorePoints )
+        if ( allowsStorage )
         {
-            byte[] bytes = GeometryType.encodePointArray( array );
             allocateRecordsFromBytes( target, bytes, recordAllocator );
         }
         else
         {
-            throw new UnsupportedFormatCapabilityException( Capability.POINT_PROPERTIES );
+            throw new UnsupportedFormatCapabilityException( storageCapability );
         }
     }
 
@@ -244,11 +255,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     public void allocateRecords( Collection<DynamicRecord> target, Object array )
     {
-        allocateRecords( target, array, this, allowStorePoints );
+        allocateRecords( target, array, this, allowStorePointsAndTemporal );
     }
 
     public static void allocateRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator, boolean allowStorePoints )
+            DynamicRecordAllocator recordAllocator, boolean allowStorePointsAndTemporal )
     {
         if ( !array.getClass().isArray() )
         {
@@ -262,7 +273,38 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
         else if ( type.equals( PointValue.class ) )
         {
-            allocateFromPoints( target, (PointValue[]) array, recordAllocator, allowStorePoints );
+            allocateFromCompositeType( target,GeometryType.encodePointArray( (PointValue[]) array ),
+                    recordAllocator, allowStorePointsAndTemporal, Capability.POINT_PROPERTIES );
+        }
+        else if ( type.equals( LocalDate.class ) )
+        {
+            allocateFromCompositeType( target, TemporalType.encodeDateArray( (LocalDate[]) array ),
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+        }
+        else if ( type.equals( LocalTime.class ) )
+        {
+            allocateFromCompositeType( target, TemporalType.encodeLocalTimeArray( (LocalTime[]) array ),
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+        }
+        else if ( type.equals( LocalDateTime.class ) )
+        {
+            allocateFromCompositeType( target, TemporalType.encodeLocalDateTimeArray( (LocalDateTime[]) array ),
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+        }
+        else if ( type.equals( OffsetTime.class ) )
+        {
+            allocateFromCompositeType( target, TemporalType.encodeTimeArray( (OffsetTime[]) array ),
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+        }
+        else if ( type.equals( ZonedDateTime.class ) )
+        {
+            allocateFromCompositeType( target, TemporalType.encodeDateTimeArray( (ZonedDateTime[]) array ),
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+        }
+        else if ( type.equals( DurationValue.class ) )
+        {
+            allocateFromCompositeType( target, TemporalType.encodeDurationArray( (DurationValue[]) array ),
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
         }
         else
         {
@@ -295,6 +337,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
         {
             GeometryType.GeometryHeader geometryHeader = GeometryType.GeometryHeader.fromArrayHeaderBytes(header);
             return GeometryType.decodeGeometryArray( geometryHeader, bArray );
+        }
+        else if ( typeId == PropertyType.TEMPORAL.intValue() )
+        {
+            TemporalType.TemporalHeader temporalHeader = TemporalType.TemporalHeader.fromArrayHeaderBytes(header);
+            return TemporalType.decodeTemporalArray( temporalHeader, bArray );
         }
         else
         {

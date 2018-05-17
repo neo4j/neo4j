@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -50,7 +50,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
      * Check that lifecycle status of extension is STARTED
      */
     @Test
-    public void shouldBeStarted() throws Exception
+    public void shouldBeStarted()
     {
         GraphDatabaseAPI graphdb = graphdb( 0 );
         try
@@ -68,7 +68,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
      * Check that dependencies can be accessed
      */
     @Test
-    public void dependenciesCanBeRetrieved() throws Exception
+    public void dependenciesCanBeRetrieved()
     {
         GraphDatabaseAPI graphdb = graphdb( 0 );
         try
@@ -90,7 +90,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
      * Check that lifecycle status of extension is SHUTDOWN
      */
     @Test
-    public void shouldBeShutdown() throws Exception
+    public void shouldBeShutdown()
     {
         GraphDatabaseAPI graphdb = graphdb( 0 );
         graphdb.shutdown();

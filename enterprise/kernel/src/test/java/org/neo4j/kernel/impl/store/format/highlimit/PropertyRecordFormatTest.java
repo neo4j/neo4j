@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
@@ -23,7 +26,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.ByteUnit;
@@ -63,7 +65,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void writeAndReadRecordWithRelativeReferences() throws IOException
+    public void writeAndReadRecordWithRelativeReferences()
     {
         int recordSize = recordFormat.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
         long recordId = 0xF1F1F1F1F1F1L;
@@ -91,7 +93,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void readWriteFixedReferencesRecord() throws Exception
+    public void readWriteFixedReferencesRecord()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -104,7 +106,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenNextPropertyIsMissing() throws IOException
+    public void useFixedReferenceFormatWhenNextPropertyIsMissing()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -117,7 +119,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenPreviousPropertyIsMissing() throws IOException
+    public void useFixedReferenceFormatWhenPreviousPropertyIsMissing()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -130,7 +132,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenPreviousPropertyReferenceTooBig() throws IOException
+    public void useVariableLengthFormatWhenPreviousPropertyReferenceTooBig()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -143,7 +145,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenNextPropertyReferenceTooBig() throws IOException
+    public void useVariableLengthFormatWhenNextPropertyReferenceTooBig()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -156,7 +158,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useVariableLengthFormatWhenRecordSizeIsTooSmall() throws IOException
+    public void useVariableLengthFormatWhenRecordSizeIsTooSmall()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -169,7 +171,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord() throws IOException
+    public void useFixedReferenceFormatWhenRecordCanFitInRecordSizeRecord()
     {
         PropertyRecord source = new PropertyRecord( 1 );
         PropertyRecord target = new PropertyRecord( 1 );
@@ -182,7 +184,7 @@ public class PropertyRecordFormatTest
     }
 
     @Test
-    public void readSingleUnitRecordStoredNotInFixedReferenceFormat() throws Exception
+    public void readSingleUnitRecordStoredNotInFixedReferenceFormat()
     {
         PropertyRecord oldFormatRecord = new PropertyRecord( 1 );
         PropertyRecord newFormatRecord = new PropertyRecord( 1 );
@@ -197,7 +199,7 @@ public class PropertyRecordFormatTest
         verifySameReferences( oldFormatRecord, newFormatRecord );
     }
 
-    private void writeRecordWithOldFormat( PropertyRecord oldFormatRecord ) throws IOException
+    private void writeRecordWithOldFormat( PropertyRecord oldFormatRecord )
     {
         int oldRecordSize = PropertyRecordFormatV3_0_0.RECORD_SIZE;
         PropertyRecordFormatV3_0_0 recordFormatV30 = new PropertyRecordFormatV3_0_0();
@@ -218,13 +220,12 @@ public class PropertyRecordFormatTest
         assertNotEquals( recordA.getPrevProp(), recordB.getPrevProp() );
     }
 
-    private void writeReadRecord( PropertyRecord source, PropertyRecord target ) throws java.io.IOException
+    private void writeReadRecord( PropertyRecord source, PropertyRecord target )
     {
         writeReadRecord( source, target, PropertyRecordFormat.RECORD_SIZE );
     }
 
     private void writeReadRecord( PropertyRecord source, PropertyRecord target, int recordSize )
-            throws java.io.IOException
     {
         recordFormat.prepare( source, recordSize, idSequence );
         recordFormat.write( source, pageCursor, recordSize );

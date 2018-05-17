@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -68,7 +68,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
         JsonFactory factory = new JsonFactory( objectMapper )
         {
             @Override
-            protected JsonGenerator _createUTF8JsonGenerator( OutputStream out, IOContext ctxt ) throws IOException
+            protected JsonGenerator _createUTF8JsonGenerator( OutputStream out, IOContext ctxt )
             {
                 final int bufferSize = 1024 * 8;
                 Utf8Generator gen = new Utf8Generator( ctxt, _generatorFeatures, _objectCodec, out,

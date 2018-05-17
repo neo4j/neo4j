@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -121,7 +121,7 @@ public class DefaultUdcInformationCollectorTest
     }
 
     @Test
-    public void shouldIncludeVersionEditionAndMode() throws Throwable
+    public void shouldIncludeVersionEditionAndMode()
     {
         // Given
         usageData.set( UsageDataKeys.version, "1.2.3" );
@@ -135,7 +135,7 @@ public class DefaultUdcInformationCollectorTest
     }
 
     @Test
-    public void shouldIncludeRecentClientNames() throws Throwable
+    public void shouldIncludeRecentClientNames()
     {
         // Given
         usageData.get( UsageDataKeys.clientNames ).add( "SteveBrookClient/1.0" );
@@ -152,7 +152,7 @@ public class DefaultUdcInformationCollectorTest
     }
 
     @Test
-    public void shouldIncludePopularFeatures() throws Throwable
+    public void shouldIncludePopularFeatures()
     {
         // Given
         usageData.get( UsageDataKeys.features ).flag( bolt );

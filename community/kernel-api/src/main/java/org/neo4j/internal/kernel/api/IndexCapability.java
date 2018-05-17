@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Capabilities of an index.
@@ -30,42 +30,50 @@ import org.neo4j.values.storable.ValueGroup;
  */
 public interface IndexCapability
 {
-    /**
-     * What possible orderings is this index capable to provide for a query on given combination of {@link ValueGroup}.
-     * Ordering of ValueGroup correspond to ordering of related {@link IndexReference#properties()}.
-     *
-     * @param valueGroups Ordered array of {@link ValueGroup ValueGroups} for which index should be queried. Note that valueGroup
-     * must correspond to related {@link IndexReference#properties()}. A {@code null} value in the array
-     * ({@code new ValueGroup[]{null}}) is interpreted as a wildcard for any {@link ValueGroup}. Note that this is not the same as
-     * {@code order(null)} which is undefined.
-     * @return {@link IndexOrder} array containing all possible orderings for provided value groups or empty array if no explicit
-     * ordering is possible or if length of {@code valueGroups} and {@link IndexReference#properties()} differ.
-     */
-    IndexOrder[] orderCapability( ValueGroup... valueGroups );
+    IndexOrder[] ORDER_ASC = {IndexOrder.ASCENDING};
+    IndexOrder[] ORDER_NONE = new IndexOrder[0];
 
     /**
-     * Is the index capable of providing values for a query on given combination of {@link ValueGroup}.
-     * Ordering of ValueGroup correspond to ordering of {@code properties} in related {@link IndexReference}.
+     * What possible orderings is this index capable to provide for a query on given combination of {@link ValueCategory}.
+     * Ordering of ValueCategory correspond to ordering of related {@link IndexReference#properties()}.
      *
-     * @param valueGroups Ordered array of {@link ValueGroup ValueGroups} for which index should be queried. Note that valueGroup
-     * must correspond to related {@link IndexReference#properties()}. {@link ValueGroup#UNKNOWN} can be used as a wildcard for
-     * any {@link ValueGroup}. Behaviour is undefined for empty {@code null} array and {@code null} values in array.
-     * @return {@link IndexValueCapability#YES} if index is capable of providing values for query on provided array of value groups,
-     * {@link IndexValueCapability#NO} if not or {@link IndexValueCapability#PARTIAL} for some results. If length of
-     * {@code valueGroups} and {@link IndexReference#properties()} differ {@link IndexValueCapability#NO} is returned.
+     * @param valueCategories Ordered array of {@link ValueCategory ValueCategories} for which index should be queried. Note that valueCategory
+     * must correspond to related {@link IndexReference#properties()}. A {@code null} value in the array
+     * ({@code new ValueCategory[]{null}}) is interpreted as a wildcard for any {@link ValueCategory}. Note that this is not the same as
+     * {@code order(null)} which is undefined.
+     * @return {@link IndexOrder} array containing all possible orderings for provided value categories or empty array if no explicit
+     * ordering is possible or if length of {@code valueCategories} and {@link IndexReference#properties()} differ.
      */
-    IndexValueCapability valueCapability( ValueGroup... valueGroups );
+    IndexOrder[] orderCapability( ValueCategory... valueCategories );
+
+    /**
+     * Is the index capable of providing values for a query on given combination of {@link ValueCategory}.
+     * Ordering of ValueCategory correspond to ordering of {@code properties} in related {@link IndexReference}.
+     *
+     * @param valueCategories Ordered array of {@link ValueCategory ValueCategories} for which index should be queried. Note that valueCategory
+     * must correspond to related {@link IndexReference#properties()}. {@link ValueCategory#UNKNOWN} can be used as a wildcard for
+     * any {@link ValueCategory}. Behaviour is undefined for empty {@code null} array and {@code null} values in array.
+     * @return {@link IndexValueCapability#YES} if index is capable of providing values for query on provided array of value categories,
+     * {@link IndexValueCapability#NO} if not or {@link IndexValueCapability#PARTIAL} for some results. If length of
+     * {@code valueCategories} and {@link IndexReference#properties()} differ {@link IndexValueCapability#NO} is returned.
+     */
+    IndexValueCapability valueCapability( ValueCategory... valueCategories );
+
+    default boolean singleWildcard( ValueCategory[] valueCategories )
+    {
+        return valueCategories.length == 1 && valueCategories[0] == ValueCategory.UNKNOWN;
+    }
 
     IndexCapability NO_CAPABILITY = new IndexCapability()
     {
         @Override
-        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
-            return new IndexOrder[0];
+            return ORDER_NONE;
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexValueCapability.NO;
         }

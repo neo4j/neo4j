@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -35,6 +35,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,12 +47,13 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.DatabaseRule;
@@ -80,7 +82,7 @@ public class TransactionEventsIT
     public RuleChain ruleChain = RuleChain.outerRule( random ).around( expectedException ).around( db );
 
     @Test
-    public void shouldSeeExpectedTransactionData() throws Exception
+    public void shouldSeeExpectedTransactionData()
     {
         // GIVEN
         final Graph state = new Graph( db, random );
@@ -186,9 +188,22 @@ public class TransactionEventsIT
         } ) );
         AuthSubject subject = mock( AuthSubject.class );
         when( subject.username() ).thenReturn( "Christof" );
-        SecurityContext securityContext = new SecurityContext.Frozen( subject, AccessMode.Static.WRITE );
+        LoginContext loginContext = new LoginContext()
+        {
+            @Override
+            public AuthSubject subject()
+            {
+                return subject;
+            }
+
+            @Override
+            public SecurityContext authorize( Function<String,Integer> propertyIdLookup )
+            {
+                return new SecurityContext( subject, AccessMode.Static.WRITE );
+            }
+        };
         Map<String,Object> metadata = genericMap( "username", "joe" );
-        runTransaction( securityContext, metadata );
+        runTransaction( loginContext, metadata );
 
         assertThat( "Should have specified username", usernameRef.get(), equalTo( "Christof" ) );
         assertThat( "Should have metadata with specified username", metaDataRef.get(), equalTo( metadata ) );
@@ -306,9 +321,9 @@ public class TransactionEventsIT
         runTransaction( AnonymousContext.write(), Collections.emptyMap() );
     }
 
-    private void runTransaction( SecurityContext securityContext, Map<String,Object> metaData )
+    private void runTransaction( LoginContext loginContext, Map<String,Object> metaData )
     {
-        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, securityContext );
+        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, loginContext );
               Statement statement = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get() )
         {
             statement.queryRegistration().setMetaData( metaData );
@@ -617,7 +632,7 @@ public class TransactionEventsIT
     {
 
         @Override
-        public CountingTransactionEventHandler beforeCommit( TransactionData data ) throws Exception
+        public CountingTransactionEventHandler beforeCommit( TransactionData data )
         {
             getAndIncrement();
             return this;

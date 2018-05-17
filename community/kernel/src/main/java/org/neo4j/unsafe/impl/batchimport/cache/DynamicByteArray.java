@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.HeapByteArray.get3ByteIntFromByteBuffer;
 import static org.neo4j.unsafe.impl.batchimport.cache.HeapByteArray.get6BLongFromByteBuffer;
+import static org.neo4j.unsafe.impl.batchimport.cache.HeapByteArray.get5BLongFromByteBuffer;
 
 public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements ByteArray
 {
@@ -39,12 +40,16 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
     @Override
     public void swap( long fromIndex, long toIndex )
     {
-        byte[] a = defaultValue.clone();
-        byte[] b = defaultValue.clone();
-        get( fromIndex, a );
-        get( toIndex, b );
-        set( fromIndex, b );
-        set( toIndex, a );
+        ByteArray fromArray = at( fromIndex );
+        ByteArray toArray = at( toIndex );
+
+        // Byte-wise swap
+        for ( int i = 0; i < defaultValue.length; i++ )
+        {
+            byte intermediary = fromArray.getByte( fromIndex, i );
+            fromArray.setByte( fromIndex, i, toArray.getByte( toIndex, i ) );
+            toArray.setByte( toIndex, i, intermediary );
+        }
     }
 
     @Override
@@ -91,6 +96,14 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
     }
 
     @Override
+    public long get5ByteLong( long index, int offset )
+    {
+        ByteArray chunk = chunkOrNullAt( index );
+        return chunk != null ? chunk.get5ByteLong( index, offset ) :
+            get5BLongFromByteBuffer( defaultValueConvenienceBuffer, offset );
+    }
+
+    @Override
     public long get6ByteLong( long index, int offset )
     {
         ByteArray chunk = chunkOrNullAt( index );
@@ -127,6 +140,12 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
     public void setInt( long index, int offset, int value )
     {
         at( index ).setInt( index, offset, value );
+    }
+
+    @Override
+    public void set5ByteLong( long index, int offset, long value )
+    {
+        at( index ).set5ByteLong( index, offset, value );
     }
 
     @Override

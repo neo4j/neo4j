@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -88,7 +88,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    public void shouldScanRelationships() throws Exception
+    public void shouldScanRelationships()
     {
         // given
         List<Long> ids = new ArrayList<>();
@@ -106,7 +106,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    public void shouldAccessRelationshipByReference() throws Exception
+    public void shouldAccessRelationshipByReference()
     {
         // given
         try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
@@ -125,7 +125,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    public void shouldNotAccessDeletedRelationship() throws Exception
+    public void shouldNotAccessDeletedRelationship()
     {
         // given
         try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
@@ -139,7 +139,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    public void shouldAccessRelationshipLabels() throws Exception
+    public void shouldAccessRelationshipLabels()
     {
         // given
         Map<Integer,Integer> counts = new HashMap<>();
@@ -150,7 +150,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
             read.allRelationshipsScan( relationships );
             while ( relationships.next() )
             {
-                counts.compute( relationships.label(), ( k, v ) -> v == null ? 1 : v + 1 );
+                counts.compute( relationships.type(), ( k, v ) -> v == null ? 1 : v + 1 );
             }
         }
 
@@ -167,7 +167,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
     }
 
     @Test
-    public void shouldAccessNodes() throws Exception
+    public void shouldAccessNodes()
     {
         // given
         try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )

@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.server.security.enterprise.auth.plugin.api;
 
@@ -42,7 +45,7 @@ public interface AuthProviderOperations
      *
      * @deprecated
      * Settings are recommended to be stored in a separate file. You can use {@link AuthProviderOperations#neo4jHome()}
-     * to resolve your configuration file, e.g. <code>neo4jHome().resolve("conf/myPlugin.conf" );</code>.
+     * to resolve your configuration file, e.g. {@code neo4jHome().resolve("conf/myPlugin.conf" );}
      */
     @Deprecated
     Optional<Path> neo4jConfigFile();
@@ -103,35 +106,35 @@ public interface AuthProviderOperations
         void error( String message );
 
         /**
-         * Returns <tt>true</tt> if log level debug is enabled.
+         * Returns {@code true} if log level debug is enabled.
          *
-         * @return <tt>true</tt> if log level debug is enabled, otherwise <tt>false</tt>
+         * @return {@code true} if log level debug is enabled, otherwise {@code false}
          */
         boolean isDebugEnabled();
     }
 
     /**
-     * If set to <tt>true</tt> the authentication information returned by the plugin will be cached.
+     * If set to {@code true} the authentication information returned by the plugin will be cached.
      * The expiration time of the cached information is configured by the
-     * <tt>dbms.security.auth_cache_ttl</tt> configuration setting.
+     * {@code dbms.security.auth_cache_ttl} configuration setting.
      *
      * <p>Since a principal can be authenticated against cached authentication information this requires
      * the capability of matching the credentials of an authentication token against the credentials of the
      * authentication information returned by the plugin.
      *
-     * <p>The default value is <tt>false</tt>.
+     * <p>The default value is {@code false}.
      *
      * @param authenticationCachingEnabled if caching of authentication information should be enabled or not
      */
     void setAuthenticationCachingEnabled( boolean authenticationCachingEnabled );
 
     /**
-     * If set to <tt>true</tt> the authorization information (i.e. the list of roles for a given principal)
+     * If set to {@code true} the authorization information (i.e. the list of roles for a given principal)
      * returned by the plugin will be cached.
      * The expiration time of the cached information is configured by the
-     * <tt>dbms.security.auth_cache_ttl</tt> configuration setting.
+     * {@code dbms.security.auth_cache_ttl} configuration setting.
      *
-     * The default value is <tt>true</tt>.
+     * The default value is {@code true}.
      *
      * @param authorizationCachingEnabled if caching of authorization information should be enabled or not
      */

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -36,7 +36,6 @@ import java.lang.annotation.Target;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -232,11 +231,6 @@ public abstract class AbstractNeo4jTestCase
                 tx = null;
             }
         }
-    }
-
-    public NodeManager getNodeManager()
-    {
-        return graphDb.getDependencyResolver().resolveDependency( NodeManager.class );
     }
 
     public IdGenerator getIdGenerator( IdType idType )

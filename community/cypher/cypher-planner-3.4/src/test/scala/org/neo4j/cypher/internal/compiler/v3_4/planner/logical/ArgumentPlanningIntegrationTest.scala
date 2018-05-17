@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -28,8 +28,8 @@ class ArgumentPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   test("should build plans containing single row") {
     planFor("RETURN 42")._2 should equal(
       Projection(
-        Argument()(solved), expressions = Map("42" -> SignedDecimalIntegerLiteral("42")_)
-      )(solved)
+        Argument(), expressions = Map("42" -> SignedDecimalIntegerLiteral("42")_)
+      )
     )
   }
 }

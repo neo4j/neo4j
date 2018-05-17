@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.Numbers.safeCastIntToShort;
 import static org.neo4j.helpers.Numbers.safeCastIntToUnsignedShort;
 import static org.neo4j.helpers.Numbers.safeCastLongToByte;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
@@ -60,7 +61,7 @@ public class NumbersTest
         expectedException.expect( ArithmeticException.class );
         expectedException.expectMessage( "Value 131068 is too big to be represented as unsigned short" );
 
-        safeCastIntToUnsignedShort( Short.MAX_VALUE << 1 + 1 );
+        safeCastIntToUnsignedShort( Short.MAX_VALUE << 2 );
     }
 
     @Test
@@ -70,6 +71,15 @@ public class NumbersTest
         expectedException.expectMessage( "Value 128 is too big to be represented as byte" );
 
         safeCastLongToByte( Byte.MAX_VALUE + 1 );
+    }
+
+    @Test
+    public void failSafeCastIntToShort()
+    {
+        expectedException.expect( ArithmeticException.class );
+        expectedException.expectMessage( "Value 32768 is too big to be represented as short" );
+
+        safeCastIntToShort( Short.MAX_VALUE + 1 );
     }
 
     @Test
@@ -98,6 +108,15 @@ public class NumbersTest
         assertEquals(1, safeCastIntToUnsignedShort( 1 ));
         assertEquals(10, safeCastIntToUnsignedShort( 10 ));
         assertEquals( -1, safeCastIntToUnsignedShort( (Short.MAX_VALUE << 1) + 1 ) );
+    }
+
+    @Test
+    public void castIntToShort()
+    {
+        assertEquals(1, safeCastIntToShort( 1 ));
+        assertEquals(10, safeCastIntToShort( 10 ));
+        assertEquals( Short.MAX_VALUE, safeCastIntToShort( Short.MAX_VALUE ) );
+        assertEquals( Short.MIN_VALUE, safeCastIntToShort( Short.MIN_VALUE ) );
     }
 
     @Test

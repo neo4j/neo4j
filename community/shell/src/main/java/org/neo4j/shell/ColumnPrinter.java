@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -29,7 +29,7 @@ import static java.lang.System.lineSeparator;
 public class ColumnPrinter
 {
     private final Column rawColumn;
-    private final List<Column> columns = new ArrayList<Column>();
+    private final List<Column> columns = new ArrayList<>();
 
     public ColumnPrinter( String... columnPrefixes )
     {
@@ -84,7 +84,7 @@ public class ColumnPrinter
     private static class Column
     {
         private int widest;
-        protected final List<String> cells = new ArrayList<String>();
+        protected final List<String> cells = new ArrayList<>();
         protected final String prefix;
 
         Column( String prefix )

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -305,6 +307,29 @@ public class RecoveryTest
 
         // THEN
         assertTrue( recoveryRequired );
+        assertEquals( marker.getByteOffset(), file.length() );
+    }
+
+    @Test
+    public void doNotTruncateCheckpointsAfterLastTransaction() throws IOException
+    {
+        File file = logFiles.getLogFileForVersion( logVersion );
+        LogPositionMarker marker = new LogPositionMarker();
+        writeSomeData( file, pair ->
+        {
+            LogEntryWriter writer = pair.first();
+            writer.writeStartEntry( 1, 1, 1L, 1L, ArrayUtils.EMPTY_BYTE_ARRAY );
+            writer.writeCommitEntry( 1L, 2L );
+            writer.writeCheckPointEntry( new LogPosition( logVersion, LogHeader.LOG_HEADER_SIZE ) );
+            writer.writeCheckPointEntry( new LogPosition( logVersion, LogHeader.LOG_HEADER_SIZE ) );
+            writer.writeCheckPointEntry( new LogPosition( logVersion, LogHeader.LOG_HEADER_SIZE ) );
+            writer.writeCheckPointEntry( new LogPosition( logVersion, LogHeader.LOG_HEADER_SIZE ) );
+            Consumer<LogPositionMarker> other = pair.other();
+            other.accept( marker );
+            return true;
+        } );
+        assertTrue( recover( storeDir, logFiles ) );
+
         assertEquals( marker.getByteOffset(), file.length() );
     }
 

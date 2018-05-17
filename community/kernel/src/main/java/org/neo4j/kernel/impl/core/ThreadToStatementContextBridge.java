@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -66,16 +66,16 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         return getKernelTransactionBoundToThisThread( true ).acquireStatement();
     }
 
-    private void assertInUnterminatedTransaction( KernelTransaction transaction )
+    private static void assertInUnterminatedTransaction( KernelTransaction transaction )
     {
         if ( transaction == null )
         {
             throw new BridgeNotInTransactionException();
         }
-        Optional<Status> terminationReason = transaction.getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        if ( transaction.isTerminated() )
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
+            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
         }
     }
 
@@ -86,7 +86,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         isShutdown = true;
     }
@@ -115,7 +115,8 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         return getTopLevelTransactionBoundToThisThread( strict );
     }
 
-    // Exeptions below extend the public API exceptions with versions that have status codes.
+    // Exceptions below extend the public API exceptions with versions that have status codes.
+    // TODO why not add this status to the super exceptions?
     private static class BridgeNotInTransactionException extends NotInTransactionException implements Status.HasStatus
     {
         @Override

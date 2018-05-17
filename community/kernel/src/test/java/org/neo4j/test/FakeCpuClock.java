@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,14 +19,15 @@
  */
 package org.neo4j.test;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
+import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.resources.CpuClock;
 
 public class FakeCpuClock extends CpuClock implements TestRule
@@ -39,7 +40,7 @@ public class FakeCpuClock extends CpuClock implements TestRule
             return -1;
         }
     };
-    private final PrimitiveLongLongMap cpuTimes = Primitive.offHeapLongLongMap();
+    private final PrimitiveLongLongMap cpuTimes = Primitive.offHeapLongLongMap( GlobalMemoryTracker.INSTANCE );
 
     @Override
     public long cpuTimeNanos( long threadId )

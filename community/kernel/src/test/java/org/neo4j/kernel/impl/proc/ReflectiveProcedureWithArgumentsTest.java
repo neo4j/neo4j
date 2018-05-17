@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -28,28 +27,32 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 public class ReflectiveProcedureWithArgumentsTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void shouldCompileSimpleProcedure() throws Throwable
@@ -58,7 +61,7 @@ public class ReflectiveProcedureWithArgumentsTest
         List<CallableProcedure> procedures = compile( ClassWithProcedureWithSimpleArgs.class );
 
         // Then
-        TestCase.assertEquals( 1, procedures.size() );
+        assertEquals( 1, procedures.size() );
         assertThat( procedures.get( 0 ).signature(), equalTo(
                 procedureSignature( "org", "neo4j", "kernel", "impl", "proc", "listCoolPeople" )
                         .in( "name", Neo4jTypes.NTString )
@@ -74,7 +77,7 @@ public class ReflectiveProcedureWithArgumentsTest
         CallableProcedure procedure = compile( ClassWithProcedureWithSimpleArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( new BasicContext(), new Object[]{"Pontus", 35L} );
+        RawIterator<Object[],ProcedureException> out = procedure.apply( new BasicContext(), new Object[]{"Pontus", 35L}, resourceTracker );
 
         // Then
         List<Object[]> collect = asList( out );
@@ -90,7 +93,7 @@ public class ReflectiveProcedureWithArgumentsTest
         // When
         RawIterator<Object[],ProcedureException> out = procedure.apply( new BasicContext(), new Object[]{
                 Arrays.asList( "Roland", "Eddie", "Susan", "Jake" ),
-                Arrays.asList( 1000L, 23L, 29L, 12L )} );
+                Arrays.asList( 1000L, 23L, 29L, 12L )}, resourceTracker );
 
         // Then
         List<Object[]> collect = asList( out );
@@ -217,6 +220,6 @@ public class ReflectiveProcedureWithArgumentsTest
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
         return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(), new ComponentRegistry(),
-                NullLog.getInstance(), ProcedureConfig.DEFAULT ).compileProcedure( clazz, Optional.empty(), true );
+                NullLog.getInstance(), ProcedureConfig.DEFAULT ).compileProcedure( clazz, null, true );
     }
 }

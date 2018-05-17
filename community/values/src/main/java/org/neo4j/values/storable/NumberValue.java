@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,8 +19,28 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.AnyValue;
+
 public abstract class NumberValue extends ScalarValue
 {
+    public static double safeCastFloatingPoint( String name, AnyValue value, double defaultValue )
+    {
+        if ( value == null )
+        {
+            return defaultValue;
+        }
+        if ( value instanceof IntegralValue )
+        {
+            return ((IntegralValue) value).doubleValue();
+        }
+        if ( value instanceof FloatingPointValue )
+        {
+            return ((FloatingPointValue) value).doubleValue();
+        }
+        throw new IllegalArgumentException(
+                name + " must be a number value, but was a " + value.getClass().getSimpleName() );
+    }
+
     public abstract double doubleValue();
 
     public abstract long longValue();
@@ -28,6 +48,23 @@ public abstract class NumberValue extends ScalarValue
     abstract int compareTo( IntegralValue other );
 
     abstract int compareTo( FloatingPointValue other );
+
+    @Override
+    int unsafeCompareTo( Value otherValue )
+    {
+        if ( otherValue instanceof IntegralValue )
+        {
+            return compareTo( (IntegralValue) otherValue );
+        }
+        else if ( otherValue instanceof FloatingPointValue )
+        {
+            return compareTo( (FloatingPointValue) otherValue );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+    }
 
     @Override
     public abstract Number asObjectCopy();
@@ -39,19 +76,19 @@ public abstract class NumberValue extends ScalarValue
     }
 
     @Override
-    public boolean equals( boolean x )
+    public final boolean equals( boolean x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( char x )
+    public final boolean equals( char x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( String x )
+    public final boolean equals( String x )
     {
         return false;
     }
@@ -60,5 +97,85 @@ public abstract class NumberValue extends ScalarValue
     public ValueGroup valueGroup()
     {
         return ValueGroup.NUMBER;
+    }
+
+    public abstract NumberValue minus( long b );
+
+    public abstract NumberValue minus( double b );
+
+    public abstract NumberValue plus( long b );
+
+    public abstract NumberValue plus( double b );
+
+    public abstract NumberValue times( long b );
+
+    public abstract NumberValue times( double b );
+
+    public abstract NumberValue dividedBy( long b );
+
+    public abstract NumberValue dividedBy( double b );
+
+    public NumberValue minus( NumberValue numberValue )
+    {
+        if ( numberValue instanceof IntegralValue )
+        {
+            return minus( numberValue.longValue() );
+        }
+        else if ( numberValue instanceof FloatingPointValue )
+        {
+            return minus( numberValue.doubleValue() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot subtract " + numberValue );
+        }
+    }
+
+    public NumberValue plus( NumberValue numberValue )
+    {
+        if ( numberValue instanceof IntegralValue )
+        {
+            return plus( numberValue.longValue() );
+        }
+        else if ( numberValue instanceof FloatingPointValue )
+        {
+            return plus( numberValue.doubleValue() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot add " + numberValue );
+        }
+    }
+
+    public NumberValue times( NumberValue numberValue )
+    {
+        if ( numberValue instanceof IntegralValue )
+        {
+            return times( numberValue.longValue() );
+        }
+        else if ( numberValue instanceof FloatingPointValue )
+        {
+            return times( numberValue.doubleValue() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot multiply with " + numberValue );
+        }
+    }
+
+    public NumberValue divideBy( NumberValue numberValue )
+    {
+        if ( numberValue instanceof IntegralValue )
+        {
+            return dividedBy( numberValue.longValue() );
+        }
+        else if ( numberValue instanceof FloatingPointValue )
+        {
+            return dividedBy( numberValue.doubleValue() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot divide by " + numberValue );
+        }
     }
 }

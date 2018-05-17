@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,20 +26,20 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 
 public class TransactionStatementSequenceTest
 {
     @Test
-    public void shouldAllowReadStatementAfterReadStatement() throws Exception
+    public void shouldAllowReadStatementAfterReadStatement()
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.read() );
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
 
         // when / then
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
     }
 
     @Test
@@ -47,10 +47,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
 
         // when / then
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
     }
 
     @Test
@@ -58,10 +58,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
 
         // when / then
-        tx.acquireStatement().schemaWriteOperations();
+        tx.schemaWrite();
     }
 
     @Test
@@ -69,12 +69,12 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
 
         // when
         try
         {
-            tx.acquireStatement().schemaWriteOperations();
+            tx.schemaWrite();
 
             fail( "expected exception" );
         }
@@ -91,12 +91,12 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
-        tx.acquireStatement().schemaWriteOperations();
+        tx.schemaWrite();
 
         // when
         try
         {
-            tx.acquireStatement().dataWriteOperations();
+            tx.dataWrite();
 
             fail( "expected exception" );
         }
@@ -113,10 +113,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
 
         // when / then
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
     }
 
     @Test
@@ -124,10 +124,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
-        tx.acquireStatement().schemaWriteOperations();
+        tx.schemaWrite();
 
         // when / then
-        tx.acquireStatement().schemaWriteOperations();
+        tx.schemaWrite();
     }
 
     @Test
@@ -135,10 +135,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
 
         // when / then
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
     }
 
     @Test
@@ -146,9 +146,9 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
-        tx.acquireStatement().schemaWriteOperations();
+        tx.schemaWrite();
 
         // when / then
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
     }
 }

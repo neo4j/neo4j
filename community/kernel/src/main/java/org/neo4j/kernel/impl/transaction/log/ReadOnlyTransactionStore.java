@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -81,25 +81,25 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         life.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         life.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         life.shutdown();
     }

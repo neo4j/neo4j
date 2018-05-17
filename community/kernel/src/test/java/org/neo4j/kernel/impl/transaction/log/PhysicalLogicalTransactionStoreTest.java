@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -200,13 +200,12 @@ public class PhysicalLogicalTransactionStoreTest
 
             @Override
             public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode )
-                    throws Exception
             {
                 return mode == TransactionApplicationMode.REVERSE_RECOVERY ? mock( RecoveryApplier.class ) : visitor;
             }
 
             @Override
-            public RecoveryStartInformation getRecoveryStartInformation() throws IOException
+            public RecoveryStartInformation getRecoveryStartInformation()
             {
                 return new RecoveryStartInformation( LogPosition.start( 0 ), 1 );
             }
@@ -440,7 +439,7 @@ public class PhysicalLogicalTransactionStoreTest
         }
 
         @Override
-        public boolean visit( CommittedTransactionRepresentation tx ) throws Exception
+        public boolean visit( CommittedTransactionRepresentation tx )
         {
             TransactionRepresentation transaction = tx.getTransactionRepresentation();
             assertArrayEquals( additionalHeader, transaction.additionalHeader() );
@@ -459,7 +458,7 @@ public class PhysicalLogicalTransactionStoreTest
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
         }
     }

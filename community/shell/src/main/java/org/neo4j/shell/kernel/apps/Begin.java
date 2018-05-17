@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -45,7 +45,7 @@ public class Begin extends NonTransactionProvidingApp
 
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
-            throws ShellException, RemoteException
+            throws RemoteException
     {
         String lineWithoutApp = parser.getLineWithoutApp();
         if ( !acceptableText( lineWithoutApp ) )
@@ -86,12 +86,8 @@ public class Begin extends NonTransactionProvidingApp
 
     private boolean acceptableText( String line )
     {
-        if ( line == null || line.length() > TRANSACTION.length() )
-        {
-            return false;
-        }
+        return line != null && line.length() <= TRANSACTION.length() && TRANSACTION.startsWith( line.toUpperCase() );
 
-        return TRANSACTION.startsWith( line.toUpperCase() );
     }
 
     public static KernelTransaction currentTransaction( GraphDatabaseShellServer server )

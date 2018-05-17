@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -20,6 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 class UpdateCounter {
+  def offsetForHeaders(): Unit = {
+    if (uncommittedRows != 0)
+      throw new IllegalStateException("Header offset must be accounted for at the beginning")
+    uncommittedRows = -1
+  }
+
   private var uncommittedRows = 0L
   private var totalRows = 0L
 

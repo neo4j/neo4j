@@ -1,21 +1,24 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.bolt;
 
@@ -41,7 +44,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,6 +57,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.EnterpriseNeo4jRule;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.io.IOUtils;
@@ -62,7 +65,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.ThreadTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.VerboseTimeout;
 
 import static java.util.Collections.newSetFromMap;
@@ -70,7 +73,6 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -80,7 +82,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.driver.v1.Config.EncryptionLevel.NONE;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.function.Predicates.await;
 import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
@@ -89,21 +91,29 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class SessionResetIT
 {
+    private static final int CSV_FILE_SIZE = 10_000;
+    private static final int LOAD_CSV_BATCH_SIZE = 10;
+
     private static final String SHORT_QUERY_1 = "CREATE (n:Node {name: 'foo', occupation: 'bar'})";
     private static final String SHORT_QUERY_2 = "MATCH (n:Node {name: 'foo'}) RETURN count(n)";
     private static final String LONG_QUERY = "UNWIND range(0, 10000000) AS i CREATE (n:Node {idx: i}) DELETE n";
-    private static final String LONG_PERIODIC_COMMIT_QUERY = "USING PERIODIC COMMIT 1 " +
-                                                             "LOAD CSV FROM '" + createTmpCsvFile() + "' AS l " +
-                                                             "UNWIND range(0, 10) AS i " +
-                                                             "CREATE (n:Node {name: l[0], occupation: l[1], idx: i}) " +
-                                                             "DELETE n";
+
+    private static final String LONG_PERIODIC_COMMIT_QUERY_TEMPLATE =
+            "USING PERIODIC COMMIT 1 " +
+            "LOAD CSV FROM '%s' AS line " +
+            "UNWIND range(1, " + LOAD_CSV_BATCH_SIZE + ") AS index " +
+            "CREATE (n:Node {id: index, name: line[0], occupation: line[1]})";
 
     private static final int STRESS_IT_THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2;
     private static final long STRESS_IT_DURATION_MS = SECONDS.toMillis( 5 );
     private static final String[] STRESS_IT_QUERIES = {SHORT_QUERY_1, SHORT_QUERY_2, LONG_QUERY};
 
-    private final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 3, MINUTES ).build();
-    private final Neo4jRule db = new EnterpriseNeo4jRule().withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+    private final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 6, MINUTES ).build();
+    private final Neo4jRule db = new EnterpriseNeo4jRule()
+            .withConfig( GraphDatabaseSettings.load_csv_file_url_root, "import" )
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+            .withConfig( ServerSettings.script_enabled, Settings.TRUE )
+            .dumpLogsOnFailure( System.out );
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( timeout ).around( db );
@@ -111,13 +121,13 @@ public class SessionResetIT
     private Driver driver;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
-        driver = GraphDatabase.driver( db.boltURI(), Config.build().withEncryptionLevel( NONE ).toConfig() );
+        driver = GraphDatabase.driver( db.boltURI(), Config.build().withLogging( DEV_NULL_LOGGING ).toConfig() );
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         IOUtils.closeAllSilently( driver );
     }
@@ -140,23 +150,18 @@ public class SessionResetIT
     @Test
     public void shouldNotTerminatePeriodicCommitQueries() throws Exception
     {
-        // periodic commit query can't be terminated so but reset must fail the transaction
-        Future<Void> queryResult = runQueryInDifferentThreadAndResetSession( LONG_PERIODIC_COMMIT_QUERY, true );
+        Future<Void> queryResult = runQueryInDifferentThreadAndResetSession( longPeriodicCommitQuery(), true );
 
         try
         {
-            assertNull( queryResult.get( 1, MINUTES ) );
+            queryResult.get( 1, MINUTES );
         }
-        catch ( TimeoutException e )
+        catch ( ExecutionException ignore )
         {
-            System.err.println( "Unable to get query result, dumping all stacktraces:" );
-            ThreadTestUtils.dumpAllStackTraces();
-            throw e;
         }
         assertDatabaseIsIdle();
 
-        // termination must cause transaction failure and no nodes should be committed
-        assertEquals( 0, countNodes() );
+        assertEquals( CSV_FILE_SIZE * LOAD_CSV_BATCH_SIZE, countNodes() );
     }
 
     @Test
@@ -374,13 +379,21 @@ public class SessionResetIT
                error.getMessage().startsWith( "The transaction has been terminated" );
     }
 
-    private static URI createTmpCsvFile()
+    private String longPeriodicCommitQuery()
+    {
+        URI fileUri = createTmpCsvFile();
+        return String.format( LONG_PERIODIC_COMMIT_QUERY_TEMPLATE, fileUri );
+    }
+
+    private URI createTmpCsvFile()
     {
         try
         {
-            Path csvFile = Files.createTempFile( "test", ".csv" );
-            List<String> lines = range( 0, 50000 ).mapToObj( i -> "Foo-" + i + ", Bar-" + i ).collect( toList() );
-            return Files.write( csvFile, lines ).toAbsolutePath().toUri();
+            Path importDir = db.getConfig().get( GraphDatabaseSettings.load_csv_file_url_root ).toPath();
+            Files.createDirectory( importDir );
+            Path csvFile = Files.createTempFile( importDir, "test", ".csv" );
+            Iterable<String> lines = range( 0, CSV_FILE_SIZE ).mapToObj( i -> "Foo-" + i + ", Bar-" + i )::iterator;
+            return URI.create( "file:///" + Files.write( csvFile, lines ).getFileName() );
         }
         catch ( IOException e )
         {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -53,12 +53,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate: Predicate,
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     // If any of the points we need is null, the whole expression will return null
-    val returnNull = interestingPoints.exists(key => ctx.get(key) match {
-      case Some(Values.NO_VALUE) => true
-      case None if !allowIntroducingNewIdentifiers =>
-        throw new AssertionError("This execution plan should not exist.")
-      case _ => false
-    })
+    val returnNull = interestingPoints.exists(key => ctx.isNull(key))
 
     if (returnNull) {
       Values.NO_VALUE

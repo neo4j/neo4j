@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -54,7 +55,7 @@ public class StubPagedFile implements PagedFile
     }
 
     @Override
-    public long fileSize() throws IOException
+    public long fileSize()
     {
         final long lastPageId = getLastPageId();
         if ( lastPageId < 0 )
@@ -65,23 +66,29 @@ public class StubPagedFile implements PagedFile
     }
 
     @Override
-    public void flushAndForce() throws IOException
+    public File file()
+    {
+        return new File( "stub" );
+    }
+
+    @Override
+    public void flushAndForce()
     {
     }
 
     @Override
-    public void flushAndForce( IOLimiter limiter ) throws IOException
+    public void flushAndForce( IOLimiter limiter )
     {
     }
 
     @Override
-    public long getLastPageId() throws IOException
+    public long getLastPageId()
     {
         return lastPageId;
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 

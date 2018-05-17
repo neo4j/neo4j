@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -37,7 +37,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  * @param <KEY> type of keys in tree.
  * @param <VALUE> type of values in tree.
  */
-class FullScanNonUniqueIndexSampler<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
+class FullScanNonUniqueIndexSampler<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
         extends NonUniqueIndexSampler.Adapter
 {
     private final GBPTree<KEY,VALUE> gbpTree;

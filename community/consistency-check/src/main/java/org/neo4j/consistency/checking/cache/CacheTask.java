@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -107,11 +107,11 @@ public abstract class CacheTask extends ConsistencyCheckerTask
         {
             RecordStore<NodeRecord> nodeStore = storeAccess.getNodeStore();
             CacheAccess.Client client = cacheAccess.client();
-            for ( long nodeId = 0; nodeId < nodeStore.getHighId(); nodeId++ )
+            long highId = nodeStore.getHighId();
+            for ( long nodeId = 0; nodeId < highId; nodeId++ )
             {
                 if ( client.getFromCache( nodeId, CacheSlots.NextRelationship.SLOT_FIRST_IN_TARGET ) == 0 )
                 {
-                    // TODO reuse record instances?
                     NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
                     if ( node.inUse() && !node.isDense() )
                     {

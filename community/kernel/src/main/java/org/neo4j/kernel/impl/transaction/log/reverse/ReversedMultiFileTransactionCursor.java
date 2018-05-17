@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -71,7 +71,7 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
      * @throws IOException on I/O error.
      */
     public static TransactionCursor fromLogFile( LogFiles logFiles, LogFile logFile, LogPosition backToPosition,
-            boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor ) throws IOException
+            boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor )
     {
         long highestVersion = logFiles.getHighestLogVersion();
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();

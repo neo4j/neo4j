@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -57,7 +57,7 @@ public class HttpHeaderUtils
         {
             return mediaType;
         }
-        Map<String,String> paramsWithCharset = new HashMap<String,String>( parameters );
+        Map<String,String> paramsWithCharset = new HashMap<>( parameters );
         paramsWithCharset.putAll( CHARSET );
         return new MediaType( mediaType.getType(), mediaType.getSubtype(), paramsWithCharset );
     }
@@ -86,5 +86,34 @@ public class HttpHeaderUtils
             }
         }
         return GraphDatabaseSettings.UNSPECIFIED_TIMEOUT;
+    }
+
+    /**
+     * Validates given HTTP header name. Does not allow blank names and names with control characters, like '\n' (LF) and '\r' (CR).
+     * Can be used to detect and neutralize CRLF in HTTP headers.
+     *
+     * @param name the HTTP header name, like 'Accept' or 'Content-Type'.
+     * @return {@code true} when given name represents a valid HTTP header, {@code false} otherwise.
+     */
+    public static boolean isValidHttpHeaderName( String name )
+    {
+        if ( name == null || name.length() == 0 )
+        {
+            return false;
+        }
+        boolean isBlank = true;
+        for ( int i = 0; i < name.length(); i++ )
+        {
+            char c = name.charAt( i );
+            if ( Character.isISOControl( c ) )
+            {
+                return false;
+            }
+            if ( !Character.isWhitespace( c ) )
+            {
+                isBlank = false;
+            }
+        }
+        return !isBlank;
     }
 }

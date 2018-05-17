@@ -1,24 +1,28 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This file is part of Neo4j Enterprise Edition. The included source
+ * code can be redistributed and/or modified under the terms of the
+ * GNU AFFERO GENERAL PUBLIC LICENSE Version 3
+ * (http://www.fsf.org/licensing/licenses/agpl-3.0.html) with the
+ * Commons Clause, as found in the associated LICENSE.txt file.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Neo4j object code can be licensed independently from the source
+ * under separate terms from the AGPL. Inquiries can be directed to:
+ * licensing@neo4j.com
+ *
+ * More information is also available at:
+ * https://neo4j.com/licensing/
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -42,7 +46,6 @@ public enum LearnerState
                                             Message<LearnerMessage> message,
                                             MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == LearnerMessage.join )
                     {
@@ -59,8 +62,7 @@ public enum LearnerState
                 public LearnerState handle( LearnerContext context,
                                             Message<LearnerMessage> message,
                                             MessageHolder outgoing
-                )
-                        throws Throwable
+                ) throws IOException, ClassNotFoundException, URISyntaxException
                 {
                     switch ( message.getMessageType() )
                     {
@@ -80,7 +82,7 @@ public enum LearnerState
 
                             context.learnedInstanceId( instanceId.getId() );
 
-                            instance.closed( learnState.getValue(), message.getHeader( Message.CONVERSATION_ID ) );
+                            instance.closed( learnState.getValue(), message.getHeader( Message.HEADER_CONVERSATION_ID ) );
 
                             /*
                              * The conditional below is simply so that no expensive deserialization will happen if we
@@ -114,7 +116,7 @@ public enum LearnerState
                                 outgoing.offer( Message.internal( AtomicBroadcastMessage.broadcastResponse,
                                         learnState.getValue() )
                                         .setHeader( InstanceId.INSTANCE, instance.id.toString() )
-                                        .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader ));
+                                        .setHeader( Message.HEADER_CONVERSATION_ID, instance.conversationIdHeader ));
                                 context.setLastDeliveredInstanceId( instanceId.getId() );
 
                                 long checkInstanceId = instanceId.getId() + 1;
@@ -126,7 +128,7 @@ public enum LearnerState
                                     Message<AtomicBroadcastMessage> learnMessage = Message.internal(
                                             AtomicBroadcastMessage.broadcastResponse, instance.value_2 )
                                             .setHeader( InstanceId.INSTANCE, instance.id.toString() )
-                                            .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader );
+                                            .setHeader( Message.HEADER_CONVERSATION_ID, instance.conversationIdHeader );
                                     outgoing.offer( learnMessage );
 
                                     checkInstanceId++;
@@ -203,7 +205,7 @@ public enum LearnerState
                                 outgoing.offer( Message.respond( LearnerMessage.learn, message,
                                         new LearnerMessage.LearnState( instance.value_2 ) ).
                                         setHeader( InstanceId.INSTANCE, instanceId.toString() ).
-                                        setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader ) );
+                                        setHeader( Message.HEADER_CONVERSATION_ID, instance.conversationIdHeader ) );
                             }
                             else
                             {
@@ -251,9 +253,9 @@ public enum LearnerState
                                 }
 
                                 org.neo4j.cluster.InstanceId instanceId =
-                                        message.hasHeader( Message.INSTANCE_ID )
+                                        message.hasHeader( Message.HEADER_INSTANCE_ID )
                                         ? new org.neo4j.cluster.InstanceId(
-                                                Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) )
+                                                Integer.parseInt( message.getHeader( Message.HEADER_INSTANCE_ID ) ) )
                                         : context.getMyId();
                                 context.setLastKnownLearnedInstanceInCluster( catchUpTo, instanceId );
                             }
@@ -283,7 +285,7 @@ public enum LearnerState
                     }
                     else
                     {
-                        return new URI( message.getHeader( Message.FROM ) );
+                        return new URI( message.getHeader( Message.HEADER_FROM ) );
                     }
                 }
             }

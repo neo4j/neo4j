@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -26,17 +26,25 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
 
+import scala.collection.mutable.ArrayBuffer
+
 case class FilterFunction(collection: Expression, id: String, predicate: Predicate)
   extends NullInNullOutExpression(collection)
   with ListSupport
   with Closure {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = {
-    val traversable = makeTraversable(value)
+    val list = makeTraversable(value)
     val innerContext = m.createClone()
-    VirtualValues.filter(traversable, new java.util.function.Function[AnyValue, java.lang.Boolean]() {
-      override def apply(v1: AnyValue): java.lang.Boolean =  predicate.isTrue(innerContext.newWith1(id, v1), state)
-    })
+    val filtered = new ArrayBuffer[AnyValue]
+    val inputs = list.iterator()
+    while (inputs.hasNext()) {
+      val value = inputs.next()
+      if (predicate.isTrue(innerContext.set(id, value), state)) {
+        filtered += value
+      }
+    }
+    VirtualValues.list(filtered.toArray:_*)
   }
 
   def rewrite(f: (Expression) => Expression) =

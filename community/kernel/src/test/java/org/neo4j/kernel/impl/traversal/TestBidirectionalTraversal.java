@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -71,7 +71,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void bothSidesMustHaveSameUniqueness() throws Exception
+    public void bothSidesMustHaveSameUniqueness()
     {
         createGraph( "A TO B" );
 
@@ -86,7 +86,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void pathsForOneDirection() throws Exception
+    public void pathsForOneDirection()
     {
         /*
          * (a)-->(b)==>(c)-->(d)
@@ -106,7 +106,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void collisionEvaluator() throws Exception
+    public void collisionEvaluator()
     {
         /*
          *           (d)-->(e)--
@@ -131,7 +131,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void multipleCollisionEvaluators() throws Exception
+    public void multipleCollisionEvaluators()
     {
         /*
          *           (g)
@@ -153,7 +153,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void multipleStartAndEndNodes() throws Exception
+    public void multipleStartAndEndNodes()
     {
         /*
          * (a)--\         -->(f)
@@ -164,7 +164,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
          */
         createGraph( "a TO d", "b TO d", "c TO d", "e TO d", "e TO f", "e TO g" );
 
-        PathExpander<Void> expander = PathExpanderBuilder.<Void>empty().add( to ).build();
+        PathExpander<Void> expander = PathExpanderBuilder.empty().add( to ).build();
         TraversalDescription side = getGraphDb().traversalDescription().uniqueness( NODE_PATH ).expand( expander );
         expectPaths( getGraphDb().bidirectionalTraversalDescription().mirroredSides( side ).traverse(
                     asList( getNodeWithName( "a" ), getNodeWithName( "b" ), getNodeWithName( "c" ) ),
@@ -173,7 +173,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void ensureCorrectPathEntitiesInShortPath() throws Exception
+    public void ensureCorrectPathEntitiesInShortPath()
     {
         /*
          * (a)-->(b)
@@ -199,7 +199,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void mirroredTraversalReversesInitialState() throws Exception
+    public void mirroredTraversalReversesInitialState()
     {
         /*
          * (a)-->(b)-->(c)-->(d)
