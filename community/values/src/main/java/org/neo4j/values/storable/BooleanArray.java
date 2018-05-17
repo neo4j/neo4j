@@ -21,6 +21,7 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
@@ -63,6 +64,14 @@ public class BooleanArray extends ArrayValue
     public int computeHash()
     {
         return NumberValues.hash( value );
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        hash = hashFunction.update( hash, value.length );
+        hash = hashFunction.update( hash, hashCode() );
+        return hash;
     }
 
     @Override

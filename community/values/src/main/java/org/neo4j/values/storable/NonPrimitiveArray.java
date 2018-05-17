@@ -21,6 +21,8 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 
+import org.neo4j.hashing.HashFunction;
+
 public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends ArrayValue
 {
     protected abstract T[] value();
@@ -107,6 +109,17 @@ public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends
     public final int computeHash()
     {
         return Arrays.hashCode( value() );
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        hash = hashFunction.update( hash, length() );
+        for ( T obj : value() )
+        {
+            hash = hashFunction.update( hash, obj.hashCode() );
+        }
+        return hash;
     }
 
     @Override

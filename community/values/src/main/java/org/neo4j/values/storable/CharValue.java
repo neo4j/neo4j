@@ -22,6 +22,7 @@ package org.neo4j.values.storable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
 
@@ -66,6 +67,18 @@ public final class CharValue extends TextValue
     {
         //The 31 is there to give it the same hash as the string equivalent
         return 31 + value;
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        return updateHash( hashFunction, hash, value );
+    }
+
+    public static long updateHash( HashFunction hashFunction, long hash, char value )
+    {
+        hash = hashFunction.update( hash, value );
+        return hashFunction.update( hash, 1 ); // Pretend we're a string of length 1.
     }
 
     @Override

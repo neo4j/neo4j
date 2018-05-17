@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.hashing.HashFunction;
+
 public abstract class FloatingPointArray extends NumberArray
 {
     public abstract double doubleValue( int offset );
@@ -41,4 +43,15 @@ public abstract class FloatingPointArray extends NumberArray
         return NumberType.FLOATING_POINT;
     }
 
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        int len = length();
+        hash = hashFunction.update( hash, len );
+        for ( int i = 0; i < len; i++ )
+        {
+            hash = hashFunction.update( hash, Double.doubleToLongBits( doubleValue( i ) ) );
+        }
+        return hash;
+    }
 }

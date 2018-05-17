@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.utils.ValueMath;
 
@@ -54,6 +55,12 @@ public abstract class IntegralValue extends NumberValue
     public final int computeHash()
     {
         return NumberValues.hash( longValue() );
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        return hashFunction.update( hash, longValue() );
     }
 
     @Override

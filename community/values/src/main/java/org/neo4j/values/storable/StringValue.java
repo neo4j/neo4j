@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
@@ -175,6 +176,12 @@ public abstract class StringValue extends TextValue
         protected int computeHash()
         {
             return 0;
+        }
+
+        @Override
+        public long updateHash( HashFunction hashFunction, long hash )
+        {
+            return hashFunction.update( hash, 0 ); // Mix in our length; a single zero.
         }
 
         @Override

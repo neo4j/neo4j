@@ -26,9 +26,8 @@ import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.chrono.ChronoZonedDateTime;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
+import java.time.chrono.ChronoZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.IsoFields;
@@ -49,6 +48,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
@@ -123,6 +123,13 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     public final T asObjectCopy()
     {
         return temporal();
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        // todo Good enough? Or do subclasses need to implement each their own?
+        return hashFunction.update( hash, hashCode() );
     }
 
     @Override

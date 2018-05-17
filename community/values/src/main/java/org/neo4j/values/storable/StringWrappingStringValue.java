@@ -22,6 +22,8 @@ package org.neo4j.values.storable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.hashing.HashFunction;
+
 /**
  * Implementation of StringValue that wraps a `java.lang.String` and
  * delegates methods to that instance.
@@ -63,6 +65,34 @@ final class StringWrappingStringValue extends StringValue
             h = 31 * h + codePoint;
         }
         return h;
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        return updateHash( hashFunction, hash, value );
+    }
+
+    public static long updateHash( HashFunction hashFunction, long hash, String value )
+    {
+        //NOTE that we are basing the hash code on code points instead of char[] values.
+        int length = value.length();
+        int codePointCount = 0;
+        for ( int offset = 0; offset < length; )
+        {
+            int codePointA = value.codePointAt( offset );
+            int codePointB = 0;
+            offset += Character.charCount( codePointA );
+            codePointCount++;
+            if ( offset < length )
+            {
+                codePointB = value.codePointAt( offset );
+                offset += Character.charCount( codePointB );
+                codePointCount++;
+            }
+            hash = hashFunction.update( hash, ((long) codePointA << 32) + codePointB );
+        }
+        return hashFunction.update( hash, codePointCount );
     }
 
     @Override
