@@ -89,12 +89,7 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
               SemanticExpressionCheck.check(SemanticContext.Results, arg) chain
                 SemanticExpressionCheck.expectType(field.typ.covariant, arg)
           }.foldLeft(success)(_ chain _) chain
-            // If we get a List<Any> as the output type, that can be an artifact of
-            // Lost type information if the UDF function was using annotations and was compiled
-            // we cannot specify the type wrongly in this case.
-            SemanticExpressionCheck.when(signature.outputType != CTList(CTAny)) {
-              SemanticExpressionCheck.specifyType(signature.outputType, this)
-            }
+            SemanticExpressionCheck.specifyType(signature.outputType.covariant, this)
         } else {
           val msg = (if (signature.inputSignature.isEmpty) "arguments"
           else if (signature.inputSignature.size == 1) s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
