@@ -49,6 +49,7 @@ import static org.neo4j.internal.kernel.api.RelationshipTransactionStateTestBase
 import static org.neo4j.internal.kernel.api.RelationshipTransactionStateTestBase.RelationshipDirection.LOOP;
 import static org.neo4j.internal.kernel.api.RelationshipTransactionStateTestBase.RelationshipDirection.OUT;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "Duplicates" )
@@ -1268,6 +1269,98 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
         return expectedCounts;
     }
+
+    @Test
+    public void hasPropertiesShouldSeeNewlyCreatedProperties() throws Exception
+    {
+        // Given
+        long relationship;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            int token = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            relationship = write.relationshipCreate( write.nodeCreate(),
+                    token,
+                    write.nodeCreate() );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
+            {
+                tx.dataRead().singleRelationship( relationship, cursor );
+                assertTrue( cursor.next() );
+                assertFalse( cursor.hasProperties() );
+                tx.dataWrite().relationshipSetProperty( relationship,
+                        tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
+                        stringValue( "foo" ) );
+                assertTrue( cursor.hasProperties() );
+            }
+        }
+    }
+
+    @Test
+    public void hasPropertiesShouldSeeNewlyCreatedPropertiesOnNewlyCreatedRelationship() throws Exception
+    {
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            int token = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            long relationship = write.relationshipCreate( write.nodeCreate(), token, write.nodeCreate() );
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
+            {
+                tx.dataRead().singleRelationship( relationship, cursor );
+                assertTrue( cursor.next() );
+                assertFalse( cursor.hasProperties() );
+                tx.dataWrite().relationshipSetProperty( relationship,
+                        tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" ),
+                        stringValue( "foo" ) );
+                assertTrue( cursor.hasProperties() );
+            }
+        }
+    }
+
+    @Test
+    public void hasPropertiesShouldSeeNewlyRemovedProperties() throws Exception
+    {
+        // Given
+        long relationship;
+        int prop1, prop2, prop3;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            int token = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            relationship = write.relationshipCreate( write.nodeCreate(), token, write.nodeCreate() );
+            prop1 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+            prop2 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
+            prop3 = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop3" );
+            tx.dataWrite().relationshipSetProperty( relationship, prop1, longValue( 1 ) );
+            tx.dataWrite().relationshipSetProperty( relationship, prop2, longValue( 2 ) );
+            tx.dataWrite().relationshipSetProperty( relationship, prop3, longValue( 3 ) );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor() )
+            {
+                tx.dataRead().singleRelationship( relationship, cursor );
+                assertTrue( cursor.next() );
+
+                assertTrue( cursor.hasProperties() );
+                tx.dataWrite().relationshipRemoveProperty( relationship, prop1 );
+                assertTrue( cursor.hasProperties() );
+                tx.dataWrite().relationshipRemoveProperty( relationship, prop2 );
+                assertTrue( cursor.hasProperties() );
+                tx.dataWrite().relationshipRemoveProperty( relationship, prop3 );
+                assertFalse( cursor.hasProperties() );
+            }
+        }
+    }
+
 
     private void relateNTimes( int nRelationshipsInStore, int type, long n1, long n2, Transaction tx )
             throws KernelException

@@ -122,7 +122,6 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     private Record buffer;
     private PageCursor pageCursor;
     private final DefaultRelationshipGroupCursor group;
-    private final DefaultCursors pool;
     private GroupState groupState;
     private FilterState filterState;
     private boolean filterStore;
@@ -132,8 +131,8 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
 
     DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group, DefaultCursors pool )
     {
+        super(pool);
         this.group = group;
-        this.pool = pool;
     }
 
     /*
@@ -482,6 +481,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     @Override
     public void close()
     {
+        super.close();
         if ( !isClosed() )
         {
             read = null;
