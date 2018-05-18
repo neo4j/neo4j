@@ -30,7 +30,6 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 import org.neo4j.causalclustering.messaging.marshalling.v2.CoreReplicatedContentSerializer;
-import org.neo4j.causalclustering.messaging.marshalling.v2.SerializableContent;
 
 public class RaftMessageContentEncoder extends MessageToMessageEncoder<RaftMessages.ClusterIdAwareMessage>
 {

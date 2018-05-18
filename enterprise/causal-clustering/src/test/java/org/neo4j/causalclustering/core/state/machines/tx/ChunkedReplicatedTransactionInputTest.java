@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.causalclustering.messaging.marshalling.ChunkedReplicatedContent;
 import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentChunk;
 
 import static org.junit.Assert.assertEquals;
@@ -37,7 +38,9 @@ public class ChunkedReplicatedTransactionInputTest
     public void shouldEncodeAndDecode() throws Exception
     {
         ReplicatedTransaction replicatedTransaction = new ReplicatedTransaction( new byte[]{1, 2, 3, 4} );
-        ChunkedReplicatedTransactionInput chunkedReplicatedTransactionInput = new ChunkedReplicatedTransactionInput( (byte) 0, replicatedTransaction, 3 );
+        byte contentType = (byte) 1;
+        ChunkedReplicatedContent chunkedReplicatedTransactionInput =
+                new ChunkedReplicatedContent( contentType, ReplicatedTransactionSerializer.serializer( replicatedTransaction ), 4 );
 
         UnpooledByteBufAllocator allocator = UnpooledByteBufAllocator.DEFAULT;
         ByteBuf composedDeserialized = Unpooled.buffer();
@@ -46,7 +49,7 @@ public class ChunkedReplicatedTransactionInputTest
             ReplicatedContentChunk chunk = chunkedReplicatedTransactionInput.readChunk( allocator );
 
             ByteBuf buffer = Unpooled.buffer();
-            chunk.serialize( buffer );
+            chunk.encode( buffer );
 
             ReplicatedContentChunk deserializedChunk = ReplicatedContentChunk.deSerialize( buffer );
 

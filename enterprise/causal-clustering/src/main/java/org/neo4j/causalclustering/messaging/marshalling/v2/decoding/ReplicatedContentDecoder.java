@@ -19,9 +19,8 @@
  */
 package org.neo4j.causalclustering.messaging.marshalling.v2.decoding;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
 
@@ -29,23 +28,21 @@ import org.neo4j.causalclustering.catchup.Protocol;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentBuilder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
-import org.neo4j.causalclustering.messaging.marshalling.v2.CoreReplicatedContentSerializer;
 
-public class ReplicatedContentDecoder extends ByteToMessageDecoder
+public class ReplicatedContentDecoder extends MessageToMessageDecoder<ContentBuilder<ReplicatedContent>>
 {
-    private final CoreReplicatedContentSerializer coreReplicatedContentSerializer = new CoreReplicatedContentSerializer();
     private final Protocol<ContentType> protocol;
     private ContentBuilder<ReplicatedContent> contentBuilder = ContentBuilder.emptyUnfinished();
 
-    ReplicatedContentDecoder( Protocol<ContentType> protocol )
+    public ReplicatedContentDecoder( Protocol<ContentType> protocol )
     {
         this.protocol = protocol;
     }
 
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
+    protected void decode( ChannelHandlerContext ctx, ContentBuilder<ReplicatedContent> msg, List<Object> out )
     {
-        contentBuilder.combine( coreReplicatedContentSerializer.decode( in ) );
+        contentBuilder.combine( msg );
         if ( contentBuilder.isComplete() )
         {
             out.add( contentBuilder.build() );
