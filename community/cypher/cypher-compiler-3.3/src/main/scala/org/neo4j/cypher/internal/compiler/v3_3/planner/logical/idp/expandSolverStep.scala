@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.cypher.internal.v3_3.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
@@ -98,7 +99,7 @@ object expandSolverStep {
             originalNodeName = nodeId)
         val nodePredicate = Ands.create(nodePredicates.toSet)
         val relationshipPredicate = Ands.create(edgePredicates.toSet)
-        val legacyPredicates = extractLegacyPredicates(availablePredicates, patternRel, nodeId)
+        val legacyPredicates: Seq[(Variable, Expression)] = transformToLegacy(nodePredicate, relationshipPredicate, tempNode, tempEdge)
 
         context.logicalPlanProducer.planVarExpand(
           left = sourcePlan,
@@ -116,33 +117,8 @@ object expandSolverStep {
     }
   }
 
-  def extractLegacyPredicates(availablePredicates: Seq[Expression], patternRel: PatternRelationship,
-                              nodeId: String): Seq[(Variable, Expression)] = {
-    availablePredicates.collect {
-      //MATCH ()-[r* {prop:1337}]->()
-      case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId@Variable(patternRel.name))
-        if variable == relId || !innerPredicate.dependencies(relId) =>
-        (variable, innerPredicate) -> all
-      //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
-      case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)),
-      FunctionInvocation(_, FunctionName(fname), false,
-      Seq(PathExpression(
-      NodePathStep(startNode, MultiRelationshipPathStep(rel, _, NilPathStep) ))) ))
-        if (fname  == "nodes" || fname == "relationships")
-          && startNode.name == nodeId
-          && rel.name == patternRel.name =>
-        (variable, innerPredicate) -> all
-
-      //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
-      case none@NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)),
-      FunctionInvocation(_, FunctionName(fname), false,
-      Seq(PathExpression(
-      NodePathStep(startNode, MultiRelationshipPathStep(rel, _, NilPathStep) ))) ))
-        if (fname  == "nodes" || fname == "relationships")
-          && startNode.name == nodeId
-          && rel.name == patternRel.name =>
-        (variable, Not(innerPredicate)(innerPredicate.position)) -> none
-    }.unzip._1
-  }
+  private def transformToLegacy(nodePredicate: Expression, edgePredicate: Expression, tempNode: String, tempEdge: String): Seq[(Variable, Expression)] =
+    (Seq(Variable(tempNode)(InputPosition.NONE), Variable(tempEdge)(InputPosition.NONE)) zip Seq(nodePredicate, edgePredicate)).
+      filterNot(_._2.getClass == classOf[True])
 
 }

@@ -90,4 +90,105 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     edgePredicates shouldBe List(Not(LessThan(Property(varFor("x-edge"), PropertyKeyName("prop")(pos))(pos), literalInt(4))(pos))(pos))
     solvedPredicates shouldBe List(rewrittenRelPredicate, rewrittenNodePredicate)
   }
+
+  test("p = (n)-[r*1]->() WHERE ALL (x IN nodes(p) WHERE x.prop = n.prop") {
+    val pathExpression = PathExpression(
+      NodePathStep(
+        varFor("n"),
+        MultiRelationshipPathStep(varFor("r"),SemanticDirection.OUTGOING,NilPathStep)))(pos)
+
+    val nodePredicate = Equals(prop("x", "prop"), prop("n", "prop"))(pos)
+    val rewrittenPredicate = AllIterablePredicate(
+      FilterScope(varFor("x"), Some(nodePredicate))(pos),
+      FunctionInvocation(
+        FunctionName("nodes")(pos),
+        pathExpression)(pos))(pos)
+
+    val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")
+
+    nodePredicates shouldBe empty
+    edgePredicates shouldBe empty
+    solvedPredicates shouldBe empty
+  }
+
+  test("p = (n)-[r*1]->() WHERE ALL (x IN nodes(p) WHERE length(p) = 1)") {
+    val pathExpression = PathExpression(
+      NodePathStep(
+        varFor("n"),
+        MultiRelationshipPathStep(varFor("r"),SemanticDirection.OUTGOING,NilPathStep)))(pos)
+
+    val rewrittenPredicate = AllIterablePredicate(
+      FilterScope(varFor("x"), Some(Equals(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), literalInt(1))(pos)))(pos),
+      FunctionInvocation(
+        FunctionName("nodes")(pos),
+        pathExpression)(pos))(pos)
+
+    val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")
+
+    nodePredicates shouldBe empty
+    edgePredicates shouldBe empty
+    solvedPredicates shouldBe empty
+  }
+
+  test("p = (n)-[r*1]->() WHERE ALL (x IN rels(p) WHERE length(p) = 1)") {
+    val pathExpression = PathExpression(
+      NodePathStep(
+        varFor("n"),
+        MultiRelationshipPathStep(varFor("r"),SemanticDirection.OUTGOING,NilPathStep)))(pos)
+
+    val rewrittenPredicate = AllIterablePredicate(
+      FilterScope(varFor("x"), Some(Equals(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), literalInt(1))(pos)))(pos),
+      FunctionInvocation(
+        FunctionName("relationships")(pos),
+        pathExpression)(pos))(pos)
+
+    val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")
+
+    nodePredicates shouldBe empty
+    edgePredicates shouldBe empty
+    solvedPredicates shouldBe empty
+  }
+
+  test("p = (n)-[r*1]->() WHERE NONE (x IN nodes(p) WHERE length(p) = 1)") {
+    val pathExpression = PathExpression(
+      NodePathStep(
+        varFor("n"),
+        MultiRelationshipPathStep(varFor("r"),SemanticDirection.OUTGOING,NilPathStep)))(pos)
+
+    val rewrittenPredicate = NoneIterablePredicate(
+      FilterScope(varFor("x"), Some(Equals(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), literalInt(1))(pos)))(pos),
+      FunctionInvocation(
+        FunctionName("nodes")(pos),
+        pathExpression)(pos))(pos)
+
+    val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")
+
+    nodePredicates shouldBe empty
+    edgePredicates shouldBe empty
+    solvedPredicates shouldBe empty
+  }
+
+  test("p = (n)-[r*1]->() WHERE NONE (x IN rels(p) WHERE length(p) = 1)") {
+    val pathExpression = PathExpression(
+      NodePathStep(
+        varFor("n"),
+        MultiRelationshipPathStep(varFor("r"),SemanticDirection.OUTGOING,NilPathStep)))(pos)
+
+    val rewrittenPredicate = NoneIterablePredicate(
+      FilterScope(varFor("x"), Some(Equals(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), literalInt(1))(pos)))(pos),
+      FunctionInvocation(
+        FunctionName("relationships")(pos),
+        pathExpression)(pos))(pos)
+
+    val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")
+
+    nodePredicates shouldBe empty
+    edgePredicates shouldBe empty
+    solvedPredicates shouldBe empty
+  }
 }
