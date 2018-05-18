@@ -86,7 +86,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     public static DurationValue duration( long months, long days, long seconds, long nanos )
     {
-        return newDuration( months, days, seconds, (int) nanos );
+        return newDuration( months, days, seconds, nanos );
     }
 
     public static DurationValue parse( CharSequence text )
@@ -193,7 +193,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     private final long seconds;
     private final int nanos;
 
-    private static DurationValue newDuration( long months, long days, long seconds, int nanos )
+    private static DurationValue newDuration( long months, long days, long seconds, long nanos )
     {
         return seconds == 0 && days == 0 && months == 0 && nanos == 0 // ordered by probability of non-zero
                 ? ZERO : new DurationValue( months, days, seconds, nanos );
@@ -513,7 +513,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         // Compute the time difference - which is simple at this point
         // NANOS of a day will never overflow a long
         long nanos = assertValidUntil( from, to, NANOS );
-        return newDuration( months, days, nanos / NANOS_PER_SECOND, (int) (nanos % NANOS_PER_SECOND) );
+        return newDuration( months, days, nanos / NANOS_PER_SECOND, nanos % NANOS_PER_SECOND );
     }
 
     private static DurationValue durationInSecondsAndNanos( Temporal from, Temporal to )
