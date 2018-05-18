@@ -60,7 +60,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     @Override
     public boolean hasProperties()
     {
-        if (read.hasTxStateWithChanges())
+        if ( read.hasTxStateWithChanges() )
         {
             PropertyCursor cursor = propertyCursor();
             properties( cursor );

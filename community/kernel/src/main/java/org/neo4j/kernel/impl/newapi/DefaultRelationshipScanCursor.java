@@ -37,7 +37,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
 
     DefaultRelationshipScanCursor( DefaultCursors pool )
     {
-        super(pool);
+        super( pool );
     }
 
     void scan( int type, Read read )
