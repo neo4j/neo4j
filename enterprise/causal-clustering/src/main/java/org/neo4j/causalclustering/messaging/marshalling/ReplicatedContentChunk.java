@@ -24,21 +24,14 @@ import io.netty.buffer.DefaultByteBufHolder;
 
 public class ReplicatedContentChunk extends DefaultByteBufHolder
 {
-    private final byte txContentType;
-    private final boolean isFirst;
+    private final byte contentType;
     private final boolean isLast;
 
-    public ReplicatedContentChunk( byte txContentType, boolean isFirst, boolean isLast, ByteBuf data )
+    ReplicatedContentChunk( byte contentType, boolean isLast, ByteBuf data )
     {
         super( data );
-        this.txContentType = txContentType;
-        this.isFirst = isFirst;
+        this.contentType = contentType;
         this.isLast = isLast;
-    }
-
-    public boolean isFirst()
-    {
-        return isFirst;
     }
 
     public boolean isLast()
@@ -46,34 +39,22 @@ public class ReplicatedContentChunk extends DefaultByteBufHolder
         return isLast;
     }
 
-    private byte txContentType()
+    public byte contentType()
     {
-        return txContentType;
+        return contentType;
     }
 
-    public void serialize( ByteBuf out )
+    public void encode( ByteBuf out )
     {
-        out.writeByte( txContentType() );
-        out.writeByte( isFirstByte() );
-        out.writeByte( isLastByte() );
+        out.writeByte( contentType() );
+        out.writeBoolean( isLast() );
         out.writeBytes( content() );
     }
 
     public static ReplicatedContentChunk deSerialize( ByteBuf in )
     {
         byte txContentType = in.readByte();
-        boolean isFirst = in.readByte() == (byte) 1;
-        boolean isLast = in.readByte() == (byte) 1;
-        return new ReplicatedContentChunk( txContentType, isFirst, isLast, in.readRetainedSlice( in.readableBytes() ) );
-    }
-
-    private byte isLastByte()
-    {
-        return isLast ? (byte) 1 : (byte) 0;
-    }
-
-    private byte isFirstByte()
-    {
-        return isFirst ? (byte) 1 : (byte) 0;
+        boolean isLast = in.readBoolean();
+        return new ReplicatedContentChunk( txContentType, isLast, in.readSlice( in.readableBytes() ) );
     }
 }

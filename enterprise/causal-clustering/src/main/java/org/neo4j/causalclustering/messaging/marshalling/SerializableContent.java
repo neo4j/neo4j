@@ -17,39 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.messaging.marshalling.v2;
+package org.neo4j.causalclustering.messaging.marshalling;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.storageengine.api.WritableChannel;
 
 public interface SerializableContent
 {
     void serialize( WritableChannel channel ) throws IOException;
-
-    static SimpleSerializableContent simple( byte contentType, ThrowingConsumer<WritableChannel,IOException> serializer )
-    {
-        return new SimpleSerializableContent( contentType, serializer );
-    }
-
-    class SimpleSerializableContent implements SerializableContent
-    {
-        private final byte contentType;
-        private final ThrowingConsumer<WritableChannel,IOException> serializer;
-
-        private SimpleSerializableContent( byte contentType, ThrowingConsumer<WritableChannel,IOException> serializer )
-        {
-            this.contentType = contentType;
-            this.serializer = serializer;
-        }
-
-        public void serialize( WritableChannel channel ) throws IOException
-        {
-            channel.put( contentType );
-            serializer.accept( channel );
-        }
-    }
 }

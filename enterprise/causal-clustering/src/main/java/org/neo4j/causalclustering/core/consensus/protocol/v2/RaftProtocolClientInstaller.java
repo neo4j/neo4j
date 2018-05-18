@@ -32,7 +32,6 @@ import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.ContentTypeE
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftMessageContentEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftMessageEncoder;
-import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.SerializableContentEncoder;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
@@ -76,7 +75,6 @@ public class RaftProtocolClientInstaller implements ProtocolInstaller<Orientatio
                 .add( "raft_content_type_encoder", new ContentTypeEncoder() )
                 .add( "raft_chunked_replicated_content", new ReplicatedContentChunkEncoder() )
                 .add( "raft_chunked_writer", new ChunkedWriteHandler(  ) )
-                .add( "raft_content_encoder", new SerializableContentEncoder() )
                 .add( "raft_log_entry_encoder", new RaftLogEntryTermEncoder() )
                 .add( "raft_message_content_encoder", new RaftMessageContentEncoder( new CoreReplicatedContentSerializer() ) )
                 .install();

@@ -28,6 +28,6 @@ public class ReplicatedContentChunkEncoder extends MessageToByteEncoder<Replicat
     @Override
     protected void encode( ChannelHandlerContext ctx, ReplicatedContentChunk msg, ByteBuf out )
     {
-        msg.serialize( out );
+        msg.encode( out );
     }
 }

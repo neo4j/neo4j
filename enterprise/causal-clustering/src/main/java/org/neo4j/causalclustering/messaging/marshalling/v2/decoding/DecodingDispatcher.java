@@ -47,7 +47,7 @@ public class DecodingDispatcher extends RequestDecoderDispatcher<ContentType>
             }
         } );
         register( ContentType.RaftLogEntries, new RaftLogEntryTermDecoder( protocol ) );
-        register( ContentType.ReplicatedContent, new ReplicatedContentDecoder( protocol ) );
+        register( ContentType.ReplicatedContent, new ReplicatedContentChunkDecoder(  ) );
         register( ContentType.Message, new RaftMessageDecoder( protocol ) );
     }
 }
