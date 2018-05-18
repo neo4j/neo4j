@@ -47,7 +47,7 @@ Before you start running the unit and integration tests in the Neo4j Maven proje
 * A plain `mvn clean install` will only build the individual jar files.
 * Test execution is, of course, part of the build.
 * In case you just want the jars, without running tests, this is for you: `mvn clean install -DskipTests`.
-* To build product packages, do `export PATH="bin:$PATH" && make clean all` in the packaging directory after building artifacts with Maven
+* To build product packages, do `export PATH="bin:$PATH" && make clean all` in the packaging directory after building artifacts with Maven.
 * To build the documentation see the https://github.com/neo4j/neo4j-documentation/[Neo4j documentation].
 * If you are running into problems building on Windows you can try building Neo4j in a Ubuntu virtual machine.
 * You may need to increase the memory available to Maven: `export MAVEN_OPTS="-Xmx512m"`.
