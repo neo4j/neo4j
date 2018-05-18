@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.ReferenceFromSlot
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Expression, Rows}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{NoChildren, PlanDescriptionImpl, renderAsTreeTable}
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 class ExecutionPlanDescriptionTest extends CypherFunSuite {
+  implicit val windowsSafe = WindowsStringSafe
 
   test("use variable name instead of ReferenceFromSlot") {
 
