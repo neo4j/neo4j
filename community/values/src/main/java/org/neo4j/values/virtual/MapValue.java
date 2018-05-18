@@ -131,7 +131,7 @@ public abstract class MapValue extends VirtualValue
         @Override
         public Iterable<String> keySet()
         {
-            List<String> keys = size >= 0 ? new ArrayList<>(size) : new ArrayList<>(  );
+            List<String> keys = size >= 0 ? new ArrayList<>( size ) : new ArrayList<>();
             foreach( ( key, value ) -> {
                 if ( filter.apply( key, value ) )
                 {
@@ -379,12 +379,12 @@ public abstract class MapValue extends VirtualValue
                {
                    while ( mapIndex < maps.length )
                    {
-                       if ( internal == null || !internal.hasNext())
+                       if ( internal == null || !internal.hasNext() )
                        {
                            internal = maps[mapIndex++].keySet().iterator();
                        }
 
-                       if (internal.hasNext())
+                       if ( internal.hasNext() )
                        {
                            return internal.next();
                        }

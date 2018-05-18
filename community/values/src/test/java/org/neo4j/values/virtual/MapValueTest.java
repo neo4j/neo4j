@@ -156,7 +156,6 @@ class MapValueTest
         ) );
     }
 
-
     private void assertMapValueEquals( MapValue a, MapValue b )
     {
         assertThat( a, equalTo( b ) );
