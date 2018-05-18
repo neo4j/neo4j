@@ -597,6 +597,27 @@ class LoadCsvAcceptanceTest
     }
   }
 
+  test("should give nice error message when overflowing the buffer") {
+    runWithConfig(GraphDatabaseSettings.csv_buffer_size -> (1 * 1024 * 1024).toString) { db =>
+      val longName  = "f"* 6000000
+      val urls = csvUrls({
+        writer =>
+          writer.println("\"prop\"")
+          writer.println(longName)
+      })
+      for (url <- urls) {
+
+        val error = intercept[QueryExecutionException](db.execute(
+          s"""LOAD CSV WITH HEADERS FROM '$url' AS row
+             |RETURN row.prop""".stripMargin).next().get("row.prop"))
+        error.getMessage should equal(
+          """Tried to read a field larger than the current buffer size.
+            | Make sure that the field doesn't have an unterminated quote,
+            | if it doesn't you can try increasing the buffer size via `dbms.import.csv.buffer_size`.""".stripMargin)
+      }
+    }
+  }
+
   test("should be able to configure db to handle huge fields") {
     runWithConfig(GraphDatabaseSettings.csv_buffer_size -> (4 * 1024 * 1024).toString) { db =>
       val longName  = "f"* 6000000

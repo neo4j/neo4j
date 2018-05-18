@@ -26,13 +26,13 @@ import java.nio.file.Paths
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
 import org.neo4j.csv.reader._
+import org.neo4j.cypher.CypherExecutionException
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.TaskCloser
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.frontend.v3_3.LoadExternalResourceException
 import sun.net.www.protocol.http.HttpURLConnection
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.control.Breaks._
 
 object CSVResources {
   val NEO_USER_AGENT_PREFIX = "NeoLoadCSV_"
@@ -74,12 +74,18 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
     new Iterator[Array[String]] {
       private def readNextRow: Array[String] = {
         val buffer = new ArrayBuffer[String]
-        breakable {
+
+        try {
           while (seeker.seek(mark, intDelimiter)) {
             val success = seeker.tryExtract(mark, extractor)
             buffer += (if (success) extractor.value() else null)
-            if (mark.isEndOfLine) break()
+            if (mark.isEndOfLine) return if (buffer.isEmpty) null else buffer.toArray
           }
+        } catch {
+          case e: BufferOverflowException => throw new CypherExecutionException(
+            """Tried to read a field larger than the current buffer size.
+              | Make sure that the field doesn't have an unterminated quote,
+              | if it doesn't you can try increasing the buffer size via `dbms.import.csv.buffer_size`.""".stripMargin, e)
         }
 
         if (buffer.isEmpty) {
