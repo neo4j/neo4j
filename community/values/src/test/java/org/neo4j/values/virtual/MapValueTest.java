@@ -21,13 +21,17 @@ package org.neo4j.values.virtual;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
+import java.util.Arrays;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.values.AnyValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
+import static org.neo4j.values.virtual.VirtualValues.map;
 
 class MapValueTest
 {
@@ -35,124 +39,145 @@ class MapValueTest
     void shouldFilterOnKeys()
     {
         // Given
-        MapValue base = VirtualValues.map( new String[]{"k1", "k2", "k3"},
-                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
+        MapValue base = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ), "k3", stringValue( "v3" ) );
 
         // When
         MapValue filtered = base.filter( ( k, ignore ) -> k.equals( "k2" ) );
 
         // Then
-        assertThat( filtered.size(), equalTo( 1 ) );
-        assertThat( filtered.keys(), equalTo( VirtualValues.list( stringValue( "k2" ) ) ) );
-        assertThat( filtered.get( "k2" ), equalTo( stringValue( "v2" ) ) );
+        assertMapValueEquals( filtered, mapValue( "k2", stringValue( "v2" ) ) );
     }
 
     @Test
     void shouldFilterOnValues()
     {
         // Given
-        MapValue base = VirtualValues.map( new String[]{"k1", "k2", "k3"},
-                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
+        MapValue base = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ), "k3", stringValue( "v3" ) );
 
         // When
         MapValue filtered = base.filter( ( ignore, v ) -> v.equals( stringValue( "v2" ) ) );
 
         // Then
-        assertThat( filtered.size(), equalTo( 1 ) );
-        assertThat( filtered.keys(), equalTo( VirtualValues.list( stringValue( "k2" ) ) ) );
-        assertThat( filtered.get( "k2" ), equalTo( stringValue( "v2" ) ) );
+        assertMapValueEquals( filtered, mapValue( "k2", stringValue( "v2" ) ) );
     }
 
     @Test
     void shouldFilterOnKeysAndValues()
     {
         // Given
-        MapValue base = VirtualValues.map( new String[]{"k1", "k2", "k3"},
-                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
+        MapValue base = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ), "k3", stringValue( "v3" ) );
 
         // When
         MapValue filtered = base.filter( ( k, v ) -> k.equals( "k1" ) && v.equals( stringValue( "v2" ) ) );
 
         // Then
-        assertThat( filtered.size(), equalTo( 0 ) );
+        assertMapValueEquals( filtered, EMPTY_MAP );
+
     }
 
     @Test
     void shouldUpdateWithIdenticalValues()
     {
         // Given
-        MapValue base = VirtualValues.map( new String[]{"k1", "k2", "k3"},
-                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
+        MapValue base = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ), "k3", stringValue( "v3" ) );
 
         // When
         MapValue updated = base.updatedWith( "k3", stringValue( "v3" ) );
 
         // Then
-        assertThat( updated, equalTo( base ) );
+        assertMapValueEquals( updated, base );
     }
 
     @Test
     void shouldUpdateWithExistingKey()
     {
         // Given
-        MapValue base = VirtualValues.map( new String[]{"k1", "k2", "k3"},
-                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
+        MapValue base = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ), "k3", stringValue( "v3" ) );
 
         // When
         MapValue updated = base.updatedWith( "k3", stringValue( "version3" ) );
 
         // Then
-        assertThat( updated.size(), equalTo( 3 ) );
-        assertThat( updated.get( "k1" ), equalTo( stringValue( "v1" ) ) );
-        assertThat( updated.get( "k2" ), equalTo( stringValue( "v2" ) ) );
-        assertThat( updated.get( "k3" ), equalTo( stringValue( "version3" ) ) );
+        assertMapValueEquals( updated, mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ),
+                "k3", stringValue( "version3" ) ) );
     }
 
     @Test
     void shouldUpdateWithNewKey()
     {
         // Given
-        MapValue base = VirtualValues.map( new String[]{"k1", "k2", "k3"},
-                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
+        MapValue base = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ), "k3", stringValue( "v3" ) );
 
         // When
         MapValue updated = base.updatedWith( "k4", stringValue( "v4" ) );
 
         // Then
-        assertThat( updated.size(), equalTo( 4 ) );
-        assertThat( updated.get( "k1" ), equalTo( stringValue( "v1" ) ) );
-        assertThat( updated.get( "k2" ), equalTo( stringValue( "v2" ) ) );
-        assertThat( updated.get( "k3" ), equalTo( stringValue( "v3" ) ) );
-        assertThat( updated.get( "k4" ), equalTo( stringValue( "v4" ) ) );
+        assertMapValueEquals( updated, mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ),
+                "k3", stringValue( "v3" ), "k4", stringValue( "v4" ) ) );
     }
 
     @Test
-    void shouldUpdateWitOtherMapValue()
+    void shouldUpdateWithOtherMapValue()
     {
         // Given
-        MapValue a = VirtualValues.map( new String[]{"k1", "k2", "k3"},
-                new AnyValue[]{stringValue( "v1" ), stringValue( "v2" ), stringValue( "v3" )} );
-        MapValue b = VirtualValues.map( new String[]{"k1", "k2", "k4"},
-                new AnyValue[]{stringValue( "version1" ), stringValue( "version2" ), stringValue( "version4" )} );
+        MapValue a = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ), "k3", stringValue( "v3" ) );
+        MapValue b = mapValue( "k1", stringValue( "version1" ), "k2", stringValue( "version2" ),
+                "k4", stringValue( "version4" ) );
 
         // When
         MapValue updated = a.updatedWith( b );
 
         // Then
-        assertThat( updated.size(), equalTo( 4 ) );
-        assertThat( updated.get( "k1" ), equalTo( stringValue( "version1" ) ) );
-        assertThat( updated.get( "k2" ), equalTo( stringValue( "version2" ) ) );
-        assertThat( updated.get( "k3" ), equalTo( stringValue( "v3" ) ) );
-        assertThat( updated.get( "k4" ), equalTo( stringValue( "version4" ) ) );
+        assertMapValueEquals( updated, mapValue(
+                "k1", stringValue( "version1" ),
+                "k2", stringValue( "version2" ),
+                "k3", stringValue( "v3" ),
+                "k4", stringValue( "version4" )
+        ) );
+    }
 
-        HashMap<String,AnyValue> foreachMap = new HashMap<>( 4 );
-        updated.foreach( foreachMap::put );
+    @Test
+    void shouldUpdateMultipleTimesMapValue()
+    {
+        // Given
+        MapValue a = mapValue( "k1", stringValue( "v1" ), "k2", stringValue( "v2" ) );
+        MapValue b = mapValue( "k1", stringValue( "version1" ), "k4", stringValue( "version4" ) );
+        MapValue c = mapValue( "k3", stringValue( "v3" ) );
 
-        assertThat( foreachMap.size(), equalTo( 4 ) );
-        assertThat( foreachMap.get( "k1" ), equalTo( stringValue( "version1" ) ) );
-        assertThat( foreachMap.get( "k2" ), equalTo( stringValue( "version2" ) ) );
-        assertThat( foreachMap.get( "k3" ), equalTo( stringValue( "v3" ) ) );
-        assertThat( foreachMap.get( "k4" ), equalTo( stringValue( "version4" ) ) );
+        // When
+        MapValue updated = a.updatedWith( b ).updatedWith( c );
 
+        // Then
+        assertMapValueEquals( updated, mapValue(
+                "k1", stringValue( "version1" ),
+                "k2", stringValue( "v2" ),
+                "k3", stringValue( "v3" ),
+                "k4", stringValue( "version4" )
+        ) );
+    }
+
+
+    private void assertMapValueEquals( MapValue a, MapValue b )
+    {
+        assertThat( a, equalTo( b ) );
+        assertThat( a.size(), equalTo( b.size() ) );
+        assertThat( a.hashCode(), equalTo( b.hashCode() ) );
+        assertThat( a.keySet(), containsInAnyOrder( Iterables.asArray( String.class, b.keySet() ) ) );
+        assertThat( Arrays.asList( a.keys().asArray() ), containsInAnyOrder( b.keys().asArray() ) );
+        a.foreach( ( k, v ) -> assertThat( b.get( k ), equalTo( v ) ) );
+        b.foreach( ( k, v ) -> assertThat( a.get( k ), equalTo( v ) ) );
+    }
+
+    private MapValue mapValue( Object... kv )
+    {
+        assert kv.length % 2 == 0;
+        String[] keys = new String[kv.length / 2];
+        AnyValue[] values = new AnyValue[kv.length / 2];
+        for ( int i = 0; i < kv.length; i += 2 )
+        {
+            keys[i / 2] = (String) kv[i];
+            values[i / 2] = (AnyValue) kv[i + 1];
+        }
+        return map( keys, values );
     }
 }

@@ -19,17 +19,20 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.function.ThrowingBiConsumer;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.ValueMapper;
@@ -128,7 +131,7 @@ public abstract class MapValue extends VirtualValue
         @Override
         public Iterable<String> keySet()
         {
-            HashSet<String> keys = new HashSet<>();
+            List<String> keys = size >= 0 ? new ArrayList<>(size) : new ArrayList<>(  );
             foreach( ( key, value ) -> {
                 if ( filter.apply( key, value ) )
                 {
@@ -366,39 +369,27 @@ public abstract class MapValue extends VirtualValue
         @Override
         public Iterable<String> keySet()
         {
-           return () -> new Iterator<String>()
+           return () -> new PrefetchingIterator<String>()
            {
                private int mapIndex;
                private Iterator<String> internal;
 
                @Override
-               public boolean hasNext()
+               protected String fetchNextOrNull()
                {
-                   if ( internal == null )
+                   while ( mapIndex < maps.length )
                    {
-                       internal = maps[mapIndex].keySet().iterator();
-                   }
-                   return internal.hasNext();
-               }
+                       if ( internal == null || !internal.hasNext())
+                       {
+                           internal = maps[mapIndex++].keySet().iterator();
+                       }
 
-               @Override
-               public String next()
-               {
-                   while ( true )
-                   {
-                       if ( hasNext() )
+                       if (internal.hasNext())
                        {
                            return internal.next();
                        }
-                       else if ( mapIndex < maps.length - 1 )
-                       {
-                           internal = maps[++mapIndex].keySet().iterator();
-                       }
-                       else
-                       {
-                           throw new NoSuchElementException();
-                       }
                    }
+                   return null;
                }
            };
         }
