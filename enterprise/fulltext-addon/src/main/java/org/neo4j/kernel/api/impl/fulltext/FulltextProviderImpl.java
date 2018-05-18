@@ -65,7 +65,6 @@ public class FulltextProviderImpl implements FulltextProvider
     private final GraphDatabaseService db;
     private final Log log;
     private final TransactionIdStore transactionIdStore;
-    private final FulltextTransactionEventUpdater fulltextTransactionEventUpdater;
     private final Set<String> nodeProperties;
     private final Set<String> relationshipProperties;
     private final Map<String,WritableFulltext> writableNodeIndices;
@@ -95,18 +94,11 @@ public class FulltextProviderImpl implements FulltextProvider
         applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
         applier.start();
         factory = new FulltextFactory( fileSystem, storeDir, analyzerClassName );
-        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, applier );
         nodeProperties = ConcurrentHashMap.newKeySet();
         relationshipProperties = ConcurrentHashMap.newKeySet();
         writableNodeIndices = new ConcurrentHashMap<>();
         writableRelationshipIndices = new ConcurrentHashMap<>();
         configurationLock = new ReentrantReadWriteLock( true );
-    }
-
-    @Override
-    public void registerTransactionEventHandler()
-    {
-        db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
     }
 
     private boolean matchesConfiguration( WritableFulltext index ) throws IOException
@@ -367,7 +359,6 @@ public class FulltextProviderImpl implements FulltextProvider
     @Override
     public void close()
     {
-        db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
         applier.stop();
         Consumer<WritableFulltext> fulltextCloser = luceneFulltextIndex ->
         {

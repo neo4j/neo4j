@@ -34,11 +34,6 @@ public interface FulltextProvider extends AutoCloseable
 {
     FulltextProvider NULL_PROVIDER = new FulltextProvider()
     {
-        @Override
-        public void registerTransactionEventHandler()
-        {
-            throw noProvider();
-        }
 
         @Override
         public void awaitPopulation()
@@ -102,8 +97,6 @@ public interface FulltextProvider extends AutoCloseable
     };
     String LUCENE_FULLTEXT_ADDON_PREFIX = "__lucene__fulltext__addon__";
     String FIELD_ENTITY_ID = LUCENE_FULLTEXT_ADDON_PREFIX + "internal__id__";
-
-    void registerTransactionEventHandler();
 
     /**
      * Wait for the asynchronous background population, if one is on-going, to complete.

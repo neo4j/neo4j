@@ -44,7 +44,6 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long id;
             try ( Transaction tx = db.beginTx() )
@@ -74,7 +73,6 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             long id;
             try ( Transaction tx = db.beginTx() )
@@ -106,7 +104,6 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
 
             try ( Transaction tx = db.beginTx() )
             {
@@ -132,7 +129,6 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-            provider.registerTransactionEventHandler();
             provider.awaitPopulation();
 
             try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )

@@ -87,7 +87,6 @@ class BloomKernelExtension extends LifecycleAdapter
                     fileSystem, storeDir, analyzer );
             provider.openIndex( BLOOM_NODES, NODES );
             provider.openIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
-            provider.registerTransactionEventHandler();
             provider.registerFileListing( fileListing.get() );
 
             procedures.registerComponent( FulltextProvider.class, context -> provider, true );

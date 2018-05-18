@@ -39,6 +39,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -54,11 +55,14 @@ import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.SET_
 import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_enabled;
 import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_server;
 import static org.neo4j.ports.allocation.PortAuthority.allocatePort;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class BloomBackupIT
 {
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public SuppressOutput suppressOutput = suppressAll();
     private GraphDatabaseAPI db;
     private int backupPort;
 
