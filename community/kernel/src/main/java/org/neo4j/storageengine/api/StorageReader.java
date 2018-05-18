@@ -29,16 +29,11 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.register.Register.DoubleLongRegister;
 
 /**
  * Abstraction for accessing data from a {@link StorageEngine}.
@@ -94,11 +89,6 @@ public interface StorageReader extends AutoCloseable, Read, ExplicitIndexRead, S
      * @return a reserved relationship id for future use.
      */
     long reserveRelationship();
-
-    /**
-     * Returns all indexes (including unique) related to a property.
-     */
-    Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId );
 
     /**
      * @param labelName name of label.
