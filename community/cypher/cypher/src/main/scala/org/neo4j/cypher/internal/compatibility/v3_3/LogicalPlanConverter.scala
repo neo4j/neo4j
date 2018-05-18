@@ -48,6 +48,8 @@ object LogicalPlanConverter {
 
   type MutableExpressionMapping3To4 = mutable.Map[(ExpressionV3_3, InputPositionV3_3), Expressionv3_5]
 
+  private val v3_3_AST = "org.neo4j.cypher.internal.frontend.v3_3.ast"
+
   //noinspection ZeroIndexToHead
   private class LogicalPlanRewriter(solveds: Solveds,
                                     cardinalities: Cardinalities,
@@ -98,10 +100,14 @@ object LogicalPlanConverter {
                     _: compilerV3_3.ast.NestedPlanExpression |
                     _: compilerV3_3.ast.ResolvedFunctionInvocation), children: Seq[AnyRef]) =>
           convertVersion("compiler.v3_3.ast", "v3_5.logical.plans", item, children, helpers.as3_4(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
-        case (item@(_: astV3_3.rewriters.DesugaredMapProjection | _: astV3_3.ProcedureResultItem | _: plansV3_3.ResolvedCall), children: Seq[AnyRef]) =>
-          convertVersion("v3_3", "v3_5", item, children, helpers.as3_4(item.asInstanceOf[astV3_3.ASTNode].position), classOf[InputPosition])
+        case (item: astV3_3.rewriters.DesugaredMapProjection, children: Seq[AnyRef]) =>
+          convertVersion("org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters", "org.opencypher.v9_0.expressions", item, children, helpers.as3_4(item.position), classOf[InputPosition])
+        case (item: astV3_3.ProcedureResultItem, children: Seq[AnyRef]) =>
+          convertVersion(v3_3_AST, "org.opencypher.v9_0.ast", item, children, helpers.as3_4(item.position), classOf[InputPosition])
+        case (item: plansV3_3.ResolvedCall, children: Seq[AnyRef]) =>
+          convertVersion("org.neo4j.cypher.internal.v3_3.logical.plans", "org.neo4j.cypher.internal.v3_5.logical.plans", item, children, helpers.as3_4(item.position), classOf[InputPosition])
         case (expressionV3_3: astV3_3.ASTNode, children: Seq[AnyRef]) =>
-          convertVersion("frontend.v3_3.ast", "v3_5.expressions", expressionV3_3, children, helpers.as3_4(expressionV3_3.position), classOf[InputPosition])
+          convertVersion(v3_3_AST, "org.opencypher.v9_0.expressions", expressionV3_3, children, helpers.as3_4(expressionV3_3.position), classOf[InputPosition])
         case (symbolsV3_3.CTAny, _) => symbolsv3_5.CTAny
         case (symbolsV3_3.CTBoolean, _) => symbolsv3_5.CTBoolean
         case (symbolsV3_3.CTFloat, _) => symbolsv3_5.CTFloat
@@ -139,9 +145,9 @@ object LogicalPlanConverter {
           irv3_5.ShortestPathPattern(children(0).asInstanceOf[Option[String]], children(1).asInstanceOf[irv3_5.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
         case (astV3_3.NilPathStep, _) => expressionsv3_5.NilPathStep
         case (item@(_: astV3_3.PathStep | _: astV3_3.NameToken[_]), children: Seq[AnyRef]) =>
-          convertVersion("frontend.v3_3.ast", "v3_5.expressions", item, children)
+          convertVersion(v3_3_AST, "org.opencypher.v9_0.expressions", item, children)
         case (nameId: frontendV3_3.NameId, children: Seq[AnyRef]) =>
-          convertVersion("frontend.v3_3", "util.v3_5", nameId, children)
+          convertVersion("org.neo4j.cypher.internal.frontend.v3_3", "org.opencypher.v9_0.util", nameId, children)
         case (frontendV3_3.helpers.Fby(head, tail), children: Seq[AnyRef]) => utilv3_5.Fby(children(0), children(1).asInstanceOf[utilv3_5.NonEmptyList[_]])
         case (frontendV3_3.helpers.Last(head), children: Seq[AnyRef]) => utilv3_5.Last(children(0))
 
@@ -191,7 +197,7 @@ object LogicalPlanConverter {
             case (_: frontendV3_3.InternalException) =>
             // ProcedureOrSchema plans have no assigned IDs. That's ok.
           }
-        // Save Mapping from 3.3 expression to 3.4 expression
+        // Save Mapping from 3.3 expression to 3.5 expression
         case e: ExpressionV3_3 if isImportant(e) => expressionMap += (((e, e.position), rewritten.asInstanceOf[Expressionv3_5]))
         case _ =>
       }
@@ -245,7 +251,7 @@ object LogicalPlanConverter {
       Try(Class.forName(classNamev3_5)).map(_.getConstructors.head) match {
         case Success(c) => c
         case Failure(e: ClassNotFoundException) => throw new InternalException(
-          s"Failed trying to rewrite $classNameV3_3 - 3.4 class not found ($classNamev3_5)", e)
+          s"Failed trying to rewrite $classNameV3_3 - 3.5 class not found ($classNamev3_5)", e)
         case Failure(e: NoSuchElementException) => throw new InternalException(
           s"Failed trying to rewrite $classNameV3_3 - this class does not have a constructor", e)
         case Failure(e) => throw e
