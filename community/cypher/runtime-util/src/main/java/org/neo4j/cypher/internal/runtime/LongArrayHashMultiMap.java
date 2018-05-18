@@ -103,7 +103,8 @@ public class LongArrayHashMultiMap<VALUE>
             result = table.checkSlot( slot, key );
             slot = (slot + 1) & table.tableMask;
         }
-        @SuppressWarnings( "unchecked" ) Node current = (Node) table.values[slot];
+        @SuppressWarnings( "unchecked" )
+        Node current = (Node) table.values[slot];
 
         return new Result( current );
     }
@@ -161,7 +162,6 @@ public class LongArrayHashMultiMap<VALUE>
         }
     }
 
-
     private int slotFor( long[] value )
     {
         return LongArrayHash.hashCode( value, 0, width ) & table.tableMask;
@@ -172,7 +172,7 @@ public class LongArrayHashMultiMap<VALUE>
         final VALUE value;
         final Node next;
 
-        public Node( VALUE value, Node next )
+        Node( VALUE value, Node next )
         {
             this.value = value;
             this.next = next;
@@ -183,7 +183,7 @@ public class LongArrayHashMultiMap<VALUE>
     {
         private Node current;
 
-        public Result( Node first )
+        Result( Node first )
         {
             current = first;
         }
@@ -258,7 +258,8 @@ public class LongArrayHashMultiMap<VALUE>
 
         void addValue( int slot, VALUE value )
         {
-            @SuppressWarnings( "unchecked" ) Node current = (Node) values[slot];
+            @SuppressWarnings( "unchecked" )
+            Node current = (Node) values[slot];
             values[slot] = new Node( value, current );
         }
     }
