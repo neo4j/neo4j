@@ -48,6 +48,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.BoltMatchers.canReset;
@@ -568,9 +569,24 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldInvokeResponseHandlerOnNextAckFailureMessageOnMarkFailedIfNoHandler() throws Exception
+    public void shouldGotoReadyStateOnNextAckFailureMessageOnMarkFailedIfNoHandler() throws Exception
     {
-        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.ackFailure( handler ) );
+        // Given
+        BoltStateMachine machine = newMachine( BoltStateMachine.State.READY );
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+
+        Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
+        machine.markFailed( error );
+
+        // When
+        machine.ackFailure( responseHandler );
+
+        // Expect
+        assertNull( machine.ctx.pendingError );
+        assertFalse( machine.ctx.pendingIgnore );
+        assertEquals( BoltStateMachine.State.READY, machine.state );
+        verify( responseHandler, never() ).markFailed( any() );
+        verify( responseHandler, never() ).markIgnored();
     }
 
     @Test
@@ -626,7 +642,22 @@ public class BoltStateMachineTest
     @Test
     public void shouldInvokeResponseHandlerOnNextAckFailureMessageOnMarkFailedIfAlreadyFailedAndNoHandler() throws Exception
     {
-        testMarkFailedShouldYieldIgnoredIfAlreadyFailed( ( machine, handler ) -> machine.ackFailure( handler ) );
+        // Given
+        BoltStateMachine machine = newMachine( BoltStateMachine.State.FAILED );
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+
+        Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
+        machine.markFailed( error );
+
+        // When
+        machine.ackFailure( responseHandler );
+
+        // Expect
+        assertNull( machine.ctx.pendingError );
+        assertFalse( machine.ctx.pendingIgnore );
+        assertEquals( BoltStateMachine.State.READY, machine.state );
+        verify( responseHandler, never() ).markIgnored();
+        verify( responseHandler, never() ).markFailed( any() );
     }
 
     @Test

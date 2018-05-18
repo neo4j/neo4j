@@ -110,7 +110,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         {
             try
             {
-                if ( hasFailedOrIgnored() )
+                if ( ctx.hasFailedOrIgnored() )
                 {
                     Neo4jError pendingError = ctx.pendingError;
 
@@ -123,8 +123,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         ctx.markIgnored();
                     }
 
-                    ctx.pendingError = null;
-                    ctx.pendingIgnore = false;
+                    ctx.resetPendingFailedAndIgnored();
                 }
 
                 ctx.responseHandler.onFinish();
@@ -145,7 +144,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !hasFailedOrIgnored() )
+            if ( !ctx.hasFailedOrIgnored() )
             {
                 state = state.init( this, userAgent, authToken );
             }
@@ -172,10 +171,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !hasFailedOrIgnored() )
-            {
-                state = state.ackFailure( this );
-            }
+            state = state.ackFailure( this );
         }
         finally
         {
@@ -202,7 +198,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !hasFailedOrIgnored() )
+            if ( !ctx.hasFailedOrIgnored() )
             {
                 state = state.reset( this );
             }
@@ -227,7 +223,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !hasFailedOrIgnored() )
+            if ( !ctx.hasFailedOrIgnored() )
             {
                 state = state.run( this, statement, params );
                 handler.onMetadata( "result_available_after", Values.longValue( clock.millis() - start ) );
@@ -249,7 +245,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !hasFailedOrIgnored() )
+            if ( !ctx.hasFailedOrIgnored() )
             {
                 state = state.discardAll( this );
             }
@@ -269,7 +265,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !hasFailedOrIgnored() )
+            if ( !ctx.hasFailedOrIgnored() )
             {
                 state = state.pullAll( this );
             }
@@ -284,11 +280,6 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     {
         fail( this, error );
         state = State.FAILED;
-    }
-
-    private boolean hasFailedOrIgnored()
-    {
-        return ctx.pendingError != null || ctx.pendingIgnore;
     }
 
     /** A session id that is unique for this database instance */
@@ -331,7 +322,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( !hasFailedOrIgnored() )
+            if ( !ctx.hasFailedOrIgnored() )
             {
                 fail( this, error );
                 this.state = State.FAILED;
@@ -577,6 +568,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     @Override
                     public State ackFailure( BoltStateMachine machine )
                     {
+                        machine.ctx.resetPendingFailedAndIgnored();
                         return READY;
                     }
 
@@ -891,6 +883,17 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             {
                 responseHandler.onFinish();
             }
+        }
+
+        private boolean hasFailedOrIgnored()
+        {
+            return pendingError != null || pendingIgnore;
+        }
+
+        private void resetPendingFailedAndIgnored()
+        {
+            pendingError = null;
+            pendingIgnore = false;
         }
 
     }
