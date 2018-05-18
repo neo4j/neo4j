@@ -27,9 +27,9 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 
 /**
- * Descripbes an index which is committed to the database.
+ * Describes an index which is committed to the database.
  *
- * Adds an index id, a name, and optionally a owning constraint id to the general IndexDescriptor.
+ * Adds an index id, a name, and optionally an owning constraint id to the general IndexDescriptor.
  *
  * Can be upgraded to a {@link CapableIndexDescriptor} by adding {@link IndexCapability} to this index,
  * using {@link StoreIndexDescriptor#withoutCapabilities()} or {@link StoreIndexDescriptor#withCapabilities(IndexProviderMap)}
@@ -112,7 +112,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
     /**
      * Create a {@link StoreIndexDescriptor} with the given owning constraint id.
      *
-     * @param constraintId a id >= 0, or null if no owning constraint exists.
+     * @param constraintId an id >= 0, or null if no owning constraint exists.
      * @return a new StoreIndexDescriptor with modified owning constraint.
      */
     public StoreIndexDescriptor withOwningConstraint( Long constraintId )

@@ -43,4 +43,3 @@ public interface IndexingProvidersService
      */
     void validateBeforeCommit( SchemaDescriptor schema, Value[] tuple );
 }
-

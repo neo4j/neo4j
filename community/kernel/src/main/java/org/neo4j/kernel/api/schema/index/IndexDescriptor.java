@@ -38,7 +38,7 @@ import static java.lang.String.format;
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
  *
- * An IndexDescriptor might represent an index that has not yet been committed, and therefore carries and optional
+ * An IndexDescriptor might represent an index that has not yet been committed, and therefore carries an optional
  * user-supplied name. On commit the descriptor is upgraded to a {@link StoreIndexDescriptor} using
  * {@link IndexDescriptor#withId(long)} or {@link IndexDescriptor#withIds(long, long)}.
  */
