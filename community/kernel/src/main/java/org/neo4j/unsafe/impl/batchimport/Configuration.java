@@ -212,7 +212,9 @@ public interface Configuration
         @Override
         public int denseNodeThreshold()
         {
-            return config.get( dense_node_threshold );
+            return config.getRaw().containsKey( dense_node_threshold.name() )
+                   ? config.get( dense_node_threshold )
+                   : defaults.denseNodeThreshold();
         }
 
         @Override

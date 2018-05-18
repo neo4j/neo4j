@@ -25,11 +25,13 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.NullOutsideWorld;
@@ -40,11 +42,13 @@ import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -56,6 +60,8 @@ public class ImportCommandTest
 {
     @Rule
     public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void defaultsToCsvWhenModeNotSpecified() throws Exception
@@ -193,6 +199,26 @@ public class ImportCommandTest
     }
 
     @Test
+    public void shouldUseArgumentsFoundInside_f_Argument() throws FileNotFoundException, CommandFailed, IncorrectUsage
+    {
+        // given
+        ImportCommand importCommand =
+                new ImportCommand( testDir.directory( "home" ).toPath(), testDir.directory( "conf" ).toPath(),
+                        new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) );
+        File nodesFile = createTextFile( "nodes.csv", ":ID", "1", "2" );
+        File argFile = createTextFile( "args.txt", "--database=foo", "--nodes=" + nodesFile.getAbsolutePath() );
+        String[] arguments = {"-f", argFile.getAbsolutePath()};
+
+        // when
+        importCommand.execute( arguments );
+
+        // then
+        assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
+        assertTrue( suppressOutput.getErrorVoice().containsMessage( nodesFile.getAbsolutePath() ) );
+        assertTrue( suppressOutput.getOutputVoice().containsMessage( "2 nodes" ) );
+    }
+
+    @Test
     public void shouldPrintNiceHelp() throws Throwable
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
@@ -311,5 +337,18 @@ public class ImportCommandTest
         Files.createDirectories( storeDir );
         Path storeFile = storeDir.resolve( StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) );
         Files.createFile( storeFile );
+    }
+
+    private File createTextFile( String name, String... lines ) throws FileNotFoundException
+    {
+        File file = testDir.file( name );
+        try ( PrintStream out = new PrintStream( file ) )
+        {
+            for ( String line : lines )
+            {
+                out.println( line );
+            }
+        }
+        return file;
     }
 }
