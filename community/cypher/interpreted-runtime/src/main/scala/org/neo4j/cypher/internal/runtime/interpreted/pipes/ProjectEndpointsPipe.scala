@@ -41,7 +41,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   private def projectVarLength(qtx: QueryContext): Projector = (context: ExecutionContext) => {
     findVarLengthRelEndpoints(context, qtx) match {
       case Some((InScopeReversed(startNode, endNode), rels)) if !directed =>
-        Iterator(context.set(start, endNode, end, startNode, relName, reverse(rels)))
+        Iterator(context.set(start, endNode, end, startNode, relName, rels.reverse()))
       case Some((NotInScope(startNode, endNode), rels)) if !directed =>
         Iterator(
           executionContextFactory.copyWith(context, start, startNode, end, endNode),
