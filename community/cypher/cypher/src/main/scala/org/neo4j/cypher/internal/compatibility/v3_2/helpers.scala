@@ -58,7 +58,8 @@ object helpers {
       config.errorIfShortestPathFallbackUsedAtRuntime,
       config.errorIfShortestPathHasCommonNodesAtRuntime,
       config.legacyCsvQuoteEscaping,
-      config.nonIndexedLabelWarningThreshold)
+      config.nonIndexedLabelWarningThreshold,
+      config.planWithMinimumCardinalityEstimates)
 
 
   def as3_2(tracer: CompilationPhaseTracer): org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer = {
