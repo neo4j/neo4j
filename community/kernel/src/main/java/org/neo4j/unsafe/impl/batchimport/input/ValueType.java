@@ -482,7 +482,7 @@ public abstract class ValueType
         {
             ValueType componentType = typeOf( value.getClass().getComponentType() );
             int arrayLength = Array.getLength( value );
-            int length = Integer.BYTES; // array length
+            int length = Byte.BYTES /*component type id*/ + Integer.BYTES; /*array length*/
             for ( int i = 0; i < arrayLength; i++ )
             {
                 length += componentType.length( Array.get( value, i ) );
