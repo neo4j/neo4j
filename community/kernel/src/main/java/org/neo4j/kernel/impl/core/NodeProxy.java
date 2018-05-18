@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,7 +41,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -747,22 +744,21 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         KernelTransaction transaction = safeAcquireTransaction();
-        try ( RelationshipTraversalCursor relationships = transaction.cursors().allocateRelationshipTraversalCursor();
+        try ( RelationshipGroupCursor relationships = transaction.cursors().allocateRelationshipGroupCursor();
               Statement ignore = transaction.acquireStatement() )
         {
             NodeCursor nodes = transaction.ambientNodeCursor();
             TokenRead tokenRead = transaction.tokenRead();
             singleNode( transaction, nodes );
-            nodes.allRelationships( relationships );
-            final MutableIntSet seen = new IntHashSet();
+            nodes.relationships( relationships );
             List<RelationshipType> types = new ArrayList<>();
             while ( relationships.next() )
             {
+                // only include this type if there are any relationships with this type
                 int type = relationships.type();
-                if ( !seen.contains( type ) )
+                if ( relationships.totalCount() > 0 )
                 {
                     types.add( RelationshipType.withName( tokenRead.relationshipTypeName( relationships.type() ) ) );
-                    seen.add( type );
                 }
             }
 
