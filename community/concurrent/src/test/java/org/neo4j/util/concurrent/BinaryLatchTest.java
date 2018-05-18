@@ -19,8 +19,8 @@
  */
 package org.neo4j.util.concurrent;
 
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,90 +30,93 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.fail;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
-public class BinaryLatchTest
+class BinaryLatchTest
 {
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
-    @AfterClass
-    public static void shutDownExecutor()
+    @AfterAll
+    static void shutDownExecutor()
     {
         executor.shutdown();
     }
 
-    @Test( timeout = 3000 )
-    public void releaseThenAwaitDoesNotBlock()
+    @Test
+    void releaseThenAwaitDoesNotBlock()
     {
-        BinaryLatch latch = new BinaryLatch();
-        latch.release();
-        latch.await();
+        assertTimeout( ofSeconds( 3 ), () ->
+        {
+            BinaryLatch latch = new BinaryLatch();
+            latch.release();
+            latch.await();
+        } );
     }
 
-    @Test( timeout = 10000 )
-    public void releaseMustUnblockAwaiters() throws Exception
+    @Test
+    void releaseMustUnblockAwaiters()
     {
-        final BinaryLatch latch = new BinaryLatch();
-        Runnable awaiter = latch::await;
-        int awaiters = 24;
-        Future<?>[] futures = new Future<?>[awaiters];
-        for ( int i = 0; i < awaiters; i++ )
+        assertTimeout( ofSeconds( 1 ), () ->
         {
-            futures[i] = executor.submit( awaiter );
-        }
-
-        try
-        {
-            futures[0].get( 10, TimeUnit.MILLISECONDS );
-            fail( "Call should have timed out" );
-        }
-        catch ( TimeoutException ignore )
-        {
-            // empty
-        }
-
-        latch.release();
-
-        for ( Future<?> future : futures )
-        {
-            future.get();
-        }
-    }
-
-    @Test( timeout = 60000 )
-    public void stressLatch() throws Exception
-    {
-        final AtomicReference<BinaryLatch> latchRef = new AtomicReference<>( new BinaryLatch() );
-        Runnable awaiter = () ->
-        {
-            BinaryLatch latch;
-            while ( (latch = latchRef.get()) != null )
+            final BinaryLatch latch = new BinaryLatch();
+            Runnable awaiter = latch::await;
+            int awaiters = 24;
+            Future<?>[] futures = new Future<?>[awaiters];
+            for ( int i = 0; i < awaiters; i++ )
             {
-                latch.await();
+                futures[i] = executor.submit( awaiter );
             }
-        };
 
-        int awaiters = 6;
-        Future<?>[] futures = new Future<?>[awaiters];
-        for ( int i = 0; i < awaiters; i++ )
+            assertThrows( TimeoutException.class, () -> futures[0].get( 10, TimeUnit.MILLISECONDS ) );
+
+            latch.release();
+
+            for ( Future<?> future : futures )
+            {
+                future.get();
+            }
+        } );
+    }
+
+    @Test
+    void stressLatch()
+    {
+        assertTimeout( ofSeconds( 60 ), () ->
         {
-            futures[i] = executor.submit( awaiter );
-        }
+            final AtomicReference<BinaryLatch> latchRef = new AtomicReference<>( new BinaryLatch() );
+            Runnable awaiter = () ->
+            {
+                BinaryLatch latch;
+                while ( (latch = latchRef.get()) != null )
+                {
+                    latch.await();
+                }
+            };
 
-        ThreadLocalRandom rng = ThreadLocalRandom.current();
-        for ( int i = 0; i < 500000; i++ )
-        {
-            latchRef.getAndSet( new BinaryLatch() ).release();
-            spin( rng.nextLong( 0, 10 ) );
-        }
+            int awaiters = 6;
+            Future<?>[] futures = new Future<?>[awaiters];
+            for ( int i = 0; i < awaiters; i++ )
+            {
+                futures[i] = executor.submit( awaiter );
+            }
 
-        latchRef.getAndSet( null ).release();
+            ThreadLocalRandom rng = ThreadLocalRandom.current();
+            for ( int i = 0; i < 500000; i++ )
+            {
+                latchRef.getAndSet( new BinaryLatch() ).release();
+                spin( rng.nextLong( 0, 10 ) );
+            }
 
-        // None of the tasks we started should get stuck, e.g. miss a release signal:
-        for ( Future<?> future : futures )
-        {
-            future.get();
-        }
+            latchRef.getAndSet( null ).release();
+
+            // None of the tasks we started should get stuck, e.g. miss a release signal:
+            for ( Future<?> future : futures )
+            {
+                future.get();
+            }
+        } );
     }
 
     private static void spin( long micros )

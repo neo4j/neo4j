@@ -19,14 +19,14 @@
  */
 package org.neo4j.util.concurrent;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DecayingFlagsTest
+class DecayingFlagsTest
 {
     @Test
-    public void shouldTrackToggle()
+    void shouldTrackToggle()
     {
         // Given
         DecayingFlags.Key myFeature = new DecayingFlags.Key( 1 );
@@ -40,7 +40,7 @@ public class DecayingFlagsTest
     }
 
     @Test
-    public void shouldTrackMultipleFlags()
+    void shouldTrackMultipleFlags()
     {
         // Given
         DecayingFlags.Key featureA = new DecayingFlags.Key( 1 );
@@ -57,7 +57,7 @@ public class DecayingFlagsTest
     }
 
     @Test
-    public void toggleShouldDecay()
+    void toggleShouldDecay()
     {
         // Given
         DecayingFlags.Key featureA = new DecayingFlags.Key( 1 );
@@ -84,7 +84,7 @@ public class DecayingFlagsTest
     }
 
     @Test
-    public void resetFlagShouldRecoverIfToggledAgain()
+    void resetFlagShouldRecoverIfToggledAgain()
     {
         // Given
         DecayingFlags.Key featureA = new DecayingFlags.Key( 9 );
