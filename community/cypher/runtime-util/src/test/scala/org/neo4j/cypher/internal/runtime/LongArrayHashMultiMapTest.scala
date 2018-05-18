@@ -62,4 +62,22 @@ class LongArrayHashMultiMapTest extends FunSuite with Matchers {
     map.isEmpty should equal(false)
   }
 
+  test("multiple values with the same keys") {
+    val map = new LongArrayHashMultiMap[String](8, 3)
+    map.add(Array(0L, 0L, 1L), "hello")
+    map.add(Array(0L, 0L, 2L), "is")
+    map.add(Array(0L, 0L, 3L), "it")
+    map.add(Array(0L, 0L, 1L), "me")
+    map.add(Array(0L, 0L, 2L), "you")
+    map.add(Array(0L, 0L, 3L), "are")
+    map.add(Array(0L, 0L, 1L), "looking")
+    map.add(Array(0L, 0L, 2L), "or")
+    map.add(Array(0L, 0L, 3L), "what")
+
+    map.get(Array(0L, 0L, 1L)).asScala.toList should equal(List("looking", "me", "hello"))
+    map.get(Array(0L, 0L, 2L)).asScala.toList should equal(List("or", "you", "is"))
+    map.get(Array(0L, 0L, 3L)).asScala.toList should equal(List("what", "are", "it"))
+    map.isEmpty should equal(false)
+  }
+
 }
