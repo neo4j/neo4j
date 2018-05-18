@@ -26,7 +26,7 @@ import org.scalatest.{FunSuite, Matchers}
 import scala.collection.mutable
 import scala.util.Random
 
-class LongArraySetTest extends FunSuite with Matchers {
+class LongArrayHashSetTest extends FunSuite with Matchers {
 
   val r = new Random()
 
@@ -34,7 +34,7 @@ class LongArraySetTest extends FunSuite with Matchers {
     test(s"test #$i") {
       val width = r.nextInt(10) + 2
       val size = r.nextInt(10000)
-      val tested = new LongArraySet(16, width)
+      val tested = new LongArrayHashSet(16, width)
       val validator = new mutable.HashSet[Array[Long]]()
       (0 to size) foreach { _ =>
         val tuple = new Array[Long](width)
@@ -55,7 +55,7 @@ class LongArraySetTest extends FunSuite with Matchers {
         val b = validator.contains(tuple)
 
         if(a != b)
-          fail(s"Value: ${util.Arrays.toString(tuple)} LongArraySet $a mutable.HashSet")
+          fail(s"Value: ${util.Arrays.toString(tuple)} LongArrayHashSet $a mutable.HashSet")
       }
     }
   }
@@ -69,7 +69,7 @@ class LongArraySetTest extends FunSuite with Matchers {
   }
 
   test("manual test to help with debugging") {
-    val set = new LongArraySet(8, 3)
+    val set = new LongArrayHashSet(8, 3)
     set.add(Array(1, 2, 3))
     set.add(Array(2, 3, 4))
     set.add(Array(3, 6, 7))

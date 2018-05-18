@@ -31,10 +31,9 @@ package org.neo4j.cypher.internal.runtime;
  * The word "offset" here means the index into an array,
  * and slot is a number that multiplied by the width of the values will return the offset.
  */
-public class LongArraySet
+public class LongArrayHashSet
 {
     private static final long NOT_IN_USE = -2;
-
     private static final int SLOT_EMPTY = 0;
     private static final int VALUE_FOUND = 1;
     private static final int CONTINUE_PROBING = -1;
@@ -43,7 +42,7 @@ public class LongArraySet
     private Table table;
     private final int width;
 
-    public LongArraySet( int initialCapacity, int width )
+    public LongArrayHashSet( int initialCapacity, int width )
     {
         assert (initialCapacity & (initialCapacity - 1)) == 0 : "Size must be a power of 2";
         assert width > 0 : "Number of elements must be larger than 0";
@@ -60,7 +59,7 @@ public class LongArraySet
      */
     public boolean add( long[] value )
     {
-        assert validValue( value );
+        assert LongArrayHash.validValue( value, width );
         int slotNr = slotFor( value );
         while ( true )
         {
@@ -106,7 +105,7 @@ public class LongArraySet
      */
     public boolean contains( long[] value )
     {
-        assert validValue( value );
+        assert LongArrayHash.validValue( value, width );
         int slot = slotFor( value );
 
         int result;
@@ -117,40 +116,6 @@ public class LongArraySet
         }
         while ( result == CONTINUE_PROBING );
         return result == VALUE_FOUND;
-    }
-
-    /*
-    Only called from assert
-     */
-    private boolean validValue( long[] arr )
-    {
-        if ( arr.length != width )
-        {
-            throw new AssertionError( "all elements in the set must have the same size" );
-        }
-        for ( long l : arr )
-        {
-            if ( l == -1 || l == -2 )
-            {
-                throw new AssertionError( "magic values -1 and -2 not allowed in set" );
-            }
-        }
-        return true;
-    }
-
-    private int hashCode( long[] arr, int from, int numberOfElements )
-    {
-        // This way of producing a hashcode for an array of longs is the
-        // same used by java.util.Arrays.hashCode(long[])
-        int h = 1;
-        for ( int i = from; i < from + numberOfElements; i++ )
-        {
-            long element = arr[i];
-            int elementHash = (int) (element ^ (element >>> 32));
-            h = 31 * h + elementHash;
-        }
-
-        return h;
     }
 
     private void resize()
@@ -166,7 +131,7 @@ public class LongArraySet
         {
             if ( srcArray[fromOffset] != NOT_IN_USE )
             {
-                int toSlot = hashCode( srcArray, fromOffset, width ) & table.tableMask;
+                int toSlot = LongArrayHash.hashCode( srcArray, fromOffset, width ) & table.tableMask;
 
                 if ( dstArray[toSlot * width] != NOT_IN_USE )
                 {
@@ -193,7 +158,7 @@ public class LongArraySet
 
     private int slotFor( long[] value )
     {
-        return hashCode( value, 0, width ) & table.tableMask;
+        return LongArrayHash.hashCode( value, 0, width ) & table.tableMask;
     }
 
     class Table
