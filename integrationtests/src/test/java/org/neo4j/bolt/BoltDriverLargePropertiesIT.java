@@ -39,7 +39,6 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.server.configuration.ServerSettings;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
@@ -52,8 +51,7 @@ public class BoltDriverLargePropertiesIT
 {
     @ClassRule
     public static final Neo4jRule db = new Neo4jRule()
-            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-            .withConfig( ServerSettings.script_enabled, Settings.TRUE );
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
     private static Driver driver;
 

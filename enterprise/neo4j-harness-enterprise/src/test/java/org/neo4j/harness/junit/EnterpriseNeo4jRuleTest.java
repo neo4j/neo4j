@@ -27,7 +27,6 @@ import org.neo4j.harness.extensionpackage.MyEnterpriseUnmanagedExtension;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
@@ -43,8 +42,7 @@ public class EnterpriseNeo4jRuleTest
             .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
                     getRelativePath( getSharedTestTemporaryFolder(), LegacySslPolicyConfig.certificates_directory ) )
             .withExtension( "/test", MyEnterpriseUnmanagedExtension.class )
-            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-            .withConfig( ServerSettings.script_enabled, Settings.TRUE );
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();

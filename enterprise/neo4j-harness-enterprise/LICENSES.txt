@@ -1241,7 +1241,6 @@ THE SOFTWARE.
 ------------------------------------------------------------------------------
 Mozilla Public License, Version 2.0
   kiama
-  Mozilla Rhino
 ------------------------------------------------------------------------------
 
 Mozilla Public License Version 2.0

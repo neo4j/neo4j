@@ -525,7 +525,6 @@ public class TransactionGuardIT
             BoltConnector boltConnector = new BoltConnector( BOLT_CONNECTOR_KEY );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
                     .withProperty( boltConnector.enabled.name(), Settings.TRUE )
-                    .withProperty( ServerSettings.script_enabled.name(), Settings.TRUE )
                     .withProperty( boltConnector.encryption_level.name(),
                             BoltConnector.EncryptionLevel.DISABLED.name() )
                     .withProperty( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE );
@@ -545,7 +544,6 @@ public class TransactionGuardIT
                 boltConnector.address, "localhost:0",
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
-                ServerSettings.script_enabled, Settings.TRUE,
                 boltConnector.encryption_level, BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.auth_enabled, "false" );
     }

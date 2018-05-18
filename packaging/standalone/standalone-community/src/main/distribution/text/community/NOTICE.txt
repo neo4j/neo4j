@@ -299,9 +299,6 @@ MIT License
   xmlhttprequest.js
   xtend.js
 
-Mozilla Public License, Version 2.0
-  Mozilla Rhino
-
 SIL OFL 1.1
   Font Awesome
   Inconsolata Font

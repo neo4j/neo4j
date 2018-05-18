@@ -32,9 +32,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -58,7 +56,6 @@ public class JUnitRuleTestIT
             .withFixture( "CREATE (u:User)" )
             .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
                     getRelativePath( getSharedTestTemporaryFolder(), LegacySslPolicyConfig.certificates_directory ) )
-            .withConfig( ServerSettings.script_enabled, Settings.TRUE )
             .withFixture( graphDatabaseService ->
             {
                 try ( Transaction tx = graphDatabaseService.beginTx() )
@@ -109,7 +106,7 @@ public class JUnitRuleTestIT
     }
 
     @Test
-    public void shouldRuleWorkWithExsitingDirectory()
+    public void shouldRuleWorkWithExistingDirectory()
     {
         // given
 
@@ -127,7 +124,6 @@ public class JUnitRuleTestIT
 
         // When a rule with an pre-populated graph db directory is used
         final Neo4jRule ruleWithDirectory = new Neo4jRule( testDirectory.directory() )
-                .withConfig( ServerSettings.script_enabled, Settings.TRUE )
                 .copyFrom( testDirectory.directory() );
         ruleWithDirectory.apply( new Statement()
         {

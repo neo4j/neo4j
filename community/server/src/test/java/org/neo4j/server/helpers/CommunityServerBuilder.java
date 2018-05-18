@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -47,11 +46,8 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.time.Clocks;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
@@ -86,7 +82,6 @@ public class CommunityServerBuilder
                 GraphDatabaseDependencies.newDependencies( dependencies ) );
     };
 
-    private Clock clock;
     private String[] autoIndexedNodeKeys;
     private final String[] autoIndexedRelationshipKeys = null;
     private String[] securityRuleClassNames;
@@ -137,12 +132,6 @@ public class CommunityServerBuilder
         ServerTestUtils.writeConfigToFile( createConfiguration( temporaryFolder ), temporaryConfigFile );
 
         return temporaryConfigFile;
-    }
-
-    public CommunityServerBuilder withClock( Clock clock )
-    {
-        this.clock = clock;
-        return this;
     }
 
     public Map<String, String> createConfiguration( File temporaryFolder )
@@ -336,13 +325,9 @@ public class CommunityServerBuilder
         return this;
     }
 
-    protected DatabaseActions createDatabaseActionsObject( Database database, Config config )
+    protected DatabaseActions createDatabaseActionsObject( Database database )
     {
-        Clock clockToUse = (clock != null) ? clock : Clocks.systemClock();
-
-        return new DatabaseActions(
-                new LeaseManager( clockToUse ),
-                ScriptExecutionMode.getConfiguredMode( config ), database.getGraph() );
+        return new DatabaseActions( database.getGraph() );
     }
 
     private File buildBefore() throws IOException
@@ -378,7 +363,7 @@ public class CommunityServerBuilder
         @Override
         protected DatabaseActions createDatabaseActions()
         {
-            return createDatabaseActionsObject( database, getConfig() );
+            return createDatabaseActionsObject( database );
         }
 
         @Override

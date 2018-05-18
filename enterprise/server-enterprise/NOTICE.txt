@@ -121,7 +121,6 @@ MIT License
 
 Mozilla Public License, Version 2.0
   kiama
-  Mozilla Rhino
 
 Dependencies with multiple licenses
 -----------------------------------

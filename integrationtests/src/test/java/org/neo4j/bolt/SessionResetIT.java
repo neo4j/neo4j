@@ -62,7 +62,6 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.VerboseTimeout;
 
 import static java.util.Collections.newSetFromMap;
@@ -109,7 +108,6 @@ public class SessionResetIT
     private final Neo4jRule db = new EnterpriseNeo4jRule()
             .withConfig( GraphDatabaseSettings.load_csv_file_url_root, "import" )
             .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-            .withConfig( ServerSettings.script_enabled, Settings.TRUE )
             .dumpLogsOnFailure( System.out );
 
     @Rule
