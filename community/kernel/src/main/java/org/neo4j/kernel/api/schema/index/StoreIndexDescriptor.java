@@ -150,6 +150,12 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
 
     // ** Misc
 
+    /**
+     * WARNING: This toString is currently used in the inconsistency report, and cannot be changed due to backwards
+     *          compatibility. If you are also annoyed by this, maybe now is the time to fix the inconsistency checker.
+     *
+     * see InconsistencyReportReader.propagate( String, long )
+     */
     @Override
     public String toString()
     {
@@ -159,7 +165,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule
             ownerString = ", owner=" + owningConstraintId;
         }
 
-        return "IndexDescriptor[id=" + id + ", descriptor=" + this.userDescription( idTokenNameLookup ) +
+        return "IndexRule[id=" + id + ", descriptor=" + this.userDescription( idTokenNameLookup ) +
                 ", provider=" + this.providerDescriptor() + ownerString + "]";
     }
 

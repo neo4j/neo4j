@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,9 +40,6 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.TestDirectory;
@@ -100,8 +98,7 @@ public class HalfCreatedConstraintIT
                     ((GraphDatabaseAPI) database).getDependencyResolver().provideDependency( ThreadToStatementContextBridge.class ).get();
             KernelTransaction kernelTransaction = statementBridge.getKernelTransactionBoundToThisThread( true );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
-            IndexDescriptor index = IndexDescriptorFactory.uniqueForSchema( descriptor );
-            ((KernelTransactionImplementation) kernelTransaction).txState().indexDoAdd( index );
+            kernelTransaction.indexUniqueCreate( descriptor, Optional.empty() );
             transaction.success();
         }
     }
