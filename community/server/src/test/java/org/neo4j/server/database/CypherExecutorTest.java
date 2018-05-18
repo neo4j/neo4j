@@ -146,7 +146,7 @@ public class CypherExecutorTest
         statement = mock( Statement.class );
         request = mock( HttpServletRequest.class );
 
-        InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, () -> statement );
+        InternalTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
         LoginContext loginContext = AUTH_DISABLED;
         KernelTransaction.Type type = KernelTransaction.Type.implicit;

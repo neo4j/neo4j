@@ -44,7 +44,7 @@ public class TopLevelTransaction implements InternalTransaction
     private boolean successCalled;
     private final KernelTransaction transaction;
 
-    public TopLevelTransaction( KernelTransaction transaction, Supplier<Statement> stmt )
+    public TopLevelTransaction( KernelTransaction transaction )
     {
         this.transaction = transaction;
     }
