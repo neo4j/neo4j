@@ -158,8 +158,8 @@ public class ForsetiClient implements Locks.Client
 
         for ( int i = 0; i < sharedLockCounts.length; i++ )
         {
-            sharedLockCounts[i] = new LongIntHashMap();
-            exclusiveLockCounts[i] = new LongIntHashMap();
+            sharedLockCounts[i] = new CountableLongIntHashMap();
+            exclusiveLockCounts[i] = new CountableLongIntHashMap();
         }
     }
 
@@ -1052,24 +1052,6 @@ public class ForsetiClient implements Locks.Client
         }
     }
 
-    /**
-     * @return an approximate (assuming data is concurrently being edited) count of the number of locks held by this
-     * client.
-     */
-    int lockCount()
-    {
-        int count = 0;
-        for ( LongIntMap sharedLockCount : sharedLockCounts )
-        {
-            count += sharedLockCount.size();
-        }
-        for ( LongIntMap exclusiveLockCount : exclusiveLockCounts )
-        {
-            count += exclusiveLockCount.size();
-        }
-        return count;
-    }
-
     String describeWaitList()
     {
         StringBuilder sb = new StringBuilder( format( "%nClient[%d] waits for [", id() ) );
@@ -1175,6 +1157,22 @@ public class ForsetiClient implements Locks.Client
             {
                 sharedLockCounts.remove( resourceId );
             }
+        }
+    }
+
+    @SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
+    private static class CountableLongIntHashMap extends LongIntHashMap
+    {
+        CountableLongIntHashMap()
+        {
+            super();
+        }
+
+        @Override
+        public int size()
+        {
+            SentinelValues sentinelValues = getSentinelValues();
+            return getOccupiedWithData() + (sentinelValues == null ? 0 : sentinelValues.size());
         }
     }
 }
