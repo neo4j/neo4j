@@ -48,9 +48,9 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 
         MultiTokenSchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
         IndexReference nodes;
-        try ( Transaction transaction = db.beginTx() )
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaWrite schemaWrite = ((KernelTransactionImplementation) transaction).schemaWrite();
+            SchemaWrite schemaWrite = transaction.schemaWrite();
             nodes = schemaWrite.indexCreate( descriptor, Optional.of( FulltextIndexProviderFactory.DESCRIPTOR.name() ),
                     Optional.of( "nodes" ) );
             transaction.success();
@@ -83,9 +83,9 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
         MultiTokenSchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
         IndexReference nodes;
-        try ( Transaction transaction = db.beginTx() )
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaWrite schemaWrite = ((KernelTransactionImplementation) transaction).schemaWrite();
+            SchemaWrite schemaWrite = transaction.schemaWrite();
             nodes = schemaWrite.indexCreate( descriptor, Optional.of( FulltextIndexProviderFactory.DESCRIPTOR.name() ),
                     Optional.of( "nodes" ) );
             transaction.success();
@@ -120,9 +120,9 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
         MultiTokenSchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[0], PROP );
         IndexReference nodes;
-        try ( Transaction transaction = db.beginTx() )
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaWrite schemaWrite = ((KernelTransactionImplementation) transaction).schemaWrite();
+            SchemaWrite schemaWrite = transaction.schemaWrite();
             nodes = schemaWrite.indexCreate( descriptor, Optional.of( FulltextIndexProviderFactory.DESCRIPTOR.name() ),
                     Optional.of( "nodes" ) );
             transaction.success();
@@ -149,9 +149,9 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         }
 
         applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
-        try ( Transaction tx = db.beginTx() )
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaRead schemaRead = ((KernelTransactionImplementation) tx).schemaRead();
+            SchemaRead schemaRead = transaction.schemaRead();
             await( schemaRead.indexGetForName( "nodes" ) );
             assertQueryFindsIds( "nodes", "and", firstID );
             assertQueryFindsIds( "nodes", "in", firstID );

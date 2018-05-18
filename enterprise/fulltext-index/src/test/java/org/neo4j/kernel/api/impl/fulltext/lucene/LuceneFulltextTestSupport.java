@@ -38,9 +38,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory;
+import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.test.rule.DatabaseRule;
@@ -82,6 +85,19 @@ public class LuceneFulltextTestSupport
         db.restartDatabase( setting.name(), value );
         db.ensureStarted();
         fulltextAdapter = getAccessor();
+    }
+
+    public KernelTransactionImplementation getKernelTransaction()
+    {
+        try
+        {
+            return (KernelTransactionImplementation) db.resolveDependency( KernelImpl.class ).newTransaction(
+                    org.neo4j.internal.kernel.api.Transaction.Type.explicit, LoginContext.AUTH_DISABLED );
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new RuntimeException( "oops" );
+        }
     }
 
     private FulltextAdapter getAccessor()
@@ -181,11 +197,11 @@ public class LuceneFulltextTestSupport
         }
     }
 
-    void await( IndexReference descriptor ) throws IndexNotFoundKernelException
+    void await( IndexReference descriptor ) throws Exception
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            while (( (KernelTransactionImplementation)tx).schemaRead().indexGetState( descriptor ) != InternalIndexState.ONLINE )
+            while ( tx.schemaRead().indexGetState( descriptor ) != InternalIndexState.ONLINE )
             {
                 Thread.sleep( 100 );
             }

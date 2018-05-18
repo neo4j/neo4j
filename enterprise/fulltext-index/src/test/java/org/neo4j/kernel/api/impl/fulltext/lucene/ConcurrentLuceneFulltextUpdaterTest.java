@@ -29,11 +29,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.test.Race;
@@ -76,14 +73,13 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         return fulltextAdapter.schemaFor( NODE, entityTokens, PROP );
     }
 
-    private IndexReference createInitialIndex( MultiTokenSchemaDescriptor descriptor )
-            throws InvalidTransactionTypeKernelException, IndexNotFoundKernelException, SchemaKernelException
+    private IndexReference createInitialIndex( MultiTokenSchemaDescriptor descriptor ) throws Exception
     {
         IndexReference index;
-        try ( Transaction transaction = db.beginTx() )
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaWrite schemaWrite = ((KernelTransactionImplementation) transaction).schemaWrite();
-            index = schemaWrite.indexCreate( descriptor, Optional.of( "nodes" ), Optional.of( DESCRIPTOR.name() ) );
+            SchemaWrite schemaWrite = transaction.schemaWrite();
+            index = schemaWrite.indexCreate( descriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( "nodes" ) );
             transaction.success();
         }
         await( index );
@@ -97,6 +93,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         race.addContestant( changeConfig );
         race.addContestants( bobThreads, bobWork );
         race.go();
+        Thread.sleep( 100 );
         await( IndexDescriptorFactory.forSchema( newDescriptor, Optional.of( "nodes" ), DESCRIPTOR ) );
         try ( Transaction ignore = db.beginTx() )
         {
@@ -133,11 +130,11 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
     {
         return () ->
         {
-            try ( Transaction transaction = db.beginTx() )
+            try ( KernelTransactionImplementation transaction = getKernelTransaction() )
             {
-                SchemaWrite schemaWrite = ((KernelTransactionImplementation) transaction).schemaWrite();
+                SchemaWrite schemaWrite = transaction.schemaWrite();
                 schemaWrite.indexDrop( descriptor );
-                schemaWrite.indexCreate( newDescriptor, Optional.of( "nodes" ), Optional.of( DESCRIPTOR.name() ) );
+                schemaWrite.indexCreate( newDescriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( "nodes" ) );
             }
         };
     }

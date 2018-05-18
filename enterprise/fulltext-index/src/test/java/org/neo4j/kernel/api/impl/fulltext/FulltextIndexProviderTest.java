@@ -37,22 +37,20 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
@@ -95,7 +93,7 @@ public class FulltextIndexProviderTest
     public void createFulltextIndex() throws Exception
     {
         IndexReference fulltextIndex = createIndex( new int[]{7, 8, 9}, new int[]{2, 3, 4} );
-        try ( KernelTransactionImplementation transaction = (KernelTransactionImplementation) db.beginTx() )
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             IndexReference descriptor = transaction.schemaRead().indexGetForName( NAME );
             assertEquals( descriptor.schema(), fulltextIndex.schema() );
@@ -116,7 +114,7 @@ public class FulltextIndexProviderTest
     public void createAndRetainRelationshipFulltextIndex() throws Exception
     {
         IndexReference indexReference;
-        try ( KernelTransactionImplementation transaction = (KernelTransactionImplementation) db.beginTx() )
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             MultiTokenSchemaDescriptor schemaDescriptor = multiToken( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, 0, 1, 2, 3 );
             indexReference = transaction.schemaWrite().indexCreate( schemaDescriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( "fulltext" ) );
@@ -148,7 +146,7 @@ public class FulltextIndexProviderTest
     {
         FulltextIndexProvider provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
         IndexReference indexReference;
-        try ( KernelTransactionImplementation transaction = (KernelTransactionImplementation) db.beginTx() )
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             MultiTokenSchemaDescriptor schemaDescriptor = multiToken( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, 0, 1, 2, 3 );
             indexReference = transaction.schemaWrite().indexCreate( schemaDescriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( "fulltext" ) );
@@ -185,12 +183,25 @@ public class FulltextIndexProviderTest
         verifyNodeData( provider, thirdNodeId );
     }
 
+    private KernelTransactionImplementation getKernelTransaction()
+    {
+        try
+        {
+            return (KernelTransactionImplementation) db.resolveDependency( KernelImpl.class ).newTransaction(
+                    org.neo4j.internal.kernel.api.Transaction.Type.explicit, LoginContext.AUTH_DISABLED );
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new RuntimeException("oops");
+        }
+    }
+
     private IndexReference createIndex( int[] entityTokens, int[] propertyIds )
             throws TransactionFailureException, InvalidTransactionTypeKernelException, SchemaKernelException
 
     {
         IndexReference fulltext;
-        try ( KernelTransactionImplementation transaction = (KernelTransactionImplementation) db.beginTx() )
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             MultiTokenSchemaDescriptor schemaDescriptor = multiToken( entityTokens, EntityType.NODE, propertyIds );
             fulltext = transaction.schemaWrite().indexCreate( schemaDescriptor, Optional.of( DESCRIPTOR.name() ), Optional.of( NAME ) );
@@ -201,13 +212,11 @@ public class FulltextIndexProviderTest
 
     private void verifyThatFulltextIndexIsPresent( IndexReference fulltextIndexDescriptor ) throws TransactionFailureException
     {
-        try ( KernelTransactionImplementation transaction = (KernelTransactionImplementation) db.beginTx() )
+        try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             IndexReference descriptor = transaction.schemaRead().indexGetForName( NAME );
-            assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
             assertEquals( fulltextIndexDescriptor.schema(), descriptor.schema() );
             assertEquals( ((IndexDescriptor) fulltextIndexDescriptor).type(), ((IndexDescriptor) descriptor).type() );
-            assertEquals( ((StoreIndexDescriptor) fulltextIndexDescriptor).getName(), ((StoreIndexDescriptor) descriptor).getName() );
             transaction.success();
         }
     }
@@ -281,7 +290,7 @@ public class FulltextIndexProviderTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            while ( ((KernelTransactionImplementation) tx).schemaRead().indexGetState( descriptor ) != InternalIndexState.ONLINE )
+            while ( getKernelTransaction().schemaRead().indexGetState( descriptor ) != InternalIndexState.ONLINE )
             {
                 Thread.sleep( 100 );
             }

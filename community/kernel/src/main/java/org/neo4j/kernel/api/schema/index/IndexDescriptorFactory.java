@@ -37,32 +37,20 @@ public class IndexDescriptorFactory
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema )
     {
-        return new IndexDescriptor( schema, GENERAL, Optional.empty(), IndexProvider.UNDECIDED );
+        return forSchema( schema, Optional.empty(), IndexProvider.UNDECIDED );
+    }
+
+    public static IndexDescriptor forSchema( SchemaDescriptor schema,
+            IndexProvider.Descriptor providerDescriptor )
+    {
+        return forSchema( schema, Optional.empty(), providerDescriptor );
     }
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema,
                                              Optional<String> name,
                                              IndexProvider.Descriptor providerDescriptor )
     {
-        return new IndexDescriptor( schema, GENERAL, name, providerDescriptor );
-    }
-
-    public static IndexDescriptor forSchema( MultiTokenSchemaDescriptor schema )
-    {
-        return new IndexDescriptor( schema, MULTI_TOKEN, Optional.empty(), IndexProvider.UNDECIDED );
-    }
-
-    public static IndexDescriptor forSchema( MultiTokenSchemaDescriptor schema,
-                                             Optional<String> name,
-                                             IndexProvider.Descriptor providerDescriptor )
-    {
-        return new IndexDescriptor( schema, MULTI_TOKEN, name, providerDescriptor );
-    }
-
-    public static IndexDescriptor forSchema( SchemaDescriptor schema,
-                                             IndexProvider.Descriptor providerDescriptor )
-    {
-        return new IndexDescriptor( schema, GENERAL, Optional.empty(), providerDescriptor );
+        return new IndexDescriptor( schema, schema instanceof MultiTokenSchemaDescriptor ? MULTI_TOKEN : GENERAL, name, providerDescriptor );
     }
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
