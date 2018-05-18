@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -1361,6 +1362,37 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
+    @Test
+    public void propertyTypeShouldBeTxStateAware() throws Exception
+    {
+        // Given
+        long relationship;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            int token = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            relationship = write.relationshipCreate( write.nodeCreate(), token, write.nodeCreate() );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            try ( RelationshipScanCursor relationships = tx.cursors().allocateRelationshipScanCursor();
+                  PropertyCursor properties = tx.cursors().allocatePropertyCursor() )
+            {
+                tx.dataRead().singleRelationship( relationship, relationships );
+                assertTrue( relationships.next() );
+                assertFalse( relationships.hasProperties() );
+                int prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
+                tx.dataWrite().relationshipSetProperty( relationship, prop, stringValue( "foo" ) );
+                relationships.properties( properties );
+
+                assertTrue( properties.next() );
+                assertThat( properties.propertyType(), equalTo( ValueGroup.TEXT ) );
+            }
+        }
+    }
 
     private void relateNTimes( int nRelationshipsInStore, int type, long n1, long n2, Transaction tx )
             throws KernelException
