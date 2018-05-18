@@ -108,7 +108,7 @@ public class IndexTxStateUpdaterTest
                 .thenAnswer( x ->
                 {
                     Integer argument = x.getArgument( 0 );
-                    return filter( hasProperty( argument ), indexes.iterator() );
+                    return map( DefaultIndexReference::fromDescriptor, filter( hasProperty( argument ), indexes.iterator() ) );
                 } );
 
         HashMap<Integer,Value> map = new HashMap<>();

@@ -232,9 +232,9 @@ public class RecordStorageReader extends DefaultCursors implements StorageReader
     }
 
     @Override
-    public Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<IndexReference> indexesGetRelatedToProperty( int propertyId )
     {
-        return schemaCache.indexesByProperty( propertyId );
+        return Iterators.map( DefaultIndexReference::fromDescriptor, schemaCache.indexesByProperty( propertyId ) );
     }
 
     @Override

@@ -610,11 +610,42 @@ public class ReadOperations implements TxStateHolder,
         Iterator<IndexReference> iterator = storageReader.indexesGetForLabel( labelId );
         if ( ktx.hasTxStateWithChanges() )
         {
-            Iterator<SchemaIndexDescriptor> descriptors = Iterators.map( DefaultIndexReference::toDescriptor, iterator );
-            descriptors = ktx.txState().indexDiffSetsByLabel( labelId ).apply( descriptors );
-            iterator = Iterators.map( DefaultIndexReference::fromDescriptor, descriptors );
+            ReadableDiffSets<SchemaIndexDescriptor> diff = ktx.txState().indexDiffSetsByLabel( labelId );
+            if ( !diff.isEmpty() )
+            {
+                Iterator<SchemaIndexDescriptor> descriptors = Iterators.map( DefaultIndexReference::toDescriptor, iterator );
+                descriptors = diff.apply( descriptors );
+                iterator = Iterators.map( DefaultIndexReference::fromDescriptor, descriptors );
+            }
         }
         return optimisticLabelLock( iterator );
+    }
+
+    @Override
+    public Iterator<IndexReference> indexesGetRelatedToProperty( int propertyId )
+    {
+        ktx.assertOpen();
+
+        Iterator<IndexReference> iterator = storageReader.indexesGetRelatedToProperty( propertyId );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            iterator = augment( iterator, ktx.txState().indexChanges() );
+        }
+
+        // Don't lock the labels of the indexes here because this method is designed to be used on commit
+        // where these locks are held already.
+        return iterator;
+    }
+
+    private Iterator<IndexReference> augment( Iterator<IndexReference> iterator, ReadableDiffSets<SchemaIndexDescriptor> diff )
+    {
+        if ( !diff.isEmpty() )
+        {
+            Iterator<SchemaIndexDescriptor> descriptors = Iterators.map( DefaultIndexReference::toDescriptor, iterator );
+            descriptors = diff.apply( descriptors );
+            iterator = Iterators.map( DefaultIndexReference::fromDescriptor, descriptors );
+        }
+        return iterator;
     }
 
     @Override
