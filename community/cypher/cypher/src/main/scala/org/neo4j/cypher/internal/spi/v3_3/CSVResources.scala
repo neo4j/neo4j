@@ -82,10 +82,8 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
             if (mark.isEndOfLine) return if (buffer.isEmpty) null else buffer.toArray
           }
         } catch {
-          case e: BufferOverflowException => throw new CypherExecutionException(
-            """Tried to read a field larger than the current buffer size.
-              | Make sure that the field doesn't have an unterminated quote,
-              | if it doesn't you can try increasing the buffer size via `dbms.import.csv.buffer_size`.""".stripMargin, e)
+          //TODO change to error message mentioning `dbms.import.csv.buffer_size` in 3.5
+          case e: BufferOverflowException => throw new CypherExecutionException(e.getMessage, e)
         }
 
         if (buffer.isEmpty) {

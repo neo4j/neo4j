@@ -606,14 +606,12 @@ class LoadCsvAcceptanceTest
           writer.println(longName)
       })
       for (url <- urls) {
-
+        //TODO this message should mention `dbms.import.csv.buffer_size` in 3.5
         val error = intercept[QueryExecutionException](db.execute(
           s"""LOAD CSV WITH HEADERS FROM '$url' AS row
              |RETURN row.prop""".stripMargin).next().get("row.prop"))
-        error.getMessage should equal(
-          """Tried to read a field larger than the current buffer size.
-            | Make sure that the field doesn't have an unterminated quote,
-            | if it doesn't you can try increasing the buffer size via `dbms.import.csv.buffer_size`.""".stripMargin)
+        error.getMessage should startWith(
+          """Tried to read a field larger than buffer size 1048576.""".stripMargin)
       }
     }
   }
