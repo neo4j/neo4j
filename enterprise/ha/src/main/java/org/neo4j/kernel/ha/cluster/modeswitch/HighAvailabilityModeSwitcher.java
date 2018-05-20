@@ -101,6 +101,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private ScheduledExecutorService modeSwitcherExecutor;
     private volatile URI me;
     private volatile Future<?> modeSwitcherFuture;
+
+    /*
+     * Valid values for this is TO_MASTER, TO_SLAVE or PENDING. It is updated before the switcher is
+     * called to the corresponding new state or set to PENDING if a switcher fails and doesn't retry.
+     */
     private volatile HighAvailabilityMemberState currentTargetState;
     private final AtomicBoolean canAskForElections = new AtomicBoolean( true );
     private final DataSourceManager neoStoreDataSourceSupplier;
@@ -225,17 +230,42 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void stateChanged( HighAvailabilityMemberChangeEvent event )
     {
+        /*
+         * First of all, check if the state change is internal or external. In this context, internal means
+         * that the old and new state are different, so we definitely need to do something.
+         * Both cases may require a switcher to be activated, but external needs to check if the same as previously
+         * should be the one used (because the last attempt failed, for example) or maybe we simply need to update
+         * a field. Internal will probably require a new switcher to be used.
+         */
         if ( event.getNewState() == event.getOldState() )
         {
             /*
-             * We get here if for example a new master becomes available while we are already switching. In that case
-             * we don't change state but we must update with the new availableMasterId, but only if it is not null.
+             * This is the external change case. We need to check our internals and perhaps retry a transition
              */
-            if ( event.getServerHaUri() != null )
+            if ( event.getNewState() != HighAvailabilityMemberState.TO_MASTER )
             {
-                availableMasterId = event.getServerHaUri();
+                /*
+                 * We get here if for example a new master becomes available while we are already switching. In that
+                 * case we don't change state but we must update with the new availableMasterId,
+                 * but only if it is not null.
+                 */
+                if ( event.getServerHaUri() != null )
+                {
+                    availableMasterId = event.getServerHaUri();
+                }
+                return;
             }
-            return;
+            /*
+             * The other case is that the new state is TO_MASTER
+             */
+            else if ( currentTargetState == HighAvailabilityMemberState.TO_MASTER )
+            {
+                /*
+                 * We are still switching from before. If a failure had happened, then currentTargetState would
+                 * be PENDING.
+                 */
+                return;
+            }
         }
 
         availableMasterId = event.getServerHaUri();
@@ -300,6 +330,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             catch ( Throwable e )
             {
                 msgLog.error( "Failed to switch to master", e );
+                /*
+                 * If the attempt to switch to master fails, then we must not try again. We'll trigger an election
+                 * and if we are elected again, we'll try again. We differentiate between this case and the case where
+                 * we simply receive another election result while switching hasn't completed yet by setting the
+                 * currentTargetState as follows:
+                 */
+                currentTargetState = HighAvailabilityMemberState.PENDING;
                 // Since this master switch failed, elect someone else
                 election.demote( instanceId );
             }
