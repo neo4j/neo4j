@@ -82,10 +82,12 @@ public interface PageCache extends AutoCloseable
     /**
      * List a snapshot of the current file mappings.
      * <p>
-     * The mappings can change as soon as this method returns. However, the returned {@link PagedFile}s will remain
-     * valid even if they are closed elsewhere.
+     * The mappings can change as soon as this method returns.
      * <p>
-     * <strong>NOTE:</strong> The calling code is responsible for closing <em>all</em> the returned paged files.
+     * <strong>NOTE:</strong> The calling code should <em>not</em> close the returned paged files, unless it does so
+     * in collaboration with the code that originally mapped the file. Any reference count in the mapping will
+     * <em>not</em> be incremented by this method, so calling code must be prepared for that the returned
+     * {@link PagedFile}s can be asynchronously closed elsewhere.
      *
      * @throws IOException if page cache has been closed or page eviction problems occur.
      */
@@ -125,6 +127,12 @@ public interface PageCache extends AutoCloseable
      * The max number of cached pages.
      */
     int maxCachedPages();
+
+    /**
+     * Report any thread-local events to the global page cache tracer, as if acquiring a thread-specific page cursor
+     * tracer, and reporting the events collected within it.
+     */
+    void reportEvents();
 
     /**
      * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its

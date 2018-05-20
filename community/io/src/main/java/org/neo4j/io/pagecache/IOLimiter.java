@@ -103,6 +103,11 @@ public interface IOLimiter
         // Same as for disableLimit().
     }
 
+    default boolean isLimited()
+    {
+        return false;
+    }
+
     /**
      * An IOPSLimiter implementation that does not restrict the rate of IO. Use this implementation if you want the
      * flush to go as fast as possible.

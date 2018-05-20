@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
@@ -28,7 +29,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -145,7 +147,7 @@ public class MuninnPageCache implements PageCache
     // the constructor of the PageCache, because the Executors have too many configuration options, many of which are
     // highly troublesome for our use case; caller-runs, bounded submission queues, bounded thread count, non-daemon
     // thread factories, etc.
-    private static final Executor backgroundThreadExecutor = BackgroundThreadExecutor.INSTANCE;
+    private static final BackgroundThreadExecutor backgroundThreadExecutor = BackgroundThreadExecutor.INSTANCE;
 
     private static final List<OpenOption> ignoredOpenOptions = Arrays.asList( (OpenOption) StandardOpenOption.APPEND,
             StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SPARSE );
@@ -480,7 +482,7 @@ public class MuninnPageCache implements PageCache
     @Override
     public synchronized List<PagedFile> listExistingMappings() throws IOException
     {
-        assertHealthy();
+        assertNotClosed();
         ensureThreadsInitialised();
 
         List<PagedFile> list = new ArrayList<>();
@@ -488,8 +490,9 @@ public class MuninnPageCache implements PageCache
 
         while ( current != null )
         {
+            // Note that we are NOT incrementing the reference count here.
+            // Calling code is expected to be able to deal with asynchronously closed PagedFiles.
             MuninnPagedFile pagedFile = current.pagedFile;
-            pagedFile.incrementRefCount();
             list.add( pagedFile );
             current = current.next;
         }
@@ -610,6 +613,53 @@ public class MuninnPageCache implements PageCache
         clearEvictorException();
     }
 
+    public void experimentalFlushAndForceParallelUnsynchronised() throws IOException
+    {
+        assertNotClosed();
+        List<Future<?>> flushes = new ArrayList<>();
+        List<PagedFile> files = listExistingMappings();
+        for ( PagedFile file : files )
+        {
+            MuninnPagedFile pagedFile = (MuninnPagedFile) file;
+            flushes.add( backgroundThreadExecutor.submit( () ->
+            {
+                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( pagedFile.swapper ) )
+                {
+                    FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
+                    pagedFile.flushAndForceInternal( flushOpportunity, false, IOLimiter.unlimited() );
+                }
+                catch ( ClosedChannelException e )
+                {
+                    if ( pagedFile.getRefCount() > 0 )
+                    {
+                        // The file is not supposed to be closed, since we have a positive ref-count, yet we got a
+                        // ClosedChannelException anyway? It's an odd situation, so let's tell the outside world about
+                        // this failure.
+                        throw e;
+                    }
+                    // Otherwise: The file was closed while we were trying to flush it. Since unmapping implies a flush
+                    // anyway, we can safely assume that this is not a problem. The file was flushed, and it doesn't
+                    // really matter how that happened. We'll ignore this exception.
+                }
+                return null;
+            } ) );
+        }
+
+        for ( Future<?> flush : flushes )
+        {
+            try
+            {
+                flush.get();
+            }
+            catch ( InterruptedException | ExecutionException e )
+            {
+                throw new IOException( e );
+            }
+        }
+        syncDevice();
+        clearEvictorException();
+    }
+
     private void flushAllPages( IOLimiter limiter ) throws IOException
     {
         try ( MajorFlushEvent cacheFlush = pageCacheTracer.beginCacheFlush() )
@@ -715,6 +765,12 @@ public class MuninnPageCache implements PageCache
     public int maxCachedPages()
     {
         return pages.length;
+    }
+
+    @Override
+    public void reportEvents()
+    {
+        pageCursorTracerSupplier.get().reportEvents();
     }
 
     int getPageCacheId()

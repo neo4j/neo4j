@@ -108,6 +108,12 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
+    public void reportEvents()
+    {
+        delegate.reportEvents();
+    }
+
+    @Override
     public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
         return delegate.streamFilesRecursive( directory );
