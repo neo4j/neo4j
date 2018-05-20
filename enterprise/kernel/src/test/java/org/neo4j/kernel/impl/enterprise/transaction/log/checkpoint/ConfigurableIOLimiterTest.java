@@ -227,4 +227,57 @@ public class ConfigurableIOLimiterTest
         repeatedlyCallMaybeLimitIO( limiter, stamp, 10 );
         assertThat( pauseNanosCounter.get(), greaterThan( TimeUnit.SECONDS.toNanos( 9 ) ) );
     }
+
+    @Test
+    public void configuredLimitMustReflectCurrentState()
+    {
+        createIOLimiter( 100 );
+
+        assertThat( limiter.isLimited(), is( true ) );
+        multipleDisableShouldReportUnlimited( limiter );
+        assertThat( limiter.isLimited(), is( true ) );
+    }
+
+    @Test
+    public void configuredDisabledLimitShouldBeUnlimited()
+    {
+        createIOLimiter( -1 );
+
+        assertThat( limiter.isLimited(), is( false ) );
+        multipleDisableShouldReportUnlimited( limiter );
+        assertThat( limiter.isLimited(), is( false ) );
+    }
+
+    @Test
+    public void unlimitedShouldAlwaysBeUnlimited()
+    {
+        IOLimiter limiter = IOLimiter.unlimited();
+
+        assertThat( limiter.isLimited(), is( false ) );
+        multipleDisableShouldReportUnlimited( limiter );
+        assertThat( limiter.isLimited(), is( false ) );
+    }
+
+    private static void multipleDisableShouldReportUnlimited( IOLimiter limiter )
+    {
+        limiter.disableLimit();
+        try
+        {
+            assertThat( limiter.isLimited(), is( false ) );
+            limiter.disableLimit();
+            try
+            {
+                assertThat( limiter.isLimited(), is( false ) );
+            }
+            finally
+            {
+                limiter.enableLimit();
+            }
+            assertThat( limiter.isLimited(), is( false ) );
+        }
+        finally
+        {
+            limiter.enableLimit();
+        }
+    }
 }

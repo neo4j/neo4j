@@ -82,10 +82,12 @@ public interface PageCache extends AutoCloseable
     /**
      * List a snapshot of the current file mappings.
      * <p>
-     * The mappings can change as soon as this method returns. However, the returned {@link PagedFile}s will remain
-     * valid even if they are closed elsewhere.
+     * The mappings can change as soon as this method returns.
      * <p>
-     * <strong>NOTE:</strong> The calling code is responsible for closing <em>all</em> the returned paged files.
+     * <strong>NOTE:</strong> The calling code should <em>not</em> close the returned paged files, unless it does so
+     * in collaboration with the code that originally mapped the file. Any reference count in the mapping will
+     * <em>not</em> be incremented by this method, so calling code must be prepared for that the returned
+     * {@link PagedFile}s can be asynchronously closed elsewhere.
      *
      * @throws IOException if page cache has been closed or page eviction problems occur.
      */
@@ -134,6 +136,20 @@ public interface PageCache extends AutoCloseable
 
     /**
      * Check if the backing {@link FileSystemAbstraction file system} supports regular file operations or not.
+     * Report any thread-local events to the global page cache tracer, as if acquiring a thread-specific page cursor
+     * tracer, and reporting the events collected within it.
+     */
+    void reportEvents();
+
+    /**
+     * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
+     * sub-directories.
+     * <p>
+     * Alternatively, if the {@link File} given as an argument refers to a file instead of a directory, then a stream
+     * will be returned with a file handle for just that file.
+     * <p>
+     * The stream is based on a snapshot of the file tree, so changes made to the tree using the returned file handles
+     * will not be reflected in the stream.
      * <p>
      * E.g. the file system for block device will not work with generic open and read/write calls and all operations
      * needs to be done through the page cache.

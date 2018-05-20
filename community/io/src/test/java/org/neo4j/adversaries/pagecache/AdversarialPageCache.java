@@ -19,8 +19,6 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,6 +27,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
+import org.apache.commons.lang3.ArrayUtils;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -133,5 +133,10 @@ public class AdversarialPageCache implements PageCache
     public boolean fileSystemSupportsFileOperations()
     {
         return delegate.fileSystemSupportsFileOperations();
+    }
+
+    public void reportEvents()
+    {
+        delegate.reportEvents();
     }
 }

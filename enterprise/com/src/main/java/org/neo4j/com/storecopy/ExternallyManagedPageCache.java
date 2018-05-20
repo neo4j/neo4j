@@ -111,6 +111,11 @@ public class ExternallyManagedPageCache implements PageCache
         return delegate.getCachedFileSystem();
     }
 
+    public void reportEvents()
+    {
+        delegate.reportEvents();
+    }
+
     @Override
     public boolean fileSystemSupportsFileOperations()
     {

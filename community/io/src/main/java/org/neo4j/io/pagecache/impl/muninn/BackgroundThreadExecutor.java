@@ -19,8 +19,11 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * An executor for the background threads for the page caches.
@@ -34,7 +37,7 @@ final class BackgroundThreadExecutor implements Executor
 {
     static final BackgroundThreadExecutor INSTANCE = new BackgroundThreadExecutor();
 
-    private final Executor executor;
+    private final ExecutorService executor;
 
     private BackgroundThreadExecutor()
     {
@@ -47,4 +50,8 @@ final class BackgroundThreadExecutor implements Executor
         executor.execute( command );
     }
 
+    public <T> Future<T> submit( Callable<T> callable )
+    {
+        return executor.submit( callable );
+    }
 }

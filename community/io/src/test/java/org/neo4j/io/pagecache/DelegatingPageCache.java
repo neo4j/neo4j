@@ -78,6 +78,11 @@ public class DelegatingPageCache implements PageCache
         return delegate.getCachedFileSystem();
     }
 
+    public void reportEvents()
+    {
+        delegate.reportEvents();
+    }
+
     @Override
     public void flushAndForce( IOLimiter limiter ) throws IOException
     {
