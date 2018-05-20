@@ -31,12 +31,16 @@ import static java.lang.String.format;
 
 public class DbStructureTool
 {
-    private DbStructureTool()
+    protected DbStructureTool()
     {
-        throw new IllegalStateException( "Should not be instantiated" );
     }
 
     public static void main( String[] args ) throws IOException
+    {
+        new DbStructureTool().run( args );
+    }
+
+    protected void run( String[] args ) throws IOException
     {
         if ( args.length != 2 && args.length != 3 )
         {
@@ -53,11 +57,11 @@ public class DbStructureTool
         String generatedClassName = parsedGenerated.other();
 
         String generator = format( "%s %s [<output source root>] <db-dir>",
-                DbStructureTool.class.getCanonicalName(),
+                getClass().getCanonicalName(),
                 generatedClassWithPackage
         );
 
-        GraphDatabaseService graph = new GraphDatabaseFactory().newEmbeddedDatabase( new File( dbDir ) );
+        GraphDatabaseService graph = instantiateGraphDatabase( dbDir );
         try
         {
             if ( writeToFile )
@@ -83,7 +87,12 @@ public class DbStructureTool
         }
     }
 
-    private static void traceDb( String generator,
+    protected GraphDatabaseService instantiateGraphDatabase( String dbDir )
+    {
+        return new GraphDatabaseFactory().newEmbeddedDatabase( new File( dbDir ) );
+    }
+
+    private void traceDb( String generator,
                                  String generatedClazzPackage, String generatedClazzName,
                                  GraphDatabaseService graph,
                                  Appendable output )
@@ -104,7 +113,7 @@ public class DbStructureTool
         tracer.close();
     }
 
-    private static Pair<String, String> parseClassNameWithPackage( String classNameWithPackage )
+    private Pair<String, String> parseClassNameWithPackage( String classNameWithPackage )
     {
         if ( classNameWithPackage.contains( "%" ) )
         {
