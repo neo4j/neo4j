@@ -19,7 +19,7 @@
 
   <properties>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-    <license-text.header>GPL-3-header.txt</license-text.header>
+    <license-text.header>../../build/GPL-3-header.txt</license-text.header>
     <openCypher.version>1.0.0</openCypher.version>
   </properties>
 
