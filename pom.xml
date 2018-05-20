@@ -25,7 +25,7 @@
 
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3</name>
+      <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
       <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
     </license>
   </licenses>
@@ -85,8 +85,7 @@
     <forkCounts>0</forkCounts>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
 
-    <licensesVersion>7</licensesVersion>
-    <license-text.header>AGPL-3-header.txt</license-text.header>
+    <license-text.header>build/AGPL-3-header.txt</license-text.header>
 
     <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
@@ -772,13 +771,6 @@
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <dependencies>
-          <dependency>
-            <groupId>org.neo4j.maven</groupId>
-            <artifactId>licenses</artifactId>
-            <version>${licensesVersion}</version>
-          </dependency>
-        </dependencies>
         <executions>
           <execution>
             <id>check-licenses</id>
