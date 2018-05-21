@@ -62,7 +62,8 @@ class BackupDelegator extends LifecycleAdapter
     {
         try
         {
-            return remoteStore.tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), true );
+            boolean keepTxLogsInDir = false; // If this is false, then the config is read! Somewhat misleading
+            return remoteStore.tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), keepTxLogsInDir );
         }
         catch ( IOException e )
         {

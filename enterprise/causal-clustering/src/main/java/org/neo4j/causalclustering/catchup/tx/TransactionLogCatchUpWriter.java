@@ -25,6 +25,7 @@ package org.neo4j.causalclustering.catchup.tx;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -64,6 +65,11 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         this.asPartOfStoreCopy = asPartOfStoreCopy;
         LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
                 .withLastCommittedTransactionIdSupplier( () -> fromTxId - 1 );
+        new RuntimeException( String.format( "KEEP TX LOGS FLAG IS %s; when false then it will add config. %s=%s, %s=%s, %s=%s\n", keepTxLogsInStoreDir,
+                GraphDatabaseSettings.keep_logical_logs.name(), config.get( GraphDatabaseSettings.keep_logical_logs ),
+                GraphDatabaseSettings.check_point_interval_time.name(), config.get( GraphDatabaseSettings.check_point_interval_time ),
+                GraphDatabaseSettings.logical_log_rotation_threshold.name(), config.get( GraphDatabaseSettings.logical_log_rotation_threshold )
+                ) ).printStackTrace( System.out );
         if ( !keepTxLogsInStoreDir )
         {
             logFilesBuilder.withConfig( config );
@@ -80,6 +86,17 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     {
         CommittedTransactionRepresentation tx = txPullResponse.tx();
         long receivedTxId = tx.getCommitEntry().getTxId();
+        if ( logFiles.getLogFile().rotationNeeded() )
+        {
+            try
+            {
+                logFiles.getLogFile().rotate();
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+        }
 
         if ( receivedTxId != expectedTxId )
         {

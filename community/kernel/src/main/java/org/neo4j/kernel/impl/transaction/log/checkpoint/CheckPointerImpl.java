@@ -149,7 +149,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         {
             long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
             long lastClosedTransactionId = lastClosedTransaction[0];
-            System.out.printf( "Check point was needed an lastClosedTransaction is = %s\n", Arrays.toString( lastClosedTransaction ) );
+            System.out.printf( "Check point was needed and lastClosedTransaction is = %s\n", Arrays.toString( lastClosedTransaction ) );
             LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
             String prefix = triggerInfo.describe( lastClosedTransactionId );
             /*

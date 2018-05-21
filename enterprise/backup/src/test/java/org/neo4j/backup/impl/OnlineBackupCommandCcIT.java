@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import org.neo4j.causalclustering.ClusterHelper;
@@ -294,8 +295,9 @@ public class OnlineBackupCommandCcIT
                 "--name=" + backupName ) );
 
         // and the database contains a few more transactions
-        transactions1M( clusterLeader( cluster ).database() ); // first rotation
-        transactions1M( clusterLeader( cluster ).database() ); // second rotation and prune
+        IntStream.range( 0, 2 ).forEach( i -> transactions1M( clusterLeader( cluster ).database() ) );
+//        transactions1M( clusterLeader( cluster ).database() ); // first rotation
+//        transactions1M( clusterLeader( cluster ).database() ); // second rotation and prune
 
         // when we perform an incremental backup
         assertEquals( 0, runBackupToolFromSameJvm(

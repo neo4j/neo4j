@@ -44,6 +44,7 @@ import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -109,6 +110,8 @@ public class BackupSupportingClassesFactory
                 new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
         StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, monitors, logProvider, backOffStrategy );
 
+        System.out.printf( "Remote stores being created with config %s;%s\n", config.get( GraphDatabaseSettings.keep_logical_logs ),
+                config.get( GraphDatabaseSettings.check_point_interval_time ) );
         RemoteStore remoteStore = new RemoteStore(
                 logProvider, fileSystemAbstraction, pageCache, storeCopyClient,
                 txPullClient,

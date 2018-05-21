@@ -104,6 +104,14 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
          * Whereas channel.size() should be fine, we're safer calling position() due to possibility
          * of this file being memory mapped or whatever.
          */
+//        if ( channel.position() > 28_438_000 )
+//        {
+//            throw new RuntimeException();
+//        }
+//        if (channel.position()>2800000 && channel.position()<2801000 ) {
+//            new RuntimeException( "" + channel.position() ).printStackTrace( System.err );
+//        }
+//        System.out.println( "channel.position() = " + channel.position() );
         return channel.position() >= rotateAtSize.get();
     }
 

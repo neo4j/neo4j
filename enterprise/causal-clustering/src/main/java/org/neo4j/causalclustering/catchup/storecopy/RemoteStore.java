@@ -137,8 +137,9 @@ public class RemoteStore
 
             // Even for cluster store copy, we still write the transaction logs into the store directory itself
             // because the destination directory is temporary. We will copy them to the correct place later.
+            boolean keepTxLogsInStoreDir = false;
             CatchupResult catchupResult = pullTransactions( addressProvider.primary(), expectedStoreId, destDir,
-                    lastFlushedTxId, true, true );
+                    lastFlushedTxId, true, keepTxLogsInStoreDir );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
                 throw new StoreCopyFailedException( "Failed to pull transactions: " + catchupResult );

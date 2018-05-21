@@ -177,6 +177,8 @@ public class LogFilesBuilder
         TransactionLogFilesContext filesContext = buildContext();
         File logsDirectory = getLogsDirectory();
         filesContext.getFileSystem().mkdirs( logsDirectory );
+        System.out.println( "logsDirectory = " + logsDirectory );
+        System.out.println( "logFileName = " + logFileName );
         return new TransactionLogFiles( logsDirectory, logFileName, filesContext );
     }
 
