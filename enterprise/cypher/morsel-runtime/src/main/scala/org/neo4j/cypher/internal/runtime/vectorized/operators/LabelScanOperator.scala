@@ -45,7 +45,7 @@ class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: L
         nodeCursor = context.transactionalContext.cursors.allocateNodeLabelIndexCursor()
         read.nodeLabelScan(labelId.get.id,  nodeCursor)
         iterationState = is
-      case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
+      case ContinueLoopWith(ContinueWithSource(it, is)) =>
         nodeCursor = it.asInstanceOf[NodeLabelIndexCursor]
         iterationState = is
       case _ => throw new IllegalStateException()

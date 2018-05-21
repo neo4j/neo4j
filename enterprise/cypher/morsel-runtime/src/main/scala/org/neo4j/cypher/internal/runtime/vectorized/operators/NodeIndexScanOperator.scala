@@ -44,7 +44,7 @@ class NodeIndexScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, labe
         valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
         read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE)
         iterationState = is
-      case ContinueLoopWith(ContinueWithSource(cursor, is, _)) =>
+      case ContinueLoopWith(ContinueWithSource(cursor, is)) =>
         valueIndexCursor = cursor.asInstanceOf[NodeValueIndexCursor]
         iterationState = is
       case _ => throw new IllegalStateException()

@@ -42,7 +42,7 @@ abstract class NodeIndexOperator[CURSOR <: NodeIndexCursor](longsPerRow: Int, re
     data.validRows = processedRows
 
     if (hasMore)
-      ContinueWithSource(cursor, iterationState, needsSameThread = false)
+      ContinueWithSource(cursor, iterationState)
     else {
       if (cursor != null) {
         cursor.close()
