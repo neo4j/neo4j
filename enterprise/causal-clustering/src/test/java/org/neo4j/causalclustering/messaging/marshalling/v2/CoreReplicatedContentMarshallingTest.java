@@ -46,6 +46,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
 
 import static org.junit.Assert.assertEquals;
 

@@ -27,10 +27,10 @@ import java.time.Duration;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.EnterpriseCoreEditionModule;
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.MonitoredRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
 import org.neo4j.causalclustering.core.consensus.log.segmented.CoreLogPruningStrategy;
 import org.neo4j.causalclustering.core.consensus.log.segmented.CoreLogPruningStrategyFactory;
@@ -43,21 +43,23 @@ import org.neo4j.causalclustering.core.consensus.shipping.RaftLogShippingManager
 import org.neo4j.causalclustering.core.consensus.term.MonitoredTermStateStorage;
 import org.neo4j.causalclustering.core.consensus.term.TermState;
 import org.neo4j.causalclustering.core.consensus.vote.VoteState;
+import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.replication.SendToMyself;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.RaftCoreTopologyConnector;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.marshalling.v1.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.catchup_batch_size;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.join_catch_up_timeout;
@@ -90,7 +92,7 @@ public class ConsensusModule
 
         LogProvider logProvider = logging.getInternalLogProvider();
 
-        final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
+        final CoreReplicatedContentSerializer marshal = new CoreReplicatedContentSerializer();
 
         RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
                 platformModule.jobScheduler );
@@ -159,8 +161,8 @@ public class ConsensusModule
         return new LeaderAvailabilityTimers( electionTimeout, electionTimeout.dividedBy( 3 ), systemClock(), timerService, logProvider );
     }
 
-    private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
-            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider,
+    private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem, File clusterStateDirectory,
+            ChannelMarshal<ReplicatedContent> marshal, LogProvider logProvider,
             JobScheduler scheduler )
     {
         EnterpriseCoreEditionModule.RaftLogImplementation raftLogImplementation =

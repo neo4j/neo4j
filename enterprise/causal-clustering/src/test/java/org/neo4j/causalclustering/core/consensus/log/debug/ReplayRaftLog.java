@@ -31,7 +31,7 @@ import org.neo4j.causalclustering.core.consensus.log.segmented.SegmentedRaftLog;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionFactory;
-import org.neo4j.causalclustering.messaging.marshalling.v1.CoreReplicatedContentMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -71,7 +71,7 @@ public class ReplayRaftLog
             CoreLogPruningStrategy pruningStrategy =
                     new CoreLogPruningStrategyFactory( config.get( raft_log_pruning_strategy ), logProvider ).newInstance();
             SegmentedRaftLog log = new SegmentedRaftLog( fileSystem, logDirectory, config.get( raft_log_rotation_size ),
-                    new CoreReplicatedContentMarshal(), logProvider, config.get( raft_log_reader_pool_size ),
+                    new CoreReplicatedContentSerializer(), logProvider, config.get( raft_log_reader_pool_size ),
                     Clocks.systemClock(), new OnDemandJobScheduler(), pruningStrategy );
 
             long totalCommittedEntries = log.appendIndex(); // Not really, but we need to have a way to pass in the commit index

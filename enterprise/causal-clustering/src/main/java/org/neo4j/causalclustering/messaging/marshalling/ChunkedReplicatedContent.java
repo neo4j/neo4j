@@ -28,7 +28,7 @@ import java.io.IOException;
 
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class ChunkedReplicatedContent implements SerializableContent, ChunkedInput<ReplicatedContentChunk>
+public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ReplicatedContentChunk>
 {
 
     private static final int DEFAULT_CHUNK_SIZE = 8192;
@@ -55,7 +55,7 @@ public class ChunkedReplicatedContent implements SerializableContent, ChunkedInp
     }
 
     @Override
-    public void serialize( WritableChannel channel ) throws IOException
+    public void marshal( WritableChannel channel ) throws IOException
     {
         channel.put( contentType );
         serializer.marshal( channel );

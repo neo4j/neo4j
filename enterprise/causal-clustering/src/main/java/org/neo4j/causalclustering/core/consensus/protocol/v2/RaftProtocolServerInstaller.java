@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.ContentTypeDispatcher;
-import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.ContentTypeProtocol;
+import org.neo4j.causalclustering.messaging.marshalling.v2.ContentTypeProtocol;
 import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.DecodingDispatcher;
 import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.RaftMessageComposer;
 import org.neo4j.causalclustering.messaging.marshalling.v2.decoding.ReplicatedContentDecoder;

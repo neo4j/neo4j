@@ -27,7 +27,7 @@ import org.neo4j.causalclustering.messaging.NetworkFlushableChannelNetty4;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public interface Serializer
+public interface Serializer extends Marshal
 {
     /** May override buffer allocation size.
      * @param channelConsumer
@@ -60,17 +60,10 @@ public interface Serializer
     }
 
     /**
-     * Writes to byteBuf until full.
+     * Writes to ByteBuf until there is no more left to write. Should write equal to or less the amount of writable bytes in the buffer.
      *
      * @param byteBuf where data will be written
      * @return false if there is no more data left to write after this call.
      */
     boolean encode( ByteBuf byteBuf ) throws IOException;
-
-    /**
-     * Writes all content to the channel
-     *
-     * @param channel to where data is written.
-     */
-    void marshal( WritableChannel channel ) throws IOException;
 }
