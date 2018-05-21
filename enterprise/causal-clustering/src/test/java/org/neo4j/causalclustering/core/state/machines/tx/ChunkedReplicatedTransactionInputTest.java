@@ -49,15 +49,12 @@ public class ChunkedReplicatedTransactionInputTest
         ByteBuf composedDeserialized = Unpooled.buffer();
         while ( !chunkedReplicatedTransactionInput.isEndOfInput() )
         {
-            ReplicatedContentChunk chunk = chunkedReplicatedTransactionInput.readChunk( allocator );
+            ByteBuf chunk = chunkedReplicatedTransactionInput.readChunk( allocator );
 
-            ByteBuf buffer = Unpooled.buffer();
-            chunk.encode( buffer );
-
-            ReplicatedContentChunk deserializedChunk = ReplicatedContentChunk.deSerialize( buffer );
+            ReplicatedContentChunk deserializedChunk = ReplicatedContentChunk.deSerialize( chunk );
 
             composedDeserialized.writeBytes( deserializedChunk.content() );
-            buffer.release();
+            chunk.release();
         }
         byte[] array = Arrays.copyOf( composedDeserialized.array(), composedDeserialized.readableBytes() );
         assertEquals( replicatedTransaction, new ReplicatedTransaction( array ) );

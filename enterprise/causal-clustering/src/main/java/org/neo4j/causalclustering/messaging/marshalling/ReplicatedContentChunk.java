@@ -30,7 +30,7 @@ public class ReplicatedContentChunk extends DefaultByteBufHolder
     private final byte contentType;
     private final boolean isLast;
 
-    ReplicatedContentChunk( byte contentType, boolean isLast, ByteBuf data )
+    private ReplicatedContentChunk( byte contentType, boolean isLast, ByteBuf data )
     {
         super( data );
         this.contentType = contentType;
@@ -45,13 +45,6 @@ public class ReplicatedContentChunk extends DefaultByteBufHolder
     public byte contentType()
     {
         return contentType;
-    }
-
-    public void encode( ByteBuf out )
-    {
-        out.writeByte( contentType() );
-        out.writeBoolean( isLast() );
-        out.writeBytes( content() );
     }
 
     public static ReplicatedContentChunk deSerialize( ByteBuf in )

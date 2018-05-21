@@ -31,7 +31,7 @@ import java.io.IOException;
 
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ReplicatedContentChunk>
+public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
 {
 
     private static final int DEFAULT_CHUNK_SIZE = 8192;
@@ -77,25 +77,41 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<Replicate
     }
 
     @Override
-    public ReplicatedContentChunk readChunk( ChannelHandlerContext ctx ) throws IOException
+    public ByteBuf readChunk( ChannelHandlerContext ctx ) throws IOException
     {
         return readChunk( ctx.alloc() );
     }
 
     @Override
-    public ReplicatedContentChunk readChunk( ByteBufAllocator allocator ) throws IOException
+    public ByteBuf readChunk( ByteBufAllocator allocator ) throws IOException
     {
-        if ( isEndOfInput() )
+        boolean endOfInput = isEndOfInput();
+        if ( endOfInput )
         {
             return null;
         }
         ByteBuf buffer = allocator.buffer( chunkSize );
-        if ( !serializer.encode( buffer ) )
+        try
         {
-            lastByteWasWritten = true;
+            // transfer to buffer
+            buffer.writeByte( contentType );
+            buffer.writeBoolean( endOfInput );
+            if ( !serializer.encode( buffer ) )
+            {
+                lastByteWasWritten = true;
+            }
+            if ( isEndOfInput() != endOfInput )
+            {
+                buffer.setBoolean( 1, isEndOfInput() );
+            }
+            progress += buffer.readableBytes();
+            return buffer;
         }
-        progress += buffer.readableBytes();
-        return new ReplicatedContentChunk( contentType, isEndOfInput(), buffer );
+        catch ( IOException e )
+        {
+            buffer.release();
+            throw e;
+        }
     }
 
     @Override
