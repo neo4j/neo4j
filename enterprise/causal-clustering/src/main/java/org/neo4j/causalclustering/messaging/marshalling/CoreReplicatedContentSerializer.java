@@ -82,9 +82,7 @@ public class CoreReplicatedContentSerializer extends SafeChannelMarshal<Replicat
         }
         else if ( content instanceof NewLeaderBarrier )
         {
-            return singleton( new ChunkedReplicatedContent( NEW_LEADER_BARRIER_TYPE, simple( channel ->
-            {
-            } ) ) );
+            return singleton( new ChunkedReplicatedContent( NEW_LEADER_BARRIER_TYPE, simple( channel -> {} ) ) );
         }
         else if ( content instanceof ReplicatedLockTokenRequest )
         {
@@ -99,8 +97,7 @@ public class CoreReplicatedContentSerializer extends SafeChannelMarshal<Replicat
         }
         else if ( content instanceof DummyRequest )
         {
-            return singleton( new ChunkedReplicatedContent( DUMMY_REQUEST,
-                    simple( channel -> DummyRequest.Marshal.INSTANCE.marshal( (DummyRequest) content, channel ) ) ) );
+            return singleton( new ChunkedReplicatedContent( DUMMY_REQUEST, ((DummyRequest) content).serializer() ) );
         }
         else
         {
