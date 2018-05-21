@@ -80,4 +80,9 @@ class LongArrayHashMultiMapTest extends FunSuite with Matchers {
     map.isEmpty should equal(false)
   }
 
+  test("getting a non existing value returns an empty iterator") {
+    val map = new LongArrayHashMultiMap[String](32, 2)
+    map.get(Array(0L, 0L)).asScala.toList should equal(List.empty)
+  }
+
 }

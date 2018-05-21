@@ -1,0 +1,124 @@
+/*
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.runtime;
+
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.CONTINUE_PROBING;
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.NOT_IN_USE;
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.SLOT_EMPTY;
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.VALUE_FOUND;
+
+class LongArrayHashTable
+{
+    public final long[] keys;
+    private final int width;
+    public final int capacity;
+    int numberOfEntries;
+    private int resizeLimit;
+
+    private static final double LOAD_FACTOR = 0.75;
+
+    int tableMask;
+
+    LongArrayHashTable( int capacity, int width )
+    {
+        resizeLimit = (int) (capacity * LOAD_FACTOR);
+        tableMask = Integer.highestOneBit( capacity ) - 1;
+        keys = new long[capacity * width];
+        this.width = width;
+        java.util.Arrays.fill( keys, NOT_IN_USE );
+        this.capacity = capacity;
+    }
+
+    boolean timeToResize()
+    {
+        return numberOfEntries == resizeLimit;
+    }
+
+    /***
+     * Checks whether a slot in the table contains a given key.
+     * @param slot Slot to check
+     * @param key Key to check
+     * @return Can return:
+     *  SLOT_EMPTY - This slot is free. In other words - the key is not in the table
+     *  CONTINUE_PROBING - This slot is taken by a different key
+     *  VALUE_FOUND - The key is in the table at this slot
+     */
+    int checkSlot( int slot, long[] key )
+    {
+        assert LongArrayHash.validValue( key, width );
+
+        int startOffset = slot * width;
+        if ( keys[startOffset] == NOT_IN_USE )
+        {
+            return SLOT_EMPTY;
+        }
+
+        for ( int i = 0; i < width; i++ )
+        {
+            if ( keys[startOffset + i] != key[i] )
+            {
+                return CONTINUE_PROBING;
+            }
+        }
+
+        return VALUE_FOUND;
+    }
+
+    /**
+     * Writes the key to this slot.
+     * @param slot The slot to write to.
+     * @param key Le key.
+     */
+    void claimSlot( int slot, long[] key )
+    {
+        int offset = slot * width;
+        System.arraycopy( key, 0, keys, offset, width );
+        numberOfEntries++;
+    }
+
+    public boolean isEmpty()
+    {
+        for ( int i = 0; i < keys.length; i = i + width )
+        {
+            if ( keys[i] != NOT_IN_USE )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Finds an slot not already claimed, starting from a given slot.
+     * @return First unused slot after fromSlot
+     */
+    int findUnusedSlot( int fromSlot )
+    {
+        while ( true )
+        {
+            if ( keys[fromSlot * width] == NOT_IN_USE )
+            {
+                return fromSlot;
+            }
+            fromSlot = (fromSlot + 1) & tableMask;
+        }
+    }
+
+}

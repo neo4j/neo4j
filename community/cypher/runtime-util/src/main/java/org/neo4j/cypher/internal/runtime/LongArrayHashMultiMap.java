@@ -19,24 +19,24 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
+import org.opencypher.v9_0.util.InternalException;
+
 import java.util.Iterator;
+
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.CONTINUE_PROBING;
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.NOT_IN_USE;
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.SLOT_EMPTY;
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.VALUE_FOUND;
 
 /**
  * A fast implementation of a multi map with long[] as keys.
- *
  * Multi maps are maps that can store multiple values per key.
- * @param <VALUE>
  */
 public class LongArrayHashMultiMap<VALUE>
 {
-    private static final long NOT_IN_USE = -2;
-    private static final int SLOT_EMPTY = 0;
-    private static final int VALUE_FOUND = 1;
-    private static final int CONTINUE_PROBING = -1;
-    private static final double LOAD_FACTOR = 0.75;
-
     private final int width;
-    private Table table;
+    private LongArrayHashTable table;
+    private Object[] values;
 
     public LongArrayHashMultiMap( int initialCapacity, int width )
     {
@@ -44,7 +44,8 @@ public class LongArrayHashMultiMap<VALUE>
         assert width > 0 : "Number of elements must be larger than 0";
 
         this.width = width;
-        table = new Table( initialCapacity );
+        table = new LongArrayHashTable( initialCapacity, width );
+        values = new Object[initialCapacity];
     }
 
     public void add( long[] key, VALUE value )
@@ -54,9 +55,10 @@ public class LongArrayHashMultiMap<VALUE>
 
         while ( true )
         {
-            int offset = slotNr * width;
-            if ( table.keys[offset] == NOT_IN_USE )
+            int currentState = table.checkSlot( slotNr, key );
+            switch ( currentState )
             {
+            case SLOT_EMPTY:
                 if ( table.timeToResize() )
                 {
                     // We know we need to add the value to the set, but there is no space left
@@ -67,27 +69,25 @@ public class LongArrayHashMultiMap<VALUE>
                 else
                 {
                     // We found an empty spot!
-                    table.setFirstValue( slotNr, key, value );
+                    table.claimSlot( slotNr, key );
+                    values[slotNr] = new Node( value, null );
                     return;
                 }
-            }
-            else
-            {
-                for ( int i = 0; i < width; i++ )
-                {
-                    if ( table.keys[offset + i] != key[i] )
-                    {
-                        // Found a different value in this slot - continue probing
-                        slotNr = (slotNr + 1) & table.tableMask;
-                        break;
-                    }
-                    else if ( i == width - 1 )
-                    {
-                        // We found other matching values
-                        table.addValue( slotNr, value );
-                        return;
-                    }
-                }
+                break;
+
+            case CONTINUE_PROBING:
+                slotNr = (slotNr + 1) & table.tableMask;
+                break;
+
+            case VALUE_FOUND:
+                // Slot already taken by this key. We'll just add this new value to the list.
+                @SuppressWarnings( "unchecked" )
+                Node oldValue = (Node) values[slotNr];
+                values[slotNr] = new Node( value, oldValue );
+                return;
+
+            default:
+                throw new InternalException( "Unknown state returned from hash table " + currentState, null );
             }
         }
     }
@@ -97,28 +97,21 @@ public class LongArrayHashMultiMap<VALUE>
         assert LongArrayHash.validValue( key, width );
         int slot = slotFor( key );
 
-        int result = table.checkSlot( slot, key );
-        while ( result == CONTINUE_PROBING )
+        // Here we'll spin while the slot is taken by a different value.
+        while ( table.checkSlot( slot, key ) == CONTINUE_PROBING )
         {
-            result = table.checkSlot( slot, key );
             slot = (slot + 1) & table.tableMask;
         }
+
         @SuppressWarnings( "unchecked" )
-        Node current = (Node) table.values[slot];
+        Node current = (Node) values[slot];
 
         return new Result( current );
     }
 
     public boolean isEmpty()
     {
-        for ( int i = 0; i < table.capacity; i++ )
-        {
-            if ( table.keys[i] != NOT_IN_USE )
-            {
-                return false;
-            }
-        }
-        return true;
+        return table.isEmpty();
     }
 
     private void resize()
@@ -126,8 +119,9 @@ public class LongArrayHashMultiMap<VALUE>
         int oldSize = table.capacity;
         int oldNumberEntries = table.numberOfEntries;
         long[] srcKeys = table.keys;
-        Object[] srcValues = table.values;
-        table = new Table( oldSize * 2 );
+        Object[] srcValues = values;
+        table = new LongArrayHashTable( oldSize * 2, width );
+        values = new Object[oldSize * 2];
         long[] dstKeys = table.keys;
         table.numberOfEntries = oldNumberEntries;
 
@@ -137,28 +131,10 @@ public class LongArrayHashMultiMap<VALUE>
             if ( srcKeys[fromOffset] != NOT_IN_USE )
             {
                 int toSlot = LongArrayHash.hashCode( srcKeys, fromOffset, width ) & table.tableMask;
-
-                if ( dstKeys[toSlot * width] != NOT_IN_USE )
-                {
-                    // Linear probe until we find an unused slot.
-                    // No need to check for size here - we are already inside of resize()
-                    toSlot = findUnusedSlot( dstKeys, toSlot );
-                }
+                toSlot = table.findUnusedSlot( toSlot );
                 System.arraycopy( srcKeys, fromOffset, dstKeys, toSlot * width, width );
-                table.values[toSlot] = srcValues[fromSlot];
+                values[toSlot] = srcValues[fromSlot];
             }
-        }
-    }
-
-    private int findUnusedSlot( long[] to, int fromSlot )
-    {
-        while ( true )
-        {
-            if ( to[fromSlot * width] == NOT_IN_USE )
-            {
-                return fromSlot;
-            }
-            fromSlot = (fromSlot + 1) & table.tableMask;
         }
     }
 
@@ -198,69 +174,6 @@ public class LongArrayHashMultiMap<VALUE>
             VALUE value = current.value;
             current = current.next;
             return value;
-        }
-    }
-
-    class Table
-    {
-        private final int capacity;
-        private final long[] keys;
-        private final Object[] values;
-        int numberOfEntries;
-        private int resizeLimit;
-
-        int tableMask;
-
-        Table( int capacity )
-        {
-            this.capacity = capacity;
-            resizeLimit = (int) (capacity * LOAD_FACTOR);
-            tableMask = Integer.highestOneBit( capacity ) - 1;
-            keys = new long[capacity * width];
-            java.util.Arrays.fill( keys, NOT_IN_USE );
-            values = new Object[capacity];
-        }
-
-        boolean timeToResize()
-        {
-            return numberOfEntries == resizeLimit;
-        }
-
-        // This code is duplicated in LongArrayHashSet. We should measure if it's OK to extract into LongArrayHash
-        int checkSlot( int slot, long[] value )
-        {
-            assert value.length == width;
-
-            int startOffset = slot * width;
-            if ( keys[startOffset] == NOT_IN_USE )
-            {
-                return SLOT_EMPTY;
-            }
-
-            for ( int i = 0; i < width; i++ )
-            {
-                if ( keys[startOffset + i] != value[i] )
-                {
-                    return CONTINUE_PROBING;
-                }
-            }
-
-            return VALUE_FOUND;
-        }
-
-        void setFirstValue( int slot, long[] key, VALUE value )
-        {
-            int offset = slot * width;
-            System.arraycopy( key, 0, keys, offset, width );
-            values[slot] = new Node( value, null );
-            numberOfEntries++;
-        }
-
-        void addValue( int slot, VALUE value )
-        {
-            @SuppressWarnings( "unchecked" )
-            Node current = (Node) values[slot];
-            values[slot] = new Node( value, current );
         }
     }
 }

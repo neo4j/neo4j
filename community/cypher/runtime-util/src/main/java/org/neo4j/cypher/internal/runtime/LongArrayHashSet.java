@@ -19,6 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
+import org.opencypher.v9_0.util.InternalException;
+
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.CONTINUE_PROBING;
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.NOT_IN_USE;
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.SLOT_EMPTY;
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.VALUE_FOUND;
+
 /**
  * When you need to have a set of arrays of longs representing entities - look no further
  * <p>
@@ -33,13 +40,7 @@ package org.neo4j.cypher.internal.runtime;
  */
 public class LongArrayHashSet
 {
-    private static final long NOT_IN_USE = -2;
-    private static final int SLOT_EMPTY = 0;
-    private static final int VALUE_FOUND = 1;
-    private static final int CONTINUE_PROBING = -1;
-    private static final double LOAD_FACTOR = 0.75;
-
-    private Table table;
+    private LongArrayHashTable table;
     private final int width;
 
     public LongArrayHashSet( int initialCapacity, int width )
@@ -48,7 +49,7 @@ public class LongArrayHashSet
         assert width > 0 : "Number of elements must be larger than 0";
 
         this.width = width;
-        table = new Table( initialCapacity );
+        table = new LongArrayHashTable( initialCapacity, width );
     }
 
     /**
@@ -61,11 +62,13 @@ public class LongArrayHashSet
     {
         assert LongArrayHash.validValue( value, width );
         int slotNr = slotFor( value );
+
         while ( true )
         {
-            int offset = slotNr * width;
-            if ( table.inner[offset] == NOT_IN_USE )
+            int currentState = table.checkSlot( slotNr, value );
+            switch ( currentState )
             {
+            case SLOT_EMPTY:
                 if ( table.timeToResize() )
                 {
                     // We know we need to add the value to the set, but there is no space left
@@ -75,25 +78,21 @@ public class LongArrayHashSet
                 }
                 else
                 {
-                    table.setValue( slotNr, value );
+                    // We found an empty spot!
+                    table.claimSlot( slotNr, value );
                     return true;
                 }
-            }
-            else
-            {
-                for ( int i = 0; i < width; i++ )
-                {
-                    if ( table.inner[offset + i] != value[i] )
-                    {
-                        // Found a different value in this slot
-                        slotNr = (slotNr + 1) & table.tableMask;
-                        break;
-                    }
-                    else if ( i == width - 1 )
-                    {
-                        return false;
-                    }
-                }
+                break;
+
+            case CONTINUE_PROBING:
+                slotNr = (slotNr + 1) & table.tableMask;
+                break;
+
+            case VALUE_FOUND:
+                return false;
+
+            default:
+                throw new InternalException( "Unknown state returned from hash table " + currentState, null );
             }
         }
     }
@@ -122,9 +121,9 @@ public class LongArrayHashSet
     {
         int oldSize = table.capacity;
         int oldNumberEntries = table.numberOfEntries;
-        long[] srcArray = table.inner;
-        table = new Table( oldSize * 2 );
-        long[] dstArray = table.inner;
+        long[] srcArray = table.keys;
+        table = new LongArrayHashTable( oldSize * 2, width );
+        long[] dstArray = table.keys;
         table.numberOfEntries = oldNumberEntries;
 
         for ( int fromOffset = 0; fromOffset < oldSize * width; fromOffset = fromOffset + width )
@@ -132,84 +131,14 @@ public class LongArrayHashSet
             if ( srcArray[fromOffset] != NOT_IN_USE )
             {
                 int toSlot = LongArrayHash.hashCode( srcArray, fromOffset, width ) & table.tableMask;
-
-                if ( dstArray[toSlot * width] != NOT_IN_USE )
-                {
-                    // Linear probe until we find an unused slot.
-                    // No need to check for size here - we are already inside of resize()
-                    toSlot = findUnusedSlot( dstArray, toSlot );
-                }
+                toSlot = table.findUnusedSlot( toSlot );
                 System.arraycopy( srcArray, fromOffset, dstArray, toSlot * width, width );
             }
-        }
-    }
-
-    private int findUnusedSlot( long[] to, int fromSlot )
-    {
-        while ( true )
-        {
-            if ( to[fromSlot * width] == NOT_IN_USE )
-            {
-                return fromSlot;
-            }
-            fromSlot = (fromSlot + 1) & table.tableMask;
         }
     }
 
     private int slotFor( long[] value )
     {
         return LongArrayHash.hashCode( value, 0, width ) & table.tableMask;
-    }
-
-    class Table
-    {
-        private final int capacity;
-        private final long[] inner;
-        int numberOfEntries;
-        private int resizeLimit;
-
-        int tableMask;
-
-        Table( int capacity )
-        {
-            this.capacity = capacity;
-            resizeLimit = (int) (capacity * LOAD_FACTOR);
-            tableMask = Integer.highestOneBit( capacity ) - 1;
-            inner = new long[capacity * width];
-            java.util.Arrays.fill( inner, NOT_IN_USE );
-        }
-
-        boolean timeToResize()
-        {
-            return numberOfEntries == resizeLimit;
-        }
-
-        int checkSlot( int slot, long[] value )
-        {
-            assert value.length == width;
-
-            int startOffset = slot * width;
-            if ( inner[startOffset] == NOT_IN_USE )
-            {
-                return SLOT_EMPTY;
-            }
-
-            for ( int i = 0; i < width; i++ )
-            {
-                if ( inner[startOffset + i] != value[i] )
-                {
-                    return CONTINUE_PROBING;
-                }
-            }
-
-            return VALUE_FOUND;
-        }
-
-        void setValue( int slot, long[] value )
-        {
-            int offset = slot * width;
-            System.arraycopy( value, 0, inner, offset, width );
-            numberOfEntries++;
-        }
     }
 }

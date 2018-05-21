@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.runtime;
 
 public class LongArrayHash
 {
-
-    public static final long NOT_IN_USE = -2;
-    public static final int SLOT_EMPTY = 0;
-    public static final int VALUE_FOUND = 1;
-    public static final int CONTINUE_PROBING = -1;
+    static final long NOT_IN_USE = -2;
+    static final int SLOT_EMPTY = 0;
+    static final int VALUE_FOUND = 1;
+    static final int CONTINUE_PROBING = -1;
 
     public static int hashCode( long[] arr, int from, int numberOfElements )
     {
@@ -50,9 +49,9 @@ public class LongArrayHash
         }
         for ( long l : arr )
         {
-            if ( l == -1 || l == -2 )
+            if ( l == NOT_IN_USE )
             {
-                throw new AssertionError( "magic values -1 and -2 not allowed in keys" );
+                throw new AssertionError( "magic value " + NOT_IN_USE + " not allowed in keys" );
             }
         }
         return true;
