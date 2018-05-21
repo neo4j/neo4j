@@ -24,9 +24,9 @@ package org.neo4j.causalclustering.core.state.machines.tx;
 
 import io.netty.buffer.ByteBuf;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
+import org.neo4j.causalclustering.messaging.marshalling.ByteArraySerializer;
 import org.neo4j.causalclustering.messaging.marshalling.Serializer;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -71,47 +71,6 @@ public class ReplicatedTransactionSerializer
 
     public static Serializer serializer( ReplicatedTransaction replicatedTransaction )
     {
-        return new TxSerializer( replicatedTransaction );
-    }
-
-    private static class TxSerializer implements Serializer
-    {
-        private final ReplicatedTransaction replicatedTransaction;
-        private final ByteArrayInputStream inputStream;
-
-        TxSerializer( ReplicatedTransaction replicatedTransaction )
-        {
-            inputStream = new ByteArrayInputStream( replicatedTransaction.getTxBytes() );
-            this.replicatedTransaction = replicatedTransaction;
-        }
-
-        @Override
-        public boolean encode( ByteBuf byteBuf ) throws IOException
-        {
-            if ( inputStream.available() == replicatedTransaction.getTxBytes().length )
-            {
-                byteBuf.writeInt( replicatedTransaction.getTxBytes().length );
-            }
-            if ( !hasBytes() )
-            {
-                return false;
-            }
-            int toWrite = Math.min( inputStream.available(), byteBuf.writableBytes() );
-            byteBuf.writeBytes( inputStream, toWrite );
-            return hasBytes();
-        }
-
-        private boolean hasBytes()
-        {
-            return inputStream.available() > 0;
-        }
-
-        @Override
-        public void marshal( WritableChannel channel ) throws IOException
-        {
-            int length = replicatedTransaction.getTxBytes().length;
-            channel.putInt( length );
-            channel.put( replicatedTransaction.getTxBytes(), length );
-        }
+        return new ByteArraySerializer( replicatedTransaction.getTxBytes() );
     }
 }
