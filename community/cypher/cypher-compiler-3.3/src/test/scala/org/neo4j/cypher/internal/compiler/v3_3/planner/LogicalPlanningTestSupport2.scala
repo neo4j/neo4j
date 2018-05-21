@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter.unnestApply
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
@@ -196,7 +196,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable = semanticTable,
         strategy = queryGraphSolver,
         input = QueryGraphSolverInput.empty,
-        notificationLogger = devNullLogger
+        notificationLogger = devNullLogger,
+        costComparisonListener = devNullListener
       )
       f(config, ctx)
     }
