@@ -144,7 +144,7 @@ abstract class LogicalPlan(idGen: IdGen)
   override def toString: String = {
     def indent(level: Int, in: String): String = level match {
       case 0 => in
-      case _ => "\n" + "  " * level + in
+      case _ => System.lineSeparator() + "  " * level + in
     }
 
     val childrenHeap = new scala.collection.mutable.Stack[(String, Int, Option[LogicalPlan])]
@@ -163,10 +163,10 @@ abstract class LogicalPlan(idGen: IdGen)
             case (None, None) =>
               sb.append("}")
             case (Some(l), None) =>
-              childrenHeap.push(("\n" + "  " * level + "}", level + 1, None))
+              childrenHeap.push((System.lineSeparator() + "  " * level + "}", level + 1, None))
               childrenHeap.push(("LHS -> ", level + 1, plan.lhs))
             case _ =>
-              childrenHeap.push(("\n" + "  " * level + "}", level + 1, None))
+              childrenHeap.push((System.lineSeparator() + "  " * level + "}", level + 1, None))
               childrenHeap.push(("RHS -> ", level + 1, plan.rhs))
               childrenHeap.push(("LHS -> ", level + 1, plan.lhs))
           }
