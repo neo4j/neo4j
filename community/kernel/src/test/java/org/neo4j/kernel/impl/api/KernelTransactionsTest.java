@@ -605,14 +605,14 @@ public class KernelTransactionsTest
             SystemNanoClock clock, AvailabilityGuard availabilityGuard )
     {
         return new KernelTransactions( statementLocksFactory, null, statementOperations,
-                                       null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
-                                       mock( TransactionMonitor.class ), availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
-                                       new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                                       new CanWrite(),
-                                       DefaultCursors::new, AutoIndexing.UNSUPPORTED,
-                                       mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
-                                       mock( ConstraintSemantics.class ), mock( SchemaState.class ),
-                                       mock( IndexingProvidersService.class), mock( PropertyKeyTokenHolder.class ) );
+                null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
+                mock( TransactionMonitor.class ), availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
+                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
+                new CanWrite(),
+                DefaultCursors::new, AutoIndexing.UNSUPPORTED,
+                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
+                mock( ConstraintSemantics.class ), mock( SchemaState.class ),
+                mock( IndexingProvidersService.class), mock( PropertyKeyTokenHolder.class ) );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -678,11 +678,11 @@ public class KernelTransactionsTest
                 AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier, PropertyKeyTokenHolder propertyKeyTokenHolder )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory, transactionCommitProcess,
-                   indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
-                   transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                   accessCapability, cursors, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier,
-                   ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
-                   mock( IndexingProvidersService.class ), propertyKeyTokenHolder );
+                    indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
+                    transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
+                    accessCapability, cursors, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier,
+                    ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
+                    mock( IndexingProvidersService.class ), propertyKeyTokenHolder );
         }
 
         @Override
