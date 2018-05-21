@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
+import org.neo4j.helpers.collection.Pair;
+
 public class LongArrayHash
 {
     static final long NOT_IN_USE = -2;
@@ -55,5 +57,27 @@ public class LongArrayHash
             }
         }
         return true;
+    }
+
+    static Pair<LongArrayHashTable,Object[]> doubleInSize( LongArrayHashTable srcTable, Object[] srcValues )
+    {
+        LongArrayHashTable dstTable = new LongArrayHashTable( srcTable.capacity * 2, srcTable.width );
+        Object[] dstValues = new Object[srcTable.capacity * 2];
+        long[] srcKeys = srcTable.keys;
+        long[] dstKeys = dstTable.keys;
+        dstTable.numberOfEntries = srcTable.numberOfEntries;
+        for ( int fromSlot = 0; fromSlot < srcTable.capacity; fromSlot = fromSlot + 1 )
+        {
+            int width = srcTable.width;
+            int fromOffset = fromSlot * width;
+            if ( srcKeys[fromOffset] != NOT_IN_USE )
+            {
+                int toSlot = LongArrayHash.hashCode( srcKeys, fromOffset, width ) & dstTable.tableMask;
+                toSlot = dstTable.findUnusedSlot( toSlot );
+                System.arraycopy( srcKeys, fromOffset, dstKeys, toSlot * width, width );
+                dstValues[toSlot] = srcValues[fromSlot];
+            }
+        }
+        return Pair.of( dstTable, dstValues );
     }
 }

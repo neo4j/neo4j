@@ -22,24 +22,27 @@ package org.neo4j.cypher.internal.runtime;
 import org.opencypher.v9_0.util.InternalException;
 
 import java.util.Iterator;
+import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.CONTINUE_PROBING;
+import static org.neo4j.cypher.internal.runtime.LongArrayHash.NOT_IN_USE;
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.SLOT_EMPTY;
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.VALUE_FOUND;
 
 /**
- * A fast implementation of a multi map with long[] as keys.
- * Multi maps are maps that can store multiple values per key.
+ * A fast implementation of a hash map with long[] as keys.
  */
-public class LongArrayHashMultiMap<VALUE>
+public class LongArrayHashMap<VALUE>
 {
     private final int width;
     private LongArrayHashTable table;
     private Object[] values;
 
-    public LongArrayHashMultiMap( int initialCapacity, int width )
+    public LongArrayHashMap( int initialCapacity, int width )
     {
         assert (initialCapacity & (initialCapacity - 1)) == 0 : "Size must be a power of 2";
         assert width > 0 : "Number of elements must be larger than 0";
@@ -49,11 +52,10 @@ public class LongArrayHashMultiMap<VALUE>
         values = new Object[initialCapacity];
     }
 
-    public void add( long[] key, VALUE value )
+    public VALUE getOrCreateAndAdd( long[] key, Supplier<VALUE> creator )
     {
         assert LongArrayHash.validValue( key, width );
         int slotNr = slotFor( key );
-
         while ( true )
         {
             int currentState = table.checkSlot( slotNr, key );
@@ -71,8 +73,9 @@ public class LongArrayHashMultiMap<VALUE>
                 {
                     // We found an empty spot!
                     table.claimSlot( slotNr, key );
-                    values[slotNr] = new Node( value, null );
-                    return;
+                    VALUE newValue = creator.get();
+                    values[slotNr] = newValue;
+                    return newValue;
                 }
                 break;
 
@@ -81,11 +84,9 @@ public class LongArrayHashMultiMap<VALUE>
                 break;
 
             case VALUE_FOUND:
-                // Slot already taken by this key. We'll just add this new value to the list.
                 @SuppressWarnings( "unchecked" )
-                Node oldValue = (Node) values[slotNr];
-                values[slotNr] = new Node( value, oldValue );
-                return;
+                VALUE oldValue = (VALUE) values[slotNr];
+                return oldValue;
 
             default:
                 throw new InternalException( "Unknown state returned from hash table " + currentState, null );
@@ -93,21 +94,31 @@ public class LongArrayHashMultiMap<VALUE>
         }
     }
 
-    public Iterator<VALUE> get( long[] key )
+    public VALUE get( long[] key )
     {
         assert LongArrayHash.validValue( key, width );
-        int slot = slotFor( key );
-
-        // Here we'll spin while the slot is taken by a different value.
-        while ( table.checkSlot( slot, key ) == CONTINUE_PROBING )
+        int slotNr = slotFor( key );
+        while ( true )
         {
-            slot = (slot + 1) & table.tableMask;
+            int currentState = table.checkSlot( slotNr, key );
+            switch ( currentState )
+            {
+            case SLOT_EMPTY:
+                return null;
+
+            case CONTINUE_PROBING:
+                slotNr = (slotNr + 1) & table.tableMask;
+                break;
+
+            case VALUE_FOUND:
+                @SuppressWarnings( "unchecked" )
+                VALUE oldValue = (VALUE) values[slotNr];
+                return oldValue;
+
+            default:
+                throw new InternalException( "Unknown state returned from hash table " + currentState, null );
+            }
         }
-
-        @SuppressWarnings( "unchecked" )
-        Node current = (Node) values[slot];
-
-        return new Result( current );
     }
 
     public boolean isEmpty()
@@ -127,37 +138,70 @@ public class LongArrayHashMultiMap<VALUE>
         return LongArrayHash.hashCode( value, 0, width ) & table.tableMask;
     }
 
-    class Node
+    public Iterator<Map.Entry<long[],VALUE>> iterator()
     {
-        final VALUE value;
-        final Node next;
-
-        Node( VALUE value, Node next )
+        return new PrefetchingIterator<Map.Entry<long[],VALUE>>()
         {
-            this.value = value;
-            this.next = next;
-        }
+            int current; // Initialized to 0
+
+            @Override
+            protected Map.Entry<long[],VALUE> fetchNextOrNull()
+            {
+                // First, find a good spot
+                while ( current < table.capacity && table.keys[current * width] == NOT_IN_USE )
+                {
+                    current = current + 1;
+                }
+
+                // If we have reached the end, return null
+                if ( current == table.capacity )
+                {
+                    return null;
+                }
+
+                // Otherwise, let's create the return object.
+                long[] key = new long[width];
+                System.arraycopy( table.keys, current * width, key, 0, width );
+
+                @SuppressWarnings( "unchecked" )
+                VALUE value = (VALUE) values[current];
+                Entry result = new Entry( key, value );
+
+                // Move
+                current = current + 1;
+
+                return result;
+            }
+        };
     }
 
-    class Result extends org.neo4j.helpers.collection.PrefetchingIterator<VALUE>
+    class Entry implements Map.Entry<long[],VALUE>
     {
-        private Node current;
+        private final long[] key;
+        private final VALUE value;
 
-        Result( Node first )
+        Entry( long[] key, VALUE value )
         {
-            current = first;
+            this.key = key;
+            this.value = value;
         }
 
         @Override
-        protected VALUE fetchNextOrNull()
+        public long[] getKey()
         {
-            if ( current == null )
-            {
-                return null;
-            }
-            VALUE value = current.value;
-            current = current.next;
+            return key;
+        }
+
+        @Override
+        public VALUE getValue()
+        {
             return value;
+        }
+
+        @Override
+        public VALUE setValue( VALUE value )
+        {
+            return null;
         }
     }
 }

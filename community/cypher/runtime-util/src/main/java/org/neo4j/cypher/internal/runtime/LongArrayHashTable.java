@@ -24,10 +24,13 @@ import static org.neo4j.cypher.internal.runtime.LongArrayHash.NOT_IN_USE;
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.SLOT_EMPTY;
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.VALUE_FOUND;
 
+/**
+ * This hash table is used as a backing store for the keys of set, map and multi-map where the keys are arrays of longs.
+ */
 class LongArrayHashTable
 {
     public final long[] keys;
-    private final int width;
+    public final int width;
     public final int capacity;
     int numberOfEntries;
     private int resizeLimit;
@@ -46,6 +49,11 @@ class LongArrayHashTable
         this.capacity = capacity;
     }
 
+    /**
+     * Signals whether it's time to size up or not. The actual resizing is done slightly differently depending on if this is a map or set. Maps have, in
+     * addition to a hash table also a separate array for the values.
+     * @return true if the number of keys in the hash table has reached capacity.
+     */
     boolean timeToResize()
     {
         return numberOfEntries == resizeLimit;
