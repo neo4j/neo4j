@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.storageengine.api.Token;
 
 import static java.util.Arrays.asList;
@@ -99,27 +100,10 @@ public class DelegatingTokenHolderTest
     @Test
     public void batchTokenCreateMustIgnoreExistingTokens() throws Exception
     {
-        holder.setInitialTokens( asList(
-                token( "a", 1 ),
-                token( "b", 2 ) ) );
+        initialTokensABC();
 
-        when( creator.createToken( "c" ) ).thenReturn( 3 );
-        assertThat( holder.getOrCreateId( "c" ), is( 3 ) );
         AtomicInteger nextId = new AtomicInteger( 42 );
-
-        doAnswer( inv ->
-        {
-            int[] ids = inv.getArgument( 1 );
-            IntPredicate filter = inv.getArgument( 2 );
-            for ( int i = 0; i < ids.length; i++ )
-            {
-                if ( filter.test( i ) )
-                {
-                    ids[i] = nextId.getAndIncrement();
-                }
-            }
-            return null;
-        } ).when( creator ).createTokens( any( String[].class ), any( int[].class ), any( IntPredicate.class ) );
+        mockAssignNewTokenIdsInBatch( nextId );
 
         String[] names = new String[]{"b", "X", "a", "Y", "c"};
         int[] ids = new int[names.length];
@@ -135,6 +119,59 @@ public class DelegatingTokenHolderTest
         // And these should not throw.
         holder.getTokenById( 42 );
         holder.getTokenById( 43 );
+    }
+
+    private void mockAssignNewTokenIdsInBatch( AtomicInteger nextId ) throws KernelException
+    {
+        doAnswer( inv ->
+        {
+            int[] ids = inv.getArgument( 1 );
+            IntPredicate filter = inv.getArgument( 2 );
+            for ( int i = 0; i < ids.length; i++ )
+            {
+                if ( filter.test( i ) )
+                {
+                    ids[i] = nextId.getAndIncrement();
+                }
+            }
+            return null;
+        } ).when( creator ).createTokens( any( String[].class ), any( int[].class ), any( IntPredicate.class ) );
+    }
+
+    private void initialTokensABC() throws KernelException
+    {
+        holder.setInitialTokens( asList(
+                token( "a", 1 ),
+                token( "b", 2 ) ) );
+
+        when( creator.createToken( "c" ) ).thenReturn( 3 );
+        assertThat( holder.getOrCreateId( "c" ), is( 3 ) );
+    }
+
+    @Test
+    public void batchTokenCreateMustDeduplicateTokenCreates() throws Exception
+    {
+        initialTokensABC();
+
+        AtomicInteger nextId = new AtomicInteger( 42 );
+        mockAssignNewTokenIdsInBatch( nextId );
+
+        // NOTE: the existing 'b', and the missing 'X', tokens are in here twice:
+        String[] names = new String[]{"b", "b", "X", "a", "X", "c"};
+        int[] ids = new int[names.length];
+        holder.getOrCreateIds( names, ids );
+
+        assertThat( ids.length, is( 6 ) );
+        assertThat( ids[0], is( 2 ) );
+        assertThat( ids[1], is( 2 ) );
+        assertThat( ids[2], is( 42 ) );
+        assertThat( ids[3], is( 1 ) );
+        assertThat( ids[4], is( 42 ) );
+        assertThat( ids[5], is( 3 ) );
+        assertThat( nextId.get(), is( 43 ) );
+
+        // And this should not throw.
+        holder.getTokenById( 42 );
     }
 
     @Test( expected = IllegalArgumentException.class )
