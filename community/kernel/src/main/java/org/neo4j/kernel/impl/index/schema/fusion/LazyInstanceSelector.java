@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.util.function.IntFunction;
+import java.util.EnumMap;
+import java.util.function.Function;
 
 /**
  * Selects an instance given a certain slot and instantiate them lazy.
@@ -27,30 +28,42 @@ import java.util.function.IntFunction;
  */
 class LazyInstanceSelector<T> extends InstanceSelector<T>
 {
-    private final IntFunction<T> factory;
+    private final Function<IndexSlot,T> factory;
 
     /**
-     * @param instances uninstantiated instances, instantiated lazily by the {@code factory}
-     * @param factory {@link IntFunction} for instantiating instances for specific slots.
+     * Empty lazy selector
+     *
+     * See {@link this#LazyInstanceSelector(EnumMap, Function)}
      */
-    LazyInstanceSelector( T[] instances, IntFunction<T> factory )
+    LazyInstanceSelector( Function<IndexSlot,T> factory )
     {
-        super( instances );
+        this( new EnumMap<>( IndexSlot.class ), factory );
+    }
+
+    /**
+     * Lazy selector with initial mapping
+     *
+     * @param map with initial mapping
+     * @param factory {@link Function} for instantiating instances for specific slots.
+     */
+    LazyInstanceSelector( EnumMap<IndexSlot,T> map, Function<IndexSlot,T> factory )
+    {
+        super( map );
         this.factory = factory;
     }
 
     /**
      * Instantiating an instance if it hasn't already been instantiated.
      *
-     * See {@link InstanceSelector#select(int)}
+     * See {@link InstanceSelector#select(IndexSlot)}
      */
     @Override
-    T select( int slot )
+    T select( IndexSlot slot )
     {
-        if ( instances[slot] == null )
+        if ( !instances.containsKey( slot ) )
         {
             assertOpen();
-            instances[slot] = factory.apply( slot );
+            instances.put( slot, factory.apply( slot ) );
         }
         return super.select( slot );
     }
@@ -58,12 +71,12 @@ class LazyInstanceSelector<T> extends InstanceSelector<T>
     /**
      * Returns the instance at the given slot. If the instance at the given {@code slot} hasn't been instantiated yet, {@code null} is returned.
      *
-     * @param slot slot number to return instance for.
+     * @param slot slot to return instance for.
      * @return the instance at the given {@code slot}, or {@code null}.
      */
-    T getIfInstantiated( int slot )
+    T getIfInstantiated( IndexSlot slot )
     {
-        return instances[slot];
+        return instances.get( slot );
     }
 
     private void assertOpen()

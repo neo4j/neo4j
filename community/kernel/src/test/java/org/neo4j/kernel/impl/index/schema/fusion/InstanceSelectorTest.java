@@ -22,8 +22,18 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.neo4j.helpers.collection.Iterables;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 
 public class InstanceSelectorTest
 {
@@ -31,15 +41,17 @@ public class InstanceSelectorTest
     public void shouldSelect()
     {
         // given
-        InstanceSelector<String> selector = selector( "0", "1" );
+        InstanceSelector<String> selector = selector(
+                NUMBER, "0",
+                STRING, "1" );
 
         // when
-        String select0 = selector.select( 0 );
+        String select0 = selector.select( NUMBER );
         // then
         assertEquals( "0", select0 );
 
         // when
-        String select1 = selector.select( 1 );
+        String select1 = selector.select( STRING );
         // then
         assertEquals( "1", select1 );
     }
@@ -48,12 +60,12 @@ public class InstanceSelectorTest
     public void shouldThrowOnNonInstantiatedSelect()
     {
         // given
-        InstanceSelector<String> selector = selector( "0", null );
+        InstanceSelector<String> selector = selector( NUMBER, "0" );
 
         try
         {
             // when
-            selector.select( 1 );
+            selector.select( STRING );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -64,15 +76,15 @@ public class InstanceSelectorTest
     }
 
     @Test
-    public void shouldThrowOnNonInstantiatedInstancesAs()
+    public void shouldThrowOnNonInstantiatedFlatMap()
     {
         // given
-        InstanceSelector<String> selector = selector( "0", null );
+        InstanceSelector<String> selector = selector( NUMBER, "0" );
 
         // when
         try
         {
-            selector.instancesAs( new Number[2], Integer::parseInt );
+            selector.flatMap( Integer::parseInt );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -83,24 +95,64 @@ public class InstanceSelectorTest
     }
 
     @Test
-    public void shouldInstancesAs()
+    public void shouldThrowOnNonInstantiatedMap()
     {
         // given
-        InstanceSelector<String> selector = selector( "0", "1" );
+        InstanceSelector<String> selector = selector( NUMBER, "0" );
 
         // when
-        Number[] numbers = selector.instancesAs( new Number[2], Integer::parseInt );
-
-        // then
-        assertEquals( 0, numbers[0] );
-        assertEquals( 1, numbers[1] );
+        try
+        {
+            selector.map( Integer::parseInt );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then
+            // good
+        }
     }
 
+    @Test
+    public void shouldFlatMap()
+    {
+        // given
+        InstanceSelector<String> selector = selectorFilledWithOrdinal();
+
+        // when
+        List<Integer> actual = Iterables.asList( selector.flatMap( Integer::parseInt ) );
+        List<Integer> expected = Arrays.stream( IndexSlot.values() ).map( Enum::ordinal ).collect( Collectors.toList() );
+
+        // then
+        assertEquals( expected.size(), actual.size() );
+        for ( Integer i : expected )
+        {
+            assertTrue( actual.contains( i ) );
+        }
+    }
+
+    @Test
+    public void shouldMap()
+    {
+        // given
+        InstanceSelector<String> selector = selectorFilledWithOrdinal();
+
+        // when
+        EnumMap<IndexSlot,Integer> actual = selector.map( Integer::parseInt );
+
+        // then
+        for ( IndexSlot slot : IndexSlot.values() )
+        {
+            assertEquals( slot.ordinal(), actual.get( slot ).intValue() );
+        }
+    }
+
+    @SuppressWarnings( "ResultOfMethodCallIgnored" )
     @Test
     public void shouldThrowOnNonInstantiatedForAll()
     {
         // given
-        InstanceSelector<String> selector = selector( "0", null );
+        InstanceSelector<String> selector = selector( NUMBER, "0" );
 
         // when
         try
@@ -119,21 +171,22 @@ public class InstanceSelectorTest
     public void shouldForAll()
     {
         // given
-        InstanceSelector<String> selector = selector( "0", "1" );
+        InstanceSelector<String> selector = selectorFilledWithOrdinal();
 
         // when
         MutableInt count = new MutableInt();
         selector.forAll( s -> count.increment() );
 
         // then
-        assertEquals( 2, count.intValue() );
+        assertEquals( IndexSlot.values().length, count.intValue() );
     }
 
+    @SuppressWarnings( "ResultOfMethodCallIgnored" )
     @Test
-    public void shouldNotThrowOnNonInstantiatedForAll()
+    public void shouldNotThrowOnNonInstantiatedClose()
     {
         // given
-        InstanceSelector<String> selector = selector( (String) null );
+        InstanceSelector<String> selector = selector( NUMBER, "0" );
 
         // when
         selector.close( Integer::parseInt );
@@ -146,18 +199,34 @@ public class InstanceSelectorTest
     public void shouldCloseAll()
     {
         // given
-        InstanceSelector<String> selector = selector( "0", "1" );
+        InstanceSelector<String> selector = selectorFilledWithOrdinal();
 
         // when
         MutableInt count = new MutableInt();
         selector.close( s -> count.increment() );
 
         // then
-        assertEquals( 2, count.intValue() );
+        assertEquals( IndexSlot.values().length, count.intValue() );
     }
 
-    private InstanceSelector<String> selector( String... strings )
+    private InstanceSelector<String> selector( Object... mapping )
     {
-        return new InstanceSelector<>( strings );
+        EnumMap<IndexSlot,String> map = new EnumMap<>( IndexSlot.class );
+        int i = 0;
+        while ( i < mapping.length )
+        {
+            map.put( (IndexSlot) mapping[i++], (String) mapping[i++] );
+        }
+        return new InstanceSelector<>( map );
+    }
+
+    private InstanceSelector<String> selectorFilledWithOrdinal()
+    {
+        EnumMap<IndexSlot,String> map = new EnumMap<>( IndexSlot.class );
+        for ( IndexSlot slot : IndexSlot.values() )
+        {
+            map.put( slot, Integer.toString( slot.ordinal() ) );
+        }
+        return new InstanceSelector<>( map );
     }
 }

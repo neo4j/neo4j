@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
@@ -64,7 +66,12 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
     @Override
     public IndexSampler createSampler()
     {
-        return new FusionIndexSampler( Iterators.stream( iterator() ).map( IndexReader::createSampler ).toArray( IndexSampler[]::new ) );
+        List<IndexSampler> samplers = new ArrayList<>();
+        for ( SpatialIndexPartReader<NativeSchemaValue> partReader : this )
+        {
+            samplers.add( partReader.createSampler() );
+        }
+        return new FusionIndexSampler( samplers );
     }
 
     @Override

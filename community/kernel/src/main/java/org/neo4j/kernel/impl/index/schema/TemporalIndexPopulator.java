@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -131,10 +130,12 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public IndexSample sampleResult()
     {
-        IndexSample[] indexSamples = StreamSupport.stream( this.spliterator(), false )
-                .map( PartPopulator::sampleResult )
-                .toArray( IndexSample[]::new );
-        return combineSamples( indexSamples );
+        List<IndexSample> samples = new ArrayList<>();
+        for ( PartPopulator<?> partPopulator : this )
+        {
+            samples.add( partPopulator.sampleResult() );
+        }
+        return combineSamples( samples );
     }
 
     static class PartPopulator<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexPopulator<KEY, NativeSchemaValue>

@@ -27,6 +27,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -55,15 +56,15 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.GROUP_OF;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 @RunWith( Parameterized.class )
 public class FusionIndexProviderTest
@@ -72,7 +73,7 @@ public class FusionIndexProviderTest
     public static final StoreIndexDescriptor AN_INDEX =
             IndexDescriptorFactory.forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).withId( 0 );
 
-    private IndexProvider[] providers;
+    private EnumMap<IndexSlot,IndexProvider> providers;
     private IndexProvider[] aliveProviders;
     private IndexProvider fusionIndexProvider;
     private SlotSelector slotSelector;
@@ -100,23 +101,79 @@ public class FusionIndexProviderTest
     @Rule
     public RandomRule random = new RandomRule();
 
+    private void setupMocks()
+    {
+        IndexSlot[] aliveSlots = fusionVersion.aliveSlots();
+        aliveProviders = new IndexProvider[aliveSlots.length];
+        providers = new EnumMap<>( IndexSlot.class );
+        fill( providers, IndexProvider.EMPTY );
+        for ( int i = 0; i < aliveSlots.length; i++ )
+        {
+            switch ( aliveSlots[i] )
+            {
+            case STRING:
+                IndexProvider string = mockProvider( StringIndexProvider.class, "string" );
+                providers.put( STRING, string );
+                aliveProviders[i] = string;
+                break;
+            case NUMBER:
+                IndexProvider number = mockProvider( NumberIndexProvider.class, "number" );
+                providers.put( NUMBER, number );
+                aliveProviders[i] = number;
+                break;
+            case SPATIAL:
+                IndexProvider spatial = mockProvider( SpatialIndexProvider.class, "spatial" );
+                providers.put( SPATIAL, spatial );
+                aliveProviders[i] = spatial;
+                break;
+            case TEMPORAL:
+                IndexProvider temporal = mockProvider( TemporalIndexProvider.class, "temporal" );
+                providers.put( TEMPORAL, temporal );
+                aliveProviders[i] = temporal;
+                break;
+            case LUCENE:
+                IndexProvider lucene = mockProvider( IndexProvider.class, "lucene" );
+                providers.put( LUCENE, lucene );
+                aliveProviders[i] = lucene;
+                break;
+            default:
+                throw new RuntimeException();
+            }
+        }
+        fusionIndexProvider = new FusionIndexProvider(
+                providers.get( STRING ),
+                providers.get( NUMBER ),
+                providers.get( SPATIAL ),
+                providers.get( TEMPORAL ),
+                providers.get( LUCENE ),
+                fusionVersion.slotSelector(), DESCRIPTOR, 10, NONE, mock( FileSystemAbstraction.class ), false );
+        instanceSelector = new InstanceSelector<>( providers );
+    }
+
+    private IndexProvider mockProvider( Class<? extends IndexProvider> providerClass, String name )
+    {
+        IndexProvider mock = mock( providerClass );
+        when( mock.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( name, "1" ) );
+        return mock;
+    }
+
     @Test
     public void mustSelectCorrectTargetForAllGivenValueCombinations()
     {
         // given
-        Value[][] values = FusionIndexTestHelp.valuesByGroup();
+        EnumMap<IndexSlot,Value[]> values = FusionIndexTestHelp.valuesByGroup();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
-        for ( int i = 0; i < values.length; i++ )
+        for ( IndexSlot slot : IndexSlot.values() )
         {
-            Value[] group = values[i];
+            Value[] group = values.get( slot );
             for ( Value value : group )
             {
                 // when
                 IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( value ), GROUP_OF ) );
 
                 // then
-                assertSame( orLucene( providers[i] ), selected );
+                assertSame( orLucene( providers.get( slot ) ), selected );
             }
         }
 
@@ -129,7 +186,7 @@ public class FusionIndexProviderTest
                 IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( firstValue, secondValue ), GROUP_OF ) );
 
                 // then
-                assertSame( providers[LUCENE], selected );
+                assertSame( providers.get( LUCENE ), selected );
             }
         }
     }
@@ -141,7 +198,7 @@ public class FusionIndexProviderTest
         int sumIndexSize = 0;
         int sumUniqueValues = 0;
         int sumSampleSize = 0;
-        IndexSample[] samples = new IndexSample[providers.length];
+        IndexSample[] samples = new IndexSample[providers.size()];
         for ( int i = 0; i < samples.length; i++ )
         {
             int indexSize = random.nextInt( 0, 1_000_000 );
@@ -154,7 +211,7 @@ public class FusionIndexProviderTest
         }
 
         // when
-        IndexSample fusionSample = FusionIndexSampler.combineSamples( samples );
+        IndexSample fusionSample = FusionIndexSampler.combineSamples( Arrays.asList( samples ) );
 
         // then
         assertEquals( sumIndexSize, fusionSample.indexSize() );
@@ -273,62 +330,6 @@ public class FusionIndexProviderTest
         }
     }
 
-    private void setupMocks()
-    {
-        int[] aliveSlots = fusionVersion.aliveSlots();
-        aliveProviders = new IndexProvider[aliveSlots.length];
-        providers = new IndexProvider[INSTANCE_COUNT];
-        Arrays.fill( providers, IndexProvider.EMPTY );
-        for ( int i = 0; i < aliveSlots.length; i++ )
-        {
-            switch ( aliveSlots[i] )
-            {
-            case STRING:
-                IndexProvider string = mockProvider( StringIndexProvider.class, "string" );
-                providers[STRING] = string;
-                aliveProviders[i] = string;
-                break;
-            case NUMBER:
-                IndexProvider number = mockProvider( NumberIndexProvider.class, "number" );
-                providers[NUMBER] = number;
-                aliveProviders[i] = number;
-                break;
-            case SPATIAL:
-                IndexProvider spatial = mockProvider( SpatialIndexProvider.class, "spatial" );
-                providers[SPATIAL] = spatial;
-                aliveProviders[i] = spatial;
-                break;
-            case TEMPORAL:
-                IndexProvider temporal = mockProvider( TemporalIndexProvider.class, "temporal" );
-                providers[TEMPORAL] = temporal;
-                aliveProviders[i] = temporal;
-                break;
-            case LUCENE:
-                IndexProvider lucene = mockProvider( IndexProvider.class, "lucene" );
-                providers[LUCENE] = lucene;
-                aliveProviders[i] = lucene;
-                break;
-            default:
-                throw new RuntimeException();
-            }
-        }
-        fusionIndexProvider = new FusionIndexProvider(
-                providers[STRING],
-                providers[NUMBER],
-                providers[SPATIAL],
-                providers[TEMPORAL],
-                providers[LUCENE],
-                fusionVersion.slotSelector(), DESCRIPTOR, 10, NONE, mock( FileSystemAbstraction.class ), false );
-        instanceSelector = new InstanceSelector<>( providers );
-    }
-
-    private IndexProvider mockProvider( Class<? extends IndexProvider> providerClass, String name )
-    {
-        IndexProvider mock = mock( providerClass );
-        when( mock.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( name, "1" ) );
-        return mock;
-    }
-
     private void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
     {
         when( mockedProvider.getInitialState( any( StoreIndexDescriptor.class ) ) ).thenReturn( state );
@@ -336,6 +337,6 @@ public class FusionIndexProviderTest
 
     private IndexProvider orLucene( IndexProvider provider )
     {
-        return provider != IndexProvider.EMPTY ? provider : providers[LUCENE];
+        return provider != IndexProvider.EMPTY ? provider : providers.get( LUCENE );
     }
 }
