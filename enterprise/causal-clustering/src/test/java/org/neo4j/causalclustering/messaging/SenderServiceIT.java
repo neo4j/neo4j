@@ -30,14 +30,17 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
+import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller;
 import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller;
-import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.net.Server;
@@ -61,7 +64,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory.VOID_WRAPPER;
@@ -72,8 +74,8 @@ public class SenderServiceIT
 {
     private final LogProvider logProvider = NullLogProvider.getInstance();
 
-    private final ApplicationSupportedProtocols supportedApplicationProtocol =
-            new ApplicationSupportedProtocols( Protocol.ApplicationProtocolCategory.RAFT, emptyList() );
+    private final ApplicationSupportedProtocols supportedApplicationProtocol = new ApplicationSupportedProtocols( Protocol.ApplicationProtocolCategory.RAFT,
+            Arrays.asList( ApplicationProtocols.RAFT_1.implementation(), ApplicationProtocols.RAFT_2.implementation() ) );
     private final Collection<ModifierSupportedProtocols> supportedModifierProtocols = emptyList();
 
     private final ApplicationProtocolRepository applicationProtocolRepository =
@@ -84,10 +86,18 @@ public class SenderServiceIT
     @Parameterized.Parameter
     public boolean blocking;
 
-    @Parameterized.Parameters( name = "blocking={0}" )
-    public static Iterable<Boolean> params()
+    @Parameterized.Parameter( 1 )
+    public ApplicationProtocols clientProtocol;
+
+    @Parameterized.Parameters( name = "blocking={0} protocol={1}" )
+    public static Iterable<Object[]> params()
     {
-        return asSet( true, false );
+        return clientRepositories().stream().flatMap( r -> Stream.of( new Object[]{true, r}, new Object[]{false, r} ) ).collect( Collectors.toList() );
+    }
+
+    private static Collection<ApplicationProtocols> clientRepositories()
+    {
+        return Arrays.asList( ApplicationProtocols.RAFT_1, ApplicationProtocols.RAFT_2 );
     }
 
     @Test
@@ -133,9 +143,11 @@ public class SenderServiceIT
     {
         NettyPipelineBuilderFactory pipelineFactory = new NettyPipelineBuilderFactory( VOID_WRAPPER );
 
-        RaftProtocolServerInstaller.Factory raftProtocolServerInstaller = new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineFactory, logProvider );
+        RaftProtocolServerInstaller.Factory factoryV1 = new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineFactory, logProvider );
+        org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstaller.Factory factoryV2 =
+                new org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstaller.Factory( nettyHandler, pipelineFactory, logProvider );
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> installer =
-                new ProtocolInstallerRepository<>( singletonList( raftProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );
+                new ProtocolInstallerRepository<>( Arrays.asList( factoryV1, factoryV2 ), ModifierProtocolInstaller.allServerInstallers );
 
         HandshakeServerInitializer channelInitializer = new HandshakeServerInitializer( applicationProtocolRepository, modifierProtocolRepository,
                 installer, pipelineFactory, logProvider );
@@ -148,12 +160,13 @@ public class SenderServiceIT
     {
         NettyPipelineBuilderFactory pipelineFactory = new NettyPipelineBuilderFactory( VOID_WRAPPER );
 
-        RaftProtocolClientInstaller.Factory raftProtocolClientInstaller = new RaftProtocolClientInstaller.Factory( pipelineFactory, logProvider );
+        RaftProtocolClientInstaller.Factory factoryV1 = new RaftProtocolClientInstaller.Factory( pipelineFactory, logProvider );
+        org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstaller.Factory factoryV2 =
+                new org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstaller.Factory( pipelineFactory, logProvider );
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstaller =
-                new ProtocolInstallerRepository<>( singletonList( raftProtocolClientInstaller ), ModifierProtocolInstaller.allClientInstallers );
+                new ProtocolInstallerRepository<>( Arrays.asList( factoryV1, factoryV2 ), ModifierProtocolInstaller.allClientInstallers );
 
-        HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer(
-                applicationProtocolRepository,
+        HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( clientRepository(),
                 modifierProtocolRepository,
                 protocolInstaller,
                 pipelineFactory,
@@ -162,5 +175,11 @@ public class SenderServiceIT
                 logProvider );
 
         return new SenderService( channelInitializer, logProvider );
+    }
+
+    private ApplicationProtocolRepository clientRepository()
+    {
+        return new ApplicationProtocolRepository( new ApplicationProtocols[]{ApplicationProtocols.RAFT_2},
+                new ApplicationSupportedProtocols( Protocol.ApplicationProtocolCategory.RAFT, emptyList() ) );
     }
 }
