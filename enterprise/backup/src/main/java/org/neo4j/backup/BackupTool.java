@@ -53,6 +53,10 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+/**
+ * @deprecated Use the {@code neo4j-admin backup} instead.
+ */
+@Deprecated
 public class BackupTool
 {
     private static final String TO = "to";

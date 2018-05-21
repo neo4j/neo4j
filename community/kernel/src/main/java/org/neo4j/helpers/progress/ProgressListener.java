@@ -25,20 +25,28 @@ package org.neo4j.helpers.progress;
  * Progress objects are not thread safe, and are to be used by a single thread only. Each Progress object from a {@link
  * ProgressMonitorFactory.MultiPartBuilder} can be used from different threads.
  */
+@Deprecated
 public interface ProgressListener
 {
+    @Deprecated
     void started( String task );
 
+    @Deprecated
     void started();
 
+    @Deprecated
     void set( long progress );
 
+    @Deprecated
     void add( long progress );
 
+    @Deprecated
     void done();
 
+    @Deprecated
     void failed( Throwable e );
 
+    @Deprecated
     class Adapter implements ProgressListener
     {
         @Override
@@ -73,8 +81,10 @@ public interface ProgressListener
         }
     }
 
+    @Deprecated
     ProgressListener NONE = new Adapter();
 
+    @Deprecated
     class SinglePartProgressListener extends Adapter
     {
         private final Indicator indicator;
@@ -136,6 +146,7 @@ public interface ProgressListener
         }
     }
 
+    @Deprecated
     final class MultiPartProgressListener extends Adapter
     {
         public final String part;

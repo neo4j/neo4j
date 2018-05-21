@@ -57,11 +57,16 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_server;
 
+/**
+ * @deprecated This will be moved to an internal package in the future.
+ */
+@Deprecated
 public class OnlineBackupKernelExtension implements Lifecycle
 {
     private Object startBindingListener;
     private Object bindingListener;
 
+    @Deprecated
     public interface BackupProvider
     {
         TheBackupInterface newBackup();
