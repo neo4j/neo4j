@@ -140,16 +140,16 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
     @Test
     public void shouldBeAbleToGetOrCreateMultiplePropertyKeys() throws Exception
     {
-        int idB = disk.propertyKeyGetOrCreateForName( "b" );
+        int idB = storageReader.propertyKeyGetOrCreateForName( "b" );
 
         String[] names = {"a", "b", "c"};
         int[] ids = new int[3];
         Arrays.fill( ids, TokenHolder.NO_ID );
 
-        disk.propertyKeyGetOrCreateForNames( names, ids );
-        assertThat( ids[0], is( disk.propertyKeyGetForName( "a" ) ) );
+        storageReader.propertyKeyGetOrCreateForNames( names, ids );
+        assertThat( ids[0], is( storageReader.propertyKeyGetForName( "a" ) ) );
         assertThat( ids[1], is( idB ) );
-        assertThat( ids[2], is( disk.propertyKeyGetForName( "c" ) ) );
+        assertThat( ids[2], is( storageReader.propertyKeyGetForName( "c" ) ) );
         assertThat( ids[0], greaterThanOrEqualTo( 0 ) );
         assertThat( ids[1], greaterThanOrEqualTo( 0 ) );
         assertThat( ids[2], greaterThanOrEqualTo( 0 ) );

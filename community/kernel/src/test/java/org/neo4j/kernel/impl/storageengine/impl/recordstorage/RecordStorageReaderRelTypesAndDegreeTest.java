@@ -363,11 +363,11 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         // GIVEN
         String[] typeNames = {relType1.name(), relType2.name()};
         int[] typeIds = new int[typeNames.length];
-        disk.relationshipTypeGetOrCreateForNames( typeNames, typeIds );
+        storageReader.relationshipTypeGetOrCreateForNames( typeNames, typeIds );
 
         // WHEN
-        String firstLabelName = disk.relationshipTypeGetName( typeIds[0] );
-        String secondLabelName = disk.relationshipTypeGetName( typeIds[1] );
+        String firstLabelName = storageReader.relationshipTypeGetName( typeIds[0] );
+        String secondLabelName = storageReader.relationshipTypeGetName( typeIds[1] );
 
         // THEN
         assertEquals( typeNames[0], firstLabelName );

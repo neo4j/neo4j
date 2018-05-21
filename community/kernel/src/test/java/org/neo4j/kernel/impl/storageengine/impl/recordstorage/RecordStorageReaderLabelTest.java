@@ -81,11 +81,11 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         // GIVEN
         String[] labelNames = {label1.name(), label2.name()};
         int[] labelIds = new int[labelNames.length];
-        disk.labelGetOrCreateForNames( labelNames, labelIds );
+        storageReader.labelGetOrCreateForNames( labelNames, labelIds );
 
         // WHEN
-        String firstLabelName = disk.labelGetName( labelIds[0] );
-        String secondLabelName = disk.labelGetName( labelIds[1] );
+        String firstLabelName = storageReader.labelGetName( labelIds[0] );
+        String secondLabelName = storageReader.labelGetName( labelIds[1] );
 
         // THEN
         assertEquals( labelNames[0], firstLabelName );

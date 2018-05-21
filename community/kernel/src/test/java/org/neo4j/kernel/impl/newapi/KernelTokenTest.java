@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.TokenHolder;
-import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -37,7 +37,7 @@ import static org.neo4j.test.assertion.Assert.assertException;
 
 public class KernelTokenTest
 {
-    private final StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+    private final StorageReader storeReadLayer = mock( StorageReader.class );
     private final KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
     private KernelToken token = new KernelToken( storeReadLayer, ktx );
 
