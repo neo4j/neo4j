@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.ReplicatedContentChunkEncoder;
+import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentChunkEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.ContentTypeEncoder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.encoding.RaftLogEntryTermEncoder;

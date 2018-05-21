@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.messaging.marshalling.v2.encoding;
+package org.neo4j.causalclustering.messaging.marshalling;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
-
-import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentChunk;
 
 public class ReplicatedContentChunkEncoder extends MessageToByteEncoder<ReplicatedContentChunk>
 {

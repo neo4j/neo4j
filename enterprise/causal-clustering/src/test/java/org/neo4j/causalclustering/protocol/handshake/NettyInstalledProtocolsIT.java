@@ -44,6 +44,7 @@ import org.junit.runners.Parameterized;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -54,8 +55,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller;
-import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolClientInstaller;
+import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstaller;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -77,6 +78,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols.RAFT_1;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols.RAFT_2;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.COMPRESSION;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -99,10 +101,9 @@ public class NettyInstalledProtocolsIT
         Stream<Optional<ModifierProtocol>> noModifierProtocols = Stream.of( Optional.empty() );
         Stream<Optional<ModifierProtocol>> individualModifierProtocols = Stream.of( ModifierProtocols.values() ).map( Optional::of );
 
-        // TODO permutations across differently identified modifiers, when we have some
-
-        return Stream.concat( noModifierProtocols, individualModifierProtocols )
-                .map( NettyInstalledProtocolsIT::raft1WithCompressionModifier )
+        return Stream
+                .concat( noModifierProtocols, individualModifierProtocols )
+                .flatMap( protocol -> Stream.of( raft1WithCompressionModifier( protocol ), raft2WithCompressionModifiers( protocol ) ) )
                 .collect( Collectors.toList() );
     }
 
@@ -110,8 +111,15 @@ public class NettyInstalledProtocolsIT
     private static Parameters raft1WithCompressionModifier( Optional<ModifierProtocol> protocol )
     {
         List<String> versions = Streams.ofOptional( protocol ).map( Protocol::implementation ).collect( Collectors.toList() );
-        return new Parameters( "Raft 1, modifiers: " + protocol,
-                new ApplicationSupportedProtocols( RAFT, singletonList( RAFT_1.implementation() ) ),
+        return new Parameters( "Raft 1, modifiers: " + protocol, new ApplicationSupportedProtocols( RAFT, singletonList( RAFT_1.implementation() ) ),
+                singletonList( new ModifierSupportedProtocols( COMPRESSION, versions ) ) );
+    }
+
+    @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
+    private static Parameters raft2WithCompressionModifiers( Optional<ModifierProtocol> protocol )
+    {
+        List<String> versions = Streams.ofOptional( protocol ).map( Protocol::implementation ).collect( Collectors.toList() );
+        return new Parameters( "Raft 2, modifiers: " + protocol, new ApplicationSupportedProtocols( RAFT, singletonList( RAFT_2.implementation() ) ),
                 singletonList( new ModifierSupportedProtocols( COMPRESSION, versions ) ) );
     }
 
@@ -208,10 +216,13 @@ public class NettyInstalledProtocolsIT
 
         void start( final ApplicationProtocolRepository applicationProtocolRepository, final ModifierProtocolRepository modifierProtocolRepository )
         {
-            RaftProtocolServerInstaller.Factory raftFactory =
+            RaftProtocolServerInstaller.Factory raftFactoryV2 =
                     new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineBuilderFactory, logProvider );
+            org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller.Factory raftFactoryV1 =
+                    new org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstaller.Factory( nettyHandler, pipelineBuilderFactory,
+                            logProvider );
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository =
-                    new ProtocolInstallerRepository<>( singletonList( raftFactory ), ModifierProtocolInstaller.allServerInstallers );
+                    new ProtocolInstallerRepository<>( Arrays.asList( raftFactoryV1, raftFactoryV2 ), ModifierProtocolInstaller.allServerInstallers );
 
             eventLoopGroup = new NioEventLoopGroup();
             ServerBootstrap bootstrap = new ServerBootstrap().group( eventLoopGroup )
@@ -251,9 +262,11 @@ public class NettyInstalledProtocolsIT
         Client( ApplicationProtocolRepository applicationProtocolRepository, ModifierProtocolRepository modifierProtocolRepository,
                 NettyPipelineBuilderFactory pipelineBuilderFactory, Config config )
         {
-            RaftProtocolClientInstaller.Factory raftFactory = new RaftProtocolClientInstaller.Factory( pipelineBuilderFactory, logProvider );
+            RaftProtocolClientInstaller.Factory raftFactoryV2 = new RaftProtocolClientInstaller.Factory( pipelineBuilderFactory, logProvider );
+            org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller.Factory raftFactoryV1 =
+                    new org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolClientInstaller.Factory( pipelineBuilderFactory, logProvider );
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository =
-                    new ProtocolInstallerRepository<>( singletonList( raftFactory ), ModifierProtocolInstaller.allClientInstallers );
+                    new ProtocolInstallerRepository<>( Arrays.asList( raftFactoryV1, raftFactoryV2 ), ModifierProtocolInstaller.allClientInstallers );
             eventLoopGroup = new NioEventLoopGroup();
             Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
             handshakeClientInitializer = new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository,
