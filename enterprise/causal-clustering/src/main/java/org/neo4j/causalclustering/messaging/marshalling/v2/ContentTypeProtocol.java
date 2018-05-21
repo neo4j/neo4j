@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.messaging.marshalling.v2.decoding;
+package org.neo4j.causalclustering.messaging.marshalling.v2;
 
 import org.neo4j.causalclustering.catchup.Protocol;
-import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
 public class ContentTypeProtocol extends Protocol<ContentType>
 {

@@ -28,7 +28,7 @@ import java.util.List;
 
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentChunk;
-import org.neo4j.causalclustering.messaging.marshalling.v2.CoreReplicatedContentSerializer;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
 
 public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
 {

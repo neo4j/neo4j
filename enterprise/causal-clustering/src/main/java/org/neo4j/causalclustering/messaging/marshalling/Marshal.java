@@ -23,7 +23,12 @@ import java.io.IOException;
 
 import org.neo4j.storageengine.api.WritableChannel;
 
-public interface SerializableContent
+public interface Marshal
 {
-    void serialize( WritableChannel channel ) throws IOException;
+    /**
+     * Writes all content to the channel
+     *
+     * @param channel to where data is written.
+     */
+    void marshal( WritableChannel channel ) throws IOException;
 }

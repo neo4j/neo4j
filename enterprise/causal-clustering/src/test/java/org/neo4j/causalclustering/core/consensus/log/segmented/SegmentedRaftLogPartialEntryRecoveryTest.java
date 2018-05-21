@@ -39,7 +39,7 @@ import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenReque
 import org.neo4j.causalclustering.core.state.machines.token.TokenType;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.marshalling.v1.CoreReplicatedContentMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -79,7 +79,7 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
         LogProvider logProvider = getInstance();
         CoreLogPruningStrategy pruningStrategy =
                 new CoreLogPruningStrategyFactory( "100 entries", logProvider ).newInstance();
-        return new SegmentedRaftLog( fsRule.get(), logDirectory, rotateAtSize, new CoreReplicatedContentMarshal(),
+        return new SegmentedRaftLog( fsRule.get(), logDirectory, rotateAtSize, new CoreReplicatedContentSerializer(),
                 logProvider, 8, Clocks.fakeClock(), new OnDemandJobScheduler(), pruningStrategy );
     }
 
@@ -88,7 +88,7 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
         FileNames fileNames = new FileNames( logDirectory );
         return new RecoveryProtocol( fsRule.get(), fileNames,
                 new ReaderPool( 8, getInstance(), fileNames, fsRule.get(), Clocks.fakeClock() ),
-                new CoreReplicatedContentMarshal(), getInstance() );
+                new CoreReplicatedContentSerializer(), getInstance() );
     }
 
     @Test

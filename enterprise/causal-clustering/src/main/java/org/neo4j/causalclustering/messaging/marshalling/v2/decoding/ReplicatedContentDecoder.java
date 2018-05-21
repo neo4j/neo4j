@@ -26,7 +26,7 @@ import java.util.List;
 
 import org.neo4j.causalclustering.catchup.Protocol;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.messaging.marshalling.v2.ContentBuilder;
+import org.neo4j.causalclustering.messaging.marshalling.ContentBuilder;
 import org.neo4j.causalclustering.messaging.marshalling.v2.ContentType;
 
 public class ReplicatedContentDecoder extends MessageToMessageDecoder<ContentBuilder<ReplicatedContent>>

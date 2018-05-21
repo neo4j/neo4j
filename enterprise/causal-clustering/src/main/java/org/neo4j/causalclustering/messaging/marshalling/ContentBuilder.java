@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.messaging.marshalling.v2;
+package org.neo4j.causalclustering.messaging.marshalling;
 
 import java.util.function.Function;
 
@@ -31,16 +31,20 @@ public class ContentBuilder<CONTENT>
         return new ContentBuilder<>( content -> content, false );
     }
 
-    ContentBuilder( Function<CONTENT,CONTENT> contentFunction, boolean isComplete )
+    public static <C> ContentBuilder<C> unfinished( Function<C,C> contentFunction )
+    {
+        return new ContentBuilder<>( contentFunction, false );
+    }
+
+    public static <C> ContentBuilder<C> finished( C content )
+    {
+        return new ContentBuilder<>( c1 -> content, true );
+    }
+
+    private ContentBuilder( Function<CONTENT,CONTENT> contentFunction, boolean isComplete )
     {
         this.contentFunction = contentFunction;
         this.isComplete = isComplete;
-    }
-
-    ContentBuilder( CONTENT replicatedContent )
-    {
-        this.isComplete = true;
-        this.contentFunction = replicatedContent1 -> replicatedContent;
     }
 
     public boolean isComplete()

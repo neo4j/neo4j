@@ -17,20 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.messaging.marshalling.v2;
+package org.neo4j.causalclustering.messaging.marshalling;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.UUID;
 
 import org.neo4j.causalclustering.core.consensus.NewLeaderBarrier;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSetSerializer;
 import org.neo4j.causalclustering.core.replication.DistributedOperation;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.core.replication.session.GlobalSession;
-import org.neo4j.causalclustering.core.replication.session.LocalOperationId;
 import org.neo4j.causalclustering.core.state.machines.dummy.DummyRequest;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationRequest;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationRequestSerializer;
@@ -41,10 +38,7 @@ import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenReque
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionSerializer;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
-import org.neo4j.causalclustering.messaging.marshalling.ChunkedReplicatedContent;
-import org.neo4j.causalclustering.messaging.marshalling.SerializableContent;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -62,7 +56,7 @@ public class CoreReplicatedContentSerializer extends SafeChannelMarshal<Replicat
     private static final byte DISTRIBUTED_OPERATION = 7;
     private static final byte DUMMY_REQUEST = 8;
 
-    public Collection<SerializableContent> toSerializable( ReplicatedContent content )
+    public Collection<Marshal> toSerializable( ReplicatedContent content )
     {
         if ( content instanceof ReplicatedTransaction )
         {
@@ -96,16 +90,8 @@ public class CoreReplicatedContentSerializer extends SafeChannelMarshal<Replicat
         }
         else if ( content instanceof DistributedOperation )
         {
-            LinkedList<SerializableContent> list = new LinkedList<>( toSerializable( ((DistributedOperation) content).content() ) );
-            list.add( 0, new ChunkedReplicatedContent( DISTRIBUTED_OPERATION, simple( channel ->
-            {
-                channel.putLong( ((DistributedOperation) content).globalSession().sessionId().getMostSignificantBits() );
-                channel.putLong( ((DistributedOperation) content).globalSession().sessionId().getLeastSignificantBits() );
-                new MemberId.Marshal().marshal( ((DistributedOperation) content).globalSession().owner(), channel );
-
-                channel.putLong( ((DistributedOperation) content).operationId().localSessionId() );
-                channel.putLong( ((DistributedOperation) content).operationId().sequenceNumber() );
-            } ) ) );
+            LinkedList<Marshal> list = new LinkedList<>( toSerializable( ((DistributedOperation) content).content() ) );
+            list.add( 0, new ChunkedReplicatedContent( DISTRIBUTED_OPERATION, ((DistributedOperation) content).serialize() ) );
             return list;
         }
         else if ( content instanceof DummyRequest )
@@ -124,32 +110,23 @@ public class CoreReplicatedContentSerializer extends SafeChannelMarshal<Replicat
         switch ( contentType )
         {
         case TX_CONTENT_TYPE:
-            return new ContentBuilder<>( ReplicatedTransactionSerializer.unmarshal( channel ) );
+            return ContentBuilder.finished( ReplicatedTransactionSerializer.unmarshal( channel ) );
         case RAFT_MEMBER_SET_TYPE:
-            return new ContentBuilder<>( MemberIdSetSerializer.unmarshal( channel ) );
+            return ContentBuilder.finished( MemberIdSetSerializer.unmarshal( channel ) );
         case ID_RANGE_REQUEST_TYPE:
-            return new ContentBuilder<>( ReplicatedIdAllocationRequestSerializer.unmarshal( channel ) );
+            return ContentBuilder.finished( ReplicatedIdAllocationRequestSerializer.unmarshal( channel ) );
         case TOKEN_REQUEST_TYPE:
-            return new ContentBuilder<>( ReplicatedTokenRequestSerializer.unmarshal( channel ) );
+            return ContentBuilder.finished( ReplicatedTokenRequestSerializer.unmarshal( channel ) );
         case NEW_LEADER_BARRIER_TYPE:
-            return new ContentBuilder<>( new NewLeaderBarrier() );
+            return ContentBuilder.finished( new NewLeaderBarrier() );
         case LOCK_TOKEN_REQUEST:
-            return new ContentBuilder<>( ReplicatedLockTokenSerializer.unmarshal( channel ) );
+            return ContentBuilder.finished( ReplicatedLockTokenSerializer.unmarshal( channel ) );
         case DISTRIBUTED_OPERATION:
         {
-            long mostSigBits = channel.getLong();
-            long leastSigBits = channel.getLong();
-            MemberId owner = new MemberId.Marshal().unmarshal( channel );
-            GlobalSession globalSession = new GlobalSession( new UUID( mostSigBits, leastSigBits ), owner );
-
-            long localSessionId = channel.getLong();
-            long sequenceNumber = channel.getLong();
-            LocalOperationId localOperationId = new LocalOperationId( localSessionId, sequenceNumber );
-
-            return new ContentBuilder<>( replicatedContent -> new DistributedOperation( replicatedContent, globalSession, localOperationId ), false );
+            return DistributedOperation.deserialize( channel );
         }
         case DUMMY_REQUEST:
-            return new ContentBuilder<>( DummyRequest.Marshal.INSTANCE.unmarshal( channel ) );
+            return ContentBuilder.finished( DummyRequest.Marshal.INSTANCE.unmarshal( channel ) );
         default:
             throw new IllegalStateException( "Not a recognized content type: " + contentType );
         }
@@ -158,9 +135,9 @@ public class CoreReplicatedContentSerializer extends SafeChannelMarshal<Replicat
     @Override
     public void marshal( ReplicatedContent coreReplicatedContent, WritableChannel channel ) throws IOException
     {
-        for ( SerializableContent serializableContent : toSerializable( coreReplicatedContent ) )
+        for ( Marshal marshal : toSerializable( coreReplicatedContent ) )
         {
-            serializableContent.serialize( channel );
+            marshal.marshal( channel );
         }
     }
 
