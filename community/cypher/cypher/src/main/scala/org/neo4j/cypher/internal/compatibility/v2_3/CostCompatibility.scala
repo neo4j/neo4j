@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntime}
+import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -34,7 +34,7 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
                              kernelMonitors: KernelMonitors,
                              log: Log,
                              planner: CypherPlannerOption,
-                             runtime: CypherRuntime) extends Compatibility {
+                             runtime: CypherRuntimeOption) extends Compatibility {
 
   protected val compiler = {
     val plannerName = planner match {
@@ -46,8 +46,8 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
     }
 
     val runtimeName: Option[RuntimeName] = runtime match {
-      case CypherRuntime.default => None
-      case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
+      case CypherRuntimeOption.default => None
+      case CypherRuntimeOption.interpreted => Some(InterpretedRuntimeName)
       case _ => throw new IllegalArgumentException("Runtime is not supported in Cypher 2.3")
     }
 

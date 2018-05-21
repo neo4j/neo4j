@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.GeneratedQuery
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Id
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -36,7 +36,7 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
                              kernelMonitors: KernelMonitors,
                              log: Log,
                              planner: CypherPlannerOption,
-                             runtime: CypherRuntime,
+                             runtime: CypherRuntimeOption,
                              strategy: CypherUpdateStrategy) extends Compatibility {
 
   protected val compiler = {
@@ -48,9 +48,9 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
     }
 
     val runtimeName = runtime match {
-      case CypherRuntime.default => None
-      case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
-      case CypherRuntime.compiled => Some(CompiledRuntimeName)
+      case CypherRuntimeOption.default => None
+      case CypherRuntimeOption.interpreted => Some(InterpretedRuntimeName)
+      case CypherRuntimeOption.compiled => Some(CompiledRuntimeName)
       case _ => throw new IllegalArgumentException("Runtime is not supported in Cypher 3.1")
     }
     val updateStrategy = strategy match {

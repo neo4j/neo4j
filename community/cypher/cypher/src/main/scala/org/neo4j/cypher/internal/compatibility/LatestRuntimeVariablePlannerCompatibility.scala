@@ -56,7 +56,7 @@ STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
                      kernelMonitors: KernelMonitors,
                      log: Log,
                      planner: CypherPlannerOption,
-                     runtime: CypherRuntime,
+                     runtime: CypherRuntimeOption,
                      updateStrategy: CypherUpdateStrategy,
                      runtimeBuilder: RuntimeBuilder[T],
                      contextCreatorV3_5: ContextCreator[CONTEXT3_4],
@@ -92,11 +92,11 @@ STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
     ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
       If((s: CompilationState) => s.maybeExecutionPlan.isFailure) {
         val maybeRuntimeName: Option[RuntimeName] = runtime match {
-          case CypherRuntime.default => None
-          case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
-          case CypherRuntime.slotted => Some(SlottedRuntimeName)
-          case CypherRuntime.morsel => Some(MorselRuntimeName)
-          case CypherRuntime.compiled => Some(CompiledRuntimeName)
+          case CypherRuntimeOption.default => None
+          case CypherRuntimeOption.interpreted => Some(InterpretedRuntimeName)
+          case CypherRuntimeOption.slotted => Some(SlottedRuntimeName)
+          case CypherRuntimeOption.morsel => Some(MorselRuntimeName)
+          case CypherRuntimeOption.compiled => Some(CompiledRuntimeName)
         }
         runtimeBuilder.create(maybeRuntimeName, configv3_5.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan_v3_5])
       }

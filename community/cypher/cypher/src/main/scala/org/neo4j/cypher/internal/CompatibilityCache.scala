@@ -30,17 +30,17 @@ import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.opencypher.v9_0.util.InvalidArgumentException
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
 
 sealed trait PlannerSpec
-final case class PlannerSpec_v2_3(planner: CypherPlannerOption, runtime: CypherRuntime) extends PlannerSpec
-final case class PlannerSpec_v3_1(planner: CypherPlannerOption, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
-final case class PlannerSpec_v3_3(planner: CypherPlannerOption, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
-final case class PlannerSpec_v3_5(planner: CypherPlannerOption, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
+final case class PlannerSpec_v2_3(planner: CypherPlannerOption, runtime: CypherRuntimeOption) extends PlannerSpec
+final case class PlannerSpec_v3_1(planner: CypherPlannerOption, runtime: CypherRuntimeOption, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
+final case class PlannerSpec_v3_3(planner: CypherPlannerOption, runtime: CypherRuntimeOption, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
+final case class PlannerSpec_v3_5(planner: CypherPlannerOption, runtime: CypherRuntimeOption, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
 
 trait CompatibilityFactory {
   def create(spec: PlannerSpec_v2_3, config: CypherPlannerConfiguration): v2_3.Compatibility

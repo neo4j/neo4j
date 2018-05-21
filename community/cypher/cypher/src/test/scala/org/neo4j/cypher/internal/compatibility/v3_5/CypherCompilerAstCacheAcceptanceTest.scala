@@ -61,7 +61,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
                   kernelMonitors,
                   log,
                   CypherPlannerOption.default,
-                  CypherRuntime.default,
+                  CypherRuntimeOption.default,
                   CypherUpdateStrategy.default,
                   CommunityRuntimeBuilder,
                   CommunityRuntimeContextCreator,
@@ -110,7 +110,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
                                                                    CypherVersion.default,
                                                                    CypherExecutionMode.default,
                                                                    CypherPlannerOption.default,
-                                                                   CypherRuntime.default,
+                                                                   CypherRuntimeOption.default,
                                                                    CypherUpdateStrategy.default,
                                                                    debugOptions),
                                                     noTracing, Set.empty)

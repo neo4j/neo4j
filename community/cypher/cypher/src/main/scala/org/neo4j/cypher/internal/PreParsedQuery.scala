@@ -32,7 +32,7 @@ case class PreParsedQuery(statement: String,
                           version: CypherVersion,
                           executionMode: CypherExecutionMode,
                           planner: CypherPlannerOption,
-                          runtime: CypherRuntime,
+                          runtime: CypherRuntimeOption,
                           updateStrategy: CypherUpdateStrategy,
                           debugOptions: Set[String]) {
 
@@ -42,7 +42,7 @@ case class PreParsedQuery(statement: String,
       case _ => s"planner=${planner.name}"
     }
     val runtimeInfo = runtime match {
-      case CypherRuntime.default => ""
+      case CypherRuntimeOption.default => ""
       case _ => s"runtime=${runtime.name}"
     }
     val updateStrategyInfo = updateStrategy match {

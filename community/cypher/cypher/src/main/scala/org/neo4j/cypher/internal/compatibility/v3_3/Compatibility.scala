@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, PlanCon
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -60,7 +60,7 @@ T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState]](configv3_5: Cy
                                                                   kernelMonitors: KernelMonitors,
                                                                   log: Log,
                                                                   planner: CypherPlannerOption,
-                                                                  runtime: CypherRuntime,
+                                                                  runtime: CypherRuntimeOption,
                                                                   updateStrategy: CypherUpdateStrategy,
                                                                   runtimeBuilder: RuntimeBuilder[T],
                                                                   contextCreatorV3_3: v3_3.ContextCreator[CONTEXT3_3],
