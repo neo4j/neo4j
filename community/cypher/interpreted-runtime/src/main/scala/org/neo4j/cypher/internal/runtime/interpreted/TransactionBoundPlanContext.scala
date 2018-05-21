@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
-import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
+import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.procedure.Mode
 
@@ -90,7 +90,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   private def getOnlineIndex(reference: IndexReference): Option[IndexDescriptor] =
     tc.schemaRead.indexGetState(reference) match {
-      case InternalIndexState.ONLINE => Some(IndexDescriptor(reference.label(), reference.properties()))
+      case InternalIndexState.ONLINE =>
+        reference match {
+          case cir: CapableIndexReference => Some(IndexDescriptor(cir.label(), cir.properties(), cir.limitations().map(kernelToCypher).toSet))
+          case _ => Some(IndexDescriptor(reference.label(), reference.properties()))
+        }
       case _ => None
     }
 

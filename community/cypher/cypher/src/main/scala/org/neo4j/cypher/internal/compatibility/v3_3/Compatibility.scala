@@ -25,11 +25,12 @@ import org.neo4j.cypher.exceptionHandler.{RunSafely, runSafely => runtimeRunSafe
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_3.helpers.as3_3
+import org.neo4j.cypher.internal.compatibility.v3_4.notifications.LogicalPlanNotifications
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_4}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeContext => CommunityRuntimeContextV3_4, _}
-import org.neo4j.cypher.internal.compatibility.v3_4.{LogicalPlanNotifications, ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_4}
+import org.neo4j.cypher.internal.compatibility.v3_4.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_4}
 import org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{idp => idpV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.{logical => logicalV3_3}

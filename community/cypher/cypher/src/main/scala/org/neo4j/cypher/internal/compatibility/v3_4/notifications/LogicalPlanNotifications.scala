@@ -17,19 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_4.notifications
 
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
+trait NotificationChecker {
+  def apply(plan: LogicalPlan): TraversableOnce[InternalNotification]
+}
+
 object LogicalPlanNotifications {
   def checkForNotifications(logicalPlan: LogicalPlan,
                             planContext: PlanContext,
                             config: CypherCompilerConfiguration): Seq[InternalNotification] = {
-    val notificationCheckers = Seq(checkForEagerLoadCsv,
-      CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
+    val notificationCheckers = Seq(
+      checkForEagerLoadCsv,
+      checkForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold),
+      checkForIndexLimitation(planContext))
 
     notificationCheckers.flatMap(_ (logicalPlan))
   }

@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_4.notifications
 
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{InternalNotification, LargeLabelWithLoadCsvNotification}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId, NameId}
+import org.neo4j.cypher.internal.util.v3_4.{Cardinality, LabelId}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LoadCSV, LogicalPlan, NodeByLabelScan}
 
-case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
+case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
                                                nonIndexedLabelWarningThreshold: Long
-                                              ) extends (LogicalPlan => Option[InternalNotification]) {
+                                              ) extends NotificationChecker {
 
   private val threshold = Cardinality(nonIndexedLabelWarningThreshold)
 
-  def apply(plan: LogicalPlan): Option[InternalNotification] = {
+  def apply(plan: LogicalPlan): Seq[InternalNotification] = {
     import org.neo4j.cypher.internal.util.v3_4.Foldable._
 
     sealed trait SearchState
@@ -49,8 +49,8 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
     }
 
     resultState match {
-      case LargeLabelWithLoadCsvFound => Some(LargeLabelWithLoadCsvNotification)
-      case _ => None
+      case LargeLabelWithLoadCsvFound => Seq(LargeLabelWithLoadCsvNotification)
+      case _ => Seq.empty
     }
   }
 

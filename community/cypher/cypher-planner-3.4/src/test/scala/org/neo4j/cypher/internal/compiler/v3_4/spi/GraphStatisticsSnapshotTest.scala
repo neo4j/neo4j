@@ -119,6 +119,72 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     frozen1.diverges(frozen2, bigNumber) should equal(false)
   }
 
+  test("0 selectivity values should not lead to wrong divergences") {
+    val snapshot1 = new MutableGraphStatisticsSnapshot()
+    val statistics = graphStatistics(idxSelectivity = 0, idxPropertyExistsSelectivity = 0)
+    val instrumentedStatistics1 = InstrumentedGraphStatistics(statistics, snapshot1)
+    instrumentedStatistics1.nodesAllCardinality()
+    instrumentedStatistics1.indexSelectivity(index)
+    instrumentedStatistics1.nodesWithLabelCardinality(Some(label4))
+
+    val snapshot2 = new MutableGraphStatisticsSnapshot()
+    val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
+    statistics.factor(2)
+    instrumentedStatistics2.nodesAllCardinality()
+    instrumentedStatistics2.nodesWithLabelCardinality(Some(label4))
+    instrumentedStatistics2.indexSelectivity(index)
+
+    val frozen1 = snapshot1.freeze
+    val frozen2 = snapshot2.freeze
+    val smallNumber = 0.1
+
+    frozen1.diverges(frozen2, smallNumber) should equal(true)
+  }
+
+  test("0 label cardinality values should not lead to wrong divergences") {
+    val snapshot1 = new MutableGraphStatisticsSnapshot()
+    val statistics = graphStatistics(labeledNodes = 0)
+    val instrumentedStatistics1 = InstrumentedGraphStatistics(statistics, snapshot1)
+    instrumentedStatistics1.nodesAllCardinality()
+    instrumentedStatistics1.indexSelectivity(index)
+    instrumentedStatistics1.nodesWithLabelCardinality(Some(label4))
+
+    val snapshot2 = new MutableGraphStatisticsSnapshot()
+    val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
+    statistics.factor(2)
+    instrumentedStatistics2.nodesAllCardinality()
+    instrumentedStatistics2.nodesWithLabelCardinality(Some(label4))
+    instrumentedStatistics2.indexSelectivity(index)
+
+    val frozen1 = snapshot1.freeze
+    val frozen2 = snapshot2.freeze
+    val smallNumber = 0.1
+
+    frozen1.diverges(frozen2, smallNumber) should equal(true)
+  }
+
+  test("0 all nodes cardinality values should not lead to wrong divergences") {
+    val snapshot1 = new MutableGraphStatisticsSnapshot()
+    val statistics = graphStatistics(allNodes = 0)
+    val instrumentedStatistics1 = InstrumentedGraphStatistics(statistics, snapshot1)
+    instrumentedStatistics1.nodesAllCardinality()
+    instrumentedStatistics1.indexSelectivity(index)
+    instrumentedStatistics1.nodesWithLabelCardinality(Some(label4))
+
+    val snapshot2 = new MutableGraphStatisticsSnapshot()
+    val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
+    statistics.factor(2)
+    instrumentedStatistics2.nodesAllCardinality()
+    instrumentedStatistics2.nodesWithLabelCardinality(Some(label4))
+    instrumentedStatistics2.indexSelectivity(index)
+
+    val frozen1 = snapshot1.freeze
+    val frozen2 = snapshot2.freeze
+    val smallNumber = 0.1
+
+    frozen1.diverges(frozen2, smallNumber) should equal(true)
+  }
+
   test("if threshold is 1.0 nothing diverges") {
     val snapshot1 = new MutableGraphStatisticsSnapshot()
     val statistics = graphStatistics()
