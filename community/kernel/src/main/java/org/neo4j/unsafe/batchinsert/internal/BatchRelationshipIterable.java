@@ -23,43 +23,26 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreNodeRelationshipCursor;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.Direction;
-
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import org.neo4j.storageengine.api.StorageReader;
 
 abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
-    private final StoreNodeRelationshipCursor relationshipCursor;
+    private final RelationshipTraversalCursor relationshipCursor;
 
-    BatchRelationshipIterable( NeoStores neoStores, long nodeId, RecordCursors cursors )
+    BatchRelationshipIterable( long nodeId, StorageReader reader )
     {
-        RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
-        RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
-        this.relationshipCursor = new StoreNodeRelationshipCursor( relationshipRecord, relationshipGroupRecord,
-                cursor -> {}, cursors, NO_LOCK_SERVICE );
-
-        // TODO There's an opportunity to reuse lots of instances created here, but this isn't a
-        // critical path instance so perhaps not necessary a.t.m.
-        try
+        this.relationshipCursor = reader.allocateRelationshipTraversalCursor();
+        try ( NodeCursor nodeCursor = reader.allocateNodeCursor() )
         {
-            NodeStore nodeStore = neoStores.getNodeStore();
-            NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
-            relationshipCursor
-                    .init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeId, Direction.BOTH, ALWAYS_TRUE_INT );
+            reader.singleNode( nodeId, nodeCursor );
+            if ( !nodeCursor.next() )
+            {
+                throw new InvalidRecordException( "Unable to find node " + nodeId );
+            }
+            nodeCursor.allRelationships( relationshipCursor );
         }
         catch ( InvalidRecordException e )
         {
@@ -80,8 +63,8 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
                     return null;
                 }
 
-                return nextFrom( relationshipCursor.id(), relationshipCursor.type(),
-                        relationshipCursor.startNode(), relationshipCursor.endNode() );
+                return nextFrom( relationshipCursor.relationshipReference(), relationshipCursor.type(),
+                        relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
             }
         };
     }

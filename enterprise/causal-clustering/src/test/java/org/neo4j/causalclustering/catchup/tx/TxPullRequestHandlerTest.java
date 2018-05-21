@@ -26,10 +26,13 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
+import java.util.Iterator;
+
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -52,7 +55,6 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMAT
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
-import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -198,6 +200,54 @@ public class TxPullRequestHandlerTest
             public CommittedTransactionRepresentation get()
             {
                 return cursor.get();
+            }
+        };
+    }
+
+    @SafeVarargs
+    private static <T> Cursor<T> cursor( final T... items )
+    {
+        return cursor( Iterables.asIterable( items ) );
+    }
+
+    private static <T> Cursor<T> cursor( final Iterable<T> items )
+    {
+        return new Cursor<T>()
+        {
+            Iterator<T> iterator = items.iterator();
+
+            T current;
+
+            @Override
+            public boolean next()
+            {
+                if ( iterator.hasNext() )
+                {
+                    current = iterator.next();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                iterator = items.iterator();
+                current = null;
+            }
+
+            @Override
+            public T get()
+            {
+                if ( current == null )
+                {
+                    throw new IllegalStateException();
+                }
+
+                return current;
             }
         };
     }

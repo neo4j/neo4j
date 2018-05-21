@@ -29,14 +29,13 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.StorageReader;
 
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 
 /**
  * Implementation of the relationship store.
  */
-public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,NoStoreHeader> implements StorageReader.Relationships
+public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,NoStoreHeader>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 

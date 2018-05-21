@@ -43,7 +43,7 @@ public class Labels implements LabelSet
         return new Labels( labels );
     }
 
-    static Labels from( LongSet set )
+    public static Labels from( LongSet set )
     {
         return new Labels( set.toArray() );
     }

@@ -39,7 +39,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.newapi.Operations;
+import org.neo4j.kernel.impl.newapi.WriteOperations;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -52,10 +52,8 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Suite.SuiteClasses;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT
-        .NodePropertyExistenceExistenceConstrainVerificationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT
-        .RelationshipPropertyExistenceExistenceConstrainVerificationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.NodePropertyExistenceExistenceConstrainVerificationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.RelationshipPropertyExistenceExistenceConstrainVerificationIT;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Suite.class )
@@ -99,7 +97,7 @@ public class PropertyExistenceConstraintVerificationIT
         @Override
         Class<?> getOwner()
         {
-            return Operations.class;
+            return WriteOperations.class;
         }
 
     }
@@ -137,7 +135,7 @@ public class PropertyExistenceConstraintVerificationIT
         @Override
         Class<?> getOwner()
         {
-            return Operations.class;
+            return WriteOperations.class;
         }
 
     }
@@ -235,7 +233,7 @@ public class PropertyExistenceConstraintVerificationIT
                     createOffender( db, KEY );
 
                     constraintCreation = thread.executeAndAwait( createConstraint(), null,
-                            waitingWhileIn( Operations.class, constraintCreationMethodName() ),
+                            waitingWhileIn( WriteOperations.class, constraintCreationMethodName() ),
                             WAIT_TIMEOUT_SECONDS, SECONDS );
 
                     tx.success();

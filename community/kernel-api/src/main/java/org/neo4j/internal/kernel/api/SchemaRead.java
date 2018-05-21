@@ -54,6 +54,14 @@ public interface SchemaRead
     Iterator<IndexReference> indexesGetForLabel( int labelId );
 
     /**
+     * Returns all indexes (including unique) related to a property.
+     *
+     * @param propertyKeyId property key id to match.
+     * @return all {@link IndexReference index references} that are related to {@code propertyKeyId}.
+     */
+    Iterator<IndexReference> indexesGetRelatedToProperty( int propertyKeyId );
+
+    /**
      * Returns all indexes used in the database
      *
      * @return all indexes used in the database
@@ -149,6 +157,7 @@ public interface SchemaRead
      */
     Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
             throws IndexNotFoundKernelException;
+
     /**
      * Finds all constraints for the given schema
      *

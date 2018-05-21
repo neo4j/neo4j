@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.newapi.Operations;
+import org.neo4j.kernel.impl.newapi.WriteOperations;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
@@ -137,7 +137,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     private void waitTransactionToStartWaitingForTheLock() throws InterruptedException
     {
         while ( Thread.getAllStackTraces().keySet().stream().noneMatch(
-                ThreadingRule.waitingWhileIn( Operations.class, "acquireExclusiveNodeLock" ) ) )
+                ThreadingRule.waitingWhileIn( WriteOperations.class, "acquireExclusiveNodeLock" ) ) )
         {
             TimeUnit.MILLISECONDS.sleep( 10 );
         }
