@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.{ExecutionEngineFunSuite}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V3_1, V3_2}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
@@ -63,8 +63,8 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should throw on unrecognized map entry") {
-    // Fixed in 3.1.9 and 3.2.11
-    val notYetFixed = Configs.Version3_1 + Configs.Version3_2 + Configs.AllRulePlanners
+    // Fixed in 3.1.9
+    val notYetFixed = Configs.Version3_1 + Configs.AllRulePlanners
     failWithError(expectedToFail - notYetFixed, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
   }
 

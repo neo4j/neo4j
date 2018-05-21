@@ -24,8 +24,6 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, _}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, QueryExecutionException}
-
-
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.kernel.api.exceptions.Status
 
@@ -824,8 +822,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
 
     val result = executeWith(Configs.CommunityInterpreted, query, planComparisonStrategy = ComparePlansWithAssertion({ plan =>
       plan should useOperatorTimes("NodeHashJoin", 3)
-      // Fixed in next release of 3.2
-    }, expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3 + Configs.Version3_1 + Configs.Version3_2))
+    }, expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3 + Configs.Version3_1))
 
     result.toList should equal (List(Map("c" -> 4)))
   }
