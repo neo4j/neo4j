@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.{CypherPlanner, CypherRuntime}
+import org.neo4j.cypher.{CypherPlannerOption, CypherRuntime}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -33,15 +33,15 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
                              clock: Clock,
                              kernelMonitors: KernelMonitors,
                              log: Log,
-                             planner: CypherPlanner,
+                             planner: CypherPlannerOption,
                              runtime: CypherRuntime) extends Compatibility {
 
   protected val compiler = {
     val plannerName = planner match {
-      case CypherPlanner.default => None
-      case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
-      case CypherPlanner.greedy => Some(GreedyPlannerName)
-      case CypherPlanner.dp => Some(DPPlannerName)
+      case CypherPlannerOption.default => None
+      case CypherPlannerOption.cost | CypherPlannerOption.idp => Some(IDPPlannerName)
+      case CypherPlannerOption.greedy => Some(GreedyPlannerName)
+      case CypherPlannerOption.dp => Some(DPPlannerName)
       case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
     }
 

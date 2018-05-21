@@ -31,14 +31,14 @@ case class PreParsedQuery(statement: String,
                           isPeriodicCommit: Boolean,
                           version: CypherVersion,
                           executionMode: CypherExecutionMode,
-                          planner: CypherPlanner,
+                          planner: CypherPlannerOption,
                           runtime: CypherRuntime,
                           updateStrategy: CypherUpdateStrategy,
                           debugOptions: Set[String]) {
 
   val statementWithVersionAndPlanner: String = {
     val plannerInfo = planner match {
-      case CypherPlanner.default => ""
+      case CypherPlannerOption.default => ""
       case _ => s"planner=${planner.name}"
     }
     val runtimeInfo = runtime match {

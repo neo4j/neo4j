@@ -24,7 +24,7 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState => LogicalPlanStateV3_3}
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3, DPPlannerName => DPPlannerNameV3_3, IDPPlannerName => IDPPlannerNameV3_3, ProcedurePlannerName => ProcedurePlannerNameV3_3, UpdateStrategy => UpdateStrategyV3_3}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.v3_5.{CypherCompilerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
+import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, UpdateStrategy, defaultUpdateStrategy, eagerUpdateStrategy}
 import org.neo4j.cypher.internal.compiler.{v3_5 => compilerv3_5}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression => ExpressionV3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
@@ -50,7 +50,7 @@ object helpers {
     monitor.endFailure(tc.executingQuery(), t)
   }
 
-  def as3_3(config: CypherCompilerConfiguration): CypherCompilerConfiguration3_3 =
+  def as3_3(config: CypherPlannerConfiguration): CypherCompilerConfiguration3_3 =
     CypherCompilerConfiguration3_3(
       config.queryCacheSize,
       as3_3(config.statsDivergenceCalculator),

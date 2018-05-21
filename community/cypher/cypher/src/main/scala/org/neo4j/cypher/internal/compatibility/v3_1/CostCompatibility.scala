@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.GeneratedQuery
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Id
-import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherPlannerOption, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -35,15 +35,15 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
                              clock: Clock,
                              kernelMonitors: KernelMonitors,
                              log: Log,
-                             planner: CypherPlanner,
+                             planner: CypherPlannerOption,
                              runtime: CypherRuntime,
                              strategy: CypherUpdateStrategy) extends Compatibility {
 
   protected val compiler = {
     val plannerName = planner match {
-      case CypherPlanner.default => None
-      case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
-      case CypherPlanner.dp => Some(DPPlannerName)
+      case CypherPlannerOption.default => None
+      case CypherPlannerOption.cost | CypherPlannerOption.idp => Some(IDPPlannerName)
+      case CypherPlannerOption.dp => Some(DPPlannerName)
       case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
     }
 

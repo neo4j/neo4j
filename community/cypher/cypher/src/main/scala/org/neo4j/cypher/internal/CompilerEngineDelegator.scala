@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_5.{CypherCompilerConfiguration, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.opencypher.v9_0.util.helpers.fixedPoint
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.util.InputPosition
@@ -59,7 +59,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
   private val log: Log = logProvider.getLog(getClass)
 
-  private val compilerConfig = CypherCompilerConfiguration(
+  private val compilerConfig = CypherPlannerConfiguration(
     queryCacheSize = getQueryCacheSize,
     statsDivergenceCalculator = getStatisticsDivergenceCalculator,
     useErrorsOverWarnings = config.useErrorsOverWarnings,
@@ -81,7 +81,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     val supportedRuntimes3_1 = Seq(CypherRuntime.interpreted, CypherRuntime.default)
 
     var preParsingNotifications: Set[org.neo4j.graphdb.Notification] = Set.empty
-    if ((preParsedQuery.version == CypherVersion.v3_3 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlanner.rule) {
+    if ((preParsedQuery.version == CypherVersion.v3_3 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlannerOption.rule) {
       preParsingNotifications = preParsingNotifications + rulePlannerUnavailableFallbackNotification(preParsedQuery.offset)
       preParsedQuery = preParsedQuery.copy(version = CypherVersion.v3_1)
     }

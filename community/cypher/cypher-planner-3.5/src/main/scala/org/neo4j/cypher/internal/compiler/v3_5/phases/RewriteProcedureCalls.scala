@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.{ResolvedCall, ResolvedFunct
 import org.opencypher.v9_0.expressions.FunctionInvocation
 
 // Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
-case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, BaseState] {
+case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseState] {
 
   // Current procedure calling syntax allows simplified short-hand syntax for queries
   // that only consist of a standalone procedure call. In all other cases attempts to
@@ -68,7 +68,7 @@ case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, Base
 
   override def description = "resolve procedure calls"
 
-  override def process(from: BaseState, context: CompilerContext): BaseState = {
+  override def process(from: BaseState, context: PlannerContext): BaseState = {
     val rewrittenStatement = from.statement().endoRewrite(rewriter(context.planContext))
     from.withStatement(rewrittenStatement)
   }

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, RelTypeId}
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
 
-object ResolveTokens extends VisitorPhase[CompilerContext, BaseState] {
+object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
     ast.fold(()) {
       case token: PropertyKeyName =>
@@ -68,7 +68,7 @@ object ResolveTokens extends VisitorPhase[CompilerContext, BaseState] {
 
   override def description = "resolve token ids for labels, property keys and relationship types"
 
-  override def visit(value: BaseState, context: CompilerContext): Unit = value.statement() match {
+  override def visit(value: BaseState, context: PlannerContext): Unit = value.statement() match {
     case q: Query => resolve(q)(value.semanticTable(), context.planContext)
     case _ =>
   }

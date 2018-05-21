@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.v3_5.StatsDivergenceCalculator
-import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherVersion}
+import org.neo4j.cypher.{CypherPlannerOption, CypherRuntime, CypherVersion}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.configuration.Config
 
@@ -32,7 +32,7 @@ object CypherConfiguration {
   def fromConfig(config: Config): CypherConfiguration = {
     CypherConfiguration(
       CypherVersion(config.get(GraphDatabaseSettings.cypher_parser_version)),
-      CypherPlanner(config.get(GraphDatabaseSettings.cypher_planner)),
+      CypherPlannerOption(config.get(GraphDatabaseSettings.cypher_planner)),
       CypherRuntime(config.get(GraphDatabaseSettings.cypher_runtime)),
       config.get(GraphDatabaseSettings.query_cache_size).toInt,
       statsDivergenceFromConfig(config),
@@ -63,7 +63,7 @@ object CypherConfiguration {
 }
 
 case class CypherConfiguration(version: CypherVersion,
-                               planner: CypherPlanner,
+                               planner: CypherPlannerOption,
                                runtime: CypherRuntime,
                                queryCacheSize: Int,
                                statsDivergenceCalculator: StatsDivergenceCalculator,

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
-import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CardinalityCostModel, ExpressionEvaluator, Metrics, StatisticsBackedCardinalityModel}
 import org.opencypher.v9_0.ast.semantics.SemanticTable
@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinaliti
 import org.opencypher.v9_0.util.{Cardinality, Cost}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
-case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherCompilerConfiguration)
+case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
 
   override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {

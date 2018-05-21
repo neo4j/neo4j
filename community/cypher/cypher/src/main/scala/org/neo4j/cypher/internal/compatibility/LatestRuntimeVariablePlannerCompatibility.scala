@@ -51,11 +51,11 @@ import scala.collection.JavaConverters._
 
 abstract class LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4 <: CommunityRuntimeContextv3_5,
 T <: Transformer[CONTEXT3_4, LogicalPlanState, CompilationState],
-STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
+STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
                      clock: Clock,
                      kernelMonitors: KernelMonitors,
                      log: Log,
-                     planner: CypherPlanner,
+                     planner: CypherPlannerOption,
                      runtime: CypherRuntime,
                      updateStrategy: CypherUpdateStrategy,
                      runtimeBuilder: RuntimeBuilder[T],
@@ -160,7 +160,7 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
 
 object LatestRuntimeVariablePlannerCompatibility {
   def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors,
-                             config: CypherCompilerConfiguration): QueryGraphSolver = n match {
+                             config: CypherPlannerConfiguration): QueryGraphSolver = n match {
     case IDPPlannerName =>
       val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
       val solverConfig = new ConfigurableIDPSolverConfig(

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.helpers.CachedFunction
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
@@ -28,8 +28,8 @@ case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsF
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel =
     CachedFunction(metricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator))
 
-  def newCostModel(config: CypherCompilerConfiguration) =
-    CachedFunction(metricsFactory.newCostModel(config: CypherCompilerConfiguration))
+  def newCostModel(config: CypherPlannerConfiguration) =
+    CachedFunction(metricsFactory.newCostModel(config: CypherPlannerConfiguration))
 
   def newQueryGraphCardinalityModel(statistics: GraphStatistics) =
     CachedFunction(metricsFactory.newQueryGraphCardinalityModel(statistics))

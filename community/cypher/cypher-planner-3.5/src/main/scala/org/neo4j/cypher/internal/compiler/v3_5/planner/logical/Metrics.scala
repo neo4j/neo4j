@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
 import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, _}
@@ -90,10 +90,10 @@ case class Metrics(cost: CostModel,
 
 trait MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
-  def newCostModel(config: CypherCompilerConfiguration): CostModel
+  def newCostModel(config: CypherPlannerConfiguration): CostModel
   def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel
 
-  def newMetrics(statistics: GraphStatistics,expressionEvaluator: ExpressionEvaluator, config: CypherCompilerConfiguration) = {
+  def newMetrics(statistics: GraphStatistics,expressionEvaluator: ExpressionEvaluator, config: CypherPlannerConfiguration) = {
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, expressionEvaluator)
     Metrics(newCostModel(config), cardinality, queryGraphCardinalityModel)

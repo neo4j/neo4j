@@ -66,7 +66,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   class SpyableMetricsFactory extends MetricsFactory {
     def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
-    def newCostModel(config: CypherCompilerConfiguration) =
+    def newCostModel(config: CypherPlannerConfiguration) =
       SimpleMetricsFactory.newCostModel(config)
     def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel =
       SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics)
@@ -219,7 +219,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     newMockedLogicalPlanWithSolved(solveds, cardinalities, idNames, solved, Cardinality(0))
   }
 
-  val config = CypherCompilerConfiguration(
+  val config = CypherPlannerConfiguration(
     queryCacheSize = 100,
     statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
     useErrorsOverWarnings = false,
@@ -256,7 +256,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     Do(rewriteStuff _) andThen
     CreatePlannerQuery
 
-  private def rewriteStuff(input: BaseState, context: CompilerContext): BaseState = {
+  private def rewriteStuff(input: BaseState, context: PlannerContext): BaseState = {
     val newStatement = input.statement().endoRewrite(namePatternPredicatePatternElements)
     input.withStatement(newStatement)
   }

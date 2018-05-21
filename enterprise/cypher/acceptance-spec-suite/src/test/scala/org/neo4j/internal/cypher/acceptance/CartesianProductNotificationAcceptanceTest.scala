@@ -45,7 +45,7 @@ import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   var logger: InternalNotificationLogger = _
-  var compiler: CypherCompiler[CommunityRuntimeContext] = _
+  var compiler: CypherPlanner[CommunityRuntimeContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -119,7 +119,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       }
     }
   }
-  private val configuration = CypherCompilerConfiguration(
+  private val configuration = CypherPlannerConfiguration(
     queryCacheSize = 128,
     statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
     useErrorsOverWarnings = false,
@@ -133,9 +133,9 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
   )
   private lazy val monitors = WrappedMonitors(kernelMonitors)
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-  private def createCompiler(): CypherCompiler[CommunityRuntimeContext] = {
+  private def createCompiler(): CypherPlanner[CommunityRuntimeContext] = {
 
-    new CypherCompilerFactory().costBasedCompiler(
+    new CypherPlannerFactory().costBasedCompiler(
       configuration,
       Clock.systemUTC(),
       monitors,

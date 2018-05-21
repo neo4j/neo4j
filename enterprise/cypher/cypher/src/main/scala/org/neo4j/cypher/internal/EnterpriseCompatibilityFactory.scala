@@ -22,7 +22,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.CypherPlanner
+import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.internal.compatibility.v3_5.Compatibility
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_5._
@@ -40,18 +40,18 @@ import org.neo4j.scheduler.JobScheduler
 class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDatabaseQueryService,
                                      kernelMonitors: KernelMonitors,
                                      logProvider: LogProvider) extends CompatibilityFactory {
-  override def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility =
+  override def create(spec: PlannerSpec_v2_3, config: CypherPlannerConfiguration): v2_3.Compatibility =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_1, config: CypherCompilerConfiguration): v3_1.Compatibility =
+  override def create(spec: PlannerSpec_v3_1, config: CypherPlannerConfiguration): v3_1.Compatibility =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3compat.Compatibility[_,_,_] =
+  override def create(spec: PlannerSpec_v3_3, config: CypherPlannerConfiguration): v3_3compat.Compatibility[_,_,_] =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_5, config: CypherCompilerConfiguration): Compatibility[_,_] =
+  override def create(spec: PlannerSpec_v3_5, config: CypherPlannerConfiguration): Compatibility[_,_] =
     (spec.planner, spec.runtime) match {
-      case (CypherPlanner.rule, _) => inner.create(spec, config)
+      case (CypherPlannerOption.rule, _) => inner.create(spec, config)
 
       case _ =>
         val settings = graph.getDependencyResolver.resolveDependency(classOf[Config])

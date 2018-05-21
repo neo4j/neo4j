@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_5.{CypherCompilerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.DefaultIDPSolverConfig
 import org.opencypher.v9_0.ast.{Hint, UsingJoinHint}
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities

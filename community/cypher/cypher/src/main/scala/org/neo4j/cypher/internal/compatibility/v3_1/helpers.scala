@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.{CompilationPhaseEvent, CompilationPhase => v3_1Phase}
 import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerConfiguration => CypherCompilerConfiguration3_1}
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.{CompilationPhase => v3_5Phase}
-import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition => InputPosition3_1}
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
@@ -34,7 +34,7 @@ object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
     monitor.endFailure(tc.executingQuery(), t)
   }
-  def as3_1(config: CypherCompilerConfiguration) =
+  def as3_1(config: CypherPlannerConfiguration) =
     CypherCompilerConfiguration3_1(
       config.queryCacheSize,
       config.statsDivergenceCalculator.initialThreshold,
