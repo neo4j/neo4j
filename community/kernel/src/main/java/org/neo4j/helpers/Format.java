@@ -84,7 +84,7 @@ public class Format
 
     public static String time( TimeZone timeZone )
     {
-        return time( new Date() );
+        return time( new Date(), timeZone );
     }
 
     public static String time( long millis )

@@ -241,7 +241,7 @@ public class NeoStores implements AutoCloseable
         {
             try
             {
-                type.close( this, stores[i] );
+                type.close( stores[i] );
             }
             finally
             {

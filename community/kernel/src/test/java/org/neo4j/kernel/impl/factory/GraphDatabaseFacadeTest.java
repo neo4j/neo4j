@@ -110,7 +110,7 @@ public class GraphDatabaseFacadeTest
     public void executeQueryStartDefaultTransaction()
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
-        InternalTransaction transaction = new TopLevelTransaction( kernelTransaction, null );
+        InternalTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
         when( queryService.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
             .thenReturn( transaction );

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.coreapi;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Lock;
@@ -32,7 +31,6 @@ import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
@@ -44,7 +42,7 @@ public class TopLevelTransaction implements InternalTransaction
     private boolean successCalled;
     private final KernelTransaction transaction;
 
-    public TopLevelTransaction( KernelTransaction transaction, Supplier<Statement> stmt )
+    public TopLevelTransaction( KernelTransaction transaction )
     {
         this.transaction = transaction;
     }
