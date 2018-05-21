@@ -41,8 +41,8 @@ class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extend
         nodeCursor = context.transactionalContext.cursors.allocateNodeCursor()
         read.allNodesScan(nodeCursor)
         iterationState = is
-      case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
-        nodeCursor = it.asInstanceOf[NodeCursor]
+      case ContinueLoopWith(ContinueWithSource(cursor, is, _)) =>
+        nodeCursor = cursor.asInstanceOf[NodeCursor]
         iterationState = is
       case _ => throw new IllegalStateException()
     }
