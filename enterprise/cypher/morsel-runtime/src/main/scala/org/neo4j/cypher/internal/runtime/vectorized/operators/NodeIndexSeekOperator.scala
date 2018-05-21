@@ -60,8 +60,8 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
         read.nodeIndexSeek(reference(context), nodeCursor, IndexOrder.NONE,
                            IndexQuery.exact(propertyKey.nameId.id, valueExpr(currentRow, queryState) ))
         iterationState = is
-      case ContinueLoopWith(ContinueWithSource(it, is)) =>
-        nodeCursor = it.asInstanceOf[NodeValueIndexCursor]
+      case ContinueLoopWith(ContinueWithSource(cursor, is)) =>
+        nodeCursor = cursor.asInstanceOf[NodeValueIndexCursor]
         iterationState = is
       case _ => throw new IllegalStateException()
 
