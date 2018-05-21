@@ -142,6 +142,66 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
       }, expectPlansToFail = ignoreConfiguration))
   }
 
+  test("AllNodesInPath") {
+    graph.execute("CREATE (a:A {foo: 'bar'})-[:REL]->(b:B {foo: 'bar'})-[:REL]->(c:C {foo: 'bar'})-[:REL]->(d:D {foo: 'bar', name: 'd'})")
+    val query = """MATCH p = (pA)-[:REL*3..3]->(pB)
+                  |WHERE all(i IN nodes(p) WHERE i.foo = 'bar')
+                  |RETURN pB.name """.stripMargin
+    val result = executeWith(expectedToSucceed, query, planComparisonStrategy =
+      ComparePlansWithAssertion(plan => {
+        plan should useOperators("VarLengthExpand(All)")
+      }, expectPlansToFail = Configs.AllRulePlanners))
+    result.toList should equal(List(Map("pB.name" -> "d")))
+  }
+
+  test("AllRelationships") {
+    graph.execute("CREATE (a:A)-[:REL {foo: 'bar'}]->(b:B)-[:REL {foo: 'bar'}]->(c:C)-[:REL {foo: 'bar'}]->(d:D {name: 'd'})")
+    val query = """MATCH p = (pA)-[:REL*3..3  {foo:'bar'}]->(pB)
+                  |WHERE all(i IN rels(p) WHERE i.foo = 'bar')
+                  |RETURN pB.name """.stripMargin
+    val result = executeWith(expectedToSucceed, query, planComparisonStrategy =
+      ComparePlansWithAssertion(plan => {
+        plan should useOperators("VarLengthExpand(All)")
+      }, expectPlansToFail = Configs.AllRulePlanners))
+    result.toList should equal(List(Map("pB.name" -> "d")))
+  }
+
+  test("AllRelationshipsInPath") {
+    graph.execute("CREATE (a:A)-[:REL {foo: 'bar'}]->(b:B)-[:REL {foo: 'bar'}]->(c:C)-[:REL {foo: 'bar'}]->(d:D {name: 'd'})")
+    val query = """MATCH p = (pA)-[:REL*3..3]->(pB)
+                  |WHERE all(i IN rels(p) WHERE i.foo = 'bar')
+                  |RETURN pB.name """.stripMargin
+    val result = executeWith(expectedToSucceed, query, planComparisonStrategy =
+      ComparePlansWithAssertion(plan => {
+        plan should useOperators("VarLengthExpand(All)")
+      }, expectPlansToFail = Configs.AllRulePlanners))
+    result.toList should equal(List(Map("pB.name" -> "d")))
+  }
+
+  test("NoNodeInPath") {
+    graph.execute("CREATE (a:A {foo: 'bar'})-[:REL]->(b:B {foo: 'bar'})-[:REL]->(c:C {foo: 'bar'})-[:REL]->(d:D {foo: 'bar', name: 'd'})")
+    val query = """MATCH p = (pA)-[:REL*3..3]->(pB)
+                  |WHERE none(i IN nodes(p) WHERE i.foo = 'barz')
+                  |RETURN pB.name """.stripMargin
+    val result = executeWith(expectedToSucceed, query, planComparisonStrategy =
+      ComparePlansWithAssertion(plan => {
+        plan should useOperators("VarLengthExpand(All)")
+      }, expectPlansToFail = Configs.AllRulePlanners))
+    result.toList should equal(List(Map("pB.name" -> "d")))
+  }
+
+  test("NoRelationshipInPath") {
+    graph.execute("CREATE (a:A)-[:REL {foo: 'bar'}]->(b:B)-[:REL {foo: 'bar'}]->(c:C)-[:REL {foo: 'bar'}]->(d:D {name: 'd'})")
+    val query = """MATCH p = (pA)-[:REL*3..3]->(pB)
+                  |WHERE none(i IN rels(p) WHERE i.foo = 'barz')
+                  |RETURN pB.name """.stripMargin
+    val result = executeWith(expectedToSucceed, query, planComparisonStrategy =
+      ComparePlansWithAssertion(plan => {
+        plan should useOperators("VarLengthExpand(All)")
+      }, expectPlansToFail = Configs.AllRulePlanners))
+    result.toList should equal(List(Map("pB.name" -> "d")))
+  }
+
   test("AllNodesInPath with inner predicate using labelled nodes of the path") {
     val node1 = createLabeledNode("NODE")
     val node2 = createLabeledNode("NODE")

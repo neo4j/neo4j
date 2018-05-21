@@ -90,7 +90,7 @@ object expandSolverStep {
           qg.selections.predicatesGiven(availableSymbols + patternRel.name)
         val tempNode = patternRel.name + "_NODES"
         val tempEdge = patternRel.name + "_RELS"
-        val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
+        val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(Variable,Expression)], solvedPredicates: Seq[Expression]) =
           extractPredicates(
             availablePredicates,
             originalEdgeName = patternRel.name,
@@ -99,7 +99,6 @@ object expandSolverStep {
             originalNodeName = nodeId)
         val nodePredicate = Ands.create(nodePredicates.toSet)
         val relationshipPredicate = Ands.create(edgePredicates.toSet)
-        val legacyPredicates: Seq[(Variable, Expression)] = transformToLegacy(nodePredicate, relationshipPredicate, tempNode, tempEdge)
 
         context.logicalPlanProducer.planVarExpand(
           left = sourcePlan,
@@ -116,9 +115,5 @@ object expandSolverStep {
           legacyPredicates = legacyPredicates)
     }
   }
-
-  private def transformToLegacy(nodePredicate: Expression, edgePredicate: Expression, tempNode: String, tempEdge: String): Seq[(Variable, Expression)] =
-    (Seq(Variable(tempNode)(InputPosition.NONE), Variable(tempEdge)(InputPosition.NONE)) zip Seq(nodePredicate, edgePredicate)).
-      filterNot(_._2.getClass == classOf[True])
 
 }
