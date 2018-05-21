@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Set;
 
@@ -62,18 +63,18 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.helpers.ArrayUtil.without;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @RunWith( Parameterized.class )
@@ -82,7 +83,7 @@ public class FusionIndexAccessorTest
     private FusionIndexAccessor fusionIndexAccessor;
     private final long indexId = 0;
     private final DropAction dropAction = mock( DropAction.class );
-    private IndexAccessor[] accessors;
+    private EnumMap<IndexSlot,IndexAccessor> accessors;
     private IndexAccessor[] aliveAccessors;
     private StoreIndexDescriptor indexDescriptor =
             IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 42 ) ).withId( indexId );
@@ -110,9 +111,9 @@ public class FusionIndexAccessorTest
 
     private void initiateMocks()
     {
-        int[] activeSlots = fusionVersion.aliveSlots();
-        accessors = new IndexAccessor[INSTANCE_COUNT];
-        Arrays.fill( accessors, IndexAccessor.EMPTY );
+        IndexSlot[] activeSlots = fusionVersion.aliveSlots();
+        accessors = new EnumMap<>( IndexSlot.class );
+        fill( accessors, IndexAccessor.EMPTY );
         aliveAccessors = new IndexAccessor[activeSlots.length];
         for ( int i = 0; i < activeSlots.length; i++ )
         {
@@ -121,19 +122,19 @@ public class FusionIndexAccessorTest
             switch ( activeSlots[i] )
             {
             case STRING:
-                accessors[STRING] = mock;
+                accessors.put( STRING, mock );
                 break;
             case NUMBER:
-                accessors[NUMBER] = mock;
+                accessors.put( NUMBER, mock );
                 break;
             case SPATIAL:
-                accessors[SPATIAL] = mock;
+                accessors.put( SPATIAL, mock );
                 break;
             case TEMPORAL:
-                accessors[TEMPORAL] = mock;
+                accessors.put( TEMPORAL, mock );
                 break;
             case LUCENE:
-                accessors[LUCENE] = mock;
+                accessors.put( LUCENE, mock );
                 break;
             default:
                 throw new RuntimeException();
@@ -300,31 +301,6 @@ public class FusionIndexAccessorTest
         for ( List<Long> part : ids )
         {
             assertResultContainsAll( result, part );
-        }
-    }
-
-    @Test
-    public void allEntriesReaderMustCombineResultFromAllWithOneEmpty()
-    {
-        for ( int i = 0; i < accessors.length; i++ )
-        {
-            // given
-            List<Long>[] ids = new List[aliveAccessors.length];
-            long lastId = 0;
-            for ( int j = 0; j < ids.length; j++ )
-            {
-                ids[j] = j == i ? Collections.emptyList() : Arrays.asList( lastId++, lastId++ );
-            }
-            mockAllEntriesReaders( ids );
-
-            // when
-            Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
-
-            // then
-            for ( List<Long> part : ids )
-            {
-                assertResultContainsAll( result, part );
-            }
         }
     }
 

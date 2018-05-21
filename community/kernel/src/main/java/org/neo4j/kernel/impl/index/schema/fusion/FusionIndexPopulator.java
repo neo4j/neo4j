@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
 
 class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements IndexPopulator
 {
@@ -66,15 +65,14 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
-        LazyInstanceSelector<Collection<IndexEntryUpdate<?>>> batchSelector =
-                new LazyInstanceSelector<>( new Collection[INSTANCE_COUNT], slot -> new ArrayList<>() );
+        LazyInstanceSelector<Collection<IndexEntryUpdate<?>>> batchSelector = new LazyInstanceSelector<>( slot -> new ArrayList<>() );
         for ( IndexEntryUpdate<?> update : updates )
         {
             batchSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).add( update );
         }
 
         // Manual loop due do multiple exception types
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
+        for ( IndexSlot slot : IndexSlot.values() )
         {
             Collection<IndexEntryUpdate<?>> batch = batchSelector.getIfInstantiated( slot );
             if ( batch != null )
@@ -89,7 +87,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
             throws IndexEntryConflictException, IOException
     {
         // Manual loop due do multiple exception types
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
+        for ( IndexSlot slot : IndexSlot.values() )
         {
             instanceSelector.select( slot ).verifyDeferredConstraints( propertyAccessor );
         }
@@ -99,7 +97,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
         LazyInstanceSelector<IndexUpdater> updaterSelector =
-                new LazyInstanceSelector<>( new IndexUpdater[INSTANCE_COUNT], slot -> instanceSelector.select( slot ).newPopulatingUpdater( accessor ) );
+                new LazyInstanceSelector<>( slot -> instanceSelector.select( slot ).newPopulatingUpdater( accessor ) );
         return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
 
@@ -124,6 +122,6 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples( instanceSelector.instancesAs( new IndexSample[INSTANCE_COUNT], IndexPopulator::sampleResult ) );
+        return combineSamples( instanceSelector.flatMap( IndexPopulator::sampleResult ) );
     }
 }

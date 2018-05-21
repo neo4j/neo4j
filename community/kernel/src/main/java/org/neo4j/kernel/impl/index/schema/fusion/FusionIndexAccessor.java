@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -38,8 +39,6 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
-import static org.neo4j.helpers.collection.Iterators.iterator;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
@@ -66,8 +65,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        LazyInstanceSelector<IndexUpdater> updaterSelector = new LazyInstanceSelector<>( new IndexUpdater[INSTANCE_COUNT],
-                slot -> instanceSelector.select( slot ).newUpdater( mode ) );
+        LazyInstanceSelector<IndexUpdater> updaterSelector = new LazyInstanceSelector<>( slot -> instanceSelector.select( slot ).newUpdater( mode ) );
         return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
 
@@ -92,40 +90,30 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public IndexReader newReader()
     {
-        LazyInstanceSelector<IndexReader> readerSelector = new LazyInstanceSelector<>( new IndexReader[INSTANCE_COUNT],
-                slot -> instanceSelector.select( slot ).newReader() );
+        LazyInstanceSelector<IndexReader> readerSelector = new LazyInstanceSelector<>( slot -> instanceSelector.select( slot ).newReader() );
         return new FusionIndexReader( slotSelector, readerSelector, descriptor );
     }
 
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        BoundedIterable<Long>[] entries = instanceSelector.instancesAs( new BoundedIterable[INSTANCE_COUNT], IndexAccessor::newAllEntriesReader );
+        Iterable<BoundedIterable<Long>> entries = instanceSelector.flatMap( IndexAccessor::newAllEntriesReader );
         return new BoundedIterable<Long>()
         {
             @Override
             public long maxCount()
             {
-                long[] maxCounts = new long[entries.length];
                 long sum = 0;
-                for ( int i = 0; i < entries.length; i++ )
+                for ( BoundedIterable entry : entries )
                 {
-                    maxCounts[i] = entries[i].maxCount();
-                    sum += maxCounts[i];
-                }
-                return existsUnknownMaxCount( maxCounts ) ? UNKNOWN_MAX_COUNT : sum;
-            }
-
-            private boolean existsUnknownMaxCount( long... maxCounts )
-            {
-                for ( long maxCount : maxCounts )
-                {
+                    long maxCount = entry.maxCount();
                     if ( maxCount == UNKNOWN_MAX_COUNT )
                     {
-                        return true;
+                        return UNKNOWN_MAX_COUNT;
                     }
+                    sum += maxCount;
                 }
-                return false;
+                return sum;
             }
 
             @SuppressWarnings( "unchecked" )
@@ -146,15 +134,14 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
-        return concatResourceIterators(
-                iterator( instanceSelector.instancesAs( new ResourceIterator[INSTANCE_COUNT], accessor -> accessor.snapshotFiles() ) ) );
+        return concatResourceIterators( instanceSelector.flatMap( IndexAccessor::snapshotFiles ).iterator() );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
+        for ( IndexSlot slot : IndexSlot.values() )
         {
             instanceSelector.select( slot ).verifyDeferredConstraints( propertyAccessor );
         }
@@ -163,12 +150,8 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public boolean isDirty()
     {
-        boolean isDirty = false;
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
-        {
-            isDirty |= instanceSelector.select( slot ).isDirty();
-        }
-        return isDirty;
+        return StreamSupport.stream( instanceSelector.flatMap( IndexAccessor::isDirty ).spliterator(), false )
+                .anyMatch( Boolean::booleanValue );
     }
 
     @Override

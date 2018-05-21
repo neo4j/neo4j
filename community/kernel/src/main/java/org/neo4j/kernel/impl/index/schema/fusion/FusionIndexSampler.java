@@ -19,15 +19,18 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 public class FusionIndexSampler implements IndexSampler
 {
-    private final IndexSampler[] samplers;
+    private final Iterable<IndexSampler> samplers;
 
-    public FusionIndexSampler( IndexSampler... samplers )
+    public FusionIndexSampler( Iterable<IndexSampler> samplers )
     {
         this.samplers = samplers;
     }
@@ -35,15 +38,15 @@ public class FusionIndexSampler implements IndexSampler
     @Override
     public IndexSample sampleIndex() throws IndexNotFoundKernelException
     {
-        IndexSample[] samples = new IndexSample[samplers.length];
-        for ( int i = 0; i < samplers.length; i++ )
+        List<IndexSample> samples = new ArrayList<>();
+        for ( IndexSampler sampler : samplers )
         {
-            samples[i] = samplers[i].sampleIndex();
+            samples.add( sampler.sampleIndex() );
         }
         return combineSamples( samples );
     }
 
-    public static IndexSample combineSamples( IndexSample... samples )
+    public static IndexSample combineSamples( Iterable<IndexSample> samples )
     {
         long indexSize = 0;
         long uniqueValues = 0;

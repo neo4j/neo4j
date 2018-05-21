@@ -32,45 +32,36 @@ import static org.apache.commons.lang3.ArrayUtils.contains;
  */
 interface SlotSelector
 {
-    int INSTANCE_COUNT = 5;
-
-    int UNKNOWN = -1;
-    int STRING = 0;
-    int NUMBER = 1;
-    int SPATIAL = 2;
-    int TEMPORAL = 3;
-    int LUCENE = 4;
-
-    void validateSatisfied( IndexProvider[] instances );
+    void validateSatisfied( InstanceSelector<IndexProvider> instances );
 
     /**
      * Selects a slot to use based on the given values. The values can be anything that can yield a {@link ValueGroup value group},
      * which is what the {@code groupOf} function extracts from each value.
      *
+     * @param <V> type of value to extract {@link ValueGroup} from.
      * @param values values, something which can yield a {@link ValueGroup}.
      * @param groupOf {@link Function} to get {@link ValueGroup} for the given values.
-     * @param <V> type of value to extract {@link ValueGroup} from.
-     * @return a slot number, or {@link #UNKNOWN} if no single slot could be selected. This typically means that all slots are needed.
+     * @return {@link IndexSlot} or {@code null} if no single slot could be selected. This means that all slots are needed.
      */
-    <V> int selectSlot( V[] values, Function<V,ValueGroup> groupOf );
+    <V> IndexSlot selectSlot( V[] values, Function<V,ValueGroup> groupOf );
 
     /**
-     * Standard utility method for typical implementation of {@link SlotSelector#validateSatisfied(IndexProvider[])}.
+     * Standard utility method for typical implementation of {@link SlotSelector#validateSatisfied(InstanceSelector)}.
      *
      * @param instances instances to validate.
      * @param aliveIndex slots to ensure have been initialized with non-empty instances.
      */
-    static void validateSelectorInstances( Object[] instances, int... aliveIndex )
+    static void validateSelectorInstances( InstanceSelector<IndexProvider> instances, IndexSlot... aliveIndex )
     {
-        for ( int i = 0; i < instances.length; i++ )
+        for ( IndexSlot indexSlot : IndexSlot.values() )
         {
-            boolean expected = contains( aliveIndex, i );
-            boolean actual = instances[i] != IndexProvider.EMPTY;
+            boolean expected = contains( aliveIndex, indexSlot );
+            boolean actual = instances.select( indexSlot ) != IndexProvider.EMPTY;
             if ( expected != actual )
             {
                 throw new IllegalArgumentException(
                         String.format( "Only indexes expected to be separated from IndexProvider.EMPTY are %s but was %s",
-                                Arrays.toString( aliveIndex ), Arrays.toString( instances ) ) );
+                                Arrays.toString( aliveIndex ), instances ) );
             }
         }
     }

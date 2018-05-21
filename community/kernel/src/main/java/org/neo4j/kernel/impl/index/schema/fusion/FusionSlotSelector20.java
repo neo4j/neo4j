@@ -24,6 +24,12 @@ import java.util.function.Function;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.ValueGroup;
 
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
+
 
 /**
  * Selector for "lucene+native-2.x".
@@ -32,13 +38,13 @@ import org.neo4j.values.storable.ValueGroup;
 public class FusionSlotSelector20 implements SlotSelector
 {
     @Override
-    public void validateSatisfied( IndexProvider[] instances )
+    public void validateSatisfied( InstanceSelector<IndexProvider> instances )
     {
         SlotSelector.validateSelectorInstances( instances, STRING, NUMBER, SPATIAL, TEMPORAL, LUCENE );
     }
 
     @Override
-    public <V> int selectSlot( V[] values, Function<V,ValueGroup> groupOf )
+    public <V> IndexSlot selectSlot( V[] values, Function<V,ValueGroup> groupOf )
     {
         if ( values.length > 1 )
         {
@@ -57,7 +63,7 @@ public class FusionSlotSelector20 implements SlotSelector
         case TEMPORAL:
             return TEMPORAL;
         case UNKNOWN:
-            return UNKNOWN;
+            return null;
         default:
             return LUCENE;
         }

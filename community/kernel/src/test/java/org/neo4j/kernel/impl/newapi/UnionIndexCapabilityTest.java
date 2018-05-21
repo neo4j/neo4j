@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.newapi;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -146,12 +148,12 @@ public class UnionIndexCapabilityTest
         assertEquals( asSet( IndexLimitation.SLOW_CONTAINS ), asSet( union.limitations() ) );
     }
 
-    private UnionIndexCapability unionOfIndexLimitations( IndexLimitation[]... limitiations )
+    private UnionIndexCapability unionOfIndexLimitations( IndexLimitation[]... limitations )
     {
-        IndexCapability[] capabilities = new IndexCapability[limitiations.length];
-        for ( int i = 0; i < limitiations.length; i++ )
+        List<IndexCapability> capabilities = new ArrayList<>();
+        for ( IndexLimitation[] limitation : limitations )
         {
-            capabilities[i] = capabilityWithIndexLimitations( limitiations[i] );
+            capabilities.add( capabilityWithIndexLimitations( limitation ) );
         }
         return new UnionIndexCapability( capabilities );
     }
@@ -165,20 +167,20 @@ public class UnionIndexCapabilityTest
 
     private UnionIndexCapability unionOfValueCapabilities( IndexValueCapability... valueCapabilities )
     {
-        IndexCapability[] capabilities = new IndexCapability[valueCapabilities.length];
-        for ( int i = 0; i < valueCapabilities.length; i++ )
+        List<IndexCapability> capabilities = new ArrayList<>( valueCapabilities.length );
+        for ( IndexValueCapability valueCapability : valueCapabilities )
         {
-            capabilities[i] = capabilityWithValue( valueCapabilities[i] );
+            capabilities.add( capabilityWithValue( valueCapability ) );
         }
         return new UnionIndexCapability( capabilities );
     }
 
     private UnionIndexCapability unionOfOrderCapabilities( IndexOrder[]... indexOrders )
     {
-        IndexCapability[] capabilities = new IndexCapability[indexOrders.length];
-        for ( int i = 0; i < indexOrders.length; i++ )
+        List<IndexCapability> capabilities = new ArrayList<>( indexOrders.length );
+        for ( IndexOrder[] indexOrder : indexOrders )
         {
-            capabilities[i] = capabilityWithOrder( indexOrders[i] );
+            capabilities.add( capabilityWithOrder( indexOrder ) );
         }
         return new UnionIndexCapability( capabilities );
     }

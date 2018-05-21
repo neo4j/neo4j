@@ -36,8 +36,6 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.PrimitiveLongResourceCollections.concat;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.UNKNOWN;
 
 class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexReader
 {
@@ -64,24 +62,24 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     @Override
     public IndexSampler createSampler()
     {
-        return new FusionIndexSampler( instanceSelector.instancesAs( new IndexSampler[INSTANCE_COUNT], IndexReader::createSampler ) );
+        return new FusionIndexSampler( instanceSelector.flatMap( IndexReader::createSampler ) );
     }
 
     @Override
     public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        int slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
-        return slot != UNKNOWN
+        IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
+        return slot != null
                ? instanceSelector.select( slot ).query( predicates )
-               : concat( instanceSelector.instancesAs( new PrimitiveLongResourceIterator[INSTANCE_COUNT], reader -> reader.query( predicates ) ) );
+               : concat( instanceSelector.flatMap( reader -> reader.query( predicates ) ) );
     }
 
     @Override
     public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
             throws IndexNotApplicableKernelException
     {
-        int slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
-        if ( slot != UNKNOWN )
+        IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
+        if ( slot != null )
         {
             instanceSelector.select( slot ).query( cursor, indexOrder, predicates );
         }
@@ -103,8 +101,8 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     @Override
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
-        int slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
-        if ( slot != UNKNOWN )
+        IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
+        if ( slot != null )
         {
             return instanceSelector.select( slot ).hasFullValuePrecision( predicates );
         }

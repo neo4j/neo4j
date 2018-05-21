@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -44,12 +45,11 @@ import org.neo4j.values.storable.ValueCategory;
 
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 /**
  * This {@link IndexProvider index provider} act as one logical index but is backed by four physical
@@ -77,39 +77,36 @@ public class FusionIndexProvider extends IndexProvider
             boolean archiveFailedIndex )
     {
         super( descriptor, priority, directoryStructure );
-        IndexProvider[] providers = new IndexProvider[INSTANCE_COUNT];
-        fillProvidersArray( providers, stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
-        slotSelector.validateSatisfied( providers );
         this.archiveFailedIndex = archiveFailedIndex;
         this.slotSelector = slotSelector;
-        this.providers = new InstanceSelector<>( providers );
+        this.providers = new InstanceSelector<>();
         this.dropAction = new FileSystemDropAction( fs, directoryStructure() );
+        fillProvidersSelector( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
+        slotSelector.validateSatisfied( providers );
     }
 
-    private void fillProvidersArray( IndexProvider[] providers,
+    private void fillProvidersSelector(
             IndexProvider stringProvider, IndexProvider numberProvider, IndexProvider spatialProvider,
             IndexProvider temporalProvider, IndexProvider luceneProvider )
     {
-        providers[STRING] = stringProvider;
-        providers[NUMBER] = numberProvider;
-        providers[SPATIAL] = spatialProvider;
-        providers[TEMPORAL] = temporalProvider;
-        providers[LUCENE] = luceneProvider;
+        providers.put( STRING, stringProvider );
+        providers.put( NUMBER, numberProvider );
+        providers.put( SPATIAL, spatialProvider );
+        providers.put( TEMPORAL, temporalProvider );
+        providers.put( LUCENE, luceneProvider );
     }
 
     @Override
     public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        IndexPopulator[] populators =
-                providers.instancesAs( new IndexPopulator[INSTANCE_COUNT], provider -> provider.getPopulator( descriptor, samplingConfig ) );
+        EnumMap<IndexSlot,IndexPopulator> populators = providers.map( provider -> provider.getPopulator( descriptor, samplingConfig ) );
         return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), descriptor.getId(), dropAction, archiveFailedIndex );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        IndexAccessor[] accessors =
-                providers.instancesAs( new IndexAccessor[INSTANCE_COUNT], provider -> provider.getOnlineAccessor( descriptor, samplingConfig ) );
+        EnumMap<IndexSlot,IndexAccessor> accessors = providers.map( provider -> provider.getOnlineAccessor( descriptor, samplingConfig ) );
         return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), descriptor, dropAction );
     }
 
@@ -144,13 +141,13 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
-        InternalIndexState[] states = providers.instancesAs( new InternalIndexState[INSTANCE_COUNT], p -> p.getInitialState( descriptor ) );
-        if ( Arrays.stream( states ).anyMatch( state -> state == FAILED ) )
+        Iterable<InternalIndexState> states = providers.flatMap( p -> p.getInitialState( descriptor ) );
+        if ( StreamSupport.stream( states.spliterator(), false ).anyMatch( state -> state == FAILED ) )
         {
             // One of the state is FAILED, the whole state must be considered FAILED
             return FAILED;
         }
-        if ( Arrays.stream( states ).anyMatch( state -> state == POPULATING ) )
+        if ( StreamSupport.stream( states.spliterator(), false ).anyMatch( state -> state == POPULATING ) )
         {
             // No state is FAILED and one of the state is POPULATING, the whole state must be considered POPULATING
             return POPULATING;
@@ -162,8 +159,7 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public IndexCapability getCapability()
     {
-        IndexCapability[] capabilities =
-                providers.instancesAs( new IndexCapability[INSTANCE_COUNT], provider -> provider.getCapability() );
+        Iterable<IndexCapability> capabilities = providers.flatMap( IndexProvider::getCapability );
         return new UnionIndexCapability( capabilities )
         {
             @Override

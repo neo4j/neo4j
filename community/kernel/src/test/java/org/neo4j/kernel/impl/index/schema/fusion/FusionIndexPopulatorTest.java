@@ -27,9 +27,9 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -51,22 +51,22 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyCallFail;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 
 @RunWith( Parameterized.class )
 public class FusionIndexPopulatorTest
 {
     private IndexPopulator[] alivePopulators;
-    private IndexPopulator[] populators;
+    private EnumMap<IndexSlot,IndexPopulator> populators;
     private FusionIndexPopulator fusionIndexPopulator;
     private final long indexId = 8;
     private final DropAction dropAction = mock( DropAction.class );
@@ -91,9 +91,9 @@ public class FusionIndexPopulatorTest
 
     private void initiateMocks()
     {
-        int[] aliveSlots = fusionVersion.aliveSlots();
-        populators = new IndexPopulator[INSTANCE_COUNT];
-        Arrays.fill( populators, IndexPopulator.EMPTY );
+        IndexSlot[] aliveSlots = fusionVersion.aliveSlots();
+        populators = new EnumMap<>( IndexSlot.class );
+        fill( populators, IndexPopulator.EMPTY );
         alivePopulators = new IndexPopulator[aliveSlots.length];
         for ( int i = 0; i < aliveSlots.length; i++ )
         {
@@ -102,19 +102,19 @@ public class FusionIndexPopulatorTest
             switch ( aliveSlots[i] )
             {
             case STRING:
-                populators[STRING] = mock;
+                populators.put( STRING, mock );
                 break;
             case NUMBER:
-                populators[NUMBER] = mock;
+                populators.put( NUMBER, mock );
                 break;
             case SPATIAL:
-                populators[SPATIAL] = mock;
+                populators.put( SPATIAL, mock );
                 break;
             case TEMPORAL:
-                populators[TEMPORAL] = mock;
+                populators.put( TEMPORAL, mock );
                 break;
             case LUCENE:
-                populators[LUCENE] = mock;
+                populators.put( LUCENE, mock );
                 break;
             default:
                 throw new RuntimeException();
@@ -177,7 +177,7 @@ public class FusionIndexPopulatorTest
     /* drop */
 
     @Test
-    public void dropMustDropAll() throws Exception
+    public void dropMustDropAll()
     {
         // when
         fusionIndexPopulator.drop();
@@ -191,7 +191,7 @@ public class FusionIndexPopulatorTest
     }
 
     @Test
-    public void dropMustThrowIfAnyDropThrow() throws Exception
+    public void dropMustThrowIfAnyDropThrow()
     {
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
@@ -216,14 +216,14 @@ public class FusionIndexPopulatorTest
     public void addMustSelectCorrectPopulator() throws Exception
     {
         // given
-        Value[][] values = FusionIndexTestHelp.valuesByGroup();
+        EnumMap<IndexSlot,Value[]> values = FusionIndexTestHelp.valuesByGroup();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
-        for ( int i = 0; i < populators.length; i++ )
+        for ( IndexSlot slot : IndexSlot.values() )
         {
-            for ( Value value : values[i] )
+            for ( Value value : values.get( slot ) )
             {
-                verifyAddWithCorrectPopulator( orLucene( populators[i] ), value );
+                verifyAddWithCorrectPopulator( orLucene( populators.get( slot ) ), value );
             }
         }
 
@@ -232,7 +232,7 @@ public class FusionIndexPopulatorTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyAddWithCorrectPopulator( populators[LUCENE], firstValue, secondValue );
+                verifyAddWithCorrectPopulator( populators.get( LUCENE ), firstValue, secondValue );
             }
         }
     }
@@ -302,12 +302,11 @@ public class FusionIndexPopulatorTest
     @Test
     public void closeMustThrowIfCloseAnyThrow() throws Exception
     {
-        for ( int i = 0; i < alivePopulators.length; i++ )
+        for ( IndexSlot aliveSlot : fusionVersion.aliveSlots() )
         {
             // given
-            IndexPopulator alivePopulator = alivePopulators[i];
             IOException failure = new IOException( "fail" );
-            doThrow( failure ).when( alivePopulator ).close( anyBoolean() );
+            doThrow( failure ).when( populators.get( aliveSlot ) ).close( anyBoolean() );
 
             verifyCallFail( failure, () ->
             {
@@ -345,10 +344,9 @@ public class FusionIndexPopulatorTest
     @Test
     public void closeMustCloseOthersIfAnyThrow() throws Exception
     {
-        for ( int i = 0; i < alivePopulators.length; i++ )
+        for ( IndexSlot throwingSlot : fusionVersion.aliveSlots() )
         {
-            IndexPopulator throwingPopulator = alivePopulators[i];
-            verifyOtherCloseOnThrow( throwingPopulator );
+            verifyOtherCloseOnThrow( populators.get( throwingSlot ) );
             initiateMocks();
         }
     }
@@ -421,11 +419,11 @@ public class FusionIndexPopulatorTest
     public void shouldIncludeSampleOnCorrectPopulator()
     {
         // given
-        Value[][] values = FusionIndexTestHelp.valuesByGroup();
+        EnumMap<IndexSlot,Value[]> values = FusionIndexTestHelp.valuesByGroup();
 
-        for ( int activeSlot : fusionVersion.aliveSlots() )
+        for ( IndexSlot activeSlot : fusionVersion.aliveSlots() )
         {
-            verifySampleToCorrectPopulator( values[activeSlot], populators[activeSlot] );
+            verifySampleToCorrectPopulator( values.get( activeSlot ), populators.get( activeSlot ) );
         }
     }
 
@@ -445,6 +443,6 @@ public class FusionIndexPopulatorTest
 
     private IndexPopulator orLucene( IndexPopulator populator )
     {
-        return populator != IndexPopulator.EMPTY ? populator : populators[LUCENE];
+        return populator != IndexPopulator.EMPTY ? populator : populators.get( LUCENE );
     }
 }
