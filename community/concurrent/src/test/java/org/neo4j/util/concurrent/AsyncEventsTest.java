@@ -19,9 +19,9 @@
  */
 package org.neo4j.util.concurrent;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -32,25 +32,27 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
-public class AsyncEventsTest
+class AsyncEventsTest
 {
     private ExecutorService executor;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         executor = Executors.newCachedThreadPool();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         executor.shutdown();
     }
@@ -78,7 +80,7 @@ public class AsyncEventsTest
     }
 
     @Test
-    public void eventsMustBeProcessedByBackgroundThread() throws Exception
+    void eventsMustBeProcessedByBackgroundThread() throws Exception
     {
         EventConsumer consumer = new EventConsumer();
 
@@ -100,7 +102,7 @@ public class AsyncEventsTest
     }
 
     @Test
-    public void mustNotProcessEventInSameThreadWhenNotShutDown() throws Exception
+    void mustNotProcessEventInSameThreadWhenNotShutDown() throws Exception
     {
         EventConsumer consumer = new EventConsumer();
 
@@ -115,87 +117,93 @@ public class AsyncEventsTest
         assertThat( processingThread, is( not( Thread.currentThread() ) ) );
     }
 
-    @Test( timeout = 10000 )
-    public void mustProcessEventsDirectlyWhenShutDown() throws Exception
+    @Test
+    void mustProcessEventsDirectlyWhenShutDown()
     {
-        EventConsumer consumer = new EventConsumer();
-
-        AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
-        executor.submit( asyncEvents );
-
-        asyncEvents.send( new Event() );
-        Thread threadForFirstEvent = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
-        asyncEvents.shutdown();
-
-        assertThat( threadForFirstEvent, is( not( Thread.currentThread() ) ) );
-
-        Thread threadForSubsequentEvents;
-        do
+        assertTimeout( ofSeconds( 10 ), () ->
         {
+            EventConsumer consumer = new EventConsumer();
+
+            AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
+            executor.submit( asyncEvents );
+
             asyncEvents.send( new Event() );
-            threadForSubsequentEvents = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
-        }
-        while ( threadForSubsequentEvents != Thread.currentThread() );
-    }
+            Thread threadForFirstEvent = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
+            asyncEvents.shutdown();
 
-    @Test( timeout = 10000 )
-    public void concurrentlyPublishedEventsMustAllBeProcessed() throws Exception
-    {
-        EventConsumer consumer = new EventConsumer();
-        final CountDownLatch startLatch = new CountDownLatch( 1 );
-        final int threads = 10;
-        final int iterations = 2_000;
-        final AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
-        executor.submit( asyncEvents );
+            assertThat( threadForFirstEvent, is( not( Thread.currentThread() ) ) );
 
-        ExecutorService threadPool = Executors.newFixedThreadPool( threads );
-        Runnable runner = () ->
-        {
-            try
-            {
-                startLatch.await();
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
-
-            for ( int i = 0; i < iterations; i++ )
+            Thread threadForSubsequentEvents;
+            do
             {
                 asyncEvents.send( new Event() );
+                threadForSubsequentEvents = consumer.poll( 10, TimeUnit.SECONDS ).processedBy;
             }
-        };
-        for ( int i = 0; i < threads; i++ )
-        {
-            threadPool.submit( runner );
-        }
-        startLatch.countDown();
-
-        Thread thisThread = Thread.currentThread();
-        int eventCount = threads * iterations;
-        try
-        {
-            for ( int i = 0; i < eventCount; i++ )
-            {
-                Event event = consumer.poll( 1, TimeUnit.SECONDS );
-                if ( event == null )
-                {
-                    i--;
-                }
-                else
-                {
-                    assertThat( event.processedBy, is( not( thisThread ) ) );
-                }
-            }
-        }
-        finally
-        {
-            asyncEvents.shutdown();
-        }
+            while ( threadForSubsequentEvents != Thread.currentThread() );
+        } );
     }
 
     @Test
-    public void awaitingShutdownMustBlockUntilAllMessagesHaveBeenProcessed() throws Exception
+    void concurrentlyPublishedEventsMustAllBeProcessed()
+    {
+        assertTimeout( ofSeconds( 10 ), () ->
+        {
+            EventConsumer consumer = new EventConsumer();
+            final CountDownLatch startLatch = new CountDownLatch( 1 );
+            final int threads = 10;
+            final int iterations = 2_000;
+            final AsyncEvents<Event> asyncEvents = new AsyncEvents<>( consumer, AsyncEvents.Monitor.NONE );
+            executor.submit( asyncEvents );
+
+            ExecutorService threadPool = Executors.newFixedThreadPool( threads );
+            Runnable runner = () ->
+            {
+                try
+                {
+                    startLatch.await();
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( e );
+                }
+
+                for ( int i = 0; i < iterations; i++ )
+                {
+                    asyncEvents.send( new Event() );
+                }
+            };
+            for ( int i = 0; i < threads; i++ )
+            {
+                threadPool.submit( runner );
+            }
+            startLatch.countDown();
+
+            Thread thisThread = Thread.currentThread();
+            int eventCount = threads * iterations;
+            try
+            {
+                for ( int i = 0; i < eventCount; i++ )
+                {
+                    Event event = consumer.poll( 1, TimeUnit.SECONDS );
+                    if ( event == null )
+                    {
+                        i--;
+                    }
+                    else
+                    {
+                        assertThat( event.processedBy, is( not( thisThread ) ) );
+                    }
+                }
+            }
+            finally
+            {
+                asyncEvents.shutdown();
+            }
+        } );
+    }
+
+    @Test
+    void awaitingShutdownMustBlockUntilAllMessagesHaveBeenProcessed() throws Exception
     {
         final Event specialShutdownObservedEvent = new Event();
         final CountDownLatch awaitStartLatch = new CountDownLatch( 1 );
