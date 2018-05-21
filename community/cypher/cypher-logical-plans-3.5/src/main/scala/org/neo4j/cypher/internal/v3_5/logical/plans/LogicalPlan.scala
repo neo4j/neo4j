@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.v3_5.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, Strictness}
+import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.util.Foldable._
 import org.opencypher.v9_0.util.Rewritable._
 import org.opencypher.v9_0.util.attribution.{Id, IdGen, SameId}
-import org.opencypher.v9_0.util.{Foldable, InternalException, Rewritable, Unchangeable}
-import org.opencypher.v9_0.expressions.Expression
+import org.opencypher.v9_0.util.{Foldable, InternalException, Rewritable}
 
-import scala.util.hashing.MurmurHash3
 import scala.collection.mutable
+import scala.util.hashing.MurmurHash3
 
 object LogicalPlan {
   val LOWEST_TX_LAYER = 0
@@ -144,7 +144,7 @@ abstract class LogicalPlan(idGen: IdGen)
   override def toString: String = {
     def indent(level: Int, in: String): String = level match {
       case 0 => in
-      case _ => "\n" + "  " * level + in
+      case _ => System.lineSeparator() + "  " * level + in
     }
 
     val childrenHeap = new scala.collection.mutable.Stack[(String, Int, Option[LogicalPlan])]
@@ -163,10 +163,10 @@ abstract class LogicalPlan(idGen: IdGen)
             case (None, None) =>
               sb.append("}")
             case (Some(l), None) =>
-              childrenHeap.push(("\n" + "  " * level + "}", level + 1, None))
+              childrenHeap.push((System.lineSeparator() + "  " * level + "}", level + 1, None))
               childrenHeap.push(("LHS -> ", level + 1, plan.lhs))
             case _ =>
-              childrenHeap.push(("\n" + "  " * level + "}", level + 1, None))
+              childrenHeap.push((System.lineSeparator() + "  " * level + "}", level + 1, None))
               childrenHeap.push(("RHS -> ", level + 1, plan.rhs))
               childrenHeap.push(("LHS -> ", level + 1, plan.lhs))
           }
