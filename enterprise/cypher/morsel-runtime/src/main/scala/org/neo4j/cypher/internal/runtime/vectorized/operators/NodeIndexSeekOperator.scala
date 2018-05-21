@@ -26,13 +26,14 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.internal.kernel.api._
+import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
 
 class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
                             label: LabelToken,
                             propertyKey: PropertyKeyToken,
-                            valueExpr: Expression) extends Operator {
+                            valueExpr: Expression)
+  extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset){
 
   private var reference: IndexReference = CapableIndexReference.NO_INDEX
 
@@ -65,30 +66,7 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
       case _ => throw new IllegalStateException()
 
     }
-
-    val longs: Array[Long] = data.longs
-
-    var processedRows = 0
-    var hasMore = true
-    while (processedRows < data.validRows && hasMore) {
-      hasMore = nodeCursor.next()
-      if (hasMore) {
-        longs(processedRows * longsPerRow + offset) = nodeCursor.nodeReference()
-        processedRows += 1
-      }
-    }
-
-    data.validRows = processedRows
-
-    if (hasMore)
-      ContinueWithSource(nodeCursor, iterationState, needsSameThread = false)
-    else {
-      if (nodeCursor != null) {
-        nodeCursor.close()
-        nodeCursor = null
-      }
-      EndOfLoop(iterationState)
-    }
+   iterate(data, nodeCursor, iterationState)
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies

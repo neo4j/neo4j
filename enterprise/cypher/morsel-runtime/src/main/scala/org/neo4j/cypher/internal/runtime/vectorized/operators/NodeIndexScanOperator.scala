@@ -23,37 +23,37 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
+import org.neo4j.internal.kernel.api.{IndexOrder, NodeValueIndexCursor}
 
-class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: LazyLabel)
-  extends NodeIndexOperator[NodeLabelIndexCursor](longsPerRow, refsPerRow, offset) {
+
+class NodeIndexScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: Int, propertyKey: Int)
+  extends NodeIndexOperator[NodeValueIndexCursor](longsPerRow, refsPerRow, offset) {
 
   override def operate(message: Message,
                        data: Morsel,
                        context: QueryContext,
                        state: QueryState): Continuation = {
-    var nodeCursor: NodeLabelIndexCursor  = null
+    var valueIndexCursor: NodeValueIndexCursor  = null
     var iterationState: Iteration = null
     val read = context.transactionalContext.dataRead
-    val labelId = label.getOptId(context)
-    if (labelId.isEmpty) return EndOfLoop(iterationState)
+    val index = context.transactionalContext.schemaRead.index(label, propertyKey)
 
     message match {
       case StartLeafLoop(is) =>
-        nodeCursor = context.transactionalContext.cursors.allocateNodeLabelIndexCursor()
-        read.nodeLabelScan(labelId.get.id,  nodeCursor)
+        valueIndexCursor = context.transactionalContext.cursors.allocateNodeValueIndexCursor()
+        read.nodeIndexScan(index, valueIndexCursor, IndexOrder.NONE)
         iterationState = is
-      case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
-        nodeCursor = it.asInstanceOf[NodeLabelIndexCursor]
+      case ContinueLoopWith(ContinueWithSource(cursor, is, _)) =>
+        valueIndexCursor = cursor.asInstanceOf[NodeValueIndexCursor]
         iterationState = is
       case _ => throw new IllegalStateException()
-
     }
 
-    iterate(data, nodeCursor, iterationState)
+    iterate(data, valueIndexCursor, iterationState)
   }
+
+
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
 }
