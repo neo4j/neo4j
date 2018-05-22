@@ -23,7 +23,6 @@
 package org.neo4j.causalclustering.messaging.marshalling.v2.decoding;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -41,41 +40,54 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
     {
-        boolean isLast = in.readBoolean();
-        if ( unfinishedChunk == null )
+        try
         {
-            byte contentType = in.readByte();
-            int allocationSize = in.readInt();
-            if ( isLast )
+
+            boolean isLast = in.readBoolean();
+            if ( unfinishedChunk == null )
             {
-                out.add( coreReplicatedContentSerializer.read( contentType, new NetworkReadableClosableChannelNetty4( in.readSlice( in.readableBytes() ) ) ) );
-            }
-            else
-            {
-                ByteBuf replicatedContentBuffer;
-                if ( allocationSize == -1 )
+                byte contentType = in.readByte();
+                int allocationSize = in.readInt();
+                if ( isLast )
                 {
-                    replicatedContentBuffer = in.copy();
+                    out.add( coreReplicatedContentSerializer.read( contentType,
+                            new NetworkReadableClosableChannelNetty4( in.readSlice( in.readableBytes() ) ) ) );
                 }
                 else
                 {
-                    replicatedContentBuffer = ByteBufAllocator.DEFAULT.heapBuffer( allocationSize, allocationSize );
+                    ByteBuf replicatedContentBuffer;
+                    if ( allocationSize == -1 )
+                    {
+                        replicatedContentBuffer = in.copy();
+                    }
+                    else
+                    {
+                        replicatedContentBuffer = ctx.alloc().buffer( allocationSize, allocationSize );
+                    }
+                    unfinishedChunk = new UnfinishedChunk( contentType, replicatedContentBuffer );
+                    unfinishedChunk.consume( in );
                 }
-                unfinishedChunk = new UnfinishedChunk( contentType, replicatedContentBuffer );
+            }
+            else
+            {
                 unfinishedChunk.consume( in );
+
+                if ( isLast )
+                {
+                    out.add( coreReplicatedContentSerializer.read( unfinishedChunk.contentType,
+                            new NetworkReadableClosableChannelNetty4( unfinishedChunk.content() ) ) );
+                    unfinishedChunk.release();
+                    unfinishedChunk = null;
+                }
             }
         }
-        else
+        catch ( Exception e )
         {
-            unfinishedChunk.consume( in );
-
-            if ( isLast )
+            if ( unfinishedChunk != null )
             {
-                out.add( coreReplicatedContentSerializer.read( unfinishedChunk.contentType,
-                        new NetworkReadableClosableChannelNetty4( unfinishedChunk.content() ) ) );
-                unfinishedChunk.content().release();
-                unfinishedChunk = null;
+                unfinishedChunk.release();
             }
+            throw e;
         }
     }
 
