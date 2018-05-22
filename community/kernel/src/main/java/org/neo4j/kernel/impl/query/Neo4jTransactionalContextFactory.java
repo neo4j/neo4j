@@ -26,7 +26,6 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -43,23 +42,13 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
 
     public static TransactionalContextFactory create(
         GraphDatabaseFacade.SPI spi,
-        Guard guard,
         ThreadToStatementContextBridge txBridge,
         PropertyContainerLocker locker )
     {
         Supplier<GraphDatabaseQueryService> queryService = lazySingleton( spi::queryService );
         Supplier<Kernel> kernel = lazySingleton( spi::kernel );
-        Neo4jTransactionalContext.Creator contextCreator =
-                ( tx, initialStatement, executingQuery ) -> new Neo4jTransactionalContext( queryService.get(),
-
-                        guard,
-                    txBridge,
-                    locker,
-                    tx,
-                    initialStatement,
-                    executingQuery,
-                    kernel.get()
-                );
+        Neo4jTransactionalContext.Creator contextCreator = ( tx, initialStatement, executingQuery ) ->
+                new Neo4jTransactionalContext( queryService.get(), txBridge, locker, tx, initialStatement, executingQuery, kernel.get() );
 
         return new Neo4jTransactionalContextFactory( txBridge, contextCreator );
     }
@@ -72,12 +61,10 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         DependencyResolver resolver = queryService.getDependencyResolver();
         ThreadToStatementContextBridge txBridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
         Kernel kernel = resolver.resolveDependency( Kernel.class );
-        Guard guard = resolver.resolveDependency( Guard.class );
         Neo4jTransactionalContext.Creator contextCreator =
                 ( tx, initialStatement, executingQuery ) ->
                         new Neo4jTransactionalContext(
                                 queryService,
-                                guard,
                                 txBridge,
                                 locker,
                                 tx,

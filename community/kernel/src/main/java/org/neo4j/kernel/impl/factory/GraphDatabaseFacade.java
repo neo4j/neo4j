@@ -82,7 +82,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
@@ -200,7 +199,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     /**
      * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
      */
-    public void init( EditionModule editionModule, SPI spi, Guard guard, ThreadToStatementContextBridge txBridge, Config config,
+    public void init( EditionModule editionModule, SPI spi, ThreadToStatementContextBridge txBridge, Config config,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
         this.editionModule = editionModule;
@@ -224,7 +223,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     nodeAutoIndexer, relAutoIndexer );
         } );
 
-        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, guard, txBridge, locker );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, txBridge, locker );
     }
 
     @Override

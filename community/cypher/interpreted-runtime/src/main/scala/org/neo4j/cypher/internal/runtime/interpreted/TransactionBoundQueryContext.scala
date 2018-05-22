@@ -24,16 +24,12 @@ import java.util.function.Predicate
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.collection.{PrimitiveLongResourceIterator, RawIterator}
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.opencypher.v9_0.util.{EntityNotFoundException, FailedIndexException}
-import org.opencypher.v9_0.expressions.SemanticDirection
-import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
@@ -51,9 +47,8 @@ import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
-import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
-import org.neo4j.kernel.impl.api.store.{RelationshipIterator}
+import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
@@ -62,6 +57,9 @@ import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipPro
 import org.neo4j.values.storable.{TextValue, Value, Values, _}
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 import org.neo4j.values.{AnyValue, ValueMapper}
+import org.opencypher.v9_0.expressions.SemanticDirection
+import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.opencypher.v9_0.util.{EntityNotFoundException, FailedIndexException}
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -88,13 +86,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       getDependencyResolver.
       provideDependency(classOf[ThreadToStatementContextBridge]).
       get
-    val guard = new TerminationGuard
     val locker = new PropertyContainerLocker
     val query = transactionalContext.tc.executingQuery()
 
     val context = transactionalContext.tc.asInstanceOf[Neo4jTransactionalContext]
     val newTx = transactionalContext.graph.beginTransaction(context.transactionType, context.securityContext)
-    val neo4jTransactionalContext = context.copyFrom(context.graph, guard, statementProvider, locker, newTx,
+    val neo4jTransactionalContext = context.copyFrom(context.graph, statementProvider, locker, newTx,
                                                      statementProvider.get(), query)
     new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
   }
