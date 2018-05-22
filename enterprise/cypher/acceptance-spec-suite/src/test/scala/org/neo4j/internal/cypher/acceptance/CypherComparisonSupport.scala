@@ -28,13 +28,13 @@ import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPoint
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, PlannerVersion => IPDPlannerVersion, Runtime => IPDRuntime, RuntimeVersion => IPDRuntimeVersion}
-import org.opencypher.v9_0.util.Eagerly
-import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
+import org.opencypher.v9_0.util.Eagerly
+import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
 import org.scalatest.Assertions
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -347,7 +347,7 @@ object CypherComparisonSupport {
     object V3_1 extends Version("3.1")
 
     object V3_3 extends Version("3.3") {
-      // 3.3 has 3.4 runtime
+      // 3.3 has 3.5 runtime
       override val acceptedRuntimeVersionNames = Set("3.5")
     }
 
@@ -611,7 +611,7 @@ object CypherComparisonSupport {
 
     def Version3_3: TestConfiguration = TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes.Default)
 
-    def Version3_4: TestConfiguration =
+    def Version3_5: TestConfiguration =
       TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
