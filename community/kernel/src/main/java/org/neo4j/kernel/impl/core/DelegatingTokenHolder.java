@@ -172,7 +172,7 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> extends Lifecyc
         {
             // We still have unresolved ids to create.
             ObjectIntHashMap<String> createdTokens = createUnresolvedTokens( unresolvedIndexes, names, ids );
-            createdTokens.forEachKeyValue( (name,index) ->
+            createdTokens.forEachKeyValue( ( name, index ) ->
                     tokenCache.put( tokenFactory.newToken( name, ids[index] ) ) );
         }
     }
@@ -221,7 +221,7 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> extends Lifecyc
             // Remap duplicate tokens to the token id we created for the first instance of any duplicate token name.
             if ( remappingIndexes.notEmpty() )
             {
-                remappingIndexes.forEachKeyValue( (index,creatingIndex) -> ids[index] = ids[creatingIndex] );
+                remappingIndexes.forEachKeyValue( ( index, creatingIndex ) -> ids[index] = ids[creatingIndex] );
             }
 
             return createdTokens;
