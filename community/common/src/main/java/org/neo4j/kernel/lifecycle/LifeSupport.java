@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.neo4j.helpers.Exceptions;
+
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
@@ -184,14 +186,7 @@ public class LifeSupport implements Lifecycle
                 }
                 catch ( LifecycleException e )
                 {
-                    if ( ex != null )
-                    {
-                        ex.addSuppressed( e );
-                    }
-                    else
-                    {
-                        ex = e;
-                    }
+                    ex = Exceptions.chain( ex, e );
                 }
             }
 
@@ -267,14 +262,7 @@ public class LifeSupport implements Lifecycle
             }
             catch ( LifecycleException e )
             {
-                if ( ex != null )
-                {
-                    ex.addSuppressed( e );
-                }
-                else
-                {
-                    ex = e;
-                }
+                ex = Exceptions.chain( ex, e );
             }
         }
         return ex;
