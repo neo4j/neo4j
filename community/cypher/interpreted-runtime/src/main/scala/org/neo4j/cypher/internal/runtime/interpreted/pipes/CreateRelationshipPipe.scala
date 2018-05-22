@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.util.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{CypherTypeException, InternalException, InvalidSemanticsException}
 
 abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                     properties: Option[Expression])
@@ -41,7 +41,6 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
     val end = getNode(context, endNode)
     val typeId = typ.typ(state.query)
     val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
-    relationship.`type`() // we do this to make sure the relationship is loaded from the store into this object
     setProperties(context, state, relationship.id())
     context += key -> relationship
   }
