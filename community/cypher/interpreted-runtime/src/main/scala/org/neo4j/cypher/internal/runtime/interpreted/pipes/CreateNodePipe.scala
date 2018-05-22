@@ -38,9 +38,9 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
 
   private def createNode(context: ExecutionContext, state: QueryState): ExecutionContext = {
     val node = state.query.createNode()
-    setProperties(context, state, node.getId)
-    setLabels(context, state, node.getId)
-    context += key -> ValueUtils.fromNodeProxy(node)
+    setProperties(context, state, node.id())
+    setLabels(context, state, node.id())
+    context += key -> node
   }
 
   private def setProperties(context: ExecutionContext, state: QueryState, nodeId: Long) = {

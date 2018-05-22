@@ -52,8 +52,8 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
-import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
 import org.neo4j.values.storable.{TextValue, Value, Values, _}
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 import org.neo4j.values.{AnyValue, ValueMapper}
@@ -128,7 +128,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def createNode(): Node = entityAccessor.newNodeProxy(writes().nodeCreate())
+  override def createNode(): NodeValue = ValueUtils.fromNodeProxy(entityAccessor.newNodeProxy(writes().nodeCreate()))
 
   override def createNodeId(): Long = writes().nodeCreate()
 
