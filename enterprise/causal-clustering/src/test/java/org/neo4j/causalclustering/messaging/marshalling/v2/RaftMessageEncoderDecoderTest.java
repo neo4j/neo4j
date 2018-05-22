@@ -69,7 +69,7 @@ public class RaftMessageEncoderDecoderTest
         return new RaftMessages.RaftMessage[]{
                                 new RaftMessages.Heartbeat( MEMBER_ID, 1, 2, 3 ),
                                 new RaftMessages.HeartbeatResponse( MEMBER_ID ),
-                                new RaftMessages.NewEntry.Request( MEMBER_ID, new ReplicatedTransaction( new byte[]{1, 2, 3, 4, 5} ) ),
+                                new RaftMessages.NewEntry.Request( MEMBER_ID, new ReplicatedTransaction( new byte[]{1, 2, 3, 4, 5,6, 7,8} ) ),
                                 new RaftMessages.NewEntry.Request( MEMBER_ID, new DistributedOperation(
                                         new DistributedOperation( new ReplicatedTransaction( new byte[]{1, 2, 3, 4, 5} ),
                                                 new GlobalSession( UUID.randomUUID(), MEMBER_ID ), new LocalOperationId( 1, 2 ) ),

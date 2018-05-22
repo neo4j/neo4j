@@ -45,6 +45,11 @@ public class ByteArraySerializer implements Serializer
     {
         if ( inputStream.available() == content.length )
         {
+            if ( !byteBuf.isWritable( 5 ) )
+            {
+                return true;
+            }
+
             byteBuf.writeInt( content.length );
         }
         if ( !hasBytes() )
@@ -54,6 +59,13 @@ public class ByteArraySerializer implements Serializer
         int toWrite = Math.min( inputStream.available(), byteBuf.writableBytes() );
         byteBuf.writeBytes( inputStream, toWrite );
         return hasBytes();
+    }
+
+    @Override
+    public int length()
+    {
+        // initial int plus array length
+        return content.length + 4;
     }
 
     private boolean hasBytes()

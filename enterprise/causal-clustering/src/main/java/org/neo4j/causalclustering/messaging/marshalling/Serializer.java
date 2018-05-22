@@ -33,7 +33,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 public interface Serializer extends Marshal
 {
     /** May override buffer allocation size.
-     * @param channelConsumer
+     * @param channelConsumer used by both encode and marshal to serialize the object.
      * @return a simple serializer that encodes all the content at once.
      */
     static Serializer simple( ThrowingConsumer<WritableChannel,IOException> channelConsumer )
@@ -55,6 +55,12 @@ public interface Serializer extends Marshal
             }
 
             @Override
+            public int length()
+            {
+                return -1;
+            }
+
+            @Override
             public void marshal( WritableChannel channel ) throws IOException
             {
                 channelConsumer.accept( channel );
@@ -69,4 +75,13 @@ public interface Serializer extends Marshal
      * @return false if there is no more data left to write after this call.
      */
     boolean encode( ByteBuf byteBuf ) throws IOException;
+
+    /** This is used by the decoding side to allocate the byte buffer for the de-serialized object.
+     * Only needed if the de-serialized object may be very large and if it needs to be fully written to memory.
+     * @return the total bytes of the serialized object.
+     */
+    default int length()
+    {
+        return -1;
+    }
 }
