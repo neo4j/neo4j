@@ -535,9 +535,4 @@ class PageList
         sb.append( ", usageCounter = " ).append( getUsageCounter( pageRef ) );
         sb.append( " ] " ).append( OffHeapPageLock.toString( offLock( pageRef ) ) );
     }
-
-    public void close()
-    {
-        memoryAllocator.close();
-    }
 }
