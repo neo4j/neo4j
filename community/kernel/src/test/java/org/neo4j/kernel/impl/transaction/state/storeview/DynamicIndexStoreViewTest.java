@@ -31,7 +31,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -57,7 +57,7 @@ public class DynamicIndexStoreViewTest
     private final NeoStores neoStores = mock( NeoStores.class );
     private final NodeStore nodeStore = mock( NodeStore.class );
     private final CountsTracker countStore = mock( CountsTracker.class );
-    private final Visitor<NodeUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
     private final Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private final AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );

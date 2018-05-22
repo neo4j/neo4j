@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 
 /**
  * Implements both BatchTransactionApplier and TransactionApplier in order to reduce garbage.
- * Gathers node/property commands by node id, preparing for extraction of {@link NodeUpdates updates}.
+ * Gathers node/property commands by node id, preparing for extraction of {@link EntityUpdates updates}.
  */
 public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier
