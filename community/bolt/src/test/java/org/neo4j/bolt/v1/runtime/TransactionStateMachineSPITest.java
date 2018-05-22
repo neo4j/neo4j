@@ -29,9 +29,9 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -133,7 +133,7 @@ public class TransactionStateMachineSPITest
 
         when(dependencyResolver.provideDependency( TransactionIdStore.class )).thenReturn( txIdStore );
 
-        return new TransactionStateMachineSPI( db, new ThreadToStatementContextBridge(),
+        return new TransactionStateMachineSPI( db, new ThreadToStatementContextBridge( mock( AvailabilityGuard.class ) ),
                 mock( QueryExecutionEngine.class ), availabilityGuard, queryService, txAwaitDuration,
                 clock );
     }

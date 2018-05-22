@@ -29,7 +29,6 @@ import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 @Service.Implementation( App.class )
@@ -93,6 +92,6 @@ public class Begin extends NonTransactionProvidingApp
     public static KernelTransaction currentTransaction( GraphDatabaseShellServer server )
     {
         return server.getDb().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                .getTopLevelTransactionBoundToThisThread( false );
+                .getKernelTransactionBoundToThisThread( false );
     }
 }

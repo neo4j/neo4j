@@ -515,7 +515,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
     {
         assertTransactionOpen();
-        return () -> tokens.inUse( statementContext.getTopLevelTransactionBoundToThisThread( true ) );
+        return () -> tokens.inUse( statementContext.getKernelTransactionBoundToThisThread( true ) );
     }
 
     @Override

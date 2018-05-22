@@ -26,6 +26,7 @@ import java.time.Clock;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
@@ -121,7 +122,7 @@ public class BoltFactoryImplTest
     private static BoltFactoryImpl newBoltFactory( GraphDatabaseAPI db )
     {
         return new BoltFactoryImpl( db, new UsageData( new OnDemandJobScheduler() ), NullLogService.getInstance(),
-                new ThreadToStatementContextBridge(), mock( Authentication.class ), BoltConnectionTracker.NOOP,
+                new ThreadToStatementContextBridge( mock( AvailabilityGuard.class ) ), mock( Authentication.class ), BoltConnectionTracker.NOOP,
                 Config.defaults() );
     }
 
