@@ -41,7 +41,7 @@ class LongArrayHashMultiMapTest extends FunSuite with Matchers {
     map.isEmpty should equal(true)
   }
 
-  test("fill and resize") {
+  test("fill and doubleCapacity") {
     val map = new LongArrayHashMultiMap[String](8, 3)
     map.add(Array(0L, 8L, 1L), "hello")
     map.add(Array(0L, 7L, 2L), "is")

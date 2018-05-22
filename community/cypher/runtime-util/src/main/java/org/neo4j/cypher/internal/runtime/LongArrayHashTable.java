@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
+import org.neo4j.helpers.collection.Pair;
+
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.CONTINUE_PROBING;
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.NOT_IN_USE;
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.SLOT_EMPTY;
@@ -32,7 +34,7 @@ class LongArrayHashTable
     public final long[] keys;
     public final int width;
     public final int capacity;
-    int numberOfEntries;
+    private int numberOfEntries;
     private int resizeLimit;
 
     private static final double LOAD_FACTOR = 0.75;
@@ -52,6 +54,7 @@ class LongArrayHashTable
     /**
      * Signals whether it's time to size up or not. The actual resizing is done slightly differently depending on if this is a map or set. Maps have, in
      * addition to a hash table also a separate array for the values.
+     *
      * @return true if the number of keys in the hash table has reached capacity.
      */
     boolean timeToResize()
@@ -91,6 +94,7 @@ class LongArrayHashTable
 
     /**
      * Writes the key to this slot.
+     *
      * @param slot The slot to write to.
      * @param key Le key.
      */
@@ -115,9 +119,10 @@ class LongArrayHashTable
 
     /**
      * Finds an slot not already claimed, starting from a given slot.
+     *
      * @return First unused slot after fromSlot
      */
-    int findUnusedSlot( int fromSlot )
+    private int findUnusedSlot( int fromSlot )
     {
         while ( true )
         {
@@ -129,4 +134,41 @@ class LongArrayHashTable
         }
     }
 
+    LongArrayHashTable doubleCapacity()
+    {
+        LongArrayHashTable newTable = new LongArrayHashTable( capacity * 2, width );
+        newTable.numberOfEntries = numberOfEntries;
+
+        for ( int fromOffset = 0; fromOffset < capacity * width; fromOffset = fromOffset + width )
+        {
+            if ( keys[fromOffset] != NOT_IN_USE )
+            {
+                int toSlot = LongArrayHash.hashCode( keys, fromOffset, width ) & newTable.tableMask;
+                toSlot = newTable.findUnusedSlot( toSlot );
+                System.arraycopy( keys, fromOffset, newTable.keys, toSlot * width, width );
+            }
+        }
+
+        return newTable;
+    }
+
+    Pair<LongArrayHashTable,Object[]> doubleCapacity( Object[] srcValues )
+    {
+        LongArrayHashTable dstTable = new LongArrayHashTable( capacity * 2, width );
+        Object[] dstValues = new Object[capacity * 2];
+        long[] srcKeys = keys;
+        dstTable.numberOfEntries = numberOfEntries;
+        for ( int fromSlot = 0; fromSlot < capacity; fromSlot = fromSlot + 1 )
+        {
+            int fromOffset = fromSlot * width;
+            if ( srcKeys[fromOffset] != NOT_IN_USE )
+            {
+                int toSlot = LongArrayHash.hashCode( srcKeys, fromOffset, width ) & dstTable.tableMask;
+                toSlot = dstTable.findUnusedSlot( toSlot );
+                System.arraycopy( srcKeys, fromOffset, dstTable.keys, toSlot * width, width );
+                dstValues[toSlot] = srcValues[fromSlot];
+            }
+        }
+        return Pair.of( dstTable, dstValues );
+    }
 }

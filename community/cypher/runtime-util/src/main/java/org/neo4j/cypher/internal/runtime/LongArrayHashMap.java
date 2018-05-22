@@ -128,7 +128,7 @@ public class LongArrayHashMap<VALUE>
 
     private void resize()
     {
-        Pair<LongArrayHashTable,Object[]> resized = LongArrayHash.doubleInSize( table, values );
+        Pair<LongArrayHashTable,Object[]> resized = table.doubleCapacity( values );
         table = resized.first();
         values = resized.other();
     }

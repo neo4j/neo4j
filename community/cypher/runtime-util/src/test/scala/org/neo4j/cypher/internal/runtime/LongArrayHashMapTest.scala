@@ -42,7 +42,7 @@ class LongArrayHashMapTest extends FunSuite with Matchers {
     resultAsSet(map) should equal(Set.empty)
   }
 
-  test("fill and resize") {
+  test("fill and doubleCapacity") {
     val map = new LongArrayHashMap[String](8, 3)
     map.getOrCreateAndAdd(Array(0L, 8L, 1L), () => "hello")
     map.getOrCreateAndAdd(Array(0L, 7L, 2L), () => "is")

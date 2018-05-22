@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime;
 import org.opencypher.v9_0.util.InternalException;
 
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.CONTINUE_PROBING;
-import static org.neo4j.cypher.internal.runtime.LongArrayHash.NOT_IN_USE;
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.SLOT_EMPTY;
 import static org.neo4j.cypher.internal.runtime.LongArrayHash.VALUE_FOUND;
 
@@ -72,7 +71,7 @@ public class LongArrayHashSet
                 if ( table.timeToResize() )
                 {
                     // We know we need to add the value to the set, but there is no space left
-                    resize();
+                    table = table.doubleCapacity();
                     // Need to restart linear probe after resizing
                     slotNr = slotFor( value );
                 }
@@ -115,26 +114,6 @@ public class LongArrayHashSet
         }
         while ( result == CONTINUE_PROBING );
         return result == VALUE_FOUND;
-    }
-
-    private void resize()
-    {
-        int oldSize = table.capacity;
-        int oldNumberEntries = table.numberOfEntries;
-        long[] srcArray = table.keys;
-        table = new LongArrayHashTable( oldSize * 2, width );
-        long[] dstArray = table.keys;
-        table.numberOfEntries = oldNumberEntries;
-
-        for ( int fromOffset = 0; fromOffset < oldSize * width; fromOffset = fromOffset + width )
-        {
-            if ( srcArray[fromOffset] != NOT_IN_USE )
-            {
-                int toSlot = LongArrayHash.hashCode( srcArray, fromOffset, width ) & table.tableMask;
-                toSlot = table.findUnusedSlot( toSlot );
-                System.arraycopy( srcArray, fromOffset, dstArray, toSlot * width, width );
-            }
-        }
     }
 
     private int slotFor( long[] value )
