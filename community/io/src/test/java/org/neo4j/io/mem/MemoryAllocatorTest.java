@@ -170,7 +170,7 @@ public class MemoryAllocatorTest
         assertEquals( ByteUnit.mebiBytes( 1 ), memoryTracker.usedDirectMemory() );
 
         //noinspection FinalizeCalledExplicitly
-        allocator.finalize();
+        allocator.close();
         assertEquals( 0, memoryTracker.usedDirectMemory() );
     }
 }
