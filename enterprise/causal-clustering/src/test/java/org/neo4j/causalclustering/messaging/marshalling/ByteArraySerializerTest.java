@@ -56,4 +56,16 @@ public class ByteArraySerializerTest
         assertEquals( 0, buffer.readableBytes() );
         buffer.release();
     }
+
+    @Test
+    public void shouldHaveSameLengthAsBytesEncoded() throws IOException
+    {
+        byte[] data = new byte[10];
+        ByteArraySerializer byteArraySerializer = new ByteArraySerializer( data );
+
+        ByteBuf buffer = Unpooled.buffer( 100 );
+        byteArraySerializer.encode( buffer );
+
+        assertEquals( buffer.readableBytes(), byteArraySerializer.length() );
+    }
 }
