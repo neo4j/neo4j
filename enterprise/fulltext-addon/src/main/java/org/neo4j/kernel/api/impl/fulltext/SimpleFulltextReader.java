@@ -34,6 +34,7 @@ import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -51,13 +52,15 @@ class SimpleFulltextReader implements ReadOnlyFulltext
 {
     private final PartitionSearcher partitionSearcher;
     private final Analyzer analyzer;
+    private final Consumer<ReadOnlyFulltext> closeCallback;
     private final String[] properties;
 
-    SimpleFulltextReader( PartitionSearcher partitionSearcher, String[] properties, Analyzer analyzer )
+    SimpleFulltextReader( PartitionSearcher partitionSearcher, String[] properties, Analyzer analyzer, Consumer<ReadOnlyFulltext> closeCallback )
     {
         this.partitionSearcher = partitionSearcher;
         this.properties = properties;
         this.analyzer = analyzer;
+        this.closeCallback = closeCallback;
     }
 
     @Override
@@ -85,6 +88,7 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         {
             throw new IndexReaderCloseException( e );
         }
+        closeCallback.accept( this );
     }
 
     @Override

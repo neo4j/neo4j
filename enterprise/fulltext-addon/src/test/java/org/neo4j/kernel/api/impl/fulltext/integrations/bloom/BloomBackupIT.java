@@ -47,6 +47,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.AWAIT_POPULATION;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.AWAIT_REFRESH;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.ENTITYID;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.RELS;
@@ -82,6 +83,7 @@ public class BloomBackupIT
     {
         registerProcedures( db );
         setupIndicesAndInitialData();
+        db.execute( AWAIT_REFRESH );
 
         File backupDir = new File( db.getStoreDir().getParentFile(), "backup" );
         OnlineBackup.from( "127.0.0.1", backupPort ).backup( backupDir );
@@ -98,6 +100,7 @@ public class BloomBackupIT
     {
         registerProcedures( db );
         setupIndicesAndInitialData();
+        db.execute( AWAIT_REFRESH );
 
         // Full backup
         File backupDir = new File( db.getStoreDir().getParentFile(), "backup" );
@@ -120,6 +123,7 @@ public class BloomBackupIT
             additionalRelId = relationship.getId();
             transaction.success();
         }
+        db.execute( AWAIT_REFRESH );
 
         //Incremental backup
         OnlineBackup.from( "127.0.0.1", backupPort ).backup( backupDir );

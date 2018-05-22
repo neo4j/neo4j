@@ -23,6 +23,7 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Set;
 
@@ -84,6 +85,12 @@ public interface FulltextProvider extends AutoCloseable
         }
 
         @Override
+        public void awaitFlip()
+        {
+            throw noProvider();
+        }
+
+        @Override
         public void close()
         {
             throw noProvider();
@@ -104,7 +111,7 @@ public interface FulltextProvider extends AutoCloseable
      * Such population, where the entire store is scanned for data to write to the index, will be started if the index
      * needs to recover after an unclean shut-down, or a configuration change.
      *
-     * @throws RuntimeException If it was not possible to wait for the population to finish, for some reason.
+     * @throws UncheckedIOException If it was not possible to wait for the population to finish, for some reason.
      */
     void awaitPopulation();
 
@@ -129,4 +136,6 @@ public interface FulltextProvider extends AutoCloseable
     void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys ) throws IOException, InvalidArgumentsException;
 
     void registerFileListing( NeoStoreFileListing fileListing );
+
+    void awaitFlip();
 }

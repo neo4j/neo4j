@@ -62,6 +62,13 @@ public class BloomProcedures
         provider.awaitPopulation();
     }
 
+    @Description( "Await index refresh" )
+    @Procedure( name = "bloom.awaitRefresh", mode = READ )
+    public void awaitRefresh()
+    {
+        provider.awaitFlip();
+    }
+
     @Description( "Returns the node property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedNodePropertyKeys", mode = READ )
     public Stream<PropertyOutput> getIndexedNodePropertyKeys()

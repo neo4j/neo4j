@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,16 +45,18 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
 {
 
     private final List<ReadOnlyFulltext> indexReaders;
+    private final Consumer<ReadOnlyFulltext> closeCallback;
 
-    PartitionedFulltextReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer )
+    PartitionedFulltextReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer, Consumer<ReadOnlyFulltext> closeCallback )
     {
-        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleFulltextReader( partitionSearcher, properties, analyzer ) ).collect(
-                Collectors.toList() ) );
+        this.indexReaders =
+                partitionSearchers.stream().map( partitionSearcher -> new SimpleFulltextReader( partitionSearcher, properties, analyzer,
+                        PartitionedFulltextReader::nullCallback ) ).collect( Collectors.toList() );
+        this.closeCallback = closeCallback;
     }
 
-    private PartitionedFulltextReader( List<ReadOnlyFulltext> readers )
+    private static void nullCallback( ReadOnlyFulltext reader )
     {
-        this.indexReaders = readers;
     }
 
     @Override
@@ -89,6 +92,7 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
         {
             throw new IndexReaderCloseException( e );
         }
+        closeCallback.accept( this );
     }
 
     @Override
