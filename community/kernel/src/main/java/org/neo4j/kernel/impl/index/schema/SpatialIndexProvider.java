@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.gis.spatial.index.curves.PartialOverlapConfiguration;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -56,12 +57,20 @@ public class SpatialIndexProvider extends NativeIndexProvider<SpatialSchemaKey,N
     {
         super( SPATIAL_PROVIDER_DESCRIPTOR, 0, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
         this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
-        this.settingsFactory = getConfiguredSpaceFillingCurveSettings( config );
+        this.settingsFactory = new SpaceFillingCurveSettingsFactory( config );
     }
 
     @Override
-    Layout<SpatialSchemaKey,NativeSchemaValue> layout( StoreIndexDescriptor descriptor )
+    Layout<SpatialSchemaKey,NativeSchemaValue> layout( File storeFile, StoreIndexDescriptor descriptor )
     {
+        // For an existing index the space filling curve settings should be read from the index file, so that a change to
+        // the configuration options passed into the db won't affect them.
+        individualSettings =
+        if ( fs.fileExists( storeFile ) )
+        {
+            GBPTree.readHeader( pageCache, storeFile, settingsFactory.headerReader( NativeSchemaIndexHeaderReader::readFailureMessage ) );
+        }
+
         return new SpatialLayout( settingsFactory );
     }
 
@@ -78,11 +87,6 @@ public class SpatialIndexProvider extends NativeIndexProvider<SpatialSchemaKey,N
     {
         return new SpatialIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig,
                 configuration );
-    }
-
-    private SpaceFillingCurveSettingsFactory getConfiguredSpaceFillingCurveSettings( Config config )
-    {
-        return new SpaceFillingCurveSettingsFactory( config );
     }
 
     private static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration( Config config )

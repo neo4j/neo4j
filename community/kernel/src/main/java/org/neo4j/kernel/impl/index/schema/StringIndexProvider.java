@@ -55,7 +55,7 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
     }
 
     @Override
-    Layout<StringSchemaKey,NativeSchemaValue> layout( StoreIndexDescriptor descriptor )
+    Layout<StringSchemaKey,NativeSchemaValue> layout( File storeFile, StoreIndexDescriptor descriptor )
     {
         return new StringLayout();
     }

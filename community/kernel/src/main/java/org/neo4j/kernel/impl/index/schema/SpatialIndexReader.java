@@ -39,11 +39,14 @@ import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
 class SpatialIndexReader extends NativeSchemaIndexReader<SpatialSchemaKey,NativeSchemaValue>
 {
     private final SpaceFillingCurveConfiguration configuration;
+    private SpaceFillingCurve currentCurve;
+    private CoordinateReferenceSystem currentCrs;
 
     SpatialIndexReader( GBPTree<SpatialSchemaKey,NativeSchemaValue> tree, Layout<SpatialSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig,
             IndexDescriptor descriptor, SpaceFillingCurveConfiguration configuration )
@@ -113,12 +116,14 @@ class SpatialIndexReader extends NativeSchemaIndexReader<SpatialSchemaKey,Native
         {
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
             client.initialize( descriptor, multiProgressor, query );
-            SpaceFillingCurve curve = layout().getSpaceFillingCurve( rangePredicate.crs() );
+            SpaceFillingCurve curve = spaceFillingCurve( rangePredicate.crs() );
             double[] from = rangePredicate.from() == null ? null : rangePredicate.from().coordinate();
             double[] to = rangePredicate.to() == null ? null : rangePredicate.to().coordinate();
             List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( from, to, configuration );
+            System.out.println( "q" );
             for ( SpaceFillingCurve.LongRange range : ranges )
             {
+                System.out.println( "range " + range );
                 SpatialSchemaKey treeKeyFrom = layout.newKey();
                 SpatialSchemaKey treeKeyTo = layout.newKey();
                 treeKeyFrom.fromDerivedValue( Long.MIN_VALUE, range.min, rangePredicate.crs() );
@@ -137,6 +142,16 @@ class SpatialIndexReader extends NativeSchemaIndexReader<SpatialSchemaKey,Native
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    private SpaceFillingCurve spaceFillingCurve( CoordinateReferenceSystem crs )
+    {
+        if ( currentCrs != crs )
+        {
+            currentCurve = layout().getSpaceFillingCurve( crs );
+            currentCrs = crs;
+        }
+        return currentCurve;
     }
 
     @Override

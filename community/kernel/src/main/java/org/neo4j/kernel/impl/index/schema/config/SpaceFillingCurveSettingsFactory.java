@@ -128,7 +128,9 @@ public class SpaceFillingCurveSettingsFactory
     {
         if ( settings.containsKey( crs ) )
         {
-            return settings.get( crs );
+            SpaceFillingCurveSettings s = settings.get( crs );
+            System.out.println( crs + " --> " + s );
+            return s;
         }
         else
         {

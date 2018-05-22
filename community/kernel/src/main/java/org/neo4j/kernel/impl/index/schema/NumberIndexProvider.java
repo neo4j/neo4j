@@ -54,7 +54,7 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
     }
 
     @Override
-    Layout<NumberSchemaKey,NativeSchemaValue> layout( StoreIndexDescriptor descriptor )
+    Layout<NumberSchemaKey,NativeSchemaValue> layout( File storeFile, StoreIndexDescriptor descriptor )
     {
         // split like this due to legacy reasons, there are old stores out there with these different identifiers
         switch ( descriptor.type() )

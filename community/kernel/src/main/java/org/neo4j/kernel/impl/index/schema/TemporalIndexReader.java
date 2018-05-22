@@ -72,8 +72,18 @@ class TemporalIndexReader extends NativeSchemaIndexReader<TemporalSchemaKey,Nati
 
         case range:
             IndexQuery.RangePredicate<?> rangePredicate = (IndexQuery.RangePredicate<?>) predicate;
-            initFromForRange( rangePredicate, treeKeyFrom, treeKeyTo );
-            initToForRange( rangePredicate, treeKeyTo, treeKeyFrom );
+            boolean openEndedFrom = initFromForRange( rangePredicate, treeKeyFrom );
+            boolean openEndedTo = initToForRange( rangePredicate, treeKeyTo );
+
+            // If either from or to is open-ended then initialize its type to that of the other type
+            if ( openEndedFrom )
+            {
+                treeKeyFrom.type = treeKeyTo.type;
+            }
+            if ( openEndedTo )
+            {
+                treeKeyTo.type = treeKeyFrom.type;
+            }
             break;
 
         default:
@@ -82,33 +92,35 @@ class TemporalIndexReader extends NativeSchemaIndexReader<TemporalSchemaKey,Nati
         return false; // no filtering
     }
 
-    private void initFromForRange( IndexQuery.RangePredicate<?> rangePredicate, TemporalSchemaKey treeKeyFrom, TemporalSchemaKey other )
+    private boolean initFromForRange( IndexQuery.RangePredicate<?> rangePredicate, TemporalSchemaKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
         {
             treeKeyFrom.initAsLowest();
-            treeKeyFrom.type = other.type;
+            return true;
         }
         else
         {
             treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE, fromValue );
             treeKeyFrom.setCompareId( true );
+            return false;
         }
     }
 
-    private void initToForRange( IndexQuery.RangePredicate<?> rangePredicate, TemporalSchemaKey treeKeyTo, TemporalSchemaKey other )
+    private boolean initToForRange( IndexQuery.RangePredicate<?> rangePredicate, TemporalSchemaKey treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
         {
             treeKeyTo.initAsHighest();
-            treeKeyTo.type = other.type;
+            return true;
         }
         else
         {
             treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
             treeKeyTo.setCompareId( true );
+            return false;
         }
     }
 }

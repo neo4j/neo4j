@@ -50,7 +50,7 @@ public class TemporalIndexProvider extends NativeIndexProvider<TemporalSchemaKey
     }
 
     @Override
-    Layout<TemporalSchemaKey,NativeSchemaValue> layout( StoreIndexDescriptor descriptor )
+    Layout<TemporalSchemaKey,NativeSchemaValue> layout( File storeFile, StoreIndexDescriptor descriptor )
     {
         return new TemporalLayout();
     }
