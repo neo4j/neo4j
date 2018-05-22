@@ -23,6 +23,7 @@
 package org.neo4j.causalclustering.messaging.marshalling.v2.decoding;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -30,7 +31,6 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.List;
 
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
-import org.neo4j.causalclustering.messaging.marshalling.ReplicatedContentChunk;
 import org.neo4j.causalclustering.messaging.marshalling.CoreReplicatedContentSerializer;
 
 public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
@@ -41,24 +41,35 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
     {
-        ReplicatedContentChunk replicatedContentChunk = ReplicatedContentChunk.deSerialize( in );
+        boolean isLast = in.readBoolean();
         if ( unfinishedChunk == null )
         {
-            if ( replicatedContentChunk.isLast() )
+            byte contentType = in.readByte();
+            int allocationSize = in.readInt();
+            if ( isLast )
             {
-                out.add( coreReplicatedContentSerializer.read( replicatedContentChunk.contentType(),
-                        new NetworkReadableClosableChannelNetty4( replicatedContentChunk.content() ) ) );
+                out.add( coreReplicatedContentSerializer.read( contentType, new NetworkReadableClosableChannelNetty4( in.readSlice( in.readableBytes() ) ) ) );
             }
             else
             {
-                unfinishedChunk = new UnfinishedChunk( replicatedContentChunk );
+                ByteBuf replicatedContentBuffer;
+                if ( allocationSize == -1 )
+                {
+                    replicatedContentBuffer = in.copy();
+                }
+                else
+                {
+                    replicatedContentBuffer = ByteBufAllocator.DEFAULT.heapBuffer( allocationSize, allocationSize );
+                }
+                unfinishedChunk = new UnfinishedChunk( contentType, replicatedContentBuffer );
+                unfinishedChunk.consume( in );
             }
         }
         else
         {
-            unfinishedChunk.consume( replicatedContentChunk );
+            unfinishedChunk.consume( in );
 
-            if ( replicatedContentChunk.isLast() )
+            if ( isLast )
             {
                 out.add( coreReplicatedContentSerializer.read( unfinishedChunk.contentType,
                         new NetworkReadableClosableChannelNetty4( unfinishedChunk.content() ) ) );
@@ -72,19 +83,15 @@ public class ReplicatedContentChunkDecoder extends ByteToMessageDecoder
     {
         private final byte contentType;
 
-        UnfinishedChunk( ReplicatedContentChunk replicatedContentChunk )
+        UnfinishedChunk( byte contentType, ByteBuf byteBuf )
         {
-            super( replicatedContentChunk.content().copy() );
-            contentType = replicatedContentChunk.contentType();
+            super( byteBuf );
+            this.contentType = contentType;
         }
 
-        void consume( ReplicatedContentChunk replicatedContentChunk )
+        void consume( ByteBuf replicatedContentChunk )
         {
-            if ( replicatedContentChunk.contentType() != contentType )
-            {
-                throw new IllegalArgumentException( "Wrong content type. Expected " + contentType + " got " + replicatedContentChunk.contentType() );
-            }
-            content().writeBytes( replicatedContentChunk.content() );
+            content().writeBytes( replicatedContentChunk );
         }
     }
 }

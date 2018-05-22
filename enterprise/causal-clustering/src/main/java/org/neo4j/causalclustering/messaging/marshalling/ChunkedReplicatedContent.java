@@ -45,7 +45,7 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
     {
         this.serializer = serializer;
         this.chunkSize = chunkSize;
-        if ( chunkSize < 4 )
+        if ( chunkSize < 7 )
         {
             throw new IllegalArgumentException( "Chunk size must be at least 4 bytes" );
         }
@@ -93,16 +93,20 @@ public class ChunkedReplicatedContent implements Marshal, ChunkedInput<ByteBuf>
         ByteBuf buffer = allocator.buffer( chunkSize );
         try
         {
-            // transfer to buffer
-            buffer.writeByte( contentType );
             buffer.writeBoolean( endOfInput );
+            if ( progress() == 0 )
+            {
+                // extra metadata on first chunk
+                buffer.writeByte( contentType );
+                buffer.writeInt( serializer.length() );
+            }
             if ( !serializer.encode( buffer ) )
             {
                 lastByteWasWritten = true;
             }
             if ( isEndOfInput() != endOfInput )
             {
-                buffer.setBoolean( 1, isEndOfInput() );
+                buffer.setBoolean( 0, isEndOfInput() );
             }
             progress += buffer.readableBytes();
             return buffer;
