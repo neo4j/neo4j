@@ -28,8 +28,6 @@ import org.opencypher.v9_0.util.test_helpers.WindowsStringSafe
 
 class DebugToStringTest extends ExecutionEngineFunSuite {
 
-  implicit val windowsSafe = WindowsStringSafe
-
   /**
     * This tests an internal feature that is not supported or critical for end users. Still nice to see that it works
     * and what the expected outputs are.
@@ -82,8 +80,7 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
     textResult should include("ScopeLocation")
   }
 
-  //TODO this test fails on windows
-  ignore("cost reporting") {
+  test("cost reporting") {
     val stringResult = graph.execute("CYPHER debug=dumpCosts MATCH (a:A) RETURN *").resultAsString()
     stringResult should equal("""+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
                                 || # | planId | planText                                                             | planCost                                                          | cost   | est cardinality | winner |
