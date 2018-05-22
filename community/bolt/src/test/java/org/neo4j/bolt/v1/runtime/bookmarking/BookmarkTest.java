@@ -21,13 +21,10 @@ package org.neo4j.bolt.v1.runtime.bookmarking;
 
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
@@ -42,7 +39,7 @@ public class BookmarkTest
 {
     private MapValue singletonMap( String key, Object value )
     {
-        return VirtualValues.map( Collections.singletonMap( key, ValueUtils.of( value ) ));
+        return VirtualValues.map( new String[]{key}, new AnyValue[]{ValueUtils.of( value )} );
     }
 
     @Test
@@ -363,12 +360,12 @@ public class BookmarkTest
 
     private static MapValue params( String bookmark, Object bookmarks )
     {
-        Map<String,AnyValue> result = new HashMap<>();
+        MapValueBuilder builder = new MapValueBuilder();
         if ( bookmark != null )
         {
-            result.put( "bookmark", ValueUtils.of( bookmark ) );
+            builder.add( "bookmark", ValueUtils.of( bookmark ) );
         }
-        result.put( "bookmarks", ValueUtils.of( bookmarks ) );
-        return VirtualValues.map( result );
+        builder.add( "bookmarks", ValueUtils.of( bookmarks ) );
+        return builder.build();
     }
 }

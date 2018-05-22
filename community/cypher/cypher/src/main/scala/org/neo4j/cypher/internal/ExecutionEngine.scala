@@ -33,7 +33,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{QueryExecution, ResultBuffer, TransactionalContext}
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
-import org.neo4j.values.virtual.{MapValue, VirtualValues}
+import org.neo4j.values.virtual.MapValue
 
 trait StringCacheMonitor extends CypherCacheMonitor[String]
 
@@ -97,7 +97,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       if (preParsedQuery.executionMode.name != "explain") {
         checkParameters(cachedExecutableQuery.paramNames, params, cachedExecutableQuery.extractedParams)
       }
-      val combinedParams = VirtualValues.combine(params, cachedExecutableQuery.extractedParams)
+      val combinedParams = params.updatedWith(cachedExecutableQuery.extractedParams)
       context.executingQuery().planningCompleted(cachedExecutableQuery.plan.plannerInfo)
       cachedExecutableQuery.plan.run(context, preParsedQuery.executionMode, combinedParams)
 

@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.function.BiConsumer
-
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.opencypher.v9_0.util.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.opencypher.v9_0.util.attribution.Id
+import org.opencypher.v9_0.util.{CypherTypeException, InvalidSemanticsException}
 
 abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
   extends PipeWithSource(src) with GraphElementPropertyFunctions {
@@ -50,7 +49,7 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
         case _: NodeValue | _: RelationshipValue =>
           throw new CypherTypeException("Parameter provided for node creation is not a Map")
         case IsMap(map) =>
-          map(state.query).foreach(new BiConsumer[String, AnyValue] {
+          map(state.query).foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
             override def accept(k: String, v: AnyValue): Unit = setProperty(nodeId, k, v, state.query)
           })
 

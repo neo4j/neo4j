@@ -21,7 +21,6 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -29,7 +28,6 @@ import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.hashing.HashFunction;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.utils.InvalidValuesArgumentException;
@@ -293,10 +291,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     public static PointValue fromMap( MapValue map )
     {
         PointBuilder fields = new PointBuilder();
-        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
-        {
-            fields.assign( entry.getKey().toLowerCase(), entry.getValue() );
-        }
+        map.foreach( ( key, value ) -> fields.assign( key.toLowerCase(), value ) );
         return fromInputFields( fields );
     }
 

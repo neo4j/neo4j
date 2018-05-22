@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v2_3
 
 import java.util.Collections.emptyList
-import java.util.function.BiConsumer
 
 import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal._
@@ -34,6 +33,7 @@ import org.opencypher.v9_0.frontend.phases
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.graphdb.{Node, Relationship, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
@@ -135,7 +135,7 @@ trait Compatibility {
                      executionMode: CypherExecutionMode,
                      params: MapValue): Result = {
       var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
-      params.foreach(new BiConsumer[String, AnyValue] {
+      params.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))
       })
 

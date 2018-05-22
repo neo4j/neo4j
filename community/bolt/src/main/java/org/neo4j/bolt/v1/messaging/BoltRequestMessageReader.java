@@ -20,13 +20,12 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
-
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Reader for Bolt request messages made available via a {@link Neo4jPack.Unpacker}.
@@ -101,8 +100,10 @@ public class BoltRequestMessageReader
     {
         MapValue authTokenValue = unpacker.unpackMap();
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
-        return authTokenValue.entrySet()
-                .stream()
-                .collect( toMap( Map.Entry::getKey, entry -> writer.valueAsObject( entry.getValue() ) ) );
+        HashMap<String,Object> tokenMap = new HashMap<>( authTokenValue.size() );
+
+        authTokenValue.foreach(
+                ( key, value ) -> tokenMap.put( key, writer.valueAsObject( value ) ) );
+        return tokenMap;
     }
 }

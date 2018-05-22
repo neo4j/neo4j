@@ -24,13 +24,13 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_5.codegen.ir
 
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.BiConsumer
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
 import org.neo4j.cypher.internal.runtime.compiled.codegen.{CodeGenContext, JoinTableMethod, Variable}
@@ -39,6 +39,8 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor
@@ -197,7 +199,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
       list
     case m: MapValue =>
       val map = new util.HashMap[String, AnyRef]()
-      m.foreach(new BiConsumer[String, AnyValue] {
+      m.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, toObjectConverter(u))
       })
       map

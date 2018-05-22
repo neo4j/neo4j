@@ -1167,11 +1167,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   // This version is for when maps contains AnyValues
   override def asMap(map: Map[String, Expression]) = {
-    invoke(method[VirtualValues, MapValue]("map", typeRef[java.util.Map[String,AnyValue]]),
-      invoke(Methods.createAnyValueMap,
-             newArray(typeRef[Object], map.flatMap {
-               case (key, value) => Seq(constant(key), value)
-             }.toSeq: _*)))
+    val (keys: Seq[String], values: Seq[Expression]) = map.toSeq.unzip
+    invoke(method[VirtualValues, MapValue]("map", typeRef[Array[String]], typeRef[Array[AnyValue]]),
+           newArray(typeRef[String], keys.map(constant): _*),
+           newArray(typeRef[AnyValue], values: _*))
   }
 
   override def invokeMethod(resultType: JoinTableType, resultVar: String, methodName: String)

@@ -19,19 +19,20 @@
  */
 package org.neo4j.values;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
@@ -39,7 +40,6 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -171,9 +171,13 @@ public class ValueMapperTest
         {
             @SuppressWarnings( "unchecked" )
             Map<String,?> map = (Map<String,?>) obj;
-            return map( map.entrySet().stream()
-                    .map( e -> new Entry( e.getKey(), valueOf( e.getValue() ) ) )
-                    .collect( toMap( e -> e.key, e -> e.value ) ) );
+            MapValueBuilder builder = new MapValueBuilder( map.size() );
+            for ( Map.Entry<String,?> entry : map.entrySet() )
+            {
+                builder.add( entry.getKey(), valueOf( entry.getValue() ) );
+            }
+
+            return builder.build();
         }
         throw new AssertionError( "cannot convert: " + obj + " (a " + obj.getClass().getName() + ")" );
     }
