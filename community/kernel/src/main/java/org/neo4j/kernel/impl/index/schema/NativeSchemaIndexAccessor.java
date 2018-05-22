@@ -33,7 +33,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -42,24 +42,17 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
-public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
-        extends NativeSchemaIndex<KEY,VALUE> implements IndexAccessor
+public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> extends NativeSchemaIndex<KEY,VALUE>
+        implements IndexAccessor
 {
     private final NativeSchemaIndexUpdater<KEY,VALUE> singleUpdater;
     final IndexSamplingConfig samplingConfig;
 
-    NativeSchemaIndexAccessor(
-            PageCache pageCache,
-            FileSystemAbstraction fs,
-            File storeFile,
-            Layout<KEY,VALUE> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            IndexProvider.Monitor monitor,
-            SchemaIndexDescriptor descriptor,
-            long indexId,
+    NativeSchemaIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor );
         singleUpdater = new NativeSchemaIndexUpdater<>( layout.newKey(), layout.newValue() );
         this.samplingConfig = samplingConfig;
         instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );

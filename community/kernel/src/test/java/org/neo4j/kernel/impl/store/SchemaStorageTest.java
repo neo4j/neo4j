@@ -46,12 +46,12 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
 import org.neo4j.test.rule.DatabaseRule;
@@ -65,6 +65,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
 
 public class SchemaStorageTest
@@ -115,11 +118,11 @@ public class SchemaStorageTest
                 index( LABEL2, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
+        StoreIndexDescriptor rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNotNull( rule );
-        assertRule( rule, LABEL1, PROP2, SchemaIndexDescriptor.Type.GENERAL );
+        assertRule( rule, LABEL1, PROP2, IndexDescriptor.Type.GENERAL );
     }
 
     @Test
@@ -134,7 +137,7 @@ public class SchemaStorageTest
         createSchema( db -> db.schema().indexFor( Label.label( LABEL1 ) )
           .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create() );
 
-        IndexRule rule = storage.indexGetForSchema( SchemaIndexDescriptorFactory.forLabel(
+        StoreIndexDescriptor rule = storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
                 labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ) );
 
         assertNotNull( rule );
@@ -145,7 +148,7 @@ public class SchemaStorageTest
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( d ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( e ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( f ) ) );
-        assertEquals( SchemaIndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+        assertEquals( IndexDescriptor.Type.GENERAL, rule.type() );
     }
 
     @Test
@@ -162,7 +165,7 @@ public class SchemaStorageTest
             indexCreator.create();
         } );
 
-        IndexRule rule = storage.indexGetForSchema( SchemaIndexDescriptorFactory.forLabel(
+        StoreIndexDescriptor rule = storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
                 labelId( LABEL1 ), Arrays.stream( props ).mapToInt( this::propId ).toArray() ) );
 
         assertNotNull( rule );
@@ -171,7 +174,7 @@ public class SchemaStorageTest
         {
             assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( prop ) ) );
         }
-        assertEquals( SchemaIndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+        assertEquals( IndexDescriptor.Type.GENERAL, rule.type() );
     }
 
     @Test
@@ -182,7 +185,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
+        StoreIndexDescriptor rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNull( rule );
@@ -197,11 +200,11 @@ public class SchemaStorageTest
                 index( LABEL1, PROP2 ) );
 
         // When
-        IndexRule rule = storage.indexGetForSchema( uniqueIndexDescriptor( LABEL1, PROP1 ) );
+        StoreIndexDescriptor rule = storage.indexGetForSchema( uniqueIndexDescriptor( LABEL1, PROP1 ) );
 
         // Then
         assertNotNull( rule );
-        assertRule( rule, LABEL1, PROP1, SchemaIndexDescriptor.Type.UNIQUE );
+        assertRule( rule, LABEL1, PROP1, IndexDescriptor.Type.UNIQUE );
     }
 
     @Test
@@ -214,10 +217,10 @@ public class SchemaStorageTest
                 uniquenessConstraint( LABEL2, PROP1 ) );
 
         // When
-        Set<IndexRule> listedRules = asSet( storage.indexesGetAll() );
+        Set<StoreIndexDescriptor> listedRules = asSet( storage.indexesGetAll() );
 
         // Then
-        Set<IndexRule> expectedRules = new HashSet<>();
+        Set<StoreIndexDescriptor> expectedRules = new HashSet<>();
         expectedRules.add( makeIndexRule( 0, LABEL1, PROP1 ) );
         expectedRules.add( makeIndexRule( 1, LABEL1, PROP2 ) );
         expectedRules.add( makeIndexRuleForConstraint( 2, LABEL2, PROP1, 0L ) );
@@ -331,11 +334,11 @@ public class SchemaStorageTest
         return tokenNameLookup;
     }
 
-    private void assertRule( IndexRule rule, String label, String propertyKey, SchemaIndexDescriptor.Type type )
+    private void assertRule( StoreIndexDescriptor rule, String label, String propertyKey, IndexDescriptor.Type type )
     {
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
-        assertEquals( type, rule.getIndexDescriptor().type() );
+        assertEquals( type, rule.type() );
     }
 
     private void assertRule( ConstraintRule rule, String label, String propertyKey, ConstraintDescriptor.Type type )
@@ -345,44 +348,35 @@ public class SchemaStorageTest
         assertEquals( type, rule.getConstraintDescriptor().type() );
     }
 
-    private SchemaIndexDescriptor indexDescriptor( String label, String property )
+    private IndexDescriptor indexDescriptor( String label, String property )
     {
-        return SchemaIndexDescriptorFactory.forLabel( labelId( label ), propId( property ) );
+        return TestIndexDescriptorFactory.forLabel( labelId( label ), propId( property ) );
     }
 
-    private SchemaIndexDescriptor uniqueIndexDescriptor( String label, String property )
+    private IndexDescriptor uniqueIndexDescriptor( String label, String property )
     {
-        return SchemaIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) );
+        return TestIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) );
     }
 
-    private IndexRule makeIndexRule( long ruleId, String label, String propertyKey )
+    private StoreIndexDescriptor makeIndexRule( long ruleId, String label, String propertyKey )
     {
-        return IndexRule.indexRule(
-                ruleId,
-                SchemaIndexDescriptorFactory.forLabel( labelId( label ), propId( propertyKey ) ),
-                PROVIDER_DESCRIPTOR );
+        return forSchema( forLabel( labelId( label ), propId( propertyKey ) ), PROVIDER_DESCRIPTOR ).withId( ruleId );
     }
 
-    private IndexRule makeIndexRuleForConstraint( long ruleId, String label, String propertyKey,
-            long constraintId )
+    private StoreIndexDescriptor makeIndexRuleForConstraint( long ruleId, String label, String propertyKey, long constraintId )
     {
-        return IndexRule.constraintIndexRule(
-                ruleId,
-                SchemaIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( propertyKey ) ),
-                PROVIDER_DESCRIPTOR, constraintId );
+        return uniqueForSchema( forLabel( labelId( label ), propId( propertyKey ) ), PROVIDER_DESCRIPTOR ).withIds( ruleId, constraintId );
     }
 
     private ConstraintRule getUniquePropertyConstraintRule( long id, String label, String property )
     {
-        return ConstraintRule.constraintRule( id,
-                ConstraintDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) ), 0L );
+        return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) ), 0L );
     }
 
     private ConstraintRule getRelationshipPropertyExistenceConstraintRule( long id, String type,
             String property )
     {
-        return ConstraintRule.constraintRule( id,
-                ConstraintDescriptorFactory.existsForRelType( typeId( type ), propId( property ) ) );
+        return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForRelType( typeId( type ), propId( property ) ) );
     }
 
     private static int labelId( String labelName )

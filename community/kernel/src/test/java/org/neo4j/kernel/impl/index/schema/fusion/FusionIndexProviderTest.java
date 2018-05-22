@@ -32,8 +32,8 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
@@ -48,12 +48,12 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.GROUP_OF;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
@@ -69,6 +69,8 @@ import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
 public class FusionIndexProviderTest
 {
     private static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( "test-fusion", "1" );
+    public static final StoreIndexDescriptor AN_INDEX =
+            IndexDescriptorFactory.forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).withId( 0 );
 
     private IndexProvider[] providers;
     private IndexProvider[] aliveProviders;
@@ -168,13 +170,13 @@ public class FusionIndexProviderTest
         IllegalStateException failure = new IllegalStateException( "not failed" );
         for ( IndexProvider provider : aliveProviders )
         {
-            when( provider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenThrow( failure );
+            when( provider.getPopulationFailure( any( StoreIndexDescriptor.class ) ) ).thenThrow( failure );
         }
 
         // then
         try
         {
-            fusionIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
+            fusionIndexProvider.getPopulationFailure( AN_INDEX );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -194,16 +196,16 @@ public class FusionIndexProviderTest
             {
                 if ( provider == failingProvider )
                 {
-                    when( provider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( failure );
+                    when( provider.getPopulationFailure( any( StoreIndexDescriptor.class ) ) ).thenReturn( failure );
                 }
                 else
                 {
-                    when( provider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenThrow( exception );
+                    when( provider.getPopulationFailure( any( StoreIndexDescriptor.class ) ) ).thenThrow( exception );
                 }
             }
 
             // then
-            assertThat( fusionIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( failure ) );
+            assertThat( fusionIndexProvider.getPopulationFailure( AN_INDEX ), containsString( failure ) );
         }
     }
 
@@ -216,11 +218,11 @@ public class FusionIndexProviderTest
         {
             String failureMessage = "FAILURE[" + aliveProvider + "]";
             failureMessages.add( failureMessage );
-            when( aliveProvider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( failureMessage );
+            when( aliveProvider.getPopulationFailure( any( StoreIndexDescriptor.class ) ) ).thenReturn( failureMessage );
         }
 
         // then
-        String populationFailure = fusionIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
+        String populationFailure = fusionIndexProvider.getPopulationFailure( AN_INDEX );
         for ( String failureMessage : failureMessages )
         {
             assertThat( populationFailure, containsString( failureMessage ) );
@@ -232,7 +234,6 @@ public class FusionIndexProviderTest
     {
         // given
         IndexProvider provider = fusionIndexProvider;
-        SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
 
         for ( InternalIndexState state : InternalIndexState.values() )
         {
@@ -243,7 +244,7 @@ public class FusionIndexProviderTest
                 {
                     setInitialState( aliveProvider, failedProvider == aliveProvider ? InternalIndexState.FAILED : state );
                 }
-                InternalIndexState initialState = provider.getInitialState( 0, schemaIndexDescriptor );
+                InternalIndexState initialState = provider.getInitialState( AN_INDEX );
 
                 // then
                 assertEquals( InternalIndexState.FAILED, initialState );
@@ -255,8 +256,6 @@ public class FusionIndexProviderTest
     public void shouldReportPopulatingIfAnyIsPopulating()
     {
         // given
-        SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
-
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
         {
             for ( IndexProvider populatingProvider : aliveProviders )
@@ -266,7 +265,7 @@ public class FusionIndexProviderTest
                 {
                     setInitialState( aliveProvider, populatingProvider == aliveProvider ? InternalIndexState.POPULATING : state );
                 }
-                InternalIndexState initialState = fusionIndexProvider.getInitialState( 0, schemaIndexDescriptor );
+                InternalIndexState initialState = fusionIndexProvider.getInitialState( AN_INDEX );
 
                 // then
                 assertEquals( InternalIndexState.POPULATING, initialState );
@@ -332,7 +331,7 @@ public class FusionIndexProviderTest
 
     private void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
     {
-        when( mockedProvider.getInitialState( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( state );
+        when( mockedProvider.getInitialState( any( StoreIndexDescriptor.class ) ) ).thenReturn( state );
     }
 
     private IndexProvider orLucene( IndexProvider provider )

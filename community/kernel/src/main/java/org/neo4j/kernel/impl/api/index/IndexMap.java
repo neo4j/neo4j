@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
@@ -96,12 +97,13 @@ public final class IndexMap implements Cloneable
         return indexIdsByDescriptor.get( descriptor );
     }
 
-    public void putIndexProxy( long indexId, IndexProxy indexProxy )
+    public void putIndexProxy( IndexProxy indexProxy )
     {
-        SchemaDescriptor schema = indexProxy.getDescriptor().schema();
-        indexesById.put( indexId, indexProxy );
+        StoreIndexDescriptor descriptor = indexProxy.getDescriptor();
+        SchemaDescriptor schema = descriptor.schema();
+        indexesById.put( descriptor.getId(), indexProxy );
         indexesByDescriptor.put( schema, indexProxy );
-        indexIdsByDescriptor.put( schema, indexId );
+        indexIdsByDescriptor.put( schema, descriptor.getId() );
         addDescriptorToLookups( schema );
     }
 
@@ -234,7 +236,7 @@ public final class IndexMap implements Cloneable
 
     private static Map<SchemaDescriptor, IndexProxy> indexesByDescriptor( LongObjectMap<IndexProxy> indexesById )
     {
-        return indexesById.toMap( IndexProxy::schema, Functions.identity() );
+        return indexesById.toMap( indexProxy -> indexProxy.getDescriptor().schema(), Functions.identity() );
     }
 
     private static MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor( LongObjectMap<IndexProxy> indexesById )
@@ -242,7 +244,7 @@ public final class IndexMap implements Cloneable
         final MutableObjectLongMap<SchemaDescriptor> map = new ObjectLongHashMap<>( indexesById.size() );
         indexesById.forEachKeyValue( ( id, indexProxy ) ->
         {
-            map.put( indexProxy.schema(), id );
+            map.put( indexProxy.getDescriptor().schema(), id );
 
         } );
         return map;

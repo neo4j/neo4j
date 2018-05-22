@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -53,8 +54,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -93,7 +94,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
@@ -584,8 +584,8 @@ public class IndexPopulationJobTest
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        SchemaIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
-        return new InMemoryIndexProvider().getPopulator( 21, descriptor, samplingConfig );
+        IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
+        return new InMemoryIndexProvider().getPopulator( descriptor.withId( 21 ), samplingConfig );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator,
@@ -612,27 +612,28 @@ public class IndexPopulationJobTest
                                                       LogProvider logProvider, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        SchemaIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
+        IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider );
         IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, stateHolder );
-        job.addPopulator( populator, indexId, new IndexMeta( indexId, descriptor, PROVIDER_DESCRIPTOR, NO_CAPABILITY ),
+        job.addPopulator( populator, descriptor.withId( indexId ).withoutCapabilities(),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
     }
 
-    private SchemaIndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
+    private IndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         try ( Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
-            SchemaIndexDescriptor descriptor = constraint ?
-                                               SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
-                                               SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+            SchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
+            IndexDescriptor descriptor = constraint ?
+                                         IndexDescriptorFactory.uniqueForSchema( schema, PROVIDER_DESCRIPTOR ) :
+                                         IndexDescriptorFactory.forSchema( schema, PROVIDER_DESCRIPTOR );
             tx.success();
             return descriptor;
         }

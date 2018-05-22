@@ -44,7 +44,7 @@ public interface SuperReadableDiffSets<T>
 
     boolean isEmpty();
 
-    Iterator<T> apply( Iterator<T> source );
+    Iterator<T> apply( Iterator<? extends T> source );
 
     int delta();
 

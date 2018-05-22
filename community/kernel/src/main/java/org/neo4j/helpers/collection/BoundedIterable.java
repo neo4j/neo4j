@@ -19,6 +19,7 @@
  */
 package org.neo4j.helpers.collection;
 
+@Deprecated
 public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable
 {
     long UNKNOWN_MAX_COUNT = -1;

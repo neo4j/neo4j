@@ -19,7 +19,9 @@
  */
 package org.neo4j.helpers;
 
+@Deprecated
 public interface Cancelable
 {
+    @Deprecated
     void cancel();
 }

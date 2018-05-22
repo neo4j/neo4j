@@ -26,6 +26,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.storecopy.StoreWriter;
 
+@Deprecated
 public interface TheBackupInterface
 {
     Response<Void> fullBackup( StoreWriter writer, boolean forensics );

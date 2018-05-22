@@ -23,8 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.logging.LogProvider;
@@ -39,6 +39,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
 public class OnlineIndexSamplingJobTest
 {
@@ -75,7 +77,8 @@ public class OnlineIndexSamplingJobTest
     private final long indexId = 1;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
-    private final SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( 1, 2 );
+    private final CapableIndexDescriptor indexDescriptor =
+            forSchema( forLabel( 1, 2 ), IndexProvider.UNDECIDED ).withId( indexId ).withoutCapabilities();
     private final IndexReader indexReader = mock( IndexReader.class );
     private final IndexSampler indexSampler = mock( IndexSampler.class );
 
@@ -85,7 +88,7 @@ public class OnlineIndexSamplingJobTest
     @Before
     public void setup() throws IndexNotFoundKernelException
     {
-        when( indexProxy.getDescriptor() ).thenReturn( schemaIndexDescriptor );
+        when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
         when( indexProxy.newReader() ).thenReturn( indexReader );
         when( indexReader.createSampler() ).thenReturn( indexSampler );
         when( indexSampler.sampleIndex() ).thenReturn( new IndexSample( indexSize, indexUniqueValues, indexSize ) );

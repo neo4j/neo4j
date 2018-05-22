@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -138,7 +138,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldIndexAdd() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
         {
             // when
@@ -154,15 +154,15 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldIndexChange() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
-        Iterator<IndexEntryUpdate<SchemaIndexDescriptor>> generator = filter( skipExisting( updates ), layoutUtil.randomUpdateGenerator( random ) );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), layoutUtil.randomUpdateGenerator( random ) );
 
         for ( int i = 0; i < updates.length; i++ )
         {
-            IndexEntryUpdate<SchemaIndexDescriptor> update = updates[i];
+            IndexEntryUpdate<IndexDescriptor> update = updates[i];
             Value newValue = generator.next().values()[0];
-            updates[i] = change( update.getEntityId(), schemaIndexDescriptor, update.values()[0], newValue );
+            updates[i] = change( update.getEntityId(), indexDescriptor, update.values()[0], newValue );
         }
 
         // when
@@ -177,15 +177,14 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldIndexRemove() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         for ( int i = 0; i < updates.length; i++ )
         {
             // when
-            IndexEntryUpdate<SchemaIndexDescriptor> update = updates[i];
-            IndexEntryUpdate<SchemaIndexDescriptor> remove = remove( update.getEntityId(),
-                    schemaIndexDescriptor, update.values() );
+            IndexEntryUpdate<IndexDescriptor> update = updates[i];
+            IndexEntryUpdate<IndexDescriptor> remove = remove( update.getEntityId(), indexDescriptor, update.values() );
             processAll( remove );
             forceAndCloseAccessor();
 
@@ -199,16 +198,16 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldHandleRandomUpdates() throws Exception
     {
         // given
-        Set<IndexEntryUpdate<SchemaIndexDescriptor>> expectedData = new HashSet<>();
-        Iterator<IndexEntryUpdate<SchemaIndexDescriptor>> newDataGenerator = layoutUtil.randomUpdateGenerator( random );
+        Set<IndexEntryUpdate<IndexDescriptor>> expectedData = new HashSet<>();
+        Iterator<IndexEntryUpdate<IndexDescriptor>> newDataGenerator = layoutUtil.randomUpdateGenerator( random );
 
         // when
         int rounds = 50;
         for ( int round = 0; round < rounds; round++ )
         {
             // generate a batch of updates (add, change, remove)
-            IndexEntryUpdate<SchemaIndexDescriptor>[] batch = generateRandomUpdates( expectedData, newDataGenerator,
-                    random.nextInt( 5, 20 ), (float) round / rounds * 2 );
+            IndexEntryUpdate<IndexDescriptor>[] batch =
+                    generateRandomUpdates( expectedData, newDataGenerator, random.nextInt( 5, 20 ), (float) round / rounds * 2 );
             // apply to tree
             processAll( batch );
             // apply to expectedData
@@ -229,7 +228,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         try ( IndexReader reader = accessor.newReader() )
         {
             // when
-            IndexEntryUpdate<SchemaIndexDescriptor> update = layoutUtil.randomUpdateGenerator( random ).next();
+            IndexEntryUpdate<IndexDescriptor> update = layoutUtil.randomUpdateGenerator( random ).next();
             long count = reader.countIndexedNodes( 123, update.values()[0] );
 
             // then
@@ -241,13 +240,13 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldReturnCountOneForExistingData() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         // when
         try ( IndexReader reader = accessor.newReader() )
         {
-            for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {
                 long count = reader.countIndexedNodes( update.getEntityId(), update.values() );
 
@@ -256,7 +255,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
             }
 
             // and when
-            Iterator<IndexEntryUpdate<SchemaIndexDescriptor>> generator = filter( skipExisting( updates ), layoutUtil.randomUpdateGenerator( random ) );
+            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), layoutUtil.randomUpdateGenerator( random ) );
             long count = reader.countIndexedNodes( 123, generator.next().values()[0] );
 
             // then
@@ -268,13 +267,13 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldReturnCountZeroForMismatchingData() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         // when
         IndexReader reader = accessor.newReader();
 
-        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             long countWithMismatchingData = reader.countIndexedNodes( update.getEntityId() + 1, update.values() );
             long countWithNonExistentEntityId = reader.countIndexedNodes( NON_EXISTENT_ENTITY_ID, update.values() );
@@ -291,7 +290,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldReturnAllEntriesForExistsPredicate() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         // when
@@ -318,12 +317,12 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldReturnMatchingEntriesForExactPredicate() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         // when
         IndexReader reader = accessor.newReader();
-        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             Value value = update.values()[0];
             LongIterator result = query( reader, IndexQuery.exact( 0, value ) );
@@ -335,7 +334,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldReturnNoEntriesForMismatchingExactPredicate() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         // when
@@ -349,7 +348,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -364,7 +363,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -379,7 +378,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -394,7 +393,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -409,7 +408,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldReturnNoEntriesForRangePredicateOutsideAnyMatch() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         layoutUtil.sort( updates );
         processAll( updates[0], updates[1], updates[updates.length - 1], updates[updates.length - 2] );
 
@@ -424,7 +423,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void mustHandleNestedQueries() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -452,7 +451,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void mustHandleMultipleNestedQueries() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -492,7 +491,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         assertEntityIdHits( expected1, result1 );
     }
 
-    private long entityIdOf( IndexEntryUpdate<SchemaIndexDescriptor> update )
+    private long entityIdOf( IndexEntryUpdate<IndexDescriptor> update )
     {
         return update.getEntityId();
     }
@@ -501,10 +500,10 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldHandleMultipleConsecutiveUpdaters() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
-        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
             {
@@ -548,7 +547,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void forceShouldCheckpointTree() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] data = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] data = layoutUtil.someUpdates();
         processAll( data );
 
         // when
@@ -564,7 +563,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void closeShouldCloseTreeWithoutCheckpoint() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] data = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] data = layoutUtil.someUpdates();
         processAll( data );
 
         // when
@@ -590,7 +589,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldSampleIndex() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
         try ( IndexReader reader = accessor.newReader() )
         {
@@ -662,7 +661,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldSeeAllEntriesInAllEntriesReader() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         // when
@@ -690,7 +689,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     public void shouldNotSeeFilteredEntries() throws Exception
     {
         // given
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
         layoutUtil.sort( updates );
         IndexReader reader = accessor.newReader();
@@ -708,16 +707,16 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         assertFalse( iter.hasNext() );
     }
 
-    private Value generateUniqueValue( IndexEntryUpdate<SchemaIndexDescriptor>[] updates )
+    private Value generateUniqueValue( IndexEntryUpdate<IndexDescriptor>[] updates )
     {
         return filter( skipExisting( updates ), layoutUtil.randomUpdateGenerator( random ) ).next().values()[0];
     }
 
-    private static Predicate<IndexEntryUpdate<SchemaIndexDescriptor>> skipExisting( IndexEntryUpdate<SchemaIndexDescriptor>[] existing )
+    private static Predicate<IndexEntryUpdate<IndexDescriptor>> skipExisting( IndexEntryUpdate<IndexDescriptor>[] existing )
     {
         return update ->
         {
-            for ( IndexEntryUpdate<SchemaIndexDescriptor> e : existing )
+            for ( IndexEntryUpdate<IndexDescriptor> e : existing )
             {
                 if ( Arrays.equals( e.values(), update.values() ) )
                 {
@@ -728,7 +727,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         };
     }
 
-    private Value valueOf( IndexEntryUpdate<SchemaIndexDescriptor> update )
+    private Value valueOf( IndexEntryUpdate<IndexDescriptor> update )
     {
         return update.values()[0];
     }
@@ -738,7 +737,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         return new IndexProgressor.NodeValueClient()
         {
             @Override
-            public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
+            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
             {
                 iter.initialize( descriptor, progressor, query );
             }
@@ -808,13 +807,13 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         return Arrays.copyOf( entityIds, cursor );
     }
 
-    private void applyUpdatesToExpectedData( Set<IndexEntryUpdate<SchemaIndexDescriptor>> expectedData,
-            IndexEntryUpdate<SchemaIndexDescriptor>[] batch )
+    private void applyUpdatesToExpectedData( Set<IndexEntryUpdate<IndexDescriptor>> expectedData,
+            IndexEntryUpdate<IndexDescriptor>[] batch )
     {
-        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : batch )
+        for ( IndexEntryUpdate<IndexDescriptor> update : batch )
         {
-            IndexEntryUpdate<SchemaIndexDescriptor> addition = null;
-            IndexEntryUpdate<SchemaIndexDescriptor> removal = null;
+            IndexEntryUpdate<IndexDescriptor> addition = null;
+            IndexEntryUpdate<IndexDescriptor> removal = null;
             switch ( update.updateMode() )
             {
             case ADDED:
@@ -842,12 +841,12 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         }
     }
 
-    private IndexEntryUpdate<SchemaIndexDescriptor>[] generateRandomUpdates(
-            Set<IndexEntryUpdate<SchemaIndexDescriptor>> expectedData,
-            Iterator<IndexEntryUpdate<SchemaIndexDescriptor>> newDataGenerator, int count, float removeFactor )
+    private IndexEntryUpdate<IndexDescriptor>[] generateRandomUpdates(
+            Set<IndexEntryUpdate<IndexDescriptor>> expectedData,
+            Iterator<IndexEntryUpdate<IndexDescriptor>> newDataGenerator, int count, float removeFactor )
     {
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<SchemaIndexDescriptor>[] updates = new IndexEntryUpdate[count];
+        IndexEntryUpdate<IndexDescriptor>[] updates = new IndexEntryUpdate[count];
         float addChangeRatio = 0.5f;
         for ( int i = 0; i < count; i++ )
         {
@@ -855,16 +854,16 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
             if ( !expectedData.isEmpty() && factor < removeFactor )
             {
                 // remove something
-                IndexEntryUpdate<SchemaIndexDescriptor> toRemove = selectRandomItem( expectedData );
-                updates[i] = remove( toRemove.getEntityId(), schemaIndexDescriptor, toRemove.values() );
+                IndexEntryUpdate<IndexDescriptor> toRemove = selectRandomItem( expectedData );
+                updates[i] = remove( toRemove.getEntityId(), indexDescriptor, toRemove.values() );
             }
             else if ( !expectedData.isEmpty() && factor < (1 - removeFactor) * addChangeRatio )
             {
                 // change
-                IndexEntryUpdate<SchemaIndexDescriptor> toChange = selectRandomItem( expectedData );
+                IndexEntryUpdate<IndexDescriptor> toChange = selectRandomItem( expectedData );
                 // use the data generator to generate values, even if the whole update as such won't be used
-                IndexEntryUpdate<SchemaIndexDescriptor> updateContainingValue = newDataGenerator.next();
-                updates[i] = change( toChange.getEntityId(), schemaIndexDescriptor, toChange.values(),
+                IndexEntryUpdate<IndexDescriptor> updateContainingValue = newDataGenerator.next();
+                updates[i] = change( toChange.getEntityId(), indexDescriptor, toChange.values(),
                         updateContainingValue.values() );
             }
             else
@@ -877,18 +876,18 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     }
 
     @SuppressWarnings( "unchecked" )
-    private IndexEntryUpdate<SchemaIndexDescriptor> selectRandomItem( Set<IndexEntryUpdate<SchemaIndexDescriptor>> expectedData )
+    private IndexEntryUpdate<IndexDescriptor> selectRandomItem( Set<IndexEntryUpdate<IndexDescriptor>> expectedData )
     {
         return expectedData.toArray( new IndexEntryUpdate[expectedData.size()] )[random.nextInt( expectedData.size() )];
     }
 
     @SafeVarargs
-    final void processAll( IndexEntryUpdate<SchemaIndexDescriptor>... updates )
+    final void processAll( IndexEntryUpdate<IndexDescriptor>... updates )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
         {
-            for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {
                 updater.process( update );
             }
@@ -901,18 +900,18 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         closeAccessor();
     }
 
-    private void processAll( IndexUpdater updater, IndexEntryUpdate<SchemaIndexDescriptor>[] updates )
+    private void processAll( IndexUpdater updater, IndexEntryUpdate<IndexDescriptor>[] updates )
             throws IOException, IndexEntryConflictException
     {
-        for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             updater.process( update );
         }
     }
 
-    private IndexEntryUpdate<SchemaIndexDescriptor> simpleUpdate()
+    private IndexEntryUpdate<IndexDescriptor> simpleUpdate()
     {
-        return IndexEntryUpdate.add( 0, schemaIndexDescriptor, of( 0 ) );
+        return IndexEntryUpdate.add( 0, indexDescriptor, of( 0 ) );
     }
 
     // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate

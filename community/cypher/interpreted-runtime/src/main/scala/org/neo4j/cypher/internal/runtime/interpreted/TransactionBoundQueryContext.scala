@@ -53,7 +53,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
-import org.neo4j.kernel.impl.api.store.{DefaultIndexReference, RelationshipIterator}
+import org.neo4j.kernel.impl.api.store.{RelationshipIterator}
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
@@ -318,7 +318,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def lockingUniqueIndexSeek(indexReference: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] = {
     indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
-    val index = DefaultIndexReference.general(indexReference.label(), indexReference.properties():_*)
+    val index = transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(indexReference.label(), indexReference.properties():_*)
     val nodeId = reads().lockingNodeUniqueIndexSeek(index, queries:_*)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
@@ -658,7 +658,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropIndexRule(descriptor: IndexDescriptor): Unit =
     transactionalContext.kernelTransaction.schemaWrite().indexDrop(
-      DefaultIndexReference.general(descriptor.label, descriptor.properties.map(_.id):_*)
+      transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(descriptor.label, descriptor.properties.map(_.id):_*)
     )
 
   override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = try {

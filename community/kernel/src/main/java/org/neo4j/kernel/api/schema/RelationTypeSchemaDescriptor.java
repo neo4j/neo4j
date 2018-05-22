@@ -60,12 +60,6 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     }
 
     @Override
-    public String keyName( TokenNameLookup tokenNameLookup )
-    {
-        return tokenNameLookup.relationshipTypeGetName( relTypeId );
-    }
-
-    @Override
     public int getRelTypeId()
     {
         return relTypeId;

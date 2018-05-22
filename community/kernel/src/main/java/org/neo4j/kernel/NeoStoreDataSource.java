@@ -503,9 +503,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             throw new RuntimeException( e );
         }
 
-        // NOTE: please make sure this is performed after having added everything to the life, in fact we would like
-        // to perform the checkpointing as first step when the life is shutdown.
-        life.add( lifecycleToTriggerCheckPointOnShutdown() );
+        life.addLast( lifecycleToTriggerCheckPointOnShutdown() );
 
         try
         {
@@ -648,8 +646,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
-            IndexingService indexingService,
-            DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
+            IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
             AvailabilityGuard availabilityGuard, SystemNanoClock clock, PropertyAccessor propertyAccessor )
     {

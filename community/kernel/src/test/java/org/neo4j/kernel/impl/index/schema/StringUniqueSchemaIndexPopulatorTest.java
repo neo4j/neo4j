@@ -26,7 +26,7 @@ public class StringUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaInde
     @Override
     NativeSchemaIndexPopulator<StringSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        return new StringSchemaIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new StringSchemaIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override

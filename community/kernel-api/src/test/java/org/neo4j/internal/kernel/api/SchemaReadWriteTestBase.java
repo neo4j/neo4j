@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.kernel.api.CapableIndexReference.NO_INDEX;
+import static org.neo4j.internal.kernel.api.IndexReference.NO_INDEX;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
@@ -86,7 +86,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = session.beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat( schemaRead.index( label, prop1 ), equalTo( CapableIndexReference.NO_INDEX ) );
+            assertThat( schemaRead.index( label, prop1 ), equalTo( IndexReference.NO_INDEX ) );
         }
     }
 
@@ -104,19 +104,6 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertThat( schemaRead.index( label, prop1 ), equalTo( index ) );
-        }
-    }
-
-    @Test
-    public void shouldGetUndecidedVersionAndKeyFromIndexReference() throws Exception
-    {
-        try ( Transaction transaction = session.beginTransaction() )
-        {
-            transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            CapableIndexReference index = transaction.schemaRead().index( label, prop1 );
-
-            assertThat( index.providerKey(), equalTo( "Undecided" ));
-            assertThat( index.providerVersion(), equalTo( "0" ));
         }
     }
 
@@ -189,7 +176,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             transaction.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
             SchemaRead schemaRead = transaction.schemaRead();
-            CapableIndexReference index = schemaRead.index( label, prop2 );
+            IndexReference index = schemaRead.index( label, prop2 );
             assertThat( index.properties(), equalTo( new int[]{prop2} ) );
             assertThat( 2, equalTo( Iterators.asList( schemaRead.indexesGetAll() ).size() ) );
         }

@@ -139,9 +139,9 @@ abstract class SuperDiffSets<T> implements SuperReadableDiffSets<T>
     }
 
     @Override
-    public Iterator<T> apply( Iterator<T> source )
+    public Iterator<T> apply( Iterator<? extends T> source )
     {
-        Iterator<T> result = source;
+        Iterator<T> result = (Iterator)source;
         if ( ( removedElements != null && !removedElements.isEmpty() ) ||
              ( addedElements != null && !addedElements.isEmpty() ) )
         {

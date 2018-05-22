@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -48,6 +48,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 public class NeoTransactionIndexApplierTest
@@ -106,7 +107,7 @@ public class NeoTransactionIndexApplierTest
     public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
-        final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
+        final StoreIndexDescriptor indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
@@ -125,16 +126,16 @@ public class NeoTransactionIndexApplierTest
         verify( indexingService ).createIndexes( indexRule );
     }
 
-    private IndexRule indexRule( long ruleId, int labelId, int propertyId, Descriptor descriptor )
+    private StoreIndexDescriptor indexRule( long ruleId, int labelId, int propertyId, Descriptor descriptor )
     {
-        return IndexRule.indexRule( ruleId, SchemaIndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
+        return IndexDescriptorFactory.forSchema( forLabel( labelId, propertyId ), descriptor ).withId( ruleId );
     }
 
     @Test
     public void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
-        final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
+        final StoreIndexDescriptor indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 

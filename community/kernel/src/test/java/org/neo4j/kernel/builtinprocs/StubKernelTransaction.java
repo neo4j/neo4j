@@ -37,11 +37,13 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.ClockContext;
 
 public class StubKernelTransaction implements KernelTransaction
@@ -55,6 +57,12 @@ public class StubKernelTransaction implements KernelTransaction
     public Statement acquireStatement()
     {
         return new StubStatement( );
+    }
+
+    @Override
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override

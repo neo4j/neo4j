@@ -57,7 +57,6 @@ import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
-import org.neo4j.kernel.impl.api.store.DefaultIndexReference
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
@@ -207,7 +206,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   }
 
   override def indexSeek(index: IndexDescriptor, value: Any) =
-    seek(DefaultIndexReference.general(index.labelId, index.propertyId),
+    seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId),
          IndexQuery.exact(index.propertyId, value))
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
@@ -295,19 +294,19 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   }
 
   private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] =
-    seek(DefaultIndexReference.general(index.labelId, index.propertyId), IndexQuery.stringPrefix(index.propertyId, prefix))
+    seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.stringPrefix(index.propertyId, prefix))
 
   private def indexSeekByNumericalRange(index: IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] =(range match {
     case rangeLessThan: RangeLessThan[Number] =>
       rangeLessThan.limit(BY_NUMBER).map { limit =>
         val rangePredicate = IndexQuery.range(index.propertyId, null, false, limit.endPoint, limit.isInclusive)
-        seek(DefaultIndexReference.general(index.labelId, index.propertyId), rangePredicate)
+        seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), rangePredicate)
       }
 
     case rangeGreaterThan: RangeGreaterThan[Number] =>
       rangeGreaterThan.limit(BY_NUMBER).map { limit =>
         val rangePredicate = IndexQuery.range(index.propertyId, limit.endPoint, limit.isInclusive, null, false)
-        seek(DefaultIndexReference.general(index.labelId, index.propertyId), rangePredicate)
+        seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), rangePredicate)
       }
 
     case RangeBetween(rangeGreaterThan, rangeLessThan) =>
@@ -317,7 +316,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
             .range(index.propertyId, greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
                    lessThanLimit.endPoint,
                    lessThanLimit.isInclusive)
-          seek(DefaultIndexReference.general(index.labelId, index.propertyId), rangePredicate)
+          seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), rangePredicate)
         }
       }
   }).getOrElse(Iterator.empty)
@@ -329,14 +328,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
       rangeLessThan.limit(BY_STRING).map { limit =>
         val rangePredicate = IndexQuery
           .range(index.propertyId, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive)
-        seek(DefaultIndexReference.general(index.labelId, index.propertyId), rangePredicate)
+        seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), rangePredicate)
       }.getOrElse(Iterator.empty)
 
     case rangeGreaterThan: RangeGreaterThan[String] =>
       rangeGreaterThan.limit(BY_STRING).map { limit =>
         val rangePredicate = IndexQuery
           .range(index.propertyId, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false)
-        seek(DefaultIndexReference.general(index.labelId, index.propertyId), rangePredicate)
+        seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), rangePredicate)
       }.getOrElse(Iterator.empty)
 
     case RangeBetween(rangeGreaterThan, rangeLessThan) =>
@@ -345,14 +344,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
           val rangePredicate = IndexQuery
             .range(index.propertyId, greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive,
                    lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive)
-          seek(DefaultIndexReference.general(index.labelId, index.propertyId), rangePredicate)
+          seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), rangePredicate)
         }
       }.getOrElse(Iterator.empty)
   }
 
   override def indexScan(index: IndexDescriptor) = {
     val cursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(DefaultIndexReference.general(index.labelId, index.propertyId), cursor, IndexOrder.NONE)
+    reads().nodeIndexScan(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), cursor, IndexOrder.NONE)
     new CursorIterator[Node] {
       override protected def fetchNext(): Node = {
         if (cursor.next()) entityAccessor.newNodeProxy(cursor.nodeReference())
@@ -363,14 +362,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   }
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
-    seek(DefaultIndexReference.general(index.labelId, index.propertyId), IndexQuery.stringContains(index.propertyId, value))
+    seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.stringContains(index.propertyId, value))
 
   override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
-    seek(DefaultIndexReference.general(index.labelId, index.propertyId), IndexQuery.stringSuffix(index.propertyId, value))
+    seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.stringSuffix(index.propertyId, value))
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
-    val nodeId = reads().lockingNodeUniqueIndexSeek(DefaultIndexReference.general(index.labelId, index.propertyId), IndexQuery.exact(index.propertyId, value))
+    val nodeId = reads().lockingNodeUniqueIndexSeek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.exact(index.propertyId, value))
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -731,8 +730,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
   override def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = try {
     IdempotentResult(
-      DefaultIndexReference.toDescriptor(
-        txContext.kernelTransaction.schemaWrite().indexCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
+      txContext.kernelTransaction.schemaWrite().indexCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
     )
   } catch {
     case _: AlreadyIndexedException =>
@@ -742,11 +740,11 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
       if (read.indexGetState(index) == InternalIndexState.FAILED)
         throw new FailedIndexException(index.userDescription(tokenNameLookup))
-      IdempotentResult(DefaultIndexReference.toDescriptor(index), wasCreated = false)
+      IdempotentResult(index, wasCreated = false)
   }
 
   override def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    txContext.kernelTransaction.schemaWrite().indexDrop(DefaultIndexReference.general( labelId, propertyKeyId ))
+    txContext.kernelTransaction.schemaWrite().indexDrop(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked( labelId, propertyKeyId ))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
     txContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(

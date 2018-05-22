@@ -33,7 +33,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -43,7 +43,7 @@ import org.neo4j.values.storable.Value;
 abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
         implements IndexReader
 {
-    protected final SchemaIndexDescriptor descriptor;
+    protected final IndexDescriptor descriptor;
     final Layout<KEY,VALUE> layout;
     final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
     private final GBPTree<KEY,VALUE> tree;
@@ -51,7 +51,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey<KEY>, VALUE e
 
     NativeSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig,
-            SchemaIndexDescriptor descriptor )
+            IndexDescriptor descriptor )
     {
         this.tree = tree;
         this.layout = layout;

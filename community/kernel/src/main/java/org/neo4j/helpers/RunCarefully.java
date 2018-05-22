@@ -24,20 +24,24 @@ import java.util.List;
 
 import static org.neo4j.helpers.collection.Iterables.asArray;
 
+@Deprecated
 public class RunCarefully
 {
     private final Runnable[] operations;
 
+    @Deprecated
     public RunCarefully( Runnable... operations )
     {
         this.operations = operations;
     }
 
+    @Deprecated
     public RunCarefully( Iterable<Runnable> operations )
     {
         this( asArray( Runnable.class, operations ) );
     }
 
+    @Deprecated
     public void run()
     {
         List<Throwable> errors = new ArrayList<>();

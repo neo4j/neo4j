@@ -23,11 +23,11 @@ import java.util.Timer;
 
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.udc.UsageData;
 
 /**
@@ -39,7 +39,7 @@ import org.neo4j.udc.UsageData;
  * testing and short-run applications. Subsequent updates are made at regular
  * intervals. Both times are specified in milliseconds.
  */
-public class UdcKernelExtension implements Lifecycle
+public class UdcKernelExtension extends LifecycleAdapter
 {
     private Timer timer;
     private IdGeneratorFactory idGeneratorFactory;
@@ -57,11 +57,6 @@ public class UdcKernelExtension implements Lifecycle
         this.startupStats = startupStats;
         this.usageData = usageData;
         this.timer = timer;
-    }
-
-    @Override
-    public void init()
-    {
     }
 
     @Override
@@ -93,8 +88,4 @@ public class UdcKernelExtension implements Lifecycle
         }
     }
 
-    @Override
-    public void shutdown()
-    {
-    }
 }

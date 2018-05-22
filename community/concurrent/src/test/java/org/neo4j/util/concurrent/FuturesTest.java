@@ -19,7 +19,7 @@
  */
 package org.neo4j.util.concurrent;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.Future;
@@ -27,18 +27,16 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class FuturesTest
+class FuturesTest
 {
-    private static final Runnable NOOP = () ->
-    {
-    };
+    private static final Runnable NOOP = () -> { };
 
     @Test
-    public void combinedFutureShouldGetResultsAfterAllComplete() throws Exception
+    void combinedFutureShouldGetResultsAfterAllComplete() throws Exception
     {
         FutureTask<String> task1 = new FutureTask<>( NOOP, "1" );
         FutureTask<String> task2 = new FutureTask<>( NOOP, "2" );
@@ -46,28 +44,12 @@ public class FuturesTest
 
         Future<List<String>> combined = Futures.combine( task1, task2, task3 );
 
-        try
-        {
-            combined.get( 10, TimeUnit.MILLISECONDS );
-            fail( "should have timedout" );
-        }
-        catch ( TimeoutException e )
-        {
-            // continue
-        }
+        assertThrows( TimeoutException.class, () -> combined.get( 10, TimeUnit.MILLISECONDS ) );
 
         task3.run();
         task2.run();
 
-        try
-        {
-            combined.get( 10, TimeUnit.MILLISECONDS );
-            fail( "should have timedout" );
-        }
-        catch ( TimeoutException e )
-        {
-            // continue
-        }
+        assertThrows( TimeoutException.class, () -> combined.get( 10, TimeUnit.MILLISECONDS ) );
 
         task1.run();
 

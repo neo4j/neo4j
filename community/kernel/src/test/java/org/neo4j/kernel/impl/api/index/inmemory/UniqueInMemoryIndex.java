@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
 import org.neo4j.values.storable.Value;
@@ -39,7 +39,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
 {
     private final SchemaDescriptor schema;
 
-    UniqueInMemoryIndex( SchemaIndexDescriptor descriptor )
+    UniqueInMemoryIndex( IndexDescriptor descriptor )
     {
         super( descriptor );
         this.schema = descriptor.schema();
