@@ -25,12 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-<<<<<<< HEAD
 import org.opencypher.v9_0.util.attribution.Id
-=======
 import org.neo4j.cypher.internal.runtime.{LongArrayHashMultiMap, PrefetchingIterator}
-import org.neo4j.cypher.internal.util.v3_5.attribution.Id
->>>>>>> Faster NodeHashJoinPipe
 
 case class NodeHashJoinSlottedPipe(lhsOffsets: Array[Int],
                                    rhsOffsets: Array[Int],
