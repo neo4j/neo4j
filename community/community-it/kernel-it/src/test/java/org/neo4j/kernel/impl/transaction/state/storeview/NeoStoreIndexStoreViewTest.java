@@ -43,7 +43,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -155,7 +155,7 @@ public class NeoStoreIndexStoreViewTest
     {
         // given
         @SuppressWarnings( "unchecked" )
-        Visitor<NodeUpdates,Exception> visitor = mock( Visitor.class );
+        Visitor<EntityUpdates,Exception> visitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
                 storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, null, false );
 
@@ -196,7 +196,7 @@ public class NeoStoreIndexStoreViewTest
 
         storeViewNodeStoreScan.process( nodeRecord );
 
-        NodeUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
+        EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
         assertNotNull( "Visitor should contain container with updates.", propertyUpdates );
 
         LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 0, 0 );
@@ -212,9 +212,9 @@ public class NeoStoreIndexStoreViewTest
                 containsInAnyOrder( index1, index2, index3 ) );
     }
 
-    NodeUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
+    EntityUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
-        return NodeUpdates.forNode( nodeId, labels ).added( propertyKeyId, Values.of( value ) ).build();
+        return EntityUpdates.forEntity( nodeId, labels ).added( propertyKeyId, Values.of( value ) ).build();
     }
 
     private void createAlistairAndStefanNodes()
@@ -255,36 +255,36 @@ public class NeoStoreIndexStoreViewTest
         }
     }
 
-    private static class CopyUpdateVisitor implements Visitor<NodeUpdates,RuntimeException>
+    private static class CopyUpdateVisitor implements Visitor<EntityUpdates,RuntimeException>
     {
 
-        private NodeUpdates propertyUpdates;
+        private EntityUpdates propertyUpdates;
 
         @Override
-        public boolean visit( NodeUpdates element ) throws RuntimeException
+        public boolean visit( EntityUpdates element ) throws RuntimeException
         {
             propertyUpdates = element;
             return true;
         }
 
-        public NodeUpdates getPropertyUpdates()
+        public EntityUpdates getPropertyUpdates()
         {
             return propertyUpdates;
         }
     }
 
-    class NodeUpdateCollectingVisitor implements Visitor<NodeUpdates, Exception>
+    class NodeUpdateCollectingVisitor implements Visitor<EntityUpdates, Exception>
     {
-        private final Set<NodeUpdates> updates = new HashSet<>();
+        private final Set<EntityUpdates> updates = new HashSet<>();
 
         @Override
-        public boolean visit( NodeUpdates propertyUpdates )
+        public boolean visit( EntityUpdates propertyUpdates )
         {
             updates.add( propertyUpdates );
             return false;
         }
 
-        Set<NodeUpdates> getUpdates()
+        Set<EntityUpdates> getUpdates()
         {
             return updates;
         }

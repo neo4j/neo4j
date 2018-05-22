@@ -82,8 +82,8 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
@@ -507,10 +507,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             populators.add( new IndexPopulatorWithSchema( populator, index ) );
         }
 
-        Visitor<NodeUpdates, IOException> propertyUpdateVisitor = updates ->
+        Visitor<EntityUpdates, IOException> propertyUpdateVisitor = updates ->
         {
             // Do a lookup from which property has changed to a list of indexes worried about that property.
-            // We do not need to load additional properties as the NodeUpdates for a full node store scan already
+            // We do not need to load additional properties as the EntityUpdates for a full node store scan already
             // include all properties for the node.
             for ( IndexEntryUpdate<IndexPopulatorWithSchema> indexUpdate : updates.forIndexKeys( populators ) )
             {

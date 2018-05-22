@@ -29,8 +29,8 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -50,13 +50,13 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
     private final PropertyStore propertyStore;
 
     private final Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor;
-    private final Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor;
+    private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
     private final IntPredicate propertyKeyIdFilter;
     protected final int[] labelIds;
 
     public StoreViewNodeStoreScan( NodeStore nodeStore, LockService locks, PropertyStore propertyStore,
             Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-            Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor,
+            Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter )
     {
         super( nodeStore, locks, nodeStore.getHighId() );
@@ -94,7 +94,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
         {
             // Notify the property update visitor
             // TODO: reuse object instead? Better in terms of speed and GC?
-            NodeUpdates.Builder updates = NodeUpdates.forNode( node.getId(), labels );
+            EntityUpdates.Builder updates = EntityUpdates.forEntity( node.getId(), labels );
             boolean hasRelevantProperty = false;
 
             for ( PropertyBlock property : properties( node ) )

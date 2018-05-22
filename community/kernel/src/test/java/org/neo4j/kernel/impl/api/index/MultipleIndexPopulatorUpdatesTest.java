@@ -58,7 +58,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MultipleIndexPopulatorUpdatesTest
@@ -161,7 +160,7 @@ public class MultipleIndexPopulatorUpdatesTest
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter,
-                Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor,
+                Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
                 boolean forceStoreScan )
         {
@@ -182,7 +181,7 @@ public class MultipleIndexPopulatorUpdatesTest
 
         ListenableNodeScanViewNodeStoreScan( NodeStore nodeStore, LockService locks,
                 PropertyStore propertyStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-                Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
+                Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Listener<NodeRecord> processListener )
         {
             super( nodeStore, locks, propertyStore, labelUpdateVisitor, propertyUpdatesVisitor,

@@ -67,6 +67,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -491,15 +492,16 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     }
 
     @Override
-    public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates )
+    public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates )
     {
         Iterable<SchemaDescriptor> relatedIndexes =
                                             indexMapRef.getRelatedIndexes(
-                                                nodeUpdates.labelsChanged(),
-                                                nodeUpdates.labelsUnchanged(),
-                                                nodeUpdates.propertiesChanged() );
+                                                entityUpdates.entityTokensChanged(),
+                                                entityUpdates.entityTokensUnchanged(),
+                                                entityUpdates.propertiesChanged() );
 
-        return nodeUpdates.forIndexKeys( relatedIndexes, storeView );
+        //TODO hardcoded node
+        return entityUpdates.forIndexKeys( relatedIndexes, storeView, EntityType.NODE );
     }
 
     /**

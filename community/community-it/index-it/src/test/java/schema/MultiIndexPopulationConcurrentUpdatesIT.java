@@ -66,12 +66,12 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -164,10 +164,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     @Test
     public void applyConcurrentDeletesToPopulatedIndex() throws Throwable
     {
-        List<NodeUpdates> updates = new ArrayList<>( 2 );
-        updates.add( NodeUpdates.forNode( country1.getId(), id( COUNTRY_LABEL ) )
+        List<EntityUpdates> updates = new ArrayList<>( 2 );
+        updates.add( EntityUpdates.forEntity( country1.getId(), id( COUNTRY_LABEL ) )
                 .removed( propertyId, Values.of( "Sweden" ) ).build() );
-        updates.add( NodeUpdates.forNode( color2.getId(), id( COLOR_LABEL ) )
+        updates.add( EntityUpdates.forEntity( color2.getId(), id( COLOR_LABEL ) )
                 .removed( propertyId, Values.of( "green" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
@@ -194,10 +194,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     @Test
     public void applyConcurrentAddsToPopulatedIndex() throws Throwable
     {
-        List<NodeUpdates> updates = new ArrayList<>( 2 );
-        updates.add( NodeUpdates.forNode( otherNodes[0].getId(), id( COUNTRY_LABEL ) )
+        List<EntityUpdates> updates = new ArrayList<>( 2 );
+        updates.add( EntityUpdates.forEntity( otherNodes[0].getId(), id( COUNTRY_LABEL ) )
                 .added( propertyId, Values.of( "Denmark" ) ).build() );
-        updates.add( NodeUpdates.forNode( otherNodes[1].getId(), id( CAR_LABEL ) )
+        updates.add( EntityUpdates.forEntity( otherNodes[1].getId(), id( CAR_LABEL ) )
                 .added( propertyId, Values.of( "BMW" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
@@ -224,10 +224,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     @Test
     public void applyConcurrentChangesToPopulatedIndex() throws Exception
     {
-        List<NodeUpdates> updates = new ArrayList<>( 2 );
-        updates.add( NodeUpdates.forNode( color2.getId(), id( COLOR_LABEL ) )
+        List<EntityUpdates> updates = new ArrayList<>( 2 );
+        updates.add( EntityUpdates.forEntity( color2.getId(), id( COLOR_LABEL ) )
                 .changed( propertyId, Values.of( "green" ), Values.of( "pink" ) ).build() );
-        updates.add( NodeUpdates.forNode( car2.getId(), id( CAR_LABEL ) )
+        updates.add( EntityUpdates.forEntity( car2.getId(), id( CAR_LABEL ) )
                 .changed( propertyId, Values.of( "Ford" ), Values.of( "SAAB" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
@@ -500,7 +500,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter,
-                Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor,
+                Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
                 boolean forceStoreScan )
         {
@@ -520,7 +520,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         LabelScanViewNodeStoreWrapper( NodeStore nodeStore, LockService locks,
                 PropertyStore propertyStore,
                 LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-                Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
+                Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
                 LabelScanViewNodeStoreScan<FAILURE> delegate,
                 Runnable customAction )
         {
@@ -585,9 +585,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private class UpdateGenerator implements Runnable
     {
 
-        private Iterable<NodeUpdates> updates;
+        private Iterable<EntityUpdates> updates;
 
-        UpdateGenerator( Iterable<NodeUpdates> updates )
+        UpdateGenerator( Iterable<EntityUpdates> updates )
         {
             this.updates = updates;
         }
@@ -595,11 +595,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         @Override
         public void run()
         {
-            for ( NodeUpdates update : updates )
+            for ( EntityUpdates update : updates )
                 {
                     try ( Transaction transaction = embeddedDatabase.beginTx() )
                     {
-                        Node node = embeddedDatabase.getNodeById( update.getNodeId() );
+                        Node node = embeddedDatabase.getNodeById( update.getEntityId() );
                         for ( int labelId : labelsNameIdMap.values() )
                         {
                             LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyId );
@@ -629,7 +629,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 }
                 try
                 {
-                    for ( NodeUpdates update : updates )
+                    for ( EntityUpdates update : updates )
                     {
                         Iterable<IndexEntryUpdate<SchemaDescriptor>> entryUpdates =
                                 indexService.convertToIndexUpdates( update );

@@ -38,5 +38,5 @@ public interface IndexingUpdateService
      * application of the updates to the indexes, so that the properties reflect the exact state of the
      * transaction.
      */
-    Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates );
+    Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates );
 }

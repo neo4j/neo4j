@@ -618,21 +618,21 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    private class NodePopulationVisitor implements Visitor<NodeUpdates,
+    private class NodePopulationVisitor implements Visitor<EntityUpdates,
             IndexPopulationFailedKernelException>
     {
         @Override
-        public boolean visit( NodeUpdates updates )
+        public boolean visit( EntityUpdates updates )
         {
             add( updates );
-            populateFromUpdateQueueBatched( updates.getNodeId() );
+            populateFromUpdateQueueBatched( updates.getEntityId() );
             return false;
         }
 
-        private void add( NodeUpdates updates )
+        private void add( EntityUpdates updates )
         {
             // This is called from a full store node scan, meaning that all node properties are included in the
-            // NodeUpdates object. Therefore no additional properties need to be loaded.
+            // EntityUpdates object. Therefore no additional properties need to be loaded.
             for ( IndexEntryUpdate<IndexPopulation> indexUpdate : updates.forIndexKeys( populations ) )
             {
                 indexUpdate.indexKey().onUpdate( indexUpdate );

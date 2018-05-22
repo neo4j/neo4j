@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.api.schema;
 
+import java.util.function.IntConsumer;
+
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.storageengine.api.EntityType;
 
 public class SchemaDescriptorFactory
 {
@@ -39,6 +42,25 @@ public class SchemaDescriptorFactory
         validateRelationshipTypeLabelId( relTypeId );
         validatePropertyIds( propertyIds );
         return new RelationTypeSchemaDescriptor( relTypeId, propertyIds );
+    }
+
+    public static MultiTokenSchemaDescriptor multiToken( int[] entityTokens, EntityType entityType, int... propertyIds )
+    {
+        validatePropertyIds( propertyIds );
+        IntConsumer validator;
+        if ( entityType == EntityType.NODE )
+        {
+            validator = SchemaDescriptorFactory::validateLabelId;
+        }
+        else
+        {
+            validator = SchemaDescriptorFactory::validateRelationshipTypeLabelId;
+        }
+        for ( int entityToken : entityTokens )
+        {
+            validator.accept( entityToken );
+        }
+        return new MultiTokenSchemaDescriptor( entityTokens, entityType, propertyIds );
     }
 
     private static void validatePropertyIds( int[] propertyIds )
