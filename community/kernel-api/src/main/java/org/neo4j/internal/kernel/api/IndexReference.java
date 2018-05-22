@@ -24,20 +24,40 @@ import java.util.List;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+import org.neo4j.values.storable.ValueCategory;
 
 import static java.lang.String.format;
 
 /**
- * Reference to a specific index. This reference is valid until the schema of the database changes (that is a
- * create/drop of an index or constraint occurs).
+ * Reference to a specific index together with it's capabilities. This reference is valid until the schema of the database changes
+ * (that is a create/drop of an index or constraint occurs).
  */
-public interface IndexReference
+public interface IndexReference extends IndexCapability
 {
+    /**
+     * Returns true if this index only allows one value per key.
+     */
     boolean isUnique();
 
+    /**
+     * Returns the labelId associated with this index.
+     */
     int label();
 
+    /**
+     * Returns the propertyKeyIds associated with this index.
+     */
     int[] properties();
+
+    /**
+     * Returns the key (or name) of the index provider that backs this index.
+     */
+    String providerKey();
+
+    /**
+     * Returns the version of the index provider that backs this index.
+     */
+    String providerVersion();
 
     /**
      * @param tokenNameLookup used for looking up names for token ids.
@@ -64,4 +84,49 @@ public interface IndexReference
                 Iterators.filter( IndexReference::isUnique, materialized.iterator() ) );
 
     }
+
+    IndexReference NO_INDEX = new IndexReference()
+    {
+        @Override
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+        {
+            return NO_CAPABILITY.orderCapability( valueCategories );
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+        {
+            return NO_CAPABILITY.valueCapability( valueCategories );
+        }
+
+        @Override
+        public boolean isUnique()
+        {
+            return false;
+        }
+
+        @Override
+        public int label()
+        {
+            return Token.NO_TOKEN;
+        }
+
+        @Override
+        public int[] properties()
+        {
+            return new int[0];
+        }
+
+        @Override
+        public String providerKey()
+        {
+            return null;
+        }
+
+        @Override
+        public String providerVersion()
+        {
+            return null;
+        }
+    };
 }

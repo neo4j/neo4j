@@ -19,31 +19,27 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Optional;
+
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.values.storable.Value;
 
-/**
- * Small class for holding a bunch of information about an index that we need to rebuild during recovery.
- */
-public class RebuildingIndexDescriptor
+public interface IndexingProvidersService
 {
-    private final SchemaIndexDescriptor schemaIndexDescriptor;
-    private final Descriptor providerDescriptor;
+    /**
+     * Get the index provider descriptor for the index provider with the given name, or the
+     * descriptor of the default index provider, if no name was given.
+     *
+     * @param providerName name of the wanted index provider
+     */
+    IndexProvider.Descriptor indexProviderForNameOrDefault( Optional<String> providerName );
 
-    RebuildingIndexDescriptor( SchemaIndexDescriptor schemaIndexDescriptor, IndexProvider.Descriptor providerDescriptor )
-    {
-        this.schemaIndexDescriptor = schemaIndexDescriptor;
-        this.providerDescriptor = providerDescriptor;
-    }
-
-    public SchemaIndexDescriptor getSchemaIndexDescriptor()
-    {
-        return schemaIndexDescriptor;
-    }
-
-    public Descriptor getProviderDescriptor()
-    {
-        return providerDescriptor;
-    }
+    /**
+     * Validate that the given value tuple can be stored in the index associated with the given schema.
+     *
+     * @param schema index schema of the target index
+     * @param tuple value tuple to validate
+     */
+    void validateBeforeCommit( SchemaDescriptor schema, Value[] tuple );
 }

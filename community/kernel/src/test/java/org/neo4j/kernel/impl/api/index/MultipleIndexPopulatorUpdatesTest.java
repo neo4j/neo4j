@@ -35,12 +35,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -58,7 +58,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MultipleIndexPopulatorUpdatesTest
@@ -92,7 +92,7 @@ public class MultipleIndexPopulatorUpdatesTest
         IndexPopulator populator = createIndexPopulator();
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
 
-        addPopulator( indexPopulator, populator, 1, SchemaIndexDescriptorFactory.forLabel( 1, 1 ) );
+        addPopulator( indexPopulator, populator, 1, TestIndexDescriptorFactory.forLabel( 1, 1 ) );
 
         indexPopulator.create();
         StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllNodes();
@@ -115,18 +115,16 @@ public class MultipleIndexPopulatorUpdatesTest
     }
 
     private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
-            IndexPopulator indexPopulator, long indexId, SchemaIndexDescriptor descriptor )
+            IndexPopulator indexPopulator, long indexId, IndexDescriptor descriptor )
     {
-        return addPopulator( multipleIndexPopulator, indexId, descriptor, indexPopulator,
-                mock( FlippableIndexProxy.class ), mock( FailedIndexProxyFactory.class ) );
+        return addPopulator( multipleIndexPopulator, descriptor.withId( indexId ), indexPopulator,
+                             mock( FlippableIndexProxy.class ), mock( FailedIndexProxyFactory.class ) );
     }
 
-    private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
-                                                                 long indexId, SchemaIndexDescriptor descriptor, IndexPopulator indexPopulator,
-                                                                 FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
+    private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, StoreIndexDescriptor descriptor,
+            IndexPopulator indexPopulator, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return multipleIndexPopulator.addPopulator( indexPopulator, indexId,
-                new IndexMeta( indexId, descriptor, mock( IndexProvider.Descriptor.class ), NO_CAPABILITY ),
+        return multipleIndexPopulator.addPopulator( indexPopulator, descriptor.withoutCapabilities(),
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 

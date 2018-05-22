@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -30,12 +30,12 @@ public class DateTimeNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSc
     {
         TemporalIndexFiles.FileLayout<ZonedDateTimeSchemaKey> fileLayout =
                 new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.ZONED_DATE_TIME );
-        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override
     protected LayoutTestUtil<ZonedDateTimeSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new DateTimeLayoutTestUtil( SchemaIndexDescriptorFactory.forLabel( 42, 666 ) );
+        return new DateTimeLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 }

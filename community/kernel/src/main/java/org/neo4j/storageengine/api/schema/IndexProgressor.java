@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.LabelSet;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
 import org.neo4j.kernel.impl.newapi.ExplicitIndexProgressor;
 import org.neo4j.values.storable.Value;
@@ -78,7 +78,7 @@ public interface IndexProgressor extends AutoCloseable
          * @param progressor The progressor
          * @param query The query of this progression
          */
-        void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor,
+        void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
                          IndexQuery[] query );
 
         /**

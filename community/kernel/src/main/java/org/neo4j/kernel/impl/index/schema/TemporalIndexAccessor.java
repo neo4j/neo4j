@@ -39,7 +39,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -49,18 +50,12 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.PartAccessor<?>> implements IndexAccessor
 {
-    private final SchemaIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
 
-    TemporalIndexAccessor( long indexId,
-                           SchemaIndexDescriptor descriptor,
-                           IndexSamplingConfig samplingConfig,
-                           PageCache pageCache,
-                           FileSystemAbstraction fs,
-                           RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                           IndexProvider.Monitor monitor,
-                           TemporalIndexFiles temporalIndexFiles ) throws IOException
+    TemporalIndexAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, PageCache pageCache, FileSystemAbstraction fs,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, TemporalIndexFiles temporalIndexFiles ) throws IOException
     {
-        super( new PartFactory( pageCache, fs, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig, temporalIndexFiles ) );
+        super( new PartFactory( pageCache, fs, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig, temporalIndexFiles ) );
         this.descriptor = descriptor;
 
         temporalIndexFiles.loadExistingIndexes( this );
@@ -173,19 +168,14 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     static class PartAccessor<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexAccessor<KEY, NativeSchemaValue>
     {
         private final Layout<KEY,NativeSchemaValue> layout;
-        private final SchemaIndexDescriptor descriptor;
+        private final IndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
 
-        PartAccessor( PageCache pageCache,
-                      FileSystemAbstraction fs,
-                      TemporalIndexFiles.FileLayout<KEY> fileLayout,
-                      RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                      IndexProvider.Monitor monitor,
-                      SchemaIndexDescriptor descriptor,
-                      long indexId,
-                      IndexSamplingConfig samplingConfig ) throws IOException
+        PartAccessor( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout,
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
+                IndexSamplingConfig samplingConfig ) throws IOException
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
             this.samplingConfig = samplingConfig;
@@ -205,26 +195,18 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         private final FileSystemAbstraction fs;
         private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
         private final IndexProvider.Monitor monitor;
-        private final SchemaIndexDescriptor descriptor;
-        private final long indexId;
+        private final StoreIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
         private final TemporalIndexFiles temporalIndexFiles;
 
-        PartFactory( PageCache pageCache,
-                     FileSystemAbstraction fs,
-                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                     IndexProvider.Monitor monitor,
-                     SchemaIndexDescriptor descriptor,
-                     long indexId,
-                     IndexSamplingConfig samplingConfig,
-                     TemporalIndexFiles temporalIndexFiles )
+        PartFactory( PageCache pageCache, FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor,
+                     StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TemporalIndexFiles temporalIndexFiles )
         {
             this.pageCache = pageCache;
             this.fs = fs;
             this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
             this.monitor = monitor;
             this.descriptor = descriptor;
-            this.indexId = indexId;
             this.samplingConfig = samplingConfig;
             this.temporalIndexFiles = temporalIndexFiles;
         }
@@ -271,12 +253,12 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             {
                 createEmptyIndex( fileLayout );
             }
-            return new PartAccessor<>( pageCache, fs, fileLayout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+            return new PartAccessor<>( pageCache, fs, fileLayout, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig );
         }
 
         private <KEY extends NativeSchemaKey<KEY>> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
-            IndexPopulator populator = new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, indexId, samplingConfig );
+            IndexPopulator populator = new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, samplingConfig );
             populator.create();
             populator.close( true );
         }

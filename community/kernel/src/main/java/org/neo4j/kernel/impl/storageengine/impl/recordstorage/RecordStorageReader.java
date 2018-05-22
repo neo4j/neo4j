@@ -33,8 +33,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -47,15 +46,15 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
@@ -77,7 +76,6 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
@@ -272,75 +270,63 @@ class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
+    public CapableIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override
-    public Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schemaCache.indexDescriptorsForLabel( labelId );
     }
 
     @Override
-    public Iterator<SchemaIndexDescriptor> indexesGetAll()
+    public Iterator<CapableIndexDescriptor> indexesGetAll()
     {
-        return toIndexDescriptors( schemaCache.indexRules() );
+        return schemaCache.indexDescriptors().iterator();
     }
 
     @Override
-    public Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<CapableIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
     {
         return schemaCache.indexesByProperty( propertyId );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( SchemaIndexDescriptor index )
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
-        IndexRule rule = indexRule( index );
-        if ( rule != null )
+        StoreIndexDescriptor storeIndexDescriptor = getStoreIndexDescriptor( index );
+        if ( storeIndexDescriptor != null )
         {
             // Think of the index as being orphaned if the owning constraint is missing or broken.
-            Long owningConstraint = rule.getOwningConstraint();
+            Long owningConstraint = storeIndexDescriptor.getOwningConstraint();
             return schemaCache.hasConstraintRule( owningConstraint ) ? owningConstraint : null;
         }
         return null;
     }
 
     @Override
-    public long indexGetCommittedId( SchemaIndexDescriptor index )
-            throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( index );
-        if ( rule == null )
+        StoreIndexDescriptor storeIndexDescriptor = getStoreIndexDescriptor( index );
+        if ( storeIndexDescriptor == null )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
         }
-        return rule.getId();
+        return storeIndexDescriptor.getId();
     }
 
     @Override
-    public InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getState();
     }
 
-    @Override
-    public IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor.schema() ).getProviderDescriptor();
-    }
-
-    public CapableIndexReference indexReference( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        boolean unique = descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
-        SchemaDescriptor schema = descriptor.schema();
-        IndexProxy indexProxy = indexService.getIndexProxy( schema );
-
-        return new DefaultCapableIndexReference( unique, indexProxy.getIndexCapability(),
-                indexProxy.getProviderDescriptor(), schema.keyId(),
-                schema.getPropertyIds() );
+        IndexProxy indexProxy = indexService.getIndexProxy( descriptor.schema() );
+        return indexProxy.getDescriptor();
     }
 
     @Override
@@ -683,13 +669,13 @@ class RecordStorageReader implements StorageReader
         }
     }
 
-    private IndexRule indexRule( SchemaIndexDescriptor index )
+    private StoreIndexDescriptor getStoreIndexDescriptor( IndexDescriptor index )
     {
-        for ( IndexRule rule : schemaCache.indexRules() )
+        for ( StoreIndexDescriptor descriptor : schemaCache.indexDescriptors() )
         {
-            if ( rule.getIndexDescriptor().equals( index ) )
+            if ( descriptor.equals( index ) )
             {
-                return rule;
+                return descriptor;
             }
         }
 
@@ -809,11 +795,6 @@ class RecordStorageReader implements StorageReader
                         " with startNode:" + startNode + " and endNode:" + endNode );
     }
 
-    private static Iterator<SchemaIndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
-    {
-        return Iterators.map( IndexRule::getIndexDescriptor, rules.iterator() );
-    }
-
     @Override
     public void acquire()
     {
@@ -911,13 +892,13 @@ class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public IndexReader getIndexReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexReader getIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory().newReader( descriptor );
     }
 
     @Override
-    public IndexReader getFreshIndexReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory().newUnCachedReader( descriptor );
     }

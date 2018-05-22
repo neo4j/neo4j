@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -53,7 +53,7 @@ public final class CompiledIndexUtils
      * @param value The value to seek for
      * @return A cursor positioned at the data found in index.
      */
-    public static NodeValueIndexCursor indexSeek( Read read, CursorFactory cursors, CapableIndexReference index, Object value )
+    public static NodeValueIndexCursor indexSeek( Read read, CursorFactory cursors, IndexReference index, Object value )
             throws KernelException
     {
         assert index.properties().length == 1;

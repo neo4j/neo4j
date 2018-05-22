@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
@@ -40,8 +40,7 @@ public class SpatialNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSch
     NativeSchemaIndexPopulator<SpatialSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
         fileLayout = new SpatialIndexFiles.SpatialFileLayout( crs, settings, super.getIndexFile() );
-        return new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, indexId, samplingConfig,
-                new StandardConfiguration() );
+        return new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig, new StandardConfiguration() );
     }
 
     @Override
@@ -53,6 +52,6 @@ public class SpatialNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSch
     @Override
     protected LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new SpatialLayoutTestUtil( SchemaIndexDescriptorFactory.forLabel( 42, 666 ), settings, crs );
+        return new SpatialLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ), settings, crs );
     }
 }

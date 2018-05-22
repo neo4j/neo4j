@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
@@ -51,35 +51,35 @@ public class UpdateCapturingIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        return actual.getPopulator( indexId, descriptor, samplingConfig );
+        return actual.getPopulator( descriptor, samplingConfig );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
             throws IOException
     {
-        IndexAccessor actualAccessor = actual.getOnlineAccessor( indexId, descriptor, samplingConfig );
-        return indexes.computeIfAbsent( indexId, id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
+        IndexAccessor actualAccessor = actual.getOnlineAccessor( descriptor, samplingConfig );
+        return indexes.computeIfAbsent( descriptor.getId(), id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
     {
-        return actual.getPopulationFailure( indexId, descriptor );
+        return actual.getPopulationFailure( descriptor );
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
-        return actual.getInitialState( indexId, descriptor );
+        return actual.getInitialState( descriptor );
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability()
     {
-        return actual.getCapability( schemaIndexDescriptor );
+        return actual.getCapability();
     }
 
     @Override

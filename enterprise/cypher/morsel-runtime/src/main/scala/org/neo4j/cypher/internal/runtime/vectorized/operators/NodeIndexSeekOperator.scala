@@ -34,10 +34,10 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
                             propertyKey: PropertyKeyToken,
                             valueExpr: Expression) extends Operator {
 
-  private var reference: IndexReference = CapableIndexReference.NO_INDEX
+  private var reference: IndexReference = IndexReference.NO_INDEX
 
   private def reference(context: QueryContext): IndexReference = {
-    if (reference == CapableIndexReference.NO_INDEX) {
+    if (reference == IndexReference.NO_INDEX) {
       reference = context.indexReference(label.nameId.id, propertyKey.nameId.id)
     }
     reference

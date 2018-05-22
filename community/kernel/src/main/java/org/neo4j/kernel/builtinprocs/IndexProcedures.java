@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -110,12 +109,12 @@ public class IndexProcedures implements AutoCloseable
         return propertyKeyIds;
     }
 
-    private CapableIndexReference getIndex( int labelId, int[] propertyKeyIds, IndexSpecifier index ) throws
+    private IndexReference getIndex( int labelId, int[] propertyKeyIds, IndexSpecifier index ) throws
             ProcedureException
     {
-        CapableIndexReference indexReference = ktx.schemaRead().index( labelId, propertyKeyIds );
+        IndexReference indexReference = ktx.schemaRead().index( labelId, propertyKeyIds );
 
-        if ( indexReference == CapableIndexReference.NO_INDEX )
+        if ( indexReference == IndexReference.NO_INDEX )
         {
             throw new ProcedureException( Status.Schema.IndexNotFound, "No index on %s", index );
         }

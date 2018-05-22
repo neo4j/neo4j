@@ -42,7 +42,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.api.LookupFilter;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -95,7 +95,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     {
         Set<Long> labels = NodeLabelReader.getListOfLabels( record, records, engine );
         IntObjectMap<PropertyBlock> nodePropertyMap = null;
-        for ( IndexRule indexRule : indexes.onlineRules() )
+        for ( StoreIndexDescriptor indexRule : indexes.onlineRules() )
         {
             long labelId = indexRule.schema().keyId();
             if ( labels.contains( labelId ) )
@@ -129,7 +129,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     }
 
     private void verifyNodeCorrectlyIndexedUniquely( long nodeId, Value[] propertyValues,
-            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule,
+            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, StoreIndexDescriptor indexRule,
             IndexReader reader )
     {
         IndexQuery[] query = seek( indexRule.schema(), propertyValues );
@@ -155,7 +155,9 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     }
 
     private void reportIncorrectIndexCount( Value[] propertyValues,
-            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule, long count )
+                                            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine,
+                                            StoreIndexDescriptor indexRule,
+                                            long count )
     {
         if ( count == 0 )
         {

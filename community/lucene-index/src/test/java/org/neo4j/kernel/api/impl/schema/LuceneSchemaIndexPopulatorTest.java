@@ -40,12 +40,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -62,6 +62,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class LuceneSchemaIndexPopulatorTest
 {
@@ -76,9 +77,8 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexPopulator indexPopulator;
     private IndexReader reader;
     private IndexSearcher searcher;
-    private final long indexId = 0;
     private static final int propertyKeyId = 666;
-    private static final SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 42, propertyKeyId );
+    private StoreIndexDescriptor index;
 
     @Before
     public void before() throws Exception
@@ -90,7 +90,8 @@ public class LuceneSchemaIndexPopulatorTest
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        indexPopulator = provider.getPopulator( indexId, index, samplingConfig );
+        index = IndexDescriptorFactory.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).withId( 0 );
+        indexPopulator = provider.getPopulator( index, samplingConfig );
         indexPopulator.create();
     }
 
@@ -292,12 +293,12 @@ public class LuceneSchemaIndexPopulatorTest
     private void switchToVerification() throws IOException
     {
         indexPopulator.close( true );
-        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId, index ) );
+        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( index ) );
         reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );
     }
 
-    private static void addUpdate( IndexPopulator populator, long nodeId, Object value )
+    private void addUpdate( IndexPopulator populator, long nodeId, Object value )
             throws IOException, IndexEntryConflictException
     {
         populator.add( singletonList( IndexQueryHelper.add( nodeId, index.schema(), value ) ) );

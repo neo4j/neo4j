@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -35,7 +35,7 @@ import static org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,NativeSchemaValue>
 {
     StringSchemaIndexReader( GBPTree<StringSchemaKey,NativeSchemaValue> tree, Layout<StringSchemaKey,NativeSchemaValue> layout,
-            IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor )
+            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
     }

@@ -37,7 +37,9 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -78,10 +80,12 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class FusionIndexAccessorTest
 {
     private FusionIndexAccessor fusionIndexAccessor;
-    private final long indexId = 10;
+    private final long indexId = 0;
     private final DropAction dropAction = mock( DropAction.class );
     private IndexAccessor[] accessors;
     private IndexAccessor[] aliveAccessors;
+    private StoreIndexDescriptor indexDescriptor =
+            IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 42 ) ).withId( indexId );
 
     @Rule
     public RandomRule random = new RandomRule();
@@ -135,8 +139,7 @@ public class FusionIndexAccessorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexAccessor = new FusionIndexAccessor( fusionVersion.slotSelector(), new InstanceSelector<>( accessors ), indexId,
-                mock( SchemaIndexDescriptor.class ), dropAction );
+        fusionIndexAccessor = new FusionIndexAccessor(  fusionVersion.slotSelector(), new InstanceSelector<>( accessors ), indexDescriptor, dropAction );
     }
 
     private void resetMocks()

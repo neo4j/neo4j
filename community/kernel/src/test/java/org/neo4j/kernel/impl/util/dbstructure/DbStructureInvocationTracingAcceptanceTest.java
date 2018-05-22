@@ -46,7 +46,7 @@ import javax.tools.ToolProvider;
 
 import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -131,20 +131,14 @@ public class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitPropertyKey( 1, "age" );
         visitor.apply( null ).visitRelationshipType( 0, "ACCEPTS" );
         visitor.apply( null ).visitRelationshipType( 1, "REJECTS" );
-        visitor.apply( null ).visitIndex( SchemaIndexDescriptorFactory.forLabel( 0, 1 ),
-                ":Person(age)", 0.5d, 1L );
-        visitor.apply( null )
-                .visitIndex( SchemaIndexDescriptorFactory.uniqueForLabel( 0, 0, 2 ),
-                        ":Person(name, lastName)", 0.5d, 1L );
-        visitor.apply( null )
-                .visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 1, 0 ), ":Party(name)" );
-        visitor.apply( null ).visitNodeKeyConstraint(
-                        ConstraintDescriptorFactory.nodeKeyForLabel( 0, 1, 2 ), ":Person(name, lastName)" );
+        visitor.apply( null ).visitIndex( TestIndexDescriptorFactory.forLabel( 0, 1 ), ":Person(age)", 0.5d, 1L );
+        visitor.apply( null ).visitIndex( TestIndexDescriptorFactory.uniqueForLabel( 0, 0, 2 ), ":Person(name, lastName)", 0.5d, 1L );
+        visitor.apply( null ).visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 1, 0 ), ":Party(name)" );
+        visitor.apply( null ).visitNodeKeyConstraint( ConstraintDescriptorFactory.nodeKeyForLabel( 0, 1, 2 ), ":Person(name, lastName)" );
         visitor.apply( null ).visitAllNodesCount( 55 );
         visitor.apply( null ).visitNodeCount( 0, "Person", 50 );
         visitor.apply( null ).visitNodeCount( 0, "Party", 5 );
-        visitor.apply( null ).visitRelCount( 0, 1, -1,
-                "MATCH (:Person)-[:REJECTS]->() RETURN count(*)", 5 );
+        visitor.apply( null ).visitRelCount( 0, 1, -1, "MATCH (:Person)-[:REJECTS]->() RETURN count(*)", 5 );
     }
 
     private void assertCompiles( final String className, String source )

@@ -30,7 +30,7 @@ import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -40,7 +40,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 {
     protected IndexAccessor accessor;
 
-    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
+    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -49,10 +49,10 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void before() throws Exception
     {
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig );
         populator.create();
         populator.close( true );
-        accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig );
+        accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig );
     }
 
     @After

@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -66,11 +67,11 @@ import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureExce
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -193,7 +194,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
-            SchemaState schemaState, IndexingService indexingService )
+            SchemaState schemaState, IndexingProvidersService indexProviders )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -221,9 +222,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageReader, allStoreHolder, indexingService ), storageReader,
-                        this, new KernelToken( storageReader, this ), cursors, autoIndexing, constraintIndexCreator,
-                        constraintSemantics );
+                        new IndexTxStateUpdater( storageReader, allStoreHolder, indexProviders ), storageReader,
+                        this,
+                        new KernelToken( storageReader, this ),
+                        cursors,
+                        autoIndexing,
+                        constraintIndexCreator,
+                        constraintSemantics,
+                        indexProviders );
         this.collectionsFactory = collectionsFactorySupplier.create();
     }
 
@@ -394,6 +400,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+    {
+        return operations.indexUniqueCreate( schema, provider );
+    }
+
+    @Override
     public long pageHits()
     {
         return cursorTracerSupplier.get().hits();
@@ -425,7 +437,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( SchemaIndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
                 // TODO logically, which statement should this operation be performed on?
                 constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );

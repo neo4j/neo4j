@@ -35,8 +35,8 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -63,8 +63,7 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
-    public SimpleIndexPopulatorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
+    public SimpleIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -78,9 +77,9 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         String failure = "The contrived failure";
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         // WHEN (this will attempt to call close)
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.markAsFailed( failure ), false );
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p -> p.markAsFailed( failure ), false );
         // THEN
-        assertThat( indexProvider.getPopulationFailure( 17, descriptor ), containsString( failure ) );
+        assertThat( indexProvider.getPopulationFailure( descriptor ), containsString( failure ) );
     }
 
     @Test
@@ -88,7 +87,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
         {
             String failure = "The contrived failure";
 
@@ -96,7 +95,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             p.markAsFailed( failure );
 
             // THEN
-            assertEquals( FAILED, indexProvider.getInitialState( 17, descriptor ) );
+            assertEquals( FAILED, indexProvider.getInitialState( descriptor ) );
         }, false );
     }
 
@@ -105,7 +104,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        final IndexPopulator p = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
+        final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig );
         p.close( false );
 
         // WHEN
@@ -120,7 +119,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         final Value propertyValue = Values.of( "value1" );
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
         {
             long nodeId = 1;
 
@@ -135,7 +134,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         } );
 
         // THEN
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
             try ( IndexReader reader = accessor.newReader() )
             {
@@ -150,7 +149,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldPopulateWithAllValues() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.add( updates( valueSet1 ) ) );
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p -> p.add( updates( valueSet1 ) ) );
 
         // THEN
         assertHasAllValues( valueSet1 );
@@ -160,7 +159,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldUpdateWithAllValuesDuringPopulation() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
         {
             try ( IndexUpdater updater = p.newPopulatingUpdater( this::valueSet1Lookup ) )
             {
@@ -179,9 +178,9 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldPopulateAndUpdate() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.add( updates( valueSet1 ) ) );
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p -> p.add( updates( valueSet1 ) ) );
 
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
             // WHEN
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
@@ -222,7 +221,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
 
     private void assertHasAllValues( List<NodeAndValue> values ) throws IOException, IndexNotApplicableKernelException
     {
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
             try ( IndexReader reader = accessor.newReader() )
             {
@@ -243,7 +242,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100 ) );
+            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100 ) );
         }
 
         @Test
@@ -251,14 +250,14 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         {
             // when
             long offset = valueSet1.size();
-            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
             {
                 p.add( updates( valueSet1, 0 ) );
                 p.add( updates( valueSet1, offset ) );
             } );
 
             // then
-            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
+            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
             {
                 try ( IndexReader reader = accessor.newReader() )
                 {
@@ -279,7 +278,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
+            super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
         }
 
         /**
@@ -293,7 +292,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             int nodeId1 = 1;
             int nodeId2 = 2;
 
-            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
             {
                 try
                 {

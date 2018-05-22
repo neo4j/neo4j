@@ -23,17 +23,17 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken}
-import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference}
+import org.neo4j.internal.kernel.api.IndexReference
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
                              propertyKey: PropertyKeyToken)
                             (val id: Id = Id.INVALID_ID) extends Pipe {
 
-  private var reference: IndexReference = CapableIndexReference.NO_INDEX
+  private var reference: IndexReference = IndexReference.NO_INDEX
 
   private def reference(context: QueryContext): IndexReference = {
-    if (reference == CapableIndexReference.NO_INDEX) {
+    if (reference == IndexReference.NO_INDEX) {
       reference = context.indexReference(label.nameId.id, propertyKey.nameId.id)
     }
     reference

@@ -27,8 +27,8 @@ import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.values.storable.ValueTuple;
@@ -43,10 +43,10 @@ public class TxStateCompositeIndexTest
 {
     private TransactionState state;
 
-    private final SchemaIndexDescriptor indexOn_1_1_2 = SchemaIndexDescriptorFactory.forLabel( 1, 1, 2 );
-    private final SchemaIndexDescriptor indexOn_1_2_3 = SchemaIndexDescriptorFactory.forLabel( 1, 2, 3 );
-    private final SchemaIndexDescriptor indexOn_2_2_3 = SchemaIndexDescriptorFactory.uniqueForLabel( 2, 2, 3 );
-    private final SchemaIndexDescriptor indexOn_2_2_3_4 = SchemaIndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
+    private final IndexDescriptor indexOn_1_1_2 = TestIndexDescriptorFactory.forLabel( 1, 1, 2 );
+    private final IndexDescriptor indexOn_1_2_3 = TestIndexDescriptorFactory.forLabel( 1, 2, 3 );
+    private final IndexDescriptor indexOn_2_2_3 = TestIndexDescriptorFactory.uniqueForLabel( 2, 2, 3 );
+    private final IndexDescriptor indexOn_2_2_3_4 = TestIndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
 
     @Before
     public void before()
@@ -179,7 +179,7 @@ public class TxStateCompositeIndexTest
         assertSeek( indexOn_2_2_3_4, values3, 1000 );
     }
 
-    private void addEntries( SchemaIndexDescriptor index, ValueTuple[] values, long nodeIdStart )
+    private void addEntries( IndexDescriptor index, ValueTuple[] values, long nodeIdStart )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -187,7 +187,7 @@ public class TxStateCompositeIndexTest
         }
     }
 
-    private void assertSeek( SchemaIndexDescriptor index, ValueTuple[] values, long nodeIdStart )
+    private void assertSeek( IndexDescriptor index, ValueTuple[] values, long nodeIdStart )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -208,7 +208,7 @@ public class TxStateCompositeIndexTest
         void addDefaultStringProperties( long... nodeIds );
     }
 
-    private IndexUpdater modifyIndex( final SchemaIndexDescriptor descriptor )
+    private IndexUpdater modifyIndex( final IndexDescriptor descriptor )
     {
         return new IndexUpdater()
         {

@@ -26,10 +26,10 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -49,8 +49,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
-    public CompositeIndexPopulatorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
+    public CompositeIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -60,7 +59,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
+            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
         }
 
         @Test
@@ -68,12 +67,12 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.add( Arrays.asList(
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p -> p.add( Arrays.asList(
                     add( 1, descriptor.schema(), "v1", "v2" ),
                     add( 2, descriptor.schema(), "v1", "v2" ) ) ) );
 
             // then
-            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
+            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
             {
                 try ( IndexReader reader = accessor.newReader() )
                 {
@@ -95,7 +94,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
 
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
+            super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
         }
 
         @Test
@@ -103,7 +102,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
             {
                 p.add( Arrays.asList(
                         IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
@@ -132,7 +131,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // given
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
             {
                 // when
                 p.add( Arrays.asList(

@@ -41,7 +41,6 @@ import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -65,6 +64,8 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
 
 public class NonUniqueIndexTest
 {
@@ -165,8 +166,8 @@ public class NonUniqueIndexTest
         OperationalMode operationalMode = OperationalMode.single;
         IndexProvider indexProvider = selectIndexProvider( pageCache, storeDir, fs, monitor, config, operationalMode );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
-                SchemaIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor(
+                forSchema( forLabel( 0, 0 ), indexProvider.getProviderDescriptor() ).withId( indexId ), samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
             return PrimitiveLongCollections.asList( reader.query( IndexQuery.exact( 1, value ) ) );

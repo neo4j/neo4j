@@ -30,8 +30,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.PointValue;
@@ -66,8 +66,7 @@ import static org.neo4j.values.storable.TimeValue.time;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    public SimpleIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite,
-            SchemaIndexDescriptor descriptor )
+    public SimpleIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -218,7 +217,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100 ) );
+            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100 ) );
         }
 
         @Test
@@ -426,7 +425,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
+            super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
         }
 
         @Test

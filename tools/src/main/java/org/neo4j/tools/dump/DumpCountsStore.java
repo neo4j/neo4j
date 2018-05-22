@@ -36,7 +36,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -123,14 +123,13 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     }
 
     private final PrintStream out;
-    private final Map<Long,SchemaIndexDescriptor> indexes;
+    private final Map<Long,IndexDescriptor> indexes;
     private final List<Token> labels;
     private final List<RelationshipTypeToken> relationshipTypes;
     private final List<Token> propertyKeys;
 
-    private DumpCountsStore( PrintStream out, Map<Long,SchemaIndexDescriptor> indexes, List<Token> labels,
-                             List<RelationshipTypeToken> relationshipTypes,
-                             List<Token> propertyKeys )
+    private DumpCountsStore( PrintStream out, Map<Long,IndexDescriptor> indexes, List<Token> labels,
+                             List<RelationshipTypeToken> relationshipTypes, List<Token> propertyKeys )
     {
         this.out = out;
         this.indexes = indexes;
@@ -168,7 +167,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     @Override
     public void visitIndexStatistics( long indexId, long updates, long size )
     {
-        SchemaIndexDescriptor index = indexes.get( indexId );
+        IndexDescriptor index = indexes.get( indexId );
         out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
                 label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
     }
@@ -176,7 +175,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     @Override
     public void visitIndexSample( long indexId, long unique, long size )
     {
-        SchemaIndexDescriptor index = indexes.get( indexId );
+        IndexDescriptor index = indexes.get( indexId );
         out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
                 label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
     }
@@ -258,14 +257,14 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         }
     }
 
-    private static Map<Long,SchemaIndexDescriptor> getAllIndexesFrom( SchemaStorage storage )
+    private static Map<Long,IndexDescriptor> getAllIndexesFrom( SchemaStorage storage )
     {
-        HashMap<Long,SchemaIndexDescriptor> indexes = new HashMap<>();
-        Iterator<IndexRule> indexRules = storage.indexesGetAll();
+        HashMap<Long,IndexDescriptor> indexes = new HashMap<>();
+        Iterator<StoreIndexDescriptor> indexRules = storage.indexesGetAll();
         while ( indexRules.hasNext() )
         {
-            IndexRule rule = indexRules.next();
-            indexes.put( rule.getId(), rule.getIndexDescriptor() );
+            StoreIndexDescriptor rule = indexRules.next();
+            indexes.put( rule.getId(), rule );
         }
         return indexes;
     }

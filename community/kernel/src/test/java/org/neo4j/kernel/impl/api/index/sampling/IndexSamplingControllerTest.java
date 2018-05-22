@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.CapableIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -42,6 +42,9 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forSchema;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
 
@@ -168,7 +171,7 @@ public class IndexSamplingControllerTest
         when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
-        indexMap.putIndexProxy( anotherIndexId, anotherIndexProxy );
+        indexMap.putIndexProxy( anotherIndexProxy );
 
         // when
         controller.sampleIndexes( TRIGGER_REBUILD_UPDATED );
@@ -191,7 +194,7 @@ public class IndexSamplingControllerTest
         when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( POPULATING );
-        indexMap.putIndexProxy( anotherIndexId, anotherIndexProxy );
+        indexMap.putIndexProxy( anotherIndexProxy );
 
         // when
         controller.sampleIndexes( TRIGGER_REBUILD_UPDATED );
@@ -307,7 +310,7 @@ public class IndexSamplingControllerTest
         when( tracker.canExecuteMoreSamplingJobs() ).thenReturn( true );
         when( indexProxy.getState() ).thenReturn( ONLINE );
         when( anotherIndexProxy.getState() ).thenReturn( ONLINE );
-        indexMap.putIndexProxy( anotherIndexId, anotherIndexProxy );
+        indexMap.putIndexProxy( anotherIndexProxy );
 
         // when
         controller.sampleIndex( indexId, TRIGGER_REBUILD_UPDATED );
@@ -348,7 +351,7 @@ public class IndexSamplingControllerTest
         }
 
         @Override
-        public boolean test( long indexId, SchemaIndexDescriptor descriptor )
+        public boolean test( StoreIndexDescriptor descriptor )
         {
             return ans;
         }
@@ -365,8 +368,10 @@ public class IndexSamplingControllerTest
     private final long anotherIndexId = 3;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
-    private final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 3, 4 );
-    private final SchemaIndexDescriptor anotherDescriptor = SchemaIndexDescriptorFactory.forLabel( 5, 6 );
+    private final CapableIndexDescriptor descriptor =
+            forSchema( forLabel( 3, 4 ), PROVIDER_DESCRIPTOR ).withId( indexId ).withoutCapabilities();
+    private final CapableIndexDescriptor anotherDescriptor =
+            forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withId( anotherIndexId ).withoutCapabilities();
     private final IndexSamplingJob job = mock( IndexSamplingJob.class );
     private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
 
@@ -378,7 +383,7 @@ public class IndexSamplingControllerTest
         when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
         when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
         when( jobFactory.create( anotherIndexId, anotherIndexProxy ) ).thenReturn( anotherJob );
-        indexMap.putIndexProxy( indexId, indexProxy );
+        indexMap.putIndexProxy( indexProxy );
     }
 
     private IndexSamplingController.RecoveryCondition always( boolean ans )

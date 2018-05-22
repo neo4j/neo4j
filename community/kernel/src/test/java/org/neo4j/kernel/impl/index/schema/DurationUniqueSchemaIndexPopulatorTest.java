@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -30,13 +30,13 @@ public class DurationUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIn
     {
         TemporalIndexFiles.FileLayout<DurationSchemaKey> fileLayout =
                 new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.DURATION );
-        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, indexDescriptor, samplingConfig );
     }
 
     @Override
     protected LayoutTestUtil<DurationSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
         return new UniqueLayoutTestUtil<>(
-                new DurationLayoutTestUtil( SchemaIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
+                new DurationLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ) ) );
     }
 }
