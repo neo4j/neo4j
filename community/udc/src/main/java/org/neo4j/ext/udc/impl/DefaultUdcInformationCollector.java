@@ -84,7 +84,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private NeoStoreDataSource neoStoreDataSource;
 
-    public DefaultUdcInformationCollector( Config config, DataSourceManager xadsm,
+    public DefaultUdcInformationCollector( Config config, DataSourceManager dataSourceManager,
             IdGeneratorFactory idGeneratorFactory, StartupStatistics startupStats, UsageData usageData )
     {
         this.config = config;
@@ -92,9 +92,9 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         this.idGeneratorFactory = idGeneratorFactory;
         final StartupStatistics startupStatistics = startupStats;
 
-        if ( xadsm != null )
+        if ( dataSourceManager != null )
         {
-            xadsm.addListener( new DataSourceManager.Listener()
+            dataSourceManager.addListener( new DataSourceManager.Listener()
             {
                 @Override
                 public void registered( NeoStoreDataSource ds )

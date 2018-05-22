@@ -28,8 +28,11 @@ import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -505,6 +508,81 @@ class LifeSupportTest
 
         assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus() );
         verify( component ).shutdown();
+    }
+
+    @Test
+    void addLastComponentBeforeChain()
+    {
+        LifeSupport lifeSupport = newLifeSupport();
+        Lifecycle lastComponent = mock( Lifecycle.class );
+        Lifecycle notLastComponent1 = mock( Lifecycle.class );
+        Lifecycle notLastComponent2 = mock( Lifecycle.class );
+        Lifecycle notLastComponent3 = mock( Lifecycle.class );
+        Lifecycle notLastComponent4 = mock( Lifecycle.class );
+        lifeSupport.addLast( lastComponent );
+        lifeSupport.add( notLastComponent1 );
+        lifeSupport.add( notLastComponent2 );
+        lifeSupport.add( notLastComponent3 );
+        lifeSupport.add( notLastComponent4 );
+
+        lifeSupport.start();
+
+        List<Lifecycle> lifecycleInstances = lifeSupport.getLifecycleInstances();
+        assertSame( notLastComponent1, lifecycleInstances.get( 0 ) );
+        assertSame( notLastComponent2, lifecycleInstances.get( 1 ) );
+        assertSame( notLastComponent3, lifecycleInstances.get( 2 ) );
+        assertSame( notLastComponent4, lifecycleInstances.get( 3 ) );
+        assertSame( lastComponent, lifecycleInstances.get( 4 ) );
+        assertThat( lifecycleInstances, hasSize( 5 ) );
+    }
+
+    @Test
+    void addLastComponentSomewhereInAChain()
+    {
+        LifeSupport lifeSupport = newLifeSupport();
+        Lifecycle notLastComponent1 = mock( Lifecycle.class );
+        Lifecycle notLastComponent2 = mock( Lifecycle.class );
+        Lifecycle lastComponent = mock( Lifecycle.class );
+        Lifecycle notLastComponent3 = mock( Lifecycle.class );
+        Lifecycle notLastComponent4 = mock( Lifecycle.class );
+        lifeSupport.add( notLastComponent1 );
+        lifeSupport.add( notLastComponent2 );
+        lifeSupport.addLast( lastComponent );
+        lifeSupport.add( notLastComponent3 );
+        lifeSupport.add( notLastComponent4 );
+
+        lifeSupport.start();
+
+        List<Lifecycle> lifecycleInstances = lifeSupport.getLifecycleInstances();
+        assertSame( notLastComponent1, lifecycleInstances.get( 0 ) );
+        assertSame( notLastComponent2, lifecycleInstances.get( 1 ) );
+        assertSame( notLastComponent3, lifecycleInstances.get( 2 ) );
+        assertSame( notLastComponent4, lifecycleInstances.get( 3 ) );
+        assertSame( lastComponent, lifecycleInstances.get( 4 ) );
+        assertThat( lifecycleInstances, hasSize( 5 ) );
+    }
+
+    @Test
+    void addOnlyLastComponent()
+    {
+        LifeSupport lifeSupport = newLifeSupport();
+        Lifecycle lastComponent = mock( Lifecycle.class );
+        lifeSupport.addLast( lastComponent );
+        lifeSupport.start();
+        List<Lifecycle> lifecycleInstances = lifeSupport.getLifecycleInstances();
+
+        assertSame( lastComponent, lifecycleInstances.get( 0 ) );
+        assertThat( lifecycleInstances, hasSize( 1 ) );
+    }
+
+    @Test
+    void failToAddSeveralLastComponents()
+    {
+        LifeSupport lifeSupport = newLifeSupport();
+        Lifecycle lastComponent = mock( Lifecycle.class );
+        Lifecycle anotherLastComponent = mock( Lifecycle.class );
+        lifeSupport.addLast( lastComponent );
+        assertThrows( IllegalStateException.class, () -> lifeSupport.addLast( anotherLastComponent ) );
     }
 
     static class LifecycleMock implements Lifecycle
