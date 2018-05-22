@@ -75,7 +75,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
                                                                                 updateStrategy,
                                                                                 runtimeBuilder,
                                                                                 contextCreatorV3_5,
-                                                                                txIdProvider) {
+                                                                                txIdProvider) with Compiler {
 
   val monitorsV3_3: MonitorsV3_3 = WrappedMonitors(kernelMonitors)
   monitorsV3_3.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher3.3")
@@ -208,6 +208,8 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
 
   override val runSafelyDuringPlanning : RunSafely = runSafely
   override val runSafelyDuringRuntime : RunSafely = runtimeRunSafely
+
+  override def compile(): ExecutionPlan = ???
 }
 
 object Compatibility {

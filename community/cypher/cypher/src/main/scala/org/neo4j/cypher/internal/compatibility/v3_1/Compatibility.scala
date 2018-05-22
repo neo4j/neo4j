@@ -47,7 +47,7 @@ import org.opencypher.v9_0.{frontend => v3_5}
 import scala.collection.mutable
 import scala.util.Try
 
-trait Compatibility {
+trait Compatibility extends Compiler {
 
   val graph: GraphDatabaseQueryService
   val queryCacheSize: Int
@@ -148,6 +148,7 @@ trait Compatibility {
     }
   }
 
+  override def compile(): ExecutionPlan = ???
 }
 
 class StringInfoLogger(log: Log) extends InfoLogger {

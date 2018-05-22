@@ -30,9 +30,10 @@ import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.opencypher.v9_0.util.InvalidArgumentException
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.impl.util.CopyOnWriteHashMap
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
 
@@ -50,6 +51,19 @@ trait CompatibilityFactory {
   def create(spec: PlannerSpec_v3_3, config: CypherPlannerConfiguration): v3_3compat.Compatibility[_,_,_]
 
   def create(spec: PlannerSpec_v3_5, config: CypherPlannerConfiguration): Compatibility[_,_]
+
+  def selectCompiler(cypherVersion: CypherVersion,
+                     cypherPlanner: CypherPlannerOption,
+                     cypherRuntime: CypherRuntimeOption,
+                     cypherUpdateStrategy: CypherUpdateStrategy,
+                     config: CypherPlannerConfiguration): Compiler = {
+    cypherVersion match {
+      case CypherVersion.v2_3 => create(PlannerSpec_v2_3(cypherPlanner, cypherRuntime), config)
+      case CypherVersion.v3_1 => create(PlannerSpec_v3_1(cypherPlanner, cypherRuntime, cypherUpdateStrategy), config)
+      case CypherVersion.v3_3 => create(PlannerSpec_v3_3(cypherPlanner, cypherRuntime, cypherUpdateStrategy), config)
+      case CypherVersion.v3_5 => create(PlannerSpec_v3_5(cypherPlanner, cypherRuntime, cypherUpdateStrategy), config)
+    }
+  }
 }
 
 class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMonitors: KernelMonitors,
@@ -92,7 +106,7 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
     }
 }
 
-class CompatibilityCache(factory: CompatibilityFactory) extends CompatibilityFactory {
+class CompatibilityCache(factory: CompatibilityFactory, config: CypherPlannerConfiguration) extends CompatibilityFactory {
 
   import scala.collection.convert.decorateAsScala._
 
@@ -100,6 +114,8 @@ class CompatibilityCache(factory: CompatibilityFactory) extends CompatibilityFac
   private val cache_v3_1 = new ConcurrentHashMap[PlannerSpec_v3_1, v3_1.Compatibility].asScala
   private val cache_v3_3 = new ConcurrentHashMap[PlannerSpec_v3_3, v3_3compat.Compatibility[_,_,_]].asScala
   private val cache_v3_5 = new ConcurrentHashMap[PlannerSpec_v3_5, Compatibility[_,_]].asScala
+
+  private val compilers = new CopyOnWriteHashMap[CompilerKey, Compiler]
 
   override def create(spec: PlannerSpec_v2_3, config: CypherPlannerConfiguration): v2_3.Compatibility =
     cache_v2_3.getOrElseUpdate(spec, factory.create(spec, config))
@@ -112,4 +128,22 @@ class CompatibilityCache(factory: CompatibilityFactory) extends CompatibilityFac
 
   override def create(spec: PlannerSpec_v3_5, config: CypherPlannerConfiguration): Compatibility[_,_] =
     cache_v3_5.getOrElseUpdate(spec, factory.create(spec, config))
+
+  override def selectCompiler(cypherVersion: CypherVersion,
+                              cypherPlanner: CypherPlannerOption,
+                              cypherRuntime: CypherRuntimeOption,
+                              cypherUpdateStrategy: CypherUpdateStrategy,
+                              config: CypherPlannerConfiguration): Compiler = {
+    val key = CompilerKey(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy)
+    val compiler = compilers.get(key)
+    if (compiler == null) {
+      compilers.put(key, factory.selectCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, config))
+      compilers.get(key)
+    } else compiler
+  }
+
+  case class CompilerKey(cypherVersion: CypherVersion,
+                         cypherPlanner: CypherPlannerOption,
+                         cypherRuntime: CypherRuntimeOption,
+                         cypherUpdateStrategy: CypherUpdateStrategy)
 }

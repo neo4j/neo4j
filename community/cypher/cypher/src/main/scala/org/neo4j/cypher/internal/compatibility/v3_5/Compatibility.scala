@@ -66,7 +66,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                                            updateStrategy,
                                                                            runtimeBuilder,
                                                                            contextCreatorv3_5,
-                                                                           txIdProvider) {
+                                                                           txIdProvider) with Compiler {
 
   val monitors: Monitors = WrappedMonitors(kernelMonitors)
   monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher3.4")
@@ -162,4 +162,6 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
 
   override val runSafelyDuringPlanning: RunSafely = runSafely
   override val runSafelyDuringRuntime: RunSafely = runSafely
+
+  override def compile(): ExecutionPlan = ???
 }
