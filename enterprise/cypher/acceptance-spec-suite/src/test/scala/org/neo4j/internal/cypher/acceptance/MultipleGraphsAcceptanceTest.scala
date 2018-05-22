@@ -28,7 +28,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import scala.language.postfixOps
 
 class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-  val configs = Configs.Version3_4 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
+  val configs = Configs.Version3_5 + Configs.Version3_3 + Configs.Procs - Configs.AllRulePlanners
   val expectedException = "Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs."
 
   test("from graph") {
