@@ -133,7 +133,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
         def createPlan(): ExecutionPlan_v3_5 = {
           val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
-          LogicalPlanNotifications
+          notification.LogicalPlanNotifications
             .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
             .foreach(notificationLogger.log)
 

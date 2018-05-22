@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexLimitation;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
@@ -77,6 +78,12 @@ public class DefaultCapableIndexReference implements CapableIndexReference
     public String providerVersion()
     {
         return providerDescriptor.getVersion();
+    }
+
+    @Override
+    public IndexLimitation[] limitations()
+    {
+        return capability.limitations();
     }
 
     @Override
