@@ -135,21 +135,13 @@ public interface PageCache extends AutoCloseable
     FileSystemAbstraction getCachedFileSystem();
 
     /**
-     * Check if the backing {@link FileSystemAbstraction file system} supports regular file operations or not.
      * Report any thread-local events to the global page cache tracer, as if acquiring a thread-specific page cursor
      * tracer, and reporting the events collected within it.
      */
     void reportEvents();
 
     /**
-     * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
-     * sub-directories.
-     * <p>
-     * Alternatively, if the {@link File} given as an argument refers to a file instead of a directory, then a stream
-     * will be returned with a file handle for just that file.
-     * <p>
-     * The stream is based on a snapshot of the file tree, so changes made to the tree using the returned file handles
-     * will not be reflected in the stream.
+     * Check if the backing {@link FileSystemAbstraction file system} supports regular file operations or not.
      * <p>
      * E.g. the file system for block device will not work with generic open and read/write calls and all operations
      * needs to be done through the page cache.
