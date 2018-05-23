@@ -179,7 +179,7 @@ public class CatchUpClientIT
 
     private CatchUpClient catchupClient( ChannelHandler... channelHandlers )
     {
-        return new CatchUpClient( NullLogProvider.getInstance(), Clock.systemUTC(), 10000, catchUpResponseHandler -> new ChannelInitializer<SocketChannel>()
+        return new CatchUpClient( NullLogProvider.getInstance(), Clock.systemUTC(), catchUpResponseHandler -> new ChannelInitializer<SocketChannel>()
         {
             @Override
             protected void initChannel( SocketChannel ch )
