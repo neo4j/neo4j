@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap
 
+import scala.collection.JavaConversions._
+
 /**
   * Keeps track of all cypher compilers, and finds the relevant compiler for a preparsed query.
   *
@@ -43,6 +45,15 @@ class CompilerLibrary(factory: CompilerFactory) {
       compilers.put(key, factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, config))
       compilers.get(key)
     } else compiler
+  }
+
+  def clearCaches(): Long = {
+    val numClearedEntries =
+      compilers.values().collect {
+        case c: CachingCompiler[_] => c.clearCaches()
+      }
+
+    numClearedEntries.max
   }
 
   case class CompilerKey(cypherVersion: CypherVersion,

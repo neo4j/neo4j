@@ -32,6 +32,14 @@ trait CachingCompiler[PARSED_QUERY <: AnyRef] extends Compiler {
 
   private val parsedQueries = new LFUCache[String, PARSED_QUERY](parserCacheSize)
 
+  /**
+    * Get the parsed query from cache, or parses and caches it.
+    *
+    * @param preParsedQuery the pre-parsed query to get or cache
+    * @param parser the parser to use if the query is not cached
+    * @throws org.neo4j.cypher.SyntaxException if there are syntax errors
+    * @return the parsed query
+    */
   @throws(classOf[SyntaxException])
   protected def getOrParse(preParsedQuery: PreParsedQuery,
                            parser: => Parser[PARSED_QUERY]
@@ -41,6 +49,15 @@ trait CachingCompiler[PARSED_QUERY <: AnyRef] extends Compiler {
       parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
       parsedQuery
     }
+  }
+
+  /**
+    * Clear the caches of this caching compiler.
+    *
+    * @return the number of entries that were cleared
+    */
+  def clearCaches(): Long = {
+    parsedQueries.clear()
   }
 }
 

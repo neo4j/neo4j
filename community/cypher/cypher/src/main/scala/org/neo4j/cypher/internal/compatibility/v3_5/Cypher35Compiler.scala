@@ -104,6 +104,10 @@ case class Cypher35Compiler[CONTEXT <: CommunityRuntimeContext,
   override val runSafelyDuringPlanning: RunSafely = runSafely
   override val runSafelyDuringRuntime: RunSafely = runSafely
 
+  override def clearCaches(): Long = {
+    Math.max(super.clearCaches(), planCache.clear())
+  }
+
   override def compile(preParsedQuery: PreParsedQuery,
                        tracer: CompilationPhaseTracer,
                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],

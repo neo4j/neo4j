@@ -76,10 +76,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val queryCache: QueryCache[String, CacheableExecutableQuery] =
     new QueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer)
 
-  private val compilerEngineDelegator: CompilerEngineDelegator =
-    new CompilerEngineDelegator(queryService, kernelMonitors, config, logProvider, new CompilerLibrary(compatibilityFactory))
-
-  private val parsedQueries = new LFUCache[String, ParsedQuery](config.queryCacheSize)
+  private val masterCompiler: MasterCompiler =
+    new MasterCompiler(queryService, kernelMonitors, config, logProvider, new CompilerLibrary(compatibilityFactory))
 
   private val schemaHelper = new SchemaHelper(queryCache)
 
@@ -133,7 +131,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         val schemaToken = schemaHelper.readSchemaToken(tc)
         val cacheLookup = queryCache.computeIfAbsentOrStale(cacheKey,
                                                             tc,
-                                                            () => compilerEngineDelegator.compile(preParsedQuery, tracer, tc),
+                                                            () => masterCompiler.compile(preParsedQuery, tracer, tc),
                                                             preParsedQuery.rawStatement)
         cacheLookup match {
           case _: CacheHit[_] |
@@ -158,7 +156,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 
   def clearQueryCaches(): Long =
-    Math.max(parsedQueries.clear(), queryCache.clear())
+    List(masterCompiler.clearCaches(), queryCache.clear(), preParser.clearCache()).max
 
   def isPeriodicCommit(query: String): Boolean =
     preParser.preParseQuery(query, profile = false).isPeriodicCommit

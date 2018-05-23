@@ -48,6 +48,23 @@ class PreParser(configuredVersion: CypherVersion,
 
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](planCacheSize)
 
+  /**
+    * Clear the pre-parser query cache.
+    *
+    * @return the number of entries cleared
+    */
+  def clearCache(): Long = {
+    preParsedQueries.clear()
+  }
+
+  /**
+    * Pre-parse a user-specified cypher query.
+    *
+    * @param queryText the query
+    * @param profile true if the query should be profiled even if profile is not given as a pre-parser option
+    * @throws org.neo4j.cypher.SyntaxException if there are syntactic errors in the pre-parser options
+    * @return the pre-parsed query
+    */
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String, profile: Boolean = false): PreParsedQuery = {
     val preParsedQuery = preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))

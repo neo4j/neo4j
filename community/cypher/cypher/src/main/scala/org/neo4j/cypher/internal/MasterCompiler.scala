@@ -35,7 +35,7 @@ import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.util
 import org.opencypher.v9_0.util.InputPosition
 
-object CompilerEngineDelegator {
+object MasterCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
   val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
   val DEFAULT_QUERY_PLAN_TARGET: Long = 1000 * 60 * 60 * 7 // 7 hours
@@ -49,13 +49,13 @@ object CompilerEngineDelegator {
 /**
   * Selects the correct cypher implementation based on a pre-parsed query.
   */
-class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
-                              kernelMonitors: KernelMonitors,
-                              config: CypherConfiguration,
-                              logProvider: LogProvider,
-                              compilerLibrary: CompilerLibrary) {
+class MasterCompiler(graph: GraphDatabaseQueryService,
+                     kernelMonitors: KernelMonitors,
+                     config: CypherConfiguration,
+                     logProvider: LogProvider,
+                     compilerLibrary: CompilerLibrary) {
 
-  import org.neo4j.cypher.internal.CompilerEngineDelegator._
+  import org.neo4j.cypher.internal.MasterCompiler._
 
   private val log: Log = logProvider.getLog(getClass)
 
@@ -72,6 +72,15 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
     planWithMinimumCardinalityEstimates = config.planWithMinimumCardinalityEstimates
   )
+
+  /**
+    * Clear all compiler caches.
+    *
+    * @return the maximum number of entries clear from any cache
+    */
+  def clearCaches(): Long = {
+    compilerLibrary.clearCaches()
+  }
 
   /**
     * Compile pre-parsed query into executable query.
@@ -100,6 +109,12 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
       }
     }
 
+    /**
+      * Compile query or recursively fallback to 3.1 in some cases.
+      *
+      * @param preParsedQuery the query to compile
+      * @return the compiled query
+      */
     def innerCompile(preParsedQuery: PreParsedQuery): CacheableExecutableQuery = {
 
       if ((preParsedQuery.version == CypherVersion.v3_3 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlannerOption.rule) {
@@ -140,6 +155,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
       }
     }
 
+    // Do the compilation
     innerCompile(preParsedQuery)
   }
 

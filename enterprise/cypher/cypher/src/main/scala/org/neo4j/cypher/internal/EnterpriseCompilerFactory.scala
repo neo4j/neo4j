@@ -64,7 +64,7 @@ class EnterpriseCompilerFactory(community: CommunityCompilerFactory,
           new ParallelDispatcher(morselSize, numberOfThreads, executorService)
         }
 
-      Cypher35Compiler(config, CompilerEngineDelegator.CLOCK, kernelMonitors, logProvider.getLog(getClass),
+      Cypher35Compiler(config, MasterCompiler.CLOCK, kernelMonitors, logProvider.getLog(getClass),
         cypherPlanner, cypherRuntime, cypherUpdateStrategy, EnterpriseRuntimeBuilder,
         EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher),
         LastCommittedTxIdProvider(graph))

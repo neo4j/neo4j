@@ -73,7 +73,7 @@ STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
 
   protected val cacheTracer: CacheTracer[STATEMENT] = monitorsv3_5.newMonitor[CacheTracer[STATEMENT]]("cypher3.4")
 
-  protected lazy val planCache: AstQueryCache[STATEMENT] =
+  protected val planCache: AstQueryCache[STATEMENT] =
     new AstQueryCache(configv3_5.queryCacheSize,
                       cacheTracer,
                       clock,

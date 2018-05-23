@@ -114,6 +114,10 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_5, T, StatementV3_3](
   override val runSafelyDuringPlanning : RunSafely = runSafely
   override val runSafelyDuringRuntime : RunSafely = runtimeRunSafely
 
+  override def clearCaches(): Long = {
+    Math.max(super.clearCaches(), planCache.clear())
+  }
+
   override def compile(preParsedQuery: PreParsedQuery,
                        tracer: CompilationPhaseTracer,
                        preParsingNotifications: Set[org.neo4j.graphdb.Notification],

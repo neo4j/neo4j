@@ -69,9 +69,9 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
 
         // 3.1
       case (CypherVersion.v3_1, CypherPlannerOption.rule) =>
-        v3_1.Rule31Compiler(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors)
+        v3_1.Rule31Compiler(graph, as3_1(config), MasterCompiler.CLOCK, kernelMonitors)
       case (CypherVersion.v3_1, _) =>
-        v3_1.Cost31Compiler(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors, log, cypherPlanner, cypherRuntime, cypherUpdateStrategy)
+        v3_1.Cost31Compiler(graph, as3_1(config), MasterCompiler.CLOCK, kernelMonitors, log, cypherPlanner, cypherRuntime, cypherUpdateStrategy)
 
         // 3.3 or 3.5 + rule
       case (_, CypherPlannerOption.rule) =>
@@ -79,13 +79,13 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
 
         // 3.3
       case (CypherVersion.v3_3, _) =>
-        v3_3compat.Cypher33Compiler(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
+        v3_3compat.Cypher33Compiler(config, MasterCompiler.CLOCK, kernelMonitors, log,
           cypherPlanner, cypherRuntime, cypherUpdateStrategy, CommunityRuntimeBuilder,
           CommunityRuntimeContextCreatorV3_3, CommunityRuntimeContextCreatorv3_5, LastCommittedTxIdProvider(graph))
 
         // 3.5
       case (CypherVersion.v3_5, _) =>
-        Cypher35Compiler(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
+        Cypher35Compiler(config, MasterCompiler.CLOCK, kernelMonitors, log,
           cypherPlanner, cypherRuntime, cypherUpdateStrategy, CommunityRuntimeBuilder,
                           CommunityRuntimeContextCreatorv3_5, LastCommittedTxIdProvider(graph))
     }
