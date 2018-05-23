@@ -28,6 +28,8 @@ abstract class LogicalVariable extends Expression {
   def bumpId: LogicalVariable
 
   def position: InputPosition
+
+  override def asCanonicalStringVal: String = name
 }
 
 object LogicalVariable {

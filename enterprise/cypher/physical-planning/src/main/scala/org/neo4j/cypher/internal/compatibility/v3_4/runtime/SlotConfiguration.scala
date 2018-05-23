@@ -158,6 +158,7 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
                         var numberOfLongs: Int,
                         var numberOfReferences: Int) {
 
+
   private val aliases: mutable.Set[String] = mutable.Set()
   private val slotAliases = new mutable.HashMap[Slot, mutable.Set[String]] with mutable.MultiMap[Slot, String]
 
@@ -176,6 +177,8 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     slotAliases.addBinding(slot, newKey)
     this
   }
+
+  def getAliasOf(slot: Slot): String = slotAliases(slot).head
 
   def isAlias(key: String): Boolean = {
     aliases.contains(key)
