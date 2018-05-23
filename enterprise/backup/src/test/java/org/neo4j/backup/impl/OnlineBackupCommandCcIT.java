@@ -91,7 +91,9 @@ public class OnlineBackupCommandCcIT
             .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" );
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( clusterRule );
+    public final RuleChain ruleChain = RuleChain
+            .outerRule( clusterRule );
+//            .outerRule( SuppressOutput.suppressAll() ).around( clusterRule );
 
     private File backupDir;
 
@@ -103,7 +105,7 @@ public class OnlineBackupCommandCcIT
     @Parameters( name = "{0}" )
     public static List<String> recordFormats()
     {
-        return Arrays.asList( Standard.LATEST_NAME, HighLimit.NAME );
+        return Arrays.asList( /*Standard.LATEST_NAME,*/ HighLimit.NAME );
     }
 
     @Before
@@ -295,9 +297,9 @@ public class OnlineBackupCommandCcIT
                 "--name=" + backupName ) );
 
         // and the database contains a few more transactions
-        IntStream.range( 0, 2 ).forEach( i -> transactions1M( clusterLeader( cluster ).database() ) );
-//        transactions1M( clusterLeader( cluster ).database() ); // first rotation
-//        transactions1M( clusterLeader( cluster ).database() ); // second rotation and prune
+//        IntStream.range( 0, 2 ).forEach( i -> transactions1M( clusterLeader( cluster ).database() ) );
+        transactions1M( clusterLeader( cluster ).database() ); // first rotation
+        transactions1M( clusterLeader( cluster ).database() ); // second rotation and prune
 
         // when we perform an incremental backup
         assertEquals( 0, runBackupToolFromSameJvm(
@@ -314,6 +316,7 @@ public class OnlineBackupCommandCcIT
         assertEquals( 2, highestTxIdInLogFiles );
         assertEquals( 1, lowestTxIdInLogFiles );
     }
+
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
     {
         if ( nullAbleOutput == null )

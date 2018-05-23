@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
+import org.neo4j.kernel.MyAtomicLong;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -42,7 +42,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 class TransactionLogFile extends LifecycleAdapter implements LogFile
 {
-    private final AtomicLong rotateAtSize;
+    private final MyAtomicLong rotateAtSize;
     private final TransactionLogFiles logFiles;
     private final TransactionLogFilesContext context;
     private final LogVersionBridge readerLogVersionBridge;
@@ -112,6 +112,20 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
 //            new RuntimeException( "" + channel.position() ).printStackTrace( System.err );
 //        }
 //        System.out.println( "channel.position() = " + channel.position() );
+        System.out.printf( "This is the important part, channel.position %d is greater than rotateAtSize %d = %b\n", channel.position(), rotateAtSize.get(),
+                channel.position() >= rotateAtSize.get() );
+//        if ( rotateAtSize.get() == 262144000 )
+//        {
+//            new RuntimeException( "Rotation size changed!" ).printStackTrace(  );
+//            try
+//            {
+//                Thread.sleep( 30_000 );
+//            }
+//            catch ( InterruptedException e )
+//            {
+//                e.printStackTrace();
+//            }
+//        }
         return channel.position() >= rotateAtSize.get();
     }
 

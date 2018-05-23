@@ -101,6 +101,7 @@ public class RemoteStore
 
         if ( commitState.transactionLogIndex().isPresent() )
         {
+            // TODO asPartOfStoreCopy is the same as keepTxLogsInDir?
             return pullTransactions( from, expectedStoreId, storeDir, commitState.transactionLogIndex().get() + 1, false, keepTxLogsInDir );
         }
         else
@@ -122,7 +123,7 @@ public class RemoteStore
         }
     }
 
-    public void copy( CatchupAddressProvider addressProvider, StoreId expectedStoreId, File destDir )
+    public void copy( CatchupAddressProvider addressProvider, StoreId expectedStoreId, File destDir, boolean keepTxLogsInStoreDir )
             throws StoreCopyFailedException
     {
         try
@@ -135,9 +136,6 @@ public class RemoteStore
 
             log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
 
-            // Even for cluster store copy, we still write the transaction logs into the store directory itself
-            // because the destination directory is temporary. We will copy them to the correct place later.
-            boolean keepTxLogsInStoreDir = false;
             CatchupResult catchupResult = pullTransactions( addressProvider.primary(), expectedStoreId, destDir,
                     lastFlushedTxId, true, keepTxLogsInStoreDir );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
@@ -160,6 +158,7 @@ public class RemoteStore
         storeCopyClientMonitor.startReceivingTransactions( fromTxId );
         long previousTxId = fromTxId - 1;
         try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, config,
+                // This is the writer that is attached to a single tx log file?
                 logProvider, fromTxId, asPartOfStoreCopy, keepTxLogsInStoreDir ) )
         {
             log.info( "Pulling transactions from %s starting with txId: %d", from, fromTxId );

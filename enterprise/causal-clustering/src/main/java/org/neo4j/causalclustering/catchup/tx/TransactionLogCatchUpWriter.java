@@ -65,11 +65,17 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         this.asPartOfStoreCopy = asPartOfStoreCopy;
         LogFilesBuilder logFilesBuilder = LogFilesBuilder.activeFilesBuilder( storeDir, fs, pageCache )
                 .withLastCommittedTransactionIdSupplier( () -> fromTxId - 1 );
-        new RuntimeException( String.format( "KEEP TX LOGS FLAG IS %s; when false then it will add config. %s=%s, %s=%s, %s=%s\n", keepTxLogsInStoreDir,
-                GraphDatabaseSettings.keep_logical_logs.name(), config.get( GraphDatabaseSettings.keep_logical_logs ),
-                GraphDatabaseSettings.check_point_interval_time.name(), config.get( GraphDatabaseSettings.check_point_interval_time ),
-                GraphDatabaseSettings.logical_log_rotation_threshold.name(), config.get( GraphDatabaseSettings.logical_log_rotation_threshold )
-                ) ).printStackTrace( System.out );
+
+//        new RuntimeException(
+//        String.format(
+//                "Constructing log catchup writer used for batch update. " +
+//                        "KEEP TX LOGS FLAG IS %s; when false then it will add config. %s=%s, %s=%s, %s=%s, currentThread=%s\n",
+//                keepTxLogsInStoreDir,
+//                GraphDatabaseSettings.keep_logical_logs.name(), config.get( GraphDatabaseSettings.keep_logical_logs ),
+//                GraphDatabaseSettings.check_point_interval_time.name(), config.get( GraphDatabaseSettings.check_point_interval_time ),
+//                GraphDatabaseSettings.logical_log_rotation_threshold.name(), config.get( GraphDatabaseSettings.logical_log_rotation_threshold ),
+//                Thread.currentThread().getName()
+//                ) ).printStackTrace( System.out );
         if ( !keepTxLogsInStoreDir )
         {
             logFilesBuilder.withConfig( config );

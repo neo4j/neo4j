@@ -20,7 +20,6 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  airline
   Apache Commons BeanUtils
   Apache Commons Collections
   Apache Commons Compress
@@ -44,10 +43,8 @@ Apache Software License, Version 2.0
   Data Mapper for Jackson
   FindBugs-jsr305
   Graphite Integration for Metrics
-  Guava: Google Core Libraries for Java
   hazelcast-all
   Jackson
-  javax.inject
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
   Jetty :: IO Utility

@@ -71,20 +71,30 @@ public class LogPruningImpl implements LogPruning
     private void deleteThis( Config config )
     {
         RuntimeException e = new RuntimeException(
-                String.format( "Pruning strategy from config %s which is strategy %s\n", config.get( GraphDatabaseSettings.keep_logical_logs ),
+                String.format( "[%s] Pruning strategy from config %s which is strategy %s\n",
+                        Thread.currentThread().getName(),
+                        config.get( GraphDatabaseSettings.keep_logical_logs ),
                         pruneStrategy.getClass().getName() ) );
-        for ( StackTraceElement stackTraceElement : e.getStackTrace() )
+        if ( !stackTraceContainsKeyword( e, "ReadReplicaGraphDatabase", "CoreClusterMember" ) )
         {
-            List<String> filters = Arrays.asList( "ReadReplicaGraphDatabase", "CoreClusterMember" );
+            e.printStackTrace( System.out );
+        }
+    }
+
+    public static boolean stackTraceContainsKeyword( Throwable throwable, String... keywords )
+    {
+        for ( StackTraceElement stackTraceElement : throwable.getStackTrace() )
+        {
+            List<String> filters = Arrays.asList( keywords );
             for ( String filter : filters )
             {
                 if ( stackTraceElement.getClassName().contains( filter ) )
                 {
-                    return;
+                    return true;
                 }
             }
         }
-        e.printStackTrace( System.out );
+        return false;
     }
 
     private static class CountingDeleter implements LongConsumer

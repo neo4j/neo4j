@@ -601,11 +601,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         final LogPruning logPruning =
                 new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config );
-        dependencies.satisfyDependencies( logPruning );
 
         final LogRotation logRotation =
                 new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFiles, databaseHealth );
-        dependencies.satisfyDependencies( logRotation );
 
         final TransactionAppender appender = life.add( new BatchingTransactionAppender(
                 logFiles, logRotation, transactionMetadataCache, transactionIdStore, explicitIndexTransactionOrdering,
@@ -619,7 +617,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
                 transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider,
                 tracers.checkPointTracer, ioLimiter, storeCopyCheckPointMutex );
-        dependencies.satisfyDependencies( checkPointer );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,

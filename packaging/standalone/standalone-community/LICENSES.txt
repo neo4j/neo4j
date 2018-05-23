@@ -4,30 +4,20 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
-  Apache Commons BeanUtils
-  Apache Commons Collections
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons IO
   Apache Commons Lang
-  Apache Commons Logging
   Apache Commons Text
-  Apache Shiro :: Cache
-  Apache Shiro :: Configuration :: Core
-  Apache Shiro :: Configuration :: OGDL
-  Apache Shiro :: Core
-  Apache Shiro :: Cryptography :: Ciphers
-  Apache Shiro :: Cryptography :: Core
-  Apache Shiro :: Cryptography :: Hashing
-  Apache Shiro :: Event
-  Apache Shiro :: Lang
   Caffeine cache
   Commons Lang
+  Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
-  FindBugs-jsr305
-  Graphite Integration for Metrics
-  hazelcast-all
+  disposables.js
+  dom-storage.js
+  ecdsa-sig-formatter.js
+  firebase.js
   Jackson
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
@@ -45,18 +35,12 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
-  LZ4 and xxHash
-  Metrics Core
-  Netty
   Netty/All-in-One
   Objenesis
   opencsv
   parboiled-core
   parboiled-scala
-  Prometheus Java Simpleclient
-  Prometheus Java Simpleclient Common
-  Prometheus Java Simpleclient Dropwizard
-  Prometheus Java Simpleclient Httpserver
+  rxjs.js
   WMI4Java
 ------------------------------------------------------------------------------
 
@@ -309,12 +293,25 @@ SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
+  antlr4.js
   ASM Analysis
   ASM Core
   ASM Tree
   ASM Util
+  buffer-equal-constant-time.js
+  D3.js
+  dnd-core.js
+  hoek.js
+  hoist-non-react-statics.js
+  ieee754.js
+  invariant.js
   JLine
+  joi.js
+  react-dnd-html5-backend.js
+  react-dnd.js
   Scala Compiler
+  sprintf-js.js
+  topo.js
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -341,6 +338,40 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+------------------------------------------------------------------------------
+BSD License 2-clause
+  esprima.js
+  isemail.js
+  node-noop.js
+  staged-git-files.js
+  stringify-object.js
+------------------------------------------------------------------------------
+
+Copyright <year> <copyright holder>
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+	 this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
@@ -380,7 +411,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ------------------------------------------------------------------------------
 Common Development and Distribution License Version 1.1
   Java Servlet API
-  jersey-client
   jersey-core
   jersey-server
   jersey-servlet
@@ -1107,10 +1137,204 @@ version.
 
 
 ------------------------------------------------------------------------------
+ISC
+  css-color-keywords.js
+  get-own-enumerable-property-symbols.js
+  graceful-fs.js
+  isexe.js
+  lru-cache.js
+  minimatch.js
+  pseudomap.js
+  sax.js
+  signal-exit.js
+  which.js
+  yallist.js
+------------------------------------------------------------------------------
+
+Copyright (c) <year>, <copyright holder>
+
+Permission to use, copy, modify, and/or distribute this software
+for any purpose with or without fee is hereby granted, provided
+that the above copyright notice and this permission notice
+appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE
+LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES
+OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+
+------------------------------------------------------------------------------
 MIT License
-  scallop
-  SLF4J API Module
-  SLF4J NOP Binding
+  
+  ansi-escapes.js
+  ansi-regex.js
+  ansi-styles.js
+  app-root-path.js
+  argparse.js
+  asap.js
+  ascii-data-table.js
+  assertion-error.js
+  attr-accept.js
+  babel-runtime.js
+  balanced-match.js
+  base64-js.js
+  base64url.js
+  bootstrap
+  brace-expansion.js
+  buffer.js
+  canvg
+  chai.js
+  chalk.js
+  check-error.js
+  ci-info.js
+  classnames.js
+  cli-cursor.js
+  cli-spinners.js
+  cli-truncate.js
+  code-point-at.js
+  codemirror.js
+  color-convert.js
+  color-name.js
+  commander.js
+  concat-map.js
+  core-js.js
+  cosmiconfig.js
+  cross-spawn.js
+  css-to-react-native.js
+  date-fns.js
+  deep-eql.js
+  elegant-spinner.js
+  encoding.js
+  error-ex.js
+  escape-string-regexp.js
+  execa.js
+  exit-hook.js
+  faye-websocket.js
+  fbjs.js
+  figures.js
+  file-saver.js
+  Font Awesome CSS
+  fuzzaldrin.js
+  get-func-name.js
+  get-stream.js
+  has-ansi.js
+  has-flag.js
+  http-parser-js.js
+  husky.js
+  iconv-lite.js
+  immutability-helper.js
+  indent-string.js
+  is-arrayish.js
+  is-ci.js
+  is-extglob.js
+  is-finite.js
+  is-fullwidth-code-point.js
+  is-function.js
+  is-glob.js
+  is-obj.js
+  is-plain-object.js
+  is-promise.js
+  is-regexp.js
+  is-stream.js
+  isobject.js
+  isomorphic-fetch.js
+  jest-get-type.js
+  jest-validate.js
+  js-tokens.js
+  js-yaml.js
+  jsonic.js
+  jsonwebtoken.js
+  jwa.js
+  jws.js
+  leven.js
+  lint-staged.js
+  listr-silent-renderer.js
+  listr-update-renderer.js
+  listr-verbose-renderer.js
+  listr.js
+  lodash-es.js
+  lodash.js
+  log-symbols.js
+  log-update.js
+  loose-envify.js
+  minimist.js
+  moment.js
+  ms.js
+  node-fetch.js
+  normalize-path.js
+  npm-path.js
+  npm-run-path.js
+  npm-which.js
+  number-is-nan.js
+  object-assign.js
+  onetime.js
+  ora.js
+  os-homedir.js
+  p-finally.js
+  p-map.js
+  parse-json.js
+  path-key.js
+  pathval.js
+  pinkie-promise.js
+  pinkie.js
+  postcss-value-parser.js
+  preact-compat.js
+  preact-redux.js
+  preact-render-to-string.js
+  preact-suber.js
+  preact-transition-group.js
+  preact.js
+  pretty-format.js
+  promise-polyfill.js
+  promise.js
+  prop-types.js
+  querystringify.js
+  react-addons-pure-render-mixin.js
+  react-dropzone.js
+  react-icon-base.js
+  react-icons.js
+  react-timeago.js
+  redux-observable.js
+  redux.js
+  regenerator-runtime.js
+  repeating.js
+  require-from-string.js
+  requires-port.js
+  restore-cursor.js
+  safe-buffer.js
+  save-as.js
+  setimmediate.js
+  shebang-command.js
+  shebang-regex.js
+  slice-ansi.js
+  standalone-react-addons-pure-render-mixin.js
+  stream-to-observable.js
+  string-width.js
+  strip-ansi.js
+  strip-eof.js
+  strip-indent.js
+  styled-components.js
+  stylis.js
+  suber.js
+  supports-color.js
+  swipe-js-iso.js
+  symbol-observable.js
+  type-detect.js
+  ua-parser-js.js
+  url-parse.js
+  uuid.js
+  websocket-driver.js
+  websocket-extensions.js
+  whatwg-fetch.js
+  xml2js.js
+  xmlbuilder.js
+  xmlhttprequest.js
+  xtend.js
 ------------------------------------------------------------------------------
 
 The MIT License
@@ -1139,7 +1363,6 @@ THE SOFTWARE.
 
 ------------------------------------------------------------------------------
 Mozilla Public License, Version 2.0
-  kiama
   Mozilla Rhino
 ------------------------------------------------------------------------------
 
@@ -1516,6 +1739,102 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
   This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
+
+
+
+------------------------------------------------------------------------------
+SIL OFL 1.1
+  Font Awesome
+  Inconsolata Font
+  Open Sans Font
+------------------------------------------------------------------------------
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded, 
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
 
 
 

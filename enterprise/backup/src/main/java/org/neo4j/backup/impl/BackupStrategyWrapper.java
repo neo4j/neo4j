@@ -99,6 +99,7 @@ class BackupStrategyWrapper
                 clearIdFiles( backupLocation );
                 return describeOutcome( state );
             }
+            describeOutcome( state ).getCause().get().printStackTrace(); // TODO delete this
             if ( !onlineBackupContext.getRequiredArguments().isFallbackToFull() )
             {
                 return describeOutcome( state );

@@ -350,7 +350,6 @@ public class OnlineBackupCommandHaIT
         }
     }
 
-
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
     {
         while ( continueFlagReference.get() )
