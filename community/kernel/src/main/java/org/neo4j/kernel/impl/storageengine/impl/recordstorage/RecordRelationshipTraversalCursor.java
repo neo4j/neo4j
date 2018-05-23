@@ -17,19 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.util.function.LongPredicate;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.newapi.RelationshipDirection;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.References.clearEncoding;
 
-public class StoreRelationshipTraversalCursor extends StoreRelationshipCursor implements StorageRelationshipTraversalCursor
+class RecordRelationshipTraversalCursor extends RecordRelationshipCursor implements StorageRelationshipTraversalCursor
 {
     private enum GroupState
     {
@@ -43,14 +44,14 @@ public class StoreRelationshipTraversalCursor extends StoreRelationshipCursor im
     private long next;
     private Record buffer;
     private PageCursor pageCursor;
-    private final StoreRelationshipGroupCursor group;
+    private final RecordRelationshipGroupCursor group;
     private GroupState groupState;
     private boolean open;
 
-    public StoreRelationshipTraversalCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
+    RecordRelationshipTraversalCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
     {
         super( relationshipStore, groupStore );
-        this.group = new StoreRelationshipGroupCursor( relationshipStore, groupStore );
+        this.group = new RecordRelationshipGroupCursor( relationshipStore, groupStore );
     }
 
     @Override

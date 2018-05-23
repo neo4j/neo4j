@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.nio.ByteBuffer;
 import java.util.function.IntPredicate;
@@ -48,7 +48,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-public class StorePropertyCursor extends PropertyRecord implements StoragePropertyCursor
+class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INITIAL_POSITION = -1;
@@ -62,7 +62,7 @@ public class StorePropertyCursor extends PropertyRecord implements StorageProper
     private PageCursor arrayPage;
     private boolean open;
 
-    public StorePropertyCursor( PropertyStore read )
+    RecordPropertyCursor( PropertyStore read )
     {
         super( NO_ID );
         this.read = read;
@@ -392,14 +392,14 @@ public class StorePropertyCursor extends PropertyRecord implements StorageProper
         read.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
     }
 
-    private TextValue string( org.neo4j.kernel.impl.newapi.StorePropertyCursor cursor, long reference, PageCursor page )
+    private TextValue string( RecordPropertyCursor cursor, long reference, PageCursor page )
     {
         ByteBuffer buffer = cursor.buffer = read.loadString( reference, cursor.buffer, page );
         buffer.flip();
         return Values.stringValue( UTF8.decode( buffer.array(), 0, buffer.limit() ) );
     }
 
-    private ArrayValue array( org.neo4j.kernel.impl.newapi.StorePropertyCursor cursor, long reference, PageCursor page )
+    private ArrayValue array( RecordPropertyCursor cursor, long reference, PageCursor page )
     {
         ByteBuffer buffer = cursor.buffer = read.loadArray( reference, cursor.buffer, page );
         buffer.flip();
