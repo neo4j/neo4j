@@ -22,20 +22,12 @@ package org.neo4j.kernel.impl.proc;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.guard.Guard;
 import org.neo4j.procedure.TerminationGuard;
 
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 
 public class TerminationGuardProvider implements ComponentRegistry.Provider<TerminationGuard>
 {
-    private final Guard guard;
-
-    public TerminationGuardProvider( Guard guard )
-    {
-        this.guard = guard;
-    }
-
     @Override
     public TerminationGuard apply( Context ctx ) throws ProcedureException
     {
@@ -55,7 +47,7 @@ public class TerminationGuardProvider implements ComponentRegistry.Provider<Term
         @Override
         public void check()
         {
-            guard.check( ktx );
+            ktx.assertOpen();
         }
     }
 }

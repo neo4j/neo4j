@@ -82,7 +82,6 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
                 urlValidator,
                 securityContext
             ),
-            dataSource.guard,
             dataSource.threadToTransactionBridge,
             platform.config,
             relationshipTypeTokenHolder

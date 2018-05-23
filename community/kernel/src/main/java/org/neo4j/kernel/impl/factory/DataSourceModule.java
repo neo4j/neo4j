@@ -40,8 +40,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.guard.TerminationGuard;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
@@ -103,8 +101,6 @@ public class DataSourceModule
 
     public final AutoIndexing autoIndexing;
 
-    public final Guard guard;
-
     public DataSourceModule( final PlatformModule platformModule, EditionModule editionModule,
             Supplier<QueryExecutionEngine> queryExecutionEngineSupplier )
     {
@@ -135,8 +131,6 @@ public class DataSourceModule
         StartupStatisticsProvider startupStatistics = deps.satisfyDependency( new StartupStatisticsProvider() );
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
-
-        guard = createGuard( deps );
 
         DatabasePanicEventGenerator databasePanicEventGenerator = deps.satisfyDependency(
                 new DatabasePanicEventGenerator( platformModule.eventHandlers ) );
@@ -206,18 +200,6 @@ public class DataSourceModule
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
 
-    private Guard createGuard( Dependencies deps )
-    {
-        TerminationGuard guard = createGuard();
-        deps.satisfyDependency( guard );
-        return guard;
-    }
-
-    protected TerminationGuard createGuard()
-    {
-        return new TerminationGuard();
-    }
-
     private Procedures setupProcedures( PlatformModule platform, EditionModule editionModule )
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
@@ -242,9 +224,8 @@ public class DataSourceModule
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );
         procedures.registerComponent( Log.class, ctx -> proceduresLog, true );
 
-        Guard guard = platform.dependencies.resolveDependency( Guard.class );
         procedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
-        procedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider( guard ), true );
+        procedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
 
         // Below components are not public API, but are made available for internal
         // procedures to call, and to provide temporary workarounds for the following

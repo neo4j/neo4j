@@ -180,7 +180,6 @@ public class GraphDatabaseFacadeFactory
         graphDatabaseFacade.init(
                 edition,
                 spi,
-                dataSource.guard,
                 dataSource.threadToTransactionBridge,
                 platform.config,
                 edition.relationshipTypeTokenHolder
