@@ -30,7 +30,6 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
@@ -56,6 +55,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -70,6 +70,7 @@ public class RaftReplicatorTest
     private LeaderLocator leaderLocator = mock( LeaderLocator.class );
     private MemberId myself = new MemberId( UUID.randomUUID() );
     private MemberId leader = new MemberId( UUID.randomUUID() );
+    private MemberId anotherLeader = new MemberId( UUID.randomUUID() );
     private GlobalSession session = new GlobalSession( UUID.randomUUID(), myself );
     private LocalSessionPool sessionPool = new LocalSessionPool( session );
     private TimeoutStrategy noWaitTimeoutStrategy = new ConstantTimeTimeoutStrategy( 0, MILLISECONDS );
@@ -131,37 +132,6 @@ public class RaftReplicatorTest
     }
 
     @Test
-    public void shouldRetryGettingLeader() throws Exception
-    {
-        // given
-        AtomicInteger leaderRetries = new AtomicInteger( 0 );
-
-        when( leaderLocator.getLeader() )
-                .thenThrow( new NoLeaderFoundException( ) )
-                .thenReturn( leader );
-        CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
-        CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
-
-        RaftReplicator replicator =
-                new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
-                        capturedProgress, noWaitTimeoutStrategy, new SpyRetryStrategy( leaderRetries ),
-                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
-
-        ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
-        Thread replicatingThread = replicatingThread( replicator, content, false );
-
-        // when
-        replicatingThread.start();
-        // then
-        assertEventually( "send count", () -> outbound.count, greaterThan( 2 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
-        assertEquals( 1, leaderRetries.get() );
-
-        // cleanup
-        capturedProgress.last.setReplicated();
-        replicatingThread.join( DEFAULT_TIMEOUT_MS );
-    }
-
-    @Test
     public void shouldReleaseSessionWhenFinished() throws Exception
     {
         // given
@@ -198,7 +168,7 @@ public class RaftReplicatorTest
     {
         when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
-        CapturingOutbound outbound = new CapturingOutbound();
+        CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, noWaitTimeoutStrategy, noWaitTimeoutStrategy,
@@ -213,6 +183,58 @@ public class RaftReplicatorTest
         availabilityGuard.shutdown();
         replicatingThread.join();
         assertThat( replicatingThread.getReplicationException(), Matchers.instanceOf( DatabaseShutdownException.class ) );
+    }
+
+    @Test
+    public void shouldFailIfNoLeaderIsAvailable() throws NoLeaderFoundException
+    {
+        // given
+        when( leaderLocator.getLeader() ).thenThrow( NoLeaderFoundException.class );
+
+        CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
+        CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
+
+        RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress,
+                noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(),
+                replicationLimit );
+
+        // when
+        try
+        {
+            ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
+            replicator.replicate( content, true );
+            fail( "should have thrown" );
+        }
+        catch ( ReplicationFailureException e )
+        {
+            System.out.println( "Replication aborted since no leader was available" );
+        }
+    }
+
+    @Test
+    public void shouldFailIfLeaderSwitches() throws NoLeaderFoundException
+    {
+        // given
+        when( leaderLocator.getLeader() ).thenReturn( leader ).thenReturn( anotherLeader );
+
+        CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
+        CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
+
+        RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress,
+                noWaitTimeoutStrategy, noWaitTimeoutStrategy, availabilityGuard, NullLogProvider.getInstance(),
+                replicationLimit );
+
+        // when
+        try
+        {
+            ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
+            replicator.replicate( content, true );
+            fail( "should have thrown" );
+        }
+        catch ( ReplicationFailureException e )
+        {
+            assertEquals( "Replication aborted since a leader switch was detected", e.getMessage() );
+        }
     }
 
     private ReplicatingThread replicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )
@@ -260,7 +282,7 @@ public class RaftReplicatorTest
             }
         }
 
-        public Exception getReplicationException()
+        Exception getReplicationException()
         {
             return replicationException;
         }
@@ -320,34 +342,5 @@ public class RaftReplicatorTest
             this.count++;
         }
 
-    }
-
-    private static class SpyRetryStrategy implements TimeoutStrategy
-    {
-        private final AtomicInteger increments;
-
-        SpyRetryStrategy( AtomicInteger increments )
-        {
-            this.increments = increments;
-        }
-
-        @Override
-        public TimeoutStrategy.Timeout newTimeout()
-        {
-            return new TimeoutStrategy.Timeout()
-            {
-                @Override
-                public long getMillis()
-                {
-                    return 0;
-                }
-
-                @Override
-                public void increment()
-                {
-                    increments.incrementAndGet();
-                }
-            };
-        }
     }
 }

@@ -25,6 +25,7 @@ package org.neo4j.causalclustering.core.state.machines.tx;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.causalclustering.core.replication.ReplicationFailureException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -33,6 +34,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionFactory.createImmutableReplicatedTransaction;
+import static org.neo4j.kernel.api.exceptions.Status.Cluster.ReplicationFailure;
 
 public class ReplicatedTransactionCommitProcess implements TransactionCommitProcess
 {
@@ -54,9 +56,9 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
         {
             futureTxId = replicator.replicate( transaction, true );
         }
-        catch ( InterruptedException e )
+        catch ( ReplicationFailureException e )
         {
-            throw new TransactionFailureException( "Interrupted replicating transaction.", e );
+            throw new TransactionFailureException( ReplicationFailure, e );
         }
 
         try

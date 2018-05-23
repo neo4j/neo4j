@@ -36,6 +36,11 @@ public class TransactionFailureException extends KernelException
         super( statusCode, cause, message, parameters );
     }
 
+    public TransactionFailureException( Status statusCode, Throwable cause )
+    {
+        super( statusCode, cause );
+    }
+
     public TransactionFailureException( Status statusCode, String message, Object... parameters )
     {
         super( statusCode, message, parameters );
