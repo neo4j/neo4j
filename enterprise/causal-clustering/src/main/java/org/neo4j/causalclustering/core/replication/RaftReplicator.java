@@ -75,20 +75,39 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, Lead
     }
 
     @Override
-    public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws InterruptedException
+    public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws ReplicationFailureException
     {
+        MemberId originalLeader;
+        try
+        {
+            originalLeader = leaderLocator.getLeader();
+        }
+        catch ( NoLeaderFoundException e )
+        {
+            throw new ReplicationFailureException( "Replication aborted since no leader was available", e );
+        }
+
         if ( command.hasSize() )
         {
-            return throttler.invoke( () -> replicate0( command, trackResult ), command.size() );
+            try
+            {
+                return throttler.invoke( () -> replicate0( command, trackResult, originalLeader ), command.size() );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new ReplicationFailureException( "Interrupted while waiting for replication credits", e );
+            }
         }
         else
         {
-            return replicate0( command, trackResult );
+            return replicate0( command, trackResult, originalLeader );
         }
     }
 
-    private Future<Object> replicate0( ReplicatedContent command, boolean trackResult ) throws InterruptedException
+    private Future<Object> replicate0( ReplicatedContent command, boolean trackResult, MemberId leader ) throws ReplicationFailureException
     {
+        assertNoLeaderSwitch( leader );
+
         OperationContext session = sessionPool.acquireSession();
 
         DistributedOperation operation = new DistributedOperation( command, session.globalSession(), session.localOperationId() );
@@ -96,32 +115,36 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, Lead
 
         TimeoutStrategy.Timeout progressTimeout = progressTimeoutStrategy.newTimeout();
         TimeoutStrategy.Timeout leaderTimeout = leaderTimeoutStrategy.newTimeout();
-        do
+        try
         {
-            assertDatabaseNotShutdown();
-            try
+            do
             {
-                // blocking at least until the send has succeeded or failed before retrying
-                outbound.send( leaderLocator.getLeader(), new RaftMessages.NewEntry.Request( me, operation ), true );
+                assertDatabaseNotShutdown();
+                try
+                {
+                    // blocking at least until the send has succeeded or failed before retrying
+                    outbound.send( leader, new RaftMessages.NewEntry.Request( me, operation ), true );
 
-                leaderTimeout = leaderTimeoutStrategy.newTimeout();
+                    leaderTimeout = leaderTimeoutStrategy.newTimeout();
 
-                progress.awaitReplication( progressTimeout.getMillis() );
-                progressTimeout.increment();
+                    progress.awaitReplication( progressTimeout.getMillis() );
+                    progressTimeout.increment();
+                    leader = leaderLocator.getLeader();
+                }
+                catch ( NoLeaderFoundException e )
+                {
+                    log.debug( "Could not replicate operation " + operation + " because no leader was found. Retrying.", e );
+                    Thread.sleep( leaderTimeout.getMillis() );
+                    leaderTimeout.increment();
+                }
             }
-            catch ( InterruptedException e )
-            {
-                progressTracker.abort( operation );
-                throw e;
-            }
-            catch ( NoLeaderFoundException e )
-            {
-                log.debug( "Could not replicate operation " + operation + " because no leader was found. Retrying.", e );
-                Thread.sleep( leaderTimeout.getMillis() );
-                leaderTimeout.increment();
-            }
+            while ( !progress.isReplicated() );
         }
-        while ( !progress.isReplicated() );
+        catch ( InterruptedException e )
+        {
+            progressTracker.abort( operation );
+            throw new ReplicationFailureException( "Interrupted while replicating", e );
+        }
 
         BiConsumer<Object,Throwable> cleanup = ( ignored1, ignored2 ) -> sessionPool.releaseSession( session );
 
@@ -135,6 +158,24 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, Lead
         }
 
         return progress.futureResult();
+    }
+
+    private void assertNoLeaderSwitch( MemberId originalLeader ) throws ReplicationFailureException
+    {
+        MemberId currentLeader;
+        try
+        {
+            currentLeader = leaderLocator.getLeader();
+        }
+        catch ( NoLeaderFoundException e )
+        {
+            throw new ReplicationFailureException( "Replication aborted since no leader was available", e );
+        }
+
+        if ( !currentLeader.equals( originalLeader ) )
+        {
+            throw new ReplicationFailureException( "Replication aborted since a leader switch was detected" );
+        }
     }
 
     @Override

@@ -34,6 +34,12 @@ public abstract class KernelException extends Exception implements Status.HasSta
         initCause( cause );
     }
 
+    protected KernelException( Status statusCode, Throwable cause )
+    {
+        super( cause );
+        this.statusCode = statusCode;
+    }
+
     protected KernelException( Status statusCode, String message, Object... parameters )
     {
         super( String.format( message, parameters ) );

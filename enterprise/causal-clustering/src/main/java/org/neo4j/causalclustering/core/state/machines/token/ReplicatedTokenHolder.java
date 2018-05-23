@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.causalclustering.core.replication.ReplicationFailureException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -111,7 +112,7 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
             Future<Object> future = replicator.replicate( tokenRequest, true );
             return (int) future.get();
         }
-        catch ( InterruptedException e )
+        catch ( ReplicationFailureException | InterruptedException e )
         {
             throw new org.neo4j.graphdb.TransactionFailureException( "Could not create token", e );
         }
