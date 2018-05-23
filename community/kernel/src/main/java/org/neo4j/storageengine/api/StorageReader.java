@@ -23,7 +23,6 @@ import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.IntSet;
 
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
@@ -50,11 +49,11 @@ import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.newapi.StorePropertyCursor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -568,9 +567,9 @@ public interface StorageReader extends AutoCloseable
 
     Groups groups();
 
-    Properties properties();
-
     StorageNodeCursor allocateNodeCursor();
+
+    StorePropertyCursor allocatePropertyCursor();
 
     interface RecordReads<RECORD>
     {
@@ -624,50 +623,5 @@ public interface StorageReader extends AutoCloseable
 
     interface Groups extends RecordReads<RelationshipGroupRecord>
     {
-    }
-
-    interface Properties extends RecordReads<PropertyRecord>
-    {
-        /**
-         * Open a new PageCursor for reading strings.
-         * <p>
-         * DANGER: make sure to always close this cursor.
-         *
-         * @param reference the initial string reference to access.
-         * @return the opened PageCursor
-         */
-        PageCursor openStringPageCursor( long reference );
-
-        /**
-         * Open a new PageCursor for reading arrays.
-         * <p>
-         * DANGER: make sure to always close this cursor.
-         *
-         * @param reference the initial array reference to access.
-         * @return the opened PageCursor
-         */
-        PageCursor openArrayPageCursor( long reference );
-
-        /**
-         * Loads a string into the given buffer. If that is too small we recreate the buffer. The buffer is returned
-         * in write mode, and needs to be flipped before reading.
-         *
-         * @param reference the initial string reference to load
-         * @param buffer the buffer to load into
-         * @param page the page cursor to be used
-         * @return the ByteBuffer of the string
-         */
-        ByteBuffer loadString( long reference, ByteBuffer buffer, PageCursor page );
-
-        /**
-         * Loads a array into the given buffer. If that is too small we recreate the buffer. The buffer is returned
-         * in write mode, and needs to be flipped before reading.
-         *
-         * @param reference the initial array reference to load
-         * @param buffer the buffer to load into
-         * @param page the page cursor to be used
-         * @return the ByteBuffer of the array
-         */
-        ByteBuffer loadArray( long reference, ByteBuffer buffer, PageCursor page );
     }
 }

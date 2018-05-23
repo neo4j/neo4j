@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -72,8 +71,6 @@ import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -84,13 +81,9 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
-import org.neo4j.string.UTF8;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterators.filter;
@@ -102,7 +95,6 @@ import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 public class AllStoreHolder extends Read
 {
     private final StorageReader.Groups groups;
-    private final StorageReader.Properties properties;
     private final StorageReader.Relationships relationships;
     private final StorageReader storageReader;
     private final ExplicitIndexStore explicitIndexStore;
@@ -121,7 +113,6 @@ public class AllStoreHolder extends Read
         this.storageReader = storageReader;
         this.relationships = storageReader.relationships();
         this.groups = storageReader.groups();
-        this.properties = storageReader.properties();
         this.explicitIndexStore = explicitIndexStore;
         this.procedures = procedures;
         this.schemaState = schemaState;
@@ -680,24 +671,6 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    PageCursor propertyPage( long reference )
-    {
-        return properties.openPageCursorForReading( reference );
-    }
-
-    @Override
-    PageCursor stringPage( long reference )
-    {
-        return properties.openStringPageCursor( reference );
-    }
-
-    @Override
-    PageCursor arrayPage( long reference )
-    {
-        return properties.openArrayPageCursor( reference );
-    }
-
-    @Override
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
@@ -724,14 +697,6 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    void property( PropertyRecord record, long reference, PageCursor pageCursor )
-    {
-        // We need to load forcefully here since otherwise we can have inconsistent reads
-        // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
-        properties.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
-    }
-
-    @Override
     void group( RelationshipGroupRecord record, long reference, PageCursor page )
     {
         // We need to load forcefully here since otherwise we cannot traverse over groups
@@ -744,22 +709,6 @@ public class AllStoreHolder extends Read
     long relationshipHighMark()
     {
         return relationships.getHighestPossibleIdInUse();
-    }
-
-    @Override
-    TextValue string( StorePropertyCursor cursor, long reference, PageCursor page )
-    {
-        ByteBuffer buffer = cursor.buffer = properties.loadString( reference, cursor.buffer, page );
-        buffer.flip();
-        return Values.stringValue( UTF8.decode( buffer.array(), 0, buffer.limit() ) );
-    }
-
-    @Override
-    ArrayValue array( StorePropertyCursor cursor, long reference, PageCursor page )
-    {
-        ByteBuffer buffer = cursor.buffer = properties.loadArray( reference, cursor.buffer, page );
-        buffer.flip();
-        return PropertyStore.readArrayFromBuffer( buffer );
     }
 
     boolean nodeExistsInStore( long id )

@@ -43,10 +43,10 @@ public class DefaultPropertyCursor implements PropertyCursor
     private AssertOpen assertOpen;
     private final DefaultCursors pool;
 
-    DefaultPropertyCursor( DefaultCursors pool )
+    DefaultPropertyCursor( DefaultCursors pool, StorePropertyCursor storeCursor )
     {
         this.pool = pool;
-        this.storeCursor = new StorePropertyCursor();
+        this.storeCursor = storeCursor;
     }
 
     void initNode( long nodeReference, long reference, Read read, AssertOpen assertOpen )
@@ -96,7 +96,7 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         this.assertOpen = assertOpen;
         this.read = read;
-        this.storeCursor.init( reference, read );
+        this.storeCursor.init( reference );
     }
 
     @Override

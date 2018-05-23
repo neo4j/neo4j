@@ -146,7 +146,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( propertyCursor == null )
         {
-            return trace( new DefaultPropertyCursor( this ) );
+            return trace( new DefaultPropertyCursor( this, storageReader.allocatePropertyCursor() ) );
         }
 
         try

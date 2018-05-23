@@ -50,15 +50,12 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -572,27 +569,15 @@ abstract class Read implements TxStateHolder,
 
     abstract PageCursor groupPage( long reference );
 
-    abstract PageCursor propertyPage( long reference );
-
-    abstract PageCursor stringPage( long reference );
-
-    abstract PageCursor arrayPage( long reference );
-
     abstract void relationship( RelationshipRecord record, long reference, PageCursor pageCursor );
 
     abstract void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor );
 
     abstract void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor );
 
-    abstract void property( PropertyRecord record, long reference, PageCursor pageCursor );
-
     abstract void group( RelationshipGroupRecord record, long reference, PageCursor page );
 
     abstract long relationshipHighMark();
-
-    abstract TextValue string( StorePropertyCursor cursor, long reference, PageCursor page );
-
-    abstract ArrayValue array( StorePropertyCursor cursor, long reference, PageCursor page );
 
     @Override
     public TransactionState txState()

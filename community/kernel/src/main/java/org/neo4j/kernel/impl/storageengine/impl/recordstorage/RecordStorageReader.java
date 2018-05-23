@@ -744,12 +744,6 @@ public class RecordStorageReader implements StorageReader
         return relationshipGroupStore;
     }
 
-    @Override
-    public Properties properties()
-    {
-        return propertyStore;
-    }
-
     private void visitNode( NodeItem nodeItem, DegreeVisitor visitor )
     {
         try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( nodeItem, Direction.BOTH ) )
@@ -964,5 +958,11 @@ public class RecordStorageReader implements StorageReader
     public StorageNodeCursor allocateNodeCursor()
     {
         return new StoreNodeCursor( nodeStore );
+    }
+
+    @Override
+    public org.neo4j.kernel.impl.newapi.StorePropertyCursor allocatePropertyCursor()
+    {
+        return new org.neo4j.kernel.impl.newapi.StorePropertyCursor( propertyStore );
     }
 }
