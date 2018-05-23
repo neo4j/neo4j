@@ -47,7 +47,6 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
-import org.neo4j.values.storable.DateTimeValue;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -350,11 +349,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> execution_guard_enabled =
             setting( "unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
 
+     // @see Status.Transaction#TransactionTimedOut
     @Description( "The maximum time interval of a transaction within which it should be completed." )
     @Dynamic
     public static final Setting<Duration> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String
             .valueOf( UNSPECIFIED_TIMEOUT ) );
 
+     // @see Status.Transaction#LockAcquisitionTimeout
     @Description( "The maximum time interval within which lock should be acquired." )
     public static final Setting<Duration> lock_acquisition_timeout = setting( "dbms.lock.acquisition.timeout", DURATION,
             String.valueOf( UNSPECIFIED_TIMEOUT ) );
