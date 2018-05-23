@@ -22,11 +22,10 @@ package org.neo4j.cypher.internal.javacompat;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.CommunityCompatibilityFactory;
+import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -62,9 +61,9 @@ public class ExecutionEngineTest
         Monitors monitors = graph.getDependencyResolver().resolveDependency( Monitors.class );
 
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-        CommunityCompatibilityFactory compatibilityFactory =
-                new CommunityCompatibilityFactory( graph, monitors, nullLogProvider );
-        ExecutionEngine executionEngine = new ExecutionEngine( graph, nullLogProvider, compatibilityFactory );
+        CommunityCompilerFactory compilerFactory =
+                new CommunityCompilerFactory( graph, monitors, nullLogProvider );
+        ExecutionEngine executionEngine = new ExecutionEngine( graph, nullLogProvider, compilerFactory );
 
         Result result;
         try ( InternalTransaction tx = graph
