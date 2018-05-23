@@ -55,7 +55,7 @@ abstract class MuninnPageCursor extends PageCursor
     private final PageCursorTracer tracer;
     protected MuninnPagedFile pagedFile;
     protected PageSwapper swapper;
-    protected short swapperId;
+    protected int swapperId;
     protected long pinnedPageRef;
     protected PinEvent pinEvent;
     protected long pageId;
