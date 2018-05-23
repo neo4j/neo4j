@@ -67,9 +67,6 @@ STATEMENT <: AnyRef](configv3_5: CypherPlannerConfiguration,
   protected val runSafelyDuringPlanning: RunSafely
   protected val runSafelyDuringRuntime: RunSafely
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
-                         preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery
-
   // concrete stuff
   protected val logger: InfoLogger = new StringInfoLogger(log)
   protected val monitorsv3_5: Monitors = WrappedMonitorsv3_5(kernelMonitors)

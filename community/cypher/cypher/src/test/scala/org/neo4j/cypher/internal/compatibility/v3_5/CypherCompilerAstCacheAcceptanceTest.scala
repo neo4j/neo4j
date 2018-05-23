@@ -45,7 +45,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
                      clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance):
-  Compatibility[CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = {
+  Cypher35Compiler[CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = {
 
     val config = CypherPlannerConfiguration(
       queryCacheSize,
@@ -60,16 +60,16 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       nonIndexedLabelWarningThreshold = 10000L,
       planWithMinimumCardinalityEstimates = true
     )
-    Compatibility(config,
-                  clock,
-                  kernelMonitors,
-                  log,
-                  CypherPlannerOption.default,
-                  CypherRuntimeOption.default,
-                  CypherUpdateStrategy.default,
-                  CommunityRuntimeBuilder,
-                  CommunityRuntimeContextCreator,
-                  () => 1)
+    Cypher35Compiler(config,
+                     clock,
+                     kernelMonitors,
+                     log,
+                     CypherPlannerOption.default,
+                     CypherRuntimeOption.default,
+                     CypherUpdateStrategy.default,
+                     CommunityRuntimeBuilder,
+                     CommunityRuntimeContextCreator,
+                     () => 1)
   }
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
@@ -97,7 +97,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
   var counter: CacheCounter = _
-  var compiler: Compatibility[CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = _
+  var compiler: Cypher35Compiler[CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -109,17 +109,16 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   private def runQuery(query: String, debugOptions: Set[String] = Set.empty): Unit = {
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
-      val parsedQuery = compiler.produceParsedQuery(PreParsedQuery(query, DummyPosition(0), query,
-                                                                   isPeriodicCommit = false,
-                                                                   CypherVersion.default,
-                                                                   CypherExecutionMode.default,
-                                                                   CypherPlannerOption.default,
-                                                                   CypherRuntimeOption.default,
-                                                                   CypherUpdateStrategy.default,
-                                                                   debugOptions),
-                                                    noTracing, Set.empty)
       val context = graph.transactionalContext(query = query -> Map.empty)
-      parsedQuery.plan(context, noTracing)
+      compiler.compile(PreParsedQuery(query, DummyPosition(0), query,
+                                      isPeriodicCommit = false,
+                                      CypherVersion.default,
+                                      CypherExecutionMode.default,
+                                      CypherPlannerOption.default,
+                                      CypherRuntimeOption.default,
+                                      CypherUpdateStrategy.default,
+                                      debugOptions),
+                                  noTracing, Set.empty, context)
       context.close(true)
     }
   }

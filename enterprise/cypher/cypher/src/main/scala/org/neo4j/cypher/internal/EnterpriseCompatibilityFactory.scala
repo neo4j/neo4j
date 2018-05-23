@@ -23,7 +23,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherPlannerOption
-import org.neo4j.cypher.internal.compatibility.v3_5.Compatibility
+import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Compiler
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContextCreator
@@ -37,19 +37,19 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.LogProvider
 import org.neo4j.scheduler.JobScheduler
 
-class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDatabaseQueryService,
+class EnterpriseCompatibilityFactory(inner: CompilerFactory, graph: GraphDatabaseQueryService,
                                      kernelMonitors: KernelMonitors,
-                                     logProvider: LogProvider) extends CompatibilityFactory {
-  override def create(spec: PlannerSpec_v2_3, config: CypherPlannerConfiguration): v2_3.Compatibility =
+                                     logProvider: LogProvider) extends CompilerFactory {
+  override def create(spec: PlannerSpec_v2_3, config: CypherPlannerConfiguration): v2_3.Cypher23Compiler =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_1, config: CypherPlannerConfiguration): v3_1.Compatibility =
+  override def create(spec: PlannerSpec_v3_1, config: CypherPlannerConfiguration): v3_1.Cypher31Compiler =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_3, config: CypherPlannerConfiguration): v3_3compat.Compatibility[_,_,_] =
+  override def create(spec: PlannerSpec_v3_3, config: CypherPlannerConfiguration): v3_3compat.Cypher33Compiler[_,_,_] =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_5, config: CypherPlannerConfiguration): Compatibility[_,_] =
+  override def create(spec: PlannerSpec_v3_5, config: CypherPlannerConfiguration): Cypher35Compiler[_,_] =
     (spec.planner, spec.runtime) match {
       case (CypherPlannerOption.rule, _) => inner.create(spec, config)
 
@@ -66,7 +66,7 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
 
             new ParallelDispatcher(morselSize, numberOfThreads, executorService)
           }
-        Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, logProvider.getLog(getClass),
+        Cypher35Compiler(config, CompilerEngineDelegator.CLOCK, kernelMonitors, logProvider.getLog(getClass),
                           spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder,
                           EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher),
                           LastCommittedTxIdProvider(graph))

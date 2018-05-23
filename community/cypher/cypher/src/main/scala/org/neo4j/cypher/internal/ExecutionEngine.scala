@@ -76,9 +76,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val queryCache: QueryCache[String, CachedExecutableQuery] =
     new QueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer)
 
-  private val compatibilityCache: CompatibilityCache = new CompatibilityCache(compatibilityFactory)
   private val compilerEngineDelegator: CompilerEngineDelegator =
-    new CompilerEngineDelegator(queryService, kernelMonitors, config, logProvider, compatibilityCache)
+    new CompilerEngineDelegator(queryService, kernelMonitors, config, logProvider, new CompatibilityCache(compatibilityFactory))
 
   private val parsedQueries = new LFUCache[String, ParsedQuery](config.queryCacheSize)
 
@@ -134,7 +133,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         val schemaToken = schemaHelper.readSchemaToken(tc)
         val cacheLookup = queryCache.computeIfAbsentOrStale(cacheKey,
                                                             tc,
-                                                            () => compileQuery(preParsedQuery, tracer, tc),
+                                                            () => compilerEngineDelegator.compile(preParsedQuery, tracer, tc),
                                                             preParsedQuery.rawStatement)
         cacheLookup match {
           case _: CacheHit[_] |
@@ -156,27 +155,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     }
 
     throw new IllegalStateException("Could not compile query due to insanely frequent schema changes")
-  }
-
-  private def compileQuery(preParsedQuery: PreParsedQuery,
-                           tracer: CompilationPhaseTracer,
-                           tc: TransactionalContext): CachedExecutableQuery = {
-
-
-
-    val parsedQuery = parsePreParsedQuery(preParsedQuery, tracer)
-    val (executionPlan, extractedParams, paramNames) = parsedQuery.plan(tc, tracer)
-    CachedExecutableQuery(executionPlan, paramNames, ValueConversion.asValues(extractedParams))
-  }
-
-  @throws(classOf[SyntaxException])
-  private def parsePreParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
-    parsedQueries.get(preParsedQuery.statementWithVersionAndPlanner).getOrElse {
-      val parsedQuery = compilerEngineDelegator.parseQuery(preParsedQuery, tracer)
-      //don't cache failed queries
-      if (!parsedQuery.hasErrors) parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
-      parsedQuery
-    }
   }
 
   def clearQueryCaches(): Long =
