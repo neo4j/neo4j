@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -225,7 +224,7 @@ public class TransactionStatusResultTest
                         TransactionTracer.NULL,
                         LockTracer.NONE, PageCursorTracerSupplier.NULL,
                         mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
-                        mock( DefaultCursors.class ), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
+                        AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
                         EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class),
                         mock( IndexingService.class ) )
             {

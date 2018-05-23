@@ -22,45 +22,67 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.newapi.StoreRelationshipTraversalCursor.Record;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForFiltering;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForTxStateFiltering;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoIncomingRels;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoopRels;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoingRels;
+import static org.neo4j.kernel.impl.newapi.GroupReferenceEncoding.isRelationship;
+import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
 
-class StoreRelationshipGroupCursor extends RelationshipGroupRecord
+public class StoreRelationshipGroupCursor extends RelationshipGroupRecord implements StorageRelationshipGroupCursor
 {
-    private Read read;
+    private final RelationshipStore relationshipStore;
+    private final RelationshipGroupStore groupStore;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
 
     private BufferedGroup bufferedGroup;
     private PageCursor page;
     private PageCursor edgePage;
+    private boolean open;
 
-    StoreRelationshipGroupCursor()
+    public StoreRelationshipGroupCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
     {
         super( NO_ID );
+        this.relationshipStore = relationshipStore;
+        this.groupStore = groupStore;
     }
 
-    void buffer( long nodeReference, long relationshipReference, Read read )
+    @Override
+    public void init( long nodeReference, long reference )
+    {
+        // the relationships for this node are not grouped in the store
+        if ( reference != NO_ID && isRelationship( reference ) )
+        {
+            buffer( nodeReference, clearEncoding( reference ) );
+        }
+        else // this is a normal group reference.
+        {
+            direct( nodeReference, reference );
+        }
+        open = true;
+    }
+
+    /**
+     * Sparse node, i.e. fake groups by reading the whole chain and buffering it.
+     */
+    private void buffer( long nodeReference, long relationshipReference )
     {
         setOwningNode( nodeReference );
         setId( NO_ID );
         setNext( NO_ID );
 
-        try ( PageCursor edgePage = read.relationshipPage( relationshipReference ) )
+        try ( PageCursor edgePage = relationshipStore.openPageCursorForReading( relationshipReference ) )
         {
             final MutableIntObjectMap<BufferedGroup> buffer = new IntObjectHashMap<>();
             BufferedGroup current = null;
             while ( relationshipReference != NO_ID )
             {
-                read.relationshipFull( edge, relationshipReference, edgePage );
+                relationshipStore.getRecordByCursor( relationshipReference, edge, RecordLoad.FORCE, edgePage );
                 // find the group
                 BufferedGroup group = buffer.get( edge.getType() );
                 if ( group == null )
@@ -91,11 +113,13 @@ class StoreRelationshipGroupCursor extends RelationshipGroupRecord
                 }
             }
             this.bufferedGroup = new BufferedGroup( edge, current ); // we need a dummy before the first to denote the initial pos
-            this.read = read;
         }
     }
 
-    void direct( long nodeReference, long reference, Read read )
+    /**
+     * Dense node, real groups iterated with every call to next.
+     */
+    void direct( long nodeReference, long reference )
     {
         bufferedGroup = null;
         clear();
@@ -103,11 +127,11 @@ class StoreRelationshipGroupCursor extends RelationshipGroupRecord
         setNext( reference );
         if ( page == null )
         {
-            page = read.groupPage( reference );
+            page = groupPage( reference );
         }
-        this.read = read;
     }
 
+    @Override
     public boolean next()
     {
         if ( isBuffered() )
@@ -128,12 +152,13 @@ class StoreRelationshipGroupCursor extends RelationshipGroupRecord
                 //be new types that was added in the transaction that we haven't visited yet.
                 return false;
             }
-            read.group( this, getNext(), page );
+            group( this, getNext(), page );
         } while ( !inUse() );
 
         return true;
     }
 
+    @Override
     public void setCurrent( int groupReference, int firstOut, int firstIn, int firstLoop )
     {
         setType( groupReference );
@@ -150,32 +175,37 @@ class StoreRelationshipGroupCursor extends RelationshipGroupRecord
         setFirstLoop( bufferedGroup.loops() );
     }
 
+    @Override
     public void close()
     {
-        if ( !isClosed() )
+        if ( open )
         {
+            open = false;
             bufferedGroup = null;
-            read = null;
             setId( NO_ID );
             clear();
         }
     }
 
+    @Override
     public int type()
     {
         return getType();
     }
 
+    @Override
     public int outgoingCount()
     {
         return isBuffered() ? bufferedGroup.outgoingCount : count( outgoingRawId() );
     }
 
+    @Override
     public int incomingCount()
     {
         return isBuffered() ? bufferedGroup.incomingCount : count( incomingRawId() );
     }
 
+    @Override
     public int loopCount()
     {
         return isBuffered() ? bufferedGroup.loopsCount : count( loopsRawId() );
@@ -189,9 +219,9 @@ class StoreRelationshipGroupCursor extends RelationshipGroupRecord
         }
         if ( edgePage == null )
         {
-            edgePage = read.relationshipPage( reference );
+            edgePage = relationshipStore.openPageCursorForReading( reference );
         }
-        read.relationship( edge, reference, edgePage );
+        relationshipStore.getRecordByCursor( reference, edge, RecordLoad.CHECK, edgePage );
         if ( edge.getFirstNode() == getOwningNode() )
         {
             return (int) edge.getFirstPrevRel();
@@ -202,72 +232,28 @@ class StoreRelationshipGroupCursor extends RelationshipGroupRecord
         }
     }
 
-    public void outgoing( RelationshipTraversalCursor cursor )
-    {
-        if ( isBuffered() )
-        {
-            ((DefaultRelationshipTraversalCursor) cursor).buffered(
-                    getOwningNode(), bufferedGroup.outgoing, RelationshipDirection.OUTGOING, bufferedGroup.label, read );
-        }
-        else
-        {
-            read.relationships( getOwningNode(), outgoingReference(), cursor );
-        }
-    }
-
-    public void incoming( RelationshipTraversalCursor cursor )
-    {
-        if ( isBuffered() )
-        {
-            ((DefaultRelationshipTraversalCursor) cursor).buffered(
-                    getOwningNode(), bufferedGroup.incoming, RelationshipDirection.INCOMING, bufferedGroup.label, read );
-        }
-        else
-        {
-            read.relationships( getOwningNode(), incomingReference(), cursor );
-        }
-    }
-
-    public void loops( RelationshipTraversalCursor cursor )
-    {
-        if ( isBuffered() )
-        {
-            ((DefaultRelationshipTraversalCursor) cursor).buffered(
-                    getOwningNode(), bufferedGroup.loops, RelationshipDirection.LOOP, bufferedGroup.label, read );
-        }
-        else
-        {
-            read.relationships( getOwningNode(), loopsReference(), cursor );
-        }
-    }
-
+    @Override
     public long outgoingReference()
     {
-        long outgoing = getFirstOut();
-        return outgoing == NO_ID ? encodeNoOutgoingRels( getType() ) : encodeRelationshipReference( outgoing );
+        return getFirstOut();
     }
 
+    @Override
     public long incomingReference()
     {
-        long incoming = getFirstIn();
-        return incoming == NO_ID ? encodeNoIncomingRels( getType() ) : encodeRelationshipReference( incoming );
+        return getFirstIn();
     }
 
+    @Override
     public long loopsReference()
     {
-        long loops = getFirstLoop();
-        return loops == NO_ID ? encodeNoLoopRels( getType() ) : encodeRelationshipReference( loops );
-    }
-
-    public boolean isClosed()
-    {
-        return read == null && bufferedGroup == null;
+        return getFirstLoop();
     }
 
     @Override
     public String toString()
     {
-        if ( isClosed() )
+        if ( !open )
         {
             return "RelationshipGroupCursor[closed state]";
         }
@@ -315,12 +301,7 @@ class StoreRelationshipGroupCursor extends RelationshipGroupRecord
         return bufferedGroup != null;
     }
 
-    private long encodeRelationshipReference( long relationshipId )
-    {
-        assert relationshipId != NO_ID;
-        return isBuffered() ? encodeForFiltering( relationshipId ) : encodeForTxStateFiltering( relationshipId );
-    }
-
+    @Override
     public void release()
     {
         if ( edgePage != null )
@@ -334,6 +315,12 @@ class StoreRelationshipGroupCursor extends RelationshipGroupRecord
             page.close();
             page = null;
         }
+    }
+
+    @Override
+    public long groupReference()
+    {
+        return getId();
     }
 
     static class BufferedGroup
@@ -400,5 +387,18 @@ class StoreRelationshipGroupCursor extends RelationshipGroupRecord
         {
             return firstLoop;
         }
+    }
+
+    private PageCursor groupPage( long reference )
+    {
+        return groupStore.openPageCursorForReading( reference );
+    }
+
+    private void group( RelationshipGroupRecord record, long reference, PageCursor page )
+    {
+        // We need to load forcefully here since otherwise we cannot traverse over groups
+        // records which have been concurrently deleted (flagged as inUse = false).
+        // @see #org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
+        groupStore.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
     }
 }

@@ -27,6 +27,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
@@ -37,29 +38,20 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     private Read read;
     private final DefaultCursors pool;
 
-    private StoreRelationshipGroupCursor storeCursor;
+    private StorageRelationshipGroupCursor storeCursor;
     private boolean hasCheckedTxState;
     private final MutableIntSet txTypes = new IntHashSet();
     private IntIterator txTypeIterator;
 
-    DefaultRelationshipGroupCursor( DefaultCursors pool )
+    DefaultRelationshipGroupCursor( DefaultCursors pool, StorageRelationshipGroupCursor storeCursor )
     {
         this.pool = pool;
-        this.storeCursor = new StoreRelationshipGroupCursor();
+        this.storeCursor = storeCursor;
     }
 
-    void buffer( long nodeReference, long relationshipReference, Read read )
+    void init( long nodeReference, long reference, Read read )
     {
-        storeCursor.buffer( nodeReference, relationshipReference, read );
-        this.txTypes.clear();
-        this.txTypeIterator = null;
-        this.hasCheckedTxState = false;
-        this.read = read;
-    }
-
-    void direct( long nodeReference, long reference, Read read )
-    {
-        storeCursor.direct( nodeReference, reference, read );
+        storeCursor.init( nodeReference, reference );
         this.txTypes.clear();
         this.txTypeIterator = null;
         this.hasCheckedTxState = false;
@@ -196,19 +188,19 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     @Override
     public void outgoing( RelationshipTraversalCursor cursor )
     {
-        storeCursor.outgoing( cursor );
+        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), outgoingReference(), read, RelationshipDirection.OUTGOING, type() );
     }
 
     @Override
     public void incoming( RelationshipTraversalCursor cursor )
     {
-        storeCursor.incoming( cursor );
+        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), incomingReference(), read, RelationshipDirection.INCOMING, type() );
     }
 
     @Override
     public void loops( RelationshipTraversalCursor cursor )
     {
-        storeCursor.loops( cursor );
+        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), loopsReference(), read, RelationshipDirection.LOOP, type() );
     }
 
     @Override
@@ -232,7 +224,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     @Override
     public boolean isClosed()
     {
-        return storeCursor.isClosed();
+        return read == null;
     }
 
     @Override
@@ -245,32 +237,9 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
         else
         {
             String mode = "mode=?";
-            return "RelationshipGroupCursor[id=" + storeCursor.getId() + ", open state with: " + mode + ", underlying record=" + super.toString() + " ]";
+            return "RelationshipGroupCursor[id=" + storeCursor.groupReference() + ", open state with: " + mode + ", underlying record=" +
+                    super.toString() + " ]";
         }
-    }
-
-    /**
-     * Implementation detail which provides the raw non-encoded outgoing relationship id
-     */
-    long outgoingRawId()
-    {
-        return storeCursor.outgoingRawId();
-    }
-
-    /**
-     * Implementation detail which provides the raw non-encoded incoming relationship id
-     */
-    long incomingRawId()
-    {
-        return storeCursor.incomingRawId();
-    }
-
-    /**
-     * Implementation detail which provides the raw non-encoded loops relationship id
-     */
-    long loopsRawId()
-    {
-        return storeCursor.loopsRawId();
     }
 
     public void release()

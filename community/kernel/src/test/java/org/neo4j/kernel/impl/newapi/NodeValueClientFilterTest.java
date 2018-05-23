@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -27,7 +26,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
+import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -37,23 +38,22 @@ import org.neo4j.values.storable.Value;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.newapi.MockStore.block;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClient
 {
-    @Rule
-    public final MockStore store = new MockStore( new DefaultCursors( null ) );
-    private final DefaultCursors cursors = new DefaultCursors( null );
+    private final Read read = mock( Read.class );
     private final List<Event> events = new ArrayList<>();
+    private final StubNodeCursor node = new StubNodeCursor();
+    private final StubPropertyCursor property = new StubPropertyCursor();
 
     @Test
     public void shouldAcceptAllNodesOnNoFilters()
     {
         // given
-        store.node( 17, NO_ID, false, NO_ID, 0 );
+        node.withNode( 17 );
         NodeValueClientFilter filter = initializeFilter();
 
         // when
@@ -84,7 +84,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     public void shouldRejectNodeWithNoProperties()
     {
         // given
-        store.node( 17, NO_ID, false, NO_ID, 0 );
+        node.withNode( 17 );
         NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
 
         // when
@@ -99,10 +99,8 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     @Test
     public void shouldAcceptNodeWithMatchingProperty()
     {
-        when( store.ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         // given
-        store.node( 17, 1, false, NO_ID, 0 );
-        store.property( 1, NO_ID, NO_ID, block( 12, stringValue( "hello" ) ) );
+        node.withNode( 17, new long[0], genericMap( 12, stringValue( "hello" ) ) );
         NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
 
         // when
@@ -117,10 +115,8 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     @Test
     public void shouldNotAcceptNodeWithoutMatchingProperty()
     {
-        when( store.ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         // given
-        store.node( 17, 1, false, NO_ID, 0 );
-        store.property( 1, NO_ID, NO_ID, block( 7, stringValue( "wrong" ) ) );
+        node.withNode( 17, new long[0], genericMap( 7, stringValue( "wrong" ) ) );
         NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
 
         // when
@@ -135,7 +131,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     private NodeValueClientFilter initializeFilter( IndexQuery... filters )
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
-                this, cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), store, filters );
+                this, node, property, read, filters );
         filter.initialize( TestIndexDescriptorFactory.forLabel( 11), this, null );
         return filter;
     }

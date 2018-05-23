@@ -21,35 +21,15 @@ package org.neo4j.storageengine.api;
 
 import java.util.function.LongPredicate;
 
-public interface StorageNodeCursor
+import org.neo4j.kernel.impl.newapi.RelationshipDirection;
+
+public interface StorageRelationshipTraversalCursor extends StorageRelationshipCursor
 {
-    void scan();
+    long neighbourNodeReference();
 
-    void single( long reference );
-
-    long nodeReference();
-
-    long[] labels();
-
-    boolean hasLabel( int label );
-
-    boolean hasProperties();
-
-    long relationshipGroupReference();
-
-    long allRelationshipsReference();
-
-    long propertiesReference();
+    long originNodeReference();
 
     boolean next( LongPredicate filter );
 
-    void setCurrent( long nodeReference );
-
-    void close();
-
-    boolean isDense();
-
-    void reset();
-
-    void release();
+    void init( long nodeReference, long reference, RelationshipDirection filterDirection, int filterType );
 }

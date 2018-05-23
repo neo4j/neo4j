@@ -37,6 +37,7 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
+import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 class DefaultNodeCursor implements NodeCursor
@@ -135,19 +136,19 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public void relationships( RelationshipGroupCursor cursor )
     {
-        read.relationshipGroups( storeCursor.nodeReference(), relationshipGroupReference(), cursor );
+        ((DefaultRelationshipGroupCursor) cursor).init( nodeReference(), relationshipGroupReference(), read );
     }
 
     @Override
     public void allRelationships( RelationshipTraversalCursor cursor )
     {
-        read.relationships( storeCursor.nodeReference(), allRelationshipsReference(), cursor );
+        ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference(), allRelationshipsReference(), read, null, ANY_RELATIONSHIP_TYPE );
     }
 
     @Override
     public void properties( PropertyCursor cursor )
     {
-        read.nodeProperties( storeCursor.nodeReference(), propertiesReference(), cursor );
+        ((DefaultPropertyCursor) cursor).initNode( nodeReference(), propertiesReference(), read, read );
     }
 
     @Override
@@ -229,7 +230,7 @@ class DefaultNodeCursor implements NodeCursor
                 }
                 else
                 {
-                    addedNodes = read.txState().addedAndRemovedNodes().getAdded().longIterator();
+                    addedNodes = read.txState().addedAndRemovedNodes().getAdded().freeze().longIterator();
                 }
                 hasChanges = HasChanges.YES;
             }

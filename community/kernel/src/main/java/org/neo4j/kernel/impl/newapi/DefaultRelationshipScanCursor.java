@@ -27,23 +27,24 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StoreRelationshipScanCursor> implements RelationshipScanCursor
+class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRelationshipScanCursor> implements RelationshipScanCursor
 {
     private int type;
     private long single;
     private LongIterator addedRelationships;
 
-    DefaultRelationshipScanCursor( DefaultCursors pool )
+    DefaultRelationshipScanCursor( DefaultCursors pool, StorageRelationshipScanCursor storeCursor )
     {
-        super( pool, new StoreRelationshipScanCursor() );
+        super( pool, storeCursor );
     }
 
     void scan( int type, Read read )
     {
-        storeCursor.scan( type, read );
+        storeCursor.scan( type );
         this.type = type;
         this.single = NO_ID;
         init( read );
@@ -52,7 +53,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StoreRelat
 
     void single( long reference, Read read )
     {
-        storeCursor.single( reference, read );
+        storeCursor.single( reference );
         type = -1;
         this.single = reference;
         init( read );

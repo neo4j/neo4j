@@ -21,63 +21,58 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
-abstract class StoreRelationshipCursor extends RelationshipRecord implements RelationshipVisitor<RuntimeException>
+abstract class StoreRelationshipCursor extends RelationshipRecord implements RelationshipVisitor<RuntimeException>, StorageRelationshipCursor
 {
-    Read read;
+    final RelationshipStore relationshipStore;
+    final RelationshipGroupStore groupStore;
 
-    StoreRelationshipCursor()
+    StoreRelationshipCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
     {
         super( NO_ID );
+        this.relationshipStore = relationshipStore;
+        this.groupStore = groupStore;
     }
 
-    protected void init( Read read )
-    {
-        this.read = read;
-    }
-
+    @Override
     public long relationshipReference()
     {
         return getId();
     }
 
+    @Override
     public int type()
     {
         return getType();
     }
 
+    @Override
     public boolean hasProperties()
     {
         return nextProp != NO_ID;
     }
 
-    public void source( NodeCursor cursor )
-    {
-        read.singleNode( sourceNodeReference(), cursor );
-    }
-
-    public void target( NodeCursor cursor )
-    {
-        read.singleNode( targetNodeReference(), cursor );
-    }
-
-    public void properties( PropertyCursor cursor )
-    {
-        read.relationshipProperties( relationshipReference(), propertiesReference(), cursor );
-    }
-
+    @Override
     public long sourceNodeReference()
     {
         return getFirstNode();
     }
 
+    @Override
     public long targetNodeReference()
     {
         return getSecondNode();
     }
 
+    @Override
     public long propertiesReference()
     {
         return getNextProp();
@@ -89,5 +84,32 @@ abstract class StoreRelationshipCursor extends RelationshipRecord implements Rel
     {
         setId( relationshipId );
         initialize( true, NO_ID, startNodeId, endNodeId, typeId, NO_ID, NO_ID, NO_ID, NO_ID, false, false );
+    }
+
+    PageCursor relationshipPage( long reference )
+    {
+        return relationshipStore.openPageCursorForReading( reference );
+    }
+
+    void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
+    {
+        // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
+        relationshipStore.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
+    }
+
+    void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor )
+    {
+        // We need to load forcefully for relationship chain traversal since otherwise we cannot
+        // traverse over relationship records which have been concurrently deleted
+        // (flagged as inUse = false).
+        // see
+        //      org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
+        //      org.neo4j.kernel.impl.locking.RelationshipCreateDeleteIT
+        relationshipStore.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
+    }
+
+    long relationshipHighMark()
+    {
+        return relationshipStore.getHighestPossibleIdInUse();
     }
 }

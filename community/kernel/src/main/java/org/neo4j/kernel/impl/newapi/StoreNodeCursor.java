@@ -38,6 +38,7 @@ public class StoreNodeCursor extends NodeRecord implements StorageNodeCursor
     private long next;
     private long highMark;
     private long nextStoreReference;
+    private boolean open;
 
     public StoreNodeCursor( NodeStore read )
     {
@@ -59,6 +60,7 @@ public class StoreNodeCursor extends NodeRecord implements StorageNodeCursor
         this.next = 0;
         this.highMark = nodeHighMark();
         this.nextStoreReference = NO_ID;
+        this.open = true;
     }
 
     @Override
@@ -76,6 +78,7 @@ public class StoreNodeCursor extends NodeRecord implements StorageNodeCursor
         //This marks the cursor as a "single cursor"
         this.highMark = NO_ID;
         this.nextStoreReference = NO_ID;
+        this.open = true;
     }
 
     @Override
@@ -193,17 +196,11 @@ public class StoreNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public void close()
     {
-        if ( !isClosed() )
+        if ( open )
         {
-            read = null;
+            open = false;
             reset();
         }
-    }
-
-    @Override
-    public boolean isClosed()
-    {
-        return read == null;
     }
 
     @Override
@@ -231,7 +228,7 @@ public class StoreNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public String toString()
     {
-        if ( isClosed() )
+        if ( !open )
         {
             return "StoreNodeCursor[closed state]";
         }

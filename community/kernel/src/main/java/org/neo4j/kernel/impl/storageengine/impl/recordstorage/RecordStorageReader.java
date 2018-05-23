@@ -65,6 +65,9 @@ import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.newapi.StoreNodeCursor;
+import org.neo4j.kernel.impl.newapi.StoreRelationshipGroupCursor;
+import org.neo4j.kernel.impl.newapi.StoreRelationshipScanCursor;
+import org.neo4j.kernel.impl.newapi.StoreRelationshipTraversalCursor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -90,7 +93,11 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -673,7 +680,7 @@ public class RecordStorageReader implements StorageReader
         if ( node.isDense() )
         {
             RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();
-            RecordCursor<RelationshipGroupRecord> cursor = recordCursors().relationshipGroup();
+            RecordCursor<RelationshipGroupRecord> cursor = recordCursors.relationshipGroup();
             for ( long id = node.nextGroupId(); id != NO_NEXT_RELATIONSHIP.intValue(); id = groupRecord.getNext() )
             {
                 if ( cursor.next( id, groupRecord, FORCE ) )
@@ -723,25 +730,13 @@ public class RecordStorageReader implements StorageReader
         RelationshipRecord relationshipRecord = relationshipStore.newRecord();
         RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
         return countRelationshipsInGroup( groupId, direction, relType, nodeId, relationshipRecord,
-                relationshipGroupRecord, recordCursors() );
+                relationshipGroupRecord, recordCursors );
     }
 
     @Override
     public <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader,T> factory )
     {
         return schemaCache.getOrCreateDependantState( type, factory, this );
-    }
-
-    @Override
-    public Relationships relationships()
-    {
-        return relationshipStore;
-    }
-
-    @Override
-    public Groups groups()
-    {
-        return relationshipGroupStore;
     }
 
     private void visitNode( NodeItem nodeItem, DegreeVisitor visitor )
@@ -773,9 +768,9 @@ public class RecordStorageReader implements StorageReader
     private void visitDenseNode( NodeItem nodeItem, DegreeVisitor visitor )
     {
         RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
-        RecordCursor<RelationshipGroupRecord> relationshipGroupCursor = recordCursors().relationshipGroup();
+        RecordCursor<RelationshipGroupRecord> relationshipGroupCursor = recordCursors.relationshipGroup();
         RelationshipRecord relationshipRecord = relationshipStore.newRecord();
-        RecordCursor<RelationshipRecord> relationshipCursor = recordCursors().relationship();
+        RecordCursor<RelationshipRecord> relationshipCursor = recordCursors.relationship();
 
         long groupId = nodeItem.nextGroupId();
         while ( groupId != NO_NEXT_RELATIONSHIP.longValue() )
@@ -925,12 +920,6 @@ public class RecordStorageReader implements StorageReader
         return indexReaderFactory().newUnCachedReader( descriptor );
     }
 
-    @Override
-    public RecordCursors recordCursors()
-    {
-        return recordCursors;
-    }
-
     public RecordStorageCommandCreationContext getCommandCreationContext()
     {
         return commandCreationContext;
@@ -961,7 +950,25 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public org.neo4j.kernel.impl.newapi.StorePropertyCursor allocatePropertyCursor()
+    public StorageRelationshipGroupCursor allocateRelationshipGroupCursor()
+    {
+        return new StoreRelationshipGroupCursor( relationshipStore, relationshipGroupStore );
+    }
+
+    @Override
+    public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor()
+    {
+        return new StoreRelationshipTraversalCursor( relationshipStore, relationshipGroupStore );
+    }
+
+    @Override
+    public StorageRelationshipScanCursor allocateRelationshipScanCursor()
+    {
+        return new StoreRelationshipScanCursor( relationshipStore, relationshipGroupStore );
+    }
+
+    @Override
+    public StoragePropertyCursor allocatePropertyCursor()
     {
         return new org.neo4j.kernel.impl.newapi.StorePropertyCursor( propertyStore );
     }

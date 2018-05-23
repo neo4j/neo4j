@@ -24,11 +24,9 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 
 import static java.lang.String.format;
@@ -53,11 +51,6 @@ public class DefaultCursors implements CursorFactory
     public DefaultCursors( StorageReader storageReader )
     {
         this.storageReader = storageReader;
-    }
-
-    public static Supplier<DefaultCursors> supplier( StorageEngine storageEngine )
-    {
-        return () -> new DefaultCursors( storageEngine.newReader() );
     }
 
     @Override
@@ -92,7 +85,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipScanCursor == null )
         {
-            return trace( new DefaultRelationshipScanCursor( this ) );
+            return trace( new DefaultRelationshipScanCursor( this, storageReader.allocateRelationshipScanCursor() ) );
         }
 
         try
@@ -119,7 +112,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipTraversalCursor == null )
         {
-            return trace( new DefaultRelationshipTraversalCursor( this ) );
+            return trace( new DefaultRelationshipTraversalCursor( this, storageReader.allocateRelationshipTraversalCursor() ) );
         }
 
         try
@@ -173,7 +166,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipGroupCursor == null )
         {
-            return trace( new DefaultRelationshipGroupCursor( this ) );
+            return trace( new DefaultRelationshipGroupCursor( this, storageReader.allocateRelationshipGroupCursor() ) );
         }
 
         try
@@ -281,7 +274,8 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipExplicitIndexCursor == null )
         {
-            return trace( new DefaultRelationshipExplicitIndexCursor( new DefaultRelationshipScanCursor( null ), this ) );
+            return trace( new DefaultRelationshipExplicitIndexCursor( new DefaultRelationshipScanCursor( null,
+                    storageReader.allocateRelationshipScanCursor() ), this ) );
         }
 
         try

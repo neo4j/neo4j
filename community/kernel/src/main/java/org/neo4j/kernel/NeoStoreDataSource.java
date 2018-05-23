@@ -77,7 +77,6 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -673,7 +672,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 constraintIndexCreator, statementOperationParts, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
-                cpuClockRef, heapAllocationRef, accessCapability, DefaultCursors.supplier( storageEngine ), autoIndexing,
+                cpuClockRef, heapAllocationRef, accessCapability, autoIndexing,
                 explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                 databaseSchemaState, indexingService, propertyKeyTokenHolder ) );
 

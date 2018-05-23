@@ -307,25 +307,13 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     @Test
     public void shouldTraverseSparseNodeViaGroups() throws Exception
     {
-        traverseViaGroups( sparse( graphDb ), false );
+        traverseViaGroups( sparse( graphDb ) );
     }
 
     @Test
     public void shouldTraverseDenseNodeViaGroups() throws Exception
     {
-        traverseViaGroups( RelationshipTestSupport.dense( graphDb ), false );
-    }
-
-    @Test
-    public void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
-    {
-        traverseViaGroups( sparse( graphDb ), true );
-    }
-
-    @Test
-    public void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
-    {
-        traverseViaGroups( RelationshipTestSupport.dense( graphDb ), true );
+        traverseViaGroups( RelationshipTestSupport.dense( graphDb ) );
     }
 
     @Test
@@ -1142,7 +1130,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertTrue( "access node", node.next() );
                 if ( detached )
                 {
-                    tx.dataRead().relationships( start.id, node.allRelationshipsReference(), relationship );
+                    node.allRelationships( relationship );
                 }
                 else
                 {
@@ -1159,7 +1147,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
-    private void traverseViaGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
+    private void traverseViaGroups( RelationshipTestSupport.StartNode start ) throws Exception
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -1174,55 +1162,25 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 // when
                 read.singleNode( start.id, node );
                 assertTrue( "access node", node.next() );
-                if ( detached )
-                {
-                    read.relationshipGroups( start.id, node.relationshipGroupReference(), group );
-                }
-                else
-                {
-                    node.relationships( group );
-                }
+                node.relationships( group );
 
                 while ( group.next() )
                 {
+                    int type = group.type();
                     // outgoing
-                    if ( detached )
-                    {
-                        read.relationships( start.id, group.outgoingReference(), relationship );
-                    }
-                    else
-                    {
-                        group.outgoing( relationship );
-                    }
+                    group.outgoing( relationship );
                     // then
-                    RelationshipTestSupport
-                            .assertCount( tx, relationship, expectedCounts, group.type(), OUTGOING );
+                    RelationshipTestSupport.assertCount( tx, relationship, expectedCounts, type, OUTGOING );
 
                     // incoming
-                    if ( detached )
-                    {
-                        read.relationships( start.id, group.incomingReference(), relationship );
-                    }
-                    else
-                    {
-                        group.incoming( relationship );
-                    }
+                    group.incoming( relationship );
                     // then
-                    RelationshipTestSupport
-                            .assertCount( tx, relationship, expectedCounts, group.type(), INCOMING );
+                    RelationshipTestSupport.assertCount( tx, relationship, expectedCounts, type, INCOMING );
 
                     // loops
-                    if ( detached )
-                    {
-                        read.relationships( start.id, group.loopsReference(), relationship );
-                    }
-                    else
-                    {
-                        group.loops( relationship );
-                    }
+                    group.loops( relationship );
                     // then
-                    RelationshipTestSupport
-                            .assertCount( tx, relationship, expectedCounts, group.type(), BOTH );
+                    RelationshipTestSupport.assertCount( tx, relationship, expectedCounts, type, BOTH );
                 }
             }
         }
