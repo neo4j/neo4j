@@ -285,8 +285,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
           case LongSlot(offset, true, CTRelationship, _) =>
             k -> slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
 
-          case RefSlot(offset, _, _, _) =>
-            k -> slottedExpressions.ReferenceFromSlot(offset)
+          case RefSlot(offset, _, _, name) =>
+            k -> slottedExpressions.ReferenceFromSlot(offset, name)
 
           case _ =>
             throw new InternalException(s"Did not find `$k` in the pipeline information")

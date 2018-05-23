@@ -45,7 +45,7 @@ class UnwindSlottedPipeTest extends CypherFunSuite {
     val y = outputPipeline.getReferenceOffsetFor("y")
 
     val source = FakeSlottedPipe(data.toIterator, inputPipeline)
-    val unwindPipe = UnwindSlottedPipe(source, ReferenceFromSlot(x), y, outputPipeline)()
+    val unwindPipe = UnwindSlottedPipe(source, ReferenceFromSlot(x, "x"), y, outputPipeline)()
     unwindPipe.createResults(QueryStateHelper.empty).map {
       case c: PrimitiveExecutionContext =>
         Map("x" -> c.getRefAt(x), "y" -> c.getRefAt(y))

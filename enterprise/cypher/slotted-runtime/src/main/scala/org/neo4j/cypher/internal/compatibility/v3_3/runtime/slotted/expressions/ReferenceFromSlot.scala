@@ -24,9 +24,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 
-case class ReferenceFromSlot(offset: Int) extends Expression with SlottedExpression {
+case class ReferenceFromSlot(offset: Int, name: String) extends Expression with SlottedExpression {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     ctx.getRefAt(offset)
 
+  override def toString: String = name
 }

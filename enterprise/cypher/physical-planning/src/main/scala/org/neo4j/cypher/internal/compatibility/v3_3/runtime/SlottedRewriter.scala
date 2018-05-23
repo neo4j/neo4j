@@ -140,7 +140,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
             else
               propExpression
 
-          case RefSlot(offset, _, _, _) => prop.copy(map = ReferenceFromSlot(offset))(prop.position)
+          case RefSlot(offset, _, _, name) => prop.copy(map = ReferenceFromSlot(offset, name))(prop.position)
         }
 
       case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
@@ -167,7 +167,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
             case LongSlot(offset, true, CTNode, name) => NullCheck(offset, NodeFromSlot(offset, name))
             case LongSlot(offset, false, CTRelationship, name) => RelationshipFromSlot(offset, name)
             case LongSlot(offset, true, CTRelationship, name) => NullCheck(offset, RelationshipFromSlot(offset, name))
-            case RefSlot(offset, _, _, _) => ReferenceFromSlot(offset)
+            case RefSlot(offset, _, _, name) => ReferenceFromSlot(offset, name)
             case _ =>
               throw new CantCompileQueryException("Unknown type for `" + k + "` in the pipeline information")
           }
